@@ -1,0 +1,108 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterCache.cs(32,39): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs(42,85): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs(72,26): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterMetadata.cs(3,73): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Configuration\JauntyConfig.cs(12,37): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Helpers\StringExtensions.cs(5,49): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Helpers\StringExtensions.cs(10,54): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\CommandOptions.cs(8,53): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Helpers\StringExtensions.cs(15,47): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Helpers\StringExtensions.cs(15,25): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Execution\CommandExecutor.cs(10,94): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Execution\CommandExecutor.cs(10,122): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs(113,85): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\CommandOptions.cs(10,35): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterMetadata.cs(6,40): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Configuration\JauntyConfig.cs(22,39): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Configuration\JauntyConfig.cs(5,38): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Configuration\JauntyConfig.cs(6,40): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterCache.cs(39,53): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs(74,33): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs(79,36): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' annotations context. [C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.csproj::TargetFramework=netstandard2.0]
+  Jaunty -> C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\bin\Debug\netstandard2.0\Jaunty.dll
+  Jaunty -> C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\bin\Debug\net8.0\Jaunty.dll
+  The package Beparey.Jaunty.2026.1.1 is missing a readme. Go to https://aka.ms/nuget/authoring-best-practices/readme to learn why package readmes are important.
+  Successfully created package 'C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\bin\Debug\Beparey.Jaunty.2026.1.1.nupkg'.
+  Jaunty.Tests -> C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\tests\Jaunty.Tests\bin\Debug\net8.0\Jaunty.Tests.dll
+Test run for C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\tests\Jaunty.Tests\bin\Debug\net8.0\Jaunty.Tests.dll (.NETCoreApp,Version=v8.0)
+VSTest version 18.0.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+  Failed Jaunty.Tests.Integration.ConfigResolverTests.Query_WithSnakeCaseColumnResolver_MapsCorrectly [27 ms]
+  Error Message:
+   System.InvalidOperationException : Strict mapping failed: property 'CategoryId' (column 'CategoryId') on type 'CategorySnakeCase' has no matching column in the result set.
+  Stack Trace:
+     at Jaunty.Internal.Mapping.MetadataCache`1.ValidateStrictMode(HashSet`1 readerColumns) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Mapping\MetadataCache.cs:line 72
+   at Jaunty.Internal.Mapping.MetadataCache`1.GetSetters(IDataReader reader, MappingMode mode) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Mapping\MetadataCache.cs:line 46
+   at Jaunty.Jaunty.<>c__DisplayClass16_0`1.<QueryCore>b__0(IDataReader reader) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 118
+   at Jaunty.Internal.Execution.CommandExecutor.ExecuteReader[TResult](IDbConnection connection, String sql, Object parameters, IDbTransaction transaction, Nullable`1 commandTimeout, Func`2 handler) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Execution\CommandExecutor.cs:line 36
+   at Jaunty.Jaunty.QueryCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions options, MappingMode mode) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 115
+   at Jaunty.Jaunty.Query[T](IDbConnection connection, String sql, Object parameters) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 71
+   at Jaunty.Tests.Integration.ConfigResolverTests.Query_WithSnakeCaseColumnResolver_MapsCorrectly() in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\tests\Jaunty.Tests\Integration\ConfigResolverTests.cs:line 32
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.QueryEdgeCaseTests.Query_DataWithSpecialCharacters_HandlesCorrectly [24 ms]
+  Error Message:
+   System.ArgumentException : Parameter count mismatch: SQL contains 1 unique parameter(s) [Name], but 2 value(s) provided.
+  Stack Trace:
+     at Jaunty.Internal.Parameters.ParameterBinder.BindPositional(IDbCommand command, Object parameters) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs:line 59
+   at Jaunty.Internal.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs:line 10
+   at Jaunty.Internal.Execution.CommandExecutor.ExecuteReader[TResult](IDbConnection connection, String sql, Object parameters, IDbTransaction transaction, Nullable`1 commandTimeout, Func`2 handler) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Execution\CommandExecutor.cs:line 33
+   at Jaunty.Jaunty.QueryCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions options, MappingMode mode) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 115
+   at Jaunty.Jaunty.Query[T](IDbConnection connection, String sql, Object param1, Object param2, Object[] rest) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 102
+   at Jaunty.Tests.Integration.QueryEdgeCaseTests.Query_DataWithSpecialCharacters_HandlesCorrectly() in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\tests\Jaunty.Tests\Integration\QueryEdgeCaseTests.cs:line 97
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.AttributeMappingTests.Query_WithColumnAttributes_MapsCorrectly [24 ms]
+  Error Message:
+   System.ArgumentException : Parameter count mismatch: SQL contains 1 unique parameter(s) [Id], but 2 value(s) provided.
+  Stack Trace:
+     at Jaunty.Internal.Parameters.ParameterBinder.BindPositional(IDbCommand command, Object parameters) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs:line 59
+   at Jaunty.Internal.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs:line 10
+   at Jaunty.Internal.Execution.CommandExecutor.ExecuteReader[TResult](IDbConnection connection, String sql, Object parameters, IDbTransaction transaction, Nullable`1 commandTimeout, Func`2 handler) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Execution\CommandExecutor.cs:line 33
+   at Jaunty.Jaunty.QueryCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions options, MappingMode mode) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 115
+   at Jaunty.Jaunty.Query[T](IDbConnection connection, String sql, Object param1, Object param2, Object[] rest) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 102
+   at Jaunty.Tests.Integration.AttributeMappingTests.Query_WithColumnAttributes_MapsCorrectly() in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\tests\Jaunty.Tests\Integration\AttributeMappingTests.cs:line 21
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.ConfigResolverTests.Query_AttributeTakesPrecedenceOverResolver [6 ms]
+  Error Message:
+   System.ArgumentException : Parameter count mismatch: SQL contains 1 unique parameter(s) [Id], but 2 value(s) provided.
+  Stack Trace:
+     at Jaunty.Internal.Parameters.ParameterBinder.BindPositional(IDbCommand command, Object parameters) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs:line 59
+   at Jaunty.Internal.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs:line 10
+   at Jaunty.Internal.Execution.CommandExecutor.ExecuteReader[TResult](IDbConnection connection, String sql, Object parameters, IDbTransaction transaction, Nullable`1 commandTimeout, Func`2 handler) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Execution\CommandExecutor.cs:line 33
+   at Jaunty.Jaunty.QueryCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions options, MappingMode mode) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 115
+   at Jaunty.Jaunty.Query[T](IDbConnection connection, String sql, Object param1, Object param2, Object[] rest) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 102
+   at Jaunty.Tests.Integration.ConfigResolverTests.Query_AttributeTakesPrecedenceOverResolver() in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\tests\Jaunty.Tests\Integration\ConfigResolverTests.cs:line 49
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.MappingModeTests.ProjectionMode_WithParameters_WorksCorrectly [< 1 ms]
+  Error Message:
+   System.ArgumentException : Parameter count mismatch: SQL contains 1 unique parameter(s) [Id], but 2 value(s) provided.
+  Stack Trace:
+     at Jaunty.Internal.Parameters.ParameterBinder.BindPositional(IDbCommand command, Object parameters) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs:line 59
+   at Jaunty.Internal.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs:line 10
+   at Jaunty.Internal.Execution.CommandExecutor.ExecuteReader[TResult](IDbConnection connection, String sql, Object parameters, IDbTransaction transaction, Nullable`1 commandTimeout, Func`2 handler) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Execution\CommandExecutor.cs:line 33
+   at Jaunty.Jaunty.QueryCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions options, MappingMode mode) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 115
+   at Jaunty.Jaunty.Query[T](IDbConnection connection, String sql, Object param1, Object param2, Object[] rest) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 102
+   at Jaunty.Tests.Integration.MappingModeTests.ProjectionMode_WithParameters_WorksCorrectly() in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\tests\Jaunty.Tests\Integration\MappingModeTests.cs:line 134
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.PositionalParameterTests.Query_SingleStringParameter_BindsCorrectly [1 ms]
+  Error Message:
+   System.ArgumentException : Parameter count mismatch: SQL contains 1 unique parameter(s) [Id], but 2 value(s) provided.
+  Stack Trace:
+     at Jaunty.Internal.Parameters.ParameterBinder.BindPositional(IDbCommand command, Object parameters) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs:line 59
+   at Jaunty.Internal.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Parameters\ParameterBinder.cs:line 10
+   at Jaunty.Internal.Execution.CommandExecutor.ExecuteReader[TResult](IDbConnection connection, String sql, Object parameters, IDbTransaction transaction, Nullable`1 commandTimeout, Func`2 handler) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Internal\Execution\CommandExecutor.cs:line 33
+   at Jaunty.Jaunty.QueryCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions options, MappingMode mode) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 115
+   at Jaunty.Jaunty.Query[T](IDbConnection connection, String sql, Object param1, Object param2, Object[] rest) in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\src\Jaunty\Jaunty.cs:line 102
+   at Jaunty.Tests.Integration.PositionalParameterTests.Query_SingleStringParameter_BindsCorrectly() in C:\home\syed\code\_projects\Jaunty\20260101\Jaunty\tests\Jaunty.Tests\Integration\PositionalParameterTests.cs:line 34
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Failed!  - Failed:     6, Passed:   140, Skipped:     0, Total:   146, Duration: 91 ms - Jaunty.Tests.dll (net8.0)
