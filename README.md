@@ -80,6 +80,110 @@ var filtered = connection.Query<Product>(sql, 1, "active", 50.00m);  // multiple
 var products = await connection.QueryAsync<Product>(sql, cancellationToken);
 ```
 
+## Comprehensive Examples
+
+### Advanced Parameter Binding
+
+**Multiple positional parameters:**
+```csharp
+var products = connection.Query<Product>(
+    "SELECT * FROM products WHERE price BETWEEN @MinPrice AND @MaxPrice AND category_id = @CategoryId",
+    10.00m, 100.00m, 2);  // @MinPrice=10.00, @MaxPrice=100.00, @CategoryId=2
+```
+
+**Array parameters:**
+```csharp
+var products = connection.Query<Product>(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new object[] { 1 });
+```
+
+**Parameter validation:**
+```csharp
+// This will throw immediately with a clear error message
+try
+{
+    connection.Query<Product>(sql, 1, 2, 3);  // If SQL only has 2 parameters
+}
+catch (ArgumentException ex)
+{
+    // "Parameter count mismatch: SQL contains 2 unique parameter(s), but 3 value(s) provided."
+}
+```
+
+### Working with Different Data Types
+
+**Nullable types:**
+```csharp
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    public int? CategoryId { get; set; }  // Nullable - NULL becomes null
+    public DateTime? DiscontinuedDate { get; set; }  // Nullable - NULL becomes null
+}
+
+var products = connection.Query<Product>("SELECT id, name, price, category_id, discontinued_date FROM products");
+```
+
+**Handling NULL values:**
+```csharp
+// Non-nullable value types will throw if database returns NULL
+public class Product
+{
+    public int Id { get; set; }        // If database returns NULL for 'id', throws InvalidOperationException
+    public string Name { get; set; }   // NULL becomes null (reference type)
+    public int? CategoryId { get; set; } // NULL becomes null (nullable)
+}
+```
+
+### Complex Transaction and Timeout Scenarios
+
+**Combining transaction and timeout:**
+```csharp
+using var transaction = connection.BeginTransaction();
+
+var orders = connection.Query<Order>(
+    "SELECT * FROM orders WHERE customer_id = @CustomerId",
+    new { CustomerId = 123 },
+    CommandOptions.With(transaction, timeoutSeconds: 30));
+
+transaction.Commit();
+```
+
+**Async with custom timeout:**
+```csharp
+var products = await connection.QueryAsync<Product>(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    CommandOptions.WithTimeout(15),
+    cancellationToken);
+```
+
+### Configuration Examples
+
+**Custom naming conventions:**
+```csharp
+// At application startup
+JauntyConfig.ColumnNameResolver = propertyName => $"col_{propertyName.ToLower()}";
+JauntyConfig.TableNameResolver = type => $"tbl_{type.Name.ToLower()}";
+
+// Now property 'ProductName' maps to column 'col_productname'
+// And class 'Product' maps to table 'tbl_product'
+```
+
+**Using built-in conventions:**
+```csharp
+// Snake case for columns
+JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+// Results in 'ProductName' -> 'product_name'
+
+// Plural table names
+JauntyConfig.TableNameResolver = NamingConvention.SnakeCasePluralTable;
+// Results in 'Product' -> 'products'
+```
+
 ---
 
 ## The Two Mapping Modes
@@ -397,7 +501,7 @@ Performance. Static generic classes initialize once per type and live for the ap
 
 ## License
 
-MIT
+Private License
 
 ---
 

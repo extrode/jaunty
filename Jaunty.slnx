@@ -1,5 +1,4 @@
 <Solution>
-  <Project Path="src/Jaunty.SourceGen/Jaunty.SourceGen.csproj" />
   <Project Path="src/Jaunty/Jaunty.csproj" />
   <Project Path="tests/Jaunty.Tests/Jaunty.Tests.csproj" />
 </Solution>
