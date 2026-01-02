@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Jaunty.Configuration;
 
 /// <summary>
@@ -16,7 +14,21 @@ public static class NamingConvention
         if (string.IsNullOrEmpty(name))
             return name;
 
-        var sb = new StringBuilder(name.Length + 4);
+        // Count uppercase letters to pre-size correctly
+        var upperCount = 0;
+        for (int i = 1; i < name.Length; i++)
+        {
+            if (char.IsUpper(name[i]))
+                upperCount++;
+        }
+
+        // Fast path: no uppercase after first char
+        if (upperCount == 0)
+            return name.ToLowerInvariant();
+
+        // Build result with exact size
+        var result = new char[name.Length + upperCount];
+        var j = 0;
 
         for (int i = 0; i < name.Length; i++)
         {
@@ -25,17 +37,17 @@ public static class NamingConvention
             if (char.IsUpper(c))
             {
                 if (i > 0)
-                    sb.Append('_');
+                    result[j++] = '_';
 
-                sb.Append(char.ToLowerInvariant(c));
+                result[j++] = char.ToLowerInvariant(c);
             }
             else
             {
-                sb.Append(c);
+                result[j++] = c;
             }
         }
 
-        return sb.ToString();
+        return new string(result, 0, j);
     }
 
     /// <summary>
@@ -56,15 +68,21 @@ public static class NamingConvention
         if (string.IsNullOrEmpty(name))
             return name;
 
-        return name.EndsWith("y", StringComparison.OrdinalIgnoreCase) &&
-            name.Length > 1 && !IsVowel(name[name.Length - 2])
-            ? name.Substring(0, name.Length - 1) + "ies"
-            : name.EndsWith("s", StringComparison.OrdinalIgnoreCase) ||
-                    name.EndsWith("x", StringComparison.OrdinalIgnoreCase) ||
-                    name.EndsWith("ch", StringComparison.OrdinalIgnoreCase) ||
-                    name.EndsWith("sh", StringComparison.OrdinalIgnoreCase)
-                        ? name + "es"
-                        : name + "s";
+        var len = name.Length;
+        var last = name[len - 1];
+
+        // Words ending in consonant + y: Category -> Categories
+        if ((last == 'y' || last == 'Y') && len > 1 && !IsVowel(name[len - 2]))
+            return name.Substring(0, len - 1) + "ies";
+
+        // Words ending in s, x, ch, sh: Box -> Boxes
+        if (last == 's' || last == 'S' ||
+            last == 'x' || last == 'X' ||
+            (len >= 2 && (name[len - 2] == 'c' || name[len - 2] == 's') && (last == 'h' || last == 'H')))
+            return name + "es";
+
+        // Default: Product -> Products
+        return name + "s";
     }
 
     /// <summary>
@@ -81,7 +99,6 @@ public static class NamingConvention
 
     private static bool IsVowel(char c)
     {
-        c = char.ToLowerInvariant(c);
-        return c is 'a' or 'e' or 'i' or 'o' or 'u';
+        return (c | 0x20) is 'a' or 'e' or 'i' or 'o' or 'u';
     }
 }

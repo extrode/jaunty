@@ -1,32 +1,30 @@
-﻿using System.Linq.Expressions;
+using System.Collections.Concurrent;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Jaunty.Internal.Parameters;
 
 internal static class ParameterCache
 {
-    private static readonly Dictionary<Type, ParameterMetadata[]> _cache = [];
+    private static readonly ConcurrentDictionary<Type, ParameterMetadata[]> Cache = new();
 
     public static ParameterMetadata[] Get(Type type)
     {
-        lock (_cache)
+        return Cache.GetOrAdd(type, BuildMetadata);
+    }
+
+    private static ParameterMetadata[] BuildMetadata(Type type)
+    {
+        var props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        var result = new ParameterMetadata[props.Length];
+
+        for (int i = 0; i < props.Length; i++)
         {
-            if (_cache.TryGetValue(type, out var meta))
-                return meta;
-
-            var props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-            var result = new ParameterMetadata[props.Length];
-
-            for (int i = 0; i < props.Length; i++)
-            {
-                var p = props[i];
-                var getter = CreateGetter(p);
-                result[i] = new ParameterMetadata(p.Name, getter);
-            }
-
-            _cache[type] = result;
-            return result;
+            var p = props[i];
+            result[i] = new ParameterMetadata(p.Name, CreateGetter(p));
         }
+
+        return result;
     }
 
     private static Func<object, object?> CreateGetter(PropertyInfo prop)

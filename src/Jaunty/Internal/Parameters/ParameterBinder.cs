@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 
 namespace Jaunty.Internal.Parameters;
 
@@ -16,13 +16,16 @@ internal static class ParameterBinder
     {
         var type = parameters.GetType();
 
-        // Arrays and collections of primitives are positional
         if (type.IsArray)
             return true;
 
-        // Primitive types are positional (single value)
-        return type.IsPrimitive || type == typeof(string) || type == typeof(decimal) ||
-            type == typeof(DateTime) || type == typeof(Guid) || type == typeof(byte[]);
+        // Primitive types and common value types are positional (single value)
+        return type.IsPrimitive ||
+               type == typeof(string) ||
+               type == typeof(decimal) ||
+               type == typeof(DateTime) ||
+               type == typeof(Guid) ||
+               type == typeof(byte[]);
     }
 
     private static void BindNamed(IDbCommand command, object parameters)
@@ -31,42 +34,63 @@ internal static class ParameterBinder
 
         for (int i = 0; i < meta.Length; i++)
         {
+            var m = meta[i];
             var p = command.CreateParameter();
-            p.ParameterName = meta[i].Name;
-            p.Value = meta[i].Getter(parameters) ?? DBNull.Value;
+            p.ParameterName = m.Name;
+            p.Value = m.Getter(parameters) ?? DBNull.Value;
             command.Parameters.Add(p);
         }
     }
 
     private static void BindPositional(IDbCommand command, object parameters)
     {
-        var sql = command.CommandText;
-        var paramNames = SqlParameterParser.ExtractParameterNames(sql);
+        var paramNames = SqlParameterParser.ExtractParameterNames(command.CommandText);
         var values = GetPositionalValues(parameters);
 
         // Deduplicate parameter names while preserving order
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var uniqueNames = new List<string>(paramNames.Length);
+        var uniqueCount = DeduplicateAndBind(command, paramNames, values);
+
+        if (uniqueCount != values.Length)
+        {
+            throw new ArgumentException(
+                $"Parameter count mismatch: SQL contains {uniqueCount} unique parameter(s), but {values.Length} value(s) provided.");
+        }
+    }
+
+    private static int DeduplicateAndBind(IDbCommand command, string[] paramNames, object?[] values)
+    {
+        // For small parameter counts, linear search is faster than HashSet
+        var uniqueCount = 0;
 
         for (int i = 0; i < paramNames.Length; i++)
         {
-            if (seen.Add(paramNames[i]))
-                uniqueNames.Add(paramNames[i]);
+            var name = paramNames[i];
+
+            // Check if we've seen this name before (case-insensitive)
+            var isDuplicate = false;
+            for (int j = 0; j < i; j++)
+            {
+                if (string.Equals(paramNames[j], name, StringComparison.OrdinalIgnoreCase))
+                {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (!isDuplicate)
+            {
+                if (uniqueCount < values.Length)
+                {
+                    var p = command.CreateParameter();
+                    p.ParameterName = name;
+                    p.Value = values[uniqueCount] ?? DBNull.Value;
+                    command.Parameters.Add(p);
+                }
+                uniqueCount++;
+            }
         }
 
-        if (uniqueNames.Count != values.Length)
-        {
-            throw new ArgumentException(
-                $"Parameter count mismatch: SQL contains {uniqueNames.Count} unique parameter(s) [{string.Join(", ", uniqueNames)}], but {values.Length} value(s) provided.");
-        }
-
-        for (int i = 0; i < uniqueNames.Count; i++)
-        {
-            var p = command.CreateParameter();
-            p.ParameterName = uniqueNames[i];
-            p.Value = values[i] ?? DBNull.Value;
-            command.Parameters.Add(p);
-        }
+        return uniqueCount;
     }
 
     private static object?[] GetPositionalValues(object parameters)
@@ -84,7 +108,7 @@ internal static class ParameterBinder
             return result;
         }
 
-        // Single value
-        return [parameters];
+        // Single value - avoid array allocation for common case
+        return new object?[] { parameters };
     }
 }
