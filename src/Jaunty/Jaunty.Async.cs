@@ -1,38 +1,17 @@
 using System.Data;
 using System.Data.Common;
 
-using Jaunty.Internal.Execution;
+using Jaunty.Helpers;
 using Jaunty.Internal.Mapping;
+using Jaunty.Internal.Parameters;
 
 namespace Jaunty;
 
 public static partial class Jaunty
 {
-    #region QueryScalarAsync
-
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
-    {
-        return QueryScalarCoreAsync<T>(connection, sql, null, default, cancellationToken);
-    }
-
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
-    {
-        return QueryScalarCoreAsync<T>(connection, sql, parameters, default, cancellationToken);
-    }
-
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
-    {
-        return QueryScalarCoreAsync<T>(connection, sql, null, options, cancellationToken);
-    }
-
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
-    {
-        return QueryScalarCoreAsync<T>(connection, sql, parameters, options, cancellationToken);
-    }
-
     internal static async Task<T> QueryScalarCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, CancellationToken cancellationToken)
     {
-        return await CommandExecutor.ExecuteReaderAsync(connection, sql, parameters, options.Transaction, options.CommandTimeout, async reader =>
+        return await ExecuteReaderAsync(connection, sql, parameters, options.Transaction, options.CommandTimeout, async reader =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -49,61 +28,9 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    #endregion
-
-    #region QueryAsync (Strict Mode)
-
-    public static Task<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
-    {
-        return QueryCoreAsync<T>(connection, sql, null, default, MappingMode.Strict, cancellationToken);
-    }
-
-    public static Task<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
-    {
-        return QueryCoreAsync<T>(connection, sql, parameters, default, MappingMode.Strict, cancellationToken);
-    }
-
-    public static Task<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
-    {
-        return QueryCoreAsync<T>(connection, sql, null, options, MappingMode.Strict, cancellationToken);
-    }
-
-    public static Task<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
-    {
-        return QueryCoreAsync<T>(connection, sql, parameters, options, MappingMode.Strict, cancellationToken);
-    }
-
-    #endregion
-
-    #region QueryPartialAsync (Partial/Projection Mode)
-
-    public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
-    {
-        return QueryCoreAsync<T>(connection, sql, null, default, MappingMode.Projection, cancellationToken);
-    }
-
-    public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
-    {
-        return QueryCoreAsync<T>(connection, sql, parameters, default, MappingMode.Projection, cancellationToken);
-    }
-
-    public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
-    {
-        return QueryCoreAsync<T>(connection, sql, null, options, MappingMode.Projection, cancellationToken);
-    }
-
-    public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
-    {
-        return QueryCoreAsync<T>(connection, sql, parameters, options, MappingMode.Projection, cancellationToken);
-    }
-
-    #endregion
-
-    #region Core Async Implementation
-
     internal static async Task<List<T>> QueryCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken) where T : new()
     {
-        return await CommandExecutor.ExecuteReaderAsync(connection, sql, parameters, options.Transaction, options.CommandTimeout, async reader =>
+        return await ExecuteReaderAsync(connection, sql, parameters, options.Transaction, options.CommandTimeout, async reader =>
         {
             var results = new List<T>();
             var setters = MetadataCache<T>.GetSetters(reader, mode);
@@ -138,5 +65,61 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    #endregion
+    internal static async Task<TResult> ExecuteReaderAsync<TResult>(IDbConnection connection, string sql, object? parameters,
+        IDbTransaction? transaction, int? commandTimeout, Func<IDataReader, Task<TResult>> handler, CancellationToken cancellationToken)
+    {
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql.IsNullOrWhiteSpace()) throw new ArgumentException("SQL cannot be null or whitespace.", nameof(sql));
+        if (handler is null) throw new ArgumentNullException(nameof(handler));
+
+        var wasClosed = connection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (connection is DbConnection dbConnection)
+            {
+                if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+                using var command = dbConnection.CreateCommand();
+                command.CommandText = sql;
+
+                if (transaction is not null)
+                    command.Transaction = transaction as DbTransaction;
+
+                if (commandTimeout.HasValue)
+                    command.CommandTimeout = commandTimeout.Value;
+
+                if (parameters is not null)
+                    ParameterBinder.Bind(command, parameters);
+
+                using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                return await handler(reader).ConfigureAwait(false);
+            }
+            else
+            {
+                // Fallback for non-DbConnection - use sync methods
+                if (wasClosed) connection.Open();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = sql;
+
+                if (transaction is not null)
+                    command.Transaction = transaction;
+
+                if (commandTimeout.HasValue)
+                    command.CommandTimeout = commandTimeout.Value;
+
+                if (parameters is not null)
+                    ParameterBinder.Bind(command, parameters);
+
+                using var reader = command.ExecuteReader();
+                return await handler(reader).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
+        }
+    }
 }

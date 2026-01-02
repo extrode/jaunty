@@ -1,10 +1,11 @@
-﻿namespace Jaunty.Internal.Parameters;
+namespace Jaunty.Internal.Parameters;
 
 internal static class SqlParameterParser
 {
-    public static string[] ExtractParameterNames(string sql)
+    internal static string[] ExtractParameterNames(string sql)
     {
-        var names = new List<string>();
+        // Pre-size list - most queries have 0-5 parameters
+        var names = new List<string>(4);
         var i = 0;
         var len = sql.Length;
 
@@ -15,46 +16,41 @@ internal static class SqlParameterParser
             // Skip single-line comment
             if (c == '-' && i + 1 < len && sql[i + 1] == '-')
             {
-                i = SkipToEndOfLine(sql, i + 2);
+                i = SkipToEndOfLine(sql, i + 2, len);
                 continue;
             }
 
             // Skip block comment
             if (c == '/' && i + 1 < len && sql[i + 1] == '*')
             {
-                i = SkipBlockComment(sql, i + 2);
+                i = SkipBlockComment(sql, i + 2, len);
                 continue;
             }
 
             // Skip string literal (single quote)
             if (c == '\'')
             {
-                i = SkipStringLiteral(sql, i + 1, '\'');
+                i = SkipQuoted(sql, i + 1, len, '\'');
                 continue;
             }
 
             // Skip identifier (double quote or brackets)
             if (c == '"')
             {
-                i = SkipStringLiteral(sql, i + 1, '"');
+                i = SkipQuoted(sql, i + 1, len, '"');
                 continue;
             }
 
             if (c == '[')
             {
-                i = SkipStringLiteral(sql, i + 1, ']');
+                i = SkipQuoted(sql, i + 1, len, ']');
                 continue;
             }
 
             // Found parameter
             if (c == '@')
             {
-                var name = ExtractParameterName(sql, i + 1, out var end);
-
-                if (name.Length > 0)
-                    names.Add(name);
-
-                i = end;
+                i = ExtractParameterName(sql, i + 1, len, names);
                 continue;
             }
 
@@ -64,68 +60,59 @@ internal static class SqlParameterParser
         return [.. names];
     }
 
-    private static int SkipToEndOfLine(string sql, int start)
+    private static int SkipToEndOfLine(string sql, int i, int len)
     {
-        var i = start;
-
-        while (i < sql.Length && sql[i] != '\n' && sql[i] != '\r')
+        while (i < len)
+        {
+            var c = sql[i];
+            if (c is '\n' or '\r') break;
             i++;
-
+        }
         return i;
     }
 
-    private static int SkipBlockComment(string sql, int start)
+    private static int SkipBlockComment(string sql, int i, int len)
     {
-        var i = start;
-
-        while (i + 1 < sql.Length)
+        while (i + 1 < len)
         {
             if (sql[i] == '*' && sql[i + 1] == '/')
                 return i + 2;
-
             i++;
         }
-
-        return sql.Length;
+        return len;
     }
 
-    private static int SkipStringLiteral(string sql, int start, char terminator)
+    private static int SkipQuoted(string sql, int i, int len, char terminator)
     {
-        var i = start;
-
-        while (i < sql.Length)
+        while (i < len)
         {
             if (sql[i] == terminator)
             {
                 // Handle escaped terminator (doubled)
-                if (i + 1 < sql.Length && sql[i + 1] == terminator)
+                if (i + 1 < len && sql[i + 1] == terminator)
                 {
                     i += 2;
                     continue;
                 }
-
                 return i + 1;
             }
-
             i++;
         }
-
-        return sql.Length;
+        return len;
     }
 
-    private static string ExtractParameterName(string sql, int start, out int end)
+    private static int ExtractParameterName(string sql, int start, int len, List<string> names)
     {
         var i = start;
 
-        while (i < sql.Length && IsParameterChar(sql[i]))
+        while (i < len && IsParameterChar(sql[i]))
             i++;
 
-        end = i;
-        return sql.Substring(start, i - start);
+        if (i > start)
+            names.Add(sql.Substring(start, i - start));
+
+        return i;
     }
 
-    private static bool IsParameterChar(char c)
-    {
-        return char.IsLetterOrDigit(c) || c == '_';
-    }
+    private static bool IsParameterChar(char c) => c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
 }

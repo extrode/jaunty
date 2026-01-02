@@ -1,35 +1,31 @@
-﻿using System.Data;
-
-using Jaunty.Interfaces;
-using Jaunty.Internal.Execution;
-using Jaunty.Readers;
+using System.Data;
 
 namespace Jaunty;
 
 public static partial class Jaunty
 {
-    public static IEnumerable<T> Query<T>(this IDbConnection connection, string sql)
+    public static List<T> Query<T>(this IDbConnection connection, string sql) where T : new()
     {
-        return QueryInternal<T>(connection, sql, null, default, MappingMode.Strict);
+        return QueryCore<T>(connection, sql, null, default, MappingMode.Strict);
     }
 
-    public static IEnumerable<T> Query<T>(this IDbConnection connection, string sql, object parameters)
+    public static List<T> Query<T>(this IDbConnection connection, string sql, object parameters) where T : new()
     {
-        return QueryInternal<T>(connection, sql, parameters, default, MappingMode.Strict);
+        return QueryCore<T>(connection, sql, parameters, default, MappingMode.Strict);
     }
 
-    public static IEnumerable<T> Query<T>(this IDbConnection connection, string sql, CommandOptions options)
+    public static List<T> Query<T>(this IDbConnection connection, string sql, CommandOptions options) where T : new()
     {
-        return QueryInternal<T>(connection, sql, null, options, MappingMode.Strict);
+        return QueryCore<T>(connection, sql, null, options, MappingMode.Strict);
     }
 
-    public static IEnumerable<T> Query<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options)
+    public static List<T> Query<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options) where T : new()
     {
-        return QueryInternal<T>(connection, sql, parameters, options, MappingMode.Strict);
+        return QueryCore<T>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
-    public static IEnumerable<T> Query<T>(this IDbConnection connection, string sql, object param1, object param2, params object[] rest)
+    public static List<T> Query<T>(this IDbConnection connection, string sql, object param1, object param2, params object[] rest) where T : new()
     {
-        return QueryInternal<T>(connection, sql, CombineParams(param1, param2, rest), default, MappingMode.Strict);
+        return QueryCore<T>(connection, sql, CombineParams(param1, param2, rest), default, MappingMode.Strict);
     }
 }

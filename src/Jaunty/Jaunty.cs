@@ -1,30 +1,31 @@
 using System.Data;
-using System.Reflection;
+using System.Data.Common;
 
-using Jaunty.Interfaces;
-using Jaunty.Internal.Execution;
+using Jaunty.Helpers;
 using Jaunty.Internal.Mapping;
-using Jaunty.Readers;
+using Jaunty.Internal.Parameters;
 
 namespace Jaunty;
 
 public static partial class Jaunty
 {
-    internal static object[] CombineParams(object param1, object param2, object[] rest)
+    internal static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options)
     {
-        var result = new object[2 + rest.Length];
-        result[0] = param1;
-        result[1] = param2;
+        return ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout, reader =>
+        {
+            if (reader is DbDataReader dbReader)
+                return !dbReader.Read() || dbReader.IsDBNull(0) ? default! : dbReader.GetFieldValue<T>(0);
 
-        for (int i = 0; i < rest.Length; i++)
-            result[i + 2] = rest[i];
+            if (!reader.Read() || reader.IsDBNull(0)) return default!;
 
-        return result;
+            var obj = reader.GetValue(0);
+            return (T)Convert.ChangeType(obj, typeof(T));
+        });
     }
 
     internal static List<T> QueryCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T : new()
     {
-        return CommandExecutor.ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout, reader =>
+        return ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout, reader =>
         {
             var results = new List<T>();
             var setters = MetadataCache<T>.GetSetters(reader, mode);
@@ -43,49 +44,38 @@ public static partial class Jaunty
         });
     }
 
-    internal static IEnumerable<T> QueryInternal<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T : new()
+    internal static TResult ExecuteReader<TResult>(IDbConnection connection, string sql, object? parameters, IDbTransaction? transaction,
+        int? commandTimeout, Func<IDataReader, TResult> handler)
     {
-        return CommandExecutor.ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout,
-            reader => DispatchRead<T>(reader, mode));
-    }
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql.IsNullOrWhiteSpace()) throw new ArgumentException("SQL cannot be null or whitespace.", nameof(sql));
+        if (handler is null) throw new ArgumentNullException(nameof(handler));
 
-    private static IEnumerable<T> ReadMappedEntities<T>(IDataReader reader) where T : IMapped<T>, new()
-    {
-        return EntityReader.ReadEntities<T>(reader);
-    }
+        var wasClosed = connection.State == ConnectionState.Closed;
 
-    private static IEnumerable<T> DispatchRead<T>(IDataReader reader, MappingMode mode) where T : new()
-    {
-        // 1. Source generated
-        if (GeneratedEntityReader<T>.Exists)
-            return GeneratedEntityReader<T>.Read(reader);
-
-        // 2. User mapped
-        if (ImplementsIMapped<T>())
-            return ReadMappedViaTrampoline<T>(reader);
-
-        // 3. Fallback
-        return MetadataEntityReader.ReadEntities<T>(reader, mode);
-    }
-
-    private static IEnumerable<T> ReadMappedViaTrampoline<T>(IDataReader reader)
-    {
-        var method = typeof(Jaunty)
-            .GetMethod(nameof(ReadMappedEntities), BindingFlags.NonPublic | BindingFlags.Static)!
-            .MakeGenericMethod(typeof(T));
-
-        return (IEnumerable<T>)method.Invoke(null, [reader])!;
-    }
-
-    private static bool ImplementsIMapped<T>()
-    {
-        var type = typeof(T);
-        foreach (var i in type.GetInterfaces())
+        try
         {
-            if (i.IsGenericType &&
-                i.GetGenericTypeDefinition() == typeof(IMapped<>))
-                return true;
+            if (wasClosed) connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = sql;
+
+            if (transaction is not null)
+                command.Transaction = transaction;
+
+            if (commandTimeout.HasValue)
+                command.CommandTimeout = commandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            using var reader = command.ExecuteReader();
+            return handler(reader);
         }
-        return false;
+        finally
+        {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
+        }
     }
 }

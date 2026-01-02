@@ -10,40 +10,28 @@ internal static class NameResolver
 {
     private static readonly ConcurrentDictionary<Type, string> TableNameCache = new();
     private static readonly ConcurrentDictionary<PropertyInfo, string> ColumnNameCache = new();
+    private static readonly ConcurrentDictionary<PropertyInfo, bool> IgnoredCache = new();
 
-    /// <summary>
-    /// Resolves table name for entity type.
-    /// Priority: 1) TableAttribute 2) JauntyConfig.TableNameResolver 3) Type name
-    /// </summary>
     public static string GetTableName(Type type)
     {
         return TableNameCache.GetOrAdd(type, ResolveTableName);
     }
 
-    /// <summary>
-    /// Resolves column name for property.
-    /// Priority: 1) ColumnAttribute 2) JauntyConfig.ColumnNameResolver 3) Property name
-    /// </summary>
     public static string GetColumnName(PropertyInfo property)
     {
         return ColumnNameCache.GetOrAdd(property, ResolveColumnName);
     }
 
-    /// <summary>
-    /// Checks if property should be ignored.
-    /// </summary>
     public static bool IsIgnored(PropertyInfo property)
     {
-        return property.GetCustomAttribute<IgnoreAttribute>() != null;
+        return IgnoredCache.GetOrAdd(property, p => p.IsDefined(typeof(IgnoreAttribute), false));
     }
 
-    /// <summary>
-    /// Clears all cached names. Call after changing JauntyConfig resolvers.
-    /// </summary>
     public static void ClearCache()
     {
         TableNameCache.Clear();
         ColumnNameCache.Clear();
+        IgnoredCache.Clear();
     }
 
     private static string ResolveTableName(Type type)
