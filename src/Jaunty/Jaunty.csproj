@@ -5,13 +5,13 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-		<LangVersion>latest</LangVersion>
-	</PropertyGroup>
-	
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
