@@ -1,8 +1,10 @@
 using System.Data;
 using System.Data.Common;
 
+using Jaunty.Interfaces;
 using Jaunty.Internal.Execution;
 using Jaunty.Internal.Mapping;
+using Jaunty.Readers;
 
 namespace Jaunty;
 
@@ -53,29 +55,29 @@ public static partial class Jaunty
 
     #region Query (Strict Mode)
 
-    public static List<T> Query<T>(this IDbConnection connection, string sql) where T : new()
+    public static IEnumerable<T> Query<T>(this IDbConnection connection, string sql) where T : IMapped<T>, new()
     {
-        return QueryCore<T>(connection, sql, null, default, MappingMode.Strict);
+        return QueryMapped<T>(connection, sql, null, default, MappingMode.Strict);
     }
 
-    public static List<T> Query<T>(this IDbConnection connection, string sql, object parameters) where T : new()
+    public static IEnumerable<T> Query<T>(this IDbConnection connection, string sql, object parameters) where T : IMapped<T>, new()
     {
-        return QueryCore<T>(connection, sql, parameters, default, MappingMode.Strict);
+        return QueryMapped<T>(connection, sql, parameters, default, MappingMode.Strict);
     }
 
-    public static List<T> Query<T>(this IDbConnection connection, string sql, CommandOptions options) where T : new()
+    public static IEnumerable<T> Query<T>(this IDbConnection connection, string sql, CommandOptions options) where T : IMapped<T>, new()
     {
-        return QueryCore<T>(connection, sql, null, options, MappingMode.Strict);
+        return QueryMapped<T>(connection, sql, null, options, MappingMode.Strict);
     }
 
-    public static List<T> Query<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options) where T : new()
+    public static IEnumerable<T> Query<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options) where T : IMapped<T>, new()
     {
-        return QueryCore<T>(connection, sql, parameters, options, MappingMode.Strict);
+        return QueryMapped<T>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
-    public static List<T> Query<T>(this IDbConnection connection, string sql, object param1, object param2, params object[] rest) where T : new()
+    public static IEnumerable<T> Query<T>(this IDbConnection connection, string sql, object param1, object param2, params object[] rest) where T : IMapped<T>, new()
     {
-        return QueryCore<T>(connection, sql, CombineParams(param1, param2, rest), default, MappingMode.Strict);
+        return QueryMapped<T>(connection, sql, CombineParams(param1, param2, rest), default, MappingMode.Strict);
     }
 
     #endregion
@@ -130,6 +132,16 @@ public static partial class Jaunty
 
             return results;
         });
+    }
+
+    //internal static IEnumerable<T> Query<T>(this IDbConnection connection, string sql, object? parameters = null) where T : IMapped<T>, new()
+    //{
+    //    return QueryCoreMapped<T>(connection, sql, parameters);
+    //}
+
+    internal static IEnumerable<T> QueryMapped<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T : IMapped<T>, new()
+    {
+        return CommandExecutor.ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout, reader => EntityReader.ReadEntities<T>(reader));
     }
 
     internal static object[] CombineParams(object param1, object param2, object[] rest)
