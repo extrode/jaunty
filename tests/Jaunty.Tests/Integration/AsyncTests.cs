@@ -110,12 +110,12 @@ public class AsyncTests : IDisposable
 
     #endregion
 
-    #region QueryProjectionAsync
+    #region QueryPartialAsync
 
     [Fact]
-    public async Task QueryProjectionAsync_MissingColumn_Allowed()
+    public async Task QueryPartialAsync_MissingColumn_Allowed()
     {
-        var summaries = await _db.Connection.QueryProjectionAsync<ProductSummary>(
+        var summaries = await _db.Connection.QueryPartialAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products");
 
         Assert.NotEmpty(summaries);
@@ -123,9 +123,9 @@ public class AsyncTests : IDisposable
     }
 
     [Fact]
-    public async Task QueryProjectionAsync_WithParameter_FiltersCorrectly()
+    public async Task QueryPartialAsync_WithParameter_FiltersCorrectly()
     {
-        var summaries = await _db.Connection.QueryProjectionAsync<ProductSummary>(
+        var summaries = await _db.Connection.QueryPartialAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @Id",
             new { Id = 1 });
 

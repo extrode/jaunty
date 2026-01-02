@@ -80,29 +80,29 @@ public static partial class Jaunty
 
     #endregion
 
-    #region QueryProjection (Partial/Projection Mode)
+    #region QueryPartial (Partial/Projection Mode)
 
-    public static List<T> QueryProjection<T>(this IDbConnection connection, string sql) where T : new()
+    public static List<T> QueryPartial<T>(this IDbConnection connection, string sql) where T : new()
     {
         return QueryCore<T>(connection, sql, null, default, MappingMode.Projection);
     }
 
-    public static List<T> QueryProjection<T>(this IDbConnection connection, string sql, object parameters) where T : new()
+    public static List<T> QueryPartial<T>(this IDbConnection connection, string sql, object parameters) where T : new()
     {
         return QueryCore<T>(connection, sql, parameters, default, MappingMode.Projection);
     }
 
-    public static List<T> QueryProjection<T>(this IDbConnection connection, string sql, CommandOptions options) where T : new()
+    public static List<T> QueryPartial<T>(this IDbConnection connection, string sql, CommandOptions options) where T : new()
     {
         return QueryCore<T>(connection, sql, null, options, MappingMode.Projection);
     }
 
-    public static List<T> QueryProjection<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options) where T : new()
+    public static List<T> QueryPartial<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options) where T : new()
     {
         return QueryCore<T>(connection, sql, parameters, options, MappingMode.Projection);
     }
 
-    public static List<T> QueryProjection<T>(this IDbConnection connection, string sql, object param1, object param2, params object[] rest) where T : new()
+    public static List<T> QueryPartial<T>(this IDbConnection connection, string sql, object param1, object param2, params object[] rest) where T : new()
     {
         return QueryCore<T>(connection, sql, CombineParams(param1, param2, rest), default, MappingMode.Projection);
     }

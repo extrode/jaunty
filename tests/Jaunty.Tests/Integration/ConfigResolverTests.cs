@@ -38,14 +38,14 @@ public class ConfigResolverTests : IDisposable
     }
 
     [Fact]
-    public void QueryProjection_AttributeTakesPrecedenceOverResolver()
+    public void QueryPartial_AttributeTakesPrecedenceOverResolver()
     {
         // Configure a resolver that would give wrong names
         JauntyConfig.ColumnNameResolver = name => "wrong_" + name.ToLower();
         NameResolver.ClearCache();
 
         // ProductWithAttributes has explicit [Column] attributes which should take precedence
-        var products = _db.Connection.QueryProjection<ProductWithAttributes>(
+        var products = _db.Connection.QueryPartial<ProductWithAttributes>(
             "SELECT product_id, product_name, unit_price FROM products WHERE product_id = @Id",
             new { Id = 1 });
 
