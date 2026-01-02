@@ -59,12 +59,12 @@ public class MappingModeTests : IDisposable
 
     #endregion
 
-    #region Projection Mode (QueryProjection)
+    #region Projection Mode (QueryPartial)
 
     [Fact]
-    public void QueryProjection_MissingColumns_Allowed()
+    public void QueryPartial_MissingColumns_Allowed()
     {
-        var summaries = _db.Connection.QueryProjection<ProductSummary>(
+        var summaries = _db.Connection.QueryPartial<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products");
 
         Assert.NotEmpty(summaries);
@@ -72,9 +72,9 @@ public class MappingModeTests : IDisposable
     }
 
     [Fact]
-    public void QueryProjection_OnlyIdColumn_MapsId()
+    public void QueryPartial_OnlyIdColumn_MapsId()
     {
-        var summaries = _db.Connection.QueryProjection<ProductSummary>(
+        var summaries = _db.Connection.QueryPartial<ProductSummary>(
             "SELECT product_id AS ProductId FROM products");
 
         Assert.NotEmpty(summaries);
@@ -86,9 +86,9 @@ public class MappingModeTests : IDisposable
     }
 
     [Fact]
-    public void QueryProjection_NoMatchingColumns_ReturnsDefaultEntities()
+    public void QueryPartial_NoMatchingColumns_ReturnsDefaultEntities()
     {
-        var summaries = _db.Connection.QueryProjection<ProductSummary>(
+        var summaries = _db.Connection.QueryPartial<ProductSummary>(
             "SELECT category_id, category_name FROM categories");
 
         Assert.NotEmpty(summaries);
@@ -100,18 +100,18 @@ public class MappingModeTests : IDisposable
     }
 
     [Fact]
-    public void QueryProjection_ExtraColumnsInResult_Ignored()
+    public void QueryPartial_ExtraColumnsInResult_Ignored()
     {
-        var summaries = _db.Connection.QueryProjection<ProductSummary>(
+        var summaries = _db.Connection.QueryPartial<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName, unit_price, supplier_id FROM products");
 
         Assert.NotEmpty(summaries);
     }
 
     [Fact]
-    public void QueryProjection_WithParameters_WorksCorrectly()
+    public void QueryPartial_WithParameters_WorksCorrectly()
     {
-        var summaries = _db.Connection.QueryProjection<ProductSummary>(
+        var summaries = _db.Connection.QueryPartial<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @Id",
             1);
 
@@ -127,7 +127,7 @@ public class MappingModeTests : IDisposable
     {
         // Create entity with non-nullable property that will receive null
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.QueryProjection<NonNullableEntity>(
+            _db.Connection.QueryPartial<NonNullableEntity>(
                 "SELECT NULL AS RequiredValue"));
 
         Assert.Contains("Cannot assign NULL", ex.Message);
@@ -135,11 +135,11 @@ public class MappingModeTests : IDisposable
     }
 
     [Fact]
-    public void QueryProjection_NullIntoNonNullableProperty_Throws()
+    public void QueryPartial_NullIntoNonNullableProperty_Throws()
     {
         // Even in projection mode, null into non-nullable should throw
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.QueryProjection<NonNullableEntity>(
+            _db.Connection.QueryPartial<NonNullableEntity>(
                 "SELECT NULL AS RequiredValue"));
 
         Assert.Contains("Cannot assign NULL", ex.Message);

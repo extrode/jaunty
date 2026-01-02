@@ -23,8 +23,7 @@ public class QueryEdgeCaseTests : IDisposable
             @"SELECT customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName,
               contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
               postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
-              FROM customers WHERE region IS NULL LIMIT 1",
-            MappingMode.Strict);
+              FROM customers WHERE region IS NULL LIMIT 1");
 
         Assert.NotEmpty(customers);
         Assert.Null(customers[0].Region);
@@ -34,7 +33,7 @@ public class QueryEdgeCaseTests : IDisposable
     public void Query_NullableIntWithNullValue_SetsToNull()
     {
         // Products with null supplier_id
-        var products = _db.Connection.QueryProjection<Product>(
+        var products = _db.Connection.QueryPartial<Product>(
             @"SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId,
               category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice,
               units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel,
@@ -64,8 +63,7 @@ public class QueryEdgeCaseTests : IDisposable
     {
         // customer_customer_demo is typically empty in Northwind
         var results = _db.Connection.Query<CustomerCustomerDemo>(
-            "SELECT customer_id AS CustomerId, customer_type_id AS CustomerTypeId FROM customer_customer_demo",
-            MappingMode.Strict);
+            "SELECT customer_id AS CustomerId, customer_type_id AS CustomerTypeId FROM customer_customer_demo");
 
         Assert.Empty(results);
     }
@@ -78,8 +76,7 @@ public class QueryEdgeCaseTests : IDisposable
     public void Query_LargeResultSet_HandlesCorrectly()
     {
         var orders = _db.Connection.Query<OrderSummary>(
-            "SELECT order_id AS OrderId, customer_id AS CustomerId, employee_id AS EmployeeId FROM orders",
-            MappingMode.Strict);
+            "SELECT order_id AS OrderId, customer_id AS CustomerId, employee_id AS EmployeeId FROM orders");
 
         Assert.True(orders.Count > 100); // Northwind has ~800 orders
     }
@@ -97,7 +94,6 @@ public class QueryEdgeCaseTests : IDisposable
               contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
               postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
               FROM customers WHERE company_name LIKE @Name",
-            MappingMode.Strict,
             "%'%");
 
         // Just verify it doesn't throw

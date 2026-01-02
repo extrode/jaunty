@@ -15,9 +15,9 @@ public class AttributeMappingTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     [Fact]
-    public void QueryProjection_WithColumnAttributes_MapsCorrectly()
+    public void QueryPartial_WithColumnAttributes_MapsCorrectly()
     {
-        var products = _db.Connection.QueryProjection<ProductWithAttributes>(
+        var products = _db.Connection.QueryPartial<ProductWithAttributes>(
             "SELECT product_id, product_name, unit_price FROM products WHERE product_id = @Id",
             new { Id = 1 });
 
@@ -27,10 +27,10 @@ public class AttributeMappingTests : IDisposable
     }
 
     [Fact]
-    public void QueryProjection_WithIgnoredProperty_DoesNotRequireColumn()
+    public void QueryPartial_WithIgnoredProperty_DoesNotRequireColumn()
     {
         // ComputedField is marked [Ignore], so it shouldn't require a matching column
-        var products = _db.Connection.QueryProjection<ProductWithAttributes>(
+        var products = _db.Connection.QueryPartial<ProductWithAttributes>(
             "SELECT product_id, product_name, unit_price FROM products");
 
         Assert.NotEmpty(products);

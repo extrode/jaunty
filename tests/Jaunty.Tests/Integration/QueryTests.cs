@@ -68,9 +68,9 @@ public class QueryTests : IDisposable
     }
 
     [Fact]
-    public void QueryProjection_MissingColumn_Allowed()
+    public void QueryPartial_MissingColumn_Allowed()
     {
-        var summaries = _db.Connection.QueryProjection<ProductSummary>(
+        var summaries = _db.Connection.QueryPartial<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products");
 
         Assert.NotEmpty(summaries);
@@ -78,10 +78,10 @@ public class QueryTests : IDisposable
     }
 
     [Fact]
-    public void QueryProjection_ExtraColumnsInResult_Ignored()
+    public void QueryPartial_ExtraColumnsInResult_Ignored()
     {
         // Query returns more columns than entity has properties - should work
-        var summaries = _db.Connection.QueryProjection<ProductSummary>(
+        var summaries = _db.Connection.QueryPartial<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName, unit_price FROM products");
 
         Assert.NotEmpty(summaries);
