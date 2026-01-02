@@ -7,7 +7,11 @@ namespace Jaunty.Tests.Entities;
 
 public class Product : IEntity<int>, IMapped<Product>
 {
-    public static ReadOnlySpan<string> ColumnNames => new("ProductID", "ProductName", "SupplierID", "CategoryID", "QuantityPerUnit", "UnitPrice", "UnitsInStock", "UnitsOnOrder", "ReorderLevel", "Discontinued");
+    private static readonly string[] array = [
+        "ProductId", "ProductName", "SupplierId", "CategoryId",
+            "QuantityPerUnit", "UnitPrice", "UnitsInStock", "UnitsOnOrder",
+            "ReorderLevel", "Discontinued"
+    ];
 
     [Ignore]
     public int Id
@@ -35,6 +39,8 @@ public class Product : IEntity<int>, IMapped<Product>
     public short? ReorderLevel { get; set; }
 
     public bool Discontinued { get; set; }
+
+    public static ReadOnlySpan<string> ColumnNames => array.AsSpan();
 
     public static Product ReadEntity(IDataReader reader, ReadOnlySpan<int> ordinals) => new()
     {

@@ -28,13 +28,13 @@ public class ConfigResolverTests : IDisposable
         JauntyConfig.ColumnNameResolver = NamingConvention.SnakeCaseColumn;
         NameResolver.ClearCache();
 
-        var categories = _db.Connection.Query<CategorySnakeCase>(
+        IEnumerable<CategorySnakeCase> categories = _db.Connection.Query<CategorySnakeCase>(
             "SELECT category_id, category_name, description FROM categories WHERE category_id = @Id",
             new { Id = 1 });
 
         Assert.Single(categories);
-        Assert.Equal(1, categories[0].CategoryId);
-        Assert.False(string.IsNullOrEmpty(categories[0].CategoryName));
+        Assert.Equal(1, categories.ElementAt(0).CategoryId);
+        Assert.False(string.IsNullOrEmpty(categories.ElementAt(0).CategoryName));
     }
 
     [Fact]
