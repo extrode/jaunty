@@ -11,7 +11,7 @@ public static class EntityReader
     public static IEnumerable<T> ReadEntities<T>(IDataReader reader)
         where T : IMapped<T>, new()
     {
-#if NET7_0_OR_GREATER
+#if NET8_0_OR_GREATER
         var columnNames = T.ColumnNames;
         var ordinals = new int[columnNames.Length];
         for (int i = 0; i < columnNames.Length; i++)
@@ -29,7 +29,7 @@ public static class EntityReader
 #endif
         while (reader.Read())
         {
-#if NET7_0_OR_GREATER
+#if NET8_0_OR_GREATER
             yield return T.ReadEntity(reader, ordinals);
 #else
             yield return mapper.ReadEntity(reader, ordinals);
@@ -37,11 +37,11 @@ public static class EntityReader
         }
     }
 
-#if NET7_0_OR_GREATER || ASYNC_ENUMERABLE_SUPPORT
+#if NET8_0_OR_GREATER || ASYNC_ENUMERABLE_SUPPORT
     public static async IAsyncEnumerable<T> ReadEntitiesAsync<T>(DbDataReader reader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         where T : IMapped<T>, new()
     {
-#if NET7_0_OR_GREATER
+#if NET8_0_OR_GREATER
         var columnNames = T.ColumnNames;
         var ordinals = new int[columnNames.Length];
         for (int i = 0; i < columnNames.Length; i++)
@@ -59,7 +59,7 @@ public static class EntityReader
 #endif
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
-#if NET7_0_OR_GREATER
+#if NET8_0_OR_GREATER
             yield return T.ReadEntity(reader, ordinals);
 #else
             yield return mapper.ReadEntity(reader, ordinals);
@@ -68,7 +68,7 @@ public static class EntityReader
     }
 #endif
 
-#if !NET7_0_OR_GREATER && !ASYNC_ENUMERABLE_SUPPORT
+#if !NET8_0_OR_GREATER && !ASYNC_ENUMERABLE_SUPPORT
     public static async Task<List<T>> ReadEntitiesAsync<T>(
         DbDataReader reader,
         CancellationToken cancellationToken = default)

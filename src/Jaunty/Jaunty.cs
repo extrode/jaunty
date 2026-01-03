@@ -9,7 +9,7 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    internal static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options)
+    private static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options)
     {
         return ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout, reader =>
         {
@@ -23,7 +23,7 @@ public static partial class Jaunty
         });
     }
 
-    internal static List<T> QueryCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T : new()
+    private static List<T> QueryCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T : new()
     {
         return ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout, reader =>
         {
@@ -44,7 +44,7 @@ public static partial class Jaunty
         });
     }
 
-    internal static TResult ExecuteReader<TResult>(IDbConnection connection, string sql, object? parameters, IDbTransaction? transaction,
+    private static TResult ExecuteReader<TResult>(IDbConnection connection, string sql, object? parameters, IDbTransaction? transaction,
         int? commandTimeout, Func<IDataReader, TResult> handler)
     {
         if (connection is null) throw new ArgumentNullException(nameof(connection));
