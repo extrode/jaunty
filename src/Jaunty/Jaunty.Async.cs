@@ -15,10 +15,8 @@ public static partial class Jaunty
         {
             if (reader is DbDataReader dbReader)
             {
-                if (!await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false) || await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
-                    return default!;
-
-                return await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
+                return !await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false) || await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false) ? default!
+                    : await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
             }
 
             // Fallback for non-DbDataReader
