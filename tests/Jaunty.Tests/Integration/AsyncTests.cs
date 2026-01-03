@@ -91,8 +91,7 @@ public class AsyncTests : IDisposable
     public async Task QueryAsync_NoRows_ReturnsEmptyList()
     {
         var categories = await _db.Connection.QueryAsync<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
-            new { Id = -999 });
+            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id", new { Id = -999 });
 
         Assert.Empty(categories);
     }

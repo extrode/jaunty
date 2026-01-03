@@ -126,9 +126,7 @@ public class MappingModeTests : IDisposable
     public void Query_NullIntoNonNullableProperty_Throws()
     {
         // Create entity with non-nullable property that will receive null
-        var ex = Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.QueryPartial<NonNullableEntity>(
-                "SELECT NULL AS RequiredValue"));
+        var ex = Assert.Throws<InvalidOperationException>(() => _db.Connection.Query<NonNullableEntity>("SELECT NULL AS RequiredValue"));
 
         Assert.Contains("Cannot assign NULL", ex.Message);
         Assert.Contains("RequiredValue", ex.Message);
@@ -138,9 +136,7 @@ public class MappingModeTests : IDisposable
     public void QueryPartial_NullIntoNonNullableProperty_Throws()
     {
         // Even in projection mode, null into non-nullable should throw
-        var ex = Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.QueryPartial<NonNullableEntity>(
-                "SELECT NULL AS RequiredValue"));
+        var ex = Assert.Throws<InvalidOperationException>(() => _db.Connection.QueryPartial<NonNullableEntity>("SELECT NULL AS RequiredValue"));
 
         Assert.Contains("Cannot assign NULL", ex.Message);
     }
