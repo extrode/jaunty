@@ -2,7 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Helpers;
-using Jaunty.Internal.Mapping;
+using Jaunty.Entity;
 using Jaunty.Internal.Parameters;
 
 namespace Jaunty;

@@ -1,5 +1,6 @@
+﻿using System.Buffers;
+
 using Jaunty.Configuration;
-using Jaunty.Internal;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 
@@ -18,15 +19,13 @@ public class ConfigResolverTests : IDisposable
     {
         _db.Dispose();
         JauntyConfig.Reset();
-        NameResolver.ClearCache();
     }
 
     [Fact]
     public void Query_WithSnakeCaseColumnResolver_MapsCorrectly()
     {
         // Configure snake_case column resolver
-        JauntyConfig.ColumnNameResolver = NamingConvention.SnakeCaseColumn;
-        NameResolver.ClearCache();
+        JauntyConfig.ColumnNameResolver = ToSnakeCase;
 
         IEnumerable<CategorySnakeCase> categories = _db.Connection.Query<CategorySnakeCase>(
             "SELECT category_id, category_name, description FROM categories WHERE category_id = @Id",
@@ -42,7 +41,6 @@ public class ConfigResolverTests : IDisposable
     {
         // Configure a resolver that would give wrong names
         JauntyConfig.ColumnNameResolver = name => "wrong_" + name.ToLower();
-        NameResolver.ClearCache();
 
         // ProductWithAttributes has explicit [Column] attributes which should take precedence
         var products = _db.Connection.QueryPartial<ProductWithAttributes>(
@@ -51,6 +49,38 @@ public class ConfigResolverTests : IDisposable
 
         Assert.Single(products);
         Assert.True(products[0].ProductId > 0);
+    }
+
+    private static string ToSnakeCase(string source)
+    {
+        int maxLen = source.Length * 2;
+        var buffer = ArrayPool<char>.Shared.Rent(maxLen);
+        try
+        {
+            int dst = 0;
+            bool prevIsUpper = false;
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                char ch = source[i];
+                bool isUpper = char.IsUpper(ch);
+
+                // Insert '_' before an upper case that follows a lower case
+                // or another upper case that is followed by a lower case.
+                if (isUpper && i > 0 && (!prevIsUpper || (i + 1 < source.Length && char.IsLower(source[i + 1]))))
+                    buffer[dst++] = '_';
+
+                // Write lower‑cased character
+                buffer[dst++] = char.ToLowerInvariant(ch);
+                prevIsUpper = isUpper;
+            }
+
+            return new string(buffer, 0, dst);
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(buffer);
+        }
     }
 }
 

@@ -5,9 +5,7 @@ using System.Reflection;
 using System.Collections.Frozen;
 #endif
 
-using Jaunty.Entity;
-
-namespace Jaunty.Internal.Mapping;
+namespace Jaunty.Entity;
 
 internal static class MetadataCache<T> where T : new()
 {
@@ -45,37 +43,61 @@ internal static class MetadataCache<T> where T : new()
 #endif
     }
 
-    public static PropertySetter<T>[] GetSetters(IDataReader reader, MappingMode mode)
+    internal static PropertySetter<T>[] GetSetters(IDataReader reader, MappingMode mode)
     {
         int fieldCount = reader.FieldCount;
-        var setters = new List<PropertySetter<T>>(fieldCount);
+        var settersBuffer = new PropertySetter<T>[fieldCount];
+        int count = 0;
+
+#if NET8_0_OR_GREATER
+    Span<bool> matchedProperties = stackalloc bool[Properties.Length];
+#else
+        var matchedProperties = new bool[Properties.Length];
+#endif
 
         for (int i = 0; i < fieldCount; i++)
         {
             string columnName = reader.GetName(i);
 
-            if (!ColumnToIndex.TryGetValue(columnName, out int propIndex))
+            if (ColumnToIndex.TryGetValue(columnName, out int propIndex))
             {
-                if (mode == MappingMode.Strict)
-                    throw new IndexOutOfRangeException($"Column '{columnName}' does not map to any property on {typeof(T).Name}.");
-
-                continue;
+                settersBuffer[count++] = new PropertySetter<T>(Properties[propIndex], i);
+                matchedProperties[propIndex] = true;
             }
-
-            setters.Add(new PropertySetter<T>(Properties[propIndex], i));
+            else if (mode == MappingMode.Strict)
+            {
+                throw new InvalidOperationException(
+                    $"Mapping failed: Column '{columnName}' in the result set does not map to any property of type '{typeof(T).FullName}'.");
+            }
         }
 
-        return [.. setters];
+        if (mode == MappingMode.Strict)
+        {
+            for (int i = 0; i < matchedProperties.Length; i++)
+            {
+                if (!matchedProperties[i])
+                {
+                    var prop = Properties[i];
+                    throw new InvalidOperationException(
+                        $"Strict mapping failed: Property '{prop.Property.Name}' (mapped to column '{prop.ColumnName}') was missing from the result set.");
+                }
+            }
+        }
+
+        if (count == fieldCount) return settersBuffer;
+        var result = new PropertySetter<T>[count];
+        Array.Copy(settersBuffer, result, count);
+        return result;
     }
 
     private static Action<T, IDataRecord, int> CreateSetter(PropertyInfo property)
     {
-        ParameterExpression target = Expression.Parameter(typeof(T), "target");
-        ParameterExpression record = Expression.Parameter(typeof(IDataRecord), "record");
-        ParameterExpression index = Expression.Parameter(typeof(int), "index");
-        MethodCallExpression getValue = Expression.Call(record, typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!, index);
-        UnaryExpression converted = Expression.Convert(getValue, property.PropertyType);
-        BinaryExpression assign = Expression.Assign(Expression.Property(target, property), converted);
+        var target = Expression.Parameter(typeof(T), "target");
+        var record = Expression.Parameter(typeof(IDataRecord), "record");
+        var index = Expression.Parameter(typeof(int), "index");
+        var getValue = Expression.Call(record, typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!, index);
+        var converted = Expression.Convert(getValue, property.PropertyType);
+        var assign = Expression.Assign(Expression.Property(target, property), converted);
         return Expression.Lambda<Action<T, IDataRecord, int>>(assign, target, record, index).Compile();
     }
 }
