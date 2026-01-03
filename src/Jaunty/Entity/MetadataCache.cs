@@ -24,14 +24,16 @@ internal static class MetadataCache<T> where T : new()
         IReadOnlyList<ColumnMetadata> columns = Metadata.Columns;
         var contexts = new List<PropertyContext<T>>(columns.Count);
         var nameToIndex = new Dictionary<string, int>(columns.Count, StringComparer.OrdinalIgnoreCase);
-        int ordinal = 0;
 
         for (int i = 0; i < columns.Count; i++)
         {
             ColumnMetadata column = columns[i];
             var setter = CreateSetter(column.Property);
-            contexts.Add(new PropertyContext<T>(column.Property, setter, column.ColumnName));
-            nameToIndex[column.ColumnName] = ordinal++;
+            var isNonNullable = IsNonNullableType(column.Property.PropertyType);
+            contexts.Add(new PropertyContext<T>(column.Property, setter, column.Property.Name, column.ColumnName, isNonNullable));
+            nameToIndex[column.ColumnName] = i;
+            if (!column.ColumnName.Equals(column.Property.Name, StringComparison.OrdinalIgnoreCase))
+                nameToIndex[column.Property.Name] = i;
         }
 
         Properties = [.. contexts];
@@ -50,7 +52,7 @@ internal static class MetadataCache<T> where T : new()
         int count = 0;
 
 #if NET8_0_OR_GREATER
-    Span<bool> matchedProperties = stackalloc bool[Properties.Length];
+        Span<bool> matchedProperties = stackalloc bool[Properties.Length];
 #else
         var matchedProperties = new bool[Properties.Length];
 #endif
@@ -100,24 +102,30 @@ internal static class MetadataCache<T> where T : new()
         var assign = Expression.Assign(Expression.Property(target, property), converted);
         return Expression.Lambda<Action<T, IDataRecord, int>>(assign, target, record, index).Compile();
     }
+
+    private static bool IsNonNullableType(Type type)
+    {
+        return type.IsValueType && Nullable.GetUnderlyingType(type) is null;
+    }
 }
 
-internal readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, string columnName)
+internal readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, string propertyName, string columnName, bool isNonNullable)
 {
     public PropertyInfo Property { get; } = property;
     public Action<T, IDataRecord, int> Setter { get; } = setter;
+    public string PropertyName { get; } = propertyName;
     public string ColumnName { get; } = columnName;
+    public bool IsNonNullable { get; } = isNonNullable;
 }
-
 
 internal readonly struct PropertySetter<T>(PropertyContext<T> context, int ordinal)
 {
-    private readonly PropertyContext<T> _context = context;
-    private readonly int _ordinal = ordinal;
-
     public void Set(T target, IDataRecord record)
     {
-        if (!record.IsDBNull(_ordinal))
-            _context.Setter(target, record, _ordinal);
+        if (!record.IsDBNull(ordinal))
+            context.Setter(target, record, ordinal);
+        else if (context.IsNonNullable)
+            throw new InvalidOperationException(
+                $"Cannot assign NULL to non-nullable property '{context.Property.Name}' on type '{typeof(T).Name}'.");
     }
 }
