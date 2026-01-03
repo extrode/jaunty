@@ -2,16 +2,19 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+		<!--<TargetFramework>net8.0</TargetFramework>-->
 		<ImplicitUsings>enable</ImplicitUsings>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
-		<LangVersion>latest</LangVersion>
-		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<LangVersion>latest</LangVersion>
+		<!--<DefineConstants>NETSTANDARD2_0</DefineConstants>-->
+	</PropertyGroup>
+	
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<!--<DefineConstants>NET8_0</DefineConstants>-->
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -27,5 +30,15 @@
 		<Description>A fast ORM</Description>
 		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Nullable>enable</Nullable>
+		<ErrorReport>none</ErrorReport>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
+	  <WarningLevel>5</WarningLevel>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
+	  <WarningLevel>5</WarningLevel>
 	</PropertyGroup>
 </Project>
