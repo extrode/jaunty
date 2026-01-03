@@ -2,8 +2,19 @@ namespace Jaunty.Configuration;
 
 public static class JauntyConfig
 {
+    private static Func<Type, string>? _schemaNameResolver;
     private static Func<Type, string>? _tableNameResolver;
     private static Func<string, string>? _columnNameResolver;
+
+    /// <summary>
+    /// Custom resolver for schema names. Receives entity type, returns schema name.
+    /// Return null to fall back to default behavior.
+    /// </summary>
+    public static Func<Type, string>? SchemaNameResolver
+    {
+        get => _schemaNameResolver;
+        set => _schemaNameResolver = value;
+    }
 
     /// <summary>
     /// Custom resolver for table names. Receives entity type, returns table name.
