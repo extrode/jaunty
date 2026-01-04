@@ -23,17 +23,20 @@ internal static class MetadataCache<T> where T : new()
     static MetadataCache()
     {
         Metadata = MetadataBuilder.Build<T>();
-        IReadOnlyList<ColumnMetadata> columns = Metadata.Columns;
-        var contexts = new List<PropertyContext<T>>(columns.Count);
-        var nameToIndex = new Dictionary<string, int>(columns.Count, StringComparer.OrdinalIgnoreCase);
+        var columns = Metadata.Columns.ToArray();
+        var contexts = new List<PropertyContext<T>>(columns.Length);
+        var nameToIndex = new Dictionary<string, int>(columns.Length, StringComparer.OrdinalIgnoreCase);
 
-        for (int i = 0; i < columns.Count; i++)
+        for (int i = 0; i < columns.Length; i++)
         {
-            ColumnMetadata column = columns[i];
+            var column = columns[i];
             var setter = CreateSetter(column.Property);
             var isNonNullable = IsNonNullableType(column.Property.PropertyType);
+
             contexts.Add(new PropertyContext<T>(column.Property, setter, column.Property.Name, column.ColumnName, isNonNullable));
+
             nameToIndex[column.ColumnName] = i;
+
             if (!column.ColumnName.Equals(column.Property.Name, StringComparison.OrdinalIgnoreCase))
                 nameToIndex[column.Property.Name] = i;
         }
@@ -54,7 +57,7 @@ internal static class MetadataCache<T> where T : new()
         int count = 0;
 
 #if NET8_0_OR_GREATER
-    Span<bool> matchedProperties = stackalloc bool[Properties.Length];
+        Span<bool> matchedProperties = stackalloc bool[Properties.Length];
 #else
         var matchedProperties = new bool[Properties.Length];
 #endif
@@ -113,11 +116,33 @@ internal static class MetadataCache<T> where T : new()
         var target = Expression.Parameter(typeof(T), "target");
         var record = Expression.Parameter(typeof(IDataRecord), "record");
         var index = Expression.Parameter(typeof(int), "index");
+
         var getValue = Expression.Call(record, typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!, index);
-        var converted = Expression.Convert(getValue, property.PropertyType);
-        var assign = Expression.Assign(Expression.Property(target, property), converted);
+
+        var propertyType = property.PropertyType;
+        var underlyingType = Nullable.GetUnderlyingType(propertyType);
+
+        Expression valueExpression;
+
+        if (underlyingType is not null)
+        {
+            // Nullable<T>: (T?)Convert.ChangeType(value, typeof(T))
+            var changeType = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ChangeType), [typeof(object), typeof(Type)])!, getValue,
+                Expression.Constant(underlyingType, typeof(Type)));
+            valueExpression = Expression.Convert(changeType, propertyType);
+        }
+        else
+        {
+            // Non-nullable: Convert.ChangeType(value, propertyType)
+            var changeType = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ChangeType), [typeof(object), typeof(Type)])!, getValue,
+                Expression.Constant(propertyType, typeof(Type)));
+            valueExpression = Expression.Convert(changeType, propertyType);
+        }
+
+        var assign = Expression.Assign(Expression.Property(target, property), valueExpression);
         return Expression.Lambda<Action<T, IDataRecord, int>>(assign, target, record, index).Compile();
     }
+
 
     private static bool IsNonNullableType(Type type)
     {
