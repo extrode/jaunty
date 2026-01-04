@@ -9,7 +9,7 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options)
+    private static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, Func<IDataReader, T>? mapper = null)
     {
         return ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout, reader =>
         {
@@ -23,22 +23,15 @@ public static partial class Jaunty
         });
     }
 
-    private static List<T> QueryCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T : new()
+    private static List<T> QueryCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
     {
         return ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout, reader =>
         {
             var results = new List<T>();
-            var setters = MetadataCache<T>.GetSetters(reader, mode);
+            var map = DrDispatcher.Resolve(reader, mapper, mode);
 
             while (reader.Read())
-            {
-                var entity = new T();
-
-                for (int i = 0; i < setters.Length; i++)
-                    setters[i].Set(entity, reader);
-
-                results.Add(entity);
-            }
+                results.Add(map(reader));
 
             return results;
         });
