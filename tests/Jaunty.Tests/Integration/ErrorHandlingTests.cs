@@ -12,7 +12,11 @@ public class ErrorHandlingTests : IDisposable
         _db = new Database();
     }
 
-    public void Dispose() => _db.Dispose();
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        _db.Dispose();
+    }
 
     #region Null/Invalid Arguments
 
@@ -30,7 +34,7 @@ public class ErrorHandlingTests : IDisposable
     [Fact]
     public void Query_NullSql_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        var ex = Assert.Throws<ArgumentNullException>(() =>
             _db.Connection.Query<Category>(null!));
 
         Assert.Contains("SQL", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -68,7 +72,7 @@ public class ErrorHandlingTests : IDisposable
     [Fact]
     public void QueryScalar_NullSql_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        var ex = Assert.Throws<ArgumentNullException>(() =>
             _db.Connection.QueryScalar<int>(null!));
     }
 

@@ -1,5 +1,7 @@
 ﻿using System.Data;
 
+using Jaunty.Enums;
+
 namespace Jaunty;
 
 public static partial class Jaunty

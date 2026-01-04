@@ -1,4 +1,6 @@
-using System.Data;
+﻿using System.Data;
+
+using Jaunty.Enums;
 
 namespace Jaunty;
 
