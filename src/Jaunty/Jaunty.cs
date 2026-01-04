@@ -1,8 +1,8 @@
 using System.Data;
 using System.Data.Common;
 
-using Jaunty.Helpers;
 using Jaunty.Entity;
+using Jaunty.Enums;
 using Jaunty.Internal.Parameters;
 
 namespace Jaunty;
@@ -47,10 +47,16 @@ public static partial class Jaunty
     private static TResult ExecuteReader<TResult>(IDbConnection connection, string sql, object? parameters, IDbTransaction? transaction,
         int? commandTimeout, Func<IDataReader, TResult> handler)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(handler);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (sql.IsNullOrWhiteSpace()) throw new ArgumentException("SQL cannot be null or whitespace.", nameof(sql));
         if (handler is null) throw new ArgumentNullException(nameof(handler));
-
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         var wasClosed = connection.State == ConnectionState.Closed;
 
         try

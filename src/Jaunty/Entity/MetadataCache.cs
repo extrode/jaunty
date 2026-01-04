@@ -1,6 +1,8 @@
 ﻿using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
+
+using Jaunty.Enums;
 #if NET8_0_OR_GREATER
 using System.Collections.Frozen;
 #endif
@@ -52,7 +54,7 @@ internal static class MetadataCache<T> where T : new()
         int count = 0;
 
 #if NET8_0_OR_GREATER
-        Span<bool> matchedProperties = stackalloc bool[Properties.Length];
+    Span<bool> matchedProperties = stackalloc bool[Properties.Length];
 #else
         var matchedProperties = new bool[Properties.Length];
 #endif
@@ -63,6 +65,18 @@ internal static class MetadataCache<T> where T : new()
 
             if (ColumnToIndex.TryGetValue(columnName, out int propIndex))
             {
+                if (matchedProperties[propIndex])
+                {
+                    if (mode == MappingMode.Strict)
+                    {
+                        var prop = Properties[propIndex];
+                        throw new InvalidOperationException(
+                            $"Strict mapping failed: Property '{prop.Property.Name}' was mapped more than once from the result set.");
+                    }
+
+                    continue;
+                }
+
                 settersBuffer[count++] = new PropertySetter<T>(Properties[propIndex], i);
                 matchedProperties[propIndex] = true;
             }
@@ -86,7 +100,9 @@ internal static class MetadataCache<T> where T : new()
             }
         }
 
-        if (count == fieldCount) return settersBuffer;
+        if (count == settersBuffer.Length)
+            return settersBuffer;
+
         var result = new PropertySetter<T>[count];
         Array.Copy(settersBuffer, result, count);
         return result;

@@ -1,4 +1,4 @@
-namespace Jaunty;
+namespace Jaunty.Enums;
 
 internal enum MappingMode
 {

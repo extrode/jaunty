@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Data;
 
 namespace Jaunty.Internal.Parameters;
@@ -34,8 +35,8 @@ internal static class ParameterBinder
 
         for (int i = 0; i < meta.Length; i++)
         {
-            var m = meta[i];
-            var p = command.CreateParameter();
+            ParameterMetadata m = meta[i];
+            IDbDataParameter p = command.CreateParameter();
             p.ParameterName = m.Name;
             p.Value = m.Getter(parameters) ?? DBNull.Value;
             command.Parameters.Add(p);
@@ -44,53 +45,52 @@ internal static class ParameterBinder
 
     private static void BindPositional(IDbCommand command, object parameters)
     {
-        var paramNames = SqlParameterParser.ExtractParameterNames(command.CommandText);
-        var values = GetPositionalValues(parameters);
+        string[] paramNames = SqlParameterParserCache.GetOrAdd(command.CommandText);
+        object?[] values = GetPositionalValues(parameters);
 
-        // Deduplicate parameter names while preserving order
-        var uniqueCount = DeduplicateAndBind(command, paramNames, values);
+        int uniqueSqlParams = DeduplicateAndBind(command, paramNames, values);
 
-        if (uniqueCount != values.Length)
+        if (uniqueSqlParams != values.Length)
         {
             throw new ArgumentException(
-                $"Parameter count mismatch: SQL contains {uniqueCount} unique parameter(s), but {values.Length} value(s) provided.");
+                $"Parameter count mismatch: SQL contains {uniqueSqlParams} unique parameter(s), but {values.Length} value(s) provided.");
         }
     }
 
     private static int DeduplicateAndBind(IDbCommand command, string[] paramNames, object?[] values)
     {
-        // For small parameter counts, linear search is faster than HashSet
-        var uniqueCount = 0;
+        int uniqueSqlCount = 0;
+        int valueIndex = 0;
 
         for (int i = 0; i < paramNames.Length; i++)
         {
             var name = paramNames[i];
 
-            // Check if we've seen this name before (case-insensitive)
-            var isDuplicate = false;
+            bool seen = false;
             for (int j = 0; j < i; j++)
             {
                 if (string.Equals(paramNames[j], name, StringComparison.OrdinalIgnoreCase))
                 {
-                    isDuplicate = true;
+                    seen = true;
                     break;
                 }
             }
 
-            if (!isDuplicate)
-            {
-                if (uniqueCount < values.Length)
-                {
-                    var p = command.CreateParameter();
-                    p.ParameterName = name;
-                    p.Value = values[uniqueCount] ?? DBNull.Value;
-                    command.Parameters.Add(p);
-                }
-                uniqueCount++;
-            }
+            if (seen)
+                continue;
+
+            if (valueIndex >= values.Length)
+                return uniqueSqlCount + 1;
+
+            var p = command.CreateParameter();
+            p.ParameterName = name;
+            p.Value = values[valueIndex++] ?? DBNull.Value;
+            command.Parameters.Add(p);
+
+            uniqueSqlCount++;
         }
 
-        return uniqueCount;
+        return uniqueSqlCount;
     }
 
     private static object?[] GetPositionalValues(object parameters)
@@ -109,6 +109,16 @@ internal static class ParameterBinder
         }
 
         // Single value - avoid array allocation for common case
-        return new object?[] { parameters };
+        return [parameters];
+    }
+}
+
+internal static class SqlParameterParserCache
+{
+    private static readonly ConcurrentDictionary<string, string[]> Cache = new(StringComparer.Ordinal);
+
+    public static string[] GetOrAdd(string sql)
+    {
+        return Cache.GetOrAdd(sql, static s => SqlParameterParser.ExtractParameterNames(s));
     }
 }

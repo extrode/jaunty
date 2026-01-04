@@ -12,7 +12,11 @@ public class AsyncTests : IDisposable
         _db = new Database();
     }
 
-    public void Dispose() => _db.Dispose();
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        _db.Dispose();
+    }
 
     #region QueryScalarAsync
 
