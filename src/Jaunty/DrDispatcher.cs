@@ -7,7 +7,7 @@ namespace Jaunty;
 
 internal static class DrDispatcher
 {
-    public static Func<IDataReader, T> Resolve<T>(IDataReader reader, Func<IDataReader, T>? userMapper, MappingMode mode) where T : new()
+    internal static Func<IDataReader, T> Resolve<T>(IDataReader reader, Func<IDataReader, T>? userMapper, MappingMode mode) where T : new()
     {
         // 1. User override
         if (userMapper is not null)
