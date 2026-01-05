@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Runtime.CompilerServices;
 
 using Jaunty.Entity;
 using Jaunty.Enums;
@@ -9,7 +10,7 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, Func<IDataReader, T>? mapper = null)
+    private static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options)
     {
         return ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout, reader =>
         {
@@ -37,8 +38,40 @@ public static partial class Jaunty
         });
     }
 
-    private static TResult ExecuteReader<TResult>(IDbConnection connection, string sql, object? parameters, IDbTransaction? transaction,
-        int? commandTimeout, Func<IDataReader, TResult> handler)
+    private static IEnumerable<T> QueryStreamCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
+    {
+        var wasClosed = connection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (wasClosed) connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = sql;
+
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            using var reader = command.ExecuteReader();
+            var map = DrDispatcher.Resolve(reader, mapper, mode);
+
+            while (reader.Read())
+                yield return map(reader);
+        }
+        finally
+        {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
+        }
+    }
+
+    private static TResult ExecuteReader<TResult>(IDbConnection connection, string sql, object? parameters, IDbTransaction? transaction, int? commandTimeout, Func<IDataReader, TResult> handler)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
