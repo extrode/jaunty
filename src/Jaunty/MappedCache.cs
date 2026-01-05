@@ -12,14 +12,10 @@ internal static class MappedCache<T> where T : new()
     private static Func<IDataReader, T>? ResolveMapper()
     {
         Type entityType = typeof(T);
-        if (!typeof(IMapped<T>).IsAssignableFrom(entityType))
+        if (!typeof(IMapped<>).IsAssignableFrom(entityType))
             return null;
 
-        var readMethod = entityType.GetMethod("ReadEntity",
-            BindingFlags.Public | BindingFlags.Static,
-            null,
-            [typeof(IDataReader)],
-            null);
+        var readMethod = entityType.GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Static, null, [typeof(IDataReader)], null);
 
         if (readMethod is null)
             return null;

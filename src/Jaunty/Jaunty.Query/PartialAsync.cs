@@ -6,23 +6,23 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+    public static async Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
     {
-        return QueryCoreAsync<T>(connection, sql, null, default, MappingMode.Projection, cancellationToken);
+        return await QueryCoreAsync<T>(connection, sql, null, default, MappingMode.Projection, null, cancellationToken);
     }
 
-    public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
+    public static async Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
     {
-        return QueryCoreAsync<T>(connection, sql, parameters, default, MappingMode.Projection, cancellationToken);
+        return await QueryCoreAsync<T>(connection, sql, parameters, default, MappingMode.Projection, null, cancellationToken);
     }
 
-    public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
+    public static async Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
-        return QueryCoreAsync<T>(connection, sql, null, options, MappingMode.Projection, cancellationToken);
+        return await QueryCoreAsync<T>(connection, sql, null, options, MappingMode.Projection, null, cancellationToken);
     }
 
-    public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
+    public static async Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
-        return QueryCoreAsync<T>(connection, sql, parameters, options, MappingMode.Projection, cancellationToken);
+        return await QueryCoreAsync<T>(connection, sql, parameters, options, MappingMode.Projection, null, cancellationToken);
     }
 }
