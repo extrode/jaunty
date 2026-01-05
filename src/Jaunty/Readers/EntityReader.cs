@@ -3,86 +3,34 @@ using System.Data.Common;
 using System.Runtime.CompilerServices;
 
 using Jaunty.Interfaces;
+
 namespace Jaunty.Readers;
 
 internal static class EntityReader
 {
-    // Sync version - always available
     internal static IEnumerable<T> ReadEntities<T>(IDataReader reader) where T : IMapped<T>, new()
     {
-#if NET8_0_OR_GREATER
-        var columnNames = T.ColumnNames;
-        var ordinals = new int[columnNames.Length];
-        for (int i = 0; i < columnNames.Length; i++)
-        {
-            ordinals[i] = reader.GetOrdinal(columnNames[i]);
-        }
-#else
-        var mapper = new T();
-        var columnNames = mapper.GetColumnNames();
-        var ordinals = new int[columnNames.Length];
-        for (int i = 0; i < columnNames.Length; i++)
-        {
-            ordinals[i] = reader.GetOrdinal(columnNames[i]);
-        }
-#endif
+        var mapper = MappedCache<T>.Mapper!;
         while (reader.Read())
-        {
-#if NET8_0_OR_GREATER
-            yield return T.ReadEntity(reader, ordinals);
-#else
-            yield return mapper.ReadEntity(reader, ordinals);
-#endif
-        }
+            yield return mapper(reader);
     }
 
 #if NET8_0_OR_GREATER || ASYNC_ENUMERABLE_SUPPORT
-    public static async IAsyncEnumerable<T> ReadEntitiesAsync<T>(DbDataReader reader, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : IMapped<T>, new()
+    public static async IAsyncEnumerable<T> ReadEntitiesAsync<T>(DbDataReader reader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        where T : IMapped<T>, new()
     {
-#if NET8_0_OR_GREATER
-        var columnNames = T.ColumnNames;
-        var ordinals = new int[columnNames.Length];
-        for (int i = 0; i < columnNames.Length; i++)
-        {
-            ordinals[i] = reader.GetOrdinal(columnNames[i]);
-        }
-#else
-        var mapper = new T();
-        var columnNames = mapper.GetColumnNames();
-        var ordinals = new int[columnNames.Length];
-        
-        for (int i = 0; i < columnNames.Length; i++)
-        {
-            ordinals[i] = reader.GetOrdinal(columnNames[i]);
-        }
-#endif
+        var mapper = MappedCache<T>.Mapper!;
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-        {
-#if NET8_0_OR_GREATER
-            yield return T.ReadEntity(reader, ordinals);
-#else
-            yield return mapper.ReadEntity(reader, ordinals);
-#endif
-        }
+            yield return mapper(reader);
     }
-#endif
-
-#if !NET8_0_OR_GREATER && !ASYNC_ENUMERABLE_SUPPORT
+#else
     public static async Task<List<T>> ReadEntitiesAsync<T>(DbDataReader reader, CancellationToken cancellationToken = default)
         where T : IMapped<T>, new()
     {
-        var mapper = new T();
-        var columnNames = mapper.GetColumnNames();
-        var ordinals = new int[columnNames.Length];
-
-        for (int i = 0; i < columnNames.Length; i++)
-        {
-            ordinals[i] = reader.GetOrdinal(columnNames[i]);
-        }
-
+        var mapper = MappedCache<T>.Mapper!;
         var results = new List<T>();
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-            results.Add(mapper.ReadEntity(reader, ordinals));
+            results.Add(mapper(reader));
         return results;
     }
 #endif
