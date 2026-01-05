@@ -7,12 +7,6 @@ namespace Jaunty.Tests.Entities;
 
 public class Product : IEntity<int>, IMapped<Product>
 {
-    private static readonly string[] array = [
-        "ProductId", "ProductName", "SupplierId", "CategoryId",
-            "QuantityPerUnit", "UnitPrice", "UnitsInStock", "UnitsOnOrder",
-            "ReorderLevel", "Discontinued"
-    ];
-
     [Ignore]
     public int Id
     {
@@ -21,38 +15,39 @@ public class Product : IEntity<int>, IMapped<Product>
     }
 
     public int ProductId { get; set; }
-
     public string ProductName { get; set; } = null!;
-
     public int? SupplierId { get; set; }
-
     public short? CategoryId { get; set; }
-
     public string? QuantityPerUnit { get; set; }
-
     public decimal? UnitPrice { get; set; }
-
     public short? UnitsInStock { get; set; }
-
     public short? UnitsOnOrder { get; set; }
-
     public short? ReorderLevel { get; set; }
-
     public bool Discontinued { get; set; }
 
-    public static ReadOnlySpan<string> ColumnNames => array.AsSpan();
-
-    public static Product ReadEntity(IDataReader reader, ReadOnlySpan<int> ordinals) => new()
+    public static Product ReadEntity(IDataReader reader)
     {
-        ProductId = reader.GetInt32(ordinals[0]),
-        ProductName = reader.GetString(ordinals[1]),
-        SupplierId = reader.IsDBNull(ordinals[2]) ? null : reader.GetInt32(ordinals[2]),
-        CategoryId = reader.IsDBNull(ordinals[3]) ? null : reader.GetInt16(ordinals[3]),
-        QuantityPerUnit = reader.IsDBNull(ordinals[4]) ? null : reader.GetString(ordinals[4]),
-        UnitPrice = reader.IsDBNull(ordinals[5]) ? null : reader.GetDecimal(ordinals[5]),
-        UnitsInStock = reader.IsDBNull(ordinals[6]) ? null : reader.GetInt16(ordinals[6]),
-        UnitsOnOrder = reader.IsDBNull(ordinals[7]) ? null : reader.GetInt16(ordinals[7]),
-        ReorderLevel = reader.IsDBNull(ordinals[8]) ? null : reader.GetInt16(ordinals[8]),
-        Discontinued = reader.GetBoolean(ordinals[9])
-    };
+        var ordinal = new OrdinalCache(reader);
+
+        return new()
+        {
+            ProductId = reader.GetInt32(ordinal["ProductId"]),
+            ProductName = reader.GetString(ordinal["ProductName"]),
+            SupplierId = reader.IsDBNull(ordinal["SupplierId"]) ? null : reader.GetInt32(ordinal["SupplierId"]),
+            CategoryId = reader.IsDBNull(ordinal["CategoryId"]) ? null : reader.GetInt16(ordinal["CategoryId"]),
+            QuantityPerUnit = reader.IsDBNull(ordinal["QuantityPerUnit"]) ? null : reader.GetString(ordinal["QuantityPerUnit"]),
+            UnitPrice = reader.IsDBNull(ordinal["UnitPrice"]) ? null : reader.GetDecimal(ordinal["UnitPrice"]),
+            UnitsInStock = reader.IsDBNull(ordinal["UnitsInStock"]) ? null : reader.GetInt16(ordinal["UnitsInStock"]),
+            UnitsOnOrder = reader.IsDBNull(ordinal["UnitsOnOrder"]) ? null : reader.GetInt16(ordinal["UnitsOnOrder"]),
+            ReorderLevel = reader.IsDBNull(ordinal["ReorderLevel"]) ? null : reader.GetInt16(ordinal["ReorderLevel"]),
+            Discontinued = reader.GetBoolean(ordinal["Discontinued"])
+        };
+    }
+
+    private readonly struct OrdinalCache(IDataReader reader)
+    {
+        private readonly Dictionary<string, int> _cache = [];
+
+        public int this[string columnName] => _cache.TryGetValue(columnName, out var ordinal) ? ordinal : _cache[columnName] = reader.GetOrdinal(columnName);
+    }
 }
