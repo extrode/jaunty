@@ -2,7 +2,6 @@ using System.Data;
 using System.Data.Common;
 using System.Runtime.CompilerServices;
 
-using Jaunty.Entity;
 using Jaunty.Enums;
 using Jaunty.Internal.Parameters;
 
@@ -12,12 +11,12 @@ public static partial class Jaunty
 {
     private static async Task<T> QueryScalarCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, CancellationToken cancellationToken)
     {
-        return await ExecuteReaderAsync(connection, sql, parameters, options.Transaction, options.CommandTimeout, async reader =>
+        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
-                return !await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false) || await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false) ? default!
-                    : await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
+                return !await dbReader.ReadAsync(ct).ConfigureAwait(false) || await dbReader.IsDBNullAsync(0, ct).ConfigureAwait(false) ? default!
+                    : await dbReader.GetFieldValueAsync<T>(0, ct).ConfigureAwait(false);
             }
 
             // Fallback for non-DbDataReader
@@ -29,49 +28,97 @@ public static partial class Jaunty
 
     private static async Task<List<T>> QueryCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null, CancellationToken cancellationToken = default) where T : new()
     {
-        return await ExecuteReaderAsync(connection, sql, parameters, options.Transaction, options.CommandTimeout, async reader =>
+        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
             var results = new List<T>();
-            var map = DrDispatcher.Resolve(reader, mapper, mode);
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, mapper, mode);
 
-            while (reader.Read())
-                results.Add(map(reader));
+            if (reader is DbDataReader dbReader)
+            {
+                while (await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                    results.Add(map(reader));
+            }
+            else
+            {
+                while (reader.Read())
+                {
+                    ct.ThrowIfCancellationRequested();
+                    results.Add(map(reader));
+                }
+            }
             return results;
-        }, cancellationToken);
+        }, cancellationToken).ConfigureAwait(false);
+    }
 
-        //return await ExecuteReaderAsync(connection, sql, parameters, options.Transaction, options.CommandTimeout, async reader =>
-        //{
-        //    var results = new List<T>();
-        //    var setters = MetadataCache<T>.GetSetters(reader, mode);
+    private static async Task<TResult> ExecuteReaderAsync<TResult>(IDbConnection connection, string sql, object? parameters,
+        CommandOptions options, Func<IDataReader, CancellationToken, Task<TResult>> handler, CancellationToken cancellationToken)
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(handler);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (handler is null) throw new ArgumentNullException(nameof(handler));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
+        var wasClosed = connection.State == ConnectionState.Closed;
 
-        //    if (reader is DbDataReader dbReader)
-        //    {
-        //        while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
-        //        {
-        //            var entity = new T();
+        try
+        {
+            if (connection is DbConnection dbConnection)
+            {
+                if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-        //            for (int i = 0; i < setters.Length; i++)
-        //                setters[i].Set(entity, reader);
+                using var command = dbConnection.CreateCommand();
+                command.CommandText = sql;
 
-        //            results.Add(entity);
-        //        }
-        //    }
-        //    else
-        //    {
-        //        // Fallback for non-DbDataReader
-        //        while (reader.Read())
-        //        {
-        //            var entity = new T();
+                if (options.Transaction is DbTransaction dbTransaction)
+                    command.Transaction = dbTransaction;
 
-        //            for (int i = 0; i < setters.Length; i++)
-        //                setters[i].Set(entity, reader);
+                if (options.CommandTimeout.HasValue)
+                    command.CommandTimeout = options.CommandTimeout.Value;
 
-        //            results.Add(entity);
-        //        }
-        //    }
+                if (parameters is not null)
+                    ParameterBinder.Bind(command, parameters);
 
-        //    return results;
-        //}, cancellationToken).ConfigureAwait(false);
+                using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                return await handler(reader, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                // Fallback for non-DbConnection - use sync methods
+                if (wasClosed) connection.Open();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = sql;
+
+                if (options.Transaction is DbTransaction dbTransaction)
+                    command.Transaction = dbTransaction;
+
+                if (options.CommandTimeout.HasValue)
+                    command.CommandTimeout = options.CommandTimeout.Value;
+
+                if (parameters is not null)
+                    ParameterBinder.Bind(command, parameters);
+
+                using var reader = command.ExecuteReader();
+                return await handler(reader, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+            {
+#if NET8_0_OR_GREATER
+                if (connection is DbConnection dbConn)
+                    await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                    connection.Close();
+#endif
+            }
+        }
     }
 
 #if NET8_0_OR_GREATER || ASYNC_ENUMERABLE_SUPPORT
@@ -139,74 +186,15 @@ public static partial class Jaunty
         finally
         {
             if (wasClosed && connection.State != ConnectionState.Closed)
-                connection.Close();
+#if NET8_0_OR_GREATER
+                if (connection is DbConnection dbConn)
+                    await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                    connection.Close();
+#endif
         }
 
         return results;
     }
 #endif
-
-    internal static async Task<TResult> ExecuteReaderAsync<TResult>(IDbConnection connection, string sql, object? parameters,
-        IDbTransaction? transaction, int? commandTimeout, Func<IDataReader, Task<TResult>> handler, CancellationToken cancellationToken)
-    {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(handler);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (handler is null) throw new ArgumentNullException(nameof(handler));
-        if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
-#endif
-        var wasClosed = connection.State == ConnectionState.Closed;
-
-        try
-        {
-            if (connection is DbConnection dbConnection)
-            {
-                if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-                using var command = dbConnection.CreateCommand();
-                command.CommandText = sql;
-
-                if (transaction is not null)
-                    command.Transaction = transaction as DbTransaction;
-
-                if (commandTimeout.HasValue)
-                    command.CommandTimeout = commandTimeout.Value;
-
-                if (parameters is not null)
-                    ParameterBinder.Bind(command, parameters);
-
-                using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-                return await handler(reader).ConfigureAwait(false);
-            }
-            else
-            {
-                // Fallback for non-DbConnection - use sync methods
-                if (wasClosed) connection.Open();
-
-                using var command = connection.CreateCommand();
-                command.CommandText = sql;
-
-                if (transaction is not null)
-                    command.Transaction = transaction;
-
-                if (commandTimeout.HasValue)
-                    command.CommandTimeout = commandTimeout.Value;
-
-                if (parameters is not null)
-                    ParameterBinder.Bind(command, parameters);
-
-                using var reader = command.ExecuteReader();
-                return await handler(reader).ConfigureAwait(false);
-            }
-        }
-        finally
-        {
-            if (wasClosed && connection.State != ConnectionState.Closed)
-                connection.Close();
-        }
-    }
 }

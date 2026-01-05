@@ -1,8 +1,6 @@
 using System.Data;
 using System.Data.Common;
-using System.Runtime.CompilerServices;
 
-using Jaunty.Entity;
 using Jaunty.Enums;
 using Jaunty.Internal.Parameters;
 
@@ -12,7 +10,7 @@ public static partial class Jaunty
 {
     private static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options)
     {
-        return ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout, reader =>
+        return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             if (reader is DbDataReader dbReader)
                 return !dbReader.Read() || dbReader.IsDBNull(0) ? default! : dbReader.GetFieldValue<T>(0);
@@ -26,7 +24,7 @@ public static partial class Jaunty
 
     private static List<T> QueryCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
     {
-        return ExecuteReader(connection, sql, parameters, options.Transaction, options.CommandTimeout, reader =>
+        return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             var results = new List<T>();
             var map = DrDispatcher.Resolve(reader, mapper, mode);
@@ -49,8 +47,8 @@ public static partial class Jaunty
             using var command = connection.CreateCommand();
             command.CommandText = sql;
 
-            if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            if (options.Transaction is DbTransaction dbTransaction)
+                command.Transaction = dbTransaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -71,7 +69,7 @@ public static partial class Jaunty
         }
     }
 
-    private static TResult ExecuteReader<TResult>(IDbConnection connection, string sql, object? parameters, IDbTransaction? transaction, int? commandTimeout, Func<IDataReader, TResult> handler)
+    private static TResult ExecuteReader<TResult>(IDbConnection connection, string sql, object? parameters, CommandOptions options, Func<IDataReader, TResult> handler)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -92,11 +90,11 @@ public static partial class Jaunty
             using var command = connection.CreateCommand();
             command.CommandText = sql;
 
-            if (transaction is not null)
-                command.Transaction = transaction;
+            if (options.Transaction is DbTransaction dbTransaction)
+                command.Transaction = dbTransaction;
 
-            if (commandTimeout.HasValue)
-                command.CommandTimeout = commandTimeout.Value;
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
