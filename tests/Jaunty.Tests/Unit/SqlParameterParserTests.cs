@@ -1,4 +1,4 @@
-using Jaunty.Internal.Parameters;
+using Jaunty.InternalApi.Parameters;
 
 namespace Jaunty.Tests.Unit;
 

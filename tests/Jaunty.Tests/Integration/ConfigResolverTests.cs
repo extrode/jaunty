@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 
-using Jaunty.Configuration;
+using Jaunty.PublicApi.Configuration;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 

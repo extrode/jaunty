@@ -23,10 +23,6 @@
 		</AssemblyAttribute>
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Internal\Mapping\" />
-	</ItemGroup>
-
 	<PropertyGroup>
 		<PackageId>Beparey.Jaunty</PackageId>
 		<Version>2026.01.01</Version>
