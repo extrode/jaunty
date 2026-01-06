@@ -61,7 +61,7 @@ public class AsyncTests : IDisposable
     {
         var count = await _db.Connection.QueryScalarAsync<long>(
             "SELECT COUNT(*) FROM products",
-            CommandOptions.WithTimeout(30));
+            CommandOptions<long>.WithTimeout(30));
 
         Assert.True(count > 0);
     }

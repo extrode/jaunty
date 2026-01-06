@@ -14,12 +14,12 @@ public static partial class Jaunty
         return QueryScalarCoreAsync<T>(connection, sql, parameters, default, cancellationToken);
     }
 
-    public static Task<T> ExecuteScalarAsync<T>(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
+    public static Task<T> ExecuteScalarAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)
     {
         return QueryScalarCoreAsync<T>(connection, sql, null, options, cancellationToken);
     }
 
-    public static Task<T> ExecuteScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+    public static Task<T> ExecuteScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)
     {
         return QueryScalarCoreAsync<T>(connection, sql, parameters, options, cancellationToken);
     }

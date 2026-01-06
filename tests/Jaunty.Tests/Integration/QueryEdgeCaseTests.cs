@@ -114,9 +114,9 @@ public class QueryEdgeCaseTests : IDisposable
         _db.Connection.Open();
         using var transaction = _db.Connection.BeginTransaction();
 
-        var categories = _db.Connection.Query<Category>(
+        var categories = _db.Connection.Query(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories",
-            new CommandOptions(transaction));
+            new CommandOptions<Category>(transaction: transaction));
 
         Assert.NotEmpty(categories);
         transaction.Rollback();

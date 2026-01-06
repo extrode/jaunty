@@ -8,7 +8,7 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options)
+    private static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options)
     {
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
@@ -22,12 +22,12 @@ public static partial class Jaunty
         });
     }
 
-    private static List<T> QueryCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
+    private static List<T> QueryCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             var results = new List<T>();
-            var map = DrDispatcher.Resolve(reader, mapper, mode);
+            var map = DrDispatcher.Resolve(reader, options, mode);
 
             while (reader.Read())
                 results.Add(map(reader));
@@ -36,7 +36,7 @@ public static partial class Jaunty
         });
     }
 
-    private static IEnumerable<T> QueryStreamCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
+    private static IEnumerable<T> QueryStreamCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         var wasClosed = connection.State == ConnectionState.Closed;
 
@@ -57,7 +57,7 @@ public static partial class Jaunty
                 ParameterBinder.Bind(command, parameters);
 
             using var reader = command.ExecuteReader();
-            var map = DrDispatcher.Resolve(reader, mapper, mode);
+            var map = DrDispatcher.Resolve(reader, options, mode);
 
             while (reader.Read())
                 yield return map(reader);
@@ -109,34 +109,34 @@ public static partial class Jaunty
         }
     }
 
-    private static T QueryFirstCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
+    private static T QueryFirstCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
-        T? entity = QueryFirstOrDefaultCore<T>(connection, sql, parameters, options, mode, mapper);
+        T? entity = QueryFirstOrDefaultCore<T>(connection, sql, parameters, options, mode);
         return entity is null ? throw new InvalidOperationException("Sequence contains no elements") : entity;
     }
 
-    private static T? QueryFirstOrDefaultCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
+    private static T? QueryFirstOrDefaultCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             if (!reader.Read()) return default;
-            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, mapper, mode);
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
             return map(reader);
         });
     }
 
-    private static T QuerySingleCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
+    private static T QuerySingleCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
-        T? entity = QuerySingleOrDefaultCore<T>(connection, sql, parameters, options, mode, mapper);
+        T? entity = QuerySingleOrDefaultCore<T>(connection, sql, parameters, options, mode);
         return entity is null ? throw new InvalidOperationException("Sequence contains no elements") : entity;
     }
 
-    private static T? QuerySingleOrDefaultCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
+    private static T? QuerySingleOrDefaultCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             if (!reader.Read()) return default;
-            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, mapper, mode);
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
             T entity = map(reader);
             return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : entity;
         });
