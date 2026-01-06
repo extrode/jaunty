@@ -1,3 +1,4 @@
+using Jaunty.PublicApi;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 

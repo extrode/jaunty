@@ -1,7 +1,7 @@
 using System.Data;
 
-using Jaunty.Attributes;
-using Jaunty.Interfaces;
+using Jaunty.PublicApi.Attributes;
+using Jaunty.PublicApi.Interfaces;
 
 namespace Jaunty.Tests.Entities;
 

@@ -1,3 +1,5 @@
+using Jaunty.PublicApi;
+
 namespace Jaunty.Tests.Unit;
 
 public class CommandOptionsTests

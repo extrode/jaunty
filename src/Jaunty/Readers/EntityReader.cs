@@ -2,7 +2,8 @@
 using System.Data.Common;
 using System.Runtime.CompilerServices;
 
-using Jaunty.Interfaces;
+using Jaunty.InternalApi;
+using Jaunty.PublicApi.Interfaces;
 
 namespace Jaunty.Readers;
 

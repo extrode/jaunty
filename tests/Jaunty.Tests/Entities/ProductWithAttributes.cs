@@ -1,4 +1,4 @@
-using Jaunty.Attributes;
+using Jaunty.PublicApi.Attributes;
 
 namespace Jaunty.Tests.Entities;
 
