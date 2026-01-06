@@ -25,9 +25,4 @@ public static partial class Jaunty
     {
         return QuerySingleOrDefaultCore<T>(connection, sql, parameters, options, MappingMode.Strict);
     }
-
-    public static T? QuerySingleOrDefault<T>(this IDbConnection connection, string sql, object param1, object param2, params object[] rest) where T : new()
-    {
-        return QuerySingleOrDefaultCore<T>(connection, sql, CombineParams(param1, param2, rest), default, MappingMode.Strict);
-    }
 }

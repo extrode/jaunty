@@ -27,11 +27,6 @@ public static partial class Jaunty
     {
         return QueryStreamCoreAsync<T>(connection, sql, parameters, options, MappingMode.Strict, null, cancellationToken);
     }
-
-    public static IAsyncEnumerable<T> QueryStreamAsync<T>(this DbConnection connection, string sql, object param1, object param2, params object[] rest) where T : new()
-    {
-        return QueryStreamCoreAsync<T>(connection, sql, CombineParams(param1, param2, rest), default, MappingMode.Strict, null, default);
-    }
 #else
     public static Task<IEnumerable<T>> QueryStreamAsync<T>(this DbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
     {
@@ -51,11 +46,6 @@ public static partial class Jaunty
     public static Task<IEnumerable<T>> QueryStreamAsync<T>(this DbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return QueryStreamCoreAsync<T>(connection, sql, parameters, options, MappingMode.Strict, null, cancellationToken);
-    }
-
-    public static Task<IEnumerable<T>> QueryStreamAsync<T>(this DbConnection connection, string sql, object param1, object param2, params object[] rest) where T : new()
-    {
-        return QueryStreamCoreAsync<T>(connection, sql, CombineParams(param1, param2, rest), default, MappingMode.Strict, null, default);
     }
 #endif
 }

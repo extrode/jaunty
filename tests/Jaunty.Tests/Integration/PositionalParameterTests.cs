@@ -12,7 +12,11 @@ public class PositionalParameterTests : IDisposable
         _db = new Database();
     }
 
-    public void Dispose() => _db.Dispose();
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        _db.Dispose();
+    }
 
     #region Single Positional Parameter
 
@@ -75,45 +79,45 @@ public class PositionalParameterTests : IDisposable
 
     #region Multiple Positional Parameters (params)
 
-    [Fact]
-    public void Query_TwoPositionalParameters_BindsCorrectly()
-    {
-        var categories = _db.Connection.Query<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id >= @Min AND category_id <= @Max",
-            1, 3);
+    //[Fact]
+    //public void Query_TwoPositionalParameters_BindsCorrectly()
+    //{
+    //    var categories = _db.Connection.Query<Category>(
+    //        "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id >= @Min AND category_id <= @Max",
+    //        1, 3);
 
-        Assert.Equal(3, categories.Count);
-    }
+    //    Assert.Equal(3, categories.Count);
+    //}
 
-    [Fact]
-    public void Query_ThreePositionalParameters_BindsCorrectly()
-    {
-        var count = _db.Connection.QueryScalar<long>(
-            "SELECT COUNT(*) FROM products WHERE category_id = @Cat AND supplier_id = @Sup AND discontinued = @Disc",
-            1, 1, false);
+    //[Fact]
+    //public void Query_ThreePositionalParameters_BindsCorrectly()
+    //{
+    //    var count = _db.Connection.QueryScalar<long>(
+    //        "SELECT COUNT(*) FROM products WHERE category_id = @Cat AND supplier_id = @Sup AND discontinued = @Disc",
+    //        1, 1, false);
 
-        Assert.True(count >= 0);
-    }
+    //    Assert.True(count >= 0);
+    //}
 
-    [Fact]
-    public void Query_FourPositionalParameters_BindsCorrectly()
-    {
-        var count = _db.Connection.QueryScalar<long>(
-            "SELECT COUNT(*) FROM products WHERE category_id >= @A AND category_id <= @B AND supplier_id >= @C AND supplier_id <= @D",
-            1, 3, 1, 5);
+    //[Fact]
+    //public void Query_FourPositionalParameters_BindsCorrectly()
+    //{
+    //    var count = _db.Connection.QueryScalar<long>(
+    //        "SELECT COUNT(*) FROM products WHERE category_id >= @A AND category_id <= @B AND supplier_id >= @C AND supplier_id <= @D",
+    //        1, 3, 1, 5);
 
-        Assert.True(count >= 0);
-    }
+    //    Assert.True(count >= 0);
+    //}
 
-    [Fact]
-    public void Query_MixedTypePositionalParameters_BindsCorrectly()
-    {
-        var count = _db.Connection.QueryScalar<long>(
-            "SELECT COUNT(*) FROM products WHERE category_id = @Cat AND product_name LIKE @Name AND unit_price > @Price",
-            1, "%a%", 5.0);
+    //[Fact]
+    //public void Query_MixedTypePositionalParameters_BindsCorrectly()
+    //{
+    //    var count = _db.Connection.QueryScalar<long>(
+    //        "SELECT COUNT(*) FROM products WHERE category_id = @Cat AND product_name LIKE @Name AND unit_price > @Price",
+    //        1, "%a%", 5.0);
 
-        Assert.True(count >= 0);
-    }
+    //    Assert.True(count >= 0);
+    //}
 
     #endregion
 

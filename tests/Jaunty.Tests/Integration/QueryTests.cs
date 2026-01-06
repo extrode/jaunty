@@ -12,7 +12,11 @@ public class QueryTests : IDisposable
         _db = new Database();
     }
 
-    public void Dispose() => _db.Dispose();
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        _db.Dispose();
+    }
 
     [Fact]
     public void Query_AllColumns_ReturnsEntities()
@@ -45,15 +49,15 @@ public class QueryTests : IDisposable
         Assert.Single(categories);
     }
 
-    [Fact]
-    public void Query_WithMultiplePositionalParams_FiltersCorrectly()
-    {
-        var categories = _db.Connection.Query<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id >= @Min AND category_id <= @Max",
-            1, 3);
+    //[Fact]
+    //public void Query_WithMultiplePositionalParams_FiltersCorrectly()
+    //{
+    //    var categories = _db.Connection.Query<Category>(
+    //        "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id >= @Min AND category_id <= @Max",
+    //        1, 3);
 
-        Assert.Equal(3, categories.Count);
-    }
+    //    Assert.Equal(3, categories.Count);
+    //}
 
     [Fact]
     public void Query_StrictMode_MissingColumn_Throws()

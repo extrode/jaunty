@@ -25,9 +25,4 @@ public static partial class Jaunty
     {
         return QueryStreamCore<T>(connection, sql, parameters, options, MappingMode.Projection);
     }
-
-    public static IEnumerable<T> QueryPartialStream<T>(this IDbConnection connection, string sql, object param1, object param2, params object[] rest) where T : new()
-    {
-        return QueryStreamCore<T>(connection, sql, CombineParams(param1, param2, rest), default, MappingMode.Projection);
-    }
 }
