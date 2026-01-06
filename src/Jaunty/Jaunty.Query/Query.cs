@@ -16,12 +16,12 @@ public static partial class Jaunty
         return QueryCore<T>(connection, sql, parameters, default, MappingMode.Strict);
     }
 
-    public static List<T> Query<T>(this IDbConnection connection, string sql, CommandOptions options) where T : new()
+    public static List<T> Query<T>(this IDbConnection connection, string sql, CommandOptions<T> options) where T : new()
     {
         return QueryCore<T>(connection, sql, null, options, MappingMode.Strict);
     }
 
-    public static List<T> Query<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options) where T : new()
+    public static List<T> Query<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options) where T : new()
     {
         return QueryCore<T>(connection, sql, parameters, options, MappingMode.Strict);
     }

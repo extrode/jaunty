@@ -9,7 +9,7 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static async Task<T> QueryScalarCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, CancellationToken cancellationToken)
+    private static async Task<T> QueryScalarCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken)
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
@@ -26,27 +26,27 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<List<T>> QueryCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null, CancellationToken cancellationToken = default) where T : new()
+    private static async Task<List<T>> QueryCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<T>();
-            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, mapper, mode);
+            var list = new List<T>();
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
 
             if (reader is DbDataReader dbReader)
             {
                 while (await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    results.Add(map(reader));
+                    list.Add(map(reader));
             }
             else
             {
                 while (reader.Read())
                 {
                     ct.ThrowIfCancellationRequested();
-                    results.Add(map(reader));
+                    list.Add(map(reader));
                 }
             }
-            return results;
+            return list;
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -122,7 +122,7 @@ public static partial class Jaunty
     }
 
 #if NET8_0_OR_GREATER || ASYNC_ENUMERABLE_SUPPORT
-    private static async IAsyncEnumerable<T> QueryStreamCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+    private static async IAsyncEnumerable<T> QueryStreamCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, Func<IDataReader, T>? mapper = null, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
     {
         var wasClosed = connection.State == ConnectionState.Closed;
 
@@ -143,7 +143,7 @@ public static partial class Jaunty
                 ParameterBinder.Bind(command, parameters);
 
             await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-            var map = DrDispatcher.Resolve(reader, mapper, mode);
+            var map = DrDispatcher.Resolve(reader, options, mode);
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 yield return map(reader);
@@ -155,7 +155,7 @@ public static partial class Jaunty
         }
     }
 #else
-    private static async Task<IEnumerable<T>> QueryStreamCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null, CancellationToken cancellationToken = default) where T : new()
+    private static async Task<IEnumerable<T>> QueryStreamCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, Func<IDataReader, T>? mapper = null, CancellationToken cancellationToken = default) where T : new()
     {
         var results = new List<T>();
         var wasClosed = connection.State == ConnectionState.Closed;
@@ -178,7 +178,7 @@ public static partial class Jaunty
                 ParameterBinder.Bind(command, parameters);
 
             using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-            var map = DrDispatcher.Resolve(reader, mapper, mode);
+            var map = DrDispatcher.Resolve(reader, options, mode);
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 results.Add(map(reader));
@@ -198,13 +198,13 @@ public static partial class Jaunty
     }
 #endif
 
-    private static async Task<T> QueryFirstCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null, CancellationToken cancellationToken = default) where T : new()
+    private static async Task<T> QueryFirstCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        T? entity = await QueryFirstOrDefaultCoreAsync<T>(connection, sql, parameters, options, mode, mapper, cancellationToken).ConfigureAwait(false);
+        T? entity = await QueryFirstOrDefaultCoreAsync<T>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return entity is null ? throw new InvalidOperationException("Sequence contains no elements") : entity;
     }
 
-    private static async Task<T?> QueryFirstOrDefaultCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null, CancellationToken cancellationToken = default) where T : new()
+    private static async Task<T?> QueryFirstOrDefaultCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
@@ -212,23 +212,23 @@ public static partial class Jaunty
             {
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
                     return default;
-                Func<IDataReader, T> map = DrDispatcher.Resolve(reader, mapper, mode);
+                Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
                 return map(reader);
             }
             // Fallback for non-DbDataReader
             if (!reader.Read()) return default;
-            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, mapper, mode);
+            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
             return mapFallback(reader);
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<T> QuerySingleCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null, CancellationToken cancellationToken = default) where T : new()
+    private static async Task<T> QuerySingleCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        T? entity = await QuerySingleOrDefaultCoreAsync<T>(connection, sql, parameters, options, mode, mapper, cancellationToken).ConfigureAwait(false);
+        T? entity = await QuerySingleOrDefaultCoreAsync<T>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return entity ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
-    private static async Task<T?> QuerySingleOrDefaultCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null, CancellationToken cancellationToken = default) where T : new()
+    private static async Task<T?> QuerySingleOrDefaultCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
@@ -237,7 +237,7 @@ public static partial class Jaunty
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
                     return default;
 
-                Func<IDataReader, T> map = DrDispatcher.Resolve(reader, mapper, mode);
+                Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
                 T? entity = map(reader);
                 return await dbReader.ReadAsync(ct).ConfigureAwait(false)
                     ? throw new InvalidOperationException("Sequence contains more than one element")
@@ -245,11 +245,16 @@ public static partial class Jaunty
             }
             // Fallback for non-DbDataReader
             if (!reader.Read()) return default;
-            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, mapper, mode);
+            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
             T? entityFallback = mapFallback(reader);
             return reader.Read()
                 ? throw new InvalidOperationException("Sequence contains more than one element")
                 : entityFallback;
         }, cancellationToken).ConfigureAwait(false);
     }
+
+    //private static CommandOptions ToOptionsWithoutMapper<T>(this CommandOptions<T> options)
+    //{
+    //    return new CommandOptions(options.Transaction, options.CommandTimeout);
+    //}
 }

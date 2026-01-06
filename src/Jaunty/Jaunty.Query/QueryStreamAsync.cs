@@ -18,12 +18,12 @@ public static partial class Jaunty
         return QueryStreamCoreAsync<T>(connection, sql, parameters, default, MappingMode.Strict, null, cancellationToken);
     }
 
-    public static IAsyncEnumerable<T> QueryStreamAsync<T>(this DbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
+    public static IAsyncEnumerable<T> QueryStreamAsync<T>(this DbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return QueryStreamCoreAsync<T>(connection, sql, null, options, MappingMode.Strict, null, cancellationToken);
     }
 
-    public static IAsyncEnumerable<T> QueryStreamAsync<T>(this DbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
+    public static IAsyncEnumerable<T> QueryStreamAsync<T>(this DbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return QueryStreamCoreAsync<T>(connection, sql, parameters, options, MappingMode.Strict, null, cancellationToken);
     }
@@ -43,12 +43,12 @@ public static partial class Jaunty
         return QueryStreamCoreAsync<T>(connection, sql, parameters, default, MappingMode.Strict, null, cancellationToken);
     }
 
-    public static Task<IEnumerable<T>> QueryStreamAsync<T>(this DbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
+    public static Task<IEnumerable<T>> QueryStreamAsync<T>(this DbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return QueryStreamCoreAsync<T>(connection, sql, null, options, MappingMode.Strict, null, cancellationToken);
     }
 
-    public static Task<IEnumerable<T>> QueryStreamAsync<T>(this DbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
+    public static Task<IEnumerable<T>> QueryStreamAsync<T>(this DbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return QueryStreamCoreAsync<T>(connection, sql, parameters, options, MappingMode.Strict, null, cancellationToken);
     }

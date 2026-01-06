@@ -16,12 +16,12 @@ public static partial class Jaunty
         return await QueryFirstCoreAsync<T>(connection, sql, parameters, default, MappingMode.Strict, cancellationToken: cancellationToken);
     }
 
-    public static async Task<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
+    public static async Task<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return await QueryFirstCoreAsync<T>(connection, sql, null, options, MappingMode.Strict, cancellationToken: cancellationToken);
     }
 
-    public static async Task<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
+    public static async Task<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return await QueryFirstCoreAsync<T>(connection, sql, parameters, options, MappingMode.Strict, cancellationToken: cancellationToken);
     }

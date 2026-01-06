@@ -16,12 +16,12 @@ public static partial class Jaunty
         return QueryStreamCore<T>(connection, sql, parameters, default, MappingMode.Projection);
     }
 
-    public static IEnumerable<T> QueryPartialStream<T>(this IDbConnection connection, string sql, CommandOptions options) where T : new()
+    public static IEnumerable<T> QueryPartialStream<T>(this IDbConnection connection, string sql, CommandOptions<T> options) where T : new()
     {
         return QueryStreamCore<T>(connection, sql, null, options, MappingMode.Projection);
     }
 
-    public static IEnumerable<T> QueryPartialStream<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options) where T : new()
+    public static IEnumerable<T> QueryPartialStream<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options) where T : new()
     {
         return QueryStreamCore<T>(connection, sql, parameters, options, MappingMode.Projection);
     }
