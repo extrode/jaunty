@@ -25,9 +25,4 @@ public static partial class Jaunty
     {
         return QueryCoreAsync<T>(connection, sql, parameters, options, MappingMode.Strict, cancellationToken);
     }
-
-    public static Task<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, object param1, object param2, params object[] rest) where T : new()
-    {
-        return QueryCoreAsync<T>(connection, sql, CombineParams(param1, param2, rest), default, MappingMode.Strict, default);
-    }
 }

@@ -23,9 +23,4 @@ public static partial class Jaunty
     {
         return QueryScalarCore<T>(connection, sql, parameters, options);
     }
-
-    public static T QueryScalar<T>(this IDbConnection connection, string sql, object param1, object param2, params object[] rest)
-    {
-        return QueryScalarCore<T>(connection, sql, CombineParams(param1, param2, rest), default);
-    }
 }

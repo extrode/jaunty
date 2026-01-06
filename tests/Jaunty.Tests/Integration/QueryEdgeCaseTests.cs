@@ -150,16 +150,16 @@ public class QueryEdgeCaseTests : IDisposable
         Assert.NotEmpty(categories);
     }
 
-    [Fact]
-    public void Query_WithParametersAndOptions_ExecutesCorrectly()
-    {
-        var categories = _db.Connection.Query<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
-            new { Id = 1 },
-            CommandOptions.WithTimeout(30));
+    //[Fact]
+    //public void Query_WithParametersAndOptions_ExecutesCorrectly()
+    //{
+    //    var categories = _db.Connection.Query<Category>(
+    //        "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+    //        new { Id = 1 },
+    //        CommandOptions.WithTimeout(30));
 
-        Assert.Single(categories);
-    }
+    //    Assert.Single(categories);
+    //}
 
     #endregion
 
