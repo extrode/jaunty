@@ -108,4 +108,37 @@ public static partial class Jaunty
                 connection.Close();
         }
     }
+
+    private static T QueryFirstCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
+    {
+        T? entity = QueryFirstOrDefaultCore<T>(connection, sql, parameters, options, mode, mapper);
+        return entity is null ? throw new InvalidOperationException("Sequence contains no elements") : entity;
+    }
+
+    private static T? QueryFirstOrDefaultCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read()) return default;
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, mapper, mode);
+            return map(reader);
+        });
+    }
+
+    private static T QuerySingleCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
+    {
+        T? entity = QuerySingleOrDefaultCore<T>(connection, sql, parameters, options, mode, mapper);
+        return entity is null ? throw new InvalidOperationException("Sequence contains no elements") : entity;
+    }
+
+    private static T? QuerySingleOrDefaultCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, Func<IDataReader, T>? mapper = null) where T : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read()) return default;
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, mapper, mode);
+            T entity = map(reader);
+            return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : entity;
+        });
+    }
 }
