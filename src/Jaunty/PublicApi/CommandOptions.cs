@@ -1,6 +1,6 @@
 using System.Data;
 
-namespace Jaunty.PublicApi;
+namespace Jaunty;
 
 /// <summary>
 /// Options for command execution.

@@ -4,7 +4,6 @@ using System.Data.Common;
 using Jaunty.InternalApi;
 using Jaunty.InternalApi.Enums;
 using Jaunty.InternalApi.Parameters;
-using Jaunty.PublicApi;
 
 namespace Jaunty;
 

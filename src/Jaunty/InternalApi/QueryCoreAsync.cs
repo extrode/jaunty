@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using Jaunty.InternalApi;
 using Jaunty.InternalApi.Enums;
 using Jaunty.InternalApi.Parameters;
-using Jaunty.PublicApi;
 
 namespace Jaunty;
 
@@ -173,8 +172,7 @@ public static partial class Jaunty
         {
             if (wasClosed && connection.State != ConnectionState.Closed)
 #if NET8_0_OR_GREATER
-                if (connection is DbConnection dbConn)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+                    await connection.CloseAsync().ConfigureAwait(false);
 #else
                     connection.Close();
 #endif

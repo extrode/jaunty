@@ -8,9 +8,20 @@
 
 	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<LangVersion>latest</LangVersion>
-		<!--<DefineConstants>NETSTANDARD2_0</DefineConstants>-->
+		<DefineConstants>AsyncInterfaces</DefineConstants>
+		<!--<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.1" />-->
 	</PropertyGroup>
-	
+
+	<Choose>
+		<When Condition="$(DefineConstants.Contains('AsyncInterfaces'))">
+			<ItemGroup>
+				<PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
+					<Version>10.0.1</Version>
+				</PackageReference>
+			</ItemGroup>
+		</When>
+	</Choose>
+
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
