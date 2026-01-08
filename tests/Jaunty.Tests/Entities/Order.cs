@@ -1,4 +1,4 @@
-﻿namespace Jaunty.Tests.Entities;
+namespace Jaunty.Tests.Entities;
 
 public class Order
 {

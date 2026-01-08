@@ -1,4 +1,4 @@
-﻿namespace Jaunty.PublicApi.Attributes;
+namespace Jaunty.PublicApi.Attributes;
 
 /// <summary>
 /// Specifies how the database generates values for a property.
