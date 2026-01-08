@@ -4,23 +4,26 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
+    extension(IDbConnection connection)
     {
-        return QueryScalarCoreAsync<T>(connection, sql, null, default, cancellationToken);
-    }
+        public Task<T> QueryScalarAsync<T>(string sql, CancellationToken cancellationToken = default)
+        {
+            return QueryScalarCoreAsync<T>(connection, sql, null, default, cancellationToken);
+        }
 
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
-    {
-        return QueryScalarCoreAsync<T>(connection, sql, parameters, default, cancellationToken);
-    }
+        public Task<T> QueryScalarAsync<T>(string sql, object parameters, CancellationToken cancellationToken = default)
+        {
+            return QueryScalarCoreAsync<T>(connection, sql, parameters, default, cancellationToken);
+        }
 
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)
-    {
-        return QueryScalarCoreAsync<T>(connection, sql, null, options, cancellationToken);
-    }
+        public Task<T> QueryScalarAsync<T>(string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)
+        {
+            return QueryScalarCoreAsync<T>(connection, sql, null, options, cancellationToken);
+        }
 
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)
-    {
-        return QueryScalarCoreAsync<T>(connection, sql, parameters, options, cancellationToken);
+        public Task<T> QueryScalarAsync<T>(string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)
+        {
+            return QueryScalarCoreAsync<T>(connection, sql, parameters, options, cancellationToken);
+        }
     }
 }

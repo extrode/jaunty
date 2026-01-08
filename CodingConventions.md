@@ -324,13 +324,13 @@ using Jaunty.InternalApi.Enums;
 
 ## Action Items
 
-- [ ] Standardize extension method syntax (either C# 13 or traditional)
-- [ ] Add CancellationToken to `QueryFirstOrDefaultAsync` and `QuerySingleOrDefaultAsync`
-- [ ] Add CancellationToken to all GridReader async methods
-- [ ] Fix `JauntyConfig.Reset()` to include `_schemaNameResolver`
-- [ ] Remove unused `throwOnEmpty` parameter from `ReadSingleOrDefaultCore`
-- [ ] Consolidate or deprecate `ExecuteScalar` (duplicate of `QueryScalar`)
+- [x] Standardize extension method syntax (C# 13 extension syntax)
+- [x] Add CancellationToken to `QueryFirstOrDefaultAsync` and `QuerySingleOrDefaultAsync`
+- [x] Add CancellationToken to all GridReader async methods
+- [x] Fix `JauntyConfig.Reset()` to include `_schemaNameResolver`
+- [x] Remove unused `throwOnEmpty` parameter from `ReadSingleOrDefaultCore`
+- [x] Consolidate or deprecate `ExecuteScalar` (marked with `[Obsolete]`)
 - [ ] Add XML documentation to all public APIs
 - [ ] Remove BOM from all files
-- [ ] Convert `IMapped.cs` and `IEntity.cs` to file-scoped namespaces
-- [ ] Standardize using statements across all files
+- [x] Convert `IMapped.cs` and `IEntity.cs` to file-scoped namespaces
+- [x] Standardize using statements across all files

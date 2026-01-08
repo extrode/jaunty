@@ -1,13 +1,12 @@
-﻿using System.Data;
+using System.Data;
 
-namespace Jaunty.PublicApi.Interfaces
+namespace Jaunty.PublicApi.Interfaces;
+
+public interface IMapped<T> where T : IMapped<T>, new()
 {
-    public interface IMapped<T> where T : IMapped<T>, new()
-    {
 #if NET8_0_OR_GREATER
-        static abstract T ReadEntity(IDataReader reader);
+    static abstract T ReadEntity(IDataReader reader);
 #else
-        T ReadEntity(IDataReader reader);
+    T ReadEntity(IDataReader reader);
 #endif
-    }
 }
