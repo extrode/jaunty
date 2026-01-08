@@ -1,7 +1,5 @@
 using System.Data;
 
-using Jaunty.PublicApi;
-
 namespace Jaunty;
 
 public static partial class Jaunty

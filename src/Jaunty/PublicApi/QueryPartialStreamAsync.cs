@@ -1,8 +1,6 @@
-using System.Data;
 using System.Data.Common;
 
 using Jaunty.InternalApi.Enums;
-using Jaunty.PublicApi;
 
 namespace Jaunty;
 
