@@ -331,6 +331,6 @@ using Jaunty.InternalApi.Enums;
 - [x] Remove unused `throwOnEmpty` parameter from `ReadSingleOrDefaultCore`
 - [x] Consolidate or deprecate `ExecuteScalar` (marked with `[Obsolete]`)
 - [ ] Add XML documentation to all public APIs
-- [ ] Remove BOM from all files
+- [x] Remove BOM from all files (added `.editorconfig` to enforce UTF-8 without BOM)
 - [x] Convert `IMapped.cs` and `IEntity.cs` to file-scoped namespaces
 - [x] Standardize using statements across all files

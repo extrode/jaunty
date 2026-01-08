@@ -1,4 +1,4 @@
-﻿using Jaunty.Tests.Entities;
+using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 
 namespace Jaunty.Tests.Integration;

@@ -1,4 +1,4 @@
-﻿namespace Jaunty.PublicApi.Attributes;
+namespace Jaunty.PublicApi.Attributes;
 
 /// <summary>
 /// Marks a property as the primary key.
