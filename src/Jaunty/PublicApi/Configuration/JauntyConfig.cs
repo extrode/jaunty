@@ -41,6 +41,7 @@ public static class JauntyConfig
     /// </summary>
     public static void Reset()
     {
+        _schemaNameResolver = null;
         _tableNameResolver = null;
         _columnNameResolver = null;
     }

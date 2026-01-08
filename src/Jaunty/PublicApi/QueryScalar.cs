@@ -1,28 +1,29 @@
 ﻿using System.Data;
 
-using Jaunty.PublicApi;
-
 namespace Jaunty;
 
 public static partial class Jaunty
 {
-    public static T QueryScalar<T>(this IDbConnection connection, string sql)
+    extension(IDbConnection connection)
     {
-        return QueryScalarCore<T>(connection, sql, null, default);
-    }
+        public T QueryScalar<T>(string sql)
+        {
+            return QueryScalarCore<T>(connection, sql, null, default);
+        }
 
-    public static T QueryScalar<T>(this IDbConnection connection, string sql, object parameters)
-    {
-        return QueryScalarCore<T>(connection, sql, parameters, default);
-    }
+        public T QueryScalar<T>(string sql, object parameters)
+        {
+            return QueryScalarCore<T>(connection, sql, parameters, default);
+        }
 
-    public static T QueryScalar<T>(this IDbConnection connection, string sql, CommandOptions<T> options)
-    {
-        return QueryScalarCore<T>(connection, sql, null, options);
-    }
+        public T QueryScalar<T>(string sql, CommandOptions<T> options)
+        {
+            return QueryScalarCore<T>(connection, sql, null, options);
+        }
 
-    public static T QueryScalar<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options)
-    {
-        return QueryScalarCore<T>(connection, sql, parameters, options);
+        public T QueryScalar<T>(string sql, object parameters, CommandOptions<T> options)
+        {
+            return QueryScalarCore<T>(connection, sql, parameters, options);
+        }
     }
 }

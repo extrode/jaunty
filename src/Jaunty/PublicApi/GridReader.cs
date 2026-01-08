@@ -34,13 +34,13 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
 
     public T ReadSingle<T>(CommandOptions<T> options = default) where T : new()
     {
-        var result = ReadSingleOrDefaultCore(options, MappingMode.Strict, true);
+        var result = ReadSingleOrDefaultCore(options, MappingMode.Strict);
         return result ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
     public T? ReadSingleOrDefault<T>(CommandOptions<T> options = default) where T : new()
     {
-        return ReadSingleOrDefaultCore(options, MappingMode.Strict, false);
+        return ReadSingleOrDefaultCore(options, MappingMode.Strict);
     }
 
     public T? ReadScalar<T>(CommandOptions options = default)
@@ -105,7 +105,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         }
     }
 
-    private T? ReadSingleOrDefaultCore<T>(CommandOptions<T> options, MappingMode mode, bool throwOnEmpty) where T : new()
+    private T? ReadSingleOrDefaultCore<T>(CommandOptions<T> options, MappingMode mode) where T : new()
     {
         EnsureNotConsumed();
         try
@@ -141,29 +141,29 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         }
     }
 
-    public Task<List<T>> ReadAsync<T>(CommandOptions<T> options = default) where T : new()
-        => ReadAsyncCore(options, MappingMode.Strict);
+    public Task<List<T>> ReadAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+        => ReadAsyncCore(options, MappingMode.Strict, cancellationToken);
 
-    public Task<List<T>> ReadPartialAsync<T>(CommandOptions<T> options = default) where T : new()
-        => ReadAsyncCore(options, MappingMode.Projection);
+    public Task<List<T>> ReadPartialAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+        => ReadAsyncCore(options, MappingMode.Projection, cancellationToken);
 
-    public async Task<T> ReadFirstAsync<T>(CommandOptions<T> options = default) where T : new()
+    public async Task<T> ReadFirstAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        var result = await ReadFirstOrDefaultAsyncCore(options, MappingMode.Strict);
+        var result = await ReadFirstOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken);
         return result ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
-    public Task<T?> ReadFirstOrDefaultAsync<T>(CommandOptions<T> options = default) where T : new()
-        => ReadFirstOrDefaultAsyncCore(options, MappingMode.Strict);
+    public Task<T?> ReadFirstOrDefaultAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+        => ReadFirstOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken);
 
-    public async Task<T> ReadSingleAsync<T>(CommandOptions<T> options = default) where T : new()
+    public async Task<T> ReadSingleAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        var result = await ReadSingleOrDefaultAsyncCore(options, MappingMode.Strict);
+        var result = await ReadSingleOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken);
         return result ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
-    public Task<T?> ReadSingleOrDefaultAsync<T>(CommandOptions<T> options = default) where T : new()
-        => ReadSingleOrDefaultAsyncCore(options, MappingMode.Strict);
+    public Task<T?> ReadSingleOrDefaultAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+        => ReadSingleOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken);
 
     public async Task<T?> ReadScalarAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default)
     {
@@ -197,7 +197,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         await AdvanceAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<List<T>> ReadAsyncCore<T>(CommandOptions<T> options, MappingMode mode) where T : new()
+    private async Task<List<T>> ReadAsyncCore<T>(CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken) where T : new()
     {
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
@@ -205,47 +205,47 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         var results = new List<T>();
         var map = DrDispatcher.Resolve(reader, options, mode);
 
-        while (await dbReader.ReadAsync().ConfigureAwait(false))
+        while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
             results.Add(map(reader));
-        await AdvanceAsync().ConfigureAwait(false);
+        await AdvanceAsync(cancellationToken).ConfigureAwait(false);
         return results;
     }
 
-    private async Task<T?> ReadFirstOrDefaultAsyncCore<T>(CommandOptions<T> options, MappingMode mode) where T : new()
+    private async Task<T?> ReadFirstOrDefaultAsyncCore<T>(CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken) where T : new()
     {
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
         try
         {
-            if (!await dbReader.ReadAsync().ConfigureAwait(false)) return default;
+            if (!await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false)) return default;
             var map = DrDispatcher.Resolve(reader, options, mode);
             return map(reader);
         }
         finally
         {
-            await AdvanceAsync().ConfigureAwait(false);
+            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private async Task<T?> ReadSingleOrDefaultAsyncCore<T>(CommandOptions<T> options, MappingMode mode) where T : new()
+    private async Task<T?> ReadSingleOrDefaultAsyncCore<T>(CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken) where T : new()
     {
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
         try
         {
-            if (!await dbReader.ReadAsync().ConfigureAwait(false)) return default;
+            if (!await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false)) return default;
             var map = DrDispatcher.Resolve(reader, options, mode);
             T entity = map(reader);
 
-            return await dbReader.ReadAsync().ConfigureAwait(false)
+            return await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false)
                 ? throw new InvalidOperationException("Sequence contains more than one element")
                 : entity;
         }
         finally
         {
-            await AdvanceAsync().ConfigureAwait(false);
+            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 
