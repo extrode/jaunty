@@ -331,13 +331,9 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     {
         GC.SuppressFinalize(this);
         if (reader is IAsyncDisposable asyncReader)
-        {
             await asyncReader.DisposeAsync().ConfigureAwait(false);
-        }
         else
-        {
             reader.Dispose();
-        }
 
         if (closeConnection && connection.State != ConnectionState.Closed)
         {

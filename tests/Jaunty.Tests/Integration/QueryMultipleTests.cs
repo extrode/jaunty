@@ -26,16 +26,16 @@ public class QueryMultipleTests : IDisposable
     public void QueryMultiple_ReadsMultipleResultSets_Buffered()
     {
         var sql = @"
-        SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 3;
-        SELECT customer_id, company_name FROM customers ORDER BY customer_id LIMIT 2;";
+        SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;
+        SELECT customer_id AS CustomerId, company_name AS CompanyName FROM customers ORDER BY customer_id LIMIT 2;";
 
         List<Order>? orders = null;
         List<Customer>? customers = null;
 
         _db.Connection.QueryMultiple(sql, reader =>
         {
-            orders = [.. reader.Read<Order>()];
-            customers = [.. reader.Read<Customer>()];
+            orders = [.. reader.ReadPartial<Order>()];
+            customers = [.. reader.ReadPartial<Customer>()];
         });
 
         _db.Connection.QueryMultiple(sql);
@@ -49,7 +49,7 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadPartial_MapsSubsetOfColumns()
     {
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 5;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         List<OrderSummary>? orders = null;
 
@@ -70,13 +70,13 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadFirst_ReturnsFirstRow()
     {
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 3;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         Order? order = null;
 
         _db.Connection.QueryMultiple(sql, reader =>
         {
-            order = reader.ReadFirst<Order>();
+            order = reader.ReadPartialFirst<Order>();
         });
 
         Assert.NotNull(order);
@@ -86,13 +86,13 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadFirst_NoRows_Throws()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
             _db.Connection.QueryMultiple(sql, reader =>
             {
-                reader.ReadFirst<Order>();
+                reader.ReadPartialFirst<Order>();
             });
         });
     }
@@ -100,13 +100,13 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadFirstOrDefault_ReturnsFirstRow()
     {
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 3;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         Order? order = null;
 
         _db.Connection.QueryMultiple(sql, reader =>
         {
-            order = reader.ReadFirstOrDefault<Order>();
+            order = reader.ReadPartialFirstOrDefault<Order>();
         });
 
         Assert.NotNull(order);
@@ -115,13 +115,13 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadFirstOrDefault_NoRows_ReturnsNull()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Order? order = null;
 
         _db.Connection.QueryMultiple(sql, reader =>
         {
-            order = reader.ReadFirstOrDefault<Order>();
+            order = reader.ReadPartialFirstOrDefault<Order>();
         });
 
         Assert.Null(order);
@@ -194,13 +194,13 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadSingle_ReturnsSingleRow()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = 10248;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         Order? order = null;
 
         _db.Connection.QueryMultiple(sql, reader =>
         {
-            order = reader.ReadSingle<Order>();
+            order = reader.ReadPartialSingle<Order>();
         });
 
         Assert.NotNull(order);
@@ -210,13 +210,13 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadSingle_NoRows_Throws()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
             _db.Connection.QueryMultiple(sql, reader =>
             {
-                reader.ReadSingle<Order>();
+                reader.ReadPartialSingle<Order>();
             });
         });
     }
@@ -224,13 +224,13 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadSingle_MultipleRows_Throws()
     {
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 3;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
             _db.Connection.QueryMultiple(sql, reader =>
             {
-                reader.ReadSingle<Order>();
+                reader.ReadPartialSingle<Order>();
             });
         });
     }
@@ -238,13 +238,13 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadSingleOrDefault_ReturnsSingleRow()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = 10248;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         Order? order = null;
 
         _db.Connection.QueryMultiple(sql, reader =>
         {
-            order = reader.ReadSingleOrDefault<Order>();
+            order = reader.ReadPartialSingleOrDefault<Order>();
         });
 
         Assert.NotNull(order);
@@ -254,13 +254,13 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadSingleOrDefault_NoRows_ReturnsNull()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Order? order = null;
 
         _db.Connection.QueryMultiple(sql, reader =>
         {
-            order = reader.ReadSingleOrDefault<Order>();
+            order = reader.ReadPartialSingleOrDefault<Order>();
         });
 
         Assert.Null(order);
@@ -369,13 +369,13 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadStream_StreamsResults()
     {
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 5;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         var orders = new List<Order>();
 
         _db.Connection.QueryMultiple(sql, reader =>
         {
-            foreach (var order in reader.ReadStream<Order>())
+            foreach (var order in reader.ReadPartialStream<Order>())
             {
                 orders.Add(order);
             }
@@ -411,16 +411,16 @@ public class QueryMultipleTests : IDisposable
     {
         var conn = _db.Connection! as DbConnection;
         var sql = @"
-        SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 3;
-        SELECT customer_id, company_name FROM customers ORDER BY customer_id LIMIT 2;";
+        SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;
+        SELECT customer_id AS CustomerId, company_name AS CompanyName FROM customers ORDER BY customer_id LIMIT 2;";
 
         List<Order>? orders = null;
         List<Customer>? customers = null;
 
         await conn!.QueryMultipleAsync(sql, async reader =>
         {
-            orders = await reader.ReadAsync<Order>();
-            customers = await reader.ReadAsync<Customer>();
+            orders = await reader.ReadPartialAsync<Order>();
+            customers = await reader.ReadPartialAsync<Customer>();
         });
 
         Assert.NotNull(orders);
@@ -450,13 +450,13 @@ public class QueryMultipleTests : IDisposable
     public async Task ReadFirstAsync_ReturnsFirstRow()
     {
         var conn = _db.Connection! as DbConnection;
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 3;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         Order? order = null;
 
         await conn!.QueryMultipleAsync(sql, async reader =>
         {
-            order = await reader.ReadFirstAsync<Order>();
+            order = await reader.ReadPartialFirstAsync<Order>();
         });
 
         Assert.NotNull(order);
@@ -466,13 +466,13 @@ public class QueryMultipleTests : IDisposable
     public async Task ReadFirstOrDefaultAsync_NoRows_ReturnsNull()
     {
         var conn = _db.Connection! as DbConnection;
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Order? order = null;
 
         await conn!.QueryMultipleAsync(sql, async reader =>
         {
-            order = await reader.ReadFirstOrDefaultAsync<Order>();
+            order = await reader.ReadPartialFirstOrDefaultAsync<Order>();
         });
 
         Assert.Null(order);
@@ -515,13 +515,13 @@ public class QueryMultipleTests : IDisposable
     public async Task ReadSingleAsync_ReturnsSingleRow()
     {
         var conn = _db.Connection! as DbConnection;
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = 10248;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         Order? order = null;
 
         await conn!.QueryMultipleAsync(sql, async reader =>
         {
-            order = await reader.ReadSingleAsync<Order>();
+            order = await reader.ReadPartialSingleAsync<Order>();
         });
 
         Assert.NotNull(order);
@@ -532,13 +532,13 @@ public class QueryMultipleTests : IDisposable
     public async Task ReadSingleOrDefaultAsync_NoRows_ReturnsNull()
     {
         var conn = _db.Connection! as DbConnection;
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Order? order = null;
 
         await conn!.QueryMultipleAsync(sql, async reader =>
         {
-            order = await reader.ReadSingleOrDefaultAsync<Order>();
+            order = await reader.ReadPartialSingleOrDefaultAsync<Order>();
         });
 
         Assert.Null(order);
@@ -598,13 +598,13 @@ public class QueryMultipleTests : IDisposable
     public async Task ReadStreamAsync_StreamsResults()
     {
         var conn = _db.Connection! as DbConnection;
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 5;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         var orders = new List<Order>();
 
         await conn!.QueryMultipleAsync(sql, async reader =>
         {
-            await foreach (var order in reader.ReadStreamAsync<Order>())
+            await foreach (var order in reader.ReadPartialStreamAsync<Order>())
             {
                 orders.Add(order);
             }
@@ -641,13 +641,13 @@ public class QueryMultipleTests : IDisposable
     {
         var conn = _db.Connection! as DbConnection;
         using var cts = new CancellationTokenSource();
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 3;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         List<Order>? orders = null;
 
         await conn!.QueryMultipleAsync(sql, async reader =>
         {
-            orders = await reader.ReadAsync<Order>(cancellationToken: cts.Token);
+            orders = await reader.ReadPartialAsync<Order>(cancellationToken: cts.Token);
         }, cancellationToken: cts.Token);
 
         Assert.NotNull(orders);
@@ -659,13 +659,13 @@ public class QueryMultipleTests : IDisposable
     {
         var conn = _db.Connection! as DbConnection;
         using var cts = new CancellationTokenSource();
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 3;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         Order? order = null;
 
         await conn!.QueryMultipleAsync(sql, async reader =>
         {
-            order = await reader.ReadFirstAsync<Order>(cancellationToken: cts.Token);
+            order = await reader.ReadPartialFirstAsync<Order>(cancellationToken: cts.Token);
         }, cancellationToken: cts.Token);
 
         Assert.NotNull(order);
@@ -676,13 +676,13 @@ public class QueryMultipleTests : IDisposable
     {
         var conn = _db.Connection! as DbConnection;
         using var cts = new CancellationTokenSource();
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = 10248;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         Order? order = null;
 
         await conn!.QueryMultipleAsync(sql, async reader =>
         {
-            order = await reader.ReadSingleAsync<Order>(cancellationToken: cts.Token);
+            order = await reader.ReadPartialSingleAsync<Order>(cancellationToken: cts.Token);
         }, cancellationToken: cts.Token);
 
         Assert.NotNull(order);
@@ -714,14 +714,14 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void Read_AfterAllConsumed_Throws()
     {
-        var sql = "SELECT order_id, customer_id FROM orders LIMIT 1;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders LIMIT 1;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
             _db.Connection.QueryMultiple(sql, reader =>
             {
-                _ = reader.Read<Order>();
-                _ = reader.Read<Order>(); // Should throw - already consumed
+                _ = reader.ReadPartial<Order>();
+                _ = reader.ReadPartial<Order>(); // Should throw - already consumed
             });
         });
     }
