@@ -52,7 +52,7 @@ public class QueryScalarTests : IDisposable
     {
         var name = _db.Connection.QueryScalar<string>(
             "SELECT product_name FROM products WHERE product_id = @Id",
-            1);
+            new { id = 1 });
 
         Assert.False(string.IsNullOrEmpty(name));
     }
@@ -62,7 +62,7 @@ public class QueryScalarTests : IDisposable
     {
         var result = _db.Connection.QueryScalar<long>(
             "SELECT product_id FROM products WHERE product_id = @Id",
-            -999);
+            new { id = -999 });
 
         Assert.Equal(0, result);
     }

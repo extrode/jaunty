@@ -27,30 +27,27 @@ public static partial class Jaunty
 
         var wasClosed = connection.State == ConnectionState.Closed;
 
-        try
-        {
-            if (wasClosed)
-                connection.Open();
+        if (wasClosed)
+            connection.Open();
 
-            var command = connection.CreateCommand();
-            command.CommandText = sql;
+        var command = connection.CreateCommand();
+        command.CommandText = sql;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+        if (options.Transaction is DbTransaction dbTransaction)
+            command.Transaction = dbTransaction;
 
-            if (options.CommandTimeout.HasValue)
-                command.CommandTimeout = options.CommandTimeout.Value;
+        if (options.CommandTimeout.HasValue)
+            command.CommandTimeout = options.CommandTimeout.Value;
 
-            if (parameters is not null)
-                ParameterBinder.Bind(command, parameters);
+        if (parameters is not null)
+            ParameterBinder.Bind(command, parameters);
 
-            var reader = command.ExecuteReader();
-            return new GridReader(reader, connection, wasClosed);
-        }
-        finally
-        {
-            if (wasClosed && connection.State != ConnectionState.Closed)
-                connection.Close();
-        }
+        var reader = command.ExecuteReader();
+        return new GridReader(reader, connection, wasClosed);
+        //finally
+        //{
+        //    if (wasClosed && connection.State != ConnectionState.Closed)
+        //        connection.Close();
+        //}
     }
 }

@@ -44,20 +44,20 @@ public class QueryTests : IDisposable
     {
         var categories = _db.Connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
-            1);
+            new {id = 1});
 
         Assert.Single(categories);
     }
 
-    //[Fact]
-    //public void Query_WithMultiplePositionalParams_FiltersCorrectly()
-    //{
-    //    var categories = _db.Connection.Query<Category>(
-    //        "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id >= @Min AND category_id <= @Max",
-    //        1, 3);
+    [Fact]
+    public void Query_WithMultiplePositionalParams_FiltersCorrectly()
+    {
+        var categories = _db.Connection.Query<Category>(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id >= @Min AND category_id <= @Max",
+            new { Min = 1, Max = 3 });
 
-    //    Assert.Equal(3, categories.Count);
-    //}
+        Assert.Equal(3, categories.Count);
+    }
 
     [Fact]
     public void Query_StrictMode_MissingColumn_Throws()
@@ -96,7 +96,7 @@ public class QueryTests : IDisposable
     {
         var categories = _db.Connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
-            -999);
+            new { id = -999 });
 
         Assert.Empty(categories);
     }
@@ -120,7 +120,7 @@ public class QueryTests : IDisposable
     {
         var categories = _db.Connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id OR category_id = @Id",
-            1);
+            new { Id = 1 });
 
         Assert.Single(categories);
     }
