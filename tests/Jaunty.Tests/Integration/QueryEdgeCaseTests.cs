@@ -58,7 +58,7 @@ public class QueryEdgeCaseTests : IDisposable
     {
         var results = _db.Connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
-            -99999);
+            new { @id = -99999 });
 
         Assert.Empty(results);
     }
@@ -99,7 +99,7 @@ public class QueryEdgeCaseTests : IDisposable
               contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
               postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
               FROM customers WHERE company_name LIKE @Name",
-            "%'%");
+            new { name = "%'%" });
 
         // Just verify it doesn't throw
         Assert.NotNull(customers);
@@ -173,7 +173,7 @@ public class QueryEdgeCaseTests : IDisposable
         // This tests the case-insensitive matching in MetadataCache
         var categories = _db.Connection.Query<Category>(
             "SELECT category_id AS categoryid, category_name AS categoryname, description AS DESCRIPTION FROM categories WHERE category_id = @Id",
-            1);
+             new { category_id = 1 });
 
         Assert.Single(categories);
         Assert.False(string.IsNullOrEmpty(categories[0].CategoryName));

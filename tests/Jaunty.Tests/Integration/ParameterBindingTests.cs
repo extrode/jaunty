@@ -33,7 +33,7 @@ public class ParameterBindingTests : IDisposable
     {
         var count = _db.Connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
-            1);
+            new { CategoryId = 1 });
 
         Assert.True(count >= 0);
     }
@@ -53,7 +53,7 @@ public class ParameterBindingTests : IDisposable
     {
         var count = _db.Connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId AND supplier_id = @SupplierId",
-            new object[] { 1, 1 });
+            new { CategoryId = 1, SupplierId = 1 });
 
         Assert.True(count >= 0);
     }
@@ -74,7 +74,7 @@ public class ParameterBindingTests : IDisposable
     {
         var count = _db.Connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM products WHERE product_name LIKE @Name",
-            "%Chai%");
+            new { Name = "%Chai%" });
 
         Assert.True(count >= 0);
     }

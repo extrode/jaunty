@@ -113,7 +113,7 @@ public class MappingModeTests : IDisposable
     {
         var summaries = _db.Connection.QueryPartial<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @Id",
-            1);
+            new { id = 1 });
 
         Assert.NotEmpty(summaries);
     }
