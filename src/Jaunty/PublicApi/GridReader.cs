@@ -205,7 +205,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     public Task<T?> ReadPartialSingleOrDefaultAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
         => ReadSingleOrDefaultAsyncCore(options, MappingMode.Projection, cancellationToken);
 
-    public async Task<T?> ReadScalarAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default)
+    public async Task<T?> ReadScalarAsync<T>(CommandOptions options = default, CancellationToken cancellationToken = default)
     {
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
