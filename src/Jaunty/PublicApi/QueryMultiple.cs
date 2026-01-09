@@ -33,7 +33,7 @@ public static partial class Jaunty
 #else
             if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
-            var gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
+            using var gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
             reader(gridReader);
         }
 
@@ -44,7 +44,7 @@ public static partial class Jaunty
 #else
             if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
-            var gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
+            using var gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
             return reader(gridReader);
         }
     }

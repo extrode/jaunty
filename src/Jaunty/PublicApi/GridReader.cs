@@ -213,7 +213,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         try
         {
             T? result = default;
-            if (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false) 
+            if (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false)
                 && !await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
                 result = await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
             return result;
