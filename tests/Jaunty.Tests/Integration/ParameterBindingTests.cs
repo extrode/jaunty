@@ -64,9 +64,9 @@ public class ParameterBindingTests : IDisposable
         var ex = Assert.Throws<ArgumentException>(() =>
             _db.Connection.QueryScalar<long>(
                 "SELECT COUNT(*) FROM products WHERE category_id = @A AND supplier_id = @B AND discontinued = @C",
-                new object[] { 1, 2 })); // Only 2 values for 3 parameters
+                new { A = 1, B = 2 })); // Missing C parameter
 
-        Assert.Contains("mismatch", ex.Message.ToLower());
+        Assert.Contains("@C", ex.Message);
     }
 
     [Fact]

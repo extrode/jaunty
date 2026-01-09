@@ -70,7 +70,7 @@ public class PositionalParameterTests : IDisposable
     {
         var count = _db.Connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM orders WHERE order_date > @Date",
-            new { order_date = new DateTime(1997, 6, 1) });
+            new { Date = new DateTime(1997, 6, 1) });
 
         Assert.True(count > 0);
     }
@@ -138,7 +138,7 @@ public class PositionalParameterTests : IDisposable
     {
         var count = _db.Connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM products WHERE category_id = @Cat AND supplier_id = @Sup",
-            new { category_id = 1, supplier_id = 1 });
+            new { Cat = 1, Sup = 1 });
 
         Assert.True(count >= 0);
     }
@@ -178,10 +178,10 @@ public class PositionalParameterTests : IDisposable
         var ex = Assert.Throws<ArgumentException>(() =>
             _db.Connection.QueryScalar<long>(
                 "SELECT COUNT(*) FROM products WHERE category_id = @A AND supplier_id = @B AND discontinued = @C",
-                new { category_id = 1, supplier_id = 2 }));
+                new { A = 1, B = 2 }));
 
-        Assert.Contains("3", ex.Message); // Expected 3 parameters
-        Assert.Contains("2", ex.Message); // Got 2 values
+        // Error should indicate missing parameter C
+        Assert.Contains("@C", ex.Message);
     }
 
     //[Fact]

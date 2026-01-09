@@ -123,20 +123,21 @@ public class ErrorHandlingTests : IDisposable
         var ex = Assert.Throws<ArgumentException>(() =>
             _db.Connection.Query<Category>(
                 "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id AND category_name = @Name",
-                new object[] { 1 })); // Missing second parameter
+                new { Id = 1 })); // Missing Name parameter
 
-        Assert.Contains("mismatch", ex.Message.ToLower());
+        Assert.Contains("@Name", ex.Message);
     }
 
     [Fact]
-    public void Query_ExtraParameter_ThrowsParameterCountException()
+    public void Query_ExtraParameter_Throws()
     {
+        // Extra parameters in the anonymous object cause an error
         var ex = Assert.Throws<ArgumentException>(() =>
             _db.Connection.Query<Category>(
                 "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
-                new object[] { 1, 2, 3 })); // Too many parameters
+                new { Id = 1, Extra1 = 2, Extra2 = 3 }));
 
-        Assert.Contains("mismatch", ex.Message.ToLower());
+        Assert.Contains("Unused parameter", ex.Message);
     }
 
     #endregion
