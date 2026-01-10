@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examples - Jaunty</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-logo">
+                <a href="./index.html" class="navbar-logo-link">
+                    <span class="logo-text">Jaunty</span>
+                </a>
+            </div>
+            <nav class="navbar-nav">
+                <ul class="navbar-nav-list">
+                    <li class="navbar-nav-item">
+                        <a href="./index.html" class="navbar-nav-link">Home</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="./api-reference.html" class="navbar-nav-link">API Reference</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="./examples.html" class="navbar-nav-link">Examples</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="./configuration.html" class="navbar-nav-link">Configuration</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="main-wrapper">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="index.html" class="sidebar-nav-link">Introduction</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="api-reference.html" class="sidebar-nav-link">API Reference</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="examples.html" class="sidebar-nav-link active">Examples</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="configuration.html" class="sidebar-nav-link">Configuration</a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content-wrapper">
+        <section class="section">
+            <div class="container">
+                <h1 class="section-title">Examples</h1>
+                
+                <nav class="table-of-contents">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#basic-queries">Basic Queries</a></li>
+                        <li><a href="#parameter-binding">Parameter Binding</a></li>
+                        <li><a href="#async-operations">Async Operations</a></li>
+                        <li><a href="#transactions">Transactions</a></li>
+                        <li><a href="#multiple-results">Multiple Results</a></li>
+                        <li><a href="#streaming">Streaming</a></li>
+                        <li><a href="#mapping-modes">Mapping Modes</a></li>
+                        <li><a href="#error-handling">Error Handling</a></li>
+                        <li><a href="#advanced-scenarios">Advanced Scenarios</a></li>
+                    </ul>
+                </nav>
+
+                <article id="basic-queries" class="example-section">
+                    <h2>Basic Queries</h2>
+                    
+                    <section class="example">
+                        <h3>Simple Query</h3>
+                        <p>Execute a basic query with strict mapping.</p>
+                        
+                        <pre><code class="language-csharp"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Product</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">public</span> <span class="token class-name">int</span> Id <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token class-name">string</span> Name <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token class-name">decimal</span> Price <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token class-name">int</span> CategoryId <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// Strict mapping - all properties must have matching columns</span>
+<span class="token keyword">var</span> products <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">Product</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT id AS Id, name AS Name, price AS Price, category_id AS CategoryId FROM products"</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+                    </section>
+
+                    <section class="example">
+                        <h3>Query with Filter</h3>
+                        <p>Query with WHERE clause and parameters.</p>
+                        
+                        <pre><code class="language-csharp">var products = connection.Query&lt;Product&gt;(
+    "SELECT id AS Id, name AS Name, price AS Price, category_id AS CategoryId FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 });</code></pre>
+                    </section>
+                </article>
+
+                <article id="parameter-binding" class="example-section">
+                    <h2>Parameter Binding</h2>
+                    
+                    <section class="example">
+                        <h3>Named Parameters</h3>
+                        <p>Bind parameters using anonymous objects.</p>
+                        
+                        <pre><code class="language-csharp">var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId AND price > @MinPrice",
+    new { CategoryId = 1, MinPrice = 10.00m });</code></pre>
+                    </section>
+
+                    <section class="example">
+                        <h3>Positional Parameters</h3>
+                        <p>Bind parameters by position.</p>
+                        
+                        <pre><code class="language-csharp">// Single parameter
+var product = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products WHERE id = @Id",
+    42);
+
+// Multiple positional parameters
+var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId AND price BETWEEN @MinPrice AND @MaxPrice",
+    1, 10.00m, 100.00m);  // @CategoryId=1, @MinPrice=10.00, @MaxPrice=100.00
+
+// Array parameters
+var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId AND price > @MinPrice",
+    new object[] { 1, 10.00m });</code></pre>
+                    </section>
+
+                    <section class="example">
+                        <h3>Parameter Validation</h3>
+                        <p>Jaunty validates parameter counts immediately.</p>
+                        
+                        <pre><code class="language-csharp">try
+{
+    connection.Query&lt;Product&gt;(
+        "SELECT * FROM products WHERE category_id = @CategoryId AND price > @MinPrice",
+        1);  // Only 1 value provided for 2 parameters
+}
+catch (ArgumentException ex)
+{
+    // "Parameter count mismatch: SQL contains 2 unique parameter(s), but 1 value(s) provided."
+}</code></pre>
+                    </section>
+                </article>
+
+                <article id="async-operations" class="example-section">
+                    <h2>Async Operations</h2>
+                    
+                    <section class="example">
+                        <h3>Basic Async Query</h3>
+                        <p>Execute queries asynchronously.</p>
+                        
+                        <pre><code class="language-csharp">var products = await connection.QueryAsync&lt;Product&gt;(
+    "SELECT id AS Id, name AS Name, price AS Price, category_id AS CategoryId FROM products",
+    cancellationToken);
+
+// With parameters
+var products = await connection.QueryAsync&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    cancellationToken);</code></pre>
+                    </section>
+
+                    <section class="example">
+                        <h3>Async with Command Options</h3>
+                        <p>Combine async operations with command options.</p>
+                        
+                        <pre><code class="language-csharp">var products = await connection.QueryAsync&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    CommandOptions.WithTimeout(30),  // 30 second timeout
+    cancellationToken);</code></pre>
+                    </section>
+                </article>
+
+                <article id="transactions" class="example-section">
+                    <h2>Transactions</h2>
+                    
+                    <section class="example">
+                        <h3>Transaction with Query</h3>
+                        <p>Execute queries within a transaction.</p>
+                        
+                        <pre><code class="language-csharp">using var transaction = connection.BeginTransaction();
+
+try
+{
+    var products = connection.Query&lt;Product&gt;(
+        "SELECT * FROM products WHERE category_id = @CategoryId",
+        new { CategoryId = 1 },
+        CommandOptions.WithTransaction(transaction));
+
+    // Other operations in transaction...
+    
+    transaction.Commit();
+}
+catch
+{
+    transaction.Rollback();
+    throw;
+}</code></pre>
+                    </section>
+
+                    <section class="example">
+                        <h3>Transaction with Timeout</h3>
+                        <p>Combine transaction and timeout options.</p>
+                        
+                        <pre><code class="language-csharp">using var transaction = connection.BeginTransaction();
+
+var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    CommandOptions.With(transaction, timeoutSeconds: 30));
+
+// Async version
+var products = await connection.QueryAsync&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    CommandOptions.With(transaction, timeoutSeconds: 30),
+    cancellationToken);</code></pre>
+                    </section>
+                </article>
+
+                <article id="multiple-results" class="example-section">
+                    <h2>Multiple Results</h2>
+                    
+                    <section class="example">
+                        <h3>Query Multiple Result Sets</h3>
+                        <p>Execute a query that returns multiple result sets.</p>
+                        
+                        <pre><code class="language-csharp">using var gridReader = connection.QueryMultiple(
+    "SELECT * FROM categories; SELECT * FROM products; SELECT COUNT(*) FROM orders");
+
+var categories = gridReader.Read&lt;Category&gt;().ToList();
+var products = gridReader.Read&lt;Product&gt;().ToList();
+var orderCount = gridReader.ReadScalar&lt;long&gt;();</code></pre>
+                    </section>
+
+                    <section class="example">
+                        <h3>Async Multiple Results</h3>
+                        <p>Handle multiple result sets asynchronously.</p>
+                        
+                        <pre><code class="language-csharp">using var gridReader = await connection.QueryMultipleAsync(
+    "SELECT * FROM categories; SELECT * FROM products; SELECT COUNT(*) FROM orders",
+    cancellationToken);
+
+var categories = (await gridReader.ReadAsync&lt;Category&gt;()).ToList();
+var products = (await gridReader.ReadAsync&lt;Product&gt;()).ToList();
+var orderCount = await gridReader.ReadScalarAsync&lt;long&gt;();</code></pre>
+                    </section>
+                </article>
+
+                <article id="streaming" class="example-section">
+                    <h2>Streaming</h2>
+                    
+                    <section class="example">
+                        <h3>Sync Streaming</h3>
+                        <p>Process large result sets without loading all into memory.</p>
+                        
+                        <pre><code class="language-csharp">// Sync streaming
+var products = connection.QueryStream&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 });
+
+foreach (var product in products)
+{
+    // Process each product without loading all into memory
+    ProcessProduct(product);
+}</code></pre>
+                    </section>
+
+                    <section class="example">
+                        <h3>Async Streaming</h3>
+                        <p>Asynchronous streaming for large datasets.</p>
+                        
+                        <pre><code class="language-csharp">// Async streaming (IAsyncEnumerable)
+await foreach (var product in connection.QueryStreamAsync&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    cancellationToken))
+{
+    await ProcessProductAsync(product);
+}</code></pre>
+                    </section>
+                </article>
+
+                <article id="mapping-modes" class="example-section">
+                    <h2>Mapping Modes</h2>
+                    
+                    <section class="example">
+                        <h3>Strict Mapping (Default)</h3>
+                        <p>All properties must have matching columns.</p>
+                        
+                        <pre><code class="language-csharp">public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+}
+
+// This works - all properties have matching columns
+var products = connection.Query&lt;Product&gt;(
+    "SELECT id AS Id, name AS Name, price AS Price FROM products");
+
+// This throws - Price property has no matching column
+try
+{
+    var products = connection.Query&lt;Product&gt;(
+        "SELECT id AS Id, name AS Name FROM products");
+}
+catch (InvalidOperationException ex)
+{
+    // "Strict mapping failed: Property 'Price' has no matching column"
+}</code></pre>
+                    </section>
+
+                    <section class="example">
+                        <h3>Partial Mapping</h3>
+                        <p>Map only columns that exist.</p>
+                        
+                        <pre><code class="language-csharp">public class ProductSummary
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    // Note: Price property is not selected in query, but that's OK with QueryPartial
+}
+
+// Partial mapping - only map what exists
+var summaries = connection.QueryPartial&lt;ProductSummary&gt;(
+    "SELECT id AS Id, name AS Name FROM products");
+
+// Extra columns in result are ignored
+var summaries2 = connection.QueryPartial&lt;ProductSummary&gt;(
+    "SELECT id AS Id, name AS Name, price, category_id FROM products");</code></pre>
+                    </section>
+                </article>
+
+                <article id="error-handling" class="example-section">
+                    <h2>Error Handling</h2>
+                    
+                    <section class="example">
+                        <h3>Mapping Errors</h3>
+                        <p>Handle strict mapping failures.</p>
+                        
+                        <pre><code class="language-csharp">try
+{
+    // This will throw if 'Price' column is missing (strict mapping)
+    var products = connection.Query&lt;Product&gt;(
+        "SELECT id, name, category_id FROM products");
+}
+catch (InvalidOperationException ex) when (ex.Message.Contains("Strict mapping failed"))
+{
+    // Handle mapping mismatch
+    Console.WriteLine($"Mapping error: {ex.Message}");
+}</code></pre>
+                    </section>
+
+                    <section class="example">
+                        <h3>Parameter Errors</h3>
+                        <p>Handle parameter binding errors.</p>
+                        
+                        <pre><code class="language-csharp">try
+{
+    // This will throw if parameter count doesn't match
+    var products = connection.Query&lt;Product&gt;(
+        "SELECT * FROM products WHERE category_id = @CategoryId AND price > @MinPrice",
+        1);  // Only provided one value for two parameters
+}
+catch (ArgumentException ex)
+{
+    Console.WriteLine($"Parameter error: {ex.Message}");
+}</code></pre>
+                    </section>
+                </article>
+
+                <article id="advanced-scenarios" class="example-section">
+                    <h2>Advanced Scenarios</h2>
+                    
+                    <section class="example">
+                        <h3>Custom Mapper</h3>
+                        <p>Use a custom mapper function for complex scenarios.</p>
+                        
+                        <pre><code class="language-csharp">var customMapped = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products",
+    CommandOptions&lt;Product&gt;.WithMapper(reader => new Product
+    {
+        Id = reader.GetInt32("id"),
+        Name = reader.IsDBNull("name") ? null : reader.GetString("name"),
+        Price = reader.GetDecimal("price")
+    }));</code></pre>
+                    </section>
+
+                    <section class="example">
+                        <h3>NULL Handling</h3>
+                        <p>Handle NULL values properly.</p>
+                        
+                        <pre><code class="language-csharp">public class Product
+{
+    public int Id { get; set; }           // Non-nullable: NULL from DB throws InvalidOperationException
+    public string Name { get; set; }      // Reference type: NULL becomes null
+    public int? CategoryId { get; set; }  // Nullable: NULL becomes null
+    public DateTime? DiscontinuedDate { get; set; }  // Nullable: NULL becomes null
+}
+
+var products = connection.Query&lt;Product&gt;(
+    "SELECT id, name, category_id, discontinued_date FROM products");
+
+// Non-nullable value types will throw if database returns NULL
+// Use nullable types for columns that might be NULL</code></pre>
+                    </section>
+
+                    <section class="example">
+                        <h3>Scalar Values</h3>
+                        <p>Get single scalar values.</p>
+                        
+                        <pre><code class="language-csharp">// Get count
+var count = connection.QueryScalar&lt;long&gt;("SELECT COUNT(*) FROM products");
+
+// Get max price
+var maxPrice = connection.QueryScalar&lt;decimal&gt;("SELECT MAX(price) FROM products WHERE category_id = @CategoryId", new { CategoryId = 1 });
+
+// Async scalar
+var countAsync = await connection.QueryScalarAsync&lt;long&gt;("SELECT COUNT(*) FROM products");
+
+// Single and first results
+var firstProduct = connection.QueryFirst&lt;Product&gt;("SELECT * FROM products LIMIT 1");
+var product = connection.QueryFirstOrDefault&lt;Product&gt;("SELECT * FROM products WHERE id = @Id", new { Id = 999 });
+var singleProduct = connection.QuerySingle&lt;Product&gt;("SELECT * FROM products WHERE id = @Id", new { Id = 1 });
+var singleOrDefault = connection.QuerySingleOrDefault&lt;Product&gt;("SELECT * FROM products WHERE id = @Id", new { Id = 999 });</code></pre>
+                    </section>
+                </article>
+            </div>
+        </section>
+    </main>
+</div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Jaunty</h4>
+                    <p>The micro-ORM that respects your SQL and your time.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="./index.html">Home</a></li>
+                        <li><a href="./api-reference.html">API Reference</a></li>
+                        <li><a href="./examples.html">Examples</a></li>
+                        <li><a href="./configuration.html">Configuration</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul>
+                        <li><a href="https://github.com/beparey/jaunty">GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Jaunty. Built by Syed Beparey.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

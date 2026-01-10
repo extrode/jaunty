@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - Jaunty</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-logo">
+                <a href="./index.html" class="navbar-logo-link">
+                    <span class="logo-text">Jaunty</span>
+                </a>
+            </div>
+            <nav class="navbar-nav">
+                <ul class="navbar-nav-list">
+                    <li class="navbar-nav-item">
+                        <a href="./index.html" class="navbar-nav-link">Home</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="./api-reference.html" class="navbar-nav-link">API Reference</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="./examples.html" class="navbar-nav-link">Examples</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="./configuration.html" class="navbar-nav-link">Configuration</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="main-wrapper">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="index.html" class="sidebar-nav-link">Introduction</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="api-reference.html" class="sidebar-nav-link active">API Reference</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="examples.html" class="sidebar-nav-link">Examples</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="configuration.html" class="sidebar-nav-link">Configuration</a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content-wrapper">
+        <section class="section">
+            <div class="container">
+                <h1 class="section-title">API Reference</h1>
+                
+                <nav class="table-of-contents">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#query-methods">Query Methods</a></li>
+                        <li><a href="#scalar-methods">Scalar Methods</a></li>
+                        <li><a href="#single-methods">Single Result Methods</a></li>
+                        <li><a href="#multiple-methods">Multiple Result Methods</a></li>
+                        <li><a href="#streaming-methods">Streaming Methods</a></li>
+                        <li><a href="#async-methods">Async Methods</a></li>
+                        <li><a href="#command-options">Command Options</a></li>
+                        <li><a href="#grid-reader">Grid Reader</a></li>
+                        <li><a href="#attributes">Attributes</a></li>
+                        <li><a href="#configuration">Configuration</a></li>
+                    </ul>
+                </nav>
+
+                <article id="query-methods" class="api-section">
+                    <h2>Query Methods</h2>
+                    
+                    <section class="api-method">
+                        <h3>Query&lt;T&gt;</h3>
+                        <p>Executes SQL and maps results to a list of T with strict mapping (all properties must have matching columns).</p>
+                        
+                        <h4>Signatures</h4>
+                        <pre><code class="language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">List</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> <span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token class-name">T</span> <span class="token operator">:</span> <span class="token keyword">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">List</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> <span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">,</span> <span class="token class-name">object</span> parameters<span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token class-name">T</span> <span class="token operator">:</span> <span class="token keyword">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">List</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> <span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">,</span> <span class="token class-name">CommandOptions</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> options<span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token class-name">T</span> <span class="token operator">:</span> <span class="token keyword">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">List</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> <span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">,</span> <span class="token class-name">object</span> parameters<span class="token punctuation">,</span> <span class="token class-name">CommandOptions</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> options<span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token class-name">T</span> <span class="token operator">:</span> <span class="token keyword">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span></code></pre>
+
+                        <h4>Parameters</h4>
+                        <ul>
+                            <li><strong>sql</strong> (string): The SQL query to execute</li>
+                            <li><strong>parameters</strong> (object, optional): Anonymous object containing parameter values</li>
+                            <li><strong>options</strong> (CommandOptions&lt;T&gt;, optional): Command execution options</li>
+                        </ul>
+
+                        <h4>Returns</h4>
+                        <p><code>List&lt;T&gt;</code>: A list of objects of type T</p>
+
+                        <h4>Exceptions</h4>
+                        <ul>
+                            <li><code>InvalidOperationException</code>: Thrown when strict mapping fails (property without matching column)</li>
+                        </ul>
+
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">var products = connection.Query&lt;Product&gt;(
+    "SELECT id AS Id, name AS Name, price AS Price FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 });</code></pre>
+                    </section>
+
+                    <section class="api-method">
+                        <h3>QueryPartial&lt;T&gt;</h3>
+                        <p>Executes SQL and maps only matching columns to T (partial mapping).</p>
+                        
+                        <h4>Signatures</h4>
+                        <pre><code class="language-csharp">List&lt;T&gt; QueryPartial&lt;T&gt;(string sql) where T : new()
+List&lt;T&gt; QueryPartial&lt;T&gt;(string sql, object parameters) where T : new()
+List&lt;T&gt; QueryPartial&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options) where T : new()
+List&lt;T&gt; QueryPartial&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options) where T : new()</code></pre>
+
+                        <h4>Parameters</h4>
+                        <ul>
+                            <li><strong>sql</strong> (string): The SQL query to execute</li>
+                            <li><strong>parameters</strong> (object, optional): Anonymous object containing parameter values</li>
+                            <li><strong>options</strong> (CommandOptions&lt;T&gt;, optional): Command execution options</li>
+                        </ul>
+
+                        <h4>Returns</h4>
+                        <p><code>List&lt;T&gt;</code>: A list of objects of type T with only matching properties set</p>
+
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">var summaries = connection.QueryPartial&lt;ProductSummary&gt;(
+    "SELECT id AS Id, name AS Name FROM products");</code></pre>
+                    </section>
+                </article>
+
+                <article id="scalar-methods" class="api-section">
+                    <h2>Scalar Methods</h2>
+                    
+                    <section class="api-method">
+                        <h3>QueryScalar&lt;T&gt;</h3>
+                        <p>Returns the first column of the first row as type T.</p>
+                        
+                        <h4>Signatures</h4>
+                        <pre><code class="language-csharp">T QueryScalar&lt;T&gt;(string sql)
+T QueryScalar&lt;T&gt;(string sql, object parameters)
+T QueryScalar&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)
+T QueryScalar&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)</code></pre>
+
+                        <h4>Parameters</h4>
+                        <ul>
+                            <li><strong>sql</strong> (string): The SQL query to execute</li>
+                            <li><strong>parameters</strong> (object, optional): Anonymous object containing parameter values</li>
+                            <li><strong>options</strong> (CommandOptions&lt;T&gt;, optional): Command execution options</li>
+                        </ul>
+
+                        <h4>Returns</h4>
+                        <p><code>T</code>: The value of the first column of the first row</p>
+
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">var count = connection.QueryScalar&lt;long&gt;("SELECT COUNT(*) FROM products");
+var maxPrice = connection.QueryScalar&lt;decimal&gt;("SELECT MAX(price) FROM products WHERE category_id = @CategoryId", new { CategoryId = 1 });</code></pre>
+                    </section>
+                </article>
+
+                <article id="single-methods" class="api-section">
+                    <h2>Single Result Methods</h2>
+                    
+                    <section class="api-method">
+                        <h3>QueryFirst&lt;T&gt;</h3>
+                        <p>Returns the first record or throws if no records found.</p>
+                        
+                        <h4>Signatures</h4>
+                        <pre><code class="language-csharp">T QueryFirst&lt;T&gt;(string sql) where T : new()
+T QueryFirst&lt;T&gt;(string sql, object parameters) where T : new()
+T QueryFirst&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options) where T : new()
+T QueryFirst&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options) where T : new()</code></pre>
+
+                        <h4>Exceptions</h4>
+                        <ul>
+                            <li><code>InvalidOperationException</code>: Thrown when no records are found</li>
+                        </ul>
+
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">var firstProduct = connection.QueryFirst&lt;Product&gt;("SELECT * FROM products LIMIT 1");</code></pre>
+                    </section>
+
+                    <section class="api-method">
+                        <h3>QueryFirstOrDefault&lt;T&gt;</h3>
+                        <p>Returns the first record or default if no records found.</p>
+                        
+                        <h4>Signatures</h4>
+                        <pre><code class="language-csharp">T? QueryFirstOrDefault&lt;T&gt;(string sql) where T : new()
+T? QueryFirstOrDefault&lt;T&gt;(string sql, object parameters) where T : new()
+T? QueryFirstOrDefault&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options) where T : new()
+T? QueryFirstOrDefault&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options) where T : new()</code></pre>
+
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">var product = connection.QueryFirstOrDefault&lt;Product&gt;("SELECT * FROM products WHERE id = @Id", new { Id = 999 });</code></pre>
+                    </section>
+
+                    <section class="api-method">
+                        <h3>QuerySingle&lt;T&gt;</h3>
+                        <p>Returns a single record or throws if no records or multiple records found.</p>
+                        
+                        <h4>Signatures</h4>
+                        <pre><code class="language-csharp">T QuerySingle&lt;T&gt;(string sql) where T : new()
+T QuerySingle&lt;T&gt;(string sql, object parameters) where T : new()
+T QuerySingle&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options) where T : new()
+T QuerySingle&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options) where T : new()</code></pre>
+
+                        <h4>Exceptions</h4>
+                        <ul>
+                            <li><code>InvalidOperationException</code>: Thrown when no records or multiple records are found</li>
+                        </ul>
+
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">var product = connection.QuerySingle&lt;Product&gt;("SELECT * FROM products WHERE id = @Id", new { Id = 1 });</code></pre>
+                    </section>
+
+                    <section class="api-method">
+                        <h3>QuerySingleOrDefault&lt;T&gt;</h3>
+                        <p>Returns a single record or default if no records found, throws if multiple records found.</p>
+                        
+                        <h4>Signatures</h4>
+                        <pre><code class="language-csharp">T? QuerySingleOrDefault&lt;T&gt;(string sql) where T : new()
+T? QuerySingleOrDefault&lt;T&gt;(string sql, object parameters) where T : new()
+T? QuerySingleOrDefault&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options) where T : new()
+T? QuerySingleOrDefault&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options) where T : new()</code></pre>
+
+                        <h4>Exceptions</h4>
+                        <ul>
+                            <li><code>InvalidOperationException</code>: Thrown when multiple records are found</li>
+                        </ul>
+
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">var product = connection.QuerySingleOrDefault&lt;Product&gt;("SELECT * FROM products WHERE id = @Id", new { Id = 999 });</code></pre>
+                    </section>
+                </article>
+
+                <article id="multiple-methods" class="api-section">
+                    <h2>Multiple Result Methods</h2>
+                    
+                    <section class="api-method">
+                        <h3>QueryMultiple</h3>
+                        <p>Executes SQL that returns multiple result sets and returns a GridReader.</p>
+                        
+                        <h4>Signatures</h4>
+                        <pre><code class="language-csharp">GridReader QueryMultiple(string sql)
+GridReader QueryMultiple(string sql, object parameters)
+GridReader QueryMultiple(string sql, CommandOptions options)
+GridReader QueryMultiple(string sql, object parameters, CommandOptions options)</code></pre>
+
+                        <h4>Returns</h4>
+                        <p><code>GridReader</code>: A reader for accessing multiple result sets</p>
+
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">using var gridReader = connection.QueryMultiple(
+    "SELECT * FROM categories; SELECT * FROM products; SELECT COUNT(*) FROM orders");
+
+var categories = gridReader.Read&lt;Category&gt;().ToList();
+var products = gridReader.Read&lt;Product&gt;().ToList();
+var orderCount = gridReader.ReadScalar&lt;long&gt;();</code></pre>
+                    </section>
+                </article>
+
+                <article id="streaming-methods" class="api-section">
+                    <h2>Streaming Methods</h2>
+                    
+                    <section class="api-method">
+                        <h3>QueryStream&lt;T&gt;</h3>
+                        <p>Executes SQL and returns an enumerable that yields results one at a time (memory efficient for large result sets).</p>
+                        
+                        <h4>Signatures</h4>
+                        <pre><code class="language-csharp">IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(string sql) where T : new()
+IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(string sql, object parameters) where T : new()
+IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options) where T : new()
+IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options) where T : new()</code></pre>
+
+                        <h4>Returns</h4>
+                        <p><code>IEnumerable&lt;T&gt;</code>: An enumerable that yields results lazily</p>
+
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">var products = connection.QueryStream&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 });
+
+foreach (var product in products)
+{
+    // Process each product without loading all into memory
+    ProcessProduct(product);
+}</code></pre>
+                    </section>
+
+                    <section class="api-method">
+                        <h3>QueryPartialStream&lt;T&gt;</h3>
+                        <p>Streaming version of QueryPartial with partial mapping.</p>
+                        
+                        <h4>Signatures</h4>
+                        <pre><code class="language-csharp">IEnumerable&lt;T&gt; QueryPartialStream&lt;T&gt;(string sql) where T : new()
+IEnumerable&lt;T&gt; QueryPartialStream&lt;T&gt;(string sql, object parameters) where T : new()
+IEnumerable&lt;T&gt; QueryPartialStream&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options) where T : new()
+IEnumerable&lt;T&gt; QueryPartialStream&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options) where T : new()</code></pre>
+                    </section>
+                </article>
+
+                <article id="async-methods" class="api-section">
+                    <h2>Async Methods</h2>
+                    
+                    <p>All synchronous methods have async counterparts with the same signatures plus a <code>CancellationToken</code> parameter.</p>
+                    
+                    <h3>Available Async Methods</h3>
+                    <ul>
+                        <li><code>QueryAsync&lt;T&gt;</code></li>
+                        <li><code>QueryPartialAsync&lt;T&gt;</code></li>
+                        <li><code>QueryFirstAsync&lt;T&gt;</code></li>
+                        <li><code>QueryFirstOrDefaultAsync&lt;T&gt;</code></li>
+                        <li><code>QuerySingleAsync&lt;T&gt;</code></li>
+                        <li><code>QuerySingleOrDefaultAsync&lt;T&gt;</code></li>
+                        <li><code>QueryScalarAsync&lt;T&gt;</code></li>
+                        <li><code>QueryMultipleAsync</code></li>
+                        <li><code>QueryStreamAsync&lt;T&gt;</code></li>
+                        <li><code>QueryPartialStreamAsync&lt;T&gt;</code></li>
+                    </ul>
+
+                    <h4>Example</h4>
+                    <pre><code class="language-csharp">var products = await connection.QueryAsync&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    cancellationToken);</code></pre>
+                </article>
+
+                <article id="command-options" class="api-section">
+                    <h2>Command Options</h2>
+                    
+                    <p><code>CommandOptions</code> provides a unified way to pass transaction and timeout settings without method overloading confusion.</p>
+
+                    <h3>Static Methods</h3>
+                    <pre><code class="language-csharp">CommandOptions&lt;T&gt; CommandOptions&lt;T&gt;.WithMapper(Func&lt;IDataReader, T&gt; mapper)
+CommandOptions&lt;T&gt; CommandOptions&lt;T&gt;.WithTransaction(IDbTransaction transaction)
+CommandOptions&lt;T&gt; CommandOptions&lt;T&gt;.WithTimeout(int seconds)
+CommandOptions&lt;T&gt; CommandOptions&lt;T&gt;.With(Func&lt;IDataReader, T&gt; mapper, IDbTransaction transaction, int timeoutSeconds)
+
+CommandOptions CommandOptions.WithTransaction(IDbTransaction transaction)
+CommandOptions CommandOptions.WithTimeout(int seconds)
+CommandOptions CommandOptions.With(IDbTransaction transaction, int timeoutSeconds)</code></pre>
+
+                    <h4>Example</h4>
+                    <pre><code class="language-csharp">// Timeout only
+var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products",
+    CommandOptions.WithTimeout(30));
+
+// Transaction only
+using var transaction = connection.BeginTransaction();
+var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products",
+    CommandOptions.WithTransaction(transaction));
+
+// Both
+var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products",
+    CommandOptions.With(transaction, timeoutSeconds: 30));</code></pre>
+                </article>
+
+                <article id="grid-reader" class="api-section">
+                    <h2>Grid Reader</h2>
+                    
+                    <p>Used for reading multiple result sets returned by <code>QueryMultiple</code>.</p>
+
+                    <h3>Methods</h3>
+                    <pre><code class="language-csharp">// Sync methods
+List&lt;T&gt; Read&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+List&lt;T&gt; ReadPartial&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+T ReadFirst&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+T? ReadFirstOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+T ReadPartialFirst&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+T? ReadPartialFirstOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+T ReadSingle&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+T? ReadSingleOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+T ReadPartialSingle&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+T? ReadPartialSingleOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+T? ReadScalar&lt;T&gt;(CommandOptions options = default)
+IEnumerable&lt;T&gt; ReadStream&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+IEnumerable&lt;T&gt; ReadPartialStream&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+
+// Async methods
+Task&lt;List&lt;T&gt;&gt; ReadAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+Task&lt;List&lt;T&gt;&gt; ReadPartialAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+Task&lt;T&gt; ReadFirstAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+Task&lt;T?&gt; ReadFirstOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+Task&lt;T&gt; ReadPartialFirstAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+Task&lt;T?&gt; ReadPartialFirstOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+Task&lt;T&gt; ReadSingleAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+Task&lt;T?&gt; ReadSingleOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+Task&lt;T&gt; ReadPartialSingleAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+Task&lt;T?&gt; ReadPartialSingleOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+Task&lt;T?&gt; ReadScalarAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+IAsyncEnumerable&lt;T&gt; ReadStreamAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+IAsyncEnumerable&lt;T&gt; ReadPartialStreamAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, [EnumeratorCancellation] CancellationToken cancellationToken = default)</code></pre>
+                </article>
+
+                <article id="attributes" class="api-section">
+                    <h2>Attributes</h2>
+                    
+                    <p>Attributes for customizing mapping behavior.</p>
+
+                    <section class="api-method">
+                        <h3>[Table]</h3>
+                        <p>Specifies the database table that a class is mapped to.</p>
+                        
+                        <h4>Constructor</h4>
+                        <pre><code class="language-csharp">TableAttribute(string name, string? schema = null)</code></pre>
+
+                        <h4>Properties</h4>
+                        <ul>
+                            <li><code>Name</code> (string): The table name</li>
+                            <li><code>Schema</code> (string?): The schema name (optional)</li>
+                        </ul>
+
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">[Table("order_items")]
+public class OrderItem
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+}</code></pre>
+                    </section>
+
+                    <section class="api-method">
+                        <h3>[Column]</h3>
+                        <p>Specifies the database column that a property is mapped to.</p>
+                        
+                        <h4>Constructor</h4>
+                        <pre><code class="language-csharp">ColumnAttribute(string name)</code></pre>
+
+                        <h4>Properties</h4>
+                        <ul>
+                            <li><code>Name</code> (string): The column name</li>
+                        </ul>
+
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">public class OrderItem
+{
+    [Column("item_id")]
+    public int Id { get; set; }
+
+    [Column("product_name")]
+    public string Name { get; set; }
+}</code></pre>
+                    </section>
+
+                    <section class="api-method">
+                        <h3>[Ignore]</h3>
+                        <p>Indicates that a property should be ignored during mapping.</p>
+                        
+                        <h4>Example</h4>
+                        <pre><code class="language-csharp">public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    
+    [Ignore]
+    public decimal CalculatedValue { get; set; } // Not mapped from database
+}</code></pre>
+                    </section>
+                </article>
+
+                <article id="configuration" class="api-section">
+                    <h2>Configuration</h2>
+                    
+                    <p>Global configuration for naming conventions.</p>
+
+                    <h3>JauntyConfig</h3>
+                    <pre><code class="language-csharp">public static class JauntyConfig
+{
+    public static Func&lt;Type, string&gt;? SchemaNameResolver { get; set; }
+    public static Func&lt;Type, string&gt;? TableNameResolver { get; set; }
+    public static Func&lt;string, string&gt;? ColumnNameResolver { get; set; }
+    
+    public static void Reset();
+}</code></pre>
+
+                    <h3>NamingConvention Helper Class</h3>
+                    <pre><code class="language-csharp">public static class NamingConvention
+{
+    public static string ToSnakeCase(string propertyName);
+    public static string ToLowerCase(string propertyName);
+    public static string Pluralize(string singular);
+    public static string SnakeCasePluralTable(Type type);
+    public static string SnakeCaseColumn(string propertyName);
+}</code></pre>
+
+                    <h4>Example</h4>
+                    <pre><code class="language-csharp">// At application startup
+JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;  // ProductName -> product_name
+JauntyConfig.TableNameResolver = NamingConvention.SnakeCasePluralTable;  // Product -> products
+
+// Reset configuration
+JauntyConfig.Reset();</code></pre>
+                </article>
+            </div>
+        </section>
+    </main>
+</div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Jaunty</h4>
+                    <p>The micro-ORM that respects your SQL and your time.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="./index.html">Home</a></li>
+                        <li><a href="./api-reference.html">API Reference</a></li>
+                        <li><a href="./examples.html">Examples</a></li>
+                        <li><a href="./configuration.html">Configuration</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul>
+                        <li><a href="https://github.com/beparey/jaunty">GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Jaunty. Built by Syed Beparey.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
