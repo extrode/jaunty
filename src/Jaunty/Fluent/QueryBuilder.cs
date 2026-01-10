@@ -1,6 +1,6 @@
 using System.Data;
 
-namespace Jaunty.Fluent;
+namespace Jaunty;
 
 public static partial class Jaunty
 {

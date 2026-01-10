@@ -1,9 +1,8 @@
 using System.Data;
 
 using Jaunty.Core;
-using Jaunty.Internals;
 
-namespace Jaunty.Multiple;
+namespace Jaunty;
 
 public static partial class Jaunty
 {

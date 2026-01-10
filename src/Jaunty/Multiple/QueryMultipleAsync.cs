@@ -2,7 +2,7 @@ using System.Data.Common;
 
 using Jaunty.Core;
 
-namespace Jaunty.Multiple;
+namespace Jaunty;
 
 public static partial class Jaunty
 {

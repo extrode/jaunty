@@ -1,4 +1,4 @@
-using Jaunty.PublicApi;
+using Jaunty.Core;
 
 namespace Jaunty.Tests.Unit;
 
