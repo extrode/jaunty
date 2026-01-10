@@ -1,6 +1,6 @@
 using System.Data;
 
-using Jaunty.InternalApi.Parameters;
+using Jaunty.Internals.Parameters;
 
 namespace Jaunty.Tests;
 
