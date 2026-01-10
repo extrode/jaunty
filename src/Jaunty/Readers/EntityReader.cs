@@ -1,8 +1,8 @@
 using System.Data;
 using System.Data.Common;
 
-using Jaunty.InternalApi;
-using Jaunty.PublicApi.Interfaces;
+using Jaunty.Interfaces;
+using Jaunty.Internals;
 
 namespace Jaunty.Readers;
 
