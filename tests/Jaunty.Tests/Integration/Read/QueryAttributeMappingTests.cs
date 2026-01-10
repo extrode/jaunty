@@ -1,13 +1,13 @@
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 
-namespace Jaunty.Tests.Integration;
+namespace Jaunty.Tests.Integration.Read;
 
-public class AttributeMappingTests : IDisposable
+public class QueryAttributeMappingTests : IDisposable
 {
     private readonly Database _db;
 
-    public AttributeMappingTests()
+    public QueryAttributeMappingTests()
     {
         _db = new Database();
     }
