@@ -1,9 +1,10 @@
 using System.Data.Common;
 
+using Jaunty;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 
-namespace Jaunty.Tests.Integration;
+namespace Jaunty.Tests.Integration.Multiple;
 
 public class QueryMultipleTests : IDisposable
 {

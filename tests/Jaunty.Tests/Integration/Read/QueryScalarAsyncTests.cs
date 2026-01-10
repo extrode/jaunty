@@ -1,5 +1,4 @@
 using Jaunty.Core;
-using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 
 namespace Jaunty.Tests.Integration.Read;
