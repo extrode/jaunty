@@ -8,7 +8,7 @@ public static partial class Jaunty
 {
     extension(DbConnection connection)
     {
-#if NET8_0_OR_GREATER || ASYNC_ENUMERABLE_SUPPORT
+#if ASYNC_ENUMERABLE_SUPPORT
         public IAsyncEnumerable<T> QueryStreamAsync<T>(string sql, CancellationToken cancellationToken = default) where T : new()
         {
             return QueryStreamCoreAsync<T>(connection, sql, null, default, MappingMode.Strict, cancellationToken);

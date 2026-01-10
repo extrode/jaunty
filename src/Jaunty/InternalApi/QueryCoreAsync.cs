@@ -106,7 +106,7 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-#if NET8_0_OR_GREATER || ASYNC_ENUMERABLE_SUPPORT
+#if ASYNC_ENUMERABLE_SUPPORT
     private static async IAsyncEnumerable<T> QueryStreamCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
     {
         var wasClosed = connection.State == ConnectionState.Closed;
@@ -171,10 +171,10 @@ public static partial class Jaunty
         finally
         {
             if (wasClosed && connection.State != ConnectionState.Closed)
-#if NET8_0_OR_GREATER
+#if ASYNC_ENUMERABLE_SUPPORT
                     await connection.CloseAsync().ConfigureAwait(false);
 #else
-                    connection.Close();
+                connection.Close();
 #endif
         }
 
