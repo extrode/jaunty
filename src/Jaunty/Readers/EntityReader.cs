@@ -1,6 +1,5 @@
 using System.Data;
 using System.Data.Common;
-using System.Runtime.CompilerServices;
 
 using Jaunty.InternalApi;
 using Jaunty.PublicApi.Interfaces;
@@ -16,7 +15,7 @@ internal static class EntityReader
             yield return mapper(reader);
     }
 
-#if NET8_0_OR_GREATER || ASYNC_ENUMERABLE_SUPPORT
+#if ASYNC_ENUMERABLE_SUPPORT
     public static async IAsyncEnumerable<T> ReadEntitiesAsync<T>(DbDataReader reader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         where T : IMapped<T>, new()
     {
