@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jaunty - The Micro-ORM That Respects Your SQL</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-logo">
+                <a href="index.html" class="navbar-logo-link">
+                    <span class="logo-text">Jaunty</span>
+                </a>
+            </div>
+            <nav class="navbar-nav">
+                <ul class="navbar-nav-list">
+                    <li class="navbar-nav-item">
+                        <a href="index.html" class="navbar-nav-link">Home</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="api-reference.html" class="navbar-nav-link">API Reference</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="examples.html" class="navbar-nav-link">Examples</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="configuration.html" class="navbar-nav-link">Configuration</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="main-wrapper">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="index.html" class="sidebar-nav-link active">Introduction</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="api-reference.html" class="sidebar-nav-link">API Reference</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="examples.html" class="sidebar-nav-link">Examples</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="configuration.html" class="sidebar-nav-link">Configuration</a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content-wrapper">
+            <section class="hero">
+                <div class="hero-container">
+                    <h1 class="hero-title">The Micro-ORM That Respects Your SQL</h1>
+                    <p class="hero-subtitle">Jaunty is a high-performance data access library for .NET that executes your SQL and maps results to objects with strict, predictable behavior.</p>
+                    <div class="hero-buttons">
+                        <a href="#getting-started" class="button button-primary">Get Started</a>
+                        <a href="api-reference.html" class="button button-secondary">API Reference</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="features">
+                <div class="container">
+                    <div class="row">
+                        <div class="feature-card">
+                            <h3 class="feature-title">Strict by Default</h3>
+                            <p class="feature-description">Every property must have a matching column. Catch mapping errors early instead of dealing with silent partial mapping bugs.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3 class="feature-title">High Performance</h3>
+                            <p class="feature-description">Compiled expression trees, metadata caching, and minimal allocations ensure maximum performance.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3 class="feature-title">Clean API</h3>
+                            <p class="feature-description">Simple, intuitive methods that read like intent rather than ceremony.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="getting-started" class="section">
+                <div class="container">
+                    <h2 class="section-title">Getting Started</h2>
+                    
+                    <h3>Installation</h3>
+                    <pre><code class="language-bash">dotnet add package Beparey.Jaunty</code></pre>
+
+                    <h3>Basic Usage</h3>
+                    <pre><code class="language-csharp"><span class="token keyword">using</span> <span class="token namespace">Jaunty</span><span class="token punctuation">;</span>
+
+<span class="token keyword">var</span> products <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">Product</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT id AS Id, name AS Name, price AS Price FROM products WHERE category_id = @CategoryId"</span><span class="token punctuation">,</span>
+    <span class="token keyword">new</span> <span class="token punctuation">{</span> CategoryId <span class="token operator">=</span> <span class="token number">1</span> <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+
+                    <h3>Partial Mapping</h3>
+                    <pre><code class="language-csharp"><span class="token comment">// Only map columns that exist</span>
+<span class="token keyword">var</span> summaries <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">QueryPartial</span><span class="token operator">&lt;</span><span class="token class-name">ProductSummary</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT id AS Id, name AS Name FROM products"</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+                </div>
+            </section>
+
+            <section id="api-reference" class="section">
+                <div class="container">
+                    <h2 class="section-title">API Reference</h2>
+                    
+                    <h3>Query Methods</h3>
+                    <div class="api-method">
+                        <h4>Query&lt;T&gt;</h4>
+                        <p>Executes SQL and maps results to a list of T with strict mapping (all properties must have matching columns).</p>
+                        <pre><code class="language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">List</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> <span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token class-name">T</span> <span class="token operator">:</span> <span class="token keyword">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">List</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> <span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">,</span> <span class="token class-name">object</span> parameters<span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token class-name">T</span> <span class="token operator">:</span> <span class="token keyword">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">List</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> <span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">,</span> <span class="token class-name">CommandOptions</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> options<span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token class-name">T</span> <span class="token operator">:</span> <span class="token keyword">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">List</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> <span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">,</span> <span class="token class-name">object</span> parameters<span class="token punctuation">,</span> <span class="token class-name">CommandOptions</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> options<span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token class-name">T</span> <span class="token operator">:</span> <span class="token keyword">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span></code></pre>
+                    </div>
+
+                    <div class="api-method">
+                        <h4>QueryPartial&lt;T&gt;</h4>
+                        <p>Executes SQL and maps only matching columns to T (partial mapping).</p>
+                        <pre><code class="language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">List</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> <span class="token function">QueryPartial</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token class-name">T</span> <span class="token operator">:</span> <span class="token keyword">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">List</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span> <span class="token function">QueryPartial</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">,</span> <span class="token class-name">object</span> parameters<span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token class-name">T</span> <span class="token operator">:</span> <span class="token keyword">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span></code></pre>
+                    </div>
+
+                    <div class="api-method">
+                        <h4>QueryScalar&lt;T&gt;</h4>
+                        <p>Returns the first column of the first row as type T.</p>
+                        <pre><code class="language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">T</span> <span class="token function">QueryScalar</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">T</span> <span class="token function">QueryScalar</span><span class="token operator">&lt;</span><span class="token class-name">T</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token class-name">string</span> sql<span class="token punctuation">,</span> <span class="token class-name">object</span> parameters<span class="token punctuation">)</span></code></pre>
+                    </div>
+
+                    <h3>Async Methods</h3>
+                    <p>All query methods have async counterparts:</p>
+                    <ul>
+                        <li><code>QueryAsync&lt;T&gt;</code></li>
+                        <li><code>QueryPartialAsync&lt;T&gt;</code></li>
+                        <li><code>QueryScalarAsync&lt;T&gt;</code></li>
+                        <li><code>QueryFirstAsync&lt;T&gt;</code></li>
+                        <li><code>QuerySingleAsync&lt;T&gt;</code></li>
+                        <li><code>QueryMultipleAsync</code></li>
+                    </ul>
+
+                    <h3>Streaming Methods</h3>
+                    <p>For large result sets:</p>
+                    <ul>
+                        <li><code>QueryStream&lt;T&gt;</code></li>
+                        <li><code>QueryStreamAsync&lt;T&gt;</code></li>
+                        <li><code>QueryPartialStream&lt;T&gt;</code></li>
+                        <li><code>QueryPartialStreamAsync&lt;T&gt;</code></li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="examples" class="section">
+                <div class="container">
+                    <h2 class="section-title">Examples</h2>
+                    
+                    <h3>Parameter Binding</h3>
+                    <h4>Named Parameters</h4>
+                    <pre><code class="language-csharp"><span class="token keyword">var</span> products <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">Product</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT * FROM products WHERE category_id = @CategoryId AND price &gt; @MinPrice"</span>,
+    <span class="token keyword">new</span> <span class="token punctuation">{</span> CategoryId <span class="token operator">=</span> <span class="token number">1</span>, MinPrice <span class="token operator">=</span> <span class="token number">10.00m</span> <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+
+                    <h4>Positional Parameters</h4>
+                    <pre><code class="language-csharp"><span class="token keyword">var</span> products <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">Product</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT * FROM products WHERE category_id = @CategoryId"</span>,
+    <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// @CategoryId = 1</span></code></pre>
+
+                    <h4>Multiple Positional Parameters</h4>
+                    <pre><code class="language-csharp"><span class="token keyword">var</span> products <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">Product</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT * FROM products WHERE price BETWEEN @MinPrice AND @MaxPrice AND category_id = @CategoryId"</span>,
+    <span class="token number">10.00m</span>, <span class="token number">100.00m</span>, <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// @MinPrice=10.00, @MaxPrice=100.00, @CategoryId=2</span></code></pre>
+
+                    <h3>Transactions and Timeouts</h3>
+                    <pre><code class="language-csharp"><span class="token keyword">using</span> <span class="token keyword">var</span> transaction <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">BeginTransaction</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">var</span> orders <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">Order</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT * FROM orders WHERE customer_id = @CustomerId"</span>,
+    <span class="token keyword">new</span> <span class="token punctuation">{</span> CustomerId <span class="token operator">=</span> <span class="token number">123</span> <span class="token punctuation">}</span>,
+    <span class="token class-name">CommandOptions</span><span class="token punctuation">.</span><span class="token function">With</span><span class="token punctuation">(</span>transaction, timeoutSeconds<span class="token operator">:</span> <span class="token number">30</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+transaction<span class="token punctuation">.</span><span class="token function">Commit</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+
+                    <h3>Async with Cancellation</h3>
+                    <pre><code class="language-csharp"><span class="token keyword">var</span> products <span class="token operator">=</span> <span class="token keyword">await</span> connection<span class="token punctuation">.</span><span class="token function">QueryAsync</span><span class="token operator">&lt;</span><span class="token class-name">Product</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT * FROM products WHERE category_id = @CategoryId"</span>,
+    <span class="token keyword">new</span> <span class="token punctuation">{</span> CategoryId <span class="token operator">=</span> <span class="token number">1</span> <span class="token punctuation">}</span>,
+    <span class="token class-name">CommandOptions</span><span class="token punctuation">.</span><span class="token function">WithTimeout</span><span class="token punctuation">(</span><span class="token number">15</span><span class="token punctuation">)</span>,
+    cancellationToken<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+
+                    <h3>Multiple Result Sets</h3>
+                    <pre><code class="language-csharp"><span class="token keyword">using</span> <span class="token keyword">var</span> gridReader <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">QueryMultiple</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT * FROM categories; SELECT * FROM products; SELECT COUNT(*) FROM orders"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">var</span> categories <span class="token operator">=</span> gridReader<span class="token punctuation">.</span><span class="token function">Read</span><span class="token operator">&lt;</span><span class="token class-name">Category</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">var</span> products <span class="token operator">=</span> gridReader<span class="token punctuation">.</span><span class="token function">Read</span><span class="token operator">&lt;</span><span class="token class-name">Product</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">var</span> orderCount <span class="token operator">=</span> gridReader<span class="token punctuation">.</span><span class="token function">ReadScalar</span><span class="token operator">&lt;</span><span class="token class-name">long</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+                </div>
+            </section>
+
+            <section id="configuration" class="section">
+                <div class="container">
+                    <h2 class="section-title">Configuration</h2>
+                    
+                    <h3>Global Configuration</h3>
+                    <p>Configure naming conventions at application startup:</p>
+                    <pre><code class="language-csharp"><span class="token comment">// At application startup</span>
+<span class="token class-name">JauntyConfig</span><span class="token punctuation">.</span>ColumnNameResolver <span class="token operator">=</span> <span class="token class-name">NamingConvention</span><span class="token punctuation">.</span>ToSnakeCase<span class="token punctuation">;</span>  <span class="token comment">// ProductName -> product_name</span>
+<span class="token class-name">JauntyConfig</span><span class="token punctuation">.</span>TableNameResolver <span class="token operator">=</span> <span class="token class-name">NamingConvention</span><span class="token punctuation">.</span>SnakeCasePluralTable<span class="token punctuation">;</span>  <span class="token comment">// Product -> products</span>
+
+<span class="token comment">// Custom naming</span>
+<span class="token class-name">JauntyConfig</span><span class="token punctuation">.</span>TableNameResolver <span class="token operator">=</span> type <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">$"tbl_{type.Name.ToLower()}"</span><span class="token punctuation">;</span>
+<span class="token class-name">JauntyConfig</span><span class="token punctuation">.</span>ColumnNameResolver <span class="token operator">=</span> prop <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">$"col_{prop.ToLower()}"</span><span class="token punctuation">;</span></code></pre>
+
+                    <h3>Attribute Mapping</h3>
+                    <pre><code class="language-csharp"><span class="token keyword">using</span> <span class="token namespace">Jaunty.Attributes</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span><span class="token class-name">Table</span><span class="token punctuation">(</span><span class="token string">"order_items"</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">OrderItem</span>
+<span class="token punctuation">{</span>
+    <span class="token punctuation">[</span><span class="token class-name">Column</span><span class="token punctuation">(</span><span class="token string">"item_id"</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">public</span> <span class="token class-name">int</span> Id <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+    <span class="token punctuation">[</span><span class="token class-name">Column</span><span class="token punctuation">(</span><span class="token string">"product_name"</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">public</span> <span class="token class-name">string</span> Name <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+    <span class="token punctuation">[</span><span class="token class-name">Ignore</span><span class="token punctuation">]</span>  <span class="token comment">// Not mapped from database</span>
+    <span class="token keyword">public</span> <span class="token class-name">decimal</span> CalculatedDiscount <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+
+                    <h3>Command Options</h3>
+                    <pre><code class="language-csharp"><span class="token comment">// Timeout only</span>
+<span class="token keyword">var</span> products <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">Product</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT * FROM products"</span>,
+    <span class="token class-name">CommandOptions</span><span class="token punctuation">.</span><span class="token function">WithTimeout</span><span class="token punctuation">(</span><span class="token number">30</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Transaction only</span>
+<span class="token keyword">using</span> <span class="token keyword">var</span> transaction <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">BeginTransaction</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">var</span> products <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">Product</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT * FROM products"</span>,
+    <span class="token class-name">CommandOptions</span><span class="token punctuation">.</span><span class="token function">WithTransaction</span><span class="token punctuation">(</span>transaction<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// Both</span>
+<span class="token keyword">var</span> products <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">Query</span><span class="token operator">&lt;</span><span class="token class-name">Product</span><span class="token operator">&gt;</span><span class="token punctuation">(</span>
+    <span class="token string">"SELECT * FROM products"</span>,
+    <span class="token class-name">CommandOptions</span><span class="token punctuation">.</span><span class="token function">With</span><span class="token punctuation">(</span>transaction, timeoutSeconds<span class="token operator">:</span> <span class="token number">30</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Jaunty</h4>
+                    <p>The micro-ORM that respects your SQL and your time.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="api-reference.html">API Reference</a></li>
+                        <li><a href="examples.html">Examples</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul>
+                        <li><a href="https://github.com/beparey/jaunty">GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Jaunty. Built by Syed Beparey.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

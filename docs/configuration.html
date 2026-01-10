@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration - Jaunty</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-logo">
+                <a href="./index.html" class="navbar-logo-link">
+                    <span class="logo-text">Jaunty</span>
+                </a>
+            </div>
+            <nav class="navbar-nav">
+                <ul class="navbar-nav-list">
+                    <li class="navbar-nav-item">
+                        <a href="./index.html" class="navbar-nav-link">Home</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="./api-reference.html" class="navbar-nav-link">API Reference</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="./examples.html" class="navbar-nav-link">Examples</a>
+                    </li>
+                    <li class="navbar-nav-item">
+                        <a href="./configuration.html" class="navbar-nav-link">Configuration</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="main-wrapper">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="index.html" class="sidebar-nav-link">Introduction</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="api-reference.html" class="sidebar-nav-link">API Reference</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="examples.html" class="sidebar-nav-link">Examples</a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="configuration.html" class="sidebar-nav-link active">Configuration</a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content-wrapper">
+        <section class="section">
+            <div class="container">
+                <h1 class="section-title">Configuration</h1>
+                
+                <nav class="table-of-contents">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#global-configuration">Global Configuration</a></li>
+                        <li><a href="#naming-conventions">Naming Conventions</a></li>
+                        <li><a href="#attribute-mapping">Attribute Mapping</a></li>
+                        <li><a href="#command-options">Command Options</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </nav>
+
+                <article id="global-configuration" class="config-section">
+                    <h2>Global Configuration</h2>
+                    
+                    <p>Jaunty provides global configuration options through the <code>JauntyConfig</code> class. Configuration should be set at application startup before executing any queries.</p>
+
+                    <h3>JauntyConfig Properties</h3>
+                    <pre><code class="language-csharp"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">JauntyConfig</span>
+<span class="token punctuation">{</span>
+    <span class="token comment">// Custom resolver for schema names</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">Func</span><span class="token operator">&lt;</span><span class="token class-name">Type</span><span class="token punctuation">,</span> <span class="token class-name">string</span><span class="token operator">?</span><span class="token operator">&gt;</span> SchemaNameResolver <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+    <span class="token comment">// Custom resolver for table names</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">Func</span><span class="token operator">&lt;</span><span class="token class-name">Type</span><span class="token punctuation">,</span> <span class="token class-name">string</span><span class="token operator">?</span><span class="token operator">&gt;</span> TableNameResolver <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+    <span class="token comment">// Custom resolver for column names</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">Func</span><span class="token operator">&lt;</span><span class="token class-name">string</span><span class="token punctuation">,</span> <span class="token class-name">string</span><span class="token operator">?</span><span class="token operator">&gt;</span> ColumnNameResolver <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+
+    <span class="token comment">// Reset all configuration to defaults</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">Reset</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+
+                    <h3>Setting Configuration</h3>
+                    <pre><code class="language-csharp">// At application startup
+JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;  // ProductName -> product_name
+JauntyConfig.TableNameResolver = NamingConvention.SnakeCasePluralTable;  // Product -> products
+
+// Custom naming
+JauntyConfig.TableNameResolver = type => $"tbl_{type.Name.ToLower()}";
+JauntyConfig.ColumnNameResolver = propertyName => $"col_{propertyName.ToLower()}";</code></pre>
+
+                    <h3>Resetting Configuration</h3>
+                    <pre><code class="language-csharp">// Reset all configuration to defaults
+JauntyConfig.Reset();</code></pre>
+
+                    <div class="note">
+                        <h4>Note</h4>
+                        <p>Configuration should be set at application startup before executing any queries. Metadata is cached when a type is first used and won't pick up resolver changes afterward.</p>
+                    </div>
+                </article>
+
+                <article id="naming-conventions" class="config-section">
+                    <h2>Naming Conventions</h2>
+                    
+                    <p>Jaunty provides built-in naming convention helpers through the <code>NamingConvention</code> class.</p>
+
+                    <h3>Available Conventions</h3>
+                    <pre><code class="language-csharp">public static class NamingConvention
+{
+    // Convert PascalCase to snake_case
+    public static string ToSnakeCase(string propertyName);
+    
+    // Convert to lowercase
+    public static string ToLowerCase(string propertyName);
+    
+    // Pluralize English words
+    public static string Pluralize(string singular);
+    
+    // Combine snake_case and pluralization for table names
+    public static string SnakeCasePluralTable(Type type);
+    
+    // Convert to snake_case for column names
+    public static string SnakeCaseColumn(string propertyName);
+}</code></pre>
+
+                    <h3>Usage Examples</h3>
+                    <pre><code class="language-csharp">// Snake case conversion
+NamingConvention.ToSnakeCase("ProductName");     // "product_name"
+NamingConvention.ToSnakeCase("CustomerId");     // "customer_id"
+
+// Pluralization
+NamingConvention.Pluralize("Category");         // "Categories"
+NamingConvention.Pluralize("Company");          // "Companies"
+
+// Combined table naming
+NamingConvention.SnakeCasePluralTable(typeof(Product));  // "products"
+NamingConvention.SnakeCasePluralTable(typeof(Order));    // "orders"</code></pre>
+
+                    <h3>Complete Configuration Example</h3>
+                    <pre><code class="language-csharp">// At application startup
+JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+JauntyConfig.TableNameResolver = NamingConvention.SnakeCasePluralTable;
+
+// Now property 'ProductName' maps to column 'product_name'
+// And class 'Product' maps to table 'products'</code></pre>
+                </article>
+
+                <article id="attribute-mapping" class="config-section">
+                    <h2>Attribute Mapping</h2>
+                    
+                    <p>Jaunty provides attribute-based mapping for fine-grained control over how entities map to database tables and columns.</p>
+
+                    <h3>Available Attributes</h3>
+                    <pre><code class="language-csharp">[Table("table_name")]          // Specify table name
+[Column("column_name")]        // Specify column name
+[Ignore]                       // Ignore property during mapping</code></pre>
+
+                    <h3>Table Attribute</h3>
+                    <pre><code class="language-csharp">[Table("order_items")]
+public class OrderItem
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+}</code></pre>
+
+                    <h3>Column Attribute</h3>
+                    <pre><code class="language-csharp">public class OrderItem
+{
+    [Column("item_id")]
+    public int Id { get; set; }
+
+    [Column("product_name")]
+    public string Name { get; set; }
+
+    [Column("unit_price")]
+    public decimal Price { get; set; }
+}</code></pre>
+
+                    <h3>Ignore Attribute</h3>
+                    <pre><code class="language-csharp">public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+
+    [Ignore]  // Not mapped from database
+    public decimal CalculatedDiscount { get; set; }
+}</code></pre>
+
+                    <h3>Attribute Priority Order</h3>
+                    <ol>
+                        <li><code>[Column]</code> attribute</li>
+                        <li><code>JauntyConfig.ColumnNameResolver</code></li>
+                        <li>Property name (default)</li>
+                    </ol>
+
+                    <h3>Complete Attribute Example</h3>
+                    <pre><code class="language-csharp">[Table("order_items")]
+public class OrderItem
+{
+    [Column("item_id")]
+    public int Id { get; set; }
+
+    [Column("product_name")]
+    public string Name { get; set; }
+
+    [Column("unit_price")]
+    public decimal Price { get; set; }
+
+    [Ignore]  // Not mapped from database
+    public decimal CalculatedDiscount { get; set; }
+}
+
+// SQL uses database column names
+var items = connection.QueryPartial&lt;OrderItem&gt;(
+    "SELECT item_id, product_name, unit_price FROM order_items");</code></pre>
+                </article>
+
+                <article id="command-options" class="config-section">
+                    <h2>Command Options</h2>
+                    
+                    <p>CommandOptions provides a unified way to pass transaction and timeout settings without method overloading confusion.</p>
+
+                    <h3>CommandOptions&lt;T&gt; Structure</h3>
+                    <pre><code class="language-csharp">public readonly struct CommandOptions&lt;T&gt;(
+    Func&lt;IDataReader, T&gt;? mapper = null,
+    IDbTransaction? transaction = null,
+    int? commandTimeout = null)
+{
+    public readonly Func&lt;IDataReader, T&gt;? Mapper = mapper;
+    public readonly IDbTransaction? Transaction = transaction;
+    public readonly int? CommandTimeout = commandTimeout;
+}</code></pre>
+
+                    <h3>CommandOptions (non-generic) Structure</h3>
+                    <pre><code class="language-csharp">public readonly struct CommandOptions(
+    IDbTransaction? transaction = null,
+    int? commandTimeout = null)
+{
+    public readonly IDbTransaction? Transaction = transaction;
+    public readonly int? CommandTimeout = commandTimeout;
+}</code></pre>
+
+                    <h3>Static Factory Methods</h3>
+                    <pre><code class="language-csharp">// For CommandOptions&lt;T&gt;
+CommandOptions&lt;T&gt; CommandOptions&lt;T&gt;.WithMapper(Func&lt;IDataReader, T&gt; mapper)
+CommandOptions&lt;T&gt; CommandOptions&lt;T&gt;.WithTransaction(IDbTransaction transaction)
+CommandOptions&lt;T&gt; CommandOptions&lt;T&gt;.WithTimeout(int seconds)
+CommandOptions&lt;T&gt; CommandOptions&lt;T&gt;.With(Func&lt;IDataReader, T&gt; mapper, IDbTransaction transaction, int timeoutSeconds)
+
+// For CommandOptions
+CommandOptions CommandOptions.WithTransaction(IDbTransaction transaction)
+CommandOptions CommandOptions.WithTimeout(int seconds)
+CommandOptions CommandOptions.With(IDbTransaction transaction, int timeoutSeconds)</code></pre>
+
+                    <h3>Usage Examples</h3>
+                    <pre><code class="language-csharp">// Timeout only
+var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products",
+    CommandOptions.WithTimeout(30));
+
+// Transaction only
+using var transaction = connection.BeginTransaction();
+var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products",
+    CommandOptions.WithTransaction(transaction));
+
+// Both
+var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products",
+    CommandOptions.With(transaction, timeoutSeconds: 30));
+
+// Custom mapper
+var customMapped = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products",
+    CommandOptions&lt;Product&gt;.WithMapper(reader => new Product
+    {
+        Id = reader.GetInt32("id"),
+        Name = reader.IsDBNull("name") ? null : reader.GetString("name"),
+        Price = reader.GetDecimal("price")
+    }));</code></pre>
+                </article>
+
+                <article id="best-practices" class="config-section">
+                    <h2>Best Practices</h2>
+                    
+                    <h3>1. Configure at Startup</h3>
+                    <p>Always configure Jaunty at application startup before executing any queries. Configuration changes after the first query on a type will not take effect.</p>
+                    
+                    <pre><code class="language-csharp">// DO: Configure at startup
+public void ConfigureServices(IServiceCollection services)
+{
+    // Configure Jaunty
+    JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+    JauntyConfig.TableNameResolver = NamingConvention.SnakeCasePluralTable;
+    
+    // Register other services
+    services.AddScoped&lt;IProductService, ProductService&gt;();
+}</code></pre>
+
+                    <h3>2. Use Strict Mapping by Default</h3>
+                    <p>Take advantage of strict mapping to catch bugs early. Use <code>QueryPartial&lt;T&gt;</code> only when you intentionally want partial data.</p>
+                    
+                    <pre><code class="language-csharp">// PREFER: Strict mapping for complete entities
+var products = connection.Query&lt;Product&gt;(
+    "SELECT id AS Id, name AS Name, price AS Price FROM products");
+
+// USE: Partial mapping when intentionally selecting subset
+var summaries = connection.QueryPartial&lt;ProductSummary&gt;(
+    "SELECT id AS Id, name AS Name FROM products");</code></pre>
+
+                    <h3>3. Leverage Attributes for Complex Mappings</h3>
+                    <p>Use attributes for one-off customizations rather than global configuration.</p>
+                    
+                    <pre><code class="language-csharp">[Table("legacy_products")]
+public class Product
+{
+    [Column("prod_id")]
+    public int Id { get; set; }
+
+    [Column("prod_name")]
+    public string Name { get; set; }
+
+    [Column("unit_cost")]
+    public decimal Price { get; set; }
+}</code></pre>
+
+                    <h3>4. Use CommandOptions for Cross-Cutting Concerns</h3>
+                    <p>Use CommandOptions for transaction and timeout management rather than separate parameters.</p>
+                    
+                    <pre><code class="language-csharp">// PREFER: CommandOptions
+using var transaction = connection.BeginTransaction();
+var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    CommandOptions.With(transaction, timeoutSeconds: 30));
+
+// AVOID: Separate parameters would require many overloads
+// var products = connection.Query(transaction, timeout, sql, parameters); // Too many combinations!</code></pre>
+
+                    <h3>5. Handle NULL Values Appropriately</h3>
+                    <p>Use nullable types for columns that might be NULL in the database.</p>
+                    
+                    <pre><code class="language-csharp">public class Product
+{
+    public int Id { get; set; }           // Non-nullable: will throw if DB returns NULL
+    public string Name { get; set; }      // Reference type: NULL becomes null
+    public int? CategoryId { get; set; }  // Nullable: NULL becomes null
+    public DateTime? DiscontinuedDate { get; set; }  // Nullable: NULL becomes null
+}</code></pre>
+
+                    <h3>6. Use Streaming for Large Result Sets</h3>
+                    <p>Use streaming methods when dealing with large datasets to avoid memory issues.</p>
+                    
+                    <pre><code class="language-csharp">// FOR LARGE DATASETS: Use streaming
+var products = connection.QueryStream&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 });
+
+foreach (var product in products)
+{
+    ProcessProduct(product); // Process one at a time
+}</code></pre>
+                </article>
+            </div>
+        </section>
+    </main>
+</div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Jaunty</h4>
+                    <p>The micro-ORM that respects your SQL and your time.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="./index.html">Home</a></li>
+                        <li><a href="./api-reference.html">API Reference</a></li>
+                        <li><a href="./examples.html">Examples</a></li>
+                        <li><a href="./configuration.html">Configuration</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul>
+                        <li><a href="https://github.com/beparey/jaunty">GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Jaunty. Built by Syed Beparey.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
