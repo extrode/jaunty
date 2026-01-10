@@ -3,7 +3,7 @@ using System.Data.Common;
 using Jaunty.Core;
 using Jaunty.Internals.Enums;
 
-namespace Jaunty.Read;
+namespace Jaunty;
 
 public static partial class Jaunty
 {

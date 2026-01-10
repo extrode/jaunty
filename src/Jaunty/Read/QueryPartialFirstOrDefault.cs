@@ -4,7 +4,7 @@ using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Enums;
 
-namespace Jaunty.Read;
+namespace Jaunty;
 
 public static partial class Jaunty
 {
