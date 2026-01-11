@@ -1,7 +1,6 @@
 using System.Data;
 
 using Jaunty.Core;
-using Jaunty.Internals;
 using Jaunty.Internals.Enums;
 
 namespace Jaunty;

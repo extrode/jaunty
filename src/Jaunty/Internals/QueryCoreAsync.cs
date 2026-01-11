@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Runtime.CompilerServices;
 
 using Jaunty.Core;
 using Jaunty.Internals;
@@ -115,7 +116,11 @@ public static partial class Jaunty
         {
             if (wasClosed) await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            await using var command = connection.CreateCommand();
+#if NET8_0_OR_GREATER
+            await using DbCommand command = connection.CreateCommand();
+#else
+            using DbCommand command = connection.CreateCommand();
+#endif
             command.CommandText = sql;
 
             if (options.Transaction is DbTransaction dbTransaction)
@@ -127,7 +132,11 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
+#if NET8_0_OR_GREATER
             await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
             var map = DrDispatcher.Resolve(reader, options, mode);
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
@@ -136,7 +145,11 @@ public static partial class Jaunty
         finally
         {
             if (wasClosed && connection.State != ConnectionState.Closed)
+#if NET8_0_OR_GREATER
                 await connection.CloseAsync().ConfigureAwait(false);
+#else
+                connection.Close();
+#endif
         }
     }
 #else
@@ -170,9 +183,8 @@ public static partial class Jaunty
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
-#if ASYNC_ENUMERABLE_SUPPORT
-                    await connection.CloseAsync().ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+                await connection.CloseAsync().ConfigureAwait(false);
 #else
                 connection.Close();
 #endif

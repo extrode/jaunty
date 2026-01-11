@@ -45,7 +45,7 @@ public class QueryPartialStreamAsyncTests : IDisposable
     [Fact]
     public async Task QueryPartialStreamAsync_WithoutParameters_YieldsAll()
     {
-        Task<IEnumerable<ProductSummary>> summaries = _db.Connection.QueryPartialStreamAsync<ProductSummary>(
+        var summaries = _db.Connection.QueryPartialStreamAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 3");
 
         var list = new List<ProductSummary>();
