@@ -29,7 +29,11 @@ public static partial class Jaunty
             {
                 if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-                using var command = dbConnection.CreateCommand();
+#if NET8_0_OR_GREATER
+                await using DbCommand command = dbConnection.CreateCommand();
+#else
+                using DbCommand command = dbConnection.CreateCommand();
+#endif
                 command.CommandText = sql;
 
                 if (options.Transaction is DbTransaction dbTransaction)
@@ -41,7 +45,11 @@ public static partial class Jaunty
                 if (parameters is not null)
                     ParameterBinder.Bind(command, parameters);
 
+#if NET8_0_OR_GREATER
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
                 using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
                 return await handler(reader, cancellationToken).ConfigureAwait(false);
             }
             else
@@ -73,7 +81,7 @@ public static partial class Jaunty
                 if (connection is DbConnection dbConn)
                     await dbConn.CloseAsync().ConfigureAwait(false);
 #else
-                    connection.Close();
+                connection.Close();
 #endif
             }
         }

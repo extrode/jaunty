@@ -23,7 +23,11 @@ public static partial class Jaunty
         if (wasClosed)
             await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-        var command = connection.CreateCommand();
+#if NET8_0_OR_GREATER
+        await using DbCommand command = connection.CreateCommand();
+#else
+        using DbCommand command = connection.CreateCommand();
+#endif
         command.CommandText = sql;
 
         if (options.Transaction is DbTransaction dbTransaction)
@@ -35,7 +39,11 @@ public static partial class Jaunty
         if (parameters is not null)
             ParameterBinder.Bind(command, parameters);
 
-        var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+        using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
         return new GridReader(reader, connection, wasClosed);
     }
 }

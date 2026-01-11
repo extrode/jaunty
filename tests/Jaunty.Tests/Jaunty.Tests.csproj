@@ -20,6 +20,10 @@
     </PackageReference>
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- Assertion Libraries -->
     <PackageReference Include="FluentAssertions" Version="8.8.0" />
