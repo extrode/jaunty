@@ -27,7 +27,11 @@ public class QueryPartialStreamAsyncTests : IDisposable
             new { CategoryId = 1 });
 
         var count = 0;
+#if ASYNC_ENUMERABLE_SUPPORT
         await foreach (var summary in summaries)
+#else
+        foreach (var summary in await summaries)
+#endif
         {
             Assert.True(summary.ProductId > 0);
             Assert.NotNull(summary.ProductName);
@@ -41,11 +45,15 @@ public class QueryPartialStreamAsyncTests : IDisposable
     [Fact]
     public async Task QueryPartialStreamAsync_WithoutParameters_YieldsAll()
     {
-        var summaries = _db.Connection.QueryPartialStreamAsync<ProductSummary>(
+        Task<IEnumerable<ProductSummary>> summaries = _db.Connection.QueryPartialStreamAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 3");
 
         var list = new List<ProductSummary>();
+#if ASYNC_ENUMERABLE_SUPPORT
         await foreach (var summary in summaries)
+#else
+        foreach (var summary in await summaries)
+#endif
         {
             list.Add(summary);
         }
@@ -63,7 +71,11 @@ public class QueryPartialStreamAsyncTests : IDisposable
             CommandOptions<ProductSummary>.WithTimeout(30));
 
         var count = 0;
+#if ASYNC_ENUMERABLE_SUPPORT
         await foreach (var summary in summaries)
+#else
+        foreach (var summary in await summaries)
+#endif
         {
             Assert.True(summary.ProductId > 0);
             count++;
@@ -83,7 +95,11 @@ public class QueryPartialStreamAsyncTests : IDisposable
             cts.Token);
 
         var count = 0;
+#if ASYNC_ENUMERABLE_SUPPORT
         await foreach (var summary in summaries.WithCancellation(cts.Token))
+#else
+        foreach (var summary in await summaries)
+#endif
         {
             Assert.True(summary.ProductId > 0);
             count++;
@@ -99,7 +115,11 @@ public class QueryPartialStreamAsyncTests : IDisposable
             "SELECT product_id AS ProductId, product_name AS ProductName, unit_price, supplier_id FROM products LIMIT 5");
 
         var list = new List<ProductSummary>();
+#if ASYNC_ENUMERABLE_SUPPORT
         await foreach (var summary in summaries)
+#else
+        foreach (var summary in await summaries)
+#endif
         {
             list.Add(summary);
         }
@@ -115,7 +135,11 @@ public class QueryPartialStreamAsyncTests : IDisposable
             "SELECT product_id AS ProductId FROM products LIMIT 5");
 
         var list = new List<ProductSummary>();
+#if ASYNC_ENUMERABLE_SUPPORT
         await foreach (var summary in summaries)
+#else
+        foreach (var summary in await summaries)
+#endif
         {
             list.Add(summary);
         }
@@ -136,7 +160,11 @@ public class QueryPartialStreamAsyncTests : IDisposable
             new { Id = -999 });
 
         var list = new List<ProductSummary>();
+#if ASYNC_ENUMERABLE_SUPPORT
         await foreach (var summary in summaries)
+#else
+        foreach (var summary in await summaries)
+#endif
         {
             list.Add(summary);
         }
