@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Internals.Enums;
@@ -11,22 +12,30 @@ public static partial class Jaunty
     {
         public Task<T?> QueryPartialFirstOrDefaultAsync<T>(string sql, CancellationToken cancellationToken = default) where T : new()
         {
-            return QueryFirstOrDefaultCoreAsync<T>(connection, sql, null, default, MappingMode.Projection, cancellationToken);
+            return connection is not DbConnection dbConnection
+                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                : QueryFirstOrDefaultCoreAsync<T>(dbConnection, sql, null, default, MappingMode.Projection, cancellationToken);
         }
 
         public Task<T?> QueryPartialFirstOrDefaultAsync<T>(string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
         {
-            return QueryFirstOrDefaultCoreAsync<T>(connection, sql, parameters, default, MappingMode.Projection, cancellationToken);
+            return connection is not DbConnection dbConnection
+                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                : QueryFirstOrDefaultCoreAsync<T>(dbConnection, sql, parameters, default, MappingMode.Projection, cancellationToken);
         }
 
         public Task<T?> QueryPartialFirstOrDefaultAsync<T>(string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
         {
-            return QueryFirstOrDefaultCoreAsync<T>(connection, sql, null, options, MappingMode.Projection, cancellationToken);
+            return connection is not DbConnection dbConnection
+                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                : QueryFirstOrDefaultCoreAsync<T>(dbConnection, sql, null, options, MappingMode.Projection, cancellationToken);
         }
 
         public Task<T?> QueryPartialFirstOrDefaultAsync<T>(string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
         {
-            return QueryFirstOrDefaultCoreAsync<T>(connection, sql, parameters, options, MappingMode.Projection, cancellationToken);
+            return connection is not DbConnection dbConnection
+                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                : QueryFirstOrDefaultCoreAsync<T>(dbConnection, sql, parameters, options, MappingMode.Projection, cancellationToken);
         }
     }
 }

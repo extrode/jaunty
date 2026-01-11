@@ -10,7 +10,7 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static async Task<List<T>> QueryCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private static async Task<List<T>> QueryCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
@@ -34,13 +34,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<T> QueryFirstCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private static async Task<T> QueryFirstCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         T? entity = await QueryFirstOrDefaultCoreAsync<T>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return entity is null ? throw new InvalidOperationException("Sequence contains no elements") : entity;
     }
 
-    private static async Task<T?> QueryFirstOrDefaultCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private static async Task<T?> QueryFirstOrDefaultCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
@@ -58,13 +58,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<T> QuerySingleCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private static async Task<T> QuerySingleCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         T? entity = await QuerySingleOrDefaultCoreAsync<T>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return entity ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
-    private static async Task<T?> QuerySingleOrDefaultCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private static async Task<T?> QuerySingleOrDefaultCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
@@ -89,7 +89,7 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<T> QueryScalarCoreAsync<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken)
+    private static async Task<T> QueryScalarCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken)
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {

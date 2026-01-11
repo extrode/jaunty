@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 
 using Jaunty.Core;
 
@@ -10,22 +11,30 @@ public static partial class Jaunty
     {
         public Task<T> ExecuteScalarAsync<T>(string sql, CancellationToken cancellationToken = default)
         {
-            return QueryScalarCoreAsync<T>(connection, sql, null, default, cancellationToken);
+            return connection is not DbConnection dbConnection
+                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                : QueryScalarCoreAsync<T>(dbConnection, sql, null, default, cancellationToken);
         }
 
         public Task<T> ExecuteScalarAsync<T>(string sql, object parameters, CancellationToken cancellationToken = default)
         {
-            return QueryScalarCoreAsync<T>(connection, sql, parameters, default, cancellationToken);
+            return connection is not DbConnection dbConnection
+                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                : QueryScalarCoreAsync<T>(dbConnection, sql, parameters, default, cancellationToken);
         }
 
         public Task<T> ExecuteScalarAsync<T>(string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)
         {
-            return QueryScalarCoreAsync<T>(connection, sql, null, options, cancellationToken);
+            return connection is not DbConnection dbConnection
+                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                : QueryScalarCoreAsync<T>(dbConnection, sql, null, options, cancellationToken);
         }
 
         public Task<T> ExecuteScalarAsync<T>(string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)
         {
-            return QueryScalarCoreAsync<T>(connection, sql, parameters, options, cancellationToken);
+            return connection is not DbConnection dbConnection
+                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                : QueryScalarCoreAsync<T>(dbConnection, sql, parameters, options, cancellationToken);
         }
     }
 }
