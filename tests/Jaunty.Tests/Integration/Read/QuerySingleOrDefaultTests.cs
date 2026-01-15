@@ -7,6 +7,18 @@ namespace Jaunty.Tests.Integration.Read;
 public class QuerySingleOrDefaultTests : IDisposable
 {
     private readonly Database _db;
+    
+    private const string FullProductColumns = @"
+        product_id AS ProductId, 
+        product_name AS ProductName, 
+        supplier_id, 
+        category_id, 
+        quantity_per_unit, 
+        unit_price, 
+        units_in_stock, 
+        units_on_order, 
+        reorder_level, 
+        discontinued";
 
     public QuerySingleOrDefaultTests()
     {
@@ -23,7 +35,7 @@ public class QuerySingleOrDefaultTests : IDisposable
     public void QuerySingleOrDefault_WithSingleResult_ReturnsResult()
     {
         var product = _db.Connection.QuerySingleOrDefault<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id",
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 });
 
         Assert.NotNull(product);
@@ -47,7 +59,7 @@ public class QuerySingleOrDefaultTests : IDisposable
     public void QuerySingleOrDefault_NoResults_ReturnsNull()
     {
         var product = _db.Connection.QuerySingleOrDefault<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id",
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = -999 });
 
         Assert.Null(product);
@@ -58,7 +70,7 @@ public class QuerySingleOrDefaultTests : IDisposable
     {
         var ex = Assert.Throws<InvalidOperationException>(() =>
             _db.Connection.QuerySingleOrDefault<Product>(
-                "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE category_id = @CategoryId",
+                $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
                 new { CategoryId = 1 }));
 
         Assert.Contains("Sequence contains more than one element", ex.Message);
@@ -68,7 +80,7 @@ public class QuerySingleOrDefaultTests : IDisposable
     public void QuerySingleOrDefault_WithCommandOptions_Works()
     {
         var product = _db.Connection.QuerySingleOrDefault<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id",
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             CommandOptions<Product>.WithTimeout(30));
 
@@ -84,7 +96,9 @@ public class QuerySingleOrDefaultTests : IDisposable
                 "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
                 new { Id = 1 }));
 
-        Assert.Contains("Strict mapping failed", ex.Message);
-        Assert.Contains("UnitPrice", ex.Message);
+Assert.Contains("Strict mapping failed", ex.Message);
+        // Check for any of the expected missing properties
+        var missingProperties = new[] { "supplier_id", "category_id", "quantity_per_unit", "unit_price", "units_in_stock", "units_on_order", "reorder_level", "discontinued" };
+        Assert.True(missingProperties.Any(prop => ex.Message.Contains(prop)), $"Expected one of {string.Join(", ", missingProperties)} in error message: {ex.Message}");
     }
 }

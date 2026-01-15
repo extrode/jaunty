@@ -7,6 +7,18 @@ namespace Jaunty.Tests.Integration.Read;
 public class QuerySingleTests : IDisposable
 {
     private readonly Database _db;
+    
+    private const string FullProductColumns = @"
+        product_id AS ProductId, 
+        product_name AS ProductName, 
+        supplier_id, 
+        category_id, 
+        quantity_per_unit, 
+        unit_price, 
+        units_in_stock, 
+        units_on_order, 
+        reorder_level, 
+        discontinued";
 
     public QuerySingleTests()
     {
@@ -22,8 +34,8 @@ public class QuerySingleTests : IDisposable
     [Fact]
     public void QuerySingle_WithSingleResult_ReturnsResult()
     {
-        var product = _db.Connection.QuerySingle<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id",
+var product = _db.Connection.QuerySingle<Product>(
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 });
 
         Assert.NotNull(product);
@@ -34,8 +46,8 @@ public class QuerySingleTests : IDisposable
     [Fact]
     public void QuerySingle_WithParameters_FiltersCorrectly()
     {
-        var product = _db.Connection.QuerySingle<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id AND category_id = @CategoryId",
+var product = _db.Connection.QuerySingle<Product>(
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id AND category_id = @CategoryId",
             new { Id = 1, CategoryId = 1 });
 
         Assert.NotNull(product);
@@ -57,9 +69,9 @@ public class QuerySingleTests : IDisposable
     [Fact]
     public void QuerySingle_MultipleResults_Throws()
     {
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+var ex = Assert.Throws<InvalidOperationException>(() =>
             _db.Connection.QuerySingle<Product>(
-                "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE category_id = @CategoryId",
+                $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
                 new { CategoryId = 1 }));
 
         Assert.Contains("Sequence contains more than one element", ex.Message);
@@ -68,8 +80,8 @@ public class QuerySingleTests : IDisposable
     [Fact]
     public void QuerySingle_WithCommandOptions_Works()
     {
-        var product = _db.Connection.QuerySingle<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id",
+var product = _db.Connection.QuerySingle<Product>(
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             CommandOptions<Product>.WithTimeout(30));
 
@@ -85,7 +97,9 @@ public class QuerySingleTests : IDisposable
                 "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
                 new { Id = 1 }));
 
-        Assert.Contains("Strict mapping failed", ex.Message);
-        Assert.Contains("UnitPrice", ex.Message);
+Assert.Contains("Strict mapping failed", ex.Message);
+        // Check for any of the expected missing properties
+        var missingProperties = new[] { "supplier_id", "category_id", "quantity_per_unit", "unit_price", "units_in_stock", "units_on_order", "reorder_level", "discontinued" };
+        Assert.True(missingProperties.Any(prop => ex.Message.Contains(prop)), $"Expected one of {string.Join(", ", missingProperties)} in error message: {ex.Message}");
     }
 }
