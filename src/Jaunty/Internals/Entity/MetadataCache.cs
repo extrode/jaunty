@@ -49,9 +49,14 @@ internal static class MetadataCache<T> where T : new()
 #endif
     }
 
-    internal static PropertySetter<T>[] GetSetters(IDataReader reader, MappingMode mode)
+internal static PropertySetter<T>[] GetSetters(IDataReader reader, MappingMode mode)
     {
         int fieldCount = reader.FieldCount;
+        
+        // Handle empty result sets
+        if (fieldCount == 0)
+            return [];
+            
         var settersBuffer = new PropertySetter<T>[fieldCount];
         int count = 0;
 
@@ -61,9 +66,17 @@ internal static class MetadataCache<T> where T : new()
         var matchedProperties = new bool[Properties.Length];
 #endif
 
-        for (int i = 0; i < fieldCount; i++)
+for (int i = 0; i < fieldCount; i++)
         {
-            string columnName = reader.GetName(i);
+            string columnName;
+            try
+            {
+                columnName = reader.GetName(i) ?? throw new InvalidOperationException($"Column {i} has no name");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to get column name for field {i}", ex);
+            }
 
             if (ColumnToIndex.TryGetValue(columnName, out int propIndex))
             {
