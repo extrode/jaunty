@@ -23,7 +23,7 @@ public class QueryStreamAsyncTests : IDisposable
     public async Task QueryStreamAsync_WithResults_YieldsResults()
     {
         var products = _db.Connection.QueryStreamAsync<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE category_id = @CategoryId",
+            "SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
         var count = 0;
@@ -46,7 +46,7 @@ public class QueryStreamAsyncTests : IDisposable
     public async Task QueryStreamAsync_WithoutParameters_YieldsAll()
     {
         var products = _db.Connection.QueryStreamAsync<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products LIMIT 3");
+            "SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM products LIMIT 3");
 
         var list = new List<Product>();
 #if ASYNC_ENUMERABLE_SUPPORT
@@ -66,7 +66,7 @@ public class QueryStreamAsyncTests : IDisposable
     public async Task QueryStreamAsync_WithCommandOptions_Works()
     {
         var products = _db.Connection.QueryStreamAsync<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE category_id = @CategoryId",
+            "SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 },
             CommandOptions<Product>.WithTimeout(30));
 
@@ -91,7 +91,7 @@ public class QueryStreamAsyncTests : IDisposable
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // Reasonable timeout
         
         var products = _db.Connection.QueryStreamAsync<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products LIMIT 5",
+            "SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM products LIMIT 5",
             cts.Token);
 
         var count = 0;
@@ -132,7 +132,7 @@ public class QueryStreamAsyncTests : IDisposable
     public async Task QueryStreamAsync_EmptyResult_YieldsNothing()
     {
         var products = _db.Connection.QueryStreamAsync<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id",
+            "SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM products WHERE product_id = @Id",
             new { Id = -999 });
 
         var list = new List<Product>();

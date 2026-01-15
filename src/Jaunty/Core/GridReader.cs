@@ -240,10 +240,13 @@ try
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
         var opts = options;
-        var map = DrDispatcher.Resolve(reader, opts, MappingMode.Strict);
+        Func<IDataReader, T>? map = null;
 
         while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            map ??= DrDispatcher.Resolve(reader, opts, MappingMode.Strict);
             yield return map(reader);
+        }
         await AdvanceAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -253,10 +256,13 @@ try
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
         var opts = options;
-        var map = DrDispatcher.Resolve(reader, opts, MappingMode.Projection);
+        Func<IDataReader, T>? map = null;
 
         while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            map ??= DrDispatcher.Resolve(reader, opts, MappingMode.Projection);
             yield return map(reader);
+        }
         await AdvanceAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -266,10 +272,24 @@ try
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
         var results = new List<T>();
-        var map = DrDispatcher.Resolve(reader, options, mode);
+        Func<IDataReader, T>? map = null;
+        var hasRead = false;
 
         while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            hasRead = true;
+            map ??= DrDispatcher.Resolve(reader, options, mode);
             results.Add(map(reader));
+        }
+        
+        if (!hasRead && results.Count == 0)
+        {
+            // For empty result sets, we still need to handle the mapping properly
+            // but there's no data to map, so return empty list
+            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+            return results;
+        }
+
         await AdvanceAsync(cancellationToken).ConfigureAwait(false);
         return results;
     }
