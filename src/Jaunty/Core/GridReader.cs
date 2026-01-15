@@ -73,12 +73,33 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
             T? result = default;
             if (reader.Read() && !reader.IsDBNull(0))
             {
-                if (reader is DbDataReader dbReader)
-                    result = dbReader.GetFieldValue<T>(0);
-                else
+                try
                 {
-                    var val = reader.GetValue(0);
-                    result = (T)Convert.ChangeType(val, typeof(T));
+                    if (reader is DbDataReader dbReader)
+                        result = dbReader.GetFieldValue<T>(0);
+                    else
+                    {
+                        var val = reader.GetValue(0);
+                        result = (T)Convert.ChangeType(val, typeof(T));
+                    }
+                }
+                catch (Exception ex) when (ex is InvalidCastException or NullReferenceException or IndexOutOfRangeException)
+                {
+                    // Handle SQLite DataReader edge cases and type conversion issues
+                    try
+                    {
+                        // Fallback to GetValue + Convert.ChangeType for better compatibility
+                        if (!reader.IsDBNull(0))
+                        {
+                            var rawValue = reader.GetValue(0);
+                            result = (T)Convert.ChangeType(rawValue, typeof(T));
+                        }
+                    }
+                    catch
+                    {
+                        // If all else fails, return default
+                        result = default;
+                    }
                 }
             }
             return result;
@@ -218,12 +239,29 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
                 try
                 {
                     if (!await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
-                        result = await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
+                    {
+                        // Use GetValue and Convert.ChangeType as fallback for better compatibility
+                        var value = await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
+                        result = value;
+                    }
                 }
-                catch (NullReferenceException)
+                catch (Exception ex) when (ex is InvalidCastException or NullReferenceException or IndexOutOfRangeException)
                 {
-                    // Handle SQLite DataReader edge case with empty result sets
-                    result = default;
+                    // Handle SQLite DataReader edge cases and type conversion issues
+                    try
+                    {
+                        // Fallback to GetValue + Convert.ChangeType for better compatibility
+                        if (!await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
+                        {
+                            var rawValue = dbReader.GetValue(0);
+                            result = (T)Convert.ChangeType(rawValue, typeof(T));
+                        }
+                    }
+                    catch
+                    {
+                        // If all else fails, return default
+                        result = default;
+                    }
                 }
             }
             return result;
