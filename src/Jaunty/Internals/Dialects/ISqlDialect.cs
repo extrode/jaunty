@@ -56,4 +56,23 @@ internal interface ISqlDialect
     /// <param name="escapeChar">The escape character for LIKE wildcards (typically '[')</param>
     /// <returns>SQL LIKE expression with case-insensitive comparison</returns>
     string GenerateCaseInsensitiveLike(string columnName, string parameterName, string escapeChar);
+
+    /// <summary>
+    /// Returns SQL to disable foreign key constraint checks for the current session/connection.
+    /// Used by bulk operations that need to ignore referential integrity.
+    /// </summary>
+    /// <returns>SQL statement(s) to disable FK checks, or null if not supported.</returns>
+    string? GetDisableForeignKeyChecksSql();
+
+    /// <summary>
+    /// Returns SQL to re-enable foreign key constraint checks for the current session/connection.
+    /// Must be called after GetDisableForeignKeyChecksSql() to restore normal behavior.
+    /// </summary>
+    /// <returns>SQL statement(s) to enable FK checks, or null if not supported.</returns>
+    string? GetEnableForeignKeyChecksSql();
+
+    /// <summary>
+    /// Indicates whether this dialect supports session-level foreign key constraint toggling.
+    /// </summary>
+    bool SupportsForeignKeyToggle { get; }
 }

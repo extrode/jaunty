@@ -89,4 +89,10 @@ internal sealed class MySqlDialect : ISqlDialect
         // This uses the column's default collation (typically utf8mb4_general_ci)
         return $"{columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
     }
+
+    public string? GetDisableForeignKeyChecksSql() => "SET FOREIGN_KEY_CHECKS = 0";
+
+    public string? GetEnableForeignKeyChecksSql() => "SET FOREIGN_KEY_CHECKS = 1";
+
+    public bool SupportsForeignKeyToggle => true;
 }
