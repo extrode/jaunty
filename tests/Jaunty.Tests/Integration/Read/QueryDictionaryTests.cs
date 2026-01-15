@@ -169,4 +169,58 @@ public class QueryDictionaryTests : IDisposable
         Assert.True(result.ContainsKey("product_count"));
         Assert.True(result.ContainsKey("avg_price"));
     }
+
+    #region Typed Dictionary Tests - Dictionary<string, TValue>
+
+    [Fact]
+    public void Query_DictionaryStringDecimal_ConvertsAllValuesToDecimal()
+    {
+        var result = _db.Connection.QueryFirst<Dictionary<string, decimal>>(
+            "SELECT unit_price, units_in_stock FROM products WHERE unit_price IS NOT NULL AND units_in_stock IS NOT NULL LIMIT 1");
+
+        Assert.NotNull(result);
+        Assert.True(result.ContainsKey("unit_price"));
+        Assert.True(result.ContainsKey("units_in_stock"));
+        Assert.IsType<decimal>(result["unit_price"]);
+        Assert.IsType<decimal>(result["units_in_stock"]);
+    }
+
+    [Fact]
+    public void Query_DictionaryStringLong_ConvertsAllValuesToLong()
+    {
+        var result = _db.Connection.QueryFirst<Dictionary<string, long>>(
+            "SELECT product_id, category_id, units_in_stock FROM products WHERE units_in_stock IS NOT NULL LIMIT 1");
+
+        Assert.NotNull(result);
+        Assert.IsType<long>(result["product_id"]);
+        Assert.IsType<long>(result["category_id"]);
+        Assert.IsType<long>(result["units_in_stock"]);
+    }
+
+    [Fact]
+    public void Query_DictionaryStringString_ConvertsAllValuesToString()
+    {
+        var result = _db.Connection.QueryFirst<Dictionary<string, string>>(
+            "SELECT product_name, quantity_per_unit FROM products LIMIT 1");
+
+        Assert.NotNull(result);
+        Assert.IsType<string>(result["product_name"]);
+        // quantity_per_unit might be null, but if present it should be string
+    }
+
+    [Fact]
+    public void Query_DictionaryStringInt_ReturnsList()
+    {
+        var results = _db.Connection.Query<Dictionary<string, int>>(
+            "SELECT product_id, category_id FROM products LIMIT 3");
+
+        Assert.Equal(3, results.Count);
+        Assert.All(results, row =>
+        {
+            Assert.IsType<int>(row["product_id"]);
+            Assert.IsType<int>(row["category_id"]);
+        });
+    }
+
+    #endregion
 }
