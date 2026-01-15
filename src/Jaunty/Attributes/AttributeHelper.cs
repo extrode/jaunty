@@ -10,17 +10,17 @@ internal static class AttributeHelper
         for (int i = 0; i < attributes.Length; i++)
         {
             if (attributes[i] is TableAttribute tableAttribute)
-                return (tableAttribute.Name, tableAttribute.Schema);
+                return (tableAttribute.Schema, tableAttribute.Name);
 #if NET8_0_OR_GREATER
             if (attributes[i] is System.ComponentModel.DataAnnotations.Schema.TableAttribute sysTableAttribute)
-                return (sysTableAttribute.Name, sysTableAttribute.Schema);
+                return (sysTableAttribute.Schema, sysTableAttribute.Name);
 #else
             Type attributeType = attributes[i].GetType();
             if (attributeType.FullName == "System.ComponentModel.DataAnnotations.Schema.TableAttribute")
             {
                 var name = attributeType.GetProperty("Name")?.GetValue(attributes[i]) as string;
                 var schema = attributeType.GetProperty("Schema")?.GetValue(attributes[i]) as string;
-                return (name, schema);
+                return (schema, name);
             }
 #endif
         }
