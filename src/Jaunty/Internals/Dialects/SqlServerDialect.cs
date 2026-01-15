@@ -85,4 +85,14 @@ internal sealed class SqlServerDialect : ISqlDialect
         // - AS = Accent Sensitive
         return $"{columnName} COLLATE Latin1_General_CI_AS LIKE {parameterName} ESCAPE '{escapeChar}'";
     }
+
+    // SQL Server doesn't have a simple session-level FK toggle.
+    // Disabling constraints requires per-table ALTER statements.
+    // For bulk operations ignoring constraints, users should use NOCHECK per table
+    // or handle this at the application level.
+    public string? GetDisableForeignKeyChecksSql() => null;
+
+    public string? GetEnableForeignKeyChecksSql() => null;
+
+    public bool SupportsForeignKeyToggle => false;
 }

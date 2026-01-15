@@ -81,4 +81,10 @@ internal sealed class SQLiteDialect : ISqlDialect
         // This is the standard SQLite behavior
         return $"{columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
     }
+
+    public string? GetDisableForeignKeyChecksSql() => "PRAGMA foreign_keys = OFF";
+
+    public string? GetEnableForeignKeyChecksSql() => "PRAGMA foreign_keys = ON";
+
+    public bool SupportsForeignKeyToggle => true;
 }

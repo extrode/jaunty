@@ -74,4 +74,12 @@ internal sealed class PostgreSqlDialect : ISqlDialect
         // Alternative: Use UPPER() or LOWER() but ILIKE is preferred
         return $"{columnName} ILIKE {parameterName} ESCAPE '{escapeChar}'";
     }
+
+    // PostgreSQL: session_replication_role = 'replica' disables all triggers including FK constraints
+    // This is a session-level setting that affects all tables
+    public string? GetDisableForeignKeyChecksSql() => "SET session_replication_role = 'replica'";
+
+    public string? GetEnableForeignKeyChecksSql() => "SET session_replication_role = 'origin'";
+
+    public bool SupportsForeignKeyToggle => true;
 }
