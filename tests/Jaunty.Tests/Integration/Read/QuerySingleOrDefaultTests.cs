@@ -47,7 +47,7 @@ public class QuerySingleOrDefaultTests : IDisposable
     public void QuerySingleOrDefault_WithParameters_FiltersCorrectly()
     {
         var product = _db.Connection.QuerySingleOrDefault<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id AND category_id = @CategoryId",
+            "SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM products WHERE product_id = @Id AND category_id = @CategoryId",
             new { Id = 1, CategoryId = 1 });
 
         Assert.NotNull(product);

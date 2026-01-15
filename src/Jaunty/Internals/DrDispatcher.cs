@@ -19,7 +19,17 @@ internal static class DrDispatcher
             return MappedCache<T>.Mapper;
 
         // 3. Metadata reflection fallback
-        var setters = MetadataCache<T>.GetSetters(reader, mode);
+        PropertySetter<T>[] setters;
+        try
+        {
+            setters = MetadataCache<T>.GetSetters(reader, mode);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("Failed to get column name") && reader.GetType().Name.Contains("SQLite"))
+        {
+            // Handle SQLite async DataReader issue by providing a helpful error message
+            throw new InvalidOperationException($"SQLite async DataReader issue: {ex.Message}. This may be a limitation of SQLite's async DataReader implementation. Consider using synchronous methods or ensuring the reader state is valid.", ex);
+        }
+        
         return reader =>
         {
             var entity = new T();
