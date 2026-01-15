@@ -210,12 +210,22 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
-        try
+try
         {
             T? result = default;
-            if (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false)
-                && !await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
-                result = await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
+            if (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                try
+                {
+                    if (!await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
+                        result = await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
+                }
+                catch (NullReferenceException)
+                {
+                    // Handle SQLite DataReader edge case with empty result sets
+                    result = default;
+                }
+            }
             return result;
         }
         finally
@@ -302,13 +312,22 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         }
     }
 
-    private async Task AdvanceAsync(CancellationToken cancellationToken = default)
+private async Task AdvanceAsync(CancellationToken cancellationToken = default)
     {
-        bool hasNext = reader is DbDataReader dbReader
-            ? await dbReader.NextResultAsync(cancellationToken).ConfigureAwait(false)
-            : reader.NextResult();
-        if (!hasNext)
+        try
         {
+            bool hasNext = reader is DbDataReader dbReader
+                ? await dbReader.NextResultAsync(cancellationToken).ConfigureAwait(false)
+                : reader.NextResult();
+            if (!hasNext)
+            {
+                _consumed = true;
+                await DisposeAsync();
+            }
+        }
+        catch (NullReferenceException)
+        {
+            // Handle SQLite DataReader edge case where NextResult throws on empty result sets
             _consumed = true;
             await DisposeAsync();
         }
