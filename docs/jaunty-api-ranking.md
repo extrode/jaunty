@@ -5,12 +5,19 @@ This document ranks the APIs that are missing in Jaunty compared to competitors 
 ## Must-Have (Critical for ORM Competitiveness)
 
 ### 1. Complete Write Operations
-**Priority**: Critical
+**Priority**: Critical (Partially Addressed)
 **Description**: Complete CRUD operations with proper parameter binding
-**Current Status**: Basic Insert/Update/Delete implemented
-**Missing**: 
+**Current Status**: Basic Insert/Update/Delete implemented with both sync and async versions
+**Implemented**:
+- `Insert<T>()` and `InsertAsync<T>()` - Insert single entity
+- `Update<T>()` and `UpdateAsync<T>()` - Update single entity
+- `Delete<T>()` and `DeleteAsync<T>()` - Delete by entity or ID
+- All methods support CommandOptions for transactions and timeouts
+
+**Still Missing**:
 - Bulk operations (BulkInsert, BulkUpdate, BulkDelete)
 - Upsert operations
+- Range operations (InsertRange, UpdateRange, DeleteRange)
 - Proper parameter validation for write operations
 
 **Competitor Comparison**:

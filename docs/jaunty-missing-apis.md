@@ -5,9 +5,16 @@ This document analyzes APIs that are missing in Jaunty compared to competitors l
 ## Must-Have Missing APIs
 
 ### 1. Complete Write Operations
-**Status**: Partially implemented (basic CRUD added)
-**Missing**: 
+**Status**: Basic CRUD implemented, extended operations missing
+**Implemented**:
+- `Insert<T>()` and `InsertAsync<T>()` - Insert single entity
+- `Update<T>()` and `UpdateAsync<T>()` - Update single entity
+- `Delete<T>()` and `DeleteAsync<T>()` - Delete by entity or ID
+- All methods support CommandOptions for transactions and timeouts
+
+**Still Missing**:
 - Bulk operations (BulkInsert, BulkUpdate, BulkDelete)
+- Range operations (InsertRange, UpdateRange, DeleteRange)
 - Upsert operations (InsertOrUpdate, Merge)
 - Batch operations for multiple commands
 

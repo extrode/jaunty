@@ -4,6 +4,21 @@ This document outlines APIs that are planned for future implementation in Jaunty
 
 ## High Priority
 
+### Basic CRUD Operations (COMPLETED)
+Basic CRUD operations have been implemented:
+- `Insert<T>()` and `InsertAsync<T>()` - Insert single entity
+- `Update<T>()` and `UpdateAsync<T>()` - Update single entity
+- `Delete<T>()` and `DeleteAsync<T>()` - Delete by entity or ID
+- All methods support CommandOptions for transactions and timeouts
+
+### Extended Write Operations
+- `InsertRange<T>(IEnumerable<T> entities, CommandOptions options = default)` where T : new()
+- `Task<int> InsertRangeAsync<T>(IEnumerable<T> entities, CommandOptions options = default, CancellationToken cancellationToken = default)` where T : new()
+- `UpdateRange<T>(IEnumerable<T> entities, CommandOptions options = default)` where T : new()
+- `Task<int> UpdateRangeAsync<T>(IEnumerable<T> entities, CommandOptions options = default, CancellationToken cancellationToken = default)` where T : new()
+- `DeleteRange<T>(IEnumerable<T> entities, CommandOptions options = default)` where T : new()
+- `Task<int> DeleteRangeAsync<T>(IEnumerable<T> entities, CommandOptions options = default, CancellationToken cancellationToken = default)` where T : new()
+
 ### Bulk Operations
 - `BulkInsert<T>(IEnumerable<T> entities, string tableName, CommandOptions options = default)` where T : new()
 - `Task<int> BulkInsertAsync<T>(IEnumerable<T> entities, string tableName, CommandOptions options = default, CancellationToken cancellationToken = default)` where T : new()

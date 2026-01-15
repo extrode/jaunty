@@ -115,20 +115,24 @@ This document provides a comprehensive list of all public APIs currently availab
 - `Task<GridReader> QueryMultipleAsync(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)`
 
 ### Write Operations (Newly Added)
-- `int Insert<T>(T entity, string tableName, CommandOptions options = default)` where T : new()
-- `Task<int> InsertAsync<T>(T entity, string tableName, CommandOptions options = default, CancellationToken cancellationToken = default)` where T : new()
+- `long Insert<T>(T entity)` where T : class, new()
+- `long Insert<T>(T entity, CommandOptions options)` where T : class, new()
+- `Task<long> InsertAsync<T>(T entity, CancellationToken cancellationToken = default)` where T : class, new()
+- `Task<long> InsertAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` where T : class, new()
 
-- `int Update<T>(T entity, string tableName, string keyProperty = "Id", CommandOptions options = default)` where T : new()
-- `Task<int> UpdateAsync<T>(T entity, string tableName, string keyProperty = "Id", CommandOptions options = default, CancellationToken cancellationToken = default)` where T : new()
+- `int Update<T>(T entity)` where T : class, new()
+- `int Update<T>(T entity, CommandOptions options)` where T : class, new()
+- `Task<int> UpdateAsync<T>(T entity, CancellationToken cancellationToken = default)` where T : class, new()
+- `Task<int> UpdateAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` where T : class, new()
 
-- `int Delete<T>(object id, string tableName, string keyProperty = "Id", CommandOptions options = default)` where T : new()
-- `Task<int> DeleteAsync<T>(object id, string tableName, string keyProperty = "Id", CommandOptions options = default, CancellationToken cancellationToken = default)` where T : new()
-
-- `int BulkDelete<T>(IEnumerable<object> ids, string tableName, string keyProperty = "Id", CommandOptions options = default)` where T : new()
-- `Task<int> BulkDeleteAsync<T>(IEnumerable<object> ids, string tableName, string keyProperty = "Id", CommandOptions options = default, CancellationToken cancellationToken = default)` where T : new()
-
-- `int DeleteWhere<T>(string tableName, string whereCondition, object parameters, CommandOptions options = default)` where T : new()
-- `Task<int> DeleteWhereAsync<T>(string tableName, string whereCondition, object parameters, CommandOptions options = default, CancellationToken cancellationToken = default)` where T : new()
+- `int Delete<T>(T entity)` where T : class, new()
+- `int Delete<T>(T entity, CommandOptions options)` where T : class, new()
+- `int Delete<T>(object id)` where T : class, new()
+- `int Delete<T>(object id, CommandOptions options)` where T : class, new()
+- `Task<int> DeleteAsync<T>(T entity, CancellationToken cancellationToken = default)` where T : class, new()
+- `Task<int> DeleteAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` where T : class, new()
+- `Task<int> DeleteAsync<T>(object id, CancellationToken cancellationToken = default)` where T : class, new()
+- `Task<int> DeleteAsync<T>(object id, CommandOptions options, CancellationToken cancellationToken = default)` where T : class, new()
 
 ### GridReader Methods (for Multiple Result Sets)
 - `List<T> Read<T>(CommandOptions<T> options = default)` where T : new()
