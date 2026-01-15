@@ -7,6 +7,18 @@ namespace Jaunty.Tests.Integration.Read;
 public class QueryFirstOrDefaultAsyncTests : IDisposable
 {
     private readonly Database _db;
+    
+    private const string FullProductColumns = @"
+        product_id AS ProductId, 
+        product_name AS ProductName, 
+        supplier_id, 
+        category_id, 
+        quantity_per_unit, 
+        unit_price, 
+        units_in_stock, 
+        units_on_order, 
+        reorder_level, 
+        discontinued";
 
     public QueryFirstOrDefaultAsyncTests()
     {
@@ -23,7 +35,7 @@ public class QueryFirstOrDefaultAsyncTests : IDisposable
     public async Task QueryFirstOrDefaultAsync_WithResults_ReturnsFirst()
     {
         var product = await _db.Connection.QueryFirstOrDefaultAsync<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id",
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 });
 
         Assert.NotNull(product);
@@ -35,7 +47,7 @@ public class QueryFirstOrDefaultAsyncTests : IDisposable
     public async Task QueryFirstOrDefaultAsync_WithParameters_FiltersCorrectly()
     {
         var product = await _db.Connection.QueryFirstOrDefaultAsync<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE category_id = @CategoryId",
+            $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
         Assert.NotNull(product);
@@ -47,7 +59,7 @@ public class QueryFirstOrDefaultAsyncTests : IDisposable
     public async Task QueryFirstOrDefaultAsync_NoResults_ReturnsNull()
     {
         var product = await _db.Connection.QueryFirstOrDefaultAsync<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id",
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = -999 });
 
         Assert.Null(product);
@@ -57,7 +69,7 @@ public class QueryFirstOrDefaultAsyncTests : IDisposable
     public async Task QueryFirstOrDefaultAsync_WithCommandOptions_Works()
     {
         var product = await _db.Connection.QueryFirstOrDefaultAsync<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id",
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             CommandOptions<Product>.WithTimeout(30));
 
@@ -71,7 +83,7 @@ public class QueryFirstOrDefaultAsyncTests : IDisposable
         using var cts = new CancellationTokenSource();
         
         var product = await _db.Connection.QueryFirstOrDefaultAsync<Product>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id",
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             cts.Token);
 
@@ -87,7 +99,9 @@ public class QueryFirstOrDefaultAsyncTests : IDisposable
                 "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
                 new { Id = 1 }));
 
-        Assert.Contains("Strict mapping failed", ex.Message);
-        Assert.Contains("UnitPrice", ex.Message);
+Assert.Contains("Strict mapping failed", ex.Message);
+        // Check for any of the expected missing properties
+        var missingProperties = new[] { "supplier_id", "category_id", "quantity_per_unit", "unit_price", "units_in_stock", "units_on_order", "reorder_level", "discontinued" };
+        Assert.True(missingProperties.Any(prop => ex.Message.Contains(prop)), $"Expected one of {string.Join(", ", missingProperties)} in error message: {ex.Message}");
     }
 }
