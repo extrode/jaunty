@@ -67,6 +67,27 @@ internal static class DrDispatcher
             return CreateDictionaryMapper<T>(reader, valueType);
         }
 
+        // KeyValuePair<TKey, TValue> - two columns: first is Key, second is Value
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+        {
+            if (reader.FieldCount < 2)
+                throw new InvalidOperationException(
+                    $"KeyValuePair requires at least 2 columns, but query returned {reader.FieldCount}.");
+
+            return CreateKeyValuePairMapper<T>(reader, type.GetGenericArguments());
+        }
+
+        // ValueTuple - positional mapping
+        if (type.IsValueType && type.FullName?.StartsWith("System.ValueTuple`") == true)
+        {
+            var typeArgs = type.GetGenericArguments();
+            if (reader.FieldCount < typeArgs.Length)
+                throw new InvalidOperationException(
+                    $"ValueTuple<{string.Join(", ", typeArgs.Select(t => t.Name))}> requires {typeArgs.Length} columns, but query returned {reader.FieldCount}.");
+
+            return CreateValueTupleMapper<T>(reader, typeArgs);
+        }
+
         // dynamic (object at compile time) - return ExpandoObject
         if (type == typeof(object))
         {
@@ -74,6 +95,60 @@ internal static class DrDispatcher
         }
 
         return null;
+    }
+
+    private static Func<IDataReader, T> CreateKeyValuePairMapper<T>(IDataReader reader, Type[] typeArgs) where T : new()
+    {
+        var keyType = typeArgs[0];
+        var valueType = typeArgs[1];
+
+        return r =>
+        {
+            var key = r.IsDBNull(0) ? GetDefault(keyType) : ConvertValue(r.GetValue(0), keyType);
+            var value = r.IsDBNull(1) ? GetDefault(valueType) : ConvertValue(r.GetValue(1), valueType);
+
+            // Create KeyValuePair using reflection (it's a struct)
+            var kvp = Activator.CreateInstance(typeof(T), key, value);
+            return (T)kvp!;
+        };
+    }
+
+    private static Func<IDataReader, T> CreateValueTupleMapper<T>(IDataReader reader, Type[] typeArgs) where T : new()
+    {
+        var itemCount = typeArgs.Length;
+
+        return r =>
+        {
+            var values = new object?[itemCount];
+            for (int i = 0; i < itemCount; i++)
+            {
+                values[i] = r.IsDBNull(i) ? GetDefault(typeArgs[i]) : ConvertValue(r.GetValue(i), typeArgs[i]);
+            }
+
+            // Create ValueTuple using Activator
+            var tuple = Activator.CreateInstance(typeof(T), values);
+            return (T)tuple!;
+        };
+    }
+
+    private static object? GetDefault(Type type)
+    {
+        return type.IsValueType ? Activator.CreateInstance(type) : null;
+    }
+
+    private static object? ConvertValue(object value, Type targetType)
+    {
+        if (value is null)
+            return GetDefault(targetType);
+
+        var valueType = value.GetType();
+        if (targetType.IsAssignableFrom(valueType))
+            return value;
+
+        // Handle nullable types
+        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+        return Convert.ChangeType(value, underlyingType);
     }
 
     private static Func<IDataReader, T> CreateExpandoMapper<T>(IDataReader reader) where T : new()
