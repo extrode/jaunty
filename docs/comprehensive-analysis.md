@@ -61,41 +61,41 @@ Jaunty is currently a read-focused micro-ORM that emphasizes strict mapping and 
 
 ## Missing Features Compared to Dapper and Other ORMs
 
-### 1. Write Operations (CRUD) - CRITICAL MISSING
+### 1. Write Operations (CRUD) - PARTIALLY ADDRESSED
 
-Jaunty currently has NO write operations implemented. This is the biggest gap:
+Jaunty now has basic write operations implemented, but is still missing advanced features:
 
-#### INSERT Operations Missing:
+#### INSERT Operations (BASIC IMPLEMENTED):
 
-- `Insert<T>()` - Insert single entity
-- `InsertAsync<T>()` - Async insert
-- `InsertRange<T>()` - Insert multiple entities
-- `InsertRangeAsync<T>()` - Async bulk insert
-- `InsertWithIdentity<T>()` - Insert and return identity value
-- `BulkInsert<T>()` - High-performance bulk insert
+- `Insert<T>()` - Insert single entity (IMPLEMENTED)
+- `InsertAsync<T>()` - Async insert (IMPLEMENTED)
+- `InsertRange<T>()` - Insert multiple entities (MISSING)
+- `InsertRangeAsync<T>()` - Async bulk insert (MISSING)
+- `InsertWithIdentity<T>()` - Insert and return identity value (IMPLEMENTED as return value)
+- `BulkInsert<T>()` - High-performance bulk insert (MISSING)
 
-#### UPDATE Operations Missing:
+#### UPDATE Operations (BASIC IMPLEMENTED):
 
-- `Update<T>()` - Update single entity
-- `UpdateAsync<T>()` - Async update
-- `UpdateRange<T>()` - Update multiple entities
-- `UpdateRangeAsync<T>()` - Async bulk update
-- `UpdateWhere<T>()` - Update with WHERE condition
-- `BulkUpdate<T>()` - High-performance bulk update
+- `Update<T>()` - Update single entity (IMPLEMENTED)
+- `UpdateAsync<T>()` - Async update (IMPLEMENTED)
+- `UpdateRange<T>()` - Update multiple entities (MISSING)
+- `UpdateRangeAsync<T>()` - Async bulk update (MISSING)
+- `UpdateWhere<T>()` - Update with WHERE condition (MISSING)
+- `BulkUpdate<T>()` - High-performance bulk update (MISSING)
 
-#### DELETE Operations Missing:
+#### DELETE Operations (BASIC IMPLEMENTED):
 
-- `Delete<T>()` - Delete single entity
-- `DeleteAsync<T>()` - Async delete
-- `DeleteRange<T>()` - Delete multiple entities
-- `DeleteRangeAsync<T>()` - Async bulk delete
-- `DeleteWhere<T>()` - Delete with WHERE condition
-- `BulkDelete<T>()` - High-performance bulk delete
+- `Delete<T>()` - Delete single entity (IMPLEMENTED)
+- `DeleteAsync<T>()` - Async delete (IMPLEMENTED)
+- `DeleteRange<T>()` - Delete multiple entities (MISSING)
+- `DeleteRangeAsync<T>()` - Async bulk delete (MISSING)
+- `DeleteWhere<T>()` - Delete with WHERE condition (MISSING)
+- `BulkDelete<T>()` - High-performance bulk delete (MISSING)
 
-#### UPSERT Operations Missing:
+#### UPSERT Operations (ALL MISSING):
 
-- `Upsert<T>()` - Insert or update based on existence
-- `UpsertAsync<T>()` - Async upsert
+- `Upsert<T>()` - Insert or update based on existence (MISSING)
+- `UpsertAsync<T>()` - Async upsert (MISSING)
 
 ### 2. Advanced Parameter Binding - HIGH PRIORITY
 
@@ -225,11 +225,12 @@ Jaunty currently has NO write operations implemented. This is the biggest gap:
 
 ## Current Limitations
 
-### 1. Read-Only Nature
+### 1. Limited Write Operations
 
-- Cannot perform any write operations
-- Limited to SELECT queries only
-- Not suitable for full CRUD applications
+- Basic CRUD operations implemented (Insert, Update, Delete with async versions)
+- Missing bulk operations for performance
+- Missing range operations for multiple entities
+- No upsert operations
 
 ### 2. No Fluent API
 
@@ -251,6 +252,6 @@ Jaunty currently has NO write operations implemented. This is the biggest gap:
 
 ## Conclusion
 
-Jaunty is currently a capable read-only micro-ORM that excels at query execution and strict mapping. However, to be considered a serious contender with Dapper and other ORMs, it needs to implement comprehensive write operations (INSERT/UPDATE/DELETE), bulk operations, advanced parameter binding, and relationship handling. The foundation is solid, but the missing write functionality is the primary barrier to competing with full-featured ORMs.
+Jaunty is currently a capable micro-ORM that excels at query execution and strict mapping, with basic CRUD operations now implemented. To be considered a serious contender with Dapper and other ORMs, it needs to implement comprehensive bulk operations, advanced parameter binding, and relationship handling. The foundation is solid, and with the addition of basic write operations, Jaunty is moving toward becoming a complete data access solution.
 
-The project has excellent potential with its strict-by-default approach and performance focus, but needs to expand beyond read operations to be a complete data access solution.
+The project has excellent potential with its strict-by-default approach and performance focus, and the recent addition of write operations addresses the primary limitation identified in earlier assessments.
