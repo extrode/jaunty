@@ -210,7 +210,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
-try
+        try
         {
             T? result = default;
             if (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
@@ -281,7 +281,7 @@ try
             map ??= DrDispatcher.Resolve(reader, options, mode);
             results.Add(map(reader));
         }
-        
+
         if (!hasRead && results.Count == 0)
         {
             // For empty result sets, we still need to handle the mapping properly
@@ -332,7 +332,7 @@ try
         }
     }
 
-private async Task AdvanceAsync(CancellationToken cancellationToken = default)
+    private async Task AdvanceAsync(CancellationToken cancellationToken = default)
     {
         try
         {

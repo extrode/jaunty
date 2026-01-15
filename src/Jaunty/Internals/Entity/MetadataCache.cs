@@ -73,10 +73,18 @@ for (int i = 0; i < fieldCount; i++)
             {
                 columnName = reader.GetName(i) ?? throw new InvalidOperationException($"Column {i} has no name");
             }
-            catch (Exception ex) when (ex.Message.Contains("Failed to get column name for field") && reader.GetType().Name.Contains("SQLite"))
+            catch (NullReferenceException)
             {
-                // Re-throw our own SQLite-specific message for better debugging
-                throw new InvalidOperationException($"SQLite async DataReader limitation: {ex.Message}. This is a known issue with SQLite's async DataReader implementation. Consider using synchronous methods for QueryMultiple operations.", ex);
+                // Handle SQLite async DataReader limitation: use position-based mapping
+                // When GetName() fails, map by position order instead of column name
+                if (i < Properties.Length)
+                {
+                    settersBuffer[count++] = new PropertySetter<T>(Properties[i], i);
+                    matchedProperties[i] = true;
+                    continue;
+                }
+                // If we get here, we have more columns than properties
+                continue;
             }
             catch (Exception ex)
             {

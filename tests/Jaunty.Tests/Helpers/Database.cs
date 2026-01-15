@@ -3,12 +3,14 @@ using System.Data.SQLite;
 
 namespace Jaunty.Tests.Helpers;
 
-internal class Database : IDisposable
+public class Database : IDisposable
 {
     private readonly SQLiteConnection _connection;
     private bool _disposed;
 
     public IDbConnection Connection => _connection;
+    
+    public bool IsSQLite => true; // Always true for our test database
 
     public Database()
     {

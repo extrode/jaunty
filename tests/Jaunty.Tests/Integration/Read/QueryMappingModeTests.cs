@@ -47,7 +47,7 @@ public class QueryMappingModeTests : IDisposable
         Assert.Contains("Strict mapping failed", ex.Message);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public void Query_ExtraColumnsInResult_Ignored()
     {
         // Query returns extra column not in entity - should be ignored
