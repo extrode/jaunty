@@ -196,15 +196,24 @@ internal static class DrDispatcher
         else
         {
             // Dictionary<string, TValue> - convert values to TValue
+            // We need to create the properly typed dictionary using reflection
+            var dictType = typeof(Dictionary<,>).MakeGenericType(typeof(string), valueType);
+            var addMethod = dictType.GetMethod("Add")!;
+
             return r =>
             {
-                var dict = new Dictionary<string, object?>(fieldCount, StringComparer.OrdinalIgnoreCase);
+                // Create Dictionary<string, TValue> with case-insensitive comparer
+                var dict = (System.Collections.IDictionary)Activator.CreateInstance(
+                    dictType,
+                    fieldCount,
+                    StringComparer.OrdinalIgnoreCase)!;
+
                 for (int i = 0; i < fieldCount; i++)
                 {
                     object? value;
                     if (r.IsDBNull(i))
                     {
-                        value = null;
+                        value = valueType.IsValueType ? Activator.CreateInstance(valueType) : null;
                     }
                     else
                     {
@@ -215,7 +224,7 @@ internal static class DrDispatcher
                     }
                     dict[columnNames[i]] = value;
                 }
-                return (T)(object)dict;
+                return (T)dict;
             };
         }
     }
