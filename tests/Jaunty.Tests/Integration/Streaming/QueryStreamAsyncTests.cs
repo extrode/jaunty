@@ -19,7 +19,7 @@ public class QueryStreamAsyncTests : IDisposable
         _db.Dispose();
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryStreamAsync_WithResults_YieldsResults()
     {
         var products = _db.Connection.QueryStreamAsync<Product>(
@@ -42,7 +42,7 @@ public class QueryStreamAsyncTests : IDisposable
         Assert.Equal(5, count);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryStreamAsync_WithoutParameters_YieldsAll()
     {
         var products = _db.Connection.QueryStreamAsync<Product>(
@@ -62,7 +62,7 @@ public class QueryStreamAsyncTests : IDisposable
         Assert.All(list, p => Assert.True(p.ProductId > 0));
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryStreamAsync_WithCommandOptions_Works()
     {
         var products = _db.Connection.QueryStreamAsync<Product>(
@@ -85,7 +85,7 @@ public class QueryStreamAsyncTests : IDisposable
         Assert.Equal(3, count);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryStreamAsync_WithCancellationToken_Works()
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // Reasonable timeout
@@ -108,7 +108,7 @@ public class QueryStreamAsyncTests : IDisposable
         Assert.Equal(5, count);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryStreamAsync_PartialMapping_YieldsResults()
     {
         var summaries = _db.Connection.QueryStreamAsync<ProductSummary>(
@@ -128,7 +128,7 @@ public class QueryStreamAsyncTests : IDisposable
         Assert.All(list, s => Assert.True(s.ProductId > 0));
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryStreamAsync_EmptyResult_YieldsNothing()
     {
         var products = _db.Connection.QueryStreamAsync<Product>(

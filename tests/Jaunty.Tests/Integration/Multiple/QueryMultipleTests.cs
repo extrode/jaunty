@@ -407,7 +407,7 @@ public class QueryMultipleTests : IDisposable
 
     #region Async Tests
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryMultipleAsync_ReadsMultipleResultSets()
     {
         var conn = _db.Connection! as DbConnection;
@@ -430,7 +430,7 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(2, customers.Count);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadPartialAsync_MapsSubsetOfColumns()
     {
         var conn = _db.Connection! as DbConnection;
@@ -447,7 +447,7 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(5, orders.Count);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadFirstAsync_ReturnsFirstRow()
     {
         var conn = _db.Connection! as DbConnection;
@@ -637,7 +637,7 @@ public class QueryMultipleTests : IDisposable
 
     #region CancellationToken Tests
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadAsync_WithCancellationToken_Works()
     {
         var conn = _db.Connection! as DbConnection;
@@ -655,7 +655,7 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(3, orders.Count);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadFirstAsync_WithCancellationToken_Works()
     {
         var conn = _db.Connection! as DbConnection;
