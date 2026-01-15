@@ -466,6 +466,214 @@ public class ParameterBinderTests
 
     #endregion
 
+    #region Collection Parameter Expansion
+
+    [Fact]
+    public void Bind_IntArrayParameter_ExpandsToMultipleParams()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids");
+        var ids = new[] { 1, 2, 3 };
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Equal(3, command.Parameters.Count);
+        Assert.Equal("Ids0", command.Parameters[0].ParameterName);
+        Assert.Equal(1, command.Parameters[0].Value);
+        Assert.Equal("Ids1", command.Parameters[1].ParameterName);
+        Assert.Equal(2, command.Parameters[1].Value);
+        Assert.Equal("Ids2", command.Parameters[2].ParameterName);
+        Assert.Equal(3, command.Parameters[2].Value);
+        Assert.Contains("(@Ids0, @Ids1, @Ids2)", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_ListParameter_ExpandsToMultipleParams()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids");
+        var ids = new List<int> { 10, 20, 30, 40 };
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Equal(4, command.Parameters.Count);
+        Assert.Contains("(@Ids0, @Ids1, @Ids2, @Ids3)", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_StringArrayParameter_ExpandsCorrectly()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE name IN @Names");
+        var names = new[] { "Alice", "Bob", "Charlie" };
+
+        ParameterBinder.Bind(command, new { Names = names });
+
+        Assert.Equal(3, command.Parameters.Count);
+        Assert.Equal("Alice", command.Parameters[0].Value);
+        Assert.Equal("Bob", command.Parameters[1].Value);
+        Assert.Equal("Charlie", command.Parameters[2].Value);
+    }
+
+    [Fact]
+    public void Bind_EmptyArray_ExpandsToNoMatchSubquery()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids");
+        var ids = Array.Empty<int>();
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Empty(command.Parameters);
+        Assert.Contains("(SELECT NULL WHERE 1 = 0)", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_SingleItemArray_ExpandsToSingleParam()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids");
+        var ids = new[] { 42 };
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("Ids0", command.Parameters[0].ParameterName);
+        Assert.Equal(42, command.Parameters[0].Value);
+        Assert.Contains("(@Ids0)", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_CollectionWithOtherParams_ExpandsOnlyCollection()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE category_id = @CategoryId AND id IN @Ids");
+        var ids = new[] { 1, 2, 3 };
+
+        ParameterBinder.Bind(command, new { CategoryId = 5, Ids = ids });
+
+        Assert.Equal(4, command.Parameters.Count);
+        Assert.Equal("CategoryId", command.Parameters[0].ParameterName);
+        Assert.Equal(5, command.Parameters[0].Value);
+        Assert.Contains("(@Ids0, @Ids1, @Ids2)", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_MultipleCollections_ExpandsBoth()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids AND category_id IN @Categories");
+        var ids = new[] { 1, 2 };
+        var categories = new[] { 10, 20, 30 };
+
+        ParameterBinder.Bind(command, new { Ids = ids, Categories = categories });
+
+        Assert.Equal(5, command.Parameters.Count);
+        Assert.Contains("(@Ids0, @Ids1)", command.CommandText);
+        Assert.Contains("(@Categories0, @Categories1, @Categories2)", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_StringParameter_NotExpandedAsCollection()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE name = @Name");
+
+        ParameterBinder.Bind(command, new { Name = "John" });
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("Name", command.Parameters[0].ParameterName);
+        Assert.Equal("John", command.Parameters[0].Value);
+    }
+
+    [Fact]
+    public void Bind_ByteArrayParameter_NotExpandedAsCollection()
+    {
+        var command = new MockDbCommand("SELECT * FROM files WHERE data = @Data");
+        var bytes = new byte[] { 1, 2, 3 };
+
+        ParameterBinder.Bind(command, new { Data = bytes });
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("Data", command.Parameters[0].ParameterName);
+        Assert.Equal(bytes, command.Parameters[0].Value);
+    }
+
+    [Fact]
+    public void Bind_IEnumerableParameter_ExpandsCorrectly()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids");
+        IEnumerable<int> ids = Enumerable.Range(1, 5);
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Equal(5, command.Parameters.Count);
+        Assert.Contains("(@Ids0, @Ids1, @Ids2, @Ids3, @Ids4)", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_CollectionWithNullItems_ExpandsWithDbNull()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE name IN @Names");
+        var names = new string?[] { "Alice", null, "Bob" };
+
+        ParameterBinder.Bind(command, new { Names = names });
+
+        Assert.Equal(3, command.Parameters.Count);
+        Assert.Equal("Alice", command.Parameters[0].Value);
+        Assert.Equal(DBNull.Value, command.Parameters[1].Value);
+        Assert.Equal("Bob", command.Parameters[2].Value);
+    }
+
+    [Fact]
+    public void Bind_CollectionCaseInsensitive_ExpandsCorrectly()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @IDS");
+        var ids = new[] { 1, 2 };
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Equal(2, command.Parameters.Count);
+        // Expansion uses SQL parameter name case (IDS), not property name case
+        Assert.Contains("(@IDS0, @IDS1)", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_CollectionParameterUsedTwice_ExpandsBoth()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids OR parent_id IN @Ids");
+        var ids = new[] { 1, 2 };
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Equal(2, command.Parameters.Count);
+        // Both occurrences should be expanded
+        Assert.Contains("(@Ids0, @Ids1)", command.CommandText);
+        var count = command.CommandText.Split(new[] { "(@Ids0, @Ids1)" }, StringSplitOptions.None).Length - 1;
+        Assert.Equal(2, count);
+    }
+
+    [Fact]
+    public void Bind_LargeCollection_ExpandsAll()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids");
+        var ids = Enumerable.Range(1, 100).ToArray();
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Equal(100, command.Parameters.Count);
+        Assert.Contains("@Ids99", command.CommandText);
+    }
+
+    [Fact]
+    public void Bind_GuidArrayParameter_ExpandsCorrectly()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE id IN @Ids");
+        var id1 = Guid.NewGuid();
+        var id2 = Guid.NewGuid();
+        var ids = new[] { id1, id2 };
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Equal(2, command.Parameters.Count);
+        Assert.Equal(id1, command.Parameters[0].Value);
+        Assert.Equal(id2, command.Parameters[1].Value);
+    }
+
+    #endregion
+
     #region Test Helpers
 
     private enum TestEnum
