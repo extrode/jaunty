@@ -100,15 +100,15 @@ Jaunty is a lightweight micro-ORM for .NET that has evolved into a capable data 
 
 ### Features Dapper Has That Jaunty Lacks
 
-| Feature                           | Priority | Difficulty | Notes                                         |
-| --------------------------------- | -------- | ---------- | --------------------------------------------- |
-| **Table-Valued Parameters (TVP)** | High     | Medium     | SQL Server bulk operations                    |
-| **Stored procedure support**      | High     | Low        | `CommandType.StoredProcedure`                 |
-| **Output parameters**             | Medium   | Low        | SP return values                              |
-| **Literal replacements**          | Medium   | Low        | `{=value}` syntax |
-| **Pseudo-positional params**      | Low      | Low        | `?param?` syntax                              |
-| **Type handlers registry**        | Medium   | Medium     | Global type conversion                        |
-| **Command recycling**             | Low      | Medium     | Performance optimization                      |
+| Feature                           | Priority | Difficulty | Notes                         |
+| --------------------------------- | -------- | ---------- | ----------------------------- |
+| **Table-Valued Parameters (TVP)** | High     | Medium     | SQL Server bulk operations    |
+| **Stored procedure support**      | High     | Low        | `CommandType.StoredProcedure` |
+| **Output parameters**             | Medium   | Low        | SP return values              |
+| **Literal replacements**          | Medium   | Low        | `{=value}` syntax             |
+| **Pseudo-positional params**      | Low      | Low        | `?param?` syntax              |
+| **Type handlers registry**        | Medium   | Medium     | Global type conversion        |
+| **Command recycling**             | Low      | Medium     | Performance optimization      |
 
 ### Jaunty Unique Features
 
