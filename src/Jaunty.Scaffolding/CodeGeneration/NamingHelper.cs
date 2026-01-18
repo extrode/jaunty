@@ -9,6 +9,7 @@ public static class NamingHelper
 {
     /// <summary>
     /// Converts snake_case or kebab-case to PascalCase.
+    /// If the name has no delimiters, capitalizes the first letter and preserves the rest.
     /// </summary>
     /// <param name="name">The name to convert.</param>
     /// <returns>The name in PascalCase.</returns>
@@ -17,6 +18,16 @@ public static class NamingHelper
         if (string.IsNullOrEmpty(name))
             return name;
 
+        // Check if name contains any delimiters
+        bool hasDelimiters = name.Contains('_') || name.Contains('-') || name.Contains(' ');
+
+        if (!hasDelimiters)
+        {
+            // No delimiters - just capitalize first letter and preserve the rest
+            return char.ToUpperInvariant(name[0]) + name[1..];
+        }
+
+        // Has delimiters - convert to PascalCase
         var sb = new StringBuilder(name.Length);
         bool capitalizeNext = true;
 
@@ -101,7 +112,7 @@ public static class NamingHelper
         if (word.EndsWith("ies", StringComparison.OrdinalIgnoreCase) && word.Length > 4)
             return word[..^3] + "y";
 
-        // -ses, -xes, -zes, -ches, -shes -> remove -es
+        // -sses, -shes, -ches, -xes, -zes -> remove -es
         if (word.Length > 3)
         {
             if (word.EndsWith("sses", StringComparison.OrdinalIgnoreCase) ||
@@ -111,6 +122,12 @@ public static class NamingHelper
                 word.EndsWith("zes", StringComparison.OrdinalIgnoreCase))
                 return word[..^2];
         }
+
+        // -ses (but not -sses) -> remove -es (e.g., Buses -> Bus, Gases -> Gas)
+        if (word.Length > 3 &&
+            word.EndsWith("ses", StringComparison.OrdinalIgnoreCase) &&
+            !word.EndsWith("sses", StringComparison.OrdinalIgnoreCase))
+            return word[..^2];
 
         // -ves -> -f or -fe (e.g., leaves -> leaf, knives -> knife)
         if (word.EndsWith("ves", StringComparison.OrdinalIgnoreCase) && word.Length > 4)
