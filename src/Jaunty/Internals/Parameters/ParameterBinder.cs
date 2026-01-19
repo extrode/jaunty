@@ -8,6 +8,13 @@ internal static class ParameterBinder
 {
     internal static void Bind(IDbCommand command, object parameters)
     {
+        // Handle IDictionary<string, object?> directly (e.g., ExpandoObject, Dictionary)
+        if (parameters is IDictionary<string, object?> dictParams)
+        {
+            BindFromDictionary(command, dictParams);
+            return;
+        }
+
         string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText);
         var meta = ParameterCache.Get(parameters.GetType());
 
@@ -198,5 +205,29 @@ internal static class ParameterBinder
     {
         public readonly string Name = name;
         public readonly List<object?> Items = items;
+    }
+
+    private static void BindFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)
+    {
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText);
+        var bound = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < sqlParamNames.Length; i++)
+        {
+            string sqlName = sqlParamNames[i];
+            if (!bound.Add(sqlName)) continue;
+
+            if (dictParams.TryGetValue(sqlName, out var value))
+            {
+                var p = command.CreateParameter();
+                p.ParameterName = sqlName;
+                p.Value = value ?? DBNull.Value;
+                command.Parameters.Add(p);
+            }
+            else
+            {
+                throw new ArgumentException($"No value found in dictionary for SQL parameter '@{sqlName}'.");
+            }
+        }
     }
 }
