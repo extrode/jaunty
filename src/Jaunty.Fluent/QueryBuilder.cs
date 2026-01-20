@@ -182,6 +182,92 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return this;
     }
 
+    // WHERE IN / NOT IN
+    public IWhereClause<T> WhereIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        var sql = BuildInClause(selector, values, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
+        return this;
+    }
+
+    public IWhereClause<T> WhereNotIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        var sql = BuildInClause(selector, values, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
+        return this;
+    }
+
+    public IWhereClause<T> AndIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        var sql = BuildInClause(selector, values, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    public IWhereClause<T> AndNotIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        var sql = BuildInClause(selector, values, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    public IWhereClause<T> OrIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        var sql = BuildInClause(selector, values, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    public IWhereClause<T> OrNotIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        var sql = BuildInClause(selector, values, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    // WHERE BETWEEN / NOT BETWEEN
+    public IWhereClause<T> WhereBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        var sql = BuildBetweenClause(selector, from, to, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
+        return this;
+    }
+
+    public IWhereClause<T> WhereNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        var sql = BuildBetweenClause(selector, from, to, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
+        return this;
+    }
+
+    public IWhereClause<T> AndBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        var sql = BuildBetweenClause(selector, from, to, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    public IWhereClause<T> AndNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        var sql = BuildBetweenClause(selector, from, to, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    public IWhereClause<T> OrBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        var sql = BuildBetweenClause(selector, from, to, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    public IWhereClause<T> OrNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+    {
+        var sql = BuildBetweenClause(selector, from, to, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
     #endregion
 
     #region ORDER BY clause
@@ -1020,6 +1106,50 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             var value = prop.GetValue(parameters);
             _parameters.Add($"@{prop.Name}", value);
         }
+    }
+
+    private string BuildInClause<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values, bool negate)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var escapedColumn = _dialect.EscapeColumnName(columnName);
+
+        var valueList = values as IList<TValue> ?? values.ToList();
+        if (valueList.Count == 0)
+        {
+            // Empty collection: IN () is always false, NOT IN () is always true
+            return negate ? "1=1" : "1=0";
+        }
+
+        var sb = new StringBuilder();
+        sb.Append(escapedColumn);
+        sb.Append(negate ? " NOT IN (" : " IN (");
+
+        for (int i = 0; i < valueList.Count; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            var paramName = $"@p_in_{_parameters.Count}";
+            sb.Append(paramName);
+            _parameters.Add(paramName, valueList[i]);
+        }
+
+        sb.Append(')');
+        return sb.ToString();
+    }
+
+    private string BuildBetweenClause<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to, bool negate)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var escapedColumn = _dialect.EscapeColumnName(columnName);
+
+        var fromParamName = $"@p_between_from_{_parameters.Count}";
+        _parameters.Add(fromParamName, from);
+
+        var toParamName = $"@p_between_to_{_parameters.Count}";
+        _parameters.Add(toParamName, to);
+
+        return negate
+            ? $"{escapedColumn} NOT BETWEEN {fromParamName} AND {toParamName}"
+            : $"{escapedColumn} BETWEEN {fromParamName} AND {toParamName}";
     }
 
     #endregion

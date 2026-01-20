@@ -93,4 +93,20 @@ internal sealed class PostgreSqlDialect : ISqlDialect
     public string? GetEnableForeignKeyChecksSql() => "SET session_replication_role = 'origin'";
 
     public bool SupportsForeignKeyToggle => true;
+
+    public string GenerateCoalesce(params string[] expressions)
+    {
+        return $"COALESCE({string.Join(", ", expressions)})";
+    }
+
+    public string GenerateIsNull(string expression, string defaultExpression)
+    {
+        // PostgreSQL doesn't have ISNULL, use COALESCE instead
+        return $"COALESCE({expression}, {defaultExpression})";
+    }
+
+    public string GenerateNullIf(string expression, string compareExpression)
+    {
+        return $"NULLIF({expression}, {compareExpression})";
+    }
 }

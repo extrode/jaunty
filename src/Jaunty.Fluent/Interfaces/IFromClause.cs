@@ -18,6 +18,31 @@ public interface IFromClause<T> : IQueryTerminal<T> where T : new()
     IWhereClause<T> WhereRaw(string rawSql);
     IWhereClause<T> WhereRaw(string rawSql, object parameters);
 
+    // WHERE IN / NOT IN - collection-based filtering
+    /// <summary>
+    /// Filters results where the column value is in the specified collection.
+    /// </summary>
+    /// <typeparam name="TValue">The type of values in the collection.</typeparam>
+    /// <param name="selector">Expression selecting the column to filter.</param>
+    /// <param name="values">Collection of values to match against.</param>
+    IWhereClause<T> WhereIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values);
+
+    /// <summary>
+    /// Filters results where the column value is NOT in the specified collection.
+    /// </summary>
+    IWhereClause<T> WhereNotIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values);
+
+    // WHERE BETWEEN - range filtering
+    /// <summary>
+    /// Filters results where the column value is between the specified range (inclusive).
+    /// </summary>
+    IWhereClause<T> WhereBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to);
+
+    /// <summary>
+    /// Filters results where the column value is NOT between the specified range.
+    /// </summary>
+    IWhereClause<T> WhereNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to);
+
     // ORDER BY - expression-based
     IOrderByClause<T> OrderBy(Expression<Func<T, object?>> keySelector);
     IOrderByClause<T> OrderByDescending(Expression<Func<T, object?>> keySelector);
