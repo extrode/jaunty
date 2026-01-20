@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExecuteScalar Methods - Jaunty API Reference</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        :root {
+            --pico-primary: #2563eb;
+            --pico-primary-inverse: #fff;
+            --pico-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+        
+        body {
+            font-family: var(--pico-font-family);
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 1rem;
+        }
+        
+        .method-card {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--pico-border-color);
+            border-radius: var(--pico-border-radius);
+            background-color: var(--pico-card-background-color);
+        }
+        
+        .method-card h3 {
+            margin-top: 0;
+            color: var(--pico-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .signature {
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .params-table th, .params-table td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--pico-border-color);
+        }
+        
+        .params-table th {
+            background-color: var(--pico-card-hover-background-color);
+        }
+        
+        footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--pico-border-color);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><strong>Jaunty Documentation</strong></li>
+                </ul>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="overview.html">Overview</a></li>
+                    <li><a href="execute-scalar-methods.html" aria-current="page">ExecuteScalar Methods</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <hgroup>
+            <h1>ExecuteScalar Methods</h1>
+            <p>Execute SQL commands that return a single scalar value (first column of first row)</p>
+        </hgroup>
+
+        <nav class="breadcrumb">
+            <a href="index.html">Home</a> > <a href="overview.html">Overview</a> > ExecuteScalar Methods
+        </nav>
+
+        <section>
+            <h2>Overview</h2>
+            <p>ExecuteScalar methods execute SQL commands and return the value from the first column of the first row in the result set. These methods are ideal for aggregate functions like COUNT, SUM, AVG, etc., or for queries that return a single value.</p>
+        </section>
+
+        <section>
+            <h2>Synchronous ExecuteScalar Methods</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    ExecuteScalar&lt;T&gt;(string sql)
+                </h3>
+                <p>Executes a command and returns the first column of the first row as a scalar value of type T.</p>
+                
+                <div class="signature">
+                    public static T ExecuteScalar&lt;T&gt;(this IDbConnection connection, string sql)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command to execute</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The scalar value of type T from the first column of the first row</p>
+                
+                <h4>Example</h4>
+                <pre><code>// Get count of records
+var count = connection.ExecuteScalar&lt;int&gt;("SELECT COUNT(*) FROM products");
+
+// Get maximum price
+var maxPrice = connection.ExecuteScalar&lt;decimal&gt;("SELECT MAX(price) FROM products");
+
+// Get a specific value
+var productName = connection.ExecuteScalar&lt;string&gt;("SELECT product_name FROM products WHERE product_id = 1");</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    ExecuteScalar&lt;T&gt;(string sql, object parameters)
+                </h3>
+                <p>Executes a parameterized command and returns the first column of the first row as a scalar value of type T.</p>
+                
+                <div class="signature">
+                    public static T ExecuteScalar&lt;T&gt;(this IDbConnection connection, string sql, object parameters)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the command</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The scalar value of type T from the first column of the first row</p>
+                
+                <h4>Example</h4>
+                <pre><code>// Get count with parameter
+var count = connection.ExecuteScalar&lt;int&gt;(
+    "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 });
+
+// Get average price for a specific category
+var avgPrice = connection.ExecuteScalar&lt;decimal&gt;(
+    "SELECT AVG(price) FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 2 });</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    ExecuteScalar&lt;T&gt;(string sql, CommandOptions options)
+                </h3>
+                <p>Executes a command with options and returns the first column of the first row as a scalar value of type T.</p>
+                
+                <div class="signature">
+                    public static T ExecuteScalar&lt;T&gt;(this IDbConnection connection, string sql, CommandOptions options)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command to execute</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions</td>
+                            <td>Command options (transaction, timeout)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The scalar value of type T from the first column of the first row</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var transaction = connection.BeginTransaction();
+try
+{
+    var count = connection.ExecuteScalar&lt;int&gt;(
+        "SELECT COUNT(*) FROM products", 
+        CommandOptions.WithTransaction(transaction));
+    
+    transaction.Commit();
+}</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    ExecuteScalar&lt;T&gt;(string sql, object parameters, CommandOptions options)
+                </h3>
+                <p>Executes a parameterized command with options and returns the first column of the first row as a scalar value of type T.</p>
+                
+                <div class="signature">
+                    public static T ExecuteScalar&lt;T&gt;(this IDbConnection connection, string sql, object parameters, CommandOptions options)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the command</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions</td>
+                            <td>Command options (transaction, timeout)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The scalar value of type T from the first column of the first row</p>
+                
+                <h4>Example</h4>
+                <pre><code>var count = connection.ExecuteScalar&lt;int&gt;(
+    "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 },
+    CommandOptions.WithTimeout(30));</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Async ExecuteScalar Methods</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    ExecuteScalarAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a command and returns the first column of the first row as a scalar value of type T.</p>
+                
+                <div class="signature">
+                    public static Task&lt;T&gt; ExecuteScalarAsync&lt;T&gt;(this DbConnection connection, string sql, CancellationToken cancellationToken = default)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>DbConnection</td>
+                            <td>The database connection (must be a DbConnection for async operations)</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command to execute</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T from the first column of the first row</p>
+                
+                <h4>Example</h4>
+                <pre><code>var count = await connection.ExecuteScalarAsync&lt;int&gt;("SELECT COUNT(*) FROM products");</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    ExecuteScalarAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a parameterized command and returns the first column of the first row as a scalar value of type T.</p>
+                
+                <div class="signature">
+                    public static Task&lt;T&gt; ExecuteScalarAsync&lt;T&gt;(this DbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>DbConnection</td>
+                            <td>The database connection (must be a DbConnection for async operations)</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the command</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T from the first column of the first row</p>
+                
+                <h4>Example</h4>
+                <pre><code>var count = await connection.ExecuteScalarAsync&lt;int&gt;(
+    "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 });</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    ExecuteScalarAsync&lt;T&gt;(string sql, CommandOptions options, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a command with options and returns the first column of the first row as a scalar value of type T.</p>
+                
+                <div class="signature">
+                    public static Task&lt;T&gt; ExecuteScalarAsync&lt;T&gt;(this DbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>DbConnection</td>
+                            <td>The database connection (must be a DbConnection for async operations)</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command to execute</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions</td>
+                            <td>Command options (transaction, timeout)</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T from the first column of the first row</p>
+                
+                <h4>Example</h4>
+                <pre><code>var count = await connection.ExecuteScalarAsync&lt;int&gt;(
+    "SELECT COUNT(*) FROM products", 
+    CommandOptions.WithTimeout(30));</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    ExecuteScalarAsync&lt;T&gt;(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a parameterized command with options and returns the first column of the first row as a scalar value of type T.</p>
+                
+                <div class="signature">
+                    public static Task&lt;T&gt; ExecuteScalarAsync&lt;T&gt;(this DbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>DbConnection</td>
+                            <td>The database connection (must be a DbConnection for async operations)</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the command</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions</td>
+                            <td>Command options (transaction, timeout)</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T from the first column of the first row</p>
+                
+                <h4>Example</h4>
+                <pre><code>var count = await connection.ExecuteScalarAsync&lt;int&gt;(
+    "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 },
+    CommandOptions.WithTimeout(30),
+    cancellationToken);</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Common Use Cases</h2>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    Aggregate Functions
+                </h3>
+                <p>ExecuteScalar methods are ideal for aggregate functions:</p>
+                
+                <pre><code>// Count records
+var count = connection.ExecuteScalar&lt;int&gt;("SELECT COUNT(*) FROM products");
+
+// Get maximum value
+var maxPrice = connection.ExecuteScalar&lt;decimal&gt;("SELECT MAX(price) FROM products");
+
+// Get average value
+var avgPrice = connection.ExecuteScalar&lt;double&gt;("SELECT AVG(price) FROM products");
+
+// Get minimum value
+var minPrice = connection.ExecuteScalar&lt;decimal&gt;("SELECT MIN(price) FROM products");
+
+// Get sum
+var totalValue = connection.ExecuteScalar&lt;decimal&gt;("SELECT SUM(price) FROM products");</code></pre>
+            </article>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    Lookup Values
+                </h3>
+                <p>Get specific values from the database:</p>
+                
+                <pre><code>// Get a specific ID
+var productId = connection.ExecuteScalar&lt;int&gt;("SELECT product_id FROM products WHERE product_name = @ProductName", new { ProductName = "Widget" });
+
+// Get a string value
+var categoryName = connection.ExecuteScalar&lt;string&gt;("SELECT category_name FROM categories WHERE category_id = @CategoryId", new { CategoryId = 1 });
+
+// Get a date/time value
+var lastModified = connection.ExecuteScalar&lt;DateTime&gt;("SELECT MAX(last_modified) FROM products");</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Important Notes</h2>
+            <ul>
+                <li><strong>Return Value</strong>: ExecuteScalar returns the value from the first column of the first row in the result set</li>
+                <li><strong>Empty Results</strong>: If the result set is empty, ExecuteScalar will typically return the default value for the type (0 for numeric types, null for reference types)</li>
+                <li><strong>Multiple Rows</strong>: ExecuteScalar only considers the first row, ignoring any additional rows in the result set</li>
+                <li><strong>Async Requirements</strong>: Async operations require a <code>DbConnection</code> rather than just <code>IDbConnection</code></li>
+                <li><strong>Command Options</strong>: All ExecuteScalar methods support command options for transactions and timeouts</li>
+                <li><strong>Database Compatibility</strong>: ExecuteScalar works with all supported database providers (SQL Server, SQLite, PostgreSQL, MySQL)</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Best Practices</h2>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Use Appropriate Return Types
+                </h3>
+                <p>Match the return type to the expected database column type:</p>
+                <pre><code>// For integer counts
+var count = connection.ExecuteScalar&lt;int&gt;("SELECT COUNT(*) FROM products");
+
+// For decimal prices
+var price = connection.ExecuteScalar&lt;decimal&gt;("SELECT MAX(price) FROM products");
+
+// For nullable values
+var description = connection.ExecuteScalar&lt;string?&gt;("SELECT description FROM products WHERE product_id = @Id", new { Id = 1 });</code></pre>
+            </article>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Handle Potential Nulls
+                </h3>
+                <p>Consider using nullable types when the result might be NULL:</p>
+                <pre><code>// When the column might be NULL in the database
+var nullableValue = connection.ExecuteScalar&lt;int?&gt;("SELECT nullable_column FROM table WHERE condition = @condition", new { condition = "value" });
+
+// Check for null before using
+if (nullableValue.HasValue)
+{
+    ProcessValue(nullableValue.Value);
+}</code></pre>
+            </article>
+        </section>
+    </main>
+
+    <footer class="container">
+        <small>Jaunty ORM &copy; 2026 | Built with PicoCSS</small>
+    </footer>
+</body>
+</html>

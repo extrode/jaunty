@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Result Methods - Jaunty API Reference</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        :root {
+            --pico-primary: #2563eb;
+            --pico-primary-inverse: #fff;
+            --pico-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+        
+        body {
+            font-family: var(--pico-font-family);
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 1rem;
+        }
+        
+        .method-card {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--pico-border-color);
+            border-radius: var(--pico-border-radius);
+            background-color: var(--pico-card-background-color);
+        }
+        
+        .method-card h3 {
+            margin-top: 0;
+            color: var(--pico-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .signature {
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .params-table th, .params-table td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--pico-border-color);
+        }
+        
+        .params-table th {
+            background-color: var(--pico-card-hover-background-color);
+        }
+        
+        footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--pico-border-color);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><strong>Jaunty Documentation</strong></li>
+                </ul>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="overview.html">Overview</a></li>
+                    <li><a href="single-result-methods.html" aria-current="page">Single Result Methods</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <hgroup>
+            <h1>Single Result Methods</h1>
+            <p>Methods that execute queries and return single entities from the result set</p>
+        </hgroup>
+
+        <nav class="breadcrumb">
+            <a href="index.html">Home</a> > <a href="overview.html">Overview</a> > Single Result Methods
+        </nav>
+
+        <section>
+            <h2>Overview</h2>
+            <p>Single result methods execute SQL queries and return a single entity from the result set. These methods provide different behaviors for handling empty result sets and multiple results:</p>
+            <ul>
+                <li><strong>First methods</strong>: Return the first result or throw/return default</li>
+                <li><strong>Single methods</strong>: Expect exactly one result or throw/return default</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>First Result Methods</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7"></path>
+                        <path d="M13 20h7a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-7"></path>
+                        <polyline points="23 8 12 8 12 20"></polyline>
+                    </svg>
+                    QueryFirst&lt;T&gt;(string sql)
+                </h3>
+                <p>Executes a query and returns the first entity from the result set. Throws an exception if the result set is empty.</p>
+                
+                <div class="signature">
+                    public static T QueryFirst&lt;T&gt;(this IDbConnection connection, string sql) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The first entity of type T from the result set</p>
+                
+                <h4>Exceptions</h4>
+                <ul>
+                    <li><code>InvalidOperationException</code>: If the result set is empty</li>
+                </ul>
+                
+                <h4>Example</h4>
+                <pre><code>var product = connection.QueryFirst&lt;Product&gt;("SELECT * FROM products WHERE category_id = 1 LIMIT 1");</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7"></path>
+                        <path d="M13 20h7a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-7"></path>
+                        <polyline points="23 8 12 8 12 20"></polyline>
+                    </svg>
+                    QueryFirstOrDefault&lt;T&gt;(string sql)
+                </h3>
+                <p>Executes a query and returns the first entity from the result set or the default value if the result set is empty.</p>
+                
+                <div class="signature">
+                    public static T? QueryFirstOrDefault&lt;T&gt;(this IDbConnection connection, string sql) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T?</code>: The first entity of type T from the result set, or null if the result set is empty</p>
+                
+                <h4>Example</h4>
+                <pre><code>var product = connection.QueryFirstOrDefault&lt;Product&gt;("SELECT * FROM products WHERE product_id = 999");
+// Returns null if no product with ID 999 exists</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    QuerySingle&lt;T&gt;(string sql)
+                </h3>
+                <p>Executes a query and returns the single entity from the result set. Throws an exception if the result set is empty or contains more than one element.</p>
+                
+                <div class="signature">
+                    public static T QuerySingle&lt;T&gt;(this IDbConnection connection, string sql) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The single entity of type T from the result set</p>
+                
+                <h4>Exceptions</h4>
+                <ul>
+                    <li><code>InvalidOperationException</code>: If the result set is empty</li>
+                    <li><code>InvalidOperationException</code>: If the result set contains more than one element</li>
+                </ul>
+                
+                <h4>Example</h4>
+                <pre><code>var product = connection.QuerySingle&lt;Product&gt;("SELECT * FROM products WHERE product_id = 1");
+// Expects exactly one result - throws if 0 or more than 1 results</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    QuerySingleOrDefault&lt;T&gt;(string sql)
+                </h3>
+                <p>Executes a query and returns the single entity from the result set or the default value if the result set is empty. Throws an exception if the result set contains more than one element.</p>
+                
+                <div class="signature">
+                    public static T? QuerySingleOrDefault&lt;T&gt;(this IDbConnection connection, string sql) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T?</code>: The single entity of type T from the result set, or null if the result set is empty</p>
+                
+                <h4>Exceptions</h4>
+                <ul>
+                    <li><code>InvalidOperationException</code>: If the result set contains more than one element</li>
+                </ul>
+                
+                <h4>Example</h4>
+                <pre><code>var product = connection.QuerySingleOrDefault&lt;Product&gt;("SELECT * FROM products WHERE product_id = 1");
+// Returns the product if found, null if not found, or throws if multiple products match</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Async Single Result Methods</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    QueryFirstAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a query and returns the first entity from the result set. Throws an exception if the result set is empty.</p>
+                
+                <div class="signature">
+                    public static Task&lt;T&gt; QueryFirstAsync&lt;T&gt;(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;T&gt;</code>: A task that resolves to the first entity of type T from the result set</p>
+                
+                <h4>Exceptions</h4>
+                <ul>
+                    <li><code>InvalidOperationException</code>: If the result set is empty</li>
+                </ul>
+                
+                <h4>Example</h4>
+                <pre><code>var product = await connection.QueryFirstAsync&lt;Product&gt;("SELECT * FROM products WHERE category_id = 1 LIMIT 1");</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    QueryFirstOrDefaultAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a query and returns the first entity from the result set or the default value if the result set is empty.</p>
+                
+                <div class="signature">
+                    public static Task&lt;T?&gt; QueryFirstOrDefaultAsync&lt;T&gt;(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;T?&gt;</code>: A task that resolves to the first entity of type T from the result set, or null if the result set is empty</p>
+                
+                <h4>Example</h4>
+                <pre><code>var product = await connection.QueryFirstOrDefaultAsync&lt;Product&gt;("SELECT * FROM products WHERE product_id = 999");
+// Returns null if no product with ID 999 exists</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    QuerySingleAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a query and returns the single entity from the result set. Throws an exception if the result set is empty or contains more than one element.</p>
+                
+                <div class="signature">
+                    public static Task&lt;T&gt; QuerySingleAsync&lt;T&gt;(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;T&gt;</code>: A task that resolves to the single entity of type T from the result set</p>
+                
+                <h4>Exceptions</h4>
+                <ul>
+                    <li><code>InvalidOperationException</code>: If the result set is empty</li>
+                    <li><code>InvalidOperationException</code>: If the result set contains more than one element</li>
+                </ul>
+                
+                <h4>Example</h4>
+                <pre><code>var product = await connection.QuerySingleAsync&lt;Product&gt;("SELECT * FROM products WHERE product_id = 1");
+// Expects exactly one result - throws if 0 or more than 1 results</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    QuerySingleOrDefaultAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a query and returns the single entity from the result set or the default value if the result set is empty. Throws an exception if the result set contains more than one element.</p>
+                
+                <div class="signature">
+                    public static Task&lt;T?&gt; QuerySingleOrDefaultAsync&lt;T&gt;(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;T?&gt;</code>: A task that resolves to the single entity of type T from the result set, or null if the result set is empty</p>
+                
+                <h4>Exceptions</h4>
+                <ul>
+                    <li><code>InvalidOperationException</code>: If the result set contains more than one element</li>
+                </ul>
+                
+                <h4>Example</h4>
+                <pre><code>var product = await connection.QuerySingleOrDefaultAsync&lt;Product&gt;("SELECT * FROM products WHERE product_id = 1");
+// Returns the product if found, null if not found, or throws if multiple products match</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Single Result Methods with Parameters</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                    QueryFirst&lt;T&gt;(string sql, object parameters)
+                </h3>
+                <p>Executes a parameterized query and returns the first entity from the result set. Throws an exception if the result set is empty.</p>
+                
+                <div class="signature">
+                    public static T QueryFirst&lt;T&gt;(this IDbConnection connection, string sql, object parameters) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the query</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The first entity of type T from the result set</p>
+                
+                <h4>Example</h4>
+                <pre><code>var product = connection.QueryFirst&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 });</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                    QueryFirstOrDefault&lt;T&gt;(string sql, object parameters)
+                </h3>
+                <p>Executes a parameterized query and returns the first entity from the result set or the default value if the result set is empty.</p>
+                
+                <div class="signature">
+                    public static T? QueryFirstOrDefault&lt;T&gt;(this IDbConnection connection, string sql, object parameters) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the query</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T?</code>: The first entity of type T from the result set, or null if the result set is empty</p>
+                
+                <h4>Example</h4>
+                <pre><code>var product = connection.QueryFirstOrDefault&lt;Product&gt;(
+    "SELECT * FROM products WHERE product_id = @ProductId", 
+    new { ProductId = 999 });  // Returns null if product doesn't exist</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                    QuerySingle&lt;T&gt;(string sql, object parameters)
+                </h3>
+                <p>Executes a parameterized query and returns the single entity from the result set. Throws an exception if the result set is empty or contains more than one element.</p>
+                
+                <div class="signature">
+                    public static T QuerySingle&lt;T&gt;(this IDbConnection connection, string sql, object parameters) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the query</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The single entity of type T from the result set</p>
+                
+                <h4>Example</h4>
+                <pre><code>var product = connection.QuerySingle&lt;Product&gt;(
+    "SELECT * FROM products WHERE product_id = @ProductId", 
+    new { ProductId = 1 });  // Expects exactly one result</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                    QuerySingleOrDefault&lt;T&gt;(string sql, object parameters)
+                </h3>
+                <p>Executes a parameterized query and returns the single entity from the result set or the default value if the result set is empty. Throws an exception if the result set contains more than one element.</p>
+                
+                <div class="signature">
+                    public static T? QuerySingleOrDefault&lt;T&gt;(this IDbConnection connection, string sql, object parameters) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the query</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T?</code>: The single entity of type T from the result set, or null if the result set is empty</p>
+                
+                <h4>Example</h4>
+                <pre><code>var product = connection.QuerySingleOrDefault&lt;Product&gt;(
+    "SELECT * FROM products WHERE product_id = @ProductId", 
+    new { ProductId = 1 });  // Returns product if found, null if not found, throws if multiple</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Single Result Methods with Command Options</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <path d="M9.5 9h5L12 12.5 9.5 9Z"></path>
+                    </svg>
+                    QueryFirst&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)
+                </h3>
+                <p>Executes a query with command options and returns the first entity from the result set. Throws an exception if the result set is empty.</p>
+                
+                <div class="signature">
+                    public static T QueryFirst&lt;T&gt;(this IDbConnection connection, string sql, CommandOptions&lt;T&gt; options) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The first entity of type T from the result set</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var transaction = connection.BeginTransaction();
+var product = connection.QueryFirst&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = 1 LIMIT 1", 
+    CommandOptions&lt;Product&gt;.WithTransaction(transaction));</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <path d="M9.5 9h5L12 12.5 9.5 9Z"></path>
+                    </svg>
+                    QueryFirstOrDefault&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)
+                </h3>
+                <p>Executes a query with command options and returns the first entity from the result set or the default value if the result set is empty.</p>
+                
+                <div class="signature">
+                    public static T? QueryFirstOrDefault&lt;T&gt;(this IDbConnection connection, string sql, CommandOptions&lt;T&gt; options) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T?</code>: The first entity of type T from the result set, or null if the result set is empty</p>
+                
+                <h4>Example</h4>
+                <pre><code>var product = connection.QueryFirstOrDefault&lt;Product&gt;(
+    "SELECT * FROM products WHERE product_id = @ProductId", 
+    CommandOptions&lt;Product&gt;.WithTimeout(30));  // With 30-second timeout</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <path d="M9.5 9h5L12 12.5 9.5 9Z"></path>
+                    </svg>
+                    QuerySingle&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)
+                </h3>
+                <p>Executes a query with command options and returns the single entity from the result set. Throws an exception if the result set is empty or contains more than one element.</p>
+                
+                <div class="signature">
+                    public static T QuerySingle&lt;T&gt;(this IDbConnection connection, string sql, CommandOptions&lt;T&gt; options) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The single entity of type T from the result set</p>
+                
+                <h4>Example</h4>
+                <pre><code>var product = connection.QuerySingle&lt;Product&gt;(
+    "SELECT * FROM products WHERE product_id = @ProductId", 
+    CommandOptions&lt;Product&gt;.WithTimeout(30));  // With 30-second timeout</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <path d="M9.5 9h5L12 12.5 9.5 9Z"></path>
+                    </svg>
+                    QuerySingleOrDefault&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)
+                </h3>
+                <p>Executes a query with command options and returns the single entity from the result set or the default value if the result set is empty. Throws an exception if the result set contains more than one element.</p>
+                
+                <div class="signature">
+                    public static T? QuerySingleOrDefault&lt;T&gt;(this IDbConnection connection, string sql, CommandOptions&lt;T&gt; options) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T?</code>: The single entity of type T from the result set, or null if the result set is empty</p>
+                
+                <h4>Example</h4>
+                <pre><code>var product = connection.QuerySingleOrDefault&lt;Product&gt;(
+    "SELECT * FROM products WHERE product_id = @ProductId", 
+    CommandOptions&lt;Product&gt;.WithTimeout(30));  // With 30-second timeout</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Partial Mapping Variants</h2>
+            <p>Jaunty also provides partial mapping variants of single result methods that only map properties with matching columns in the result set.</p>
+            
+            <ul>
+                <li><code>QueryPartialFirst&lt;T&gt;()</code> - Returns first result with partial mapping</li>
+                <li><code>QueryPartialFirstOrDefault&lt;T&gt;()</code> - Returns first result or default with partial mapping</li>
+                <li><code>QueryPartialSingle&lt;T&gt;()</code> - Returns single result with partial mapping</li>
+                <li><code>QueryPartialSingleOrDefault&lt;T&gt;()</code> - Returns single result or default with partial mapping</li>
+                <li>Async variants of all the above methods</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Best Practices</h2>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Choose the Right Method
+                </h3>
+                <ul>
+                    <li>Use <code>QueryFirst</code> when you expect at least one result and only need the first one</li>
+                    <li>Use <code>QueryFirstOrDefault</code> when you're OK with no results and only need the first one</li>
+                    <li>Use <code>QuerySingle</code> when you expect exactly one result</li>
+                    <li>Use <code>QuerySingleOrDefault</code> when you expect zero or one result</li>
+                </ul>
+            </article>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Handle Expected vs Unexpected Results
+                </h3>
+                <p>Use the appropriate method based on your expectations:</p>
+                <pre><code>// When you expect a user to exist and it's an error if not found
+var user = connection.QuerySingle&lt;User&gt;("SELECT * FROM users WHERE id = @Id", new { Id = userId });
+
+// When it's OK if no user exists
+var user = connection.QueryFirstOrDefault&lt;User&gt;("SELECT * FROM users WHERE email = @Email", new { Email = email });</code></pre>
+            </article>
+        </section>
+    </main>
+
+    <footer class="container">
+        <small>Jaunty ORM &copy; 2026 | Built with PicoCSS</small>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiple Result Sets - Jaunty API Reference</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        :root {
+            --pico-primary: #2563eb;
+            --pico-primary-inverse: #fff;
+            --pico-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+        
+        body {
+            font-family: var(--pico-font-family);
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 1rem;
+        }
+        
+        .method-card {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--pico-border-color);
+            border-radius: var(--pico-border-radius);
+            background-color: var(--pico-card-background-color);
+        }
+        
+        .method-card h3 {
+            margin-top: 0;
+            color: var(--pico-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .signature {
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .params-table th, .params-table td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--pico-border-color);
+        }
+        
+        .params-table th {
+            background-color: var(--pico-card-hover-background-color);
+        }
+        
+        footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--pico-border-color);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><strong>Jaunty Documentation</strong></li>
+                </ul>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="overview.html">Overview</a></li>
+                    <li><a href="multiple-result-sets.html" aria-current="page">Multiple Result Sets</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <hgroup>
+            <h1>Multiple Result Sets</h1>
+            <p>Execute SQL commands that return multiple result sets and read from each sequentially</p>
+        </hgroup>
+
+        <nav class="breadcrumb">
+            <a href="index.html">Home</a> > <a href="overview.html">Overview</a> > Multiple Result Sets
+        </nav>
+
+        <section>
+            <h2>Overview</h2>
+            <p>Multiple result set methods allow executing a single command that returns multiple result sets (typically from stored procedures or batch queries with multiple SELECT statements). The <code>GridReader</code> class provides access to each result set sequentially.</p>
+            
+            <h3>Key Concepts</h3>
+            <ul>
+                <li>Each command can return multiple result sets</li>
+                <li>Results are accessed sequentially through the <code>GridReader</code></li>
+                <li>Once a result set is consumed, you cannot go back to it</li>
+                <li>Each result set can be read with different mapping modes (strict or partial)</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>QueryMultiple Methods</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    QueryMultiple(string sql)
+                </h3>
+                <p>Executes a command that returns multiple result sets and returns a GridReader for reading from each result set.</p>
+                
+                <div class="signature">
+                    public static GridReader QueryMultiple(this IDbConnection connection, string sql)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command containing multiple result sets (e.g., multiple SELECT statements separated by semicolons)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>GridReader</code>: A reader for accessing multiple result sets sequentially</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = connection.QueryMultiple("SELECT * FROM categories; SELECT * FROM products");
+var categories = gridReader.Read&lt;Category&gt;().ToList();
+var products = gridReader.Read&lt;Product&gt;().ToList();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    QueryMultiple(string sql, object parameters)
+                </h3>
+                <p>Executes a parameterized command that returns multiple result sets and returns a GridReader for reading from each result set.</p>
+                
+                <div class="signature">
+                    public static GridReader QueryMultiple(this IDbConnection connection, string sql, object parameters)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command containing multiple result sets</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the command</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>GridReader</code>: A reader for accessing multiple result sets sequentially</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = connection.QueryMultiple(
+    "SELECT * FROM categories WHERE category_id = @CategoryId; SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 });
+var categories = gridReader.Read&lt;Category&gt;().ToList();
+var products = gridReader.Read&lt;Product&gt;().ToList();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    QueryMultiple(string sql, CommandOptions options)
+                </h3>
+                <p>Executes a command with options that returns multiple result sets and returns a GridReader for reading from each result set.</p>
+                
+                <div class="signature">
+                    public static GridReader QueryMultiple(this IDbConnection connection, string sql, CommandOptions options)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command containing multiple result sets</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions</td>
+                            <td>Command options (transaction, timeout)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>GridReader</code>: A reader for accessing multiple result sets sequentially</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var transaction = connection.BeginTransaction();
+using var gridReader = connection.QueryMultiple(
+    "SELECT * FROM categories; SELECT * FROM products", 
+    CommandOptions.WithTransaction(transaction));
+var categories = gridReader.Read&lt;Category&gt;().ToList();
+var products = gridReader.Read&lt;Product&gt;().ToList();
+transaction.Commit();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    QueryMultiple(string sql, object parameters, CommandOptions options)
+                </h3>
+                <p>Executes a parameterized command with options that returns multiple result sets and returns a GridReader for reading from each result set.</p>
+                
+                <div class="signature">
+                    public static GridReader QueryMultiple(this IDbConnection connection, string sql, object parameters, CommandOptions options)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command containing multiple result sets</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the command</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions</td>
+                            <td>Command options (transaction, timeout)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>GridReader</code>: A reader for accessing multiple result sets sequentially</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var transaction = connection.BeginTransaction();
+using var gridReader = connection.QueryMultiple(
+    "SELECT * FROM categories WHERE category_id = @CategoryId; SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 },
+    CommandOptions.WithTransaction(transaction));
+var categories = gridReader.Read&lt;Category&gt;().ToList();
+var products = gridReader.Read&lt;Product&gt;().ToList();
+transaction.Commit();</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Async QueryMultiple Methods</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    QueryMultipleAsync(string sql, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a command that returns multiple result sets and returns a GridReader for reading from each result set.</p>
+                
+                <div class="signature">
+                    public static Task&lt;GridReader&gt; QueryMultipleAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command containing multiple result sets</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;GridReader&gt;</code>: A task that resolves to a reader for accessing multiple result sets sequentially</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = await connection.QueryMultipleAsync("SELECT * FROM categories; SELECT * FROM products");
+var categories = await gridReader.ReadAsync&lt;Category&gt;();
+var products = await gridReader.ReadAsync&lt;Product&gt;();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    QueryMultipleAsync(string sql, object parameters, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a parameterized command that returns multiple result sets and returns a GridReader for reading from each result set.</p>
+                
+                <div class="signature">
+                    public static Task&lt;GridReader&gt; QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command containing multiple result sets</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the command</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;GridReader&gt;</code>: A task that resolves to a reader for accessing multiple result sets sequentially</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = await connection.QueryMultipleAsync(
+    "SELECT * FROM categories WHERE category_id = @CategoryId; SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 });
+var categories = await gridReader.ReadAsync&lt;Category&gt;();
+var products = await gridReader.ReadAsync&lt;Product&gt;();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    QueryMultipleAsync(string sql, CommandOptions options, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a command with options that returns multiple result sets and returns a GridReader for reading from each result set.</p>
+                
+                <div class="signature">
+                    public static Task&lt;GridReader&gt; QueryMultipleAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command containing multiple result sets</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions</td>
+                            <td>Command options (transaction, timeout)</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;GridReader&gt;</code>: A task that resolves to a reader for accessing multiple result sets sequentially</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var transaction = connection.BeginTransaction();
+using var gridReader = await connection.QueryMultipleAsync(
+    "SELECT * FROM categories; SELECT * FROM products", 
+    CommandOptions.WithTransaction(transaction));
+var categories = await gridReader.ReadAsync&lt;Category&gt;();
+var products = await gridReader.ReadAsync&lt;Product&gt;();
+await transaction.CommitAsync();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    QueryMultipleAsync(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a parameterized command with options that returns multiple result sets and returns a GridReader for reading from each result set.</p>
+                
+                <div class="signature">
+                    public static Task&lt;GridReader&gt; QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL command containing multiple result sets</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the command</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions</td>
+                            <td>Command options (transaction, timeout)</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;GridReader&gt;</code>: A task that resolves to a reader for accessing multiple result sets sequentially</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var transaction = connection.BeginTransaction();
+using var gridReader = await connection.QueryMultipleAsync(
+    "SELECT * FROM categories WHERE category_id = @CategoryId; SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 },
+    CommandOptions.WithTransaction(transaction));
+var categories = await gridReader.ReadAsync&lt;Category&gt;();
+var products = await gridReader.ReadAsync&lt;Product&gt;();
+await transaction.CommitAsync();</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>GridReader Methods</h2>
+            <p>The GridReader provides methods to read from each result set in sequence.</p>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    Read&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+                </h3>
+                <p>Reads the current result set as a list of entities using strict mapping mode.</p>
+                
+                <div class="signature">
+                    public List&lt;T&gt; Read&lt;T&gt;(CommandOptions&lt;T&gt; options = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (custom mapper, transaction, timeout)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>List&lt;T&gt;</code>: A list of entities of type T from the current result set</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = connection.QueryMultiple("SELECT * FROM categories; SELECT * FROM products");
+var categories = gridReader.Read&lt;Category&gt;().ToList();  // Reads first result set
+var products = gridReader.Read&lt;Product&gt;().ToList();    // Reads second result set</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    ReadPartial&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+                </h3>
+                <p>Reads the current result set as a list of entities using partial mapping mode. Only maps properties with matching columns in the result set.</p>
+                
+                <div class="signature">
+                    public List&lt;T&gt; ReadPartial&lt;T&gt;(CommandOptions&lt;T&gt; options = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (custom mapper, transaction, timeout)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>List&lt;T&gt;</code>: A list of entities of type T from the current result set with partial mapping</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = connection.QueryMultiple("SELECT category_id, category_name FROM categories; SELECT product_id, product_name FROM products");
+var categories = gridReader.ReadPartial&lt;Category&gt;().ToList();  // Only maps CategoryId and CategoryName
+var products = gridReader.ReadPartial&lt;Product&gt;().ToList();    // Only maps ProductId and ProductName</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    ReadFirst&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+                </h3>
+                <p>Reads the first entity from the current result set using strict mapping mode. Throws an exception if the result set is empty.</p>
+                
+                <div class="signature">
+                    public T ReadFirst&lt;T&gt;(CommandOptions&lt;T&gt; options = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (custom mapper, transaction, timeout)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The first entity of type T from the current result set</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = connection.QueryMultiple("SELECT * FROM categories LIMIT 1; SELECT * FROM products LIMIT 1");
+var category = gridReader.ReadFirst&lt;Category&gt;();  // Gets first category
+var product = gridReader.ReadFirst&lt;Product&gt;();    // Gets first product</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    ReadFirstOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+                </h3>
+                <p>Reads the first entity from the current result set or the default value if the result set is empty, using strict mapping mode.</p>
+                
+                <div class="signature">
+                    public T? ReadFirstOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (custom mapper, transaction, timeout)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T?</code>: The first entity of type T from the current result set, or null if the result set is empty</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = connection.QueryMultiple("SELECT * FROM categories WHERE category_id = 999; SELECT * FROM products");
+var category = gridReader.ReadFirstOrDefault&lt;Category&gt;();  // Returns null if no category found
+var product = gridReader.ReadFirstOrDefault&lt;Product&gt;();    // Gets first product</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    ReadSingle&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+                </h3>
+                <p>Reads the single entity from the current result set using strict mapping mode. Throws an exception if the result set is empty or contains more than one element.</p>
+                
+                <div class="signature">
+                    public T ReadSingle&lt;T&gt;(CommandOptions&lt;T&gt; options = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (custom mapper, transaction, timeout)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T</code>: The single entity of type T from the current result set</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = connection.QueryMultiple("SELECT * FROM categories WHERE category_id = 1; SELECT COUNT(*) FROM products");
+var category = gridReader.ReadSingle&lt;Category&gt;();  // Expects exactly one category
+var count = gridReader.ReadSingle&lt;int&gt;();         // Expects exactly one scalar value</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    ReadSingleOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = default)
+                </h3>
+                <p>Reads the single entity from the current result set or the default value if the result set is empty, using strict mapping mode. Throws an exception if the result set contains more than one element.</p>
+                
+                <div class="signature">
+                    public T? ReadSingleOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (custom mapper, transaction, timeout)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T?</code>: The single entity of type T from the current result set, or null if the result set is empty</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = connection.QueryMultiple("SELECT * FROM categories WHERE category_id = 1; SELECT COUNT(*) FROM products WHERE category_id = 1");
+var category = gridReader.ReadSingleOrDefault&lt;Category&gt;();  // Gets single category or null
+var count = gridReader.ReadSingleOrDefault&lt;int&gt;();         // Gets single count or null</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    ReadScalar&lt;T&gt;(CommandOptions options = default)
+                </h3>
+                <p>Reads a scalar value (first column of first row) from the current result set.</p>
+                
+                <div class="signature">
+                    public T? ReadScalar&lt;T&gt;(CommandOptions options = default)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions</td>
+                            <td>Command options (transaction, timeout)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T?</code>: The scalar value of type T from the first column of the first row in the current result set</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = connection.QueryMultiple("SELECT COUNT(*) FROM categories; SELECT COUNT(*) FROM products");
+var categoryCount = gridReader.ReadScalar&lt;int&gt;();  // Gets count of categories
+var productCount = gridReader.ReadScalar&lt;int&gt;();  // Gets count of products</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Async GridReader Methods</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    ReadAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously reads the current result set as a list of entities using strict mapping mode.</p>
+                
+                <div class="signature">
+                    public Task&lt;List&lt;T&gt;&gt; ReadAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (custom mapper, transaction, timeout)</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;List&lt;T&gt;&gt;</code>: A task that resolves to a list of entities of type T from the current result set</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = await connection.QueryMultipleAsync("SELECT * FROM categories; SELECT * FROM products");
+var categories = await gridReader.ReadAsync&lt;Category&gt;();
+var products = await gridReader.ReadAsync&lt;Product&gt;();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    ReadFirstOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously reads the first entity from the current result set or the default value if the result set is empty, using strict mapping mode.</p>
+                
+                <div class="signature">
+                    public Task&lt;T?&gt; ReadFirstOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (custom mapper, transaction, timeout)</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;T?&gt;</code>: A task that resolves to the first entity of type T from the current result set, or null if the result set is empty</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = await connection.QueryMultipleAsync("SELECT * FROM categories WHERE category_id = 999; SELECT * FROM products");
+var category = await gridReader.ReadFirstOrDefaultAsync&lt;Category&gt;();  // Returns null if no category found
+var product = await gridReader.ReadFirstOrDefaultAsync&lt;Product&gt;();    // Gets first product</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    ReadPartialAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously reads the current result set as a list of entities using partial mapping mode. Only maps properties with matching columns in the result set.</p>
+                
+                <div class="signature">
+                    public Task&lt;List&lt;T&gt;&gt; ReadPartialAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (custom mapper, transaction, timeout)</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;List&lt;T&gt;&gt;</code>: A task that resolves to a list of entities of type T from the current result set with partial mapping</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = await connection.QueryMultipleAsync("SELECT category_id, category_name FROM categories; SELECT product_id, product_name FROM products");
+var categories = await gridReader.ReadPartialAsync&lt;Category&gt;();  // Only maps CategoryId and CategoryName
+var products = await gridReader.ReadPartialAsync&lt;Product&gt;();    // Only maps ProductId and ProductName</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    ReadStreamAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously reads the current result set as a stream of entities using strict mapping mode.</p>
+                
+                <div class="signature">
+                    public IAsyncEnumerable&lt;T&gt; ReadStreamAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (custom mapper, transaction, timeout)</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IAsyncEnumerable&lt;T&gt;</code>: An async enumerable of entities of type T from the current result set</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var gridReader = await connection.QueryMultipleAsync("SELECT * FROM categories; SELECT * FROM products");
+await foreach (var category in gridReader.ReadStreamAsync&lt;Category&gt;())
+{
+    // Process each category
+    ProcessCategory(category);
+}
+
+await foreach (var product in gridReader.ReadStreamAsync&lt;Product&gt;())
+{
+    // Process each product
+    ProcessProduct(product);
+}</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Important Notes</h2>
+            <ul>
+                <li><strong>Sequential Access</strong>: Result sets must be read in sequence; once a result set is consumed, you cannot go back to it</li>
+                <li><strong>Resource Management</strong>: The GridReader implements IDisposable and should be properly disposed after use</li>
+                <li><strong>Connection State</strong>: The underlying connection remains open while the GridReader is active</li>
+                <li><strong>Database Support</strong>: Multiple result sets are supported by SQL Server, PostgreSQL, and MySQL but have limitations in SQLite</li>
+                <li><strong>Mapping Modes</strong>: Each read method supports both strict and partial mapping modes</li>
+                <li><strong>Async Requirements</strong>: Async operations require a DbConnection rather than just IDbConnection</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Best Practices</h2>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Use Using Statement
+                </h3>
+                <p>Always dispose the GridReader properly:</p>
+                <pre><code>using var gridReader = connection.QueryMultiple("SELECT * FROM categories; SELECT * FROM products");
+var categories = gridReader.Read&lt;Category&gt;().ToList();
+var products = gridReader.Read&lt;Product&gt;().ToList();</code></pre>
+            </article>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Handle Empty Result Sets
+                </h3>
+                <p>Use ReadFirstOrDefault or ReadSingleOrDefault when the result set might be empty:</p>
+                <pre><code>using var gridReader = connection.QueryMultiple("SELECT * FROM categories WHERE category_id = 999; SELECT * FROM products");
+var category = gridReader.ReadFirstOrDefault&lt;Category&gt;();  // Returns null if no results
+var products = gridReader.Read&lt;Product&gt;().ToList();         // Returns empty list if no results</code></pre>
+            </article>
+        </section>
+    </main>
+
+    <footer class="container">
+        <small>Jaunty ORM &copy; 2026 | Built with PicoCSS</small>
+    </footer>
+</body>
+</html>

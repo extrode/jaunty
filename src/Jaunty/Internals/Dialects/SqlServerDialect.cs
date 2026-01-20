@@ -133,4 +133,58 @@ internal sealed class SqlServerDialect : ISqlDialect
     public string GenerateYear(string expression) => $"YEAR({expression})";
     public string GenerateMonth(string expression) => $"MONTH({expression})";
     public string GenerateDay(string expression) => $"DAY({expression})";
+
+    // Upsert support - SQL Server uses MERGE
+    public bool SupportsUpsert => true;
+
+    public string GenerateUpsertSql(
+        string tableName,
+        string[] insertColumns,
+        string[] insertParams,
+        string[] updateColumns,
+        string[] updateParams,
+        string[] keyColumns)
+    {
+        // SQL Server: MERGE INTO table AS target USING (VALUES (...)) AS source (...) ON ... WHEN MATCHED THEN UPDATE WHEN NOT MATCHED THEN INSERT
+        var sb = new System.Text.StringBuilder(512);
+        sb.Append("MERGE INTO ");
+        sb.Append(tableName);
+        sb.Append(" AS target USING (VALUES (");
+        sb.Append(string.Join(", ", insertParams));
+        sb.Append(")) AS source (");
+        sb.Append(string.Join(", ", insertColumns));
+        sb.Append(") ON ");
+
+        for (int i = 0; i < keyColumns.Length; i++)
+        {
+            if (i > 0) sb.Append(" AND ");
+            sb.Append("target.");
+            sb.Append(keyColumns[i]);
+            sb.Append(" = source.");
+            sb.Append(keyColumns[i]);
+        }
+
+        sb.Append(" WHEN MATCHED THEN UPDATE SET ");
+        for (int i = 0; i < updateColumns.Length; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            sb.Append("target.");
+            sb.Append(updateColumns[i]);
+            sb.Append(" = source.");
+            sb.Append(updateColumns[i]);
+        }
+
+        sb.Append(" WHEN NOT MATCHED THEN INSERT (");
+        sb.Append(string.Join(", ", insertColumns));
+        sb.Append(") VALUES (");
+        for (int i = 0; i < insertColumns.Length; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            sb.Append("source.");
+            sb.Append(insertColumns[i]);
+        }
+        sb.Append(");");
+
+        return sb.ToString();
+    }
 }

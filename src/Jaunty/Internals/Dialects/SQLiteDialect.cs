@@ -147,4 +147,38 @@ internal sealed class SQLiteDialect : ISqlDialect
     public string GenerateYear(string expression) => $"CAST(strftime('%Y', {expression}) AS INTEGER)";
     public string GenerateMonth(string expression) => $"CAST(strftime('%m', {expression}) AS INTEGER)";
     public string GenerateDay(string expression) => $"CAST(strftime('%d', {expression}) AS INTEGER)";
+
+    // Upsert support - SQLite 3.24+ supports ON CONFLICT
+    public bool SupportsUpsert => true;
+
+    public string GenerateUpsertSql(
+        string tableName,
+        string[] insertColumns,
+        string[] insertParams,
+        string[] updateColumns,
+        string[] updateParams,
+        string[] keyColumns)
+    {
+        // SQLite: INSERT INTO table (...) VALUES (...) ON CONFLICT (key) DO UPDATE SET col = excluded.col
+        var sb = new System.Text.StringBuilder(256);
+        sb.Append("INSERT INTO ");
+        sb.Append(tableName);
+        sb.Append(" (");
+        sb.Append(string.Join(", ", insertColumns));
+        sb.Append(") VALUES (");
+        sb.Append(string.Join(", ", insertParams));
+        sb.Append(") ON CONFLICT (");
+        sb.Append(string.Join(", ", keyColumns));
+        sb.Append(") DO UPDATE SET ");
+
+        for (int i = 0; i < updateColumns.Length; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            sb.Append(updateColumns[i]);
+            sb.Append(" = excluded.");
+            sb.Append(updateColumns[i]);
+        }
+
+        return sb.ToString();
+    }
 }

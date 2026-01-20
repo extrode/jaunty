@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Query Methods - Jaunty API Reference</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        :root {
+            --pico-primary: #2563eb;
+            --pico-primary-inverse: #fff;
+            --pico-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+        
+        body {
+            font-family: var(--pico-font-family);
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 1rem;
+        }
+        
+        .method-card {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--pico-border-color);
+            border-radius: var(--pico-border-radius);
+            background-color: var(--pico-card-background-color);
+        }
+        
+        .method-card h3 {
+            margin-top: 0;
+            color: var(--pico-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .signature {
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .params-table th, .params-table td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--pico-border-color);
+        }
+        
+        .params-table th {
+            background-color: var(--pico-card-hover-background-color);
+        }
+        
+        footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--pico-border-color);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><strong>Jaunty Documentation</strong></li>
+                </ul>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="overview.html">Overview</a></li>
+                    <li><a href="query-methods.html" aria-current="page">Query Methods</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <hgroup>
+            <h1>Query Methods</h1>
+            <p>Execute SQL queries and return lists of strongly-typed entities with strict or partial mapping</p>
+        </hgroup>
+
+        <nav class="breadcrumb">
+            <a href="index.html">Home</a> > <a href="overview.html">Overview</a> > Query Methods
+        </nav>
+
+        <section>
+            <h2>Overview</h2>
+            <p>Query methods execute SQL commands and return lists of strongly-typed entities. Jaunty provides both strict and partial mapping modes to handle different scenarios.</p>
+        </section>
+
+        <section>
+            <h2>Basic Query Operations</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    Query&lt;T&gt;(string sql)
+                </h3>
+                <p>Executes a query and returns the results as a list of entities using strict mapping mode.</p>
+                
+                <div class="signature">
+                    public static List&lt;T&gt; Query&lt;T&gt;(this IDbConnection connection, string sql) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>List&lt;T&gt;</code>: A list of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.Query&lt;Product&gt;("SELECT * FROM products");</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    Query&lt;T&gt;(string sql, object parameters)
+                </h3>
+                <p>Executes a parameterized query and returns the results as a list of entities using strict mapping mode.</p>
+                
+                <div class="signature">
+                    public static List&lt;T&gt; Query&lt;T&gt;(this IDbConnection connection, string sql, object parameters) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the query</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>List&lt;T&gt;</code>: A list of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 });</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    Query&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)
+                </h3>
+                <p>Executes a query with command options and returns the results as a list of entities using strict mapping mode.</p>
+                
+                <div class="signature">
+                    public static List&lt;T&gt; Query&lt;T&gt;(this IDbConnection connection, string sql, CommandOptions&lt;T&gt; options) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>List&lt;T&gt;</code>: A list of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var transaction = connection.BeginTransaction();
+var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products", 
+    CommandOptions&lt;Product&gt;.WithTransaction(transaction));</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    Query&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)
+                </h3>
+                <p>Executes a parameterized query with command options and returns the results as a list of entities using strict mapping mode.</p>
+                
+                <div class="signature">
+                    public static List&lt;T&gt; Query&lt;T&gt;(this IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the query</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>List&lt;T&gt;</code>: A list of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.Query&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 },
+    CommandOptions&lt;Product&gt;.WithTimeout(30));</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Async Query Operations</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    QueryAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a query and returns the results as a list of entities using strict mapping mode.</p>
+                
+                <div class="signature">
+                    public static Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;List&lt;T&gt;&gt;</code>: A task that resolves to a list of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = await connection.QueryAsync&lt;Product&gt;("SELECT * FROM products");</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    QueryAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a parameterized query and returns the results as a list of entities using strict mapping mode.</p>
+                
+                <div class="signature">
+                    public static Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the query</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;List&lt;T&gt;&gt;</code>: A task that resolves to a list of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = await connection.QueryAsync&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 });</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Partial Query Operations</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    QueryPartial&lt;T&gt;(string sql)
+                </h3>
+                <p>Executes a query and returns the results as a list of entities using partial mapping mode.</p>
+                
+                <div class="signature">
+                    public static List&lt;T&gt; QueryPartial&lt;T&gt;(this IDbConnection connection, string sql) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>List&lt;T&gt;</code>: A list of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.QueryPartial&lt;Product&gt;("SELECT product_id, product_name FROM products");</code></pre>
+            </article>
+        </section>
+    </main>
+
+    <footer class="container">
+        <small>Jaunty ORM &copy; 2026 | Built with PicoCSS</small>
+    </footer>
+</body>
+</html>

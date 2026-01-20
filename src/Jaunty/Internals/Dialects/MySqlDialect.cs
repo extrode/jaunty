@@ -134,4 +134,37 @@ internal sealed class MySqlDialect : ISqlDialect
     public string GenerateYear(string expression) => $"YEAR({expression})";
     public string GenerateMonth(string expression) => $"MONTH({expression})";
     public string GenerateDay(string expression) => $"DAY({expression})";
+
+    // Upsert support - MySQL uses ON DUPLICATE KEY UPDATE
+    public bool SupportsUpsert => true;
+
+    public string GenerateUpsertSql(
+        string tableName,
+        string[] insertColumns,
+        string[] insertParams,
+        string[] updateColumns,
+        string[] updateParams,
+        string[] keyColumns)
+    {
+        // MySQL: INSERT INTO table (...) VALUES (...) ON DUPLICATE KEY UPDATE col = VALUES(col)
+        var sb = new System.Text.StringBuilder(256);
+        sb.Append("INSERT INTO ");
+        sb.Append(tableName);
+        sb.Append(" (");
+        sb.Append(string.Join(", ", insertColumns));
+        sb.Append(") VALUES (");
+        sb.Append(string.Join(", ", insertParams));
+        sb.Append(") ON DUPLICATE KEY UPDATE ");
+
+        for (int i = 0; i < updateColumns.Length; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            sb.Append(updateColumns[i]);
+            sb.Append(" = VALUES(");
+            sb.Append(updateColumns[i]);
+            sb.Append(")");
+        }
+
+        return sb.ToString();
+    }
 }

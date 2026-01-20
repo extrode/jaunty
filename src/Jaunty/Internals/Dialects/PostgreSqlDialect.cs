@@ -121,4 +121,38 @@ internal sealed class PostgreSqlDialect : ISqlDialect
     public string GenerateYear(string expression) => $"EXTRACT(YEAR FROM {expression})";
     public string GenerateMonth(string expression) => $"EXTRACT(MONTH FROM {expression})";
     public string GenerateDay(string expression) => $"EXTRACT(DAY FROM {expression})";
+
+    // Upsert support - PostgreSQL uses ON CONFLICT (like SQLite)
+    public bool SupportsUpsert => true;
+
+    public string GenerateUpsertSql(
+        string tableName,
+        string[] insertColumns,
+        string[] insertParams,
+        string[] updateColumns,
+        string[] updateParams,
+        string[] keyColumns)
+    {
+        // PostgreSQL: INSERT INTO table (...) VALUES (...) ON CONFLICT (key) DO UPDATE SET col = EXCLUDED.col
+        var sb = new System.Text.StringBuilder(256);
+        sb.Append("INSERT INTO ");
+        sb.Append(tableName);
+        sb.Append(" (");
+        sb.Append(string.Join(", ", insertColumns));
+        sb.Append(") VALUES (");
+        sb.Append(string.Join(", ", insertParams));
+        sb.Append(") ON CONFLICT (");
+        sb.Append(string.Join(", ", keyColumns));
+        sb.Append(") DO UPDATE SET ");
+
+        for (int i = 0; i < updateColumns.Length; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            sb.Append(updateColumns[i]);
+            sb.Append(" = EXCLUDED.");
+            sb.Append(updateColumns[i]);
+        }
+
+        return sb.ToString();
+    }
 }
