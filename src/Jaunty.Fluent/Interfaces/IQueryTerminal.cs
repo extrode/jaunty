@@ -29,9 +29,25 @@ public interface IQueryTerminal<T> where T : new()
     T SelectPartialSingle(params Expression<Func<T, object?>>[] columns);
     T? SelectPartialSingleOrDefault(params Expression<Func<T, object?>>[] columns);
 
-    // Scalar aggregates
+    // Scalar aggregates - COUNT
     int Count();
     long LongCount();
+    int Count<TResult>(Expression<Func<T, TResult>> selector);
+    long LongCount<TResult>(Expression<Func<T, TResult>> selector);
+
+    // Scalar aggregates - SUM, AVG, MIN, MAX
+    TResult Sum<TResult>(Expression<Func<T, TResult>> selector);
+    double Avg<TResult>(Expression<Func<T, TResult>> selector);
+    TResult Min<TResult>(Expression<Func<T, TResult>> selector);
+    TResult Max<TResult>(Expression<Func<T, TResult>> selector);
+
+    // SelectX aliases (explicit terminal operation naming)
+    int SelectCount();
+    int SelectCount<TResult>(Expression<Func<T, TResult>> selector);
+    TResult SelectSum<TResult>(Expression<Func<T, TResult>> selector);
+    double SelectAvg<TResult>(Expression<Func<T, TResult>> selector);
+    TResult SelectMin<TResult>(Expression<Func<T, TResult>> selector);
+    TResult SelectMax<TResult>(Expression<Func<T, TResult>> selector);
 
     // Async variants - full entity selection
     Task<List<T>> SelectAsync(CancellationToken cancellationToken = default);
@@ -54,9 +70,25 @@ public interface IQueryTerminal<T> where T : new()
     Task<T> SelectPartialSingleAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default);
     Task<T?> SelectPartialSingleOrDefaultAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default);
 
-    // Async aggregates
+    // Async aggregates - COUNT
     Task<int> CountAsync(CancellationToken cancellationToken = default);
     Task<long> LongCountAsync(CancellationToken cancellationToken = default);
+    Task<int> CountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+    Task<long> LongCountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+
+    // Async aggregates - SUM, AVG, MIN, MAX
+    Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+    Task<double> AvgAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+    Task<TResult> MinAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+    Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+
+    // Async SelectX aliases
+    Task<int> SelectCountAsync(CancellationToken cancellationToken = default);
+    Task<int> SelectCountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+    Task<TResult> SelectSumAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+    Task<double> SelectAvgAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+    Task<TResult> SelectMinAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
+    Task<TResult> SelectMaxAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default);
 
     // SQL introspection (for debugging/logging)
     string ToSql();
