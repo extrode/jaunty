@@ -54,4 +54,20 @@ public interface IFromClause<T> : IQueryTerminal<T> where T : new()
     /// <typeparam name="TJoin">The type of entity to join.</typeparam>
     /// <param name="alias">Optional alias for the joined table (used in string-based conditions).</param>
     IJoinClause<T, TJoin> RightJoin<TJoin>(string? alias = null) where TJoin : new();
+
+    // GROUP BY
+    /// <summary>
+    /// Groups results by the specified key.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the grouping key.</typeparam>
+    /// <param name="keySelector">Expression selecting the grouping key.</param>
+    /// <returns>A grouped query builder for HAVING and Select operations.</returns>
+    /// <example>
+    /// <code>
+    /// db.From&lt;Product&gt;()
+    ///   .GroupBy(p =&gt; p.CategoryId)
+    ///   .Select(g =&gt; new { g.Key, Count = g.Count() });
+    /// </code>
+    /// </example>
+    IGroupedQuery<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector);
 }

@@ -30,4 +30,10 @@ public interface IWhereClause<T> : IQueryTerminal<T> where T : new()
     // TOP/LIMIT
     IWhereClause<T> Take(int count);
     IWhereClause<T> Skip(int count);
+
+    // GROUP BY
+    /// <summary>
+    /// Groups results by the specified key.
+    /// </summary>
+    IGroupedQuery<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector);
 }

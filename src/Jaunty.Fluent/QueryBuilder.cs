@@ -345,6 +345,20 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     #endregion
 
+    #region GROUP BY
+
+    public IGroupedQuery<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector)
+    {
+        return new GroupedQueryBuilder<T, TKey>(
+            _connection,
+            _dialect,
+            _conditions,
+            _parameters,
+            keySelector);
+    }
+
+    #endregion
+
     #region Terminal operations (sync) - Full entity (strict mapping)
 
     public List<T> Select()
@@ -493,7 +507,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public int Count()
     {
         var sql = BuildCountSql();
-        return _connection.QueryScalar<int>(sql, _parameters.ToParameterObject()!);
+        // SQLite returns Int64 for COUNT, so we need to handle conversion
+        var result = _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!);
+        return (int)result;
     }
 
     public long LongCount()
@@ -501,6 +517,58 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         var sql = BuildCountSql();
         return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!);
     }
+
+    public int Count<TResult>(Expression<Func<T, TResult>> selector)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("COUNT", columnName);
+        // SQLite returns Int64 for COUNT
+        var result = _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!);
+        return (int)result;
+    }
+
+    public long LongCount<TResult>(Expression<Func<T, TResult>> selector)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("COUNT", columnName);
+        return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public TResult Sum<TResult>(Expression<Func<T, TResult>> selector)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("SUM", columnName);
+        return ConvertScalarResult<TResult>(_connection.QueryScalar<object>(sql, _parameters.ToParameterObject()!));
+    }
+
+    public double Avg<TResult>(Expression<Func<T, TResult>> selector)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("AVG", columnName);
+        return _connection.QueryScalar<double>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public TResult Min<TResult>(Expression<Func<T, TResult>> selector)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("MIN", columnName);
+        return ConvertScalarResult<TResult>(_connection.QueryScalar<object>(sql, _parameters.ToParameterObject()!));
+    }
+
+    public TResult Max<TResult>(Expression<Func<T, TResult>> selector)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("MAX", columnName);
+        return ConvertScalarResult<TResult>(_connection.QueryScalar<object>(sql, _parameters.ToParameterObject()!));
+    }
+
+    // SelectX aliases
+    public int SelectCount() => Count();
+    public int SelectCount<TResult>(Expression<Func<T, TResult>> selector) => Count(selector);
+    public TResult SelectSum<TResult>(Expression<Func<T, TResult>> selector) => Sum(selector);
+    public double SelectAvg<TResult>(Expression<Func<T, TResult>> selector) => Avg(selector);
+    public TResult SelectMin<TResult>(Expression<Func<T, TResult>> selector) => Min(selector);
+    public TResult SelectMax<TResult>(Expression<Func<T, TResult>> selector) => Max(selector);
 
     #endregion
 
@@ -683,7 +751,10 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var sql = BuildCountSql();
         if (_connection is DbConnection dbConn)
-            return await dbConn.QueryScalarAsync<int>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+        {
+            var result = await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+            return (int)result;
+        }
         return Count();
     }
 
@@ -694,6 +765,80 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             return await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
         return LongCount();
     }
+
+    public async Task<int> CountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("COUNT", columnName);
+        if (_connection is DbConnection dbConn)
+        {
+            var result = await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+            return (int)result;
+        }
+        return Count(selector);
+    }
+
+    public async Task<long> LongCountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("COUNT", columnName);
+        if (_connection is DbConnection dbConn)
+            return await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+        return LongCount(selector);
+    }
+
+    public async Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("SUM", columnName);
+        if (_connection is DbConnection dbConn)
+        {
+            var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+            return ConvertScalarResult<TResult>(result);
+        }
+        return Sum(selector);
+    }
+
+    public async Task<double> AvgAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("AVG", columnName);
+        if (_connection is DbConnection dbConn)
+            return await dbConn.QueryScalarAsync<double>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+        return Avg(selector);
+    }
+
+    public async Task<TResult> MinAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("MIN", columnName);
+        if (_connection is DbConnection dbConn)
+        {
+            var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+            return ConvertScalarResult<TResult>(result);
+        }
+        return Min(selector);
+    }
+
+    public async Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
+    {
+        var columnName = GetColumnNameFromSelector(selector);
+        var sql = BuildAggregateSql("MAX", columnName);
+        if (_connection is DbConnection dbConn)
+        {
+            var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+            return ConvertScalarResult<TResult>(result);
+        }
+        return Max(selector);
+    }
+
+    // Async SelectX aliases
+    public Task<int> SelectCountAsync(CancellationToken cancellationToken = default) => CountAsync(cancellationToken);
+    public Task<int> SelectCountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) => CountAsync(selector, cancellationToken);
+    public Task<TResult> SelectSumAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) => SumAsync(selector, cancellationToken);
+    public Task<double> SelectAvgAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) => AvgAsync(selector, cancellationToken);
+    public Task<TResult> SelectMinAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) => MinAsync(selector, cancellationToken);
+    public Task<TResult> SelectMaxAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) => MaxAsync(selector, cancellationToken);
 
     #endregion
 
@@ -797,6 +942,56 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         }
 
         return sb.ToString();
+    }
+
+    private string BuildAggregateSql(string aggregateFunction, string columnName)
+    {
+        var sb = new StringBuilder(128);
+        sb.Append("SELECT ");
+        sb.Append(aggregateFunction);
+        sb.Append('(');
+        sb.Append(_dialect.EscapeColumnName(columnName));
+        sb.Append(')');
+
+        // FROM
+        sb.Append(" FROM ");
+        sb.Append(_dialect.EscapeTableName(_metadata.SchemaName, _metadata.TableName));
+
+        // WHERE
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+            for (int i = 0; i < _conditions.Count; i++)
+            {
+                var condition = _conditions[i];
+                if (i > 0)
+                {
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                }
+                sb.Append(condition.Sql);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private string GetColumnNameFromSelector<TResult>(Expression<Func<T, TResult>> selector)
+    {
+        var propertyName = PropertyExtractor.ExtractPropertyName(selector);
+        return GetColumnNameFromProperty(propertyName);
+    }
+
+    private static TResult ConvertScalarResult<TResult>(object value)
+    {
+        if (value is null || value is DBNull)
+            return default!;
+
+        var targetType = typeof(TResult);
+        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+        // Handle conversion from database types to C# types
+        var converted = Convert.ChangeType(value, underlyingType);
+        return (TResult)converted;
     }
 
     private string GetColumnNameFromProperty(string propertyName)
