@@ -135,4 +135,16 @@ internal sealed class SQLiteDialect : ISqlDialect
     {
         return $"NULLIF({expression}, {compareExpression})";
     }
+
+    // String functions
+    public string GenerateLength(string expression) => $"LENGTH({expression})";
+    public string GenerateUpper(string expression) => $"UPPER({expression})";
+    public string GenerateLower(string expression) => $"LOWER({expression})";
+    public string GenerateTrim(string expression) => $"TRIM({expression})";
+    public string GenerateSubstring(string expression, string start, string length) => $"SUBSTR({expression}, {start}, {length})";
+
+    // Date functions - SQLite uses strftime with CAST for integer comparison
+    public string GenerateYear(string expression) => $"CAST(strftime('%Y', {expression}) AS INTEGER)";
+    public string GenerateMonth(string expression) => $"CAST(strftime('%m', {expression}) AS INTEGER)";
+    public string GenerateDay(string expression) => $"CAST(strftime('%d', {expression}) AS INTEGER)";
 }

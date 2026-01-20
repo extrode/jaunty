@@ -46,8 +46,19 @@ internal static class PropertyExtractor
             expression = unary.Operand;
 
         // Direct member access
-        if (expression is MemberExpression member && member.Member is PropertyInfo)
+        if (expression is MemberExpression member && member.Member is PropertyInfo prop)
+        {
+            // Handle nullable .Value access (e.g., p => p.CategoryId!.Value)
+            // We want to return "CategoryId", not "Value"
+            if (prop.Name == "Value" && prop.DeclaringType?.IsGenericType == true
+                && prop.DeclaringType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                // Look at the parent member expression
+                if (member.Expression is MemberExpression parentMember && parentMember.Member is PropertyInfo)
+                    return parentMember.Member;
+            }
             return member.Member;
+        }
 
         return null;
     }

@@ -64,4 +64,19 @@ internal sealed class ParameterCollection
     {
         _parameters.Clear();
     }
+
+    /// <summary>
+    /// Gets all parameters as a list of tuples.
+    /// </summary>
+    public IReadOnlyList<(string Name, object? Value)> GetAll() => _parameters;
+
+    /// <summary>
+    /// Creates a copy of this parameter collection.
+    /// </summary>
+    public ParameterCollection Clone()
+    {
+        var clone = new ParameterCollection();
+        clone._parameters.AddRange(_parameters);
+        return clone;
+    }
 }

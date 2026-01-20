@@ -105,6 +105,17 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             return HandleSqlFunction(node);
         }
 
+        // Handle CaseBuilder method calls (Else, End)
+        if (node.Method.DeclaringType != null &&
+            node.Method.DeclaringType.IsGenericType &&
+            node.Method.DeclaringType.GetGenericTypeDefinition() == typeof(CaseBuilder<>))
+        {
+            if (node.Method.Name == "Else" || node.Method.Name == "End")
+            {
+                return HandleCaseExpression(node);
+            }
+        }
+
         // Handle string methods: Contains, StartsWith, EndsWith
         if (node.Object is not null && node.Object.Type == typeof(string))
         {
@@ -196,6 +207,27 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                 return HandleIsNull(node);
             case "NullIf":
                 return HandleNullIf(node);
+            // String functions
+            case "Length":
+                return HandleLength(node);
+            case "Upper":
+                return HandleUpper(node);
+            case "Lower":
+                return HandleLower(node);
+            case "Trim":
+                return HandleTrim(node);
+            case "Substring":
+                return HandleSubstring(node);
+            // Date functions
+            case "Year":
+                return HandleYear(node);
+            case "Month":
+                return HandleMonth(node);
+            case "Day":
+                return HandleDay(node);
+            // CASE expression (shouldn't reach here - handled in VisitMethodCall)
+            case "Case":
+                throw new NotSupportedException("Sql.Case() must be followed by .When() and .Else() or .End()");
             default:
                 throw new NotSupportedException($"SQL function '{methodName}' is not supported.");
         }
@@ -230,6 +262,191 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
 
         _sql.Append(_dialect.GenerateNullIf(valueArg, compareArg));
         return node;
+    }
+
+    // String function handlers
+    private Expression HandleLength(MethodCallExpression node)
+    {
+        var arg = TranslateArgumentToSql(node.Arguments[0]);
+        _sql.Append(_dialect.GenerateLength(arg));
+        return node;
+    }
+
+    private Expression HandleUpper(MethodCallExpression node)
+    {
+        var arg = TranslateArgumentToSql(node.Arguments[0]);
+        _sql.Append(_dialect.GenerateUpper(arg));
+        return node;
+    }
+
+    private Expression HandleLower(MethodCallExpression node)
+    {
+        var arg = TranslateArgumentToSql(node.Arguments[0]);
+        _sql.Append(_dialect.GenerateLower(arg));
+        return node;
+    }
+
+    private Expression HandleTrim(MethodCallExpression node)
+    {
+        var arg = TranslateArgumentToSql(node.Arguments[0]);
+        _sql.Append(_dialect.GenerateTrim(arg));
+        return node;
+    }
+
+    private Expression HandleSubstring(MethodCallExpression node)
+    {
+        var strArg = TranslateArgumentToSql(node.Arguments[0]);
+        var startArg = TranslateArgumentToSql(node.Arguments[1]);
+        var lengthArg = TranslateArgumentToSql(node.Arguments[2]);
+        _sql.Append(_dialect.GenerateSubstring(strArg, startArg, lengthArg));
+        return node;
+    }
+
+    // Date function handlers
+    private Expression HandleYear(MethodCallExpression node)
+    {
+        var arg = TranslateArgumentToSql(node.Arguments[0]);
+        _sql.Append(_dialect.GenerateYear(arg));
+        return node;
+    }
+
+    private Expression HandleMonth(MethodCallExpression node)
+    {
+        var arg = TranslateArgumentToSql(node.Arguments[0]);
+        _sql.Append(_dialect.GenerateMonth(arg));
+        return node;
+    }
+
+    private Expression HandleDay(MethodCallExpression node)
+    {
+        var arg = TranslateArgumentToSql(node.Arguments[0]);
+        _sql.Append(_dialect.GenerateDay(arg));
+        return node;
+    }
+
+    // CASE expression handler
+    private Expression HandleCaseExpression(MethodCallExpression node)
+    {
+        // Collect WHEN clauses by walking back through the method chain
+        var whenClauses = new List<(Expression Condition, Expression Result)>();
+        Expression? elseResult = null;
+
+        // If this is .Else(), capture the else value
+        if (node.Method.Name == "Else")
+        {
+            elseResult = node.Arguments[0];
+        }
+
+        // Walk back through the chain to collect When clauses
+        Expression? current = node.Object;
+        while (current is MethodCallExpression methodCall)
+        {
+            if (methodCall.Method.Name == "When")
+            {
+                // When(condition, result) - arguments[0] is condition, arguments[1] is result
+                whenClauses.Insert(0, (methodCall.Arguments[0], methodCall.Arguments[1]));
+                current = methodCall.Object;
+            }
+            else if (methodCall.Method.DeclaringType == typeof(Sql) && methodCall.Method.Name == "Case")
+            {
+                // Reached Sql.Case<T>() - end of chain
+                break;
+            }
+            else
+            {
+                // Unknown method in chain
+                throw new NotSupportedException($"Unexpected method '{methodCall.Method.Name}' in CASE expression chain.");
+            }
+        }
+
+        if (whenClauses.Count == 0)
+        {
+            throw new InvalidOperationException("CASE expression requires at least one WHEN clause.");
+        }
+
+        // Build the CASE SQL
+        _sql.Append("CASE");
+
+        foreach (var (condition, result) in whenClauses)
+        {
+            _sql.Append(" WHEN ");
+            // Translate the condition expression to SQL
+            TranslateCaseCondition(condition);
+            _sql.Append(" THEN ");
+            // Translate the result to SQL (may be constant or column)
+            _sql.Append(TranslateArgumentToSql(result));
+        }
+
+        if (elseResult != null)
+        {
+            _sql.Append(" ELSE ");
+            _sql.Append(TranslateArgumentToSql(elseResult));
+        }
+
+        _sql.Append(" END");
+
+        return node;
+    }
+
+    private void TranslateCaseCondition(Expression condition)
+    {
+        // The condition might be a binary expression (e.g., p.Price < 10)
+        // We need to translate it without wrapping in parentheses for cleaner SQL
+        if (condition is BinaryExpression binary)
+        {
+            // Handle comparison operators
+            var (columnName, value, isLeftColumn) = ExtractColumnAndValue(binary);
+
+            if (columnName != null)
+            {
+                var escapedColumn = _dialect.EscapeColumnName(columnName);
+                _sql.Append(escapedColumn);
+                _sql.Append(GetOperator(binary.NodeType));
+                var paramName = GetParameterName(columnName);
+                _sql.Append(paramName);
+                _parameters.Add((paramName, value));
+            }
+            else
+            {
+                // Both sides might be columns or complex expressions
+                Visit(binary.Left);
+                _sql.Append(GetOperator(binary.NodeType));
+                Visit(binary.Right);
+            }
+        }
+        else if (condition is MethodCallExpression methodCall)
+        {
+            // Handle method calls in conditions (e.g., Sql.Length(p.Name) > 10)
+            Visit(methodCall);
+        }
+        else if (condition is MemberExpression member)
+        {
+            // Handle boolean member access (e.g., p.IsActive)
+            if (IsParameterMember(member) && member.Type == typeof(bool))
+            {
+                var columnName = GetColumnName(member);
+                var escapedColumn = _dialect.EscapeColumnName(columnName);
+                _sql.Append(escapedColumn);
+                _sql.Append(" = 1");
+            }
+            else
+            {
+                Visit(member);
+            }
+        }
+        else
+        {
+            // Fallback - try to evaluate and use as constant
+            var value = EvaluateExpression(condition);
+            if (value is bool boolValue)
+            {
+                _sql.Append(boolValue ? "1 = 1" : "1 = 0");
+            }
+            else
+            {
+                Visit(condition);
+            }
+        }
     }
 
     private string TranslateArgumentToSql(Expression arg)

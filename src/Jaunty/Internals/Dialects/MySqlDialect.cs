@@ -122,4 +122,16 @@ internal sealed class MySqlDialect : ISqlDialect
     {
         return $"NULLIF({expression}, {compareExpression})";
     }
+
+    // String functions
+    public string GenerateLength(string expression) => $"LENGTH({expression})";
+    public string GenerateUpper(string expression) => $"UPPER({expression})";
+    public string GenerateLower(string expression) => $"LOWER({expression})";
+    public string GenerateTrim(string expression) => $"TRIM({expression})";
+    public string GenerateSubstring(string expression, string start, string length) => $"SUBSTRING({expression}, {start}, {length})";
+
+    // Date functions - MySQL uses YEAR(), MONTH(), DAY()
+    public string GenerateYear(string expression) => $"YEAR({expression})";
+    public string GenerateMonth(string expression) => $"MONTH({expression})";
+    public string GenerateDay(string expression) => $"DAY({expression})";
 }
