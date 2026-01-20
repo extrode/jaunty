@@ -114,16 +114,18 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                 {
                     case "Contains":
                         _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
-                        _parameters.Add((paramName, $"%{EscapeLikePattern(value?.ToString() ?? "")}%"));
+                        _parameters.Add((paramName, _dialect.FormatContainsPattern(value?.ToString() ?? "")));
                         return node;
                     case "StartsWith":
                         _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
-                        _parameters.Add((paramName, $"{EscapeLikePattern(value?.ToString() ?? "")}%"));
+                        _parameters.Add((paramName, _dialect.FormatStartsWithPattern(value?.ToString() ?? "")));
                         return node;
                     case "EndsWith":
                         _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
-                        _parameters.Add((paramName, $"%{EscapeLikePattern(value?.ToString() ?? "")}"));
+                        _parameters.Add((paramName, _dialect.FormatEndsWithPattern(value?.ToString() ?? "")));
                         return node;
+                    case "Equals" when node.Arguments.Count >= 1:
+                        return HandleStringEquals(node, escapedColumn, columnName, value);
                 }
             }
         }
@@ -322,6 +324,38 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         ExpressionType.GreaterThanOrEqual => " >= ",
         _ => throw new NotSupportedException($"Operator {nodeType} is not supported in WHERE expressions.")
     };
+
+    private Expression HandleStringEquals(MethodCallExpression node, string escapedColumn, string columnName, object? value)
+    {
+        var paramName = GetParameterName(columnName);
+        var stringValue = value?.ToString() ?? "";
+
+        bool isCaseInsensitive = false;
+        if (node.Arguments.Count >= 2)
+        {
+            var comparisonArg = EvaluateExpression(node.Arguments[1]);
+            if (comparisonArg is StringComparison comparison)
+            {
+                isCaseInsensitive = comparison is StringComparison.OrdinalIgnoreCase
+                    or StringComparison.CurrentCultureIgnoreCase
+                    or StringComparison.InvariantCultureIgnoreCase;
+            }
+        }
+
+        if (isCaseInsensitive)
+        {
+            _sql.Append(_dialect.GenerateCaseInsensitiveEquals(escapedColumn, paramName));
+        }
+        else
+        {
+            _sql.Append(escapedColumn);
+            _sql.Append(" = ");
+            _sql.Append(paramName);
+        }
+
+        _parameters.Add((paramName, stringValue));
+        return node;
+    }
 
     private static string EscapeLikePattern(string value)
     {

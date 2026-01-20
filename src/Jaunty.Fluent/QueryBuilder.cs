@@ -21,6 +21,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     private readonly IDbConnection _connection;
     private readonly ISqlDialect _dialect;
     private readonly EntityMetadata _metadata;
+    private readonly string? _alias;
     private readonly List<WhereCondition> _conditions = new();
     private readonly List<OrderByColumn> _orderByColumns = new();
     private readonly ParameterCollection _parameters = new();
@@ -28,12 +29,19 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     private int? _take;
     private int? _skip;
 
-    internal QueryBuilder(IDbConnection connection)
+    internal QueryBuilder(IDbConnection connection, string? alias = null)
     {
         _connection = connection;
         _dialect = SqlDialectFactory.GetDialect(connection);
         _metadata = MetadataCache<T>.Metadata;
+        _alias = alias;
     }
+
+    internal IDbConnection Connection => _connection;
+    internal ISqlDialect Dialect => _dialect;
+    internal string? Alias => _alias;
+    internal string TableName => _metadata.TableName;
+    internal string? SchemaName => _metadata.SchemaName;
 
     private string[] GetAllColumnNames()
     {
@@ -315,6 +323,25 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IOrderByClause<T> IOrderByClause<T>.Skip(int count) { _skip = count; return this; }
     IDistinctClause<T> IDistinctClause<T>.Take(int count) { _take = count; return this; }
     IDistinctClause<T> IDistinctClause<T>.Skip(int count) { _skip = count; return this; }
+
+    #endregion
+
+    #region JOIN operations
+
+    public IJoinClause<T, TJoin> InnerJoin<TJoin>(string? alias = null) where TJoin : new()
+    {
+        return new JoinClauseBuilder<T, TJoin>(this, JoinType.Inner, alias);
+    }
+
+    public IJoinClause<T, TJoin> LeftJoin<TJoin>(string? alias = null) where TJoin : new()
+    {
+        return new JoinClauseBuilder<T, TJoin>(this, JoinType.Left, alias);
+    }
+
+    public IJoinClause<T, TJoin> RightJoin<TJoin>(string? alias = null) where TJoin : new()
+    {
+        return new JoinClauseBuilder<T, TJoin>(this, JoinType.Right, alias);
+    }
 
     #endregion
 

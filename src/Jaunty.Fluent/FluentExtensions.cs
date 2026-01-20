@@ -12,30 +12,43 @@ public static class FluentExtensions
     /// </summary>
     /// <typeparam name="T">The entity type to query.</typeparam>
     /// <param name="connection">The database connection.</param>
-    /// <returns>A fluent query builder for chaining WHERE, ORDER BY, and SELECT operations.</returns>
+    /// <param name="alias">Optional alias for the table (used in string-based join conditions).</param>
+    /// <returns>A fluent query builder for chaining WHERE, ORDER BY, JOIN, and SELECT operations.</returns>
     /// <example>
     /// <code>
     /// // Select all columns (strict mapping)
-    /// var products = db.From<Product>().Select();
+    /// var products = db.From&lt;Product&gt;().Select();
     ///
     /// // Select specific columns (partial mapping)
-    /// var products = db.From<Product>().SelectPartial("Id", "ProductName", "CategoryId");
-    /// var products = db.From<Product>().SelectPartial(p => p.Id, p => p.ProductName, p => p.CategoryId);
+    /// var products = db.From&lt;Product&gt;().SelectPartial("Id", "ProductName", "CategoryId");
+    /// var products = db.From&lt;Product&gt;().SelectPartial(p => p.Id, p => p.ProductName, p => p.CategoryId);
     ///
     /// // With WHERE clause
-    /// var products = db.From<Product>()
+    /// var products = db.From&lt;Product&gt;()
     ///     .Where(p => p.CategoryId == 1)
     ///     .SelectPartial("Id", "ProductName");
     ///
     /// // With ORDER BY
-    /// var products = db.From<Product>()
+    /// var products = db.From&lt;Product&gt;()
     ///     .Where("CategoryId", 1)
     ///     .OrderBy(p => p.ProductName)
     ///     .Select();
+    ///
+    /// // With JOIN (expression-based)
+    /// var products = db.From&lt;Product&gt;()
+    ///     .InnerJoin&lt;Category&gt;()
+    ///     .On(p => p.CategoryId, c => c.Id)
+    ///     .Select();
+    ///
+    /// // With JOIN (string-based with aliases)
+    /// var products = db.From&lt;Product&gt;("p")
+    ///     .InnerJoin&lt;Category&gt;("c")
+    ///     .On("p.category_id", "c.id")
+    ///     .Select();
     /// </code>
     /// </example>
-    public static IFromClause<T> From<T>(this IDbConnection connection) where T : new()
+    public static IFromClause<T> From<T>(this IDbConnection connection, string? alias = null) where T : new()
     {
-        return new QueryBuilder<T>(connection);
+        return new QueryBuilder<T>(connection, alias);
     }
 }
