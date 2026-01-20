@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluent API - Jaunty API Reference</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        :root {
+            --pico-primary: #2563eb;
+            --pico-primary-inverse: #fff;
+            --pico-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+        
+        body {
+            font-family: var(--pico-font-family);
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 1rem;
+        }
+        
+        .method-card {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--pico-border-color);
+            border-radius: var(--pico-border-radius);
+            background-color: var(--pico-card-background-color);
+        }
+        
+        .method-card h3 {
+            margin-top: 0;
+            color: var(--pico-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .signature {
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .params-table th, .params-table td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--pico-border-color);
+        }
+        
+        .params-table th {
+            background-color: var(--pico-card-hover-background-color);
+        }
+        
+        footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--pico-border-color);
+            text-align: center;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .feature-card {
+            padding: 1.5rem;
+            border: 1px solid var(--pico-border-color);
+            border-radius: var(--pico-border-radius);
+        }
+        
+        .feature-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><strong>Jaunty Documentation</strong></li>
+                </ul>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="overview.html">Overview</a></li>
+                    <li><a href="fluent-api.html" aria-current="page">Fluent API</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <hgroup>
+            <h1>Fluent API</h1>
+            <p>Type-safe query builder with LINQ-like syntax for constructing SQL queries</p>
+        </hgroup>
+
+        <nav class="breadcrumb">
+            <a href="index.html">Home</a> > <a href="overview.html">Overview</a> > Fluent API
+        </nav>
+
+        <section>
+            <h2>Overview</h2>
+            <p>The Jaunty Fluent API provides a type-safe, LINQ-like query builder that enables constructing SQL queries using method chaining. This API offers compile-time validation and IntelliSense support for building complex queries.</p>
+        </section>
+
+        <section>
+            <h2>Key Features</h2>
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        Type Safety
+                    </h3>
+                    <p>All operations are strongly typed, preventing runtime errors caused by typos in column names.</p>
+                </article>
+                
+                <article class="feature-card">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"></path>
+                        </svg>
+                        Method Chaining
+                    </h3>
+                    <p>Fluent interface allows chaining operations for readable and expressive query construction.</p>
+                </article>
+                
+                <article class="feature-card">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        Compile-Time Validation
+                    </h3>
+                    <p>Property names are validated at compile time, preventing runtime errors.</p>
+                </article>
+            </div>
+        </section>
+
+        <section>
+            <h2>Getting Started</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    </svg>
+                    From&lt;T&gt;(IDbConnection connection, string? alias = null)
+                </h3>
+                <p>Entry point for the fluent query API. Creates a query builder for the specified entity type.</p>
+                
+                <div class="signature">
+                    public static IFromClause&lt;T&gt; From&lt;T&gt;(this IDbConnection connection, string? alias = null) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>alias</td>
+                            <td>string?</td>
+                            <td>Optional alias for the table (useful for joins with string-based conditions)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IFromClause&lt;T&gt;</code>: A fluent query builder for chaining operations</p>
+                
+                <h4>Example</h4>
+                <pre><code>// Basic query
+var products = connection.From&lt;Product&gt;()
+    .Select();
+
+// With alias for joins
+var products = connection.From&lt;Product&gt;("p")
+    .InnerJoin&lt;Category&gt;("c")
+    .OnColumns("p.category_id", "c.id")
+    .Select();</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>WHERE Operations</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22" x2="12" y2="12"></line>
+                    </svg>
+                    Where(Expression&lt;Func&lt;T, bool&gt;&gt; predicate)
+                </h3>
+                <p>Adds a WHERE condition using a strongly-typed expression predicate.</p>
+                
+                <div class="signature">
+                    IWhereClause&lt;T&gt; Where(Expression&lt;Func&lt;T, bool&gt;&gt; predicate)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>predicate</td>
+                            <td>Expression&lt;Func&lt;T, bool&gt;&gt;</td>
+                            <td>Expression representing the WHERE condition</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IWhereClause&lt;T&gt;</code>: Interface for chaining additional WHERE conditions</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.From&lt;Product&gt;()
+    .Where(p => p.CategoryId == 1)
+    .Where(p => p.Price > 10.00m)
+    .Select();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22" x2="12" y2="12"></line>
+                    </svg>
+                    Where(string column, object? value)
+                </h3>
+                <p>Adds a WHERE condition comparing a column to a value using equality.</p>
+                
+                <div class="signature">
+                    IWhereClause&lt;T&gt; Where(string column, object? value)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>column</td>
+                            <td>string</td>
+                            <td>The column name to compare</td>
+                        </tr>
+                        <tr>
+                            <td>value</td>
+                            <td>object?</td>
+                            <td>The value to compare against</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IWhereClause&lt;T&gt;</code>: Interface for chaining additional WHERE conditions</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.From&lt;Product&gt;()
+    .Where("category_id", 1)
+    .Where("price", 10.99m)
+    .Select();</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>JOIN Operations</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    InnerJoin&lt;TJoin&gt;(string? alias = null)
+                </h3>
+                <p>Adds an INNER JOIN to another table.</p>
+                
+                <div class="signature">
+                    IJoinClause&lt;T, TJoin&gt; InnerJoin&lt;TJoin&gt;(string? alias = null) where TJoin : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>alias</td>
+                            <td>string?</td>
+                            <td>Optional alias for the joined table (used in string-based conditions)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IJoinClause&lt;T, TJoin&gt;</code>: Interface for specifying join conditions</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.From&lt;Product&gt;("p")
+    .InnerJoin&lt;Category&gt;("c")
+    .On((p, c) => p.CategoryId == c.Id)
+    .Select();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    On(Expression&lt;Func&lt;T, TJoin, bool&gt;&gt; predicate)
+                </h3>
+                <p>Specifies the join condition using a strongly-typed expression predicate.</p>
+                
+                <div class="signature">
+                    IJoinedQuery&lt;T, TJoin&gt; On(Expression&lt;Func&lt;T, TJoin, bool&gt;&gt; predicate)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>predicate</td>
+                            <td>Expression&lt;Func&lt;T, TJoin, bool&gt;&gt;</td>
+                            <td>Expression representing the join condition</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IJoinedQuery&lt;T, TJoin&gt;</code>: Interface for continuing the query after the join</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.From&lt;Product&gt;("p")
+    .InnerJoin&lt;Category&gt;("c")
+    .On((p, c) => p.CategoryId == c.Id)
+    .Select();</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>ORDER BY Operations</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="8 6 12 2 16 6"></polyline>
+                        <line x1="12" y1="2" x2="12" y2="22"></line>
+                    </svg>
+                    OrderBy(Expression&lt;Func&lt;T, object?&gt;&gt; keySelector)
+                </h3>
+                <p>Orders the results by the specified property in ascending order.</p>
+                
+                <div class="signature">
+                    IOrderByClause&lt;T&gt; OrderBy(Expression&lt;Func&lt;T, object?&gt;&gt; keySelector)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>keySelector</td>
+                            <td>Expression&lt;Func&lt;T, object?&gt;&gt;</td>
+                            <td>Expression selecting the property to order by</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IOrderByClause&lt;T&gt;</code>: Interface for continuing the query after ordering</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.From&lt;Product&gt;()
+    .OrderBy(p => p.ProductName)
+    .Select();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="8 18 12 22 16 18"></polyline>
+                        <line x1="12" y1="22" x2="12" y2="2"></line>
+                    </svg>
+                    OrderByDescending(Expression&lt;Func&lt;T, object?&gt;&gt; keySelector)
+                </h3>
+                <p>Orders the results by the specified property in descending order.</p>
+                
+                <div class="signature">
+                    IOrderByClause&lt;T&gt; OrderByDescending(Expression&lt;Func&lt;T, object?&gt;&gt; keySelector)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>keySelector</td>
+                            <td>Expression&lt;Func&lt;T, object?&gt;&gt;</td>
+                            <td>Expression selecting the property to order by</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IOrderByClause&lt;T&gt;</code>: Interface for continuing the query after ordering</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.From&lt;Product&gt;()
+    .OrderByDescending(p => p.Price)
+    .Select();</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Pagination</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"></path>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Take(int count)
+                </h3>
+                <p>Limits the number of results returned (equivalent to LIMIT/TOP).</p>
+                
+                <div class="signature">
+                    IFromClause&lt;T&gt; Take(int count)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>count</td>
+                            <td>int</td>
+                            <td>The maximum number of results to return</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IFromClause&lt;T&gt;</code>: Interface for continuing the query after limiting results</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.From&lt;Product&gt;()
+    .OrderBy(p => p.ProductId)
+    .Take(10)
+    .Select();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"></path>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    Skip(int count)
+                </h3>
+                <p>Skips the specified number of results (equivalent to OFFSET).</p>
+                
+                <div class="signature">
+                    IFromClause&lt;T&gt; Skip(int count)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>count</td>
+                            <td>int</td>
+                            <td>The number of results to skip</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IFromClause&lt;T&gt;</code>: Interface for continuing the query after skipping results</p>
+                
+                <h4>Example</h4>
+                <pre><code>// Get products 11-20 (pagination)
+var products = connection.From&lt;Product&gt;()
+    .OrderBy(p => p.ProductId)
+    .Skip(10)
+    .Take(10)
+    .Select();</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Terminal Operations</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    Select()
+                </h3>
+                <p>Executes the query and returns all results as a list of entities using strict mapping mode.</p>
+                
+                <div class="signature">
+                    List&lt;T&gt; Select()
+                </div>
+                
+                <h4>Returns</h4>
+                <p><code>List&lt;T&gt;</code>: A list of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.From&lt;Product&gt;()
+    .Where(p => p.CategoryId == 1)
+    .OrderBy(p => p.ProductName)
+    .Select();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    SelectAsync(CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes the query and returns all results as a list of entities using strict mapping mode.</p>
+                
+                <div class="signature">
+                    Task&lt;List&lt;T&gt;&gt; SelectAsync(CancellationToken cancellationToken = default)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;List&lt;T&gt;&gt;</code>: A task that resolves to a list of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = await connection.From&lt;Product&gt;()
+    .Where(p => p.CategoryId == 1)
+    .OrderBy(p => p.ProductName)
+    .SelectAsync();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    SelectPartial(params Expression&lt;Func&lt;T, object?&gt;&gt;[] columns)
+                </h3>
+                <p>Selects only the specified columns using partial mapping mode.</p>
+                
+                <div class="signature">
+                    List&lt;T&gt; SelectPartial(params Expression&lt;Func&lt;T, object?&gt;&gt;[] columns)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>columns</td>
+                            <td>Expression&lt;Func&lt;T, object?&gt;&gt;[]</td>
+                            <td>Expressions selecting the properties to include in the result</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>List&lt;T&gt;</code>: A list of entities of type T with only specified properties mapped</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.From&lt;Product&gt;()
+    .SelectPartial(p => p.ProductId, p => p.ProductName, p => p.Price);</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Advanced Operations</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    WhereIn&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, IEnumerable&lt;TValue&gt; values)
+                </h3>
+                <p>Filters results where the selected property value is in the specified collection.</p>
+                
+                <div class="signature">
+                    IWhereClause&lt;T&gt; WhereIn&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, IEnumerable&lt;TValue&gt; values)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>selector</td>
+                            <td>Expression&lt;Func&lt;T, TValue&gt;&gt;</td>
+                            <td>Expression selecting the property to filter on</td>
+                        </tr>
+                        <tr>
+                            <td>values</td>
+                            <td>IEnumerable&lt;TValue&gt;</td>
+                            <td>Collection of values to match against</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IWhereClause&lt;T&gt;</code>: Interface for chaining additional conditions</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.From&lt;Product&gt;()
+    .WhereIn(p => p.CategoryId, new[] { 1, 2, 3 })
+    .Select();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    WhereBetween&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, TValue from, TValue to)
+                </h3>
+                <p>Filters results where the selected property value is between the specified range (inclusive).</p>
+                
+                <div class="signature">
+                    IWhereClause&lt;T&gt; WhereBetween&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, TValue from, TValue to)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>selector</td>
+                            <td>Expression&lt;Func&lt;T, TValue&gt;&gt;</td>
+                            <td>Expression selecting the property to filter on</td>
+                        </tr>
+                        <tr>
+                            <td>from</td>
+                            <td>TValue</td>
+                            <td>Lower bound of the range</td>
+                        </tr>
+                        <tr>
+                            <td>to</td>
+                            <td>TValue</td>
+                            <td>Upper bound of the range</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IWhereClause&lt;T&gt;</code>: Interface for chaining additional conditions</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.From&lt;Product&gt;()
+    .WhereBetween(p => p.Price, 10.00m, 100.00m)
+    .Select();</code></pre>
+            </article>
+        </section>
+    </main>
+
+    <footer class="container">
+        <small>Jaunty ORM &copy; 2026 | Built with PicoCSS</small>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jaunty API Reference Overview</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        :root {
+            --pico-primary: #2563eb;
+            --pico-primary-inverse: #fff;
+            --pico-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+        
+        body {
+            font-family: var(--pico-font-family);
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 1rem;
+        }
+        
+        .api-category {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--pico-border-color);
+            border-radius: var(--pico-border-radius);
+        }
+        
+        .api-category h3 {
+            margin-top: 0;
+            color: var(--pico-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .api-category ul {
+            padding-left: 1.5rem;
+        }
+        
+        .api-category li {
+            margin-bottom: 0.5rem;
+        }
+        
+        footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--pico-border-color);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><strong>Jaunty Documentation</strong></li>
+                </ul>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="overview.html" aria-current="page">Overview</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <hgroup>
+            <h1>Jaunty API Reference Overview</h1>
+            <p>Comprehensive documentation for all public APIs in Jaunty</p>
+        </hgroup>
+
+        <nav class="breadcrumb">
+            <a href="index.html">Home</a> > Overview
+        </nav>
+
+        <section>
+            <h2>Introduction</h2>
+            <p>Jaunty is a high-performance micro-ORM for .NET that executes SQL and maps results to objects with strict mapping by default. This documentation provides comprehensive reference for all public APIs.</p>
+        </section>
+
+        <section>
+            <h2>Core Concepts</h2>
+            
+            <article class="api-category">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Extension Methods
+                </h3>
+                <p>All Jaunty methods are extension methods on <code>IDbConnection</code>, providing a fluent API for database operations.</p>
+            </article>
+            
+            <article class="api-category">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    Mapping Modes
+                </h3>
+                <ul>
+                    <li><strong>Strict Mode</strong> (default): All entity properties must have matching columns in the result set</li>
+                    <li><strong>Partial Mode</strong>: Only maps properties with matching columns, ignores missing ones</li>
+                </ul>
+            </article>
+            
+            <article class="api-category">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    Command Options
+                </h3>
+                <p>Common options for controlling command execution:</p>
+                <ul>
+                    <li>Transaction</li>
+                    <li>Command timeout</li>
+                    <li>Custom mapper</li>
+                    <li>Command type (Text or StoredProcedure)</li>
+                </ul>
+            </article>
+        </section>
+
+        <section>
+            <h2>API Categories</h2>
+            
+            <article class="api-category">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    Query Operations
+                </h3>
+                <ul>
+                    <li><a href="query-methods.html">Query Methods</a> - Basic query operations with strict and partial mapping</li>
+                    <li><a href="scalar-methods.html">Scalar Methods</a> - Scalar value operations</li>
+                    <li><a href="single-result-methods.html">Single Result Methods</a> - Operations returning single results</li>
+                    <li><a href="streaming-methods.html">Streaming Methods</a> - Memory-efficient streaming operations</li>
+                </ul>
+            </article>
+            
+            <article class="api-category">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    <path d="M9.5 9h5L12 12.5 9.5 9Z"></path>
+                </svg>
+                    Multiple Result Sets
+                </h3>
+                <ul>
+                    <li><a href="multiple-result-sets.html">Multiple Result Sets</a> - Operations for handling multiple result sets with GridReader</li>
+                </ul>
+            </article>
+            
+            <article class="api-category">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    Data Modification
+                </h3>
+                <ul>
+                    <li><a href="crud-operations.html">CRUD Operations</a> - Insert, Update, Delete operations</li>
+                    <li><a href="stored-procedures.html">Stored Procedures</a> - Stored procedure execution with input, output, and return parameters</li>
+                </ul>
+            </article>
+            
+            <article class="api-category">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                    Query Building
+                </h3>
+                <ul>
+                    <li><a href="fluent-api.html">Fluent API</a> - Type-safe query builder with LINQ-like syntax</li>
+                </ul>
+            </article>
+            
+            <article class="api-category">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+                    </svg>
+                    Configuration and Attributes
+                </h3>
+                <ul>
+                    <li><a href="configuration.html">Configuration</a> - Global configuration options and CommandOptions</li>
+                    <li><a href="attributes.html">Attributes</a> - Mapping attributes for customizing entity mapping</li>
+                </ul>
+            </article>
+        </section>
+    </main>
+
+    <footer class="container">
+        <small>Jaunty ORM &copy; 2026 | Built with PicoCSS</small>
+    </footer>
+</body>
+</html>

@@ -41,6 +41,7 @@ internal static class CrudSqlCache
         string updateSql = BuildUpdateSql(metadata, dialect, escapedTableName);
         string deleteSql = BuildDeleteSql(metadata, dialect, escapedTableName);
         string deleteByIdSql = BuildDeleteByIdSql(metadata, dialect, escapedTableName);
+        string upsertSql = dialect.SupportsUpsert ? BuildUpsertSql(metadata, dialect, escapedTableName) : string.Empty;
         string lastInsertIdSql = dialect.GetLastInsertIdSql();
 
         return new CachedCrudSql(
@@ -48,8 +49,10 @@ internal static class CrudSqlCache
             updateSql,
             deleteSql,
             deleteByIdSql,
+            upsertSql,
             lastInsertIdSql,
-            metadata);
+            metadata,
+            dialect.SupportsUpsert);
     }
 
     private static string BuildInsertSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)
@@ -163,6 +166,60 @@ internal static class CrudSqlCache
         sb.Append(" = @Id");
 
         return sb.ToString();
+    }
+
+    private static string BuildUpsertSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)
+    {
+        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
+        if (primaryKeys.Count == 0)
+            return string.Empty; // Upsert requires primary key
+
+        // Get all columns for INSERT (non-identity, non-computed)
+        IReadOnlyList<ColumnMetadata> allColumns = metadata.NonIdentityColumns;
+        var insertColumns = new List<string>(allColumns.Count);
+        var insertParams = new List<string>(allColumns.Count);
+
+        for (int i = 0; i < allColumns.Count; i++)
+        {
+            ColumnMetadata col = allColumns[i];
+            if (!col.IsComputed)
+            {
+                insertColumns.Add(dialect.EscapeColumnName(col.ColumnName));
+                insertParams.Add("@" + col.Property.Name);
+            }
+        }
+
+        if (insertColumns.Count == 0)
+            return string.Empty;
+
+        // Get columns for UPDATE (non-key, non-identity, non-computed)
+        var updateColumns = new List<string>(allColumns.Count);
+        var updateParams = new List<string>(allColumns.Count);
+
+        for (int i = 0; i < allColumns.Count; i++)
+        {
+            ColumnMetadata col = allColumns[i];
+            if (!col.IsPrimaryKey && !col.IsIdentity && !col.IsComputed)
+            {
+                updateColumns.Add(dialect.EscapeColumnName(col.ColumnName));
+                updateParams.Add("@" + col.Property.Name);
+            }
+        }
+
+        // Get key columns
+        var keyColumns = new string[primaryKeys.Count];
+        for (int i = 0; i < primaryKeys.Count; i++)
+        {
+            keyColumns[i] = dialect.EscapeColumnName(primaryKeys[i].ColumnName);
+        }
+
+        return dialect.GenerateUpsertSql(
+            escapedTableName,
+            insertColumns.ToArray(),
+            insertParams.ToArray(),
+            updateColumns.ToArray(),
+            updateParams.ToArray(),
+            keyColumns);
     }
 
     private static void AppendWhereClause(StringBuilder sb, IReadOnlyList<ColumnMetadata> keys, ISqlDialect dialect, bool usePropertyNames)

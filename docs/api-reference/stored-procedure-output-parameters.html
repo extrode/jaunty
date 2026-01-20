@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stored Procedure Output Parameters - Jaunty API Reference</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        :root {
+            --pico-primary: #2563eb;
+            --pico-primary-inverse: #fff;
+            --pico-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+        
+        body {
+            font-family: var(--pico-font-family);
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 1rem;
+        }
+        
+        .method-card {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--pico-border-color);
+            border-radius: var(--pico-border-radius);
+            background-color: var(--pico-card-background-color);
+        }
+        
+        .method-card h3 {
+            margin-top: 0;
+            color: var(--pico-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .signature {
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .params-table th, .params-table td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--pico-border-color);
+        }
+        
+        .params-table th {
+            background-color: var(--pico-card-hover-background-color);
+        }
+        
+        footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--pico-border-color);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><strong>Jaunty Documentation</strong></li>
+                </ul>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="overview.html">Overview</a></li>
+                    <li><a href="stored-procedure-output-parameters.html" aria-current="page">Stored Procedure Output Parameters</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <hgroup>
+            <h1>Stored Procedure Output Parameters</h1>
+            <p>Working with input, output, and return parameters in stored procedures</p>
+        </hgroup>
+
+        <nav class="breadcrumb">
+            <a href="index.html">Home</a> > <a href="overview.html">Overview</a> > Stored Procedure Output Parameters
+        </nav>
+
+        <section>
+            <h2>Overview</h2>
+            <p>Jaunty provides comprehensive support for stored procedures with input, output, and return parameters through the <code>SpParameters</code> class. This allows you to call stored procedures that return values through output parameters or return values.</p>
+        </section>
+
+        <section>
+            <h2>SpParameters Class</h2>
+            <p>The <code>SpParameters</code> class provides methods for defining stored procedure parameters with different directions.</p>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    SpParameters.AddInput(string name, object? value)
+                </h3>
+                <p>Adds an input parameter to the stored procedure call.</p>
+                
+                <div class="signature">
+                    public SpParameters AddInput(string name, object? value)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>name</td>
+                            <td>string</td>
+                            <td>The parameter name (without @ prefix)</td>
+                        </tr>
+                        <tr>
+                            <td>value</td>
+                            <td>object?</td>
+                            <td>The parameter value</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>SpParameters</code>: The same instance for fluent chaining</p>
+                
+                <h4>Example</h4>
+                <pre><code>var parameters = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddInput("MinPrice", 10.00m);</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    SpParameters.AddInput(string name, object? value, DbType dbType, int? size = null)
+                </h3>
+                <p>Adds an input parameter with explicit database type and optional size.</p>
+                
+                <div class="signature">
+                    public SpParameters AddInput(string name, object? value, DbType dbType, int? size = null)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>name</td>
+                            <td>string</td>
+                            <td>The parameter name (without @ prefix)</td>
+                        </tr>
+                        <tr>
+                            <td>value</td>
+                            <td>object?</td>
+                            <td>The parameter value</td>
+                        </tr>
+                        <tr>
+                            <td>dbType</td>
+                            <td>DbType</td>
+                            <td>The database type</td>
+                        </tr>
+                        <tr>
+                            <td>size</td>
+                            <td>int?</td>
+                            <td>Optional size (useful for string parameters)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>SpParameters</code>: The same instance for fluent chaining</p>
+                
+                <h4>Example</h4>
+                <pre><code>var parameters = new SpParameters()
+    .AddInput("Name", "John Doe", DbType.String, 50)
+    .AddInput("Age", 30, DbType.Int32);</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    SpParameters.AddOutput(string name, DbType dbType, int? size = null)
+                </h3>
+                <p>Adds an output parameter to the stored procedure call.</p>
+                
+                <div class="signature">
+                    public SpParameters AddOutput(string name, DbType dbType, int? size = null)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>name</td>
+                            <td>string</td>
+                            <td>The parameter name (without @ prefix)</td>
+                        </tr>
+                        <tr>
+                            <td>dbType</td>
+                            <td>DbType</td>
+                            <td>The database type</td>
+                        </tr>
+                        <tr>
+                            <td>size</td>
+                            <td>int?</td>
+                            <td>Optional size (useful for string parameters)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>SpParameters</code>: The same instance for fluent chaining</p>
+                
+                <h4>Example</h4>
+                <pre><code>var parameters = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddOutput("TotalProducts", DbType.Int32);</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    SpParameters.AddInputOutput(string name, object? value, DbType dbType, int? size = null)
+                </h3>
+                <p>Adds an input/output parameter to the stored procedure call.</p>
+                
+                <div class="signature">
+                    public SpParameters AddInputOutput(string name, object? value, DbType dbType, int? size = null)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>name</td>
+                            <td>string</td>
+                            <td>The parameter name (without @ prefix)</td>
+                        </tr>
+                        <tr>
+                            <td>value</td>
+                            <td>object?</td>
+                            <td>The input value</td>
+                        </tr>
+                        <tr>
+                            <td>dbType</td>
+                            <td>DbType</td>
+                            <td>The database type</td>
+                        </tr>
+                        <tr>
+                            <td>size</td>
+                            <td>int?</td>
+                            <td>Optional size (useful for string parameters)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>SpParameters</code>: The same instance for fluent chaining</p>
+                
+                <h4>Example</h4>
+                <pre><code>var parameters = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddInputOutput("Timestamp", DateTime.UtcNow, DbType.DateTime);</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    SpParameters.AddReturnValue(string name = "RETURN_VALUE", DbType dbType = DbType.Int32)
+                </h3>
+                <p>Adds a return value parameter to the stored procedure call.</p>
+                
+                <div class="signature">
+                    public SpParameters AddReturnValue(string name = "RETURN_VALUE", DbType dbType = DbType.Int32)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>name</td>
+                            <td>string</td>
+                            <td>The parameter name (defaults to "RETURN_VALUE")</td>
+                        </tr>
+                        <tr>
+                            <td>dbType</td>
+                            <td>DbType</td>
+                            <td>The database type (defaults to DbType.Int32)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>SpParameters</code>: The same instance for fluent chaining</p>
+                
+                <h4>Example</h4>
+                <pre><code>var parameters = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddReturnValue();  // Adds return value parameter with default name and type</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Retrieving Parameter Values After Execution</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    SpParameters.Get&lt;T&gt;(string name)
+                </h3>
+                <p>Gets the value of an output or input/output parameter after the stored procedure has been executed.</p>
+                
+                <div class="signature">
+                    public T? Get&lt;T&gt;(string name)
+                </div>
+                
+                <h4>Type Parameters</h4>
+                <ul>
+                    <li><code>T</code>: The expected type of the parameter value</li>
+                </ul>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>name</td>
+                            <td>string</td>
+                            <td>The parameter name</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>T?</code>: The parameter value converted to the specified type, or null if the parameter doesn't exist or has a null value</p>
+                
+                <h4>Example</h4>
+                <pre><code>var parameters = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddOutput("TotalProducts", DbType.Int32);
+
+// Execute the stored procedure
+var results = connection.ExecuteStoredProcedure&lt;Product&gt;("GetProductsByCategory", parameters);
+
+// Get the output parameter value after execution
+var totalProducts = parameters.Get&lt;int&gt;("TotalProducts");
+Console.WriteLine($"Total products in category: {totalProducts}");</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    SpParameters.GetReturnValue()
+                </h3>
+                <p>Gets the return value after the stored procedure has been executed.</p>
+                
+                <div class="signature">
+                    public int GetReturnValue()
+                </div>
+                
+                <h4>Returns</h4>
+                <p><code>int</code>: The return value as an integer</p>
+                
+                <h4>Example</h4>
+                <pre><code>var parameters = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddReturnValue();
+
+// Execute the stored procedure
+var results = connection.ExecuteStoredProcedure&lt;Product&gt;("GetProductsByCategory", parameters);
+
+// Get the return value after execution
+var returnValue = parameters.GetReturnValue();
+Console.WriteLine($"Stored procedure returned: {returnValue}");</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    SpParameters.HasValue(string name)
+                </h3>
+                <p>Checks if a parameter exists and has a non-null value after execution.</p>
+                
+                <div class="signature">
+                    public bool HasValue(string name)
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>name</td>
+                            <td>string</td>
+                            <td>The parameter name</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>bool</code>: True if the parameter exists and has a non-null, non-DBNull value</p>
+                
+                <h4>Example</h4>
+                <pre><code>var parameters = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddOutput("LastModified", DbType.DateTime);
+
+// Execute the stored procedure
+var results = connection.ExecuteStoredProcedure&lt;Product&gt;("GetProductsByCategory", parameters);
+
+// Check if the output parameter has a value
+if (parameters.HasValue("LastModified"))
+{
+    var lastModified = parameters.Get&lt;DateTime&gt;("LastModified");
+    Console.WriteLine($"Last modified: {lastModified}");
+}</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Stored Procedure Methods with Output Parameters</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    ExecuteStoredProcedure&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default)
+                </h3>
+                <p>Executes a stored procedure with input, output, and return parameters and returns the results as a list of entities. Output parameter values can be retrieved from the SpParameters object after execution.</p>
+                
+                <div class="signature">
+                    public static List&lt;T&gt; ExecuteStoredProcedure&lt;T&gt;(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>procedureName</td>
+                            <td>string</td>
+                            <td>The name of the stored procedure to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>SpParameters</td>
+                            <td>The parameters including input, output, and return parameters</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>List&lt;T&gt;</code>: A list of entities of type T returned by the stored procedure</p>
+                
+                <h4>Example</h4>
+                <pre><code>var parameters = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddOutput("TotalProducts", DbType.Int32)
+    .AddReturnValue();
+
+var products = connection.ExecuteStoredProcedure&lt;Product&gt;(
+    "GetProductsByCategory", 
+    parameters);
+
+// Retrieve output parameter value after execution
+var totalProducts = parameters.Get&lt;int&gt;("TotalProducts");
+var returnValue = parameters.GetReturnValue();
+
+Console.WriteLine($"Retrieved {products.Count} products, total count: {totalProducts}, return value: {returnValue}");</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a stored procedure with input, output, and return parameters and returns the results as a list of entities. Output parameter values can be retrieved from the SpParameters object after execution.</p>
+                
+                <div class="signature">
+                    public static Task&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>procedureName</td>
+                            <td>string</td>
+                            <td>The name of the stored procedure to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>SpParameters</td>
+                            <td>The parameters including input, output, and return parameters</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>Task&lt;List&lt;T&gt;&gt;</code>: A task that resolves to a list of entities of type T returned by the stored procedure</p>
+                
+                <h4>Example</h4>
+                <pre><code>var parameters = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddOutput("TotalProducts", DbType.Int32)
+    .AddReturnValue();
+
+var products = await connection.ExecuteStoredProcedureAsync&lt;Product&gt;(
+    "GetProductsByCategory", 
+    parameters);
+
+// Retrieve output parameter value after execution
+var totalProducts = parameters.Get&lt;int&gt;("TotalProducts");
+var returnValue = parameters.GetReturnValue();
+
+Console.WriteLine($"Retrieved {products.Count} products, total count: {totalProducts}, return value: {returnValue}");</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Complete Example</h2>
+            <p>Here's a complete example showing how to use stored procedure output parameters:</p>
+            
+            <pre><code>// Define the parameters
+var spParams = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddInput("MinPrice", 10.00m)
+    .AddOutput("ProductCount", DbType.Int32)
+    .AddOutput("AveragePrice", DbType.Decimal)
+    .AddInputOutput("LastProcessed", DateTime.UtcNow, DbType.DateTime)
+    .AddReturnValue();
+
+// Execute the stored procedure
+var products = connection.ExecuteStoredProcedure&lt;Product&gt;(
+    "GetProductsByCategoryAndMinPrice", 
+    spParams);
+
+// Retrieve output parameter values after execution
+var productCount = spParams.Get&lt;int&gt;("ProductCount");
+var avgPrice = spParams.Get&lt;decimal&gt;("AveragePrice");
+var lastProcessed = spParams.Get&lt;DateTime&gt;("LastProcessed");
+var returnValue = spParams.GetReturnValue();
+
+Console.WriteLine($"Retrieved {products.Count} products");
+Console.WriteLine($"Total count: {productCount}");
+Console.WriteLine($"Average price: {avgPrice}");
+Console.WriteLine($"Last processed: {lastProcessed}");
+Console.WriteLine($"Return value: {returnValue}");</code></pre>
+        </section>
+
+        <section>
+            <h2>Best Practices</h2>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Always Check Parameter Values After Execution
+                </h3>
+                <p>Always retrieve output parameter values after the stored procedure has completed execution:</p>
+                <pre><code>var parameters = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddOutput("TotalProducts", DbType.Int32);
+
+var products = connection.ExecuteStoredProcedure&lt;Product&gt;("GetProductsByCategory", parameters);
+
+// Get the output parameter value AFTER execution
+var totalProducts = parameters.Get&lt;int&gt;("TotalProducts");  // Correct</code></pre>
+            </article>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Use Explicit DbType for Output Parameters
+                </h3>
+                <p>Always specify the DbType for output parameters to ensure proper type handling:</p>
+                <pre><code>// Good - specify DbType for output parameters
+var parameters = new SpParameters()
+    .AddOutput("Count", DbType.Int32)  // Explicit type
+    .AddOutput("Total", DbType.Decimal)  // Explicit type
+    .AddOutput("LastModified", DbType.DateTime);  // Explicit type
+
+// Avoid - without explicit DbType, the behavior may be inconsistent
+var badParameters = new SpParameters()
+    .AddOutput("Count", null);  // Type not specified</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Important Notes</h2>
+            <ul>
+                <li><strong>Parameter Names</strong>: Parameter names should not include the @ prefix when using SpParameters</li>
+                <li><strong>Execution Order</strong>: Output parameter values can only be retrieved after the stored procedure has been executed</li>
+                <li><strong>DbType Specification</strong>: For output parameters, it's important to specify the DbType to ensure proper type handling</li>
+                <li><strong>Return Values</strong>: Return values are typically integers representing success/failure codes</li>
+                <li><strong>Input/Output Parameters</strong>: These parameters serve as both input and output, allowing bidirectional data flow</li>
+                <li><strong>Async Support</strong>: All stored procedure methods with output parameters have both synchronous and asynchronous variants</li>
+                <li><strong>Transaction Support</strong>: Output parameters work with transactions when using CommandOptions</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="container">
+        <small>Jaunty ORM &copy; 2026 | Built with PicoCSS</small>
+    </footer>
+</body>
+</html>

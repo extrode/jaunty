@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming Methods - Jaunty API Reference</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        :root {
+            --pico-primary: #2563eb;
+            --pico-primary-inverse: #fff;
+            --pico-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+        
+        body {
+            font-family: var(--pico-font-family);
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 1rem;
+        }
+        
+        .method-card {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border: 1px solid var(--pico-border-color);
+            border-radius: var(--pico-border-radius);
+            background-color: var(--pico-card-background-color);
+        }
+        
+        .method-card h3 {
+            margin-top: 0;
+            color: var(--pico-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .signature {
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .params-table th, .params-table td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--pico-border-color);
+        }
+        
+        .params-table th {
+            background-color: var(--pico-card-hover-background-color);
+        }
+        
+        footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--pico-border-color);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <ul>
+                    <li><strong>Jaunty Documentation</strong></li>
+                </ul>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="overview.html">Overview</a></li>
+                    <li><a href="streaming-methods.html" aria-current="page">Streaming Methods</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <hgroup>
+            <h1>Streaming Methods</h1>
+            <p>Memory-efficient methods for processing large result sets without loading all data into memory</p>
+        </hgroup>
+
+        <nav class="breadcrumb">
+            <a href="index.html">Home</a> > <a href="overview.html">Overview</a> > Streaming Methods
+        </nav>
+
+        <section>
+            <h2>Overview</h2>
+            <p>Streaming methods provide memory-efficient processing of large result sets by returning <code>IEnumerable&lt;T&gt;</code> or <code>IAsyncEnumerable&lt;T&gt;</code> instead of loading all results into memory at once. These methods are ideal for processing large datasets without consuming excessive memory.</p>
+        </section>
+
+        <section>
+            <h2>Synchronous Streaming Methods</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        <path d="M5 14l4-4"></path>
+                        <path d="M12 14l4-4"></path>
+                    </svg>
+                    QueryStream&lt;T&gt;(string sql)
+                </h3>
+                <p>Executes a query and returns an enumerable sequence of entities using strict mapping mode. Results are processed lazily as they are enumerated.</p>
+                
+                <div class="signature">
+                    public static IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(this IDbConnection connection, string sql) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IEnumerable&lt;T&gt;</code>: A lazy enumerable of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>foreach (var product in connection.QueryStream&lt;Product&gt;("SELECT * FROM products"))
+{
+    // Process each product individually
+    ProcessProduct(product);
+}</code></pre>
+                
+                <h4>Important Notes</h4>
+                <ul>
+                    <li>The connection remains open during enumeration and should not be used for other operations until enumeration is complete</li>
+                    <li>The underlying data reader is automatically disposed when enumeration completes</li>
+                    <li>Uses strict mapping mode - all entity properties must have matching columns in the result set</li>
+                </ul>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        <path d="M5 14l4-4"></path>
+                        <path d="M12 14l4-4"></path>
+                    </svg>
+                    QueryStream&lt;T&gt;(string sql, object parameters)
+                </h3>
+                <p>Executes a parameterized query and returns an enumerable sequence of entities using strict mapping mode. Results are processed lazily as they are enumerated.</p>
+                
+                <div class="signature">
+                    public static IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(this IDbConnection connection, string sql, object parameters) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the query</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IEnumerable&lt;T&gt;</code>: A lazy enumerable of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>foreach (var product in connection.QueryStream&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 }))
+{
+    // Process each product individually
+    ProcessProduct(product);
+}</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        <path d="M5 14l4-4"></path>
+                        <path d="M12 14l4-4"></path>
+                    </svg>
+                    QueryStream&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)
+                </h3>
+                <p>Executes a query with command options and returns an enumerable sequence of entities using strict mapping mode. Results are processed lazily as they are enumerated.</p>
+                
+                <div class="signature">
+                    public static IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(this IDbConnection connection, string sql, CommandOptions&lt;T&gt; options) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IEnumerable&lt;T&gt;</code>: A lazy enumerable of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var transaction = connection.BeginTransaction();
+var products = connection.QueryStream&lt;Product&gt;(
+    "SELECT * FROM products", 
+    CommandOptions&lt;Product&gt;.WithTransaction(transaction));
+
+foreach (var product in products)
+{
+    // Process each product
+    ProcessProduct(product);
+}
+
+transaction.Commit();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        <path d="M5 14l4-4"></path>
+                        <path d="M12 14l4-4"></path>
+                    </svg>
+                    QueryStream&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)
+                </h3>
+                <p>Executes a parameterized query with command options and returns an enumerable sequence of entities using strict mapping mode. Results are processed lazily as they are enumerated.</p>
+                
+                <div class="signature">
+                    public static IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(this IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the query</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IEnumerable&lt;T&gt;</code>: A lazy enumerable of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>var products = connection.QueryStream&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 },
+    CommandOptions&lt;Product&gt;.WithTimeout(30));
+
+foreach (var product in products)
+{
+    // Process each product
+    ProcessProduct(product);
+}</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Asynchronous Streaming Methods</h2>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        <path d="M5 14l4-4"></path>
+                        <path d="M12 14l4-4"></path>
+                    </svg>
+                    QueryStreamAsync&lt;T&gt;(string sql, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a query and returns an async enumerable sequence of entities using strict mapping mode. Results are processed lazily as they are enumerated.</p>
+                
+                <div class="signature">
+                    public static IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(this IDbConnection connection, string sql, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token for the operation</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IAsyncEnumerable&lt;T&gt;</code>: An async enumerable of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>await foreach (var product in connection.QueryStreamAsync&lt;Product&gt;("SELECT * FROM products"))
+{
+    // Process each product individually
+    await ProcessProductAsync(product);
+}</code></pre>
+                
+                <h4>Important Notes</h4>
+                <ul>
+                    <li>Requires a <code>DbConnection</code> rather than just <code>IDbConnection</code></li>
+                    <li>The connection remains open during enumeration and should not be used for other operations until enumeration is complete</li>
+                    <li>The underlying data reader is automatically disposed when enumeration completes</li>
+                    <li>Uses strict mapping mode - all entity properties must have matching columns in the result set</li>
+                    <li>Supports cancellation via the <code>CancellationToken</code></li>
+                </ul>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        <path d="M5 14l4-4"></path>
+                        <path d="M12 14l4-4"></path>
+                    </svg>
+                    QueryStreamAsync&lt;T&gt;(string sql, object parameters, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a parameterized query and returns an async enumerable sequence of entities using strict mapping mode. Results are processed lazily as they are enumerated.</p>
+                
+                <div class="signature">
+                    public static IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(this IDbConnection connection, string sql, object parameters, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the query</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token for the operation</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IAsyncEnumerable&lt;T&gt;</code>: An async enumerable of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>await foreach (var product in connection.QueryStreamAsync&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 }))
+{
+    // Process each product individually
+    await ProcessProductAsync(product);
+}</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        <path d="M5 14l4-4"></path>
+                        <path d="M12 14l4-4"></path>
+                    </svg>
+                    QueryStreamAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a query with command options and returns an async enumerable sequence of entities using strict mapping mode. Results are processed lazily as they are enumerated.</p>
+                
+                <div class="signature">
+                    public static IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(this IDbConnection connection, string sql, CommandOptions&lt;T&gt; options, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token for the operation</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IAsyncEnumerable&lt;T&gt;</code>: An async enumerable of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>using var transaction = connection.BeginTransaction();
+await foreach (var product in connection.QueryStreamAsync&lt;Product&gt;(
+    "SELECT * FROM products", 
+    CommandOptions&lt;Product&gt;.WithTransaction(transaction)))
+{
+    // Process each product
+    await ProcessProductAsync(product);
+}
+
+await transaction.CommitAsync();</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        <path d="M5 14l4-4"></path>
+                        <path d="M12 14l4-4"></path>
+                    </svg>
+                    QueryStreamAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a parameterized query with command options and returns an async enumerable sequence of entities using strict mapping mode. Results are processed lazily as they are enumerated.</p>
+                
+                <div class="signature">
+                    public static IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(this IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>parameters</td>
+                            <td>object</td>
+                            <td>Parameters for the query</td>
+                        </tr>
+                        <tr>
+                            <td>options</td>
+                            <td>CommandOptions&lt;T&gt;</td>
+                            <td>Command options (transaction, timeout, custom mapper)</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token for the operation</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IAsyncEnumerable&lt;T&gt;</code>: An async enumerable of entities of type T</p>
+                
+                <h4>Example</h4>
+                <pre><code>await foreach (var product in connection.QueryStreamAsync&lt;Product&gt;(
+    "SELECT * FROM products WHERE category_id = @CategoryId", 
+    new { CategoryId = 1 },
+    CommandOptions&lt;Product&gt;.WithTimeout(30)))
+{
+    // Process each product
+    await ProcessProductAsync(product);
+}</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Partial Mapping Streaming Methods</h2>
+            <p>These methods use partial mapping mode, allowing entities to be mapped even if some properties don't have matching columns in the result set.</p>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        <path d="M5 14l4-4"></path>
+                        <path d="M12 14l4-4"></path>
+                    </svg>
+                    QueryPartialStream&lt;T&gt;(string sql)
+                </h3>
+                <p>Executes a query and returns an enumerable sequence of entities using partial mapping mode. Only properties with matching columns in the result set are mapped.</p>
+                
+                <div class="signature">
+                    public static IEnumerable&lt;T&gt; QueryPartialStream&lt;T&gt;(this IDbConnection connection, string sql) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IEnumerable&lt;T&gt;</code>: A lazy enumerable of entities of type T with partial mapping</p>
+                
+                <h4>Example</h4>
+                <pre><code>foreach (var product in connection.QueryPartialStream&lt;Product&gt;("SELECT product_id, product_name FROM products"))
+{
+    // Only ProductId and ProductName will be mapped, other properties will have default values
+    ProcessProduct(product);
+}</code></pre>
+            </article>
+
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        <path d="M5 14l4-4"></path>
+                        <path d="M12 14l4-4"></path>
+                    </svg>
+                    QueryPartialStreamAsync&lt;T&gt;(string sql, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+                </h3>
+                <p>Asynchronously executes a query and returns an async enumerable sequence of entities using partial mapping mode. Only properties with matching columns in the result set are mapped.</p>
+                
+                <div class="signature">
+                    public static IAsyncEnumerable&lt;T&gt; QueryPartialStreamAsync&lt;T&gt;(this IDbConnection connection, string sql, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+                </div>
+                
+                <h4>Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>connection</td>
+                            <td>IDbConnection</td>
+                            <td>The database connection</td>
+                        </tr>
+                        <tr>
+                            <td>sql</td>
+                            <td>string</td>
+                            <td>The SQL query to execute</td>
+                        </tr>
+                        <tr>
+                            <td>cancellationToken</td>
+                            <td>CancellationToken</td>
+                            <td>Cancellation token for the operation</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Returns</h4>
+                <p><code>IAsyncEnumerable&lt;T&gt;</code>: An async enumerable of entities of type T with partial mapping</p>
+                
+                <h4>Example</h4>
+                <pre><code>await foreach (var product in connection.QueryPartialStreamAsync&lt;Product&gt;("SELECT product_id, product_name FROM products"))
+{
+    // Only ProductId and ProductName will be mapped, other properties will have default values
+    await ProcessProductAsync(product);
+}</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Alternative Streaming Methods</h2>
+            <p>Jaunty also provides alternative names for streaming methods:</p>
+            
+            <ul>
+                <li><code>QueryUnbuffered&lt;T&gt;()</code> - Synchronous unbuffered query (alias to QueryStream)</li>
+                <li><code>QueryUnbufferedAsync&lt;T&gt;()</code> - Asynchronous unbuffered query (alias to QueryStreamAsync)</li>
+                <li><code>QueryPartialUnbuffered&lt;T&gt;()</code> - Partial mapping unbuffered query</li>
+                <li><code>QueryPartialUnbufferedAsync&lt;T&gt;()</code> - Partial mapping async unbuffered query</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Best Practices</h2>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M14 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Use for Large Result Sets
+                </h3>
+                <p>Use streaming methods when processing large result sets to avoid memory issues:</p>
+                <pre><code>// For large result sets, use streaming instead of loading all into memory
+var products = connection.Query&lt;Product&gt;("SELECT * FROM products");  // Loads all into memory
+
+// Better for large datasets
+foreach (var product in connection.QueryStream&lt;Product&gt;("SELECT * FROM products"))
+{
+    // Process one at a time
+    ProcessProduct(product);
+}</code></pre>
+            </article>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M14 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Connection Management
+                </h3>
+                <p>Be aware of connection state during streaming:</p>
+                <pre><code>// The connection remains open during enumeration
+// Don't use the connection for other operations during streaming
+foreach (var product in connection.QueryStream&lt;Product&gt;("SELECT * FROM products"))
+{
+    // Connection is busy with this query
+    // Don't execute other queries on the same connection here
+    ProcessProduct(product);
+} // Connection is closed after enumeration completes</code></pre>
+            </article>
+            
+            <article class="method-card">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M14 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Use Partial Mapping When Appropriate
+                </h3>
+                <p>Use partial mapping when you don't need all entity properties:</p>
+                <pre><code>// When you only need a subset of properties
+var products = connection.QueryPartialStream&lt;Product&gt;("SELECT product_id, product_name FROM products");
+
+// This avoids strict mapping errors when not all entity properties have matching columns</code></pre>
+            </article>
+        </section>
+
+        <section>
+            <h2>Performance Considerations</h2>
+            <ul>
+                <li><strong>Memory Efficiency</strong>: Streaming methods only hold one entity in memory at a time, making them ideal for large result sets</li>
+                <li><strong>Connection Usage</strong>: The connection remains open during the entire enumeration process</li>
+                <li><strong>Lazy Evaluation</strong>: Entities are only read from the database as they are enumerated</li>
+                <li><strong>Buffering</strong>: Unlike regular Query methods, streaming methods don't buffer all results in memory</li>
+                <li><strong>Async Streaming</strong>: Use async streaming methods for better scalability in web applications</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="container">
+        <small>Jaunty ORM &copy; 2026 | Built with PicoCSS</small>
+    </footer>
+</body>
+</html>

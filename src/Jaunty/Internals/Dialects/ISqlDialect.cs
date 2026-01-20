@@ -205,4 +205,31 @@ internal interface ISqlDialect
     /// <param name="expression">The SQL expression for the date/datetime.</param>
     /// <returns>Dialect-specific day extraction SQL expression.</returns>
     string GenerateDay(string expression);
+
+    // ==========================================
+    // Upsert Support
+    // ==========================================
+
+    /// <summary>
+    /// Indicates whether this dialect supports upsert operations.
+    /// </summary>
+    bool SupportsUpsert { get; }
+
+    /// <summary>
+    /// Generates SQL for an upsert (INSERT or UPDATE if exists) operation.
+    /// </summary>
+    /// <param name="tableName">The escaped table name.</param>
+    /// <param name="insertColumns">Column names for INSERT.</param>
+    /// <param name="insertParams">Parameter names for INSERT values.</param>
+    /// <param name="updateColumns">Column names for UPDATE SET clause.</param>
+    /// <param name="updateParams">Parameter names for UPDATE values.</param>
+    /// <param name="keyColumns">Primary key column names for conflict detection.</param>
+    /// <returns>Dialect-specific upsert SQL statement.</returns>
+    string GenerateUpsertSql(
+        string tableName,
+        string[] insertColumns,
+        string[] insertParams,
+        string[] updateColumns,
+        string[] updateParams,
+        string[] keyColumns);
 }
