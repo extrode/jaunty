@@ -43,6 +43,39 @@ public interface IFromClause<T> : IQueryTerminal<T> where T : new()
     /// </summary>
     IWhereClause<T> WhereNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to);
 
+    // WHERE EXISTS / NOT EXISTS - subquery filtering
+    /// <summary>
+    /// Filters results where a correlated subquery returns any rows.
+    /// </summary>
+    /// <typeparam name="TSubquery">The type of entity in the subquery.</typeparam>
+    /// <param name="predicate">Expression relating the outer entity to the subquery entity.</param>
+    /// <example>
+    /// <code>
+    /// // Find categories that have at least one product
+    /// db.From&lt;Category&gt;()
+    ///   .WhereExists&lt;Product&gt;((c, p) =&gt; c.CategoryId == p.CategoryId)
+    ///   .Select();
+    /// // SQL: SELECT * FROM categories c WHERE EXISTS (SELECT 1 FROM products p WHERE c.category_id = p.category_id)
+    /// </code>
+    /// </example>
+    IWhereClause<T> WhereExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new();
+
+    /// <summary>
+    /// Filters results where a correlated subquery returns no rows.
+    /// </summary>
+    /// <typeparam name="TSubquery">The type of entity in the subquery.</typeparam>
+    /// <param name="predicate">Expression relating the outer entity to the subquery entity.</param>
+    /// <example>
+    /// <code>
+    /// // Find categories that have no products
+    /// db.From&lt;Category&gt;()
+    ///   .WhereNotExists&lt;Product&gt;((c, p) =&gt; c.CategoryId == p.CategoryId)
+    ///   .Select();
+    /// // SQL: SELECT * FROM categories c WHERE NOT EXISTS (SELECT 1 FROM products p WHERE c.category_id = p.category_id)
+    /// </code>
+    /// </example>
+    IWhereClause<T> WhereNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new();
+
     // ORDER BY - expression-based
     IOrderByClause<T> OrderBy(Expression<Func<T, object?>> keySelector);
     IOrderByClause<T> OrderByDescending(Expression<Func<T, object?>> keySelector);
@@ -95,4 +128,38 @@ public interface IFromClause<T> : IQueryTerminal<T> where T : new()
     /// </code>
     /// </example>
     IGroupedQuery<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector);
+
+    // SUBQUERY support
+    /// <summary>
+    /// Filters results where the column value is in the result of a subquery.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the column value.</typeparam>
+    /// <typeparam name="TSubquery">The type of entity in the subquery.</typeparam>
+    /// <param name="selector">Expression selecting the column to filter.</param>
+    /// <param name="subquerySelector">Expression selecting the column from the subquery.</param>
+    /// <param name="subquery">The subquery that provides the values.</param>
+    /// <example>
+    /// <code>
+    /// // Find products in categories that have "Beverage" in their name
+    /// db.From&lt;Product&gt;()
+    ///   .WhereInSubquery(
+    ///       p =&gt; p.CategoryId,
+    ///       c =&gt; c.CategoryId,
+    ///       db.From&lt;Category&gt;().Where(c =&gt; c.CategoryName.Contains("Beverage")))
+    ///   .Select();
+    /// // SQL: SELECT * FROM products WHERE category_id IN (SELECT category_id FROM categories WHERE category_name LIKE '%Beverage%')
+    /// </code>
+    /// </example>
+    IWhereClause<T> WhereInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new();
+
+    /// <summary>
+    /// Filters results where the column value is NOT in the result of a subquery.
+    /// </summary>
+    IWhereClause<T> WhereNotInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new();
 }

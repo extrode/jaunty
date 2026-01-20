@@ -94,4 +94,65 @@ public interface IQueryTerminal<T> where T : new()
     string ToSql();
     string ToSql(params string[] columns);
     string ToSql(params Expression<Func<T, object?>>[] columns);
+
+    // Set operations (UNION, UNION ALL, EXCEPT, INTERSECT)
+    /// <summary>
+    /// Combines the results with another query using UNION (removes duplicates).
+    /// </summary>
+    /// <param name="other">The query to combine with.</param>
+    /// <example>
+    /// <code>
+    /// // Get products from category 1 OR category 2 (no duplicates)
+    /// db.From&lt;Product&gt;()
+    ///   .Where(p =&gt; p.CategoryId == 1)
+    ///   .Union(db.From&lt;Product&gt;().Where(p =&gt; p.CategoryId == 2))
+    ///   .Select();
+    /// </code>
+    /// </example>
+    ISetOperationClause<T> Union(IQueryTerminal<T> other);
+
+    /// <summary>
+    /// Combines the results with another query using UNION ALL (keeps duplicates).
+    /// </summary>
+    /// <param name="other">The query to combine with.</param>
+    /// <example>
+    /// <code>
+    /// // Get all products from category 1 and category 2 (may include duplicates)
+    /// db.From&lt;Product&gt;()
+    ///   .Where(p =&gt; p.CategoryId == 1)
+    ///   .UnionAll(db.From&lt;Product&gt;().Where(p =&gt; p.CategoryId == 2))
+    ///   .Select();
+    /// </code>
+    /// </example>
+    ISetOperationClause<T> UnionAll(IQueryTerminal<T> other);
+
+    /// <summary>
+    /// Returns rows from this query that don't appear in the other query.
+    /// </summary>
+    /// <param name="other">The query to exclude rows from.</param>
+    /// <example>
+    /// <code>
+    /// // Get products from category 1 that are NOT discontinued
+    /// db.From&lt;Product&gt;()
+    ///   .Where(p =&gt; p.CategoryId == 1)
+    ///   .Except(db.From&lt;Product&gt;().Where(p =&gt; p.Discontinued))
+    ///   .Select();
+    /// </code>
+    /// </example>
+    ISetOperationClause<T> Except(IQueryTerminal<T> other);
+
+    /// <summary>
+    /// Returns only rows that appear in both queries.
+    /// </summary>
+    /// <param name="other">The query to intersect with.</param>
+    /// <example>
+    /// <code>
+    /// // Get products that are in both category 1 AND have low stock
+    /// db.From&lt;Product&gt;()
+    ///   .Where(p =&gt; p.CategoryId == 1)
+    ///   .Intersect(db.From&lt;Product&gt;().Where(p =&gt; p.UnitsInStock &lt; 10))
+    ///   .Select();
+    /// </code>
+    /// </example>
+    ISetOperationClause<T> Intersect(IQueryTerminal<T> other);
 }

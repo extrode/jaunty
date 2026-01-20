@@ -43,6 +43,11 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     internal string TableName => _metadata.TableName;
     internal string? SchemaName => _metadata.SchemaName;
 
+    /// <summary>
+    /// Gets a copy of the current parameters for set operations.
+    /// </summary>
+    internal ParameterCollection GetParameters() => _parameters.Clone();
+
     private string[] GetAllColumnNames()
     {
         var columns = _metadata.Columns;
@@ -264,6 +269,110 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public IWhereClause<T> OrNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
     {
         var sql = BuildBetweenClause(selector, from, to, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    // WHERE EXISTS / NOT EXISTS
+    public IWhereClause<T> WhereExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new()
+    {
+        var sql = BuildExistsClause<TSubquery>(predicate, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
+        return this;
+    }
+
+    public IWhereClause<T> WhereNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new()
+    {
+        var sql = BuildExistsClause<TSubquery>(predicate, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
+        return this;
+    }
+
+    public IWhereClause<T> AndExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new()
+    {
+        var sql = BuildExistsClause<TSubquery>(predicate, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    public IWhereClause<T> AndNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new()
+    {
+        var sql = BuildExistsClause<TSubquery>(predicate, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    public IWhereClause<T> OrExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new()
+    {
+        var sql = BuildExistsClause<TSubquery>(predicate, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    public IWhereClause<T> OrNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new()
+    {
+        var sql = BuildExistsClause<TSubquery>(predicate, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    // WHERE IN SUBQUERY / NOT IN SUBQUERY
+    public IWhereClause<T> WhereInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new()
+    {
+        var sql = BuildInSubqueryClause(selector, subquerySelector, subquery, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
+        return this;
+    }
+
+    public IWhereClause<T> WhereNotInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new()
+    {
+        var sql = BuildInSubqueryClause(selector, subquerySelector, subquery, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
+        return this;
+    }
+
+    public IWhereClause<T> AndInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new()
+    {
+        var sql = BuildInSubqueryClause(selector, subquerySelector, subquery, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    public IWhereClause<T> AndNotInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new()
+    {
+        var sql = BuildInSubqueryClause(selector, subquerySelector, subquery, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    public IWhereClause<T> OrInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new()
+    {
+        var sql = BuildInSubqueryClause(selector, subquerySelector, subquery, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    public IWhereClause<T> OrNotInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new()
+    {
+        var sql = BuildInSubqueryClause(selector, subquerySelector, subquery, negate: true);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
         return this;
     }
@@ -943,6 +1052,34 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     #endregion
 
+    #region Set operations (UNION, UNION ALL, EXCEPT, INTERSECT)
+
+    public ISetOperationClause<T> Union(IQueryTerminal<T> other)
+    {
+        var builder = new SetOperationBuilder<T>(_connection, _dialect, ToSql(), _parameters.Clone());
+        return builder.Union(other);
+    }
+
+    public ISetOperationClause<T> UnionAll(IQueryTerminal<T> other)
+    {
+        var builder = new SetOperationBuilder<T>(_connection, _dialect, ToSql(), _parameters.Clone());
+        return builder.UnionAll(other);
+    }
+
+    public ISetOperationClause<T> Except(IQueryTerminal<T> other)
+    {
+        var builder = new SetOperationBuilder<T>(_connection, _dialect, ToSql(), _parameters.Clone());
+        return builder.Except(other);
+    }
+
+    public ISetOperationClause<T> Intersect(IQueryTerminal<T> other)
+    {
+        var builder = new SetOperationBuilder<T>(_connection, _dialect, ToSql(), _parameters.Clone());
+        return builder.Intersect(other);
+    }
+
+    #endregion
+
     #region Private helpers
 
     private string BuildSelectSql(string[] columns)
@@ -1150,6 +1287,105 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return negate
             ? $"{escapedColumn} NOT BETWEEN {fromParamName} AND {toParamName}"
             : $"{escapedColumn} BETWEEN {fromParamName} AND {toParamName}";
+    }
+
+    private string BuildExistsClause<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate, bool negate)
+        where TSubquery : new()
+    {
+        var subqueryMetadata = MetadataCache<TSubquery>.Metadata;
+        var subqueryTable = _dialect.EscapeTableName(subqueryMetadata.SchemaName, subqueryMetadata.TableName);
+
+        // Use ExistsExpressionVisitor to translate the correlation predicate
+        var visitor = new ExistsExpressionVisitor<T, TSubquery>(_dialect, _metadata, subqueryMetadata);
+        var (whereClause, parameters) = visitor.Translate(predicate);
+        _parameters.AddRange(parameters);
+
+        var sb = new StringBuilder();
+        sb.Append(negate ? "NOT EXISTS" : "EXISTS");
+        sb.Append(" (SELECT 1 FROM ");
+        sb.Append(subqueryTable);
+        sb.Append(" WHERE ");
+        sb.Append(whereClause);
+        sb.Append(')');
+
+        return sb.ToString();
+    }
+
+    private string BuildInSubqueryClause<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery,
+        bool negate) where TSubquery : new()
+    {
+        // Get outer column name
+        var outerColumnName = GetColumnNameFromSelector(selector);
+        var escapedOuterColumn = _dialect.EscapeColumnName(outerColumnName);
+
+        // Get subquery column name
+        var subqueryPropertyName = PropertyExtractor.ExtractPropertyName(subquerySelector);
+        var subqueryMetadata = MetadataCache<TSubquery>.Metadata;
+        var subqueryColumnName = GetColumnNameFromMetadata(subqueryMetadata, subqueryPropertyName);
+        var escapedSubqueryColumn = _dialect.EscapeColumnName(subqueryColumnName);
+
+        // Get subquery SQL - we need to extract the FROM and WHERE parts
+        // and rebuild with just the single column
+        string subquerySql;
+        ParameterCollection? subqueryParams = null;
+
+        if (subquery is QueryBuilder<TSubquery> queryBuilder)
+        {
+            // Access internal method to get parameters
+            subqueryParams = queryBuilder.GetParameters();
+            // Get the full SQL and modify it to select only the needed column
+            subquerySql = subquery.ToSql();
+        }
+        else
+        {
+            // Fallback for other implementations
+            subquerySql = subquery.ToSql();
+        }
+
+        // Replace the SELECT columns with just our needed column
+        // The SQL format is: SELECT col1, col2, ... FROM table WHERE ...
+        var fromIndex = subquerySql.IndexOf(" FROM ", StringComparison.OrdinalIgnoreCase);
+        if (fromIndex > 0)
+        {
+            subquerySql = $"SELECT {escapedSubqueryColumn}{subquerySql.Substring(fromIndex)}";
+        }
+
+        // Merge subquery parameters with prefix to avoid conflicts
+        if (subqueryParams != null)
+        {
+            var prefix = $"sq{_parameters.Count}";
+            foreach (var (name, value) in subqueryParams.GetAll())
+            {
+                var baseName = name.TrimStart('@');
+                var newName = $"@{prefix}_{baseName}";
+                // Update the SQL with the new parameter name
+                var pattern = $@"@{System.Text.RegularExpressions.Regex.Escape(baseName)}(?![a-zA-Z0-9_])";
+                subquerySql = System.Text.RegularExpressions.Regex.Replace(subquerySql, pattern, newName);
+                _parameters.Add(newName, value);
+            }
+        }
+
+        var sb = new StringBuilder();
+        sb.Append(escapedOuterColumn);
+        sb.Append(negate ? " NOT IN (" : " IN (");
+        sb.Append(subquerySql);
+        sb.Append(')');
+
+        return sb.ToString();
+    }
+
+    private static string GetColumnNameFromMetadata(EntityMetadata metadata, string propertyName)
+    {
+        var columns = metadata.Columns;
+        for (int i = 0; i < columns.Count; i++)
+        {
+            if (columns[i].Property.Name == propertyName)
+                return columns[i].ColumnName;
+        }
+        return propertyName;
     }
 
     #endregion

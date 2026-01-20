@@ -109,4 +109,16 @@ internal sealed class PostgreSqlDialect : ISqlDialect
     {
         return $"NULLIF({expression}, {compareExpression})";
     }
+
+    // String functions
+    public string GenerateLength(string expression) => $"LENGTH({expression})";
+    public string GenerateUpper(string expression) => $"UPPER({expression})";
+    public string GenerateLower(string expression) => $"LOWER({expression})";
+    public string GenerateTrim(string expression) => $"TRIM({expression})";
+    public string GenerateSubstring(string expression, string start, string length) => $"SUBSTRING({expression} FROM {start} FOR {length})";
+
+    // Date functions - PostgreSQL uses EXTRACT
+    public string GenerateYear(string expression) => $"EXTRACT(YEAR FROM {expression})";
+    public string GenerateMonth(string expression) => $"EXTRACT(MONTH FROM {expression})";
+    public string GenerateDay(string expression) => $"EXTRACT(DAY FROM {expression})";
 }

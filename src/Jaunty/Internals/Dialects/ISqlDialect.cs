@@ -131,4 +131,78 @@ internal interface ISqlDialect
     /// <param name="compareExpression">The comparison value expression.</param>
     /// <returns>NULLIF SQL expression.</returns>
     string GenerateNullIf(string expression, string compareExpression);
+
+    // ==========================================
+    // String Functions
+    // ==========================================
+
+    /// <summary>
+    /// Generates SQL for string length function.
+    /// SQL Server uses LEN, others use LENGTH.
+    /// </summary>
+    /// <param name="expression">The SQL expression for the string.</param>
+    /// <returns>Dialect-specific length SQL expression.</returns>
+    string GenerateLength(string expression);
+
+    /// <summary>
+    /// Generates SQL for uppercase conversion.
+    /// All dialects use UPPER.
+    /// </summary>
+    /// <param name="expression">The SQL expression for the string.</param>
+    /// <returns>UPPER SQL expression.</returns>
+    string GenerateUpper(string expression);
+
+    /// <summary>
+    /// Generates SQL for lowercase conversion.
+    /// All dialects use LOWER.
+    /// </summary>
+    /// <param name="expression">The SQL expression for the string.</param>
+    /// <returns>LOWER SQL expression.</returns>
+    string GenerateLower(string expression);
+
+    /// <summary>
+    /// Generates SQL for trimming whitespace.
+    /// Most dialects use TRIM, older SQL Server uses LTRIM(RTRIM(...)).
+    /// </summary>
+    /// <param name="expression">The SQL expression for the string.</param>
+    /// <returns>Dialect-specific trim SQL expression.</returns>
+    string GenerateTrim(string expression);
+
+    /// <summary>
+    /// Generates SQL for substring extraction.
+    /// SQL Server/PostgreSQL/MySQL use SUBSTRING, SQLite uses SUBSTR.
+    /// </summary>
+    /// <param name="expression">The SQL expression for the string.</param>
+    /// <param name="start">The start position SQL expression (1-based).</param>
+    /// <param name="length">The length SQL expression.</param>
+    /// <returns>Dialect-specific substring SQL expression.</returns>
+    string GenerateSubstring(string expression, string start, string length);
+
+    // ==========================================
+    // Date Functions
+    // ==========================================
+
+    /// <summary>
+    /// Generates SQL to extract the year from a date/datetime.
+    /// SQL Server/MySQL use YEAR, SQLite uses strftime, PostgreSQL uses EXTRACT.
+    /// </summary>
+    /// <param name="expression">The SQL expression for the date/datetime.</param>
+    /// <returns>Dialect-specific year extraction SQL expression.</returns>
+    string GenerateYear(string expression);
+
+    /// <summary>
+    /// Generates SQL to extract the month from a date/datetime.
+    /// SQL Server/MySQL use MONTH, SQLite uses strftime, PostgreSQL uses EXTRACT.
+    /// </summary>
+    /// <param name="expression">The SQL expression for the date/datetime.</param>
+    /// <returns>Dialect-specific month extraction SQL expression.</returns>
+    string GenerateMonth(string expression);
+
+    /// <summary>
+    /// Generates SQL to extract the day of month from a date/datetime.
+    /// SQL Server/MySQL use DAY, SQLite uses strftime, PostgreSQL uses EXTRACT.
+    /// </summary>
+    /// <param name="expression">The SQL expression for the date/datetime.</param>
+    /// <returns>Dialect-specific day extraction SQL expression.</returns>
+    string GenerateDay(string expression);
 }

@@ -63,6 +63,28 @@ public interface IWhereClause<T> : IQueryTerminal<T> where T : new()
     /// </summary>
     IWhereClause<T> OrNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to);
 
+    // AND EXISTS / NOT EXISTS
+    /// <summary>
+    /// Adds AND EXISTS condition where a correlated subquery returns any rows.
+    /// </summary>
+    IWhereClause<T> AndExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new();
+
+    /// <summary>
+    /// Adds AND NOT EXISTS condition where a correlated subquery returns no rows.
+    /// </summary>
+    IWhereClause<T> AndNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new();
+
+    // OR EXISTS / NOT EXISTS
+    /// <summary>
+    /// Adds OR EXISTS condition where a correlated subquery returns any rows.
+    /// </summary>
+    IWhereClause<T> OrExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new();
+
+    /// <summary>
+    /// Adds OR NOT EXISTS condition where a correlated subquery returns no rows.
+    /// </summary>
+    IWhereClause<T> OrNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new();
+
     // ORDER BY - expression-based
     IOrderByClause<T> OrderBy(Expression<Func<T, object?>> keySelector);
     IOrderByClause<T> OrderByDescending(Expression<Func<T, object?>> keySelector);
@@ -80,4 +102,38 @@ public interface IWhereClause<T> : IQueryTerminal<T> where T : new()
     /// Groups results by the specified key.
     /// </summary>
     IGroupedQuery<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector);
+
+    // AND IN SUBQUERY / NOT IN SUBQUERY
+    /// <summary>
+    /// Adds AND condition where the column value is in the result of a subquery.
+    /// </summary>
+    IWhereClause<T> AndInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new();
+
+    /// <summary>
+    /// Adds AND condition where the column value is NOT in the result of a subquery.
+    /// </summary>
+    IWhereClause<T> AndNotInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new();
+
+    // OR IN SUBQUERY / NOT IN SUBQUERY
+    /// <summary>
+    /// Adds OR condition where the column value is in the result of a subquery.
+    /// </summary>
+    IWhereClause<T> OrInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new();
+
+    /// <summary>
+    /// Adds OR condition where the column value is NOT in the result of a subquery.
+    /// </summary>
+    IWhereClause<T> OrNotInSubquery<TValue, TSubquery>(
+        Expression<Func<T, TValue>> selector,
+        Expression<Func<TSubquery, TValue>> subquerySelector,
+        IQueryTerminal<TSubquery> subquery) where TSubquery : new();
 }
