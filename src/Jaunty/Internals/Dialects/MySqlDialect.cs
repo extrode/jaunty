@@ -90,6 +90,17 @@ internal sealed class MySqlDialect : ISqlDialect
         return $"{columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
     }
 
+    public string GenerateCaseInsensitiveEquals(string columnName, string parameterName)
+    {
+        // MySQL: Default = is case-insensitive for most collations
+        // Use utf8mb4_general_ci to be explicit
+        return $"{columnName} COLLATE utf8mb4_general_ci = {parameterName}";
+    }
+
+    public string FormatContainsPattern(string value) => $"%{value}%";
+    public string FormatStartsWithPattern(string value) => $"{value}%";
+    public string FormatEndsWithPattern(string value) => $"%{value}";
+
     public string? GetDisableForeignKeyChecksSql() => "SET FOREIGN_KEY_CHECKS = 0";
 
     public string? GetEnableForeignKeyChecksSql() => "SET FOREIGN_KEY_CHECKS = 1";
