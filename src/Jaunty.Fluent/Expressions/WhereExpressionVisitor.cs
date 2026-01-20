@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
+using Jaunty.Fluent;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
 
@@ -98,6 +99,12 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
+        // Handle Sql.* functions (Coalesce, IsNull, NullIf)
+        if (node.Method.DeclaringType == typeof(Sql))
+        {
+            return HandleSqlFunction(node);
+        }
+
         // Handle string methods: Contains, StartsWith, EndsWith
         if (node.Object is not null && node.Object.Type == typeof(string))
         {
@@ -175,6 +182,74 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             _parameters.Add((paramName, result));
         }
         return node;
+    }
+
+    private Expression HandleSqlFunction(MethodCallExpression node)
+    {
+        var methodName = node.Method.Name;
+
+        switch (methodName)
+        {
+            case "Coalesce":
+                return HandleCoalesce(node);
+            case "IsNull":
+                return HandleIsNull(node);
+            case "NullIf":
+                return HandleNullIf(node);
+            default:
+                throw new NotSupportedException($"SQL function '{methodName}' is not supported.");
+        }
+    }
+
+    private Expression HandleCoalesce(MethodCallExpression node)
+    {
+        var arguments = new List<string>();
+
+        foreach (var arg in node.Arguments)
+        {
+            arguments.Add(TranslateArgumentToSql(arg));
+        }
+
+        _sql.Append(_dialect.GenerateCoalesce(arguments.ToArray()));
+        return node;
+    }
+
+    private Expression HandleIsNull(MethodCallExpression node)
+    {
+        var valueArg = TranslateArgumentToSql(node.Arguments[0]);
+        var defaultArg = TranslateArgumentToSql(node.Arguments[1]);
+
+        _sql.Append(_dialect.GenerateIsNull(valueArg, defaultArg));
+        return node;
+    }
+
+    private Expression HandleNullIf(MethodCallExpression node)
+    {
+        var valueArg = TranslateArgumentToSql(node.Arguments[0]);
+        var compareArg = TranslateArgumentToSql(node.Arguments[1]);
+
+        _sql.Append(_dialect.GenerateNullIf(valueArg, compareArg));
+        return node;
+    }
+
+    private string TranslateArgumentToSql(Expression arg)
+    {
+        // Unwrap Convert expression
+        if (arg is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            arg = unary.Operand;
+
+        // If it's a member access on the parameter, translate to column
+        if (arg is MemberExpression member && IsParameterMember(member))
+        {
+            var columnName = GetColumnName(member);
+            return _dialect.EscapeColumnName(columnName);
+        }
+
+        // Otherwise, evaluate and create a parameter
+        var value = EvaluateExpression(arg);
+        var paramName = GetParameterName("SqlFn");
+        _parameters.Add((paramName, value));
+        return paramName;
     }
 
     protected override Expression VisitUnary(UnaryExpression node)

@@ -105,4 +105,20 @@ internal sealed class SqlServerDialect : ISqlDialect
     public string? GetEnableForeignKeyChecksSql() => null;
 
     public bool SupportsForeignKeyToggle => false;
+
+    public string GenerateCoalesce(params string[] expressions)
+    {
+        return $"COALESCE({string.Join(", ", expressions)})";
+    }
+
+    public string GenerateIsNull(string expression, string defaultExpression)
+    {
+        // SQL Server uses ISNULL for the IsNull function
+        return $"ISNULL({expression}, {defaultExpression})";
+    }
+
+    public string GenerateNullIf(string expression, string compareExpression)
+    {
+        return $"NULLIF({expression}, {compareExpression})";
+    }
 }

@@ -119,4 +119,20 @@ internal sealed class SQLiteDialect : ISqlDialect
     public string? GetEnableForeignKeyChecksSql() => "PRAGMA foreign_keys = ON";
 
     public bool SupportsForeignKeyToggle => true;
+
+    public string GenerateCoalesce(params string[] expressions)
+    {
+        return $"COALESCE({string.Join(", ", expressions)})";
+    }
+
+    public string GenerateIsNull(string expression, string defaultExpression)
+    {
+        // SQLite uses IFNULL for the IsNull function
+        return $"IFNULL({expression}, {defaultExpression})";
+    }
+
+    public string GenerateNullIf(string expression, string compareExpression)
+    {
+        return $"NULLIF({expression}, {compareExpression})";
+    }
 }

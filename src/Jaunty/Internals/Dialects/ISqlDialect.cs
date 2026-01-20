@@ -105,4 +105,30 @@ internal interface ISqlDialect
     /// Indicates whether this dialect supports session-level foreign key constraint toggling.
     /// </summary>
     bool SupportsForeignKeyToggle { get; }
+
+    /// <summary>
+    /// Generates SQL for COALESCE function.
+    /// Returns the first non-null value among the arguments.
+    /// </summary>
+    /// <param name="expressions">The SQL expressions to coalesce (already formatted with parameters).</param>
+    /// <returns>COALESCE SQL expression.</returns>
+    string GenerateCoalesce(params string[] expressions);
+
+    /// <summary>
+    /// Generates SQL for IsNull/IfNull function.
+    /// Returns the second value if the first is null.
+    /// </summary>
+    /// <param name="expression">The SQL expression to check for null.</param>
+    /// <param name="defaultExpression">The default value expression if null.</param>
+    /// <returns>Dialect-specific IsNull SQL expression.</returns>
+    string GenerateIsNull(string expression, string defaultExpression);
+
+    /// <summary>
+    /// Generates SQL for NULLIF function.
+    /// Returns null if the two values are equal, otherwise returns the first value.
+    /// </summary>
+    /// <param name="expression">The SQL expression to check.</param>
+    /// <param name="compareExpression">The comparison value expression.</param>
+    /// <returns>NULLIF SQL expression.</returns>
+    string GenerateNullIf(string expression, string compareExpression);
 }

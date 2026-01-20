@@ -106,4 +106,20 @@ internal sealed class MySqlDialect : ISqlDialect
     public string? GetEnableForeignKeyChecksSql() => "SET FOREIGN_KEY_CHECKS = 1";
 
     public bool SupportsForeignKeyToggle => true;
+
+    public string GenerateCoalesce(params string[] expressions)
+    {
+        return $"COALESCE({string.Join(", ", expressions)})";
+    }
+
+    public string GenerateIsNull(string expression, string defaultExpression)
+    {
+        // MySQL uses IFNULL for the IsNull function
+        return $"IFNULL({expression}, {defaultExpression})";
+    }
+
+    public string GenerateNullIf(string expression, string compareExpression)
+    {
+        return $"NULLIF({expression}, {compareExpression})";
+    }
 }
