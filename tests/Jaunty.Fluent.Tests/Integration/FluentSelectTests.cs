@@ -26,7 +26,7 @@ public class FluentSelectTests : IDisposable
     public void SelectPartial_StringColumns_ReturnsOnlySelectedColumns()
     {
         var products = _db.Connection.From<Product>()
-            .SelectPartial("ProductId", "ProductName");
+            .SelectPartial("product_id", "product_name");
 
         products.Should().NotBeEmpty();
         products.First().ProductId.Should().BeGreaterThan(0);
@@ -57,7 +57,7 @@ public class FluentSelectTests : IDisposable
     public void SelectFirstOrDefault_NoMatch_ReturnsNull()
     {
         var product = _db.Connection.From<Product>()
-            .Where("ProductId", -1)
+            .Where("product_id", -1)
             .SelectFirstOrDefault();
 
         product.Should().BeNull();
