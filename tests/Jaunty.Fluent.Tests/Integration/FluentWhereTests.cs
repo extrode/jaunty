@@ -169,4 +169,261 @@ public class FluentWhereTests : IDisposable
         // SQLite uses GLOB, others use LIKE
         (sql.Contains("LIKE") || sql.Contains("GLOB")).Should().BeTrue();
     }
+
+    // --- WhereRaw Tests ---
+
+    [Fact]
+    public void WhereRaw_SimpleSql_FiltersResults()
+    {
+        var products = _db.Connection.From<Product>()
+            .WhereRaw("category_id = 1")
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId == 1);
+    }
+
+    [Fact]
+    public void WhereRaw_WithParameters_FiltersResults()
+    {
+        var products = _db.Connection.From<Product>()
+            .WhereRaw("category_id = @catId", new { catId = (short)1 })
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId == 1);
+    }
+
+    [Fact]
+    public void WhereRaw_ComplexCondition_FiltersResults()
+    {
+        var products = _db.Connection.From<Product>()
+            .WhereRaw("category_id IN (1, 2, 3)")
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId == 1 || p.CategoryId == 2 || p.CategoryId == 3);
+    }
+
+    [Fact]
+    public void WhereRaw_ToSql_GeneratesCorrectSql()
+    {
+        var sql = _db.Connection.From<Product>()
+            .WhereRaw("category_id = 1")
+            .ToSql();
+
+        sql.Should().Contain("WHERE");
+        sql.Should().Contain("category_id = 1");
+    }
+
+    // --- AndRaw / OrRaw Tests ---
+
+    [Fact]
+    public void Where_AndRaw_ChainsConditions()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .AndRaw("discontinued = 0")
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId == 1 && p.Discontinued == false);
+    }
+
+    [Fact]
+    public void Where_AndRaw_WithParameters_ChainsConditions()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .AndRaw("unit_price > @minPrice", new { minPrice = 10.0m })
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId == 1 && p.UnitPrice > 10.0m);
+    }
+
+    [Fact]
+    public void Where_OrRaw_ChainsConditions()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .OrRaw("category_id = 2")
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId == 1 || p.CategoryId == 2);
+    }
+
+    [Fact]
+    public void Where_OrRaw_WithParameters_ChainsConditions()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .OrRaw("category_id = @catId", new { catId = (short)2 })
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId == 1 || p.CategoryId == 2);
+    }
+
+    // --- Multiple Chain Tests ---
+
+    [Fact]
+    public void Where_MultipleAndOr_ChainsCorrectly()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .And(p => p.Discontinued == false)
+            .And(p => p.UnitPrice > 5)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p =>
+            p.CategoryId == 1 &&
+            p.Discontinued == false &&
+            p.UnitPrice > 5);
+    }
+
+    [Fact]
+    public void Where_MultipleOr_ChainsCorrectly()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Or(p => p.CategoryId == 2)
+            .Or(p => p.CategoryId == 3)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p =>
+            p.CategoryId == 1 ||
+            p.CategoryId == 2 ||
+            p.CategoryId == 3);
+    }
+
+    [Fact]
+    public void Where_MixedAndOrRaw_ChainsCorrectly()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .AndRaw("discontinued = 0")
+            .OrRaw("category_id = 2")
+            .Select();
+
+        products.Should().NotBeEmpty();
+    }
+
+    // --- Comparison Operators Tests ---
+
+    [Fact]
+    public void Where_GreaterThan_FiltersCorrectly()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.UnitPrice > 20)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.UnitPrice > 20);
+    }
+
+    [Fact]
+    public void Where_GreaterThanOrEqual_FiltersCorrectly()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.UnitsInStock >= 50)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.UnitsInStock >= 50);
+    }
+
+    [Fact]
+    public void Where_LessThan_FiltersCorrectly()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.UnitPrice < 10)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.UnitPrice < 10);
+    }
+
+    [Fact]
+    public void Where_LessThanOrEqual_FiltersCorrectly()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.UnitsInStock <= 20)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.UnitsInStock <= 20);
+    }
+
+    [Fact]
+    public void Where_NotEqual_FiltersCorrectly()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.CategoryId != 1)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId != 1);
+    }
+
+    // --- Boolean Tests ---
+
+    [Fact]
+    public void Where_BooleanTrue_FiltersCorrectly()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.Discontinued == true)
+            .Select();
+
+        // May or may not have discontinued products
+        products.Should().OnlyContain(p => p.Discontinued == true);
+    }
+
+    [Fact]
+    public void Where_BooleanFalse_FiltersCorrectly()
+    {
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.Discontinued == false)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.Discontinued == false);
+    }
+
+    // --- Async Tests ---
+
+    [Fact]
+    public async Task Where_SelectAsync_FiltersCorrectly()
+    {
+        var products = await _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .SelectAsync();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId == 1);
+    }
+
+    [Fact]
+    public async Task Where_CountAsync_ReturnsFilteredCount()
+    {
+        var count = await _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .CountAsync();
+
+        count.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task WhereRaw_SelectAsync_FiltersCorrectly()
+    {
+        var products = await _db.Connection.From<Product>()
+            .WhereRaw("category_id = 1")
+            .SelectAsync();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId == 1);
+    }
 }
