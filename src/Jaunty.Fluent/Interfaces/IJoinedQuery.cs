@@ -1,0 +1,184 @@
+using System.Linq.Expressions;
+
+namespace Jaunty.Fluent;
+
+/// <summary>
+/// Represents a query with a JOIN that can be further filtered or executed.
+/// </summary>
+/// <typeparam name="TFrom">The primary (left) entity type.</typeparam>
+/// <typeparam name="TJoin">The joined (right) entity type.</typeparam>
+public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : new()
+{
+    // --- Additional Joins ---
+
+    /// <summary>
+    /// Adds an INNER JOIN to another table.
+    /// </summary>
+    IJoinClause<TFrom, TJoin, T3> InnerJoin<T3>(string? alias = null) where T3 : new();
+
+    /// <summary>
+    /// Adds a LEFT JOIN to another table.
+    /// </summary>
+    IJoinClause<TFrom, TJoin, T3> LeftJoin<T3>(string? alias = null) where T3 : new();
+
+    // --- WHERE Clauses ---
+
+    /// <summary>
+    /// Adds a WHERE clause using a predicate expression.
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> Where(Expression<Func<TFrom, TJoin, bool>> predicate);
+
+    /// <summary>
+    /// Adds a WHERE clause using a raw SQL condition.
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> Where(string condition);
+
+    /// <summary>
+    /// Adds a WHERE clause using column name and value.
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> Where(string column, object value);
+
+    // --- AND/OR ---
+
+    /// <summary>
+    /// Adds an AND condition using a predicate expression.
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> And(Expression<Func<TFrom, TJoin, bool>> predicate);
+
+    /// <summary>
+    /// Adds an OR condition using a predicate expression.
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> Or(Expression<Func<TFrom, TJoin, bool>> predicate);
+
+    // --- ORDER BY ---
+
+    /// <summary>
+    /// Adds an ORDER BY clause (ascending).
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> OrderBy<TKey>(Expression<Func<TFrom, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (ascending) for the joined entity.
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> OrderByJoined<TKey>(Expression<Func<TJoin, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (descending).
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> OrderByDescending<TKey>(Expression<Func<TFrom, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (descending) for the joined entity.
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> OrderByJoinedDescending<TKey>(Expression<Func<TJoin, TKey>> keySelector);
+
+    // --- SELECT Operations ---
+
+    /// <summary>
+    /// Executes the query and returns the primary entity.
+    /// </summary>
+    List<TFrom> Select();
+
+    /// <summary>
+    /// Executes the query and returns the joined entity.
+    /// </summary>
+    List<TJoin> SelectJoined();
+
+    /// <summary>
+    /// Executes the query and returns both entities as tuples.
+    /// </summary>
+    List<(TFrom From, TJoin Joined)> SelectBoth();
+
+    /// <summary>
+    /// Executes the query with a custom projection.
+    /// </summary>
+    List<TResult> Select<TResult>(Func<TFrom, TJoin, TResult> mapper);
+
+    /// <summary>
+    /// Returns the first result or throws if empty.
+    /// </summary>
+    TFrom SelectFirst();
+
+    /// <summary>
+    /// Returns the first result or default if empty.
+    /// </summary>
+    TFrom? SelectFirstOrDefault();
+
+    /// <summary>
+    /// Returns the first result as a tuple or throws if empty.
+    /// </summary>
+    (TFrom From, TJoin Joined) SelectFirstBoth();
+
+    /// <summary>
+    /// Returns the count of rows.
+    /// </summary>
+    int Count();
+
+    /// <summary>
+    /// Returns the count of rows as long.
+    /// </summary>
+    long LongCount();
+
+    /// <summary>
+    /// Returns the generated SQL for debugging purposes.
+    /// </summary>
+    string ToSql();
+
+    // --- Async Operations ---
+
+    /// <summary>
+    /// Executes the query asynchronously and returns the primary entity.
+    /// </summary>
+    Task<List<TFrom>> SelectAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the query asynchronously and returns both entities as tuples.
+    /// </summary>
+    Task<List<(TFrom From, TJoin Joined)>> SelectBothAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the query asynchronously with a custom projection.
+    /// </summary>
+    Task<List<TResult>> SelectAsync<TResult>(Func<TFrom, TJoin, TResult> mapper, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Represents a JOIN clause for a third table.
+/// </summary>
+public interface IJoinClause<T1, T2, T3> where T1 : new() where T2 : new() where T3 : new()
+{
+    /// <summary>
+    /// Specifies the join condition using key expressions.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> On<TLeftKey, TRightKey>(Expression<Func<T1, TLeftKey>> leftKey, Expression<Func<T3, TRightKey>> rightKey);
+
+    /// <summary>
+    /// Specifies the join condition using key from T2.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> OnFromSecond<TLeftKey, TRightKey>(Expression<Func<T2, TLeftKey>> leftKey, Expression<Func<T3, TRightKey>> rightKey);
+
+    /// <summary>
+    /// Specifies the join condition using column names.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> OnColumns(string leftColumn, string rightColumn);
+
+    /// <summary>
+    /// Specifies the join condition using raw SQL.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> OnRaw(string condition);
+}
+
+/// <summary>
+/// Represents a query with three joined tables.
+/// </summary>
+public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() where T3 : new()
+{
+    IJoinedQuery3<T1, T2, T3> Where(Expression<Func<T1, T2, T3, bool>> predicate);
+    IJoinedQuery3<T1, T2, T3> Where(string condition);
+
+    List<T1> Select();
+    List<(T1, T2, T3)> SelectAll();
+    List<TResult> Select<TResult>(Func<T1, T2, T3, TResult> mapper);
+
+    string ToSql();
+}

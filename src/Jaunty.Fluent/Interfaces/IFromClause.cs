@@ -32,4 +32,26 @@ public interface IFromClause<T> : IQueryTerminal<T> where T : new()
     // TOP/LIMIT
     IFromClause<T> Take(int count);
     IFromClause<T> Skip(int count);
+
+    // JOIN operations
+    /// <summary>
+    /// Adds an INNER JOIN to another table.
+    /// </summary>
+    /// <typeparam name="TJoin">The type of entity to join.</typeparam>
+    /// <param name="alias">Optional alias for the joined table (used in string-based conditions).</param>
+    IJoinClause<T, TJoin> InnerJoin<TJoin>(string? alias = null) where TJoin : new();
+
+    /// <summary>
+    /// Adds a LEFT JOIN to another table.
+    /// </summary>
+    /// <typeparam name="TJoin">The type of entity to join.</typeparam>
+    /// <param name="alias">Optional alias for the joined table (used in string-based conditions).</param>
+    IJoinClause<T, TJoin> LeftJoin<TJoin>(string? alias = null) where TJoin : new();
+
+    /// <summary>
+    /// Adds a RIGHT JOIN to another table.
+    /// </summary>
+    /// <typeparam name="TJoin">The type of entity to join.</typeparam>
+    /// <param name="alias">Optional alias for the joined table (used in string-based conditions).</param>
+    IJoinClause<T, TJoin> RightJoin<TJoin>(string? alias = null) where TJoin : new();
 }
