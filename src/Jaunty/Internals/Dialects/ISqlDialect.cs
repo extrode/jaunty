@@ -58,6 +58,36 @@ internal interface ISqlDialect
     string GenerateCaseInsensitiveLike(string columnName, string parameterName, string escapeChar);
 
     /// <summary>
+    /// Generates a case-insensitive equals comparison.
+    /// Used when string.Equals with StringComparison.OrdinalIgnoreCase is specified.
+    /// </summary>
+    /// <param name="columnName">The column name (already escaped if needed)</param>
+    /// <param name="parameterName">The parameter placeholder (e.g., @p0)</param>
+    /// <returns>SQL equals expression with case-insensitive comparison</returns>
+    string GenerateCaseInsensitiveEquals(string columnName, string parameterName);
+
+    /// <summary>
+    /// Formats a value for case-sensitive Contains pattern matching.
+    /// </summary>
+    /// <param name="value">The search value (already escaped for pattern matching)</param>
+    /// <returns>Pattern value with appropriate wildcards for the dialect</returns>
+    string FormatContainsPattern(string value);
+
+    /// <summary>
+    /// Formats a value for case-sensitive StartsWith pattern matching.
+    /// </summary>
+    /// <param name="value">The search value (already escaped for pattern matching)</param>
+    /// <returns>Pattern value with appropriate wildcards for the dialect</returns>
+    string FormatStartsWithPattern(string value);
+
+    /// <summary>
+    /// Formats a value for case-sensitive EndsWith pattern matching.
+    /// </summary>
+    /// <param name="value">The search value (already escaped for pattern matching)</param>
+    /// <returns>Pattern value with appropriate wildcards for the dialect</returns>
+    string FormatEndsWithPattern(string value);
+
+    /// <summary>
     /// Returns SQL to disable foreign key constraint checks for the current session/connection.
     /// Used by bulk operations that need to ignore referential integrity.
     /// </summary>

@@ -75,6 +75,17 @@ internal sealed class PostgreSqlDialect : ISqlDialect
         return $"{columnName} ILIKE {parameterName} ESCAPE '{escapeChar}'";
     }
 
+    public string GenerateCaseInsensitiveEquals(string columnName, string parameterName)
+    {
+        // PostgreSQL: = is case-sensitive by default
+        // Use LOWER() for case-insensitive comparison
+        return $"LOWER({columnName}) = LOWER({parameterName})";
+    }
+
+    public string FormatContainsPattern(string value) => $"%{value}%";
+    public string FormatStartsWithPattern(string value) => $"{value}%";
+    public string FormatEndsWithPattern(string value) => $"%{value}";
+
     // PostgreSQL: session_replication_role = 'replica' disables all triggers including FK constraints
     // This is a session-level setting that affects all tables
     public string? GetDisableForeignKeyChecksSql() => "SET session_replication_role = 'replica'";

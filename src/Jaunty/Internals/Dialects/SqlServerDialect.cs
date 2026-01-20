@@ -86,6 +86,16 @@ internal sealed class SqlServerDialect : ISqlDialect
         return $"{columnName} COLLATE Latin1_General_CI_AS LIKE {parameterName} ESCAPE '{escapeChar}'";
     }
 
+    public string GenerateCaseInsensitiveEquals(string columnName, string parameterName)
+    {
+        // SQL Server: Use COLLATE with a case-insensitive collation
+        return $"{columnName} COLLATE Latin1_General_CI_AS = {parameterName}";
+    }
+
+    public string FormatContainsPattern(string value) => $"%{value}%";
+    public string FormatStartsWithPattern(string value) => $"{value}%";
+    public string FormatEndsWithPattern(string value) => $"%{value}";
+
     // SQL Server doesn't have a simple session-level FK toggle.
     // Disabling constraints requires per-table ALTER statements.
     // For bulk operations ignoring constraints, users should use NOCHECK per table

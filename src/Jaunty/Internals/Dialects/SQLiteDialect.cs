@@ -82,6 +82,38 @@ internal sealed class SQLiteDialect : ISqlDialect
         return $"{columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
     }
 
+    public string GenerateCaseInsensitiveEquals(string columnName, string parameterName)
+    {
+        // SQLite: = is case-sensitive by default
+        // Use LOWER() for case-insensitive comparison
+        return $"LOWER({columnName}) = LOWER({parameterName})";
+    }
+
+    public string FormatContainsPattern(string value)
+    {
+        // SQLite GLOB uses * instead of %
+        return $"*{EscapeGlobPattern(value)}*";
+    }
+
+    public string FormatStartsWithPattern(string value)
+    {
+        return $"{EscapeGlobPattern(value)}*";
+    }
+
+    public string FormatEndsWithPattern(string value)
+    {
+        return $"*{EscapeGlobPattern(value)}";
+    }
+
+    private static string EscapeGlobPattern(string value)
+    {
+        // Escape GLOB special characters: *, ?, [
+        return value
+            .Replace("[", "[[]")
+            .Replace("*", "[*]")
+            .Replace("?", "[?]");
+    }
+
     public string? GetDisableForeignKeyChecksSql() => "PRAGMA foreign_keys = OFF";
 
     public string? GetEnableForeignKeyChecksSql() => "PRAGMA foreign_keys = ON";
