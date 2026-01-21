@@ -95,6 +95,24 @@ public interface IQueryTerminal<T> where T : new()
     string ToSql(params string[] columns);
     string ToSql(params Expression<Func<T, object?>>[] columns);
 
+    /// <summary>
+    /// Returns the SELECT SQL with a projection expression, supporting window functions.
+    /// </summary>
+    /// <typeparam name="TResult">The projected result type (typically anonymous type).</typeparam>
+    /// <param name="selector">Projection expression defining columns and window functions.</param>
+    /// <example>
+    /// <code>
+    /// var sql = db.From&lt;Product&gt;()
+    ///   .ToSql(p =&gt; new {
+    ///       p.ProductName,
+    ///       p.UnitPrice,
+    ///       RowNum = Sql.RowNumber().PartitionBy(p.CategoryId).OrderBy(p.UnitPrice)
+    ///   });
+    /// // SQL: SELECT product_name, unit_price, ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY unit_price) AS RowNum FROM products
+    /// </code>
+    /// </example>
+    string ToSql<TResult>(Expression<Func<T, TResult>> selector);
+
     // Set operations (UNION, UNION ALL, EXCEPT, INTERSECT)
     /// <summary>
     /// Combines the results with another query using UNION (removes duplicates).
