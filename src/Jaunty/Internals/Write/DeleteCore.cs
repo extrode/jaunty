@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
+using Jaunty.Interfaces;
 using Jaunty.Internals;
 using Jaunty.Internals.Entity;
 
@@ -46,7 +47,6 @@ public static partial class Jaunty
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             BindDeleteParameters(command, entity, cached.Metadata);
-
             return command.ExecuteNonQuery();
         }
         finally
@@ -95,7 +95,6 @@ public static partial class Jaunty
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             BindDeleteParameters(command, entity, cached.Metadata);
-
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -196,6 +195,102 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteByIdSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}': Delete by ID SQL could not be generated.");
 
+        bool wasClosed = connection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (wasClosed)
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NET8_0_OR_GREATER
+            await using DbCommand command = connection.CreateCommand();
+#else
+            using DbCommand command = connection.CreateCommand();
+#endif
+            command.CommandText = cached.DeleteByIdSql;
+
+            if (options.Transaction is not null)
+                command.Transaction = (DbTransaction)options.Transaction;
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            DbParameter param = command.CreateParameter();
+            param.ParameterName = "@Id";
+            param.Value = id;
+            command.Parameters.Add(param);
+
+            return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+            {
+#if NET8_0_OR_GREATER
+                await connection.CloseAsync().ConfigureAwait(false);
+#else
+                connection.Close();
+#endif
+            }
+        }
+    }
+
+    #endregion
+
+    #region Delete by IEntity<T> Core
+
+    private static int DeleteByIdCore<T, TId>(IDbConnection connection, TId id, CommandOptions options) where T : IEntity<TId>
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(id);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (id is null) throw new ArgumentNullException(nameof(id));
+#endif
+
+        CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
+        bool wasClosed = connection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (wasClosed)
+                connection.Open();
+
+            using IDbCommand command = connection.CreateCommand();
+            command.CommandText = cached.DeleteByIdSql;
+
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            IDbDataParameter param = command.CreateParameter();
+            param.ParameterName = "@Id";
+            param.Value = id;
+            command.Parameters.Add(param);
+
+            return command.ExecuteNonQuery();
+        }
+        finally
+        {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
+        }
+    }
+
+    private static async Task<int> DeleteByIdCoreAsync<T, TId>(DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(id);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (id is null) throw new ArgumentNullException(nameof(id));
+#endif
+
+        CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
