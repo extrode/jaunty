@@ -18,6 +18,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T>
     private readonly IDbConnection _connection;
     private readonly ISqlDialect _dialect;
     private readonly EntityMetadata _metadata;
+    private readonly CachedDialectMetadata _cache;
     private readonly string _cteName;
     private readonly ParameterCollection _parameters = new();
 
@@ -32,6 +33,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T>
         _connection = connection;
         _dialect = SqlDialectFactory.GetDialect(connection);
         _metadata = MetadataCache<T>.Metadata;
+        _cache = FluentMetadataCache<T>.GetForDialect(_dialect);
         _cteName = cteName;
     }
 
@@ -231,16 +233,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T>
         return sb.ToString();
     }
 
-    private string GetColumnNameFromProperty(string propertyName)
-    {
-        var columns = _metadata.Columns;
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].Property.Name == propertyName)
-                return columns[i].ColumnName;
-        }
-        return propertyName;
-    }
+    private string GetColumnNameFromProperty(string propertyName) => _cache.GetColumnName(propertyName);
 
     #endregion
 }
