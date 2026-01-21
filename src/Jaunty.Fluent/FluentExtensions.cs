@@ -81,4 +81,36 @@ public static class FluentExtensions
     {
         return new InsertBuilder<T>(connection);
     }
+
+    /// <summary>
+    /// Starts a fluent CTE (Common Table Expression) builder for the specified entity type.
+    /// </summary>
+    /// <typeparam name="T">The entity type for the CTE.</typeparam>
+    /// <param name="connection">The database connection.</param>
+    /// <param name="cteName">The name of the CTE.</param>
+    /// <returns>A fluent CTE builder for defining and querying the CTE.</returns>
+    /// <example>
+    /// <code>
+    /// // Simple CTE: query expensive products
+    /// var expensiveProducts = db.Cte&lt;Product&gt;("ExpensiveProducts")
+    ///     .As(q => q.Where(p => p.UnitPrice > 100))
+    ///     .Select();
+    /// // SQL: WITH ExpensiveProducts AS (SELECT * FROM products WHERE unit_price > 100)
+    /// //      SELECT * FROM ExpensiveProducts
+    ///
+    /// // CTE with additional filtering on results
+    /// var results = db.Cte&lt;Product&gt;("ExpensiveProducts")
+    ///     .As(q => q.Where(p => p.UnitPrice > 100))
+    ///     .Where(p => p.CategoryId == 1)
+    ///     .OrderByDescending(p => p.UnitPrice)
+    ///     .Take(10)
+    ///     .Select();
+    /// // SQL: WITH ExpensiveProducts AS (SELECT * FROM products WHERE unit_price > 100)
+    /// //      SELECT * FROM ExpensiveProducts WHERE category_id = 1 ORDER BY unit_price DESC LIMIT 10
+    /// </code>
+    /// </example>
+    public static ICteClause<T> Cte<T>(this IDbConnection connection, string cteName) where T : new()
+    {
+        return new CteBuilder<T>(connection, cteName);
+    }
 }
