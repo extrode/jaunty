@@ -1,10 +1,14 @@
 using Jaunty.Attributes;
+using DatabaseGeneratedAttribute = System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute;
+using DatabaseGeneratedOption = System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedOption;
 
 namespace Jaunty.Fluent.Tests.Entities;
 
 [Table("products")]
 public class Product
 {
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Column("product_id")]
     public int ProductId { get; set; }
 

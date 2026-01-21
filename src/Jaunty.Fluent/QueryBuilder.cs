@@ -15,7 +15,7 @@ namespace Jaunty.Fluent;
 /// <summary>
 /// Main query builder implementation. Implements all fluent interfaces.
 /// </summary>
-internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderByClause<T>, IDistinctClause<T>
+internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderByClause<T>, IDistinctClause<T>, ISetClause<T>, IUpdateWhereClause<T>
     where T : new()
 {
     private readonly IDbConnection _connection;
@@ -25,6 +25,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     private readonly List<WhereCondition> _conditions = new();
     private readonly List<OrderByColumn> _orderByColumns = new();
     private readonly ParameterCollection _parameters = new();
+    private readonly List<SetColumn> _setColumns = new();
     private bool _distinct;
     private int? _take;
     private int? _skip;
@@ -1386,6 +1387,477 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
                 return columns[i].ColumnName;
         }
         return propertyName;
+    }
+
+    #endregion
+
+    #region Delete operations
+
+    /// <summary>
+    /// Deletes rows matching the WHERE conditions.
+    /// </summary>
+    public int Delete()
+    {
+        if (_conditions.Count == 0)
+            throw new InvalidOperationException("Delete() requires a WHERE clause. Use DeleteAll() to delete all rows.");
+
+        var sql = BuildDeleteSql();
+        return ExecuteNonQuery(sql);
+    }
+
+    /// <summary>
+    /// Asynchronously deletes rows matching the WHERE conditions.
+    /// </summary>
+    public async Task<int> DeleteAsync(CancellationToken cancellationToken = default)
+    {
+        if (_conditions.Count == 0)
+            throw new InvalidOperationException("DeleteAsync() requires a WHERE clause. Use DeleteAllAsync() to delete all rows.");
+
+        var sql = BuildDeleteSql();
+        return await ExecuteNonQueryAsync(sql, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Deletes all rows from the table (no WHERE clause).
+    /// </summary>
+    public int DeleteAll()
+    {
+        var sql = BuildDeleteSql();
+        return ExecuteNonQuery(sql);
+    }
+
+    /// <summary>
+    /// Asynchronously deletes all rows from the table (no WHERE clause).
+    /// </summary>
+    public async Task<int> DeleteAllAsync(CancellationToken cancellationToken = default)
+    {
+        var sql = BuildDeleteSql();
+        return await ExecuteNonQueryAsync(sql, cancellationToken).ConfigureAwait(false);
+    }
+
+    private string BuildDeleteSql()
+    {
+        var sb = new StringBuilder(128);
+        sb.Append("DELETE FROM ");
+        sb.Append(_dialect.EscapeTableName(_metadata.SchemaName, _metadata.TableName));
+
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+            for (int i = 0; i < _conditions.Count; i++)
+            {
+                var condition = _conditions[i];
+                if (i > 0)
+                {
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                }
+                sb.Append(condition.Sql);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private int ExecuteNonQuery(string sql)
+    {
+        var wasClosed = _connection.State == System.Data.ConnectionState.Closed;
+        try
+        {
+            if (wasClosed)
+                _connection.Open();
+
+            using var command = _connection.CreateCommand();
+            command.CommandText = sql;
+            _parameters.BindTo(command);
+
+            return command.ExecuteNonQuery();
+        }
+        finally
+        {
+            if (wasClosed && _connection.State != System.Data.ConnectionState.Closed)
+                _connection.Close();
+        }
+    }
+
+    private async Task<int> ExecuteNonQueryAsync(string sql, CancellationToken cancellationToken)
+    {
+        if (_connection is not System.Data.Common.DbConnection dbConnection)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var wasClosed = dbConnection.State == System.Data.ConnectionState.Closed;
+        try
+        {
+            if (wasClosed)
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            using var command = dbConnection.CreateCommand();
+            command.CommandText = sql;
+            _parameters.BindTo(command);
+
+            return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (wasClosed && dbConnection.State != System.Data.ConnectionState.Closed)
+                dbConnection.Close();
+        }
+    }
+
+    #endregion
+
+    #region Update operations (ISetClause, IUpdateWhereClause)
+
+    /// <summary>
+    /// Sets a column to a value using expression selector.
+    /// </summary>
+    public ISetClause<T> Set<TValue>(Expression<Func<T, TValue>> selector, TValue value)
+    {
+        string propertyName = PropertyExtractor.ExtractPropertyName(selector);
+        string columnName = GetColumnNameFromProperty(propertyName);
+        string paramName = GetUniqueParamName(propertyName);
+        _parameters.Add(paramName, value);
+        _setColumns.Add(new SetColumn(_dialect.EscapeColumnName(columnName), paramName));
+        return this;
+    }
+
+    /// <summary>
+    /// Sets a column to a value using column name.
+    /// </summary>
+    ISetClause<T> IFromClause<T>.Set(string column, object? value)
+    {
+        string paramName = GetUniqueParamName(column);
+        _parameters.Add(paramName, value);
+        _setColumns.Add(new SetColumn(_dialect.EscapeColumnName(column), paramName));
+        return this;
+    }
+
+    /// <summary>
+    /// Sets a column to a value using column name (ISetClause chaining).
+    /// </summary>
+    ISetClause<T> ISetClause<T>.Set(string column, object? value)
+    {
+        string paramName = GetUniqueParamName(column);
+        _parameters.Add(paramName, value);
+        _setColumns.Add(new SetColumn(_dialect.EscapeColumnName(column), paramName));
+        return this;
+    }
+
+    /// <summary>
+    /// Sets multiple columns from an anonymous object.
+    /// </summary>
+    ISetClause<T> IFromClause<T>.Set(object values)
+    {
+        foreach (var prop in values.GetType().GetProperties())
+        {
+            string columnName = GetColumnNameFromProperty(prop.Name);
+            string paramName = GetUniqueParamName(prop.Name);
+            _parameters.Add(paramName, prop.GetValue(values));
+            _setColumns.Add(new SetColumn(_dialect.EscapeColumnName(columnName), paramName));
+        }
+        return this;
+    }
+
+    /// <summary>
+    /// Sets multiple columns from an anonymous object (ISetClause chaining).
+    /// </summary>
+    ISetClause<T> ISetClause<T>.Set(object values)
+    {
+        foreach (var prop in values.GetType().GetProperties())
+        {
+            string columnName = GetColumnNameFromProperty(prop.Name);
+            string paramName = GetUniqueParamName(prop.Name);
+            _parameters.Add(paramName, prop.GetValue(values));
+            _setColumns.Add(new SetColumn(_dialect.EscapeColumnName(columnName), paramName));
+        }
+        return this;
+    }
+
+    /// <summary>
+    /// Adds WHERE for update using expression predicate.
+    /// </summary>
+    IUpdateWhereClause<T> ISetClause<T>.Where(Expression<Func<T, bool>> predicate)
+    {
+        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var (sql, parameters) = visitor.Translate(predicate);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
+        _parameters.AddRange(parameters);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds WHERE for update using column and value.
+    /// </summary>
+    IUpdateWhereClause<T> ISetClause<T>.Where(string column, object? value)
+    {
+        var escapedColumn = _dialect.EscapeColumnName(column);
+        var paramName = $"@{column}";
+
+        if (value is null)
+        {
+            _conditions.Add(WhereCondition.Column($"{escapedColumn} IS NULL", LogicalOperator.None));
+        }
+        else
+        {
+            _conditions.Add(WhereCondition.Column($"{escapedColumn} = {paramName}", LogicalOperator.None));
+            _parameters.Add(paramName, value);
+        }
+        return this;
+    }
+
+    /// <summary>
+    /// Adds WHERE for update using raw SQL.
+    /// </summary>
+    IUpdateWhereClause<T> ISetClause<T>.WhereRaw(string rawSql)
+    {
+        _conditions.Add(WhereCondition.Raw(rawSql, LogicalOperator.None));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds WHERE for update using raw SQL with parameters.
+    /// </summary>
+    IUpdateWhereClause<T> ISetClause<T>.WhereRaw(string rawSql, object parameters)
+    {
+        _conditions.Add(WhereCondition.Raw(rawSql, LogicalOperator.None));
+        AddParametersFromObject(parameters);
+        return this;
+    }
+
+    /// <summary>
+    /// AND condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.And(string column, object? value)
+    {
+        var escapedColumn = _dialect.EscapeColumnName(column);
+        var paramName = GetUniqueParamName(column);
+
+        if (value is null)
+        {
+            _conditions.Add(WhereCondition.Column($"{escapedColumn} IS NULL", LogicalOperator.And));
+        }
+        else
+        {
+            _conditions.Add(WhereCondition.Column($"{escapedColumn} = {paramName}", LogicalOperator.And));
+            _parameters.Add(paramName, value);
+        }
+        return this;
+    }
+
+    /// <summary>
+    /// AND condition for update WHERE clause using expression.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.And(Expression<Func<T, bool>> predicate)
+    {
+        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var (sql, parameters) = visitor.Translate(predicate);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        _parameters.AddRange(parameters);
+        return this;
+    }
+
+    /// <summary>
+    /// AND condition for update WHERE clause using raw SQL.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.AndRaw(string rawSql)
+    {
+        _conditions.Add(WhereCondition.Raw(rawSql, LogicalOperator.And));
+        return this;
+    }
+
+    /// <summary>
+    /// AND condition for update WHERE clause using raw SQL with parameters.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.AndRaw(string rawSql, object parameters)
+    {
+        _conditions.Add(WhereCondition.Raw(rawSql, LogicalOperator.And));
+        AddParametersFromObject(parameters);
+        return this;
+    }
+
+    /// <summary>
+    /// OR condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.Or(string column, object? value)
+    {
+        var escapedColumn = _dialect.EscapeColumnName(column);
+        var paramName = GetUniqueParamName(column);
+
+        if (value is null)
+        {
+            _conditions.Add(WhereCondition.Column($"{escapedColumn} IS NULL", LogicalOperator.Or));
+        }
+        else
+        {
+            _conditions.Add(WhereCondition.Column($"{escapedColumn} = {paramName}", LogicalOperator.Or));
+            _parameters.Add(paramName, value);
+        }
+        return this;
+    }
+
+    /// <summary>
+    /// OR condition for update WHERE clause using expression.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.Or(Expression<Func<T, bool>> predicate)
+    {
+        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var (sql, parameters) = visitor.Translate(predicate);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        _parameters.AddRange(parameters);
+        return this;
+    }
+
+    /// <summary>
+    /// OR condition for update WHERE clause using raw SQL.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.OrRaw(string rawSql)
+    {
+        _conditions.Add(WhereCondition.Raw(rawSql, LogicalOperator.Or));
+        return this;
+    }
+
+    /// <summary>
+    /// OR condition for update WHERE clause using raw SQL with parameters.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.OrRaw(string rawSql, object parameters)
+    {
+        _conditions.Add(WhereCondition.Raw(rawSql, LogicalOperator.Or));
+        AddParametersFromObject(parameters);
+        return this;
+    }
+
+    /// <summary>
+    /// AND IN condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.AndIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        var sql = BuildInClause(selector, values, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    /// <summary>
+    /// AND NOT IN condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.AndNotIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        var sql = BuildInClause(selector, values, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        return this;
+    }
+
+    /// <summary>
+    /// OR IN condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.OrIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        var sql = BuildInClause(selector, values, negate: false);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    /// <summary>
+    /// OR NOT IN condition for update WHERE clause.
+    /// </summary>
+    IUpdateWhereClause<T> IUpdateWhereClause<T>.OrNotIn<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values)
+    {
+        var sql = BuildInClause(selector, values, negate: true);
+        _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        return this;
+    }
+
+    /// <summary>
+    /// Updates all rows (no WHERE clause). Use with caution.
+    /// </summary>
+    public int UpdateAll()
+    {
+        if (_setColumns.Count == 0)
+            throw new InvalidOperationException("UpdateAll() requires at least one Set() call.");
+
+        var sql = BuildUpdateSql();
+        return ExecuteNonQuery(sql);
+    }
+
+    /// <summary>
+    /// Asynchronously updates all rows (no WHERE clause).
+    /// </summary>
+    public async Task<int> UpdateAllAsync(CancellationToken cancellationToken = default)
+    {
+        if (_setColumns.Count == 0)
+            throw new InvalidOperationException("UpdateAllAsync() requires at least one Set() call.");
+
+        var sql = BuildUpdateSql();
+        return await ExecuteNonQueryAsync(sql, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Executes the UPDATE with WHERE conditions.
+    /// </summary>
+    public int Update()
+    {
+        if (_setColumns.Count == 0)
+            throw new InvalidOperationException("Update() requires at least one Set() call.");
+        if (_conditions.Count == 0)
+            throw new InvalidOperationException("Update() requires a WHERE clause. Use UpdateAll() to update all rows.");
+
+        var sql = BuildUpdateSql();
+        return ExecuteNonQuery(sql);
+    }
+
+    /// <summary>
+    /// Asynchronously executes the UPDATE with WHERE conditions.
+    /// </summary>
+    public async Task<int> UpdateAsync(CancellationToken cancellationToken = default)
+    {
+        if (_setColumns.Count == 0)
+            throw new InvalidOperationException("UpdateAsync() requires at least one Set() call.");
+        if (_conditions.Count == 0)
+            throw new InvalidOperationException("UpdateAsync() requires a WHERE clause. Use UpdateAllAsync() to update all rows.");
+
+        var sql = BuildUpdateSql();
+        return await ExecuteNonQueryAsync(sql, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Returns the UPDATE SQL for debugging.
+    /// </summary>
+    string ISetClause<T>.ToSql() => BuildUpdateSql();
+
+    /// <summary>
+    /// Returns the UPDATE SQL for debugging.
+    /// </summary>
+    string IUpdateWhereClause<T>.ToSql() => BuildUpdateSql();
+
+    private string BuildUpdateSql()
+    {
+        var sb = new StringBuilder(256);
+        sb.Append("UPDATE ");
+        sb.Append(_dialect.EscapeTableName(_metadata.SchemaName, _metadata.TableName));
+
+        sb.Append(" SET ");
+        for (int i = 0; i < _setColumns.Count; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            var setCol = _setColumns[i];
+            sb.Append(setCol.ColumnName);
+            sb.Append(" = ");
+            sb.Append(setCol.ParameterName);
+        }
+
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+            for (int i = 0; i < _conditions.Count; i++)
+            {
+                var condition = _conditions[i];
+                if (i > 0)
+                {
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                }
+                sb.Append(condition.Sql);
+            }
+        }
+
+        return sb.ToString();
     }
 
     #endregion

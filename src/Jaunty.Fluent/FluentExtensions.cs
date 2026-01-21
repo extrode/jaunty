@@ -51,4 +51,34 @@ public static class FluentExtensions
     {
         return new QueryBuilder<T>(connection, alias);
     }
+
+    /// <summary>
+    /// Starts a fluent INSERT builder for the specified entity type.
+    /// </summary>
+    /// <typeparam name="T">The entity type to insert.</typeparam>
+    /// <param name="connection">The database connection.</param>
+    /// <returns>A fluent insert builder for specifying values and executing the insert.</returns>
+    /// <example>
+    /// <code>
+    /// // Insert with entity
+    /// var id = db.Into&lt;Product&gt;()
+    ///     .Values(new Product { ProductName = "Widget", UnitPrice = 9.99m })
+    ///     .Insert();
+    ///
+    /// // Insert with anonymous object
+    /// var id = db.Into&lt;Product&gt;()
+    ///     .Values(new { ProductName = "Widget", UnitPrice = 9.99m })
+    ///     .Insert();
+    ///
+    /// // Insert with individual values
+    /// var id = db.Into&lt;Product&gt;()
+    ///     .Value(p => p.ProductName, "Widget")
+    ///     .Value(p => p.UnitPrice, 9.99m)
+    ///     .Insert();
+    /// </code>
+    /// </example>
+    public static IIntoClause<T> Into<T>(this IDbConnection connection) where T : new()
+    {
+        return new InsertBuilder<T>(connection);
+    }
 }
