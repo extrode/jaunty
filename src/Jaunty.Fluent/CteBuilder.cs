@@ -12,8 +12,7 @@ namespace Jaunty.Fluent;
 /// <summary>
 /// Builder for CTE (Common Table Expression) queries.
 /// </summary>
-internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T>
-    where T : new()
+internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T : new()
 {
     private readonly IDbConnection _connection;
     private readonly ISqlDialect _dialect;
