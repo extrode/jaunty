@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using Jaunty.Fluent.Expressions;
@@ -232,6 +233,37 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return result[0];
     }
 
+    public List<(T1, T2)> Select<T1, T2>() where T1 : new() where T2 : new()
+    {
+        // Validate types match at runtime
+        if (typeof(T1) != typeof(TFrom))
+            throw new ArgumentException($"T1 must be {typeof(TFrom).Name}, got {typeof(T1).Name}", nameof(T1));
+        if (typeof(T2) != typeof(TJoin))
+            throw new ArgumentException($"T2 must be {typeof(TJoin).Name}, got {typeof(T2).Name}", nameof(T2));
+
+        // SelectBoth returns List<(TFrom, TJoin)> which equals List<(T1, T2)> when types match
+        var result = SelectBoth();
+        // Use unsafe cast since we validated types
+        return Unsafe.As<List<(TFrom, TJoin)>, List<(T1, T2)>>(ref result);
+    }
+
+    public List<TTuple> SelectTuple<TTuple>() where TTuple : struct
+    {
+        var tupleType = typeof(TTuple);
+
+        // Validate it's a 2-element ValueTuple
+        if (!tupleType.IsGenericType || tupleType.GetGenericTypeDefinition() != typeof(ValueTuple<,>))
+            throw new ArgumentException($"TTuple must be ValueTuple<{typeof(TFrom).Name}, {typeof(TJoin).Name}>", nameof(TTuple));
+
+        var typeArgs = tupleType.GetGenericArguments();
+        if (typeArgs[0] != typeof(TFrom) || typeArgs[1] != typeof(TJoin))
+            throw new ArgumentException($"Expected ({typeof(TFrom).Name}, {typeof(TJoin).Name}), got ({typeArgs[0].Name}, {typeArgs[1].Name})", nameof(TTuple));
+
+        // Cast result - safe because (TFrom, TJoin) is structurally identical to TTuple
+        var result = SelectBoth();
+        return Unsafe.As<List<(TFrom, TJoin)>, List<TTuple>>(ref result);
+    }
+
     public List<TResult> Select<TResult>(Func<TFrom, TJoin, TResult> mapper)
     {
         var both = SelectBoth();
@@ -285,6 +317,34 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     public async Task<List<(TFrom From, TJoin Joined)>> SelectBothAsync(CancellationToken cancellationToken = default)
     {
         return await Task.Run(() => SelectBoth(), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<List<(T1, T2)>> SelectAsync<T1, T2>(CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    {
+        // Validate types match at runtime
+        if (typeof(T1) != typeof(TFrom))
+            throw new ArgumentException($"T1 must be {typeof(TFrom).Name}, got {typeof(T1).Name}", nameof(T1));
+        if (typeof(T2) != typeof(TJoin))
+            throw new ArgumentException($"T2 must be {typeof(TJoin).Name}, got {typeof(T2).Name}", nameof(T2));
+
+        var result = await SelectBothAsync(cancellationToken).ConfigureAwait(false);
+        return Unsafe.As<List<(TFrom, TJoin)>, List<(T1, T2)>>(ref result);
+    }
+
+    public async Task<List<TTuple>> SelectTupleAsync<TTuple>(CancellationToken cancellationToken = default) where TTuple : struct
+    {
+        var tupleType = typeof(TTuple);
+
+        // Validate it's a 2-element ValueTuple
+        if (!tupleType.IsGenericType || tupleType.GetGenericTypeDefinition() != typeof(ValueTuple<,>))
+            throw new ArgumentException($"TTuple must be ValueTuple<{typeof(TFrom).Name}, {typeof(TJoin).Name}>", nameof(TTuple));
+
+        var typeArgs = tupleType.GetGenericArguments();
+        if (typeArgs[0] != typeof(TFrom) || typeArgs[1] != typeof(TJoin))
+            throw new ArgumentException($"Expected ({typeof(TFrom).Name}, {typeof(TJoin).Name}), got ({typeArgs[0].Name}, {typeArgs[1].Name})", nameof(TTuple));
+
+        var result = await SelectBothAsync(cancellationToken).ConfigureAwait(false);
+        return Unsafe.As<List<(TFrom, TJoin)>, List<TTuple>>(ref result);
     }
 
     public async Task<List<TResult>> SelectAsync<TResult>(Func<TFrom, TJoin, TResult> mapper, CancellationToken cancellationToken = default)
