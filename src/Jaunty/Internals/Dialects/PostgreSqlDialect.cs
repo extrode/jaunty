@@ -155,4 +155,42 @@ internal sealed class PostgreSqlDialect : ISqlDialect
 
         return sb.ToString();
     }
+
+    // Window functions - PostgreSQL supports standard SQL:2003 window functions
+    public string GenerateRowNumber() => "ROW_NUMBER()";
+    public string GenerateRank() => "RANK()";
+    public string GenerateDenseRank() => "DENSE_RANK()";
+    public string GenerateNTile(int buckets) => $"NTILE({buckets})";
+
+    public string GenerateOverClause(string[]? partitionBy, (string column, bool descending)[]? orderBy)
+    {
+        var sb = new System.Text.StringBuilder(64);
+        sb.Append(" OVER (");
+
+        if (partitionBy is { Length: > 0 })
+        {
+            sb.Append("PARTITION BY ");
+            sb.Append(string.Join(", ", partitionBy));
+        }
+
+        if (orderBy is { Length: > 0 })
+        {
+            if (partitionBy is { Length: > 0 }) sb.Append(' ');
+            sb.Append("ORDER BY ");
+            for (int i = 0; i < orderBy.Length; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                sb.Append(orderBy[i].column);
+                if (orderBy[i].descending) sb.Append(" DESC");
+            }
+        }
+
+        sb.Append(')');
+        return sb.ToString();
+    }
+
+    public string GenerateWindowAggregate(string function, string? expression)
+    {
+        return expression is null ? $"{function}(*)" : $"{function}({expression})";
+    }
 }

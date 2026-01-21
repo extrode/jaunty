@@ -1046,6 +1046,13 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return BuildSelectSql(columnNames);
     }
 
+    public string ToSql<TResult>(Expression<Func<T, TResult>> selector)
+    {
+        var visitor = new SelectExpressionVisitor<T>(_dialect);
+        var selectColumns = visitor.Translate(selector);
+        return BuildSelectSqlWithProjection(selectColumns);
+    }
+
     #endregion
 
     #region Set operations (UNION, UNION ALL, EXCEPT, INTERSECT)
@@ -1091,6 +1098,72 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         {
             if (i > 0) sb.Append(", ");
             sb.Append(_dialect.EscapeColumnName(columns[i]));
+        }
+
+        // FROM
+        sb.Append(" FROM ");
+        sb.Append(_cache.EscapedTableName);
+
+        // WHERE
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+            for (int i = 0; i < _conditions.Count; i++)
+            {
+                var condition = _conditions[i];
+                if (i > 0)
+                {
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                }
+                sb.Append(condition.Sql);
+            }
+        }
+
+        // ORDER BY
+        if (_orderByColumns.Count > 0)
+        {
+            sb.Append(" ORDER BY ");
+            for (int i = 0; i < _orderByColumns.Count; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                var orderBy = _orderByColumns[i];
+                sb.Append(_dialect.EscapeColumnName(orderBy.ColumnName));
+                if (orderBy.Descending)
+                    sb.Append(" DESC");
+            }
+        }
+
+        // LIMIT/OFFSET - use dialect's paging
+        if (_skip.HasValue || _take.HasValue)
+        {
+            var baseSql = sb.ToString();
+            return _dialect.GetPagingSql(baseSql, _skip ?? 0, _take ?? int.MaxValue);
+        }
+
+        return sb.ToString();
+    }
+
+    private string BuildSelectSqlWithProjection(List<SelectColumn> columns)
+    {
+        var sb = new StringBuilder(256);
+        sb.Append("SELECT ");
+
+        if (_distinct)
+            sb.Append("DISTINCT ");
+
+        // Columns with aliases
+        for (int i = 0; i < columns.Count; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            var col = columns[i];
+            sb.Append(col.Sql);
+            // Add alias if SQL doesn't match alias (i.e., not just a column reference)
+            if (!col.Sql.Equals(_dialect.EscapeColumnName(col.Alias), StringComparison.OrdinalIgnoreCase) &&
+                !col.Sql.Equals(col.Alias, StringComparison.OrdinalIgnoreCase))
+            {
+                sb.Append(" AS ");
+                sb.Append(col.Alias);
+            }
         }
 
         // FROM

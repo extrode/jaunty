@@ -232,4 +232,49 @@ internal interface ISqlDialect
         string[] updateColumns,
         string[] updateParams,
         string[] keyColumns);
+
+    // ==========================================
+    // Window Functions
+    // ==========================================
+
+    /// <summary>
+    /// Generates SQL for ROW_NUMBER() window function.
+    /// </summary>
+    /// <returns>ROW_NUMBER() SQL fragment.</returns>
+    string GenerateRowNumber();
+
+    /// <summary>
+    /// Generates SQL for RANK() window function.
+    /// </summary>
+    /// <returns>RANK() SQL fragment.</returns>
+    string GenerateRank();
+
+    /// <summary>
+    /// Generates SQL for DENSE_RANK() window function.
+    /// </summary>
+    /// <returns>DENSE_RANK() SQL fragment.</returns>
+    string GenerateDenseRank();
+
+    /// <summary>
+    /// Generates SQL for NTILE(n) window function.
+    /// </summary>
+    /// <param name="buckets">The number of buckets to distribute rows into.</param>
+    /// <returns>NTILE(n) SQL fragment.</returns>
+    string GenerateNTile(int buckets);
+
+    /// <summary>
+    /// Generates the OVER clause for a window function.
+    /// </summary>
+    /// <param name="partitionBy">Columns for PARTITION BY (null if none).</param>
+    /// <param name="orderBy">Columns for ORDER BY with direction (null if none).</param>
+    /// <returns>OVER(...) SQL fragment.</returns>
+    string GenerateOverClause(string[]? partitionBy, (string column, bool descending)[]? orderBy);
+
+    /// <summary>
+    /// Generates SQL for a windowed aggregate function (SUM, AVG, COUNT, MIN, MAX with OVER).
+    /// </summary>
+    /// <param name="function">The aggregate function name (SUM, AVG, COUNT, MIN, MAX).</param>
+    /// <param name="expression">The expression to aggregate (null for COUNT(*)).</param>
+    /// <returns>Aggregate function SQL fragment.</returns>
+    string GenerateWindowAggregate(string function, string? expression);
 }

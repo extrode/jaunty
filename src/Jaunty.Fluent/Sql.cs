@@ -9,7 +9,7 @@ namespace Jaunty.Fluent;
 /// markers that are detected and translated by expression visitors during SQL generation.
 /// Using these methods outside of Jaunty expressions will throw exceptions.
 /// </remarks>
-public static class Sql
+public static partial class Sql
 {
     /// <summary>
     /// Returns the first non-null value from the provided arguments.
@@ -356,6 +356,277 @@ public sealed class CaseBuilder<TResult>
     {
         throw new InvalidOperationException(
             "CaseBuilder.End is a marker method for SQL generation and cannot be called directly. " +
+            "Use it only within Jaunty fluent query expressions.");
+    }
+}
+
+// ==========================================
+// Window Functions (partial class extension)
+// ==========================================
+
+public static partial class Sql
+{
+    // ==========================================
+    // Window Ranking Functions
+    // ==========================================
+
+    /// <summary>
+    /// Returns a sequential row number starting from 1 within a partition.
+    /// Use with .PartitionBy() and .OrderBy() to define the window.
+    /// Translates to SQL ROW_NUMBER() OVER(...) function.
+    /// </summary>
+    /// <returns>A WindowBuilder for chaining PARTITION BY and ORDER BY clauses.</returns>
+    /// <example>
+    /// <code>
+    /// // Number products within each category by price
+    /// var ranked = db.From&lt;Product&gt;()
+    ///     .Select(p => new {
+    ///         p.ProductName,
+    ///         p.CategoryId,
+    ///         RowNum = Sql.RowNumber()
+    ///             .PartitionBy(p.CategoryId)
+    ///             .OrderBy(p.UnitPrice)
+    ///     });
+    ///
+    /// // SQL: SELECT product_name, category_id,
+    /// //      ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY unit_price) AS RowNum
+    /// //      FROM products
+    /// </code>
+    /// </example>
+    public static WindowBuilder<long> RowNumber()
+    {
+        throw new InvalidOperationException(
+            "Sql.RowNumber is a marker method for SQL generation and cannot be called directly. " +
+            "Use it only within Jaunty fluent query expressions.");
+    }
+
+    /// <summary>
+    /// Returns the rank of a row within a partition, with gaps for ties.
+    /// Use with .PartitionBy() and .OrderBy() to define the window.
+    /// Translates to SQL RANK() OVER(...) function.
+    /// </summary>
+    /// <returns>A WindowBuilder for chaining PARTITION BY and ORDER BY clauses.</returns>
+    /// <example>
+    /// <code>
+    /// // Rank products by price (ties get same rank, next rank is skipped)
+    /// var ranked = db.From&lt;Product&gt;()
+    ///     .Select(p => new {
+    ///         p.ProductName,
+    ///         Rank = Sql.Rank().OrderBy(p.UnitPrice)
+    ///     });
+    ///
+    /// // SQL: SELECT product_name,
+    /// //      RANK() OVER (ORDER BY unit_price) AS Rank
+    /// //      FROM products
+    /// </code>
+    /// </example>
+    public static WindowBuilder<long> Rank()
+    {
+        throw new InvalidOperationException(
+            "Sql.Rank is a marker method for SQL generation and cannot be called directly. " +
+            "Use it only within Jaunty fluent query expressions.");
+    }
+
+    /// <summary>
+    /// Returns the rank of a row within a partition, without gaps for ties.
+    /// Use with .PartitionBy() and .OrderBy() to define the window.
+    /// Translates to SQL DENSE_RANK() OVER(...) function.
+    /// </summary>
+    /// <returns>A WindowBuilder for chaining PARTITION BY and ORDER BY clauses.</returns>
+    /// <example>
+    /// <code>
+    /// // Dense rank products by price (ties get same rank, no gaps)
+    /// var ranked = db.From&lt;Product&gt;()
+    ///     .Select(p => new {
+    ///         p.ProductName,
+    ///         DenseRank = Sql.DenseRank().OrderByDesc(p.UnitPrice)
+    ///     });
+    ///
+    /// // SQL: SELECT product_name,
+    /// //      DENSE_RANK() OVER (ORDER BY unit_price DESC) AS DenseRank
+    /// //      FROM products
+    /// </code>
+    /// </example>
+    public static WindowBuilder<long> DenseRank()
+    {
+        throw new InvalidOperationException(
+            "Sql.DenseRank is a marker method for SQL generation and cannot be called directly. " +
+            "Use it only within Jaunty fluent query expressions.");
+    }
+
+    /// <summary>
+    /// Distributes rows into a specified number of groups (buckets).
+    /// Use with .PartitionBy() and .OrderBy() to define the window.
+    /// Translates to SQL NTILE(n) OVER(...) function.
+    /// </summary>
+    /// <param name="buckets">The number of groups to distribute rows into.</param>
+    /// <returns>A WindowBuilder for chaining PARTITION BY and ORDER BY clauses.</returns>
+    /// <example>
+    /// <code>
+    /// // Divide products into 4 quartiles by price
+    /// var quartiles = db.From&lt;Product&gt;()
+    ///     .Select(p => new {
+    ///         p.ProductName,
+    ///         Quartile = Sql.NTile(4).OrderBy(p.UnitPrice)
+    ///     });
+    ///
+    /// // SQL: SELECT product_name,
+    /// //      NTILE(4) OVER (ORDER BY unit_price) AS Quartile
+    /// //      FROM products
+    /// </code>
+    /// </example>
+    public static WindowBuilder<long> NTile(int buckets)
+    {
+        throw new InvalidOperationException(
+            "Sql.NTile is a marker method for SQL generation and cannot be called directly. " +
+            "Use it only within Jaunty fluent query expressions.");
+    }
+
+    // ==========================================
+    // Window Aggregate Functions
+    // ==========================================
+
+    /// <summary>
+    /// Creates a windowed SUM aggregate that can be used with OVER clause.
+    /// Use .Over() to convert to a window function with PARTITION BY and ORDER BY.
+    /// </summary>
+    /// <typeparam name="T">The numeric type to sum.</typeparam>
+    /// <param name="column">The column to sum.</param>
+    /// <returns>A WindowAggregateBuilder for chaining .Over() clause.</returns>
+    /// <example>
+    /// <code>
+    /// // Running total of freight by order date
+    /// var running = db.From&lt;Order&gt;()
+    ///     .Select(o => new {
+    ///         o.OrderDate,
+    ///         o.Freight,
+    ///         RunningTotal = Sql.Sum(o.Freight).Over().OrderBy(o.OrderDate)
+    ///     });
+    ///
+    /// // SQL: SELECT order_date, freight,
+    /// //      SUM(freight) OVER (ORDER BY order_date) AS RunningTotal
+    /// //      FROM orders
+    /// </code>
+    /// </example>
+    public static WindowAggregateBuilder<T> Sum<T>(T column)
+    {
+        throw new InvalidOperationException(
+            "Sql.Sum is a marker method for SQL generation and cannot be called directly. " +
+            "Use it only within Jaunty fluent query expressions.");
+    }
+
+    /// <summary>
+    /// Creates a windowed AVG aggregate that can be used with OVER clause.
+    /// Use .Over() to convert to a window function with PARTITION BY and ORDER BY.
+    /// </summary>
+    /// <typeparam name="T">The numeric type to average.</typeparam>
+    /// <param name="column">The column to average.</param>
+    /// <returns>A WindowAggregateBuilder for chaining .Over() clause.</returns>
+    /// <example>
+    /// <code>
+    /// // Moving average of freight within each category
+    /// var moving = db.From&lt;Order&gt;()
+    ///     .Select(o => new {
+    ///         o.OrderDate,
+    ///         MovingAvg = Sql.Avg(o.Freight).Over()
+    ///             .PartitionBy(o.ShipCountry)
+    ///             .OrderBy(o.OrderDate)
+    ///     });
+    ///
+    /// // SQL: SELECT order_date,
+    /// //      AVG(freight) OVER (PARTITION BY ship_country ORDER BY order_date) AS MovingAvg
+    /// //      FROM orders
+    /// </code>
+    /// </example>
+    public static WindowAggregateBuilder<T> Avg<T>(T column)
+    {
+        throw new InvalidOperationException(
+            "Sql.Avg is a marker method for SQL generation and cannot be called directly. " +
+            "Use it only within Jaunty fluent query expressions.");
+    }
+
+    /// <summary>
+    /// Creates a windowed COUNT aggregate that can be used with OVER clause.
+    /// Use .Over() to convert to a window function with PARTITION BY and ORDER BY.
+    /// </summary>
+    /// <returns>A WindowAggregateBuilder for chaining .Over() clause.</returns>
+    /// <example>
+    /// <code>
+    /// // Count of orders per customer
+    /// var counts = db.From&lt;Order&gt;()
+    ///     .Select(o => new {
+    ///         o.OrderId,
+    ///         o.CustomerId,
+    ///         CustomerOrderCount = Sql.Count().Over().PartitionBy(o.CustomerId)
+    ///     });
+    ///
+    /// // SQL: SELECT order_id, customer_id,
+    /// //      COUNT(*) OVER (PARTITION BY customer_id) AS CustomerOrderCount
+    /// //      FROM orders
+    /// </code>
+    /// </example>
+    public static WindowAggregateBuilder<long> Count()
+    {
+        throw new InvalidOperationException(
+            "Sql.Count is a marker method for SQL generation and cannot be called directly. " +
+            "Use it only within Jaunty fluent query expressions.");
+    }
+
+    /// <summary>
+    /// Creates a windowed MIN aggregate that can be used with OVER clause.
+    /// Use .Over() to convert to a window function with PARTITION BY and ORDER BY.
+    /// </summary>
+    /// <typeparam name="T">The type of the column.</typeparam>
+    /// <param name="column">The column to find minimum of.</param>
+    /// <returns>A WindowAggregateBuilder for chaining .Over() clause.</returns>
+    /// <example>
+    /// <code>
+    /// // Minimum price in each category
+    /// var mins = db.From&lt;Product&gt;()
+    ///     .Select(p => new {
+    ///         p.ProductName,
+    ///         p.UnitPrice,
+    ///         CategoryMinPrice = Sql.Min(p.UnitPrice).Over().PartitionBy(p.CategoryId)
+    ///     });
+    ///
+    /// // SQL: SELECT product_name, unit_price,
+    /// //      MIN(unit_price) OVER (PARTITION BY category_id) AS CategoryMinPrice
+    /// //      FROM products
+    /// </code>
+    /// </example>
+    public static WindowAggregateBuilder<T> Min<T>(T column)
+    {
+        throw new InvalidOperationException(
+            "Sql.Min is a marker method for SQL generation and cannot be called directly. " +
+            "Use it only within Jaunty fluent query expressions.");
+    }
+
+    /// <summary>
+    /// Creates a windowed MAX aggregate that can be used with OVER clause.
+    /// Use .Over() to convert to a window function with PARTITION BY and ORDER BY.
+    /// </summary>
+    /// <typeparam name="T">The type of the column.</typeparam>
+    /// <param name="column">The column to find maximum of.</param>
+    /// <returns>A WindowAggregateBuilder for chaining .Over() clause.</returns>
+    /// <example>
+    /// <code>
+    /// // Maximum price in each category
+    /// var maxes = db.From&lt;Product&gt;()
+    ///     .Select(p => new {
+    ///         p.ProductName,
+    ///         p.UnitPrice,
+    ///         CategoryMaxPrice = Sql.Max(p.UnitPrice).Over().PartitionBy(p.CategoryId)
+    ///     });
+    ///
+    /// // SQL: SELECT product_name, unit_price,
+    /// //      MAX(unit_price) OVER (PARTITION BY category_id) AS CategoryMaxPrice
+    /// //      FROM products
+    /// </code>
+    /// </example>
+    public static WindowAggregateBuilder<T> Max<T>(T column)
+    {
+        throw new InvalidOperationException(
+            "Sql.Max is a marker method for SQL generation and cannot be called directly. " +
             "Use it only within Jaunty fluent query expressions.");
     }
 }
