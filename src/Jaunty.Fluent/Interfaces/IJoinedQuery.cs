@@ -90,6 +90,20 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     List<(TFrom From, TJoin Joined)> SelectBoth();
 
     /// <summary>
+    /// Executes the query and returns both entities as tuples.
+    /// Alias for SelectBoth() with explicit type parameters for readability.
+    /// </summary>
+    /// <typeparam name="T1">Must be <typeparamref name="TFrom"/>.</typeparam>
+    /// <typeparam name="T2">Must be <typeparamref name="TJoin"/>.</typeparam>
+    List<(T1, T2)> Select<T1, T2>() where T1 : new() where T2 : new();
+
+    /// <summary>
+    /// Executes the query and returns both entities using tuple syntax.
+    /// </summary>
+    /// <typeparam name="TTuple">Must be <c>ValueTuple&lt;TFrom, TJoin&gt;</c>.</typeparam>
+    List<TTuple> SelectTuple<TTuple>() where TTuple : struct;
+
+    /// <summary>
     /// Executes the query with a custom projection.
     /// </summary>
     List<TResult> Select<TResult>(Func<TFrom, TJoin, TResult> mapper);
@@ -135,6 +149,20 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     /// Executes the query asynchronously and returns both entities as tuples.
     /// </summary>
     Task<List<(TFrom From, TJoin Joined)>> SelectBothAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the query asynchronously and returns both entities as tuples.
+    /// Alias for SelectBothAsync() with explicit type parameters for readability.
+    /// </summary>
+    /// <typeparam name="T1">Must be <typeparamref name="TFrom"/>.</typeparam>
+    /// <typeparam name="T2">Must be <typeparamref name="TJoin"/>.</typeparam>
+    Task<List<(T1, T2)>> SelectAsync<T1, T2>(CancellationToken cancellationToken = default) where T1 : new() where T2 : new();
+
+    /// <summary>
+    /// Executes the query asynchronously and returns both entities using tuple syntax.
+    /// </summary>
+    /// <typeparam name="TTuple">Must be <c>ValueTuple&lt;TFrom, TJoin&gt;</c>.</typeparam>
+    Task<List<TTuple>> SelectTupleAsync<TTuple>(CancellationToken cancellationToken = default) where TTuple : struct;
 
     /// <summary>
     /// Executes the query asynchronously with a custom projection.
