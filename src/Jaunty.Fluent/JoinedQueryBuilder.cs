@@ -358,6 +358,36 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return results;
     }
 
+    public async Task<List<TJoin>> SelectJoinedAsync(CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectJoined(), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<TFrom> SelectFirstAsync(CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectFirst(), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<TFrom?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectFirstOrDefault(), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<(TFrom From, TJoin Joined)> SelectFirstBothAsync(CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectFirstBoth(), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<int> CountAsync(CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => Count(), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<long> LongCountAsync(CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => LongCount(), cancellationToken).ConfigureAwait(false);
+    }
+
     #endregion
 
     #region Internal

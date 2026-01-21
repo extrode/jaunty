@@ -168,6 +168,36 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     /// Executes the query asynchronously with a custom projection.
     /// </summary>
     Task<List<TResult>> SelectAsync<TResult>(Func<TFrom, TJoin, TResult> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the query asynchronously and returns the joined entity.
+    /// </summary>
+    Task<List<TJoin>> SelectJoinedAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result asynchronously or throws if empty.
+    /// </summary>
+    Task<TFrom> SelectFirstAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result asynchronously or default if empty.
+    /// </summary>
+    Task<TFrom?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result as a tuple asynchronously or throws if empty.
+    /// </summary>
+    Task<(TFrom From, TJoin Joined)> SelectFirstBothAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the count of rows asynchronously.
+    /// </summary>
+    Task<int> CountAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the count of rows as long asynchronously.
+    /// </summary>
+    Task<long> LongCountAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

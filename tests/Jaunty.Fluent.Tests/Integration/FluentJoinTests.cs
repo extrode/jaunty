@@ -329,4 +329,90 @@ public class FluentJoinTests : IDisposable
 
         results.Should().NotBeEmpty();
     }
+
+    // ==========================================
+    // Async Variants Tests
+    // ==========================================
+
+    [Fact]
+    public async Task InnerJoin_SelectJoinedAsync_ReturnsCategories()
+    {
+        var categories = await _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectJoinedAsync();
+
+        categories.Should().NotBeEmpty();
+        categories.First().CategoryName.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectFirstAsync_ReturnsFirstProduct()
+    {
+        var product = await _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectFirstAsync();
+
+        product.Should().NotBeNull();
+        product.ProductName.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectFirstOrDefaultAsync_ReturnsFirstOrNull()
+    {
+        var product = await _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectFirstOrDefaultAsync();
+
+        product.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectFirstOrDefaultAsync_NoResults_ReturnsNull()
+    {
+        var product = await _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == -999) // Non-existent
+            .SelectFirstOrDefaultAsync();
+
+        product.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectFirstBothAsync_ReturnsTuple()
+    {
+        var result = await _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectFirstBothAsync();
+
+        result.From.ProductName.Should().NotBeNullOrEmpty();
+        result.Joined.CategoryName.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task InnerJoin_LongCountAsync_ReturnsCorrectCount()
+    {
+        var count = await _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .LongCountAsync();
+
+        count.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task InnerJoin_LongCountAsync_WithWhere_FiltersResults()
+    {
+        var count = await _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => c.CategoryId == 1)
+            .LongCountAsync();
+
+        count.Should().BeGreaterThan(0);
+    }
 }
