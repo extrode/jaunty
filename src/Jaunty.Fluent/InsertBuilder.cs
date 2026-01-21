@@ -19,6 +19,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
     private readonly IDbConnection _connection;
     private readonly ISqlDialect _dialect;
     private readonly EntityMetadata _metadata;
+    private readonly CachedDialectMetadata _cache;
     private readonly List<InsertColumn> _columns = new();
     private readonly ParameterCollection _parameters = new();
 
@@ -27,6 +28,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         _connection = connection;
         _dialect = SqlDialectFactory.GetDialect(connection);
         _metadata = MetadataCache<T>.Metadata;
+        _cache = FluentMetadataCache<T>.GetForDialect(_dialect);
     }
 
     #region IIntoClause implementation
@@ -127,7 +129,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
     {
         var sb = new StringBuilder(256);
         sb.Append("INSERT INTO ");
-        sb.Append(_dialect.EscapeTableName(_metadata.SchemaName, _metadata.TableName));
+        sb.Append(_cache.EscapedTableName);
         sb.Append(" (");
 
         for (int i = 0; i < _columns.Count; i++)
@@ -222,16 +224,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         return primaryKeys.Count == 1 && primaryKeys[0].IsIdentity;
     }
 
-    private string GetColumnNameFromProperty(string propertyName)
-    {
-        var columns = _metadata.Columns;
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].Property.Name == propertyName)
-                return columns[i].ColumnName;
-        }
-        return propertyName;
-    }
+    private string GetColumnNameFromProperty(string propertyName) => _cache.GetColumnName(propertyName);
 
     private ColumnMetadata? GetColumnMetadata(string propertyName)
     {

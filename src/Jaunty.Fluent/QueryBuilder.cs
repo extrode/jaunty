@@ -21,6 +21,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     private readonly IDbConnection _connection;
     private readonly ISqlDialect _dialect;
     private readonly EntityMetadata _metadata;
+    private readonly CachedDialectMetadata _cache;
     private readonly string? _alias;
     private readonly List<WhereCondition> _conditions = new();
     private readonly List<OrderByColumn> _orderByColumns = new();
@@ -35,6 +36,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _connection = connection;
         _dialect = SqlDialectFactory.GetDialect(connection);
         _metadata = MetadataCache<T>.Metadata;
+        _cache = FluentMetadataCache<T>.GetForDialect(_dialect);
         _alias = alias;
     }
 
@@ -49,14 +51,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     /// </summary>
     internal ParameterCollection GetParameters() => _parameters.Clone();
 
-    private string[] GetAllColumnNames()
-    {
-        var columns = _metadata.Columns;
-        var names = new string[columns.Count];
-        for (int i = 0; i < columns.Count; i++)
-            names[i] = columns[i].ColumnName;
-        return names;
-    }
+    private string[] GetAllColumnNames() => _cache.ColumnNames;
 
     private string[] ResolveColumns(Expression<Func<T, object?>>[] expressions)
     {
@@ -1100,7 +1095,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         // FROM
         sb.Append(" FROM ");
-        sb.Append(_dialect.EscapeTableName(_metadata.SchemaName, _metadata.TableName));
+        sb.Append(_cache.EscapedTableName);
 
         // WHERE
         if (_conditions.Count > 0)
@@ -1148,7 +1143,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         // FROM
         sb.Append(" FROM ");
-        sb.Append(_dialect.EscapeTableName(_metadata.SchemaName, _metadata.TableName));
+        sb.Append(_cache.EscapedTableName);
 
         // WHERE
         if (_conditions.Count > 0)
@@ -1179,7 +1174,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         // FROM
         sb.Append(" FROM ");
-        sb.Append(_dialect.EscapeTableName(_metadata.SchemaName, _metadata.TableName));
+        sb.Append(_cache.EscapedTableName);
 
         // WHERE
         if (_conditions.Count > 0)
@@ -1218,16 +1213,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return (TResult)converted;
     }
 
-    private string GetColumnNameFromProperty(string propertyName)
-    {
-        var columns = _metadata.Columns;
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].Property.Name == propertyName)
-                return columns[i].ColumnName;
-        }
-        return propertyName;
-    }
+    private string GetColumnNameFromProperty(string propertyName) => _cache.GetColumnName(propertyName);
 
     private string GetUniqueParamName(string baseName)
     {
@@ -1439,7 +1425,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var sb = new StringBuilder(128);
         sb.Append("DELETE FROM ");
-        sb.Append(_dialect.EscapeTableName(_metadata.SchemaName, _metadata.TableName));
+        sb.Append(_cache.EscapedTableName);
 
         if (_conditions.Count > 0)
         {
@@ -1831,7 +1817,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var sb = new StringBuilder(256);
         sb.Append("UPDATE ");
-        sb.Append(_dialect.EscapeTableName(_metadata.SchemaName, _metadata.TableName));
+        sb.Append(_cache.EscapedTableName);
 
         sb.Append(" SET ");
         for (int i = 0; i < _setColumns.Count; i++)
