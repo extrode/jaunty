@@ -129,6 +129,47 @@ public interface IFromClause<T> : IQueryTerminal<T> where T : new()
     /// </example>
     IGroupedQuery<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector);
 
+    // DELETE operation
+    /// <summary>
+    /// Deletes all rows from the table. Use with caution - requires explicit call without WHERE.
+    /// For safety, prefer using Where() before Delete().
+    /// </summary>
+    /// <returns>Number of rows affected.</returns>
+    int DeleteAll();
+
+    /// <summary>
+    /// Asynchronously deletes all rows from the table.
+    /// </summary>
+    Task<int> DeleteAllAsync(CancellationToken cancellationToken = default);
+
+    // UPDATE SET operations
+    /// <summary>
+    /// Begins an UPDATE statement by setting a column to a value.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the column value.</typeparam>
+    /// <param name="selector">Expression selecting the column to update.</param>
+    /// <param name="value">The new value for the column.</param>
+    /// <example>
+    /// <code>
+    /// db.From&lt;Product&gt;()
+    ///   .Set(p =&gt; p.UnitPrice, 15.00m)
+    ///   .Set(p =&gt; p.Discontinued, true)
+    ///   .Where(p =&gt; p.CategoryId == 1)
+    ///   .Update();
+    /// </code>
+    /// </example>
+    ISetClause<T> Set<TValue>(Expression<Func<T, TValue>> selector, TValue value);
+
+    /// <summary>
+    /// Begins an UPDATE statement by setting a column to a value using column name.
+    /// </summary>
+    ISetClause<T> Set(string column, object? value);
+
+    /// <summary>
+    /// Begins an UPDATE statement by setting multiple columns from an anonymous object.
+    /// </summary>
+    ISetClause<T> Set(object values);
+
     // SUBQUERY support
     /// <summary>
     /// Filters results where the column value is in the result of a subquery.

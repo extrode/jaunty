@@ -85,6 +85,18 @@ public interface IWhereClause<T> : IQueryTerminal<T> where T : new()
     /// </summary>
     IWhereClause<T> OrNotExists<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate) where TSubquery : new();
 
+    // DELETE operation
+    /// <summary>
+    /// Deletes rows matching the WHERE conditions.
+    /// </summary>
+    /// <returns>Number of rows affected.</returns>
+    int Delete();
+
+    /// <summary>
+    /// Asynchronously deletes rows matching the WHERE conditions.
+    /// </summary>
+    Task<int> DeleteAsync(CancellationToken cancellationToken = default);
+
     // ORDER BY - expression-based
     IOrderByClause<T> OrderBy(Expression<Func<T, object?>> keySelector);
     IOrderByClause<T> OrderByDescending(Expression<Func<T, object?>> keySelector);
