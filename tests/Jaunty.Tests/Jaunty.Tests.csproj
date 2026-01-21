@@ -43,4 +43,10 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Integration\Maria\" />
+    <Folder Include="Integration\Postgres\" />
+    <Folder Include="Integration\SqlServer\" />
+  </ItemGroup>
+
 </Project>
