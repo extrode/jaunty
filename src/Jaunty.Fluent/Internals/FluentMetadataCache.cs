@@ -54,12 +54,7 @@ internal static class FluentMetadataCache<T> where T : new()
             propertyToEscapedColumn[col.Property.Name] = escapedColumnNames[i];
         }
 
-        return new CachedDialectMetadata(
-            escapedTableName,
-            columnNames,
-            escapedColumnNames,
-            propertyToColumn,
-            propertyToEscapedColumn);
+        return new CachedDialectMetadata(escapedTableName, columnNames, escapedColumnNames, propertyToColumn, propertyToEscapedColumn);
     }
 }
 
@@ -74,12 +69,7 @@ internal sealed class CachedDialectMetadata
     private readonly Dictionary<string, string> _propertyToColumn;
     private readonly Dictionary<string, string> _propertyToEscapedColumn;
 
-    public CachedDialectMetadata(
-        string escapedTableName,
-        string[] columnNames,
-        string[] escapedColumnNames,
-        Dictionary<string, string> propertyToColumn,
-        Dictionary<string, string> propertyToEscapedColumn)
+    public CachedDialectMetadata(string escapedTableName, string[] columnNames, string[] escapedColumnNames, Dictionary<string, string> propertyToColumn, Dictionary<string, string> propertyToEscapedColumn)
     {
         EscapedTableName = escapedTableName;
         ColumnNames = columnNames;
