@@ -72,7 +72,7 @@ public class UpsertTests : IDisposable
         inserted!.CategoryName.Should().Be("UpsertTest");
 
         // Cleanup
-        ExecuteSql("DELETE FROM categories WHERE category_id = @id", new { id = newId });
+        _db.Connection.Delete<Category>(newId);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public class UpsertTests : IDisposable
         updated.Description.Should().Be("Updated description");
 
         // Cleanup
-        ExecuteSql("DELETE FROM categories WHERE category_id = @id", new { id = testId });
+        _db.Connection.Delete<Category>(testId);
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class UpsertTests : IDisposable
         inserted!.CategoryName.Should().Be("AsyncUpsertTest");
 
         // Cleanup
-        ExecuteSql("DELETE FROM categories WHERE category_id = @id", new { id = newId });
+        _db.Connection.Delete<Category>(newId);
     }
 
     [Fact]
@@ -167,6 +167,6 @@ public class UpsertTests : IDisposable
         updated!.CategoryName.Should().Be("AsyncUpdated");
 
         // Cleanup
-        ExecuteSql("DELETE FROM categories WHERE category_id = @id", new { id = testId });
+        _db.Connection.Delete<Category>(testId);
     }
 }

@@ -18,7 +18,7 @@ internal static class CrudSqlCache
     /// <summary>
     /// Gets or creates cached SQL for the specified entity type and connection.
     /// </summary>
-    public static CachedCrudSql GetSql<T>(IDbConnection connection) where T : class, new()
+    public static CachedCrudSql GetSql<T>(IDbConnection connection)
     {
         ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
         Type dialectType = dialect.GetType();
@@ -32,7 +32,7 @@ internal static class CrudSqlCache
         return cached;
     }
 
-    private static CachedCrudSql BuildCachedSql<T>(ISqlDialect dialect) where T : class, new()
+    private static CachedCrudSql BuildCachedSql<T>(ISqlDialect dialect)
     {
         EntityMetadata metadata = MetadataCache<T>.Metadata;
         string escapedTableName = dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
@@ -44,15 +44,7 @@ internal static class CrudSqlCache
         string upsertSql = dialect.SupportsUpsert ? BuildUpsertSql(metadata, dialect, escapedTableName) : string.Empty;
         string lastInsertIdSql = dialect.GetLastInsertIdSql();
 
-        return new CachedCrudSql(
-            insertSql,
-            updateSql,
-            deleteSql,
-            deleteByIdSql,
-            upsertSql,
-            lastInsertIdSql,
-            metadata,
-            dialect.SupportsUpsert);
+        return new CachedCrudSql(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, metadata, dialect.SupportsUpsert);
     }
 
     private static string BuildInsertSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)

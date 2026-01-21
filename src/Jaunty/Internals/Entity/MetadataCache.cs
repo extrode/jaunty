@@ -8,7 +8,7 @@ using System.Collections.Frozen;
 using Jaunty.Internals.Enums;
 namespace Jaunty.Internals.Entity;
 
-internal static class MetadataCache<T> where T : new()
+internal static class MetadataCache<T>
 {
     public static readonly EntityMetadata Metadata;
     private static readonly PropertyContext<T>[] Properties;

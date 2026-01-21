@@ -1,4 +1,4 @@
-﻿using Jaunty.Internals.Entity;
+using Jaunty.Internals.Entity;
 
 namespace Jaunty.Internals;
 
@@ -20,15 +20,7 @@ internal sealed class CachedCrudSql
     public bool HasSinglePrimaryKey { get; }
     public bool SupportsUpsert { get; }
 
-    public CachedCrudSql(
-        string insertSql,
-        string updateSql,
-        string deleteSql,
-        string deleteByIdSql,
-        string upsertSql,
-        string lastInsertIdSql,
-        EntityMetadata metadata,
-        bool supportsUpsert)
+    public CachedCrudSql(string insertSql, string updateSql, string deleteSql, string deleteByIdSql, string upsertSql, string lastInsertIdSql, EntityMetadata metadata, bool supportsUpsert)
     {
         InsertSql = insertSql;
         UpdateSql = updateSql;
