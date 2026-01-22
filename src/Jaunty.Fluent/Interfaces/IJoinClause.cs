@@ -19,9 +19,9 @@ public interface IJoinClause<TFrom, TJoin> where TFrom : new() where TJoin : new
     /// <returns>A joined query builder for further operations.</returns>
     /// <example>
     /// <code>
-    /// db.From<Product>()
-    ///     .InnerJoin<Category>()
-    ///     .On(p => p.CategoryId, c => c.Id)
+    /// db.From&lt;Product&gt;()
+    ///     .InnerJoin&lt;Category&gt;()
+    ///     .On(p =&gt; p.CategoryId, c =&gt; c.Id)
     ///     .Select();
     /// </code>
     /// </example>
@@ -34,13 +34,29 @@ public interface IJoinClause<TFrom, TJoin> where TFrom : new() where TJoin : new
     /// <returns>A joined query builder for further operations.</returns>
     /// <example>
     /// <code>
-    /// db.From<Product>()
-    ///     .InnerJoin<Category>()
-    ///     .On((p, c) => p.CategoryId == c.Id)
+    /// db.From&lt;Product&gt;()
+    ///     .InnerJoin&lt;Category&gt;()
+    ///     .On((p, c) =&gt; p.CategoryId == c.Id)
     ///     .Select();
     /// </code>
     /// </example>
     IJoinedQuery<TFrom, TJoin> On(Expression<Func<TFrom, TJoin, bool>> predicate);
+
+    /// <summary>
+    /// Specifies the join condition using column names (equality join).
+    /// </summary>
+    /// <param name="leftColumn">The left column (e.g., "p.category_id").</param>
+    /// <param name="rightColumn">The right column (e.g., "c.id").</param>
+    /// <returns>A joined query builder for further operations.</returns>
+    /// <example>
+    /// <code>
+    /// db.From&lt;Product&gt;("p")
+    ///     .InnerJoin&lt;Category&gt;("c")
+    ///     .On("p.category_id", "c.id")
+    ///     .Select();
+    /// </code>
+    /// </example>
+    IJoinedQuery<TFrom, TJoin> On(string leftColumn, string rightColumn);
 
     /// <summary>
     /// Specifies the join condition using a raw SQL condition.
@@ -49,8 +65,8 @@ public interface IJoinClause<TFrom, TJoin> where TFrom : new() where TJoin : new
     /// <returns>A joined query builder for further operations.</returns>
     /// <example>
     /// <code>
-    /// db.From<Product>("p")
-    ///     .InnerJoin<Category>("c")
+    /// db.From&lt;Product&gt;("p")
+    ///     .InnerJoin&lt;Category&gt;("c")
     ///     .On("p.category_id = c.id AND p.active = 1")
     ///     .Select();
     /// </code>
@@ -58,34 +74,19 @@ public interface IJoinClause<TFrom, TJoin> where TFrom : new() where TJoin : new
     IJoinedQuery<TFrom, TJoin> On(string condition);
 
     /// <summary>
-    /// Specifies the join condition using a raw SQL condition with parameters.
+    /// Specifies the join condition using a raw SQL condition with a typed parameter.
     /// </summary>
-    /// <param name="condition">The raw SQL join condition with parameter placeholders.</param>
-    /// <param name="parameters">An anonymous object containing parameter values.</param>
+    /// <typeparam name="TValue">The type of the parameter value.</typeparam>
+    /// <param name="condition">The raw SQL join condition with a @value placeholder.</param>
+    /// <param name="value">The parameter value.</param>
     /// <returns>A joined query builder for further operations.</returns>
     /// <example>
     /// <code>
-    /// db.From<Product>("p")
-    ///     .InnerJoin<Category>("c")
-    ///     .On("p.category_id = c.id AND p.active = @active", new { active = 1 })
+    /// db.From&lt;Product&gt;("p")
+    ///     .InnerJoin&lt;Category&gt;("c")
+    ///     .On&lt;int&gt;("p.category_id = c.id AND p.active = @value", 1)
     ///     .Select();
     /// </code>
     /// </example>
-    IJoinedQuery<TFrom, TJoin> On(string condition, object parameters);
-
-    /// <summary>
-    /// Specifies the join condition using column names (equality join).
-    /// </summary>
-    /// <param name="leftColumn">The left column (e.g., "p.category_id" or "products.category_id").</param>
-    /// <param name="rightColumn">The right column (e.g., "c.id" or "categories.id").</param>
-    /// <returns>A joined query builder for further operations.</returns>
-    /// <example>
-    /// <code>
-    /// db.From<Product>("p")
-    ///     .InnerJoin<Category>("c")
-    ///     .OnColumns("p.category_id", "c.id")
-    ///     .Select();
-    /// </code>
-    /// </example>
-    IJoinedQuery<TFrom, TJoin> OnColumns(string leftColumn, string rightColumn);
+    IJoinedQuery<TFrom, TJoin> On<TValue>(string condition, TValue value);
 }
