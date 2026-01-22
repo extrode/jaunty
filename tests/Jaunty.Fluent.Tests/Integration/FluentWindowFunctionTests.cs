@@ -90,14 +90,14 @@ public class FluentWindowFunctionTests : IDisposable
     }
 
     [Fact]
-    public void RowNumber_WithOrderByDesc_ToSql_GeneratesCorrectSyntax()
+    public void RowNumber_WithOrderByDescending_ToSql_GeneratesCorrectSyntax()
     {
         var sql = _db.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
                 p.UnitPrice,
-                RowNum = Sql.RowNumber().OrderByDesc(p.UnitPrice)
+                RowNum = Sql.RowNumber().OrderByDescending(p.UnitPrice)
             });
 
         sql.Should().Contain("ROW_NUMBER()");
@@ -154,7 +154,7 @@ public class FluentWindowFunctionTests : IDisposable
                 p.UnitPrice,
                 PriceRank = Sql.Rank()
                     .PartitionBy(p.CategoryId)
-                    .OrderByDesc(p.UnitPrice)
+                    .OrderByDescending(p.UnitPrice)
             });
 
         sql.Should().Contain("RANK()");
@@ -375,7 +375,7 @@ public class FluentWindowFunctionTests : IDisposable
                 p.CategoryId,
                 p.UnitPrice,
                 RowNum = Sql.RowNumber().PartitionBy(p.CategoryId).OrderBy(p.UnitPrice),
-                PriceRank = Sql.Rank().PartitionBy(p.CategoryId).OrderByDesc(p.UnitPrice)
+                PriceRank = Sql.Rank().PartitionBy(p.CategoryId).OrderByDescending(p.UnitPrice)
             });
 
         sql.Should().Contain("ROW_NUMBER()");

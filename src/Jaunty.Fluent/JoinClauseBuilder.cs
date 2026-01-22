@@ -9,9 +9,7 @@ namespace Jaunty.Fluent;
 /// <summary>
 /// Builder for the JOIN...ON clause. Implements IJoinClause.
 /// </summary>
-internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin>
-    where TFrom : new()
-    where TJoin : new()
+internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin> where TFrom : new() where TJoin : new()
 {
     private readonly QueryBuilder<TFrom> _fromBuilder;
     private readonly JoinType _joinType;
@@ -26,9 +24,7 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
         _joinMetadata = MetadataCache<TJoin>.Metadata;
     }
 
-    public IJoinedQuery<TFrom, TJoin> On<TLeftKey, TRightKey>(
-        Expression<Func<TFrom, TLeftKey>> leftKey,
-        Expression<Func<TJoin, TRightKey>> rightKey)
+    public IJoinedQuery<TFrom, TJoin> On<TLeftKey, TRightKey>(Expression<Func<TFrom, TLeftKey>> leftKey,         Expression<Func<TJoin, TRightKey>> rightKey)
     {
         var leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
         var rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
@@ -57,9 +53,16 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
         return CreateJoinedQuery(condition);
     }
 
-    public IJoinedQuery<TFrom, TJoin> OnRaw(string condition)
+    public IJoinedQuery<TFrom, TJoin> On(string condition)
     {
         return CreateJoinedQuery(condition);
+    }
+
+    public IJoinedQuery<TFrom, TJoin> On(string condition, object parameters)
+    {
+        var joinedQuery = CreateJoinedQuery(condition);
+        joinedQuery.AddParameters(parameters);
+        return joinedQuery;
     }
 
     private JoinedQueryBuilder<TFrom, TJoin> CreateJoinedQuery(string onCondition)

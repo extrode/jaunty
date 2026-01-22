@@ -239,7 +239,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
                     current = methodCall.Object;
                     break;
 
-                case "OrderByDesc":
+                case "OrderByDescending":
                     var orderDescCol = TranslateColumnArgument(methodCall.Arguments[0]);
                     orderBy.Insert(0, (orderDescCol, true));
                     current = methodCall.Object;
@@ -343,7 +343,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
                     current = methodCall.Object;
                     break;
 
-                case "OrderByDesc":
+                case "OrderByDescending":
                     var orderDescCol = TranslateColumnArgument(methodCall.Arguments[0]);
                     orderBy.Insert(0, (orderDescCol, true));
                     current = methodCall.Object;

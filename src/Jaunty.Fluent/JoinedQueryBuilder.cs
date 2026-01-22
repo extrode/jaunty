@@ -152,6 +152,38 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return this;
     }
 
+    public IJoinedQuery<TFrom, TJoin> ThenBy<TKey>(Expression<Func<TFrom, TKey>> keySelector)
+    {
+        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        var columnName = GetColumnName(_fromMetadata, propertyName, _fromAlias);
+        _orderByColumns.Add(new OrderByColumn(columnName, descending: false));
+        return this;
+    }
+
+    public IJoinedQuery<TFrom, TJoin> ThenByJoined<TKey>(Expression<Func<TJoin, TKey>> keySelector)
+    {
+        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        var columnName = GetColumnName(_joinMetadata, propertyName, _joins[0].Alias);
+        _orderByColumns.Add(new OrderByColumn(columnName, descending: false));
+        return this;
+    }
+
+    public IJoinedQuery<TFrom, TJoin> ThenByDescending<TKey>(Expression<Func<TFrom, TKey>> keySelector)
+    {
+        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        var columnName = GetColumnName(_fromMetadata, propertyName, _fromAlias);
+        _orderByColumns.Add(new OrderByColumn(columnName, descending: true));
+        return this;
+    }
+
+    public IJoinedQuery<TFrom, TJoin> ThenByJoinedDescending<TKey>(Expression<Func<TJoin, TKey>> keySelector)
+    {
+        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        var columnName = GetColumnName(_joinMetadata, propertyName, _joins[0].Alias);
+        _orderByColumns.Add(new OrderByColumn(columnName, descending: true));
+        return this;
+    }
+
     #endregion
 
     #region SELECT - Primary Entity
@@ -400,6 +432,19 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     internal List<JoinInfo> Joins => _joins;
 
     internal void AddJoin(JoinInfo join) => _joins.Add(join);
+
+    internal void AddParameters(object parameters)
+    {
+        if (parameters == null) return;
+
+        var props = parameters.GetType().GetProperties();
+        foreach (var prop in props)
+        {
+            var paramName = $"@{prop.Name}";
+            var value = prop.GetValue(parameters);
+            _parameters.Add(paramName, value);
+        }
+    }
 
     #endregion
 
