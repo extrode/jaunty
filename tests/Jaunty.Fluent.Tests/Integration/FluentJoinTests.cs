@@ -158,12 +158,31 @@ public class FluentJoinTests : IDisposable
     }
 
     [Fact]
-    public void InnerJoin_SelectWithMapper_ReturnsProjectedResults()
+    public void InnerJoin_SelectPartial_ReturnsDynamicResults()
     {
-        var results = _db.Connection.From<Product>()
-            .InnerJoin<Category>()
+        var results = _db.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
             .On(p => p.CategoryId, c => c.CategoryId)
-            .Select((p, c) => new { p.ProductName, c.CategoryName });
+            .SelectPartial("p.product_name, c.category_name");
+
+        results.Should().NotBeEmpty();
+        string productName = results.First().product_name;
+        string categoryName = results.First().category_name;
+        productName.Should().NotBeNullOrEmpty();
+        categoryName.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public void InnerJoin_SelectPartial_WithMapper_ReturnsTypedResults()
+    {
+        var results = _db.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectPartial("p.product_name, c.category_name", reader => new
+            {
+                ProductName = reader.GetString(0),
+                CategoryName = reader.GetString(1)
+            });
 
         results.Should().NotBeEmpty();
         results.First().ProductName.Should().NotBeNullOrEmpty();
