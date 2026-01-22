@@ -111,24 +111,32 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
 
     /// <summary>
     /// Executes the query and returns the specified entity type.
+    /// Uses IMapped&lt;T&gt; if implemented, otherwise maps columns to properties (strict mode - all properties must match).
     /// </summary>
-    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    /// <typeparam name="T">The entity type to map results to.</typeparam>
     /// <example>
     /// <code>
-    /// // Select only products (same as Select())
+    /// // Select products
     /// var products = db.From&lt;Product&gt;()
     ///     .InnerJoin&lt;Category&gt;()
     ///     .On(p =&gt; p.CategoryId, c =&gt; c.CategoryId)
     ///     .Select&lt;Product&gt;();
     ///
-    /// // Select only categories
-    /// var categories = db.From&lt;Product&gt;()
+    /// // Select custom entity
+    /// var results = db.From&lt;Product&gt;()
     ///     .InnerJoin&lt;Category&gt;()
     ///     .On(p =&gt; p.CategoryId, c =&gt; c.CategoryId)
-    ///     .Select&lt;Category&gt;();
+    ///     .Select&lt;ProductCategoryDto&gt;();
     /// </code>
     /// </example>
     List<T> Select<T>() where T : new();
+
+    /// <summary>
+    /// Executes the query and returns the specified entity type using a custom mapper.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to.</typeparam>
+    /// <param name="mapper">Function to map IDataReader to the result type.</param>
+    List<T> Select<T>(Func<IDataReader, T> mapper);
 
     /// <summary>
     /// Executes the query and returns both entities as tuples.
@@ -147,15 +155,27 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
 
     /// <summary>
     /// Returns the first result of the specified type or throws if empty.
+    /// Uses IMapped&lt;T&gt; if implemented, otherwise maps columns to properties (strict mode).
     /// </summary>
-    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    /// <typeparam name="T">The entity type to map results to.</typeparam>
     T SelectFirst<T>() where T : new();
 
     /// <summary>
-    /// Returns the first result of the specified type, or default if empty.
+    /// Returns the first result of the specified type using a custom mapper or throws if empty.
     /// </summary>
-    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    T SelectFirst<T>(Func<IDataReader, T> mapper);
+
+    /// <summary>
+    /// Returns the first result of the specified type, or default if empty.
+    /// Uses IMapped&lt;T&gt; if implemented, otherwise maps columns to properties (strict mode).
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to.</typeparam>
     T? SelectFirstOrDefault<T>() where T : new();
+
+    /// <summary>
+    /// Returns the first result of the specified type using a custom mapper, or default if empty.
+    /// </summary>
+    T? SelectFirstOrDefault<T>(Func<IDataReader, T> mapper);
 
     /// <summary>
     /// Returns the first result of the primary entity or throws if empty.
@@ -199,9 +219,15 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
 
     /// <summary>
     /// Executes the query asynchronously and returns the specified entity type.
+    /// Uses IMapped&lt;T&gt; if implemented, otherwise maps columns to properties (strict mode).
     /// </summary>
-    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    /// <typeparam name="T">The entity type to map results to.</typeparam>
     Task<List<T>> SelectAsync<T>(CancellationToken cancellationToken = default) where T : new();
+
+    /// <summary>
+    /// Executes the query asynchronously and returns the specified entity type using a custom mapper.
+    /// </summary>
+    Task<List<T>> SelectAsync<T>(Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Executes the query asynchronously and returns both entities as tuples.
@@ -212,15 +238,27 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
 
     /// <summary>
     /// Returns the first result of the specified type asynchronously or throws if empty.
+    /// Uses IMapped&lt;T&gt; if implemented, otherwise maps columns to properties (strict mode).
     /// </summary>
-    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    /// <typeparam name="T">The entity type to map results to.</typeparam>
     Task<T> SelectFirstAsync<T>(CancellationToken cancellationToken = default) where T : new();
 
     /// <summary>
-    /// Returns the first result of the specified type asynchronously, or default if empty.
+    /// Returns the first result asynchronously using a custom mapper or throws if empty.
     /// </summary>
-    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    Task<T> SelectFirstAsync<T>(Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result of the specified type asynchronously, or default if empty.
+    /// Uses IMapped&lt;T&gt; if implemented, otherwise maps columns to properties (strict mode).
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to.</typeparam>
     Task<T?> SelectFirstOrDefaultAsync<T>(CancellationToken cancellationToken = default) where T : new();
+
+    /// <summary>
+    /// Returns the first result asynchronously using a custom mapper, or default if empty.
+    /// </summary>
+    Task<T?> SelectFirstOrDefaultAsync<T>(Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first result of the primary entity asynchronously or throws if empty.

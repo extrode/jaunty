@@ -7,8 +7,10 @@ using System.Text;
 
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
+using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Enums;
 
 namespace Jaunty.Fluent;
 
@@ -192,10 +194,11 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     }
 
     /// <summary>
-    /// Selects the specified entity type (TFrom or TJoin).
+    /// Selects the specified entity type. Uses IMapped&lt;T&gt; if implemented, otherwise strict mapping.
     /// </summary>
     public List<T> Select<T>() where T : new()
     {
+        // Optimized paths for TFrom and TJoin
         if (typeof(T) == typeof(TFrom))
         {
             var result = Select();
@@ -206,9 +209,17 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             var result = SelectJoinedInternal();
             return Unsafe.As<List<TJoin>, List<T>>(ref result);
         }
-        throw new ArgumentException(
-            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
-            nameof(T));
+
+        // For other types, use standard Jaunty mapping (IMapped<T> or strict reflection)
+        return SelectWithMapping<T>(MappingMode.Strict);
+    }
+
+    /// <summary>
+    /// Selects using a custom mapper.
+    /// </summary>
+    public List<T> Select<T>(Func<IDataReader, T> mapper)
+    {
+        return SelectWithMapper(mapper);
     }
 
     /// <summary>
@@ -225,7 +236,6 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         var result = SelectBothInternal();
         return Unsafe.As<List<(TFrom, TJoin)>, List<(T1, T2)>>(ref result);
     }
-
 
     #endregion
 
@@ -247,6 +257,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public T SelectFirst<T>() where T : new()
     {
+        // Optimized paths for TFrom and TJoin
         if (typeof(T) == typeof(TFrom))
         {
             var result = SelectFirst();
@@ -257,13 +268,25 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             var result = SelectFirstJoinedInternal();
             return Unsafe.As<TJoin, T>(ref result);
         }
-        throw new ArgumentException(
-            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
-            nameof(T));
+
+        // For other types, use standard Jaunty mapping
+        var results = SelectWithMapping<T>(MappingMode.Strict, limit: 1);
+        if (results.Count == 0)
+            throw new InvalidOperationException("Sequence contains no elements");
+        return results[0];
+    }
+
+    public T SelectFirst<T>(Func<IDataReader, T> mapper)
+    {
+        var results = SelectWithMapper(mapper, limit: 1);
+        if (results.Count == 0)
+            throw new InvalidOperationException("Sequence contains no elements");
+        return results[0];
     }
 
     public T? SelectFirstOrDefault<T>() where T : new()
     {
+        // Optimized paths for TFrom and TJoin
         if (typeof(T) == typeof(TFrom))
         {
             var result = SelectFirstOrDefault();
@@ -274,9 +297,16 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             var result = SelectFirstOrDefaultJoinedInternal();
             return Unsafe.As<TJoin?, T?>(ref result);
         }
-        throw new ArgumentException(
-            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
-            nameof(T));
+
+        // For other types, use standard Jaunty mapping
+        var results = SelectWithMapping<T>(MappingMode.Strict, limit: 1);
+        return results.Count > 0 ? results[0] : default;
+    }
+
+    public T? SelectFirstOrDefault<T>(Func<IDataReader, T> mapper)
+    {
+        var results = SelectWithMapper(mapper, limit: 1);
+        return results.Count > 0 ? results[0] : default;
     }
 
     public (TFrom From, TJoin Joined) SelectFirstBoth()
@@ -345,6 +375,89 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return results;
     }
 
+    /// <summary>
+    /// Selects using standard Jaunty mapping (IMapped&lt;T&gt; or reflection).
+    /// </summary>
+    private List<T> SelectWithMapping<T>(MappingMode mode, int? limit = null) where T : new()
+    {
+        var sql = BuildSelectAllColumnsSql();
+        if (limit.HasValue)
+            sql += $" LIMIT {limit.Value}";
+
+        var results = new List<T>();
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        var wasClosed = _connection.State == ConnectionState.Closed;
+        if (wasClosed) _connection.Open();
+        try
+        {
+            using var reader = command.ExecuteReader();
+
+            // Resolve mapper: IMapped<T> > Reflection
+            Func<IDataReader, T>? mapper = MappedCache<T>.Mapper;
+
+            if (mapper is null)
+            {
+                // Use reflection-based mapping
+                var setters = MetadataCache<T>.GetSetters(reader, mode);
+                mapper = r =>
+                {
+                    var entity = new T();
+                    for (int i = 0; i < setters.Length; i++)
+                        setters[i].Set(entity, r);
+                    return entity;
+                };
+            }
+
+            while (reader.Read())
+            {
+                results.Add(mapper(reader));
+            }
+        }
+        finally
+        {
+            if (wasClosed) _connection.Close();
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    /// Selects using a user-provided mapper.
+    /// </summary>
+    private List<T> SelectWithMapper<T>(Func<IDataReader, T> mapper, int? limit = null)
+    {
+        var sql = BuildSelectAllColumnsSql();
+        if (limit.HasValue)
+            sql += $" LIMIT {limit.Value}";
+
+        var results = new List<T>();
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        var wasClosed = _connection.State == ConnectionState.Closed;
+        if (wasClosed) _connection.Open();
+        try
+        {
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                results.Add(mapper(reader));
+            }
+        }
+        finally
+        {
+            if (wasClosed) _connection.Close();
+        }
+
+        return results;
+    }
+
     #endregion
 
     #region COUNT
@@ -386,6 +499,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public async Task<List<T>> SelectAsync<T>(CancellationToken cancellationToken = default) where T : new()
     {
+        // Optimized paths for TFrom and TJoin
         if (typeof(T) == typeof(TFrom))
         {
             var result = await SelectAsync(cancellationToken).ConfigureAwait(false);
@@ -396,9 +510,14 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             var result = await SelectJoinedInternalAsync(cancellationToken).ConfigureAwait(false);
             return Unsafe.As<List<TJoin>, List<T>>(ref result);
         }
-        throw new ArgumentException(
-            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
-            nameof(T));
+
+        // For other types, use standard Jaunty mapping
+        return await Task.Run(() => SelectWithMapping<T>(MappingMode.Strict), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<List<T>> SelectAsync<T>(Func<IDataReader, T> mapper, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectWithMapper(mapper), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<List<(T1, T2)>> SelectAsync<T1, T2>(CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
@@ -425,36 +544,22 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public async Task<T> SelectFirstAsync<T>(CancellationToken cancellationToken = default) where T : new()
     {
-        if (typeof(T) == typeof(TFrom))
-        {
-            var result = await SelectFirstAsync(cancellationToken).ConfigureAwait(false);
-            return Unsafe.As<TFrom, T>(ref result);
-        }
-        if (typeof(T) == typeof(TJoin))
-        {
-            var result = await Task.Run(() => SelectFirstJoinedInternal(), cancellationToken).ConfigureAwait(false);
-            return Unsafe.As<TJoin, T>(ref result);
-        }
-        throw new ArgumentException(
-            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
-            nameof(T));
+        return await Task.Run(() => SelectFirst<T>(), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectFirstAsync<T>(Func<IDataReader, T> mapper, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectFirst(mapper), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectFirstOrDefaultAsync<T>(CancellationToken cancellationToken = default) where T : new()
     {
-        if (typeof(T) == typeof(TFrom))
-        {
-            var result = await SelectFirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
-            return Unsafe.As<TFrom?, T?>(ref result);
-        }
-        if (typeof(T) == typeof(TJoin))
-        {
-            var result = await Task.Run(() => SelectFirstOrDefaultJoinedInternal(), cancellationToken).ConfigureAwait(false);
-            return Unsafe.As<TJoin?, T?>(ref result);
-        }
-        throw new ArgumentException(
-            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
-            nameof(T));
+        return await Task.Run(() => SelectFirstOrDefault<T>(), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T?> SelectFirstOrDefaultAsync<T>(Func<IDataReader, T> mapper, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectFirstOrDefault(mapper), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<(TFrom From, TJoin Joined)> SelectFirstBothAsync(CancellationToken cancellationToken = default)
@@ -757,6 +862,64 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     #endregion
 
     #region Private Helpers
+
+    private string BuildSelectAllColumnsSql()
+    {
+        var sb = new StringBuilder(256);
+        sb.Append("SELECT *");
+
+        sb.Append(" FROM ");
+        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
+        if (_fromAlias is not null)
+        {
+            sb.Append(' ');
+            sb.Append(_fromAlias);
+        }
+
+        foreach (var join in _joins)
+        {
+            sb.Append(' ');
+            sb.Append(join.JoinKeyword);
+            sb.Append(' ');
+            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
+            if (join.Alias is not null)
+            {
+                sb.Append(' ');
+                sb.Append(join.Alias);
+            }
+            sb.Append(" ON ");
+            sb.Append(join.OnCondition);
+        }
+
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+            for (int i = 0; i < _conditions.Count; i++)
+            {
+                var condition = _conditions[i];
+                if (i > 0)
+                {
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                }
+                sb.Append(condition.Sql);
+            }
+        }
+
+        if (_orderByColumns.Count > 0)
+        {
+            sb.Append(" ORDER BY ");
+            for (int i = 0; i < _orderByColumns.Count; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                var orderBy = _orderByColumns[i];
+                sb.Append(orderBy.ColumnName);
+                if (orderBy.Descending)
+                    sb.Append(" DESC");
+            }
+        }
+
+        return sb.ToString();
+    }
 
     private string BuildPartialSelectSql(string columns)
     {

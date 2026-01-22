@@ -247,17 +247,35 @@ public class FluentJoinTests : IDisposable
     }
 
     [Fact]
-    public void InnerJoin_SelectTyped_WrongType_ThrowsException()
+    public void InnerJoin_SelectCustomEntity_PartialDto_ThrowsInStrictMode()
     {
+        // Select<T>() uses strict mode - all columns must map to properties
+        // ProductInfo only has subset of columns, so it should throw
         var query = _db.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId);
 
-        // Order is not part of this join (Product + Category)
-        var act = () => query.Select<Order>();
+        var act = () => query.Select<ProductInfo>();
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*T must be Product or Category*");
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*does not map to any property*");
+    }
+
+    [Fact]
+    public void InnerJoin_SelectCustomEntity_WithMapper_ReturnsCustomEntity()
+    {
+        var results = _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Select(reader => new ProductCategoryDto
+            {
+                ProductName = reader.GetString(reader.GetOrdinal("product_name")),
+                CategoryName = reader.GetString(reader.GetOrdinal("category_name"))
+            });
+
+        results.Should().NotBeEmpty();
+        results.First().ProductName.Should().NotBeNullOrEmpty();
+        results.First().CategoryName.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
