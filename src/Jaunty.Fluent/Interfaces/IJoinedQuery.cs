@@ -1,3 +1,4 @@
+using System.Data;
 using System.Linq.Expressions;
 
 namespace Jaunty.Fluent;
@@ -145,11 +146,6 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     List<(T1, T2)> Select<T1, T2>() where T1 : new() where T2 : new();
 
     /// <summary>
-    /// Executes the query with a custom projection.
-    /// </summary>
-    List<TResult> Select<TResult>(Func<TFrom, TJoin, TResult> mapper);
-
-    /// <summary>
     /// Returns the first result of the specified type or throws if empty.
     /// </summary>
     /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
@@ -215,11 +211,6 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     Task<List<(T1, T2)>> SelectAsync<T1, T2>(CancellationToken cancellationToken = default) where T1 : new() where T2 : new();
 
     /// <summary>
-    /// Executes the query asynchronously with a custom projection.
-    /// </summary>
-    Task<List<TResult>> SelectAsync<TResult>(Func<TFrom, TJoin, TResult> mapper, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Returns the first result of the specified type asynchronously or throws if empty.
     /// </summary>
     /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
@@ -257,6 +248,122 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     /// Returns the count of rows as long asynchronously.
     /// </summary>
     Task<long> LongCountAsync(CancellationToken cancellationToken = default);
+
+    // --- SELECT PARTIAL Operations (Projection) ---
+
+    /// <summary>
+    /// Executes the query selecting only the specified columns and returns dynamic results.
+    /// </summary>
+    /// <param name="columns">Comma-delimited column names (e.g., "p.product_id, p.product_name, c.category_name").</param>
+    /// <example>
+    /// <code>
+    /// var results = db.From&lt;Product&gt;("p")
+    ///     .InnerJoin&lt;Category&gt;("c")
+    ///     .On(p =&gt; p.CategoryId, c =&gt; c.CategoryId)
+    ///     .SelectPartial("p.product_id, p.product_name, c.category_name");
+    /// </code>
+    /// </example>
+    List<dynamic> SelectPartial(string columns);
+
+    /// <summary>
+    /// Executes the query selecting only the specified columns with a custom mapper.
+    /// </summary>
+    /// <typeparam name="T">The result type.</typeparam>
+    /// <param name="columns">Comma-delimited column names.</param>
+    /// <param name="mapper">Function to map IDataReader to the result type.</param>
+    List<T> SelectPartial<T>(string columns, Func<IDataReader, T> mapper);
+
+    /// <summary>
+    /// Returns the first partial result or throws if empty.
+    /// </summary>
+    dynamic SelectPartialFirst(string columns);
+
+    /// <summary>
+    /// Returns the first partial result with a custom mapper or throws if empty.
+    /// </summary>
+    T SelectPartialFirst<T>(string columns, Func<IDataReader, T> mapper);
+
+    /// <summary>
+    /// Returns the first partial result, or null if empty.
+    /// </summary>
+    dynamic? SelectPartialFirstOrDefault(string columns);
+
+    /// <summary>
+    /// Returns the first partial result with a custom mapper, or default if empty.
+    /// </summary>
+    T? SelectPartialFirstOrDefault<T>(string columns, Func<IDataReader, T> mapper);
+
+    /// <summary>
+    /// Returns the single partial result or throws if empty or more than one.
+    /// </summary>
+    dynamic SelectPartialSingle(string columns);
+
+    /// <summary>
+    /// Returns the single partial result with a custom mapper or throws if empty or more than one.
+    /// </summary>
+    T SelectPartialSingle<T>(string columns, Func<IDataReader, T> mapper);
+
+    /// <summary>
+    /// Returns the single partial result, or null if empty. Throws if more than one.
+    /// </summary>
+    dynamic? SelectPartialSingleOrDefault(string columns);
+
+    /// <summary>
+    /// Returns the single partial result with a custom mapper, or default if empty. Throws if more than one.
+    /// </summary>
+    T? SelectPartialSingleOrDefault<T>(string columns, Func<IDataReader, T> mapper);
+
+    // --- SELECT PARTIAL Async Operations ---
+
+    /// <summary>
+    /// Executes the query asynchronously selecting only the specified columns.
+    /// </summary>
+    Task<List<dynamic>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the query asynchronously selecting only the specified columns with a custom mapper.
+    /// </summary>
+    Task<List<T>> SelectPartialAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first partial result asynchronously or throws if empty.
+    /// </summary>
+    Task<dynamic> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first partial result asynchronously with a custom mapper or throws if empty.
+    /// </summary>
+    Task<T> SelectPartialFirstAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first partial result asynchronously, or null if empty.
+    /// </summary>
+    Task<dynamic?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first partial result asynchronously with a custom mapper, or default if empty.
+    /// </summary>
+    Task<T?> SelectPartialFirstOrDefaultAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single partial result asynchronously or throws if empty or more than one.
+    /// </summary>
+    Task<dynamic> SelectPartialSingleAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single partial result asynchronously with a custom mapper or throws if empty or more than one.
+    /// </summary>
+    Task<T> SelectPartialSingleAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single partial result asynchronously, or null if empty. Throws if more than one.
+    /// </summary>
+    Task<dynamic?> SelectPartialSingleOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single partial result asynchronously with a custom mapper, or default if empty. Throws if more than one.
+    /// </summary>
+    Task<T?> SelectPartialSingleOrDefaultAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -295,7 +402,6 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
 
     List<T1> Select();
     List<(T1, T2, T3)> SelectAll();
-    List<TResult> Select<TResult>(Func<T1, T2, T3, TResult> mapper);
 
     string ToSql();
 }

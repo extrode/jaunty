@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -225,19 +226,6 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return Unsafe.As<List<(TFrom, TJoin)>, List<(T1, T2)>>(ref result);
     }
 
-    /// <summary>
-    /// Selects with a custom projection mapper.
-    /// </summary>
-    public List<TResult> Select<TResult>(Func<TFrom, TJoin, TResult> mapper)
-    {
-        var both = SelectBothInternal();
-        var results = new List<TResult>(both.Count);
-        for (int i = 0; i < both.Count; i++)
-        {
-            results.Add(mapper(both[i].From, both[i].Joined));
-        }
-        return results;
-    }
 
     #endregion
 
@@ -425,17 +413,6 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return Unsafe.As<List<(TFrom, TJoin)>, List<(T1, T2)>>(ref result);
     }
 
-    public async Task<List<TResult>> SelectAsync<TResult>(Func<TFrom, TJoin, TResult> mapper, CancellationToken cancellationToken = default)
-    {
-        var both = await SelectBothInternalAsync(cancellationToken).ConfigureAwait(false);
-        var results = new List<TResult>(both.Count);
-        for (int i = 0; i < both.Count; i++)
-        {
-            results.Add(mapper(both[i].From, both[i].Joined));
-        }
-        return results;
-    }
-
     public async Task<TFrom> SelectFirstAsync(CancellationToken cancellationToken = default)
     {
         return await Task.Run(() => SelectFirst(), cancellationToken).ConfigureAwait(false);
@@ -507,6 +484,260 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     #endregion
 
+    #region SELECT PARTIAL
+
+    public List<dynamic> SelectPartial(string columns)
+    {
+        var sql = BuildPartialSelectSql(columns);
+        var results = new List<dynamic>();
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        var wasClosed = _connection.State == ConnectionState.Closed;
+        if (wasClosed) _connection.Open();
+        try
+        {
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                results.Add(MapToDynamic(reader));
+            }
+        }
+        finally
+        {
+            if (wasClosed) _connection.Close();
+        }
+
+        return results;
+    }
+
+    public List<T> SelectPartial<T>(string columns, Func<IDataReader, T> mapper)
+    {
+        var sql = BuildPartialSelectSql(columns);
+        var results = new List<T>();
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        var wasClosed = _connection.State == ConnectionState.Closed;
+        if (wasClosed) _connection.Open();
+        try
+        {
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                results.Add(mapper(reader));
+            }
+        }
+        finally
+        {
+            if (wasClosed) _connection.Close();
+        }
+
+        return results;
+    }
+
+    public dynamic SelectPartialFirst(string columns)
+    {
+        var result = SelectPartialFirstOrDefault(columns);
+        if (result is null)
+            throw new InvalidOperationException("Sequence contains no elements");
+        return result;
+    }
+
+    public T SelectPartialFirst<T>(string columns, Func<IDataReader, T> mapper)
+    {
+        var result = SelectPartialFirstOrDefault(columns, mapper);
+        if (result is null)
+            throw new InvalidOperationException("Sequence contains no elements");
+        return result;
+    }
+
+    public dynamic? SelectPartialFirstOrDefault(string columns)
+    {
+        var sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        var wasClosed = _connection.State == ConnectionState.Closed;
+        if (wasClosed) _connection.Open();
+        try
+        {
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                return MapToDynamic(reader);
+            }
+            return null;
+        }
+        finally
+        {
+            if (wasClosed) _connection.Close();
+        }
+    }
+
+    public T? SelectPartialFirstOrDefault<T>(string columns, Func<IDataReader, T> mapper)
+    {
+        var sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        var wasClosed = _connection.State == ConnectionState.Closed;
+        if (wasClosed) _connection.Open();
+        try
+        {
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                return mapper(reader);
+            }
+            return default;
+        }
+        finally
+        {
+            if (wasClosed) _connection.Close();
+        }
+    }
+
+    public dynamic SelectPartialSingle(string columns)
+    {
+        var result = SelectPartialSingleOrDefault(columns);
+        if (result is null)
+            throw new InvalidOperationException("Sequence contains no elements");
+        return result;
+    }
+
+    public T SelectPartialSingle<T>(string columns, Func<IDataReader, T> mapper)
+    {
+        var result = SelectPartialSingleOrDefault(columns, mapper);
+        if (result is null)
+            throw new InvalidOperationException("Sequence contains no elements");
+        return result;
+    }
+
+    public dynamic? SelectPartialSingleOrDefault(string columns)
+    {
+        var sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        dynamic? result = null;
+        int count = 0;
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        var wasClosed = _connection.State == ConnectionState.Closed;
+        if (wasClosed) _connection.Open();
+        try
+        {
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                count++;
+                if (count > 1)
+                    throw new InvalidOperationException("Sequence contains more than one element");
+                result = MapToDynamic(reader);
+            }
+        }
+        finally
+        {
+            if (wasClosed) _connection.Close();
+        }
+
+        return result;
+    }
+
+    public T? SelectPartialSingleOrDefault<T>(string columns, Func<IDataReader, T> mapper)
+    {
+        var sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        T? result = default;
+        int count = 0;
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        var wasClosed = _connection.State == ConnectionState.Closed;
+        if (wasClosed) _connection.Open();
+        try
+        {
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                count++;
+                if (count > 1)
+                    throw new InvalidOperationException("Sequence contains more than one element");
+                result = mapper(reader);
+            }
+        }
+        finally
+        {
+            if (wasClosed) _connection.Close();
+        }
+
+        return result;
+    }
+
+    // Async variants
+
+    public async Task<List<dynamic>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectPartial(columns), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<List<T>> SelectPartialAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectPartial(columns, mapper), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<dynamic> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectPartialFirst(columns), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectPartialFirstAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectPartialFirst(columns, mapper), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<dynamic?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectPartialFirstOrDefault(columns), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T?> SelectPartialFirstOrDefaultAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectPartialFirstOrDefault(columns, mapper), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<dynamic> SelectPartialSingleAsync(string columns, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectPartialSingle(columns), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectPartialSingleAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectPartialSingle(columns, mapper), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<dynamic?> SelectPartialSingleOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectPartialSingleOrDefault(columns), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T?> SelectPartialSingleOrDefaultAsync<T>(string columns, Func<IDataReader, T> mapper, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectPartialSingleOrDefault(columns, mapper), cancellationToken).ConfigureAwait(false);
+    }
+
+    #endregion
+
     #region Internal
 
     internal IDbConnection Connection => _connection;
@@ -526,6 +757,77 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     #endregion
 
     #region Private Helpers
+
+    private string BuildPartialSelectSql(string columns)
+    {
+        var sb = new StringBuilder(256);
+        sb.Append("SELECT ");
+        sb.Append(columns);
+
+        sb.Append(" FROM ");
+        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
+        if (_fromAlias is not null)
+        {
+            sb.Append(' ');
+            sb.Append(_fromAlias);
+        }
+
+        foreach (var join in _joins)
+        {
+            sb.Append(' ');
+            sb.Append(join.JoinKeyword);
+            sb.Append(' ');
+            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
+            if (join.Alias is not null)
+            {
+                sb.Append(' ');
+                sb.Append(join.Alias);
+            }
+            sb.Append(" ON ");
+            sb.Append(join.OnCondition);
+        }
+
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+            for (int i = 0; i < _conditions.Count; i++)
+            {
+                var condition = _conditions[i];
+                if (i > 0)
+                {
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                }
+                sb.Append(condition.Sql);
+            }
+        }
+
+        if (_orderByColumns.Count > 0)
+        {
+            sb.Append(" ORDER BY ");
+            for (int i = 0; i < _orderByColumns.Count; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                var orderBy = _orderByColumns[i];
+                sb.Append(orderBy.ColumnName);
+                if (orderBy.Descending)
+                    sb.Append(" DESC");
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static dynamic MapToDynamic(IDataReader reader)
+    {
+        var expando = new ExpandoObject() as IDictionary<string, object?>;
+        for (int i = 0; i < reader.FieldCount; i++)
+        {
+            var name = reader.GetName(i);
+            var value = reader.IsDBNull(i) ? null : reader.GetValue(i);
+            expando[name] = value;
+        }
+        return (ExpandoObject)expando;
+    }
 
     private string BuildSelectSql(string[] columns)
     {
@@ -858,11 +1160,6 @@ internal sealed class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1, T2, T3
     public List<(T1, T2, T3)> SelectAll()
     {
         throw new NotImplementedException("3-way SelectAll not yet implemented");
-    }
-
-    public List<TResult> Select<TResult>(Func<T1, T2, T3, TResult> mapper)
-    {
-        throw new NotImplementedException("3-way Select with mapper not yet implemented");
     }
 
     public string ToSql()
