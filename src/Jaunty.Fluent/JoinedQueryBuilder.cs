@@ -14,9 +14,7 @@ namespace Jaunty.Fluent;
 /// <summary>
 /// Query builder for joined queries. Implements IJoinedQuery.
 /// </summary>
-internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJoin>
-    where TFrom : new()
-    where TJoin : new()
+internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : new()
 {
     private readonly IDbConnection _connection;
     private readonly ISqlDialect _dialect;
@@ -30,13 +28,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     private readonly EntityMetadata _fromMetadata;
     private readonly EntityMetadata _joinMetadata;
 
-    internal JoinedQueryBuilder(
-        IDbConnection connection,
-        ISqlDialect dialect,
-        string fromTable,
-        string? fromSchema,
-        string? fromAlias,
-        JoinInfo firstJoin)
+    internal JoinedQueryBuilder(IDbConnection connection, ISqlDialect dialect, string fromTable, string? fromSchema, string? fromAlias, JoinInfo firstJoin)
     {
         _connection = connection;
         _dialect = dialect;
@@ -186,14 +178,70 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     #endregion
 
-    #region SELECT - Primary Entity
+    #region SELECT - Typed Selection
 
+    /// <summary>
+    /// Selects the primary (From) entity.
+    /// </summary>
     public List<TFrom> Select()
     {
         var columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         var sql = BuildSelectSql(columns);
         return _connection.QueryPartial<TFrom>(sql, _parameters.ToParameterObject()!);
     }
+
+    /// <summary>
+    /// Selects the specified entity type (TFrom or TJoin).
+    /// </summary>
+    public List<T> Select<T>() where T : new()
+    {
+        if (typeof(T) == typeof(TFrom))
+        {
+            var result = Select();
+            return Unsafe.As<List<TFrom>, List<T>>(ref result);
+        }
+        if (typeof(T) == typeof(TJoin))
+        {
+            var result = SelectJoinedInternal();
+            return Unsafe.As<List<TJoin>, List<T>>(ref result);
+        }
+        throw new ArgumentException(
+            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
+            nameof(T));
+    }
+
+    /// <summary>
+    /// Selects both entities as tuples.
+    /// </summary>
+    public List<(T1, T2)> Select<T1, T2>() where T1 : new() where T2 : new()
+    {
+        // Validate types match at runtime
+        if (typeof(T1) != typeof(TFrom))
+            throw new ArgumentException($"T1 must be {typeof(TFrom).Name}, got {typeof(T1).Name}", nameof(T1));
+        if (typeof(T2) != typeof(TJoin))
+            throw new ArgumentException($"T2 must be {typeof(TJoin).Name}, got {typeof(T2).Name}", nameof(T2));
+
+        var result = SelectBothInternal();
+        return Unsafe.As<List<(TFrom, TJoin)>, List<(T1, T2)>>(ref result);
+    }
+
+    /// <summary>
+    /// Selects with a custom projection mapper.
+    /// </summary>
+    public List<TResult> Select<TResult>(Func<TFrom, TJoin, TResult> mapper)
+    {
+        var both = SelectBothInternal();
+        var results = new List<TResult>(both.Count);
+        for (int i = 0; i < both.Count; i++)
+        {
+            results.Add(mapper(both[i].From, both[i].Joined));
+        }
+        return results;
+    }
+
+    #endregion
+
+    #region SELECT FIRST - Typed Selection
 
     public TFrom SelectFirst()
     {
@@ -209,22 +257,74 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
+    public T SelectFirst<T>() where T : new()
+    {
+        if (typeof(T) == typeof(TFrom))
+        {
+            var result = SelectFirst();
+            return Unsafe.As<TFrom, T>(ref result);
+        }
+        if (typeof(T) == typeof(TJoin))
+        {
+            var result = SelectFirstJoinedInternal();
+            return Unsafe.As<TJoin, T>(ref result);
+        }
+        throw new ArgumentException(
+            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
+            nameof(T));
+    }
+
+    public T? SelectFirstOrDefault<T>() where T : new()
+    {
+        if (typeof(T) == typeof(TFrom))
+        {
+            var result = SelectFirstOrDefault();
+            return Unsafe.As<TFrom?, T?>(ref result);
+        }
+        if (typeof(T) == typeof(TJoin))
+        {
+            var result = SelectFirstOrDefaultJoinedInternal();
+            return Unsafe.As<TJoin?, T?>(ref result);
+        }
+        throw new ArgumentException(
+            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
+            nameof(T));
+    }
+
+    public (TFrom From, TJoin Joined) SelectFirstBoth()
+    {
+        var result = SelectBothInternal();
+        if (result.Count == 0)
+            throw new InvalidOperationException("Sequence contains no elements");
+        return result[0];
+    }
+
     #endregion
 
-    #region SELECT - Joined Entity
+    #region Internal Select Helpers
 
-    public List<TJoin> SelectJoined()
+    private List<TJoin> SelectJoinedInternal()
     {
         var columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
         var sql = BuildSelectSql(columns);
         return _connection.QueryPartial<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
-    #endregion
+    private TJoin SelectFirstJoinedInternal()
+    {
+        var columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        var sql = BuildSelectSql(columns) + " LIMIT 1";
+        return _connection.QueryPartialFirst<TJoin>(sql, _parameters.ToParameterObject()!);
+    }
 
-    #region SELECT - Both Entities
+    private TJoin? SelectFirstOrDefaultJoinedInternal()
+    {
+        var columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        var sql = BuildSelectSql(columns) + " LIMIT 1";
+        return _connection.QueryPartialFirstOrDefault<TJoin>(sql, _parameters.ToParameterObject()!);
+    }
 
-    public List<(TFrom From, TJoin Joined)> SelectBoth()
+    private List<(TFrom From, TJoin Joined)> SelectBothInternal()
     {
         var fromColumns = GetPrefixedColumnsWithAlias(_fromMetadata, _fromAlias, "f_");
         var joinColumns = GetPrefixedColumnsWithAlias(_joinMetadata, _joins[0].Alias, "j_");
@@ -254,56 +354,6 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             if (wasClosed) _connection.Close();
         }
 
-        return results;
-    }
-
-    public (TFrom From, TJoin Joined) SelectFirstBoth()
-    {
-        var result = SelectBoth();
-        if (result.Count == 0)
-            throw new InvalidOperationException("Sequence contains no elements");
-        return result[0];
-    }
-
-    public List<(T1, T2)> Select<T1, T2>() where T1 : new() where T2 : new()
-    {
-        // Validate types match at runtime
-        if (typeof(T1) != typeof(TFrom))
-            throw new ArgumentException($"T1 must be {typeof(TFrom).Name}, got {typeof(T1).Name}", nameof(T1));
-        if (typeof(T2) != typeof(TJoin))
-            throw new ArgumentException($"T2 must be {typeof(TJoin).Name}, got {typeof(T2).Name}", nameof(T2));
-
-        // SelectBoth returns List<(TFrom, TJoin)> which equals List<(T1, T2)> when types match
-        var result = SelectBoth();
-        // Use unsafe cast since we validated types
-        return Unsafe.As<List<(TFrom, TJoin)>, List<(T1, T2)>>(ref result);
-    }
-
-    public List<TTuple> SelectTuple<TTuple>() where TTuple : struct
-    {
-        var tupleType = typeof(TTuple);
-
-        // Validate it's a 2-element ValueTuple
-        if (!tupleType.IsGenericType || tupleType.GetGenericTypeDefinition() != typeof(ValueTuple<,>))
-            throw new ArgumentException($"TTuple must be ValueTuple<{typeof(TFrom).Name}, {typeof(TJoin).Name}>", nameof(TTuple));
-
-        var typeArgs = tupleType.GetGenericArguments();
-        if (typeArgs[0] != typeof(TFrom) || typeArgs[1] != typeof(TJoin))
-            throw new ArgumentException($"Expected ({typeof(TFrom).Name}, {typeof(TJoin).Name}), got ({typeArgs[0].Name}, {typeArgs[1].Name})", nameof(TTuple));
-
-        // Cast result - safe because (TFrom, TJoin) is structurally identical to TTuple
-        var result = SelectBoth();
-        return Unsafe.As<List<(TFrom, TJoin)>, List<TTuple>>(ref result);
-    }
-
-    public List<TResult> Select<TResult>(Func<TFrom, TJoin, TResult> mapper)
-    {
-        var both = SelectBoth();
-        var results = new List<TResult>(both.Count);
-        for (int i = 0; i < both.Count; i++)
-        {
-            results.Add(mapper(both[i].From, both[i].Joined));
-        }
         return results;
     }
 
@@ -346,9 +396,21 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return Select();
     }
 
-    public async Task<List<(TFrom From, TJoin Joined)>> SelectBothAsync(CancellationToken cancellationToken = default)
+    public async Task<List<T>> SelectAsync<T>(CancellationToken cancellationToken = default) where T : new()
     {
-        return await Task.Run(() => SelectBoth(), cancellationToken).ConfigureAwait(false);
+        if (typeof(T) == typeof(TFrom))
+        {
+            var result = await SelectAsync(cancellationToken).ConfigureAwait(false);
+            return Unsafe.As<List<TFrom>, List<T>>(ref result);
+        }
+        if (typeof(T) == typeof(TJoin))
+        {
+            var result = await SelectJoinedInternalAsync(cancellationToken).ConfigureAwait(false);
+            return Unsafe.As<List<TJoin>, List<T>>(ref result);
+        }
+        throw new ArgumentException(
+            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
+            nameof(T));
     }
 
     public async Task<List<(T1, T2)>> SelectAsync<T1, T2>(CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
@@ -359,40 +421,19 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         if (typeof(T2) != typeof(TJoin))
             throw new ArgumentException($"T2 must be {typeof(TJoin).Name}, got {typeof(T2).Name}", nameof(T2));
 
-        var result = await SelectBothAsync(cancellationToken).ConfigureAwait(false);
+        var result = await SelectBothInternalAsync(cancellationToken).ConfigureAwait(false);
         return Unsafe.As<List<(TFrom, TJoin)>, List<(T1, T2)>>(ref result);
-    }
-
-    public async Task<List<TTuple>> SelectTupleAsync<TTuple>(CancellationToken cancellationToken = default) where TTuple : struct
-    {
-        var tupleType = typeof(TTuple);
-
-        // Validate it's a 2-element ValueTuple
-        if (!tupleType.IsGenericType || tupleType.GetGenericTypeDefinition() != typeof(ValueTuple<,>))
-            throw new ArgumentException($"TTuple must be ValueTuple<{typeof(TFrom).Name}, {typeof(TJoin).Name}>", nameof(TTuple));
-
-        var typeArgs = tupleType.GetGenericArguments();
-        if (typeArgs[0] != typeof(TFrom) || typeArgs[1] != typeof(TJoin))
-            throw new ArgumentException($"Expected ({typeof(TFrom).Name}, {typeof(TJoin).Name}), got ({typeArgs[0].Name}, {typeArgs[1].Name})", nameof(TTuple));
-
-        var result = await SelectBothAsync(cancellationToken).ConfigureAwait(false);
-        return Unsafe.As<List<(TFrom, TJoin)>, List<TTuple>>(ref result);
     }
 
     public async Task<List<TResult>> SelectAsync<TResult>(Func<TFrom, TJoin, TResult> mapper, CancellationToken cancellationToken = default)
     {
-        var both = await SelectBothAsync(cancellationToken).ConfigureAwait(false);
+        var both = await SelectBothInternalAsync(cancellationToken).ConfigureAwait(false);
         var results = new List<TResult>(both.Count);
         for (int i = 0; i < both.Count; i++)
         {
             results.Add(mapper(both[i].From, both[i].Joined));
         }
         return results;
-    }
-
-    public async Task<List<TJoin>> SelectJoinedAsync(CancellationToken cancellationToken = default)
-    {
-        return await Task.Run(() => SelectJoined(), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<TFrom> SelectFirstAsync(CancellationToken cancellationToken = default)
@@ -403,6 +444,40 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     public async Task<TFrom?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         return await Task.Run(() => SelectFirstOrDefault(), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectFirstAsync<T>(CancellationToken cancellationToken = default) where T : new()
+    {
+        if (typeof(T) == typeof(TFrom))
+        {
+            var result = await SelectFirstAsync(cancellationToken).ConfigureAwait(false);
+            return Unsafe.As<TFrom, T>(ref result);
+        }
+        if (typeof(T) == typeof(TJoin))
+        {
+            var result = await Task.Run(() => SelectFirstJoinedInternal(), cancellationToken).ConfigureAwait(false);
+            return Unsafe.As<TJoin, T>(ref result);
+        }
+        throw new ArgumentException(
+            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
+            nameof(T));
+    }
+
+    public async Task<T?> SelectFirstOrDefaultAsync<T>(CancellationToken cancellationToken = default) where T : new()
+    {
+        if (typeof(T) == typeof(TFrom))
+        {
+            var result = await SelectFirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+            return Unsafe.As<TFrom?, T?>(ref result);
+        }
+        if (typeof(T) == typeof(TJoin))
+        {
+            var result = await Task.Run(() => SelectFirstOrDefaultJoinedInternal(), cancellationToken).ConfigureAwait(false);
+            return Unsafe.As<TJoin?, T?>(ref result);
+        }
+        throw new ArgumentException(
+            $"T must be {typeof(TFrom).Name} or {typeof(TJoin).Name}, got {typeof(T).Name}",
+            nameof(T));
     }
 
     public async Task<(TFrom From, TJoin Joined)> SelectFirstBothAsync(CancellationToken cancellationToken = default)
@@ -418,6 +493,16 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     public async Task<long> LongCountAsync(CancellationToken cancellationToken = default)
     {
         return await Task.Run(() => LongCount(), cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<List<TJoin>> SelectJoinedInternalAsync(CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectJoinedInternal(), cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<List<(TFrom From, TJoin Joined)>> SelectBothInternalAsync(CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() => SelectBothInternal(), cancellationToken).ConfigureAwait(false);
     }
 
     #endregion
