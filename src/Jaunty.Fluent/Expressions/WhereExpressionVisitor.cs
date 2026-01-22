@@ -116,7 +116,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             }
         }
 
-        // Handle string methods: Contains, StartsWith, EndsWith
+        // Handle string methods: Contains, StartsWith, EndsWith, ToUpper, ToLower, Trim, Substring
         if (node.Object is not null && node.Object.Type == typeof(string))
         {
             var memberExpr = node.Object as MemberExpression;
@@ -124,26 +124,64 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             {
                 var columnName = GetColumnName(memberExpr);
                 var escapedColumn = _dialect.EscapeColumnName(columnName);
-                var value = EvaluateExpression(node.Arguments[0]);
-
-                var paramName = GetParameterName(columnName);
 
                 switch (node.Method.Name)
                 {
                     case "Contains":
-                        _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
-                        _parameters.Add((paramName, _dialect.FormatContainsPattern(value?.ToString() ?? "")));
-                        return node;
+                        {
+                            var value = EvaluateExpression(node.Arguments[0]);
+                            var paramName = GetParameterName(columnName);
+                            _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
+                            _parameters.Add((paramName, _dialect.FormatContainsPattern(value?.ToString() ?? "")));
+                            return node;
+                        }
                     case "StartsWith":
-                        _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
-                        _parameters.Add((paramName, _dialect.FormatStartsWithPattern(value?.ToString() ?? "")));
-                        return node;
+                        {
+                            var value = EvaluateExpression(node.Arguments[0]);
+                            var paramName = GetParameterName(columnName);
+                            _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
+                            _parameters.Add((paramName, _dialect.FormatStartsWithPattern(value?.ToString() ?? "")));
+                            return node;
+                        }
                     case "EndsWith":
-                        _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
-                        _parameters.Add((paramName, _dialect.FormatEndsWithPattern(value?.ToString() ?? "")));
-                        return node;
+                        {
+                            var value = EvaluateExpression(node.Arguments[0]);
+                            var paramName = GetParameterName(columnName);
+                            _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
+                            _parameters.Add((paramName, _dialect.FormatEndsWithPattern(value?.ToString() ?? "")));
+                            return node;
+                        }
                     case "Equals" when node.Arguments.Count >= 1:
-                        return HandleStringEquals(node, escapedColumn, columnName, value);
+                        {
+                            var value = EvaluateExpression(node.Arguments[0]);
+                            return HandleStringEquals(node, escapedColumn, columnName, value);
+                        }
+                    case "ToUpper":
+                        _sql.Append(_dialect.GenerateUpper(escapedColumn));
+                        return node;
+                    case "ToLower":
+                        _sql.Append(_dialect.GenerateLower(escapedColumn));
+                        return node;
+                    case "Trim":
+                        _sql.Append(_dialect.GenerateTrim(escapedColumn));
+                        return node;
+                    case "Substring":
+                        {
+                            var startIndex = EvaluateExpression(node.Arguments[0]);
+                            // SQL SUBSTRING is 1-based, C# is 0-based
+                            var sqlStart = Convert.ToInt32(startIndex) + 1;
+                            if (node.Arguments.Count >= 2)
+                            {
+                                var length = EvaluateExpression(node.Arguments[1]);
+                                _sql.Append(_dialect.GenerateSubstring(escapedColumn, sqlStart.ToString(), length?.ToString() ?? "1"));
+                            }
+                            else
+                            {
+                                // No length specified - use large number for "rest of string"
+                                _sql.Append(_dialect.GenerateSubstring(escapedColumn, sqlStart.ToString(), "8000"));
+                            }
+                            return node;
+                        }
                 }
             }
         }
@@ -490,6 +528,16 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
 
     protected override Expression VisitMember(MemberExpression node)
     {
+        // Handle string.Length property (e.g., p.ProductName.Length > 10)
+        if (node.Member.Name == "Length" && node.Expression is MemberExpression innerMember
+            && innerMember.Type == typeof(string) && IsParameterMember(innerMember))
+        {
+            var columnName = GetColumnName(innerMember);
+            var escapedColumn = _dialect.EscapeColumnName(columnName);
+            _sql.Append(_dialect.GenerateLength(escapedColumn));
+            return node;
+        }
+
         // Handle boolean properties directly (e.g., p => p.IsActive)
         if (IsParameterMember(node) && node.Type == typeof(bool))
         {
@@ -566,6 +614,13 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
 
         if (expression is MemberExpression member && IsParameterMember(member))
         {
+            // Exclude string.Length - it should be handled as LENGTH() function, not a column
+            if (member.Member.Name == "Length" && member.Expression is MemberExpression innerMember
+                && innerMember.Type == typeof(string))
+            {
+                return false;
+            }
+
             columnName = GetColumnName(member);
             return true;
         }

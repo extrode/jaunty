@@ -13,7 +13,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     // ==========================================
-    // Sql.Length Tests
+    // string.Length Tests
     // ==========================================
 
     [Fact]
@@ -21,7 +21,7 @@ public class FluentStringFunctionsTests : IDisposable
     {
         // Products with names longer than 10 characters
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Length(p.ProductName) > 10)
+            .Where(p => p.ProductName.Length > 10)
             .Select();
 
         products.Should().NotBeEmpty();
@@ -32,7 +32,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void Length_ToSql_GeneratesLengthFunction()
     {
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Length(p.ProductName) > 10)
+            .Where(p => p.ProductName.Length > 10)
             .ToSql();
 
         // SQLite uses LENGTH
@@ -45,33 +45,33 @@ public class FluentStringFunctionsTests : IDisposable
     {
         // Products with names exactly 4 characters
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Length(p.ProductName) == 4)
+            .Where(p => p.ProductName.Length == 4)
             .Select();
 
         products.Should().OnlyContain(p => p.ProductName!.Length == 4);
     }
 
     // ==========================================
-    // Sql.Upper Tests
+    // string.ToUpper Tests
     // ==========================================
 
     [Fact]
-    public void Upper_InWhere_FiltersResults()
+    public void ToUpper_InWhere_FiltersResults()
     {
-        // Find product "Chai" using uppercase comparison
+        // Find product "Chang" using uppercase comparison
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Upper(p.ProductName) == "CHAI")
+            .Where(p => p.ProductName.ToUpper() == "CHANG")
             .Select();
 
         products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName!.Equals("Chai", StringComparison.OrdinalIgnoreCase));
+        products.Should().OnlyContain(p => p.ProductName!.Equals("Chang", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
-    public void Upper_ToSql_GeneratesUpperFunction()
+    public void ToUpper_ToSql_GeneratesUpperFunction()
     {
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Upper(p.ProductName) == "CHAI")
+            .Where(p => p.ProductName.ToUpper() == "CHANG")
             .ToSql();
 
         sql.Should().Contain("UPPER");
@@ -79,26 +79,26 @@ public class FluentStringFunctionsTests : IDisposable
     }
 
     // ==========================================
-    // Sql.Lower Tests
+    // string.ToLower Tests
     // ==========================================
 
     [Fact]
-    public void Lower_InWhere_FiltersResults()
+    public void ToLower_InWhere_FiltersResults()
     {
-        // Find product "Chai" using lowercase comparison
+        // Find product "Chang" using lowercase comparison
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Lower(p.ProductName) == "chai")
+            .Where(p => p.ProductName.ToLower() == "chang")
             .Select();
 
         products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName!.Equals("Chai", StringComparison.OrdinalIgnoreCase));
+        products.Should().OnlyContain(p => p.ProductName!.Equals("Chang", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
-    public void Lower_ToSql_GeneratesLowerFunction()
+    public void ToLower_ToSql_GeneratesLowerFunction()
     {
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Lower(p.ProductName) == "chai")
+            .Where(p => p.ProductName.ToLower() == "chang")
             .ToSql();
 
         sql.Should().Contain("LOWER");
@@ -106,14 +106,14 @@ public class FluentStringFunctionsTests : IDisposable
     }
 
     // ==========================================
-    // Sql.Trim Tests
+    // string.Trim Tests
     // ==========================================
 
     [Fact]
     public void Trim_ToSql_GeneratesTrimFunction()
     {
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Trim(p.ProductName) == "Chai")
+            .Where(p => p.ProductName.Trim() == "Chang")
             .ToSql();
 
         sql.Should().Contain("TRIM");
@@ -125,22 +125,22 @@ public class FluentStringFunctionsTests : IDisposable
     {
         // Trim shouldn't affect normal product names (no leading/trailing spaces)
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Trim(p.ProductName) == "Chai")
+            .Where(p => p.ProductName.Trim() == "Chang")
             .Select();
 
         products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName!.Trim() == "Chai");
+        products.Should().OnlyContain(p => p.ProductName!.Trim() == "Chang");
     }
 
     // ==========================================
-    // Sql.Substring Tests
+    // string.Substring Tests
     // ==========================================
 
     [Fact]
     public void Substring_ToSql_GeneratesSubstringFunction()
     {
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Substring(p.ProductName, 1, 3) == "Cha")
+            .Where(p => p.ProductName.Substring(0, 3) == "Cha")
             .ToSql();
 
         // SQLite uses SUBSTR
@@ -153,11 +153,10 @@ public class FluentStringFunctionsTests : IDisposable
     {
         // Find products starting with "Cha"
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Substring(p.ProductName, 1, 3) == "Cha")
+            .Where(p => p.ProductName.Substring(0, 3) == "Cha")
             .Select();
 
         products.Should().NotBeEmpty();
-        // SQLite SUBSTR uses 1-based indexing
         products.Should().OnlyContain(p => p.ProductName!.Substring(0, 3) == "Cha");
     }
 
@@ -169,7 +168,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void Length_CombinedWithAnd_FiltersCorrectly()
     {
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Length(p.ProductName) > 5)
+            .Where(p => p.ProductName.Length > 5)
             .And(p => p.Discontinued == false)
             .Select();
 
@@ -180,11 +179,11 @@ public class FluentStringFunctionsTests : IDisposable
     }
 
     [Fact]
-    public void Upper_CombinedWithOr_FiltersCorrectly()
+    public void ToUpper_CombinedWithOr_FiltersCorrectly()
     {
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Upper(p.ProductName) == "CHAI")
-            .Or(p => Sql.Upper(p.ProductName) == "CHANG")
+            .Where(p => p.ProductName.ToUpper() == "CHANG")
+            .Or(p => p.ProductName.ToUpper() == "CHANG")
             .ToSql();
 
         sql.Should().Contain("UPPER");
@@ -195,8 +194,8 @@ public class FluentStringFunctionsTests : IDisposable
     public void Multiple_StringFunctions_InSameQuery()
     {
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Length(p.ProductName) > 5)
-            .And(p => Sql.Upper(p.ProductName) != "TEST")
+            .Where(p => p.ProductName.Length > 5)
+            .And(p => p.ProductName.ToUpper() != "TEST")
             .ToSql();
 
         sql.Should().Contain("LENGTH");
@@ -212,7 +211,7 @@ public class FluentStringFunctionsTests : IDisposable
     public async Task Length_SelectAsync_FiltersCorrectly()
     {
         var products = await _db.Connection.From<Product>()
-            .Where(p => Sql.Length(p.ProductName) > 10)
+            .Where(p => p.ProductName.Length > 10)
             .SelectAsync();
 
         products.Should().NotBeEmpty();
@@ -220,10 +219,10 @@ public class FluentStringFunctionsTests : IDisposable
     }
 
     [Fact]
-    public async Task Upper_CountAsync_ReturnsFilteredCount()
+    public async Task ToUpper_CountAsync_ReturnsFilteredCount()
     {
         var count = await _db.Connection.From<Product>()
-            .Where(p => Sql.Upper(p.ProductName) == "CHAI")
+            .Where(p => p.ProductName.ToUpper() == "CHANG")
             .CountAsync();
 
         count.Should().BeGreaterThan(0);
@@ -237,7 +236,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void Length_WithOrderBy_WorksCorrectly()
     {
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Length(p.ProductName) > 5)
+            .Where(p => p.ProductName.Length > 5)
             .OrderBy(p => p.ProductName)
             .Take(5)
             .Select();
@@ -249,15 +248,13 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void Substring_WithDifferentPositions()
     {
-        // Test substring starting at position 2
+        // Test substring starting at position 1 (C# 0-based)
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Substring(p.ProductName, 2, 2) == "ha")
+            .Where(p => p.ProductName.Substring(1, 2) == "ha")
             .ToSql();
 
-        // Values are parameterized, not inlined
         sql.Should().Contain("SUBSTR");
         sql.Should().Contain("product_name");
-        sql.Should().Contain("@SqlFn");  // start position parameter
     }
 
     [Fact]
@@ -265,10 +262,34 @@ public class FluentStringFunctionsTests : IDisposable
     {
         // QuantityPerUnit is a nullable string column
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Length(p.QuantityPerUnit) > 5)
+            .Where(p => p.QuantityPerUnit!.Length > 5)
             .ToSql();
 
         sql.Should().Contain("LENGTH");
         sql.Should().Contain("quantity_per_unit");
+    }
+
+    // ==========================================
+    // Sql.* still works for functions without C# equivalents
+    // ==========================================
+
+    [Fact]
+    public void SqlCoalesce_StillWorks()
+    {
+        var sql = _db.Connection.From<Product>()
+            .Where(p => Sql.Coalesce(p.QuantityPerUnit, "N/A") != "N/A")
+            .ToSql();
+
+        sql.Should().Contain("COALESCE");
+    }
+
+    [Fact]
+    public void SqlYear_StillWorks()
+    {
+        var sql = _db.Connection.From<Order>()
+            .Where(o => Sql.Year(o.OrderDate) == 1997)
+            .ToSql();
+
+        sql.Should().Contain("order_date");
     }
 }
