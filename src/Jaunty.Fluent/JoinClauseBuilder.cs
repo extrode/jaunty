@@ -47,7 +47,7 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
         return CreateJoinedQuery(condition);
     }
 
-    public IJoinedQuery<TFrom, TJoin> OnColumns(string leftColumn, string rightColumn)
+    public IJoinedQuery<TFrom, TJoin> On(string leftColumn, string rightColumn)
     {
         var condition = $"{leftColumn} = {rightColumn}";
         return CreateJoinedQuery(condition);
@@ -58,10 +58,10 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
         return CreateJoinedQuery(condition);
     }
 
-    public IJoinedQuery<TFrom, TJoin> On(string condition, object parameters)
+    public IJoinedQuery<TFrom, TJoin> On<TValue>(string condition, TValue value)
     {
         var joinedQuery = CreateJoinedQuery(condition);
-        joinedQuery.AddParameters(parameters);
+        joinedQuery.AddParameter("@value", value);
         return joinedQuery;
     }
 

@@ -518,17 +518,9 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     internal void AddJoin(JoinInfo join) => _joins.Add(join);
 
-    internal void AddParameters(object parameters)
+    internal void AddParameter<TValue>(string name, TValue value)
     {
-        if (parameters == null) return;
-
-        var props = parameters.GetType().GetProperties();
-        foreach (var prop in props)
-        {
-            var paramName = $"@{prop.Name}";
-            var value = prop.GetValue(parameters);
-            _parameters.Add(paramName, value);
-        }
+        _parameters.Add(name, value);
     }
 
     #endregion
@@ -789,13 +781,13 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         return CreateJoinedQuery3(condition);
     }
 
-    public IJoinedQuery3<T1, T2, T3> OnColumns(string leftColumn, string rightColumn)
+    public IJoinedQuery3<T1, T2, T3> On(string leftColumn, string rightColumn)
     {
         var condition = $"{leftColumn} = {rightColumn}";
         return CreateJoinedQuery3(condition);
     }
 
-    public IJoinedQuery3<T1, T2, T3> OnRaw(string condition)
+    public IJoinedQuery3<T1, T2, T3> On(string condition)
     {
         return CreateJoinedQuery3(condition);
     }

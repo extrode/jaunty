@@ -265,24 +265,24 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
 public interface IJoinClause<T1, T2, T3> where T1 : new() where T2 : new() where T3 : new()
 {
     /// <summary>
-    /// Specifies the join condition using key expressions.
+    /// Specifies the join condition using key expressions from T1.
     /// </summary>
     IJoinedQuery3<T1, T2, T3> On<TLeftKey, TRightKey>(Expression<Func<T1, TLeftKey>> leftKey, Expression<Func<T3, TRightKey>> rightKey);
 
     /// <summary>
-    /// Specifies the join condition using key from T2.
+    /// Specifies the join condition using key expressions from T2.
     /// </summary>
     IJoinedQuery3<T1, T2, T3> OnFromSecond<TLeftKey, TRightKey>(Expression<Func<T2, TLeftKey>> leftKey, Expression<Func<T3, TRightKey>> rightKey);
 
     /// <summary>
     /// Specifies the join condition using column names.
     /// </summary>
-    IJoinedQuery3<T1, T2, T3> OnColumns(string leftColumn, string rightColumn);
+    IJoinedQuery3<T1, T2, T3> On(string leftColumn, string rightColumn);
 
     /// <summary>
     /// Specifies the join condition using raw SQL.
     /// </summary>
-    IJoinedQuery3<T1, T2, T3> OnRaw(string condition);
+    IJoinedQuery3<T1, T2, T3> On(string condition);
 }
 
 /// <summary>
