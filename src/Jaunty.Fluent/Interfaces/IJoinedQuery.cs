@@ -95,33 +95,54 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     // --- SELECT Operations ---
 
     /// <summary>
-    /// Executes the query and returns the primary entity.
+    /// Executes the query and returns the primary (From) entity.
+    /// Equivalent to <c>Select&lt;TFrom&gt;()</c>.
     /// </summary>
+    /// <example>
+    /// <code>
+    /// var products = db.From&lt;Product&gt;()
+    ///     .InnerJoin&lt;Category&gt;()
+    ///     .On(p =&gt; p.CategoryId, c =&gt; c.CategoryId)
+    ///     .Select();  // Returns List&lt;Product&gt;
+    /// </code>
+    /// </example>
     List<TFrom> Select();
 
     /// <summary>
-    /// Executes the query and returns the joined entity.
+    /// Executes the query and returns the specified entity type.
     /// </summary>
-    List<TJoin> SelectJoined();
+    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    /// <example>
+    /// <code>
+    /// // Select only products (same as Select())
+    /// var products = db.From&lt;Product&gt;()
+    ///     .InnerJoin&lt;Category&gt;()
+    ///     .On(p =&gt; p.CategoryId, c =&gt; c.CategoryId)
+    ///     .Select&lt;Product&gt;();
+    ///
+    /// // Select only categories
+    /// var categories = db.From&lt;Product&gt;()
+    ///     .InnerJoin&lt;Category&gt;()
+    ///     .On(p =&gt; p.CategoryId, c =&gt; c.CategoryId)
+    ///     .Select&lt;Category&gt;();
+    /// </code>
+    /// </example>
+    List<T> Select<T>() where T : new();
 
     /// <summary>
     /// Executes the query and returns both entities as tuples.
-    /// </summary>
-    List<(TFrom From, TJoin Joined)> SelectBoth();
-
-    /// <summary>
-    /// Executes the query and returns both entities as tuples.
-    /// Alias for SelectBoth() with explicit type parameters for readability.
     /// </summary>
     /// <typeparam name="T1">Must be <typeparamref name="TFrom"/>.</typeparam>
     /// <typeparam name="T2">Must be <typeparamref name="TJoin"/>.</typeparam>
+    /// <example>
+    /// <code>
+    /// var results = db.From&lt;Product&gt;()
+    ///     .InnerJoin&lt;Category&gt;()
+    ///     .On(p =&gt; p.CategoryId, c =&gt; c.CategoryId)
+    ///     .Select&lt;Product, Category&gt;();  // Returns List&lt;(Product, Category)&gt;
+    /// </code>
+    /// </example>
     List<(T1, T2)> Select<T1, T2>() where T1 : new() where T2 : new();
-
-    /// <summary>
-    /// Executes the query and returns both entities using tuple syntax.
-    /// </summary>
-    /// <typeparam name="TTuple">Must be <c>ValueTuple&lt;TFrom, TJoin&gt;</c>.</typeparam>
-    List<TTuple> SelectTuple<TTuple>() where TTuple : struct;
 
     /// <summary>
     /// Executes the query with a custom projection.
@@ -129,12 +150,26 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     List<TResult> Select<TResult>(Func<TFrom, TJoin, TResult> mapper);
 
     /// <summary>
-    /// Returns the first result or throws if empty.
+    /// Returns the first result of the specified type or throws if empty.
+    /// </summary>
+    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    T SelectFirst<T>() where T : new();
+
+    /// <summary>
+    /// Returns the first result of the specified type, or default if empty.
+    /// </summary>
+    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    T? SelectFirstOrDefault<T>() where T : new();
+
+    /// <summary>
+    /// Returns the first result of the primary entity or throws if empty.
+    /// Equivalent to <c>SelectFirst&lt;TFrom&gt;()</c>.
     /// </summary>
     TFrom SelectFirst();
 
     /// <summary>
-    /// Returns the first result or default if empty.
+    /// Returns the first result of the primary entity, or default if empty.
+    /// Equivalent to <c>SelectFirstOrDefault&lt;TFrom&gt;()</c>.
     /// </summary>
     TFrom? SelectFirstOrDefault();
 
@@ -161,28 +196,23 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     // --- Async Operations ---
 
     /// <summary>
-    /// Executes the query asynchronously and returns the primary entity.
+    /// Executes the query asynchronously and returns the primary (From) entity.
+    /// Equivalent to <c>SelectAsync&lt;TFrom&gt;()</c>.
     /// </summary>
     Task<List<TFrom>> SelectAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Executes the query asynchronously and returns both entities as tuples.
+    /// Executes the query asynchronously and returns the specified entity type.
     /// </summary>
-    Task<List<(TFrom From, TJoin Joined)>> SelectBothAsync(CancellationToken cancellationToken = default);
+    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    Task<List<T>> SelectAsync<T>(CancellationToken cancellationToken = default) where T : new();
 
     /// <summary>
     /// Executes the query asynchronously and returns both entities as tuples.
-    /// Alias for SelectBothAsync() with explicit type parameters for readability.
     /// </summary>
     /// <typeparam name="T1">Must be <typeparamref name="TFrom"/>.</typeparam>
     /// <typeparam name="T2">Must be <typeparamref name="TJoin"/>.</typeparam>
     Task<List<(T1, T2)>> SelectAsync<T1, T2>(CancellationToken cancellationToken = default) where T1 : new() where T2 : new();
-
-    /// <summary>
-    /// Executes the query asynchronously and returns both entities using tuple syntax.
-    /// </summary>
-    /// <typeparam name="TTuple">Must be <c>ValueTuple&lt;TFrom, TJoin&gt;</c>.</typeparam>
-    Task<List<TTuple>> SelectTupleAsync<TTuple>(CancellationToken cancellationToken = default) where TTuple : struct;
 
     /// <summary>
     /// Executes the query asynchronously with a custom projection.
@@ -190,17 +220,26 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     Task<List<TResult>> SelectAsync<TResult>(Func<TFrom, TJoin, TResult> mapper, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Executes the query asynchronously and returns the joined entity.
+    /// Returns the first result of the specified type asynchronously or throws if empty.
     /// </summary>
-    Task<List<TJoin>> SelectJoinedAsync(CancellationToken cancellationToken = default);
+    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    Task<T> SelectFirstAsync<T>(CancellationToken cancellationToken = default) where T : new();
 
     /// <summary>
-    /// Returns the first result asynchronously or throws if empty.
+    /// Returns the first result of the specified type asynchronously, or default if empty.
+    /// </summary>
+    /// <typeparam name="T">Must be either <typeparamref name="TFrom"/> or <typeparamref name="TJoin"/>.</typeparam>
+    Task<T?> SelectFirstOrDefaultAsync<T>(CancellationToken cancellationToken = default) where T : new();
+
+    /// <summary>
+    /// Returns the first result of the primary entity asynchronously or throws if empty.
+    /// Equivalent to <c>SelectFirstAsync&lt;TFrom&gt;()</c>.
     /// </summary>
     Task<TFrom> SelectFirstAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Returns the first result asynchronously or default if empty.
+    /// Returns the first result of the primary entity asynchronously, or default if empty.
+    /// Equivalent to <c>SelectFirstOrDefaultAsync&lt;TFrom&gt;()</c>.
     /// </summary>
     Task<TFrom?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
 

@@ -58,29 +58,29 @@ public class FluentJoinTests : IDisposable
     }
 
     [Fact]
-    public void InnerJoin_SelectJoined_ReturnsCategories()
+    public void InnerJoin_SelectTyped_ReturnsCategories()
     {
         var categories = _db.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
-            .SelectJoined();
+            .Select<Category>();
 
         categories.Should().NotBeEmpty();
         categories.First().CategoryName.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
-    public void InnerJoin_SelectBoth_ReturnsTuples()
+    public void InnerJoin_SelectBothTyped_ReturnsTuples()
     {
         var results = _db.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
-            .SelectBoth();
+            .Select<Product, Category>();
 
         results.Should().NotBeEmpty();
         var first = results.First();
-        first.From.ProductName.Should().NotBeNullOrEmpty();
-        first.Joined.CategoryName.Should().NotBeNullOrEmpty();
+        first.Item1.ProductName.Should().NotBeNullOrEmpty();
+        first.Item2.CategoryName.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -189,20 +189,6 @@ public class FluentJoinTests : IDisposable
     }
 
     [Fact]
-    public void InnerJoin_SelectTuple_ReturnsTuples()
-    {
-        var results = _db.Connection.From<Product>()
-            .InnerJoin<Category>()
-            .On(p => p.CategoryId, c => c.CategoryId)
-            .SelectTuple<(Product, Category)>();
-
-        results.Should().NotBeEmpty();
-        var first = results.First();
-        first.Item1.ProductName.Should().NotBeNullOrEmpty();
-        first.Item2.CategoryName.Should().NotBeNullOrEmpty();
-    }
-
-    [Fact]
     public void InnerJoin_SelectGeneric_WithWhere_FiltersResults()
     {
         var results = _db.Connection.From<Product>()
@@ -210,19 +196,6 @@ public class FluentJoinTests : IDisposable
             .On(p => p.CategoryId, c => c.CategoryId)
             .Where((p, c) => c.CategoryId == 1)
             .Select<Product, Category>();
-
-        results.Should().NotBeEmpty();
-        results.Should().OnlyContain(r => r.Item1.CategoryId == 1);
-    }
-
-    [Fact]
-    public void InnerJoin_SelectTuple_WithWhere_FiltersResults()
-    {
-        var results = _db.Connection.From<Product>()
-            .InnerJoin<Category>()
-            .On(p => p.CategoryId, c => c.CategoryId)
-            .Where((p, c) => c.CategoryId == 1)
-            .SelectTuple<(Product, Category)>();
 
         results.Should().NotBeEmpty();
         results.Should().OnlyContain(r => r.Item1.CategoryId == 1);
@@ -255,29 +228,17 @@ public class FluentJoinTests : IDisposable
     }
 
     [Fact]
-    public void InnerJoin_SelectTuple_WrongTupleType_ThrowsException()
+    public void InnerJoin_SelectTyped_WrongType_ThrowsException()
     {
         var query = _db.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId);
 
-        var act = () => query.SelectTuple<(Category, Product)>(); // Wrong tuple type
+        // Order is not part of this join (Product + Category)
+        var act = () => query.Select<Order>();
 
         act.Should().Throw<ArgumentException>()
-            .WithMessage("*Expected (Product, Category)*");
-    }
-
-    [Fact]
-    public void InnerJoin_SelectTuple_NonTuple_ThrowsException()
-    {
-        var query = _db.Connection.From<Product>()
-            .InnerJoin<Category>()
-            .On(p => p.CategoryId, c => c.CategoryId);
-
-        var act = () => query.SelectTuple<int>(); // Not a tuple
-
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*TTuple must be ValueTuple*");
+            .WithMessage("*T must be Product or Category*");
     }
 
     [Fact]
@@ -295,17 +256,16 @@ public class FluentJoinTests : IDisposable
     }
 
     [Fact]
-    public async Task InnerJoin_SelectTupleAsync_ReturnsTuples()
+    public async Task InnerJoin_SelectAsyncTyped_ReturnsCategories()
     {
         var results = await _db.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
-            .SelectTupleAsync<(Product, Category)>();
+            .SelectAsync<Category>();
 
         results.Should().NotBeEmpty();
         var first = results.First();
-        first.Item1.ProductName.Should().NotBeNullOrEmpty();
-        first.Item2.CategoryName.Should().NotBeNullOrEmpty();
+        first.CategoryName.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -319,28 +279,17 @@ public class FluentJoinTests : IDisposable
         results.Should().NotBeEmpty();
     }
 
-    [Fact]
-    public void LeftJoin_SelectTuple_ReturnsTuples()
-    {
-        var results = _db.Connection.From<Product>()
-            .LeftJoin<Category>()
-            .On(p => p.CategoryId, c => c.CategoryId)
-            .SelectTuple<(Product, Category)>();
-
-        results.Should().NotBeEmpty();
-    }
-
     // ==========================================
     // Async Variants Tests
     // ==========================================
 
     [Fact]
-    public async Task InnerJoin_SelectJoinedAsync_ReturnsCategories()
+    public async Task InnerJoin_SelectAsyncCategory_ReturnsCategories()
     {
         var categories = await _db.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
-            .SelectJoinedAsync();
+            .SelectAsync<Category>();
 
         categories.Should().NotBeEmpty();
         categories.First().CategoryName.Should().NotBeNullOrEmpty();
