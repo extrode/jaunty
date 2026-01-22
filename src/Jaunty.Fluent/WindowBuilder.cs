@@ -48,10 +48,10 @@ public sealed class WindowBuilder<TResult>
     /// <typeparam name="TKey">The type of the order key.</typeparam>
     /// <param name="column">The column to order by descending.</param>
     /// <returns>The WindowBuilder for chaining.</returns>
-    public WindowBuilder<TResult> OrderByDesc<TKey>(TKey column)
+    public WindowBuilder<TResult> OrderByDescending<TKey>(TKey column)
     {
         throw new InvalidOperationException(
-            "WindowBuilder.OrderByDesc is a marker method for SQL generation and cannot be called directly. " +
+            "WindowBuilder.OrderByDescending is a marker method for SQL generation and cannot be called directly. " +
             "Use it only within Jaunty fluent query expressions.");
     }
 

@@ -19,9 +19,9 @@ public interface IJoinClause<TFrom, TJoin> where TFrom : new() where TJoin : new
     /// <returns>A joined query builder for further operations.</returns>
     /// <example>
     /// <code>
-    /// db.From&lt;Product&gt;()
-    ///     .InnerJoin&lt;Category&gt;()
-    ///     .On(p =&gt; p.CategoryId, c =&gt; c.Id)
+    /// db.From<Product>()
+    ///     .InnerJoin<Category>()
+    ///     .On(p => p.CategoryId, c => c.Id)
     ///     .Select();
     /// </code>
     /// </example>
@@ -43,6 +43,37 @@ public interface IJoinClause<TFrom, TJoin> where TFrom : new() where TJoin : new
     IJoinedQuery<TFrom, TJoin> On(Expression<Func<TFrom, TJoin, bool>> predicate);
 
     /// <summary>
+    /// Specifies the join condition using a raw SQL condition.
+    /// </summary>
+    /// <param name="condition">The raw SQL join condition.</param>
+    /// <returns>A joined query builder for further operations.</returns>
+    /// <example>
+    /// <code>
+    /// db.From<Product>("p")
+    ///     .InnerJoin<Category>("c")
+    ///     .On("p.category_id = c.id AND p.active = 1")
+    ///     .Select();
+    /// </code>
+    /// </example>
+    IJoinedQuery<TFrom, TJoin> On(string condition);
+
+    /// <summary>
+    /// Specifies the join condition using a raw SQL condition with parameters.
+    /// </summary>
+    /// <param name="condition">The raw SQL join condition with parameter placeholders.</param>
+    /// <param name="parameters">An anonymous object containing parameter values.</param>
+    /// <returns>A joined query builder for further operations.</returns>
+    /// <example>
+    /// <code>
+    /// db.From<Product>("p")
+    ///     .InnerJoin<Category>("c")
+    ///     .On("p.category_id = c.id AND p.active = @active", new { active = 1 })
+    ///     .Select();
+    /// </code>
+    /// </example>
+    IJoinedQuery<TFrom, TJoin> On(string condition, object parameters);
+
+    /// <summary>
     /// Specifies the join condition using column names (equality join).
     /// </summary>
     /// <param name="leftColumn">The left column (e.g., "p.category_id" or "products.category_id").</param>
@@ -50,26 +81,11 @@ public interface IJoinClause<TFrom, TJoin> where TFrom : new() where TJoin : new
     /// <returns>A joined query builder for further operations.</returns>
     /// <example>
     /// <code>
-    /// db.From&lt;Product&gt;("p")
-    ///     .InnerJoin&lt;Category&gt;("c")
+    /// db.From<Product>("p")
+    ///     .InnerJoin<Category>("c")
     ///     .OnColumns("p.category_id", "c.id")
     ///     .Select();
     /// </code>
     /// </example>
     IJoinedQuery<TFrom, TJoin> OnColumns(string leftColumn, string rightColumn);
-
-    /// <summary>
-    /// Specifies the join condition using a raw SQL condition.
-    /// </summary>
-    /// <param name="condition">The raw SQL join condition.</param>
-    /// <returns>A joined query builder for further operations.</returns>
-    /// <example>
-    /// <code>
-    /// db.From&lt;Product&gt;("p")
-    ///     .InnerJoin&lt;Category&gt;("c")
-    ///     .OnRaw("p.category_id = c.id AND p.active = 1")
-    ///     .Select();
-    /// </code>
-    /// </example>
-    IJoinedQuery<TFrom, TJoin> OnRaw(string condition);
 }

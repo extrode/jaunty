@@ -439,7 +439,7 @@ public static partial class Sql
     /// var ranked = db.From&lt;Product&gt;()
     ///     .Select(p => new {
     ///         p.ProductName,
-    ///         DenseRank = Sql.DenseRank().OrderByDesc(p.UnitPrice)
+    ///         DenseRank = Sql.DenseRank().OrderByDescending(p.UnitPrice)
     ///     });
     ///
     /// // SQL: SELECT product_name,

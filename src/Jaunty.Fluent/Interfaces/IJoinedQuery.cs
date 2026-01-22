@@ -72,6 +72,26 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     /// </summary>
     IJoinedQuery<TFrom, TJoin> OrderByJoinedDescending<TKey>(Expression<Func<TJoin, TKey>> keySelector);
 
+    /// <summary>
+    /// Adds an additional ORDER BY column (ascending) for the primary entity.
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> ThenBy<TKey>(Expression<Func<TFrom, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (ascending) for the joined entity.
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> ThenByJoined<TKey>(Expression<Func<TJoin, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (descending) for the primary entity.
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> ThenByDescending<TKey>(Expression<Func<TFrom, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (descending) for the joined entity.
+    /// </summary>
+    IJoinedQuery<TFrom, TJoin> ThenByJoinedDescending<TKey>(Expression<Func<TJoin, TKey>> keySelector);
+
     // --- SELECT Operations ---
 
     /// <summary>

@@ -51,7 +51,7 @@ public class FluentJoinTests : IDisposable
     {
         var products = _db.Connection.From<Product>("p")
             .InnerJoin<Category>("c")
-            .OnRaw("p.category_id = c.category_id")
+            .On("p.category_id = c.category_id")
             .Select();
 
         products.Should().NotBeEmpty();
