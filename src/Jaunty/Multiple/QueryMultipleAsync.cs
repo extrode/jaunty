@@ -10,28 +10,28 @@ public static partial class Jaunty
     public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteQueryMultipleAsync(dbConnection, sql, null, default, cancellationToken);
     }
 
     public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteQueryMultipleAsync(dbConnection, sql, parameters, default, cancellationToken);
     }
 
     public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteQueryMultipleAsync(dbConnection, sql, null, options, cancellationToken);
     }
 
     public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
     }
 
@@ -43,7 +43,7 @@ public static partial class Jaunty
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
         using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
         reader(gridReader);
@@ -57,7 +57,7 @@ public static partial class Jaunty
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
         using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
         await reader(gridReader);
@@ -71,7 +71,7 @@ public static partial class Jaunty
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
         using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
         return reader(gridReader);
@@ -85,7 +85,7 @@ public static partial class Jaunty
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
         using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
         return await reader(gridReader);

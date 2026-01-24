@@ -17,9 +17,11 @@ public static partial class Jaunty
     /// <param name="entity">The entity to upsert.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Number of affected rows.</returns>
-    public static Task<int> UpsertAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> UpsertAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return UpsertCoreAsync(connection, entity, default, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : UpsertCoreAsync(dbConnection, entity, default, cancellationToken);
     }
 
     /// <summary>
@@ -31,9 +33,11 @@ public static partial class Jaunty
     /// <param name="options">Command options (transaction, timeout).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Number of affected rows.</returns>
-    public static Task<int> UpsertAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> UpsertAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return UpsertCoreAsync(connection, entity, options, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : UpsertCoreAsync(dbConnection, entity, options, cancellationToken);
     }
 
     private static async Task<int> UpsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : class, new()

@@ -19,9 +19,11 @@ public static partial class Jaunty
     /// <param name="entities">The entities to update.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The number of rows updated.</returns>
-    public static Task<int> BulkUpdateAsync<T>(this DbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> BulkUpdateAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return BulkUpdateAsync(connection, entities, default, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : BulkUpdateAsync(dbConnection, entities, default, cancellationToken);
     }
 
     /// <summary>
@@ -34,9 +36,11 @@ public static partial class Jaunty
     /// <param name="options">Command options (transaction, timeout).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The number of rows updated.</returns>
-    public static Task<int> BulkUpdateAsync<T>(this DbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> BulkUpdateAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return BulkUpdateCoreAsync(connection, entities, options, ignoreConstraints: false, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : BulkUpdateCoreAsync(dbConnection, entities, options, ignoreConstraints: false, cancellationToken);
     }
 
     /// <summary>
@@ -50,9 +54,11 @@ public static partial class Jaunty
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The number of rows updated.</returns>
     /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
-    public static Task<int> BulkUpdateIgnoreConstraintsAsync<T>(this DbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> BulkUpdateIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return BulkUpdateIgnoreConstraintsAsync(connection, entities, default, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : BulkUpdateIgnoreConstraintsAsync(dbConnection, entities, default, cancellationToken);
     }
 
     /// <summary>
@@ -67,9 +73,11 @@ public static partial class Jaunty
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The number of rows updated.</returns>
     /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
-    public static Task<int> BulkUpdateIgnoreConstraintsAsync<T>(this DbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> BulkUpdateIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return BulkUpdateCoreAsync(connection, entities, options, ignoreConstraints: true, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : BulkUpdateCoreAsync(dbConnection, entities, options, ignoreConstraints: true, cancellationToken);
     }
 
     private static async Task<int> BulkUpdateCoreAsync<T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : class, new()

@@ -20,7 +20,7 @@ public static partial class Jaunty
     public static Task<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryFirstOrDefaultCoreAsync<T>(dbConnection, sql, null, default, MappingMode.Strict, cancellationToken);
     }
 
@@ -37,7 +37,7 @@ public static partial class Jaunty
     public static Task<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryFirstOrDefaultCoreAsync<T>(dbConnection, sql, parameters, default, MappingMode.Strict, cancellationToken);
     }
 
@@ -54,7 +54,7 @@ public static partial class Jaunty
     public static Task<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryFirstOrDefaultCoreAsync<T>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
     }
 
@@ -72,7 +72,7 @@ public static partial class Jaunty
     public static Task<T?> QueryFirstOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
-            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryFirstOrDefaultCoreAsync<T>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
     }
 }

@@ -13,56 +13,56 @@ public static partial class Jaunty
         public IAsyncEnumerable<T> QueryPartialUnbufferedAsync<T>(string sql, CancellationToken cancellationToken = default) where T : new()
         {
             return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
                 : QueryStreamCoreAsync<T>(connection, sql, null, default, MappingMode.Projection, cancellationToken);
         }
 
         public IAsyncEnumerable<T> QueryPartialUnbufferedAsync<T>(string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
         {
             return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
                 : QueryStreamCoreAsync<T>(connection, sql, parameters, default, MappingMode.Projection, cancellationToken);
         }
 
         public IAsyncEnumerable<T> QueryPartialUnbufferedAsync<T>(string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
         {
             return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
                 : QueryStreamCoreAsync<T>(connection, sql, null, options, MappingMode.Projection, cancellationToken);
         }
 
         public IAsyncEnumerable<T> QueryPartialUnbufferedAsync<T>(string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
         {
             return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
                 : QueryStreamCoreAsync<T>(connection, sql, parameters, options, MappingMode.Projection, cancellationToken);
         }
 #else
         public Task<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(string sql, CancellationToken cancellationToken = default) where T : new()
         {
             return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
                 : QueryStreamCoreAsync<T>(dbConnection, sql, null, default, MappingMode.Projection, cancellationToken);
         }
 
         public Task<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
         {
             return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
                 : QueryStreamCoreAsync<T>(dbConnection, sql, parameters, default, MappingMode.Projection, cancellationToken);
         }
 
         public Task<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
         {
             return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
                 : QueryStreamCoreAsync<T>(dbConnection, sql, null, options, MappingMode.Projection, cancellationToken);
         }
 
         public Task<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
         {
             return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+                ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
                 : QueryStreamCoreAsync<T>(dbConnection, sql, parameters, options, MappingMode.Projection, cancellationToken);
         }
 #endif
