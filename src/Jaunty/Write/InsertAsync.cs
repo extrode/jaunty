@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
@@ -16,9 +17,11 @@ public static partial class Jaunty
     /// <param name="entity">The entity to insert.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Generated identity value, or 1 for non-identity inserts.</returns>
-    public static Task<long> InsertAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<long> InsertAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return InsertCoreAsync(connection, entity, default, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : InsertCoreAsync(dbConnection, entity, default, cancellationToken);
     }
 
     /// <summary>
@@ -30,8 +33,10 @@ public static partial class Jaunty
     /// <param name="options">Command options (transaction, timeout).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Generated identity value, or 1 for non-identity inserts.</returns>
-    public static Task<long> InsertAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<long> InsertAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return InsertCoreAsync(connection, entity, options, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : InsertCoreAsync(dbConnection, entity, options, cancellationToken);
     }
 }

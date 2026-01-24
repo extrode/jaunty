@@ -19,9 +19,11 @@ public static partial class Jaunty
     /// <param name="entity">The entity to delete.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Number of rows affected.</returns>
-    public static Task<int> DeleteAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> DeleteAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return DeleteByEntityCoreAsync(connection, entity, default, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : DeleteByEntityCoreAsync(dbConnection, entity, default, cancellationToken);
     }
 
     /// <summary>
@@ -34,9 +36,11 @@ public static partial class Jaunty
     /// <param name="options">Command options (transaction, timeout).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Number of rows affected.</returns>
-    public static Task<int> DeleteAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> DeleteAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return DeleteByEntityCoreAsync(connection, entity, options, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : DeleteByEntityCoreAsync(dbConnection, entity, options, cancellationToken);
     }
 
     #endregion
@@ -52,9 +56,11 @@ public static partial class Jaunty
     /// <param name="id">The primary key value.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Number of rows affected.</returns>
-    public static Task<int> DeleteAsync<T>(this DbConnection connection, object id, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> DeleteAsync<T>(this IDbConnection connection, object id, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return DeleteByIdCoreAsync<T>(connection, id, default, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : DeleteByIdCoreAsync<T>(dbConnection, id, default, cancellationToken);
     }
 
     /// <summary>
@@ -67,9 +73,11 @@ public static partial class Jaunty
     /// <param name="options">Command options (transaction, timeout).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Number of rows affected.</returns>
-    public static Task<int> DeleteAsync<T>(this DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> DeleteAsync<T>(this IDbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return DeleteByIdCoreAsync<T>(connection, id, options, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : DeleteByIdCoreAsync<T>(dbConnection, id, options, cancellationToken);
     }
 
     #endregion
@@ -84,9 +92,11 @@ public static partial class Jaunty
     /// <param name="connection">The open <see cref="DbConnection"/> used to execute the delete command.</param>
     /// <param name="id">The primary key value of the entity to delete.</param>
     /// <returns>The number of rows affected by the delete operation.</returns>
-    public static async Task<int> DeleteAsync<T, TId>(this DbConnection connection, TId id, CancellationToken cancellationToken = default) where T : IEntity<TId>
+    public static async Task<int> DeleteAsync<T, TId>(this IDbConnection connection, TId id, CancellationToken cancellationToken = default) where T : IEntity<TId>
     {
-        return await DeleteByIdCoreAsync<T, TId>(connection, id, default, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : await DeleteByIdCoreAsync<T, TId>(dbConnection, id, default, cancellationToken);
     }
 
     /// <summary>
@@ -102,9 +112,11 @@ public static partial class Jaunty
     /// <param name="id">The primary key value of the entity to delete.</param>
     /// <param name="options">Additional command options such as timeout or transaction settings.</param>
     /// <returns>The number of rows affected by the delete operation.</returns>
-    public static async Task<int> DeleteAsync<T, TId>(this DbConnection connection, TId id, CommandOptions options, CancellationToken cancellationToken = default) where T : IEntity<TId>
+    public static async Task<int> DeleteAsync<T, TId>(this IDbConnection connection, TId id, CommandOptions options, CancellationToken cancellationToken = default) where T : IEntity<TId>
     {
-        return await DeleteByIdCoreAsync<T, TId>(connection, id, options, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : await DeleteByIdCoreAsync<T, TId>(dbConnection, id, options, cancellationToken);
     }
 
     #endregion

@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
@@ -15,9 +16,11 @@ public static partial class Jaunty
     /// <param name="entity">The entity to update.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Number of rows affected.</returns>
-    public static Task<int> UpdateAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> UpdateAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return UpdateCoreAsync(connection, entity, default, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : UpdateCoreAsync(dbConnection, entity, default, cancellationToken);
     }
 
     /// <summary>
@@ -30,8 +33,10 @@ public static partial class Jaunty
     /// <param name="options">Command options (transaction, timeout).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Number of rows affected.</returns>
-    public static Task<int> UpdateAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> UpdateAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return UpdateCoreAsync(connection, entity, options, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : UpdateCoreAsync(dbConnection, entity, options, cancellationToken);
     }
 }

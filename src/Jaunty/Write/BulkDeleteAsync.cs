@@ -4,7 +4,6 @@ using System.Data.Common;
 using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
-using Jaunty.Internals.Entity;
 
 namespace Jaunty;
 
@@ -19,9 +18,11 @@ public static partial class Jaunty
     /// <param name="entities">The entities to delete.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The number of rows deleted.</returns>
-    public static Task<int> BulkDeleteAsync<T>(this DbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> BulkDeleteAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return BulkDeleteAsync(connection, entities, default, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : BulkDeleteAsync(dbConnection, entities, default, cancellationToken);
     }
 
     /// <summary>
@@ -34,9 +35,11 @@ public static partial class Jaunty
     /// <param name="options">Command options (transaction, timeout).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The number of rows deleted.</returns>
-    public static Task<int> BulkDeleteAsync<T>(this DbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> BulkDeleteAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return BulkDeleteCoreAsync(connection, entities, options, ignoreConstraints: false, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : BulkDeleteCoreAsync(dbConnection, entities, options, ignoreConstraints: false, cancellationToken);
     }
 
     /// <summary>
@@ -51,9 +54,11 @@ public static partial class Jaunty
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The number of rows deleted.</returns>
     /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
-    public static Task<int> BulkDeleteIgnoreConstraintsAsync<T>(this DbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> BulkDeleteIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return BulkDeleteIgnoreConstraintsAsync(connection, entities, default, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : BulkDeleteIgnoreConstraintsAsync(dbConnection, entities, default, cancellationToken);
     }
 
     /// <summary>
@@ -69,9 +74,11 @@ public static partial class Jaunty
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The number of rows deleted.</returns>
     /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
-    public static Task<int> BulkDeleteIgnoreConstraintsAsync<T>(this DbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static Task<int> BulkDeleteIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return BulkDeleteCoreAsync(connection, entities, options, ignoreConstraints: true, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : BulkDeleteCoreAsync(dbConnection, entities, options, ignoreConstraints: true, cancellationToken);
     }
 
     private static async Task<int> BulkDeleteCoreAsync<T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : class, new()
