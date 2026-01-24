@@ -51,7 +51,7 @@ public static partial class Jaunty
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : QueryScalarCoreAsync<T>(dbConnection, sql, null, options, cancellationToken);
+            : QueryScalarCoreAsync(dbConnection, sql, null, options, cancellationToken);
     }
 
     /// <summary>
@@ -68,6 +68,6 @@ public static partial class Jaunty
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : QueryScalarCoreAsync<T>(dbConnection, sql, parameters, options, cancellationToken);
+            : QueryScalarCoreAsync(dbConnection, sql, parameters, options, cancellationToken);
     }
 }
