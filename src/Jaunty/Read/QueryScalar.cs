@@ -41,7 +41,7 @@ public static partial class Jaunty
     /// <returns>The value of the first column of the first row in the result set.</returns>
     public static T QueryScalar<T>(this IDbConnection connection, string sql, CommandOptions<T> options)
     {
-        return QueryScalarCore<T>(connection, sql, null, options);
+        return QueryScalarCore(connection, sql, null, options);
     }
 
     /// <summary>
@@ -55,6 +55,6 @@ public static partial class Jaunty
     /// <returns>The value of the first column of the first row in the result set.</returns>
     public static T QueryScalar<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options)
     {
-        return QueryScalarCore<T>(connection, sql, parameters, options);
+        return QueryScalarCore(connection, sql, parameters, options);
     }
 }
