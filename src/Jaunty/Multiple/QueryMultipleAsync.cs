@@ -7,90 +7,87 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    extension(IDbConnection connection)
+    public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
     {
-        public Task<GridReader> QueryMultipleAsync(string sql, CancellationToken cancellationToken = default)
-        {
-            return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
-                : ExecuteQueryMultipleAsync(dbConnection, sql, null, default, cancellationToken);
-        }
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            : ExecuteQueryMultipleAsync(dbConnection, sql, null, default, cancellationToken);
+    }
 
-        public Task<GridReader> QueryMultipleAsync(string sql, object parameters, CancellationToken cancellationToken = default)
-        {
-            return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
-                : ExecuteQueryMultipleAsync(dbConnection, sql, parameters, default, cancellationToken);
-        }
+    public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
+    {
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            : ExecuteQueryMultipleAsync(dbConnection, sql, parameters, default, cancellationToken);
+    }
 
-        public Task<GridReader> QueryMultipleAsync(string sql, CommandOptions options, CancellationToken cancellationToken = default)
-        {
-            return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
-                : ExecuteQueryMultipleAsync(dbConnection, sql, null, options, cancellationToken);
-        }
+    public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            : ExecuteQueryMultipleAsync(dbConnection, sql, null, options, cancellationToken);
+    }
 
-        public Task<GridReader> QueryMultipleAsync(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
-        {
-            return connection is not DbConnection dbConnection
-                ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
-                : ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
-        }
+    public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.")
+            : ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
+    }
 
-        public async Task QueryMultipleAsync(string sql, Action<GridReader> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
-        {
+    public static async Task QueryMultipleAsync(this IDbConnection connection, string sql, Action<GridReader> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
+    {
 #if NET8_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(reader);
 #else
-            if (reader is null) throw new ArgumentNullException(nameof(reader));
+        if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
-            if (connection is not DbConnection dbConnection)
-                throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
+        if (connection is not DbConnection dbConnection)
+            throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
 
-            using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
-            reader(gridReader);
-        }
+        using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
+        reader(gridReader);
+    }
 
-        public async Task QueryMultipleAsync(string sql, Func<GridReader, Task> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
-        {
+    public static async Task QueryMultipleAsync(this IDbConnection connection, string sql, Func<GridReader, Task> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
+    {
 #if NET8_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(reader);
 #else
-            if (reader is null) throw new ArgumentNullException(nameof(reader));
+        if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
-            if (connection is not DbConnection dbConnection)
-                throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
+        if (connection is not DbConnection dbConnection)
+            throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
 
-            using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
-            await reader(gridReader);
-        }
+        using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
+        await reader(gridReader);
+    }
 
-        public async Task<TResult> QueryMultipleAsync<TResult>(string sql, Func<GridReader, TResult> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
-        {
+    public static async Task<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, TResult> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
+    {
 #if NET8_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(reader);
 #else
-            if (reader is null) throw new ArgumentNullException(nameof(reader));
+        if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
-            if (connection is not DbConnection dbConnection)
-                throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
+        if (connection is not DbConnection dbConnection)
+            throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
 
-            using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
-            return reader(gridReader);
-        }
+        using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
+        return reader(gridReader);
+    }
 
-        public async Task<TResult> QueryMultipleAsync<TResult>(string sql, Func<GridReader, Task<TResult>> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
-        {
+    public static async Task<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, Task<TResult>> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
+    {
 #if NET8_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(reader);
 #else
-            if (reader is null) throw new ArgumentNullException(nameof(reader));
+        if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
-            if (connection is not DbConnection dbConnection)
-                throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
+        if (connection is not DbConnection dbConnection)
+            throw new InvalidOperationException("The provided IDbConnection is not a DbConnection. Async operations require a DbConnection.");
 
-            using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
-            return await reader(gridReader);
-        }
+        using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
+        return await reader(gridReader);
     }
 }
