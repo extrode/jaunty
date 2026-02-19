@@ -249,11 +249,39 @@ internal static class MetadataCache<T>
         var isEnum = underlyingType.IsEnum;
         var conversionType = isEnum ? Enum.GetUnderlyingType(underlyingType) : underlyingType;
 
-        // Fast path: reader.GetFieldValue<T>(index)
+        // Try fast path: reader.GetFieldValue<T>(index)
         var getFieldValueMethod = typeof(DbDataReader).GetMethod(nameof(DbDataReader.GetFieldValue))!.MakeGenericMethod(conversionType);
-        var getValue = Expression.Call(reader, getFieldValueMethod, index);
+        
+        // Prepare fallback path: Convert.ToX(reader.GetValue(index))
+        var getValueMethod = typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!;
+        var getValueCall = Expression.Call(reader, getValueMethod, index);
+        
+        Expression fallbackExpression;
+        if (conversionType == typeof(string)) fallbackExpression = Expression.Convert(getValueCall, typeof(string));
+        else if (conversionType == typeof(int)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToInt32), [typeof(object)])!, getValueCall);
+        else if (conversionType == typeof(long)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToInt64), [typeof(object)])!, getValueCall);
+        else if (conversionType == typeof(bool)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToBoolean), [typeof(object)])!, getValueCall);
+        else if (conversionType == typeof(DateTime)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToDateTime), [typeof(object)])!, getValueCall);
+        else if (conversionType == typeof(decimal)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToDecimal), [typeof(object)])!, getValueCall);
+        else if (conversionType == typeof(double)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToDouble), [typeof(object)])!, getValueCall);
+        else if (conversionType == typeof(float)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToSingle), [typeof(object)])!, getValueCall);
+        else if (conversionType == typeof(short)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToInt16), [typeof(object)])!, getValueCall);
+        else if (conversionType == typeof(byte)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToByte), [typeof(object)])!, getValueCall);
+        else if (conversionType == typeof(Guid)) fallbackExpression = Expression.Call(typeof(MetadataCache<T>).GetMethod(nameof(ParseGuid), BindingFlags.NonPublic | BindingFlags.Static)!, getValueCall);
+        else
+        {
+            var changeType = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ChangeType), [typeof(object), typeof(Type)])!, getValueCall,
+                Expression.Constant(conversionType, typeof(Type)));
+            fallbackExpression = Expression.Convert(changeType, conversionType);
+        }
 
-        Expression valueExpression = getValue;
+        // try { reader.GetFieldValue<T>(i) } catch (InvalidCastException) { fallback }
+        var tryGetFast = Expression.TryCatch(
+            Expression.Call(reader, getFieldValueMethod, index),
+            Expression.Catch(typeof(InvalidCastException), fallbackExpression)
+        );
+
+        Expression valueExpression = tryGetFast;
 
         if (isEnum)
         {
