@@ -15,7 +15,7 @@ internal static class MetadataCache<T>
 {
     public static readonly EntityMetadata Metadata;
     internal static readonly PropertyContext<T>[] Properties;
-    private static readonly ConcurrentDictionary<string, PropertySetter<T>[]> SettersCache = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<ReaderSignature, PropertySetter<T>[]> SettersCache = new();
 
 #if NET8_0_OR_GREATER
     private static readonly FrozenDictionary<string, int> ColumnToIndex;
@@ -63,19 +63,32 @@ internal static class MetadataCache<T>
         if (fieldCount == 0)
             return [];
 
-        string signature = GetReaderSignature(reader, mode);
-        return SettersCache.GetOrAdd(signature, _ => BuildSetters(reader, mode));
+        var signature = new ReaderSignature(reader, mode);
+        return SettersCache.GetOrAdd(signature, static (sig, state) => BuildSetters(state.reader, state.mode), (reader, mode));
     }
 
-    private static string GetReaderSignature(IDataReader reader, MappingMode mode)
+    private readonly struct ReaderSignature : IEquatable<ReaderSignature>
     {
-        var sb = new StringBuilder();
-        sb.Append((int)mode).Append('|').Append(reader.FieldCount);
-        for (int i = 0; i < reader.FieldCount; i++)
+        private readonly int _hashCode;
+
+        public ReaderSignature(IDataReader reader, MappingMode mode)
         {
-            sb.Append('|').Append(reader.GetName(i));
+            int fieldCount = reader.FieldCount;
+            var hash = new HashCode();
+            hash.Add((int)mode);
+            hash.Add(fieldCount);
+
+            for (int i = 0; i < fieldCount; i++)
+            {
+                hash.Add(reader.GetName(i), StringComparer.OrdinalIgnoreCase);
+            }
+
+            _hashCode = hash.ToHashCode();
         }
-        return sb.ToString();
+
+        public bool Equals(ReaderSignature other) => _hashCode == other._hashCode;
+        public override bool Equals(object? obj) => obj is ReaderSignature other && Equals(other);
+        public override int GetHashCode() => _hashCode;
     }
 
     private static PropertySetter<T>[] BuildSetters(IDataReader reader, MappingMode mode)
