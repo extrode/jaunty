@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Start - Jaunty Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/themes/sage/theme.css">
+  <link rel="stylesheet" href="../src/core/styles.css">
+  <style>
+    .theme-toggle {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      padding: 0.75rem 1rem;
+      background: var(--docent-primary);
+      color: white;
+      border: none;
+      border-radius: var(--docent-radius-md);
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: var(--docent-shadow-md);
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
+  
+  <aside class="sidebar">
+    <a href="/" class="sidebar-brand">Jaunty</a>
+    <nav>
+      <div class="nav-section">
+        <div class="nav-section-title">Getting Started</div>
+        <ul class="nav-list">
+          <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+          <li class="nav-item"><a href="installation.html" class="nav-link">Installation</a></li>
+          <li class="nav-item"><a href="quickstart.html" class="nav-link active" aria-current="page">Quick Start</a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+  
+  <main class="main" id="main-content">
+    <article class="content">
+      <header class="page-header">
+        <h1>Quick Start</h1>
+        <p class="lead">Learn Jaunty basics in 5 minutes.</p>
+      </header>
+
+      <aside class="admonition admonition--tip">
+        <p class="admonition-title"> Time: 5 minutes</p>
+        <p>This guide covers the essential Jaunty operations: Query, Insert, Update, and Delete.</p>
+      </aside>
+
+      <h2>Step 1: Define Your Entity</h2>
+      <pre><code><span class="k">public class</span> <span class="kt">Product</span>
+{
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">Id</span> { <span class="k">get</span>; <span class="k">set</span>; }
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Name</span> { <span class="k">get</span>; <span class="k">set</span>; }
+    <span class="k">public</span> <span class="kt">decimal</span> <span class="n">Price</span> { <span class="k">get</span>; <span class="k">set</span>; }
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">CategoryId</span> { <span class="k">get</span>; <span class="k">set</span>; }
+}</code></pre>
+
+      <h2>Step 2: Set Up Connection</h2>
+      <pre><code><span class="k">using</span> <span class="n">System</span>.<span class="n">Data</span>.<span class="n">SQLite</span>;
+<span class="k">using</span> <span class="n">Jaunty</span>;
+
+<span class="k">using</span> <span class="k">var</span> <span class="n">connection</span> = <span class="k">new</span> <span class="n">SQLiteConnection</span>(
+    <span class="s">"Data Source=products.db"</span>);
+<span class="n">connection</span>.<span class="n">Open</span>();</code></pre>
+
+      <h2>Step 3: Query Data</h2>
+      
+      <h3>Basic Query</h3>
+      <pre><code><span class="c">// Get all products</span>
+<span class="k">var</span> <span class="n">products</span> = <span class="n">connection</span>.<span class="n">Query</span>&lt;<span class="kt">Product</span>&gt;(<span class="s">"SELECT * FROM products"</span>);</code></pre>
+
+      <h3>Query with Parameters</h3>
+      <pre><code><span class="c">// Named parameters (recommended)</span>
+<span class="k">var</span> <span class="n">products</span> = <span class="n">connection</span>.<span class="n">Query</span>&lt;<span class="kt">Product</span>&gt;(
+    <span class="s">"SELECT * FROM products WHERE category_id = @CategoryId"</span>,
+    <span class="k">new</span> { <span class="n">CategoryId</span> = <span class="m">5</span> });
+
+<span class="c">// Positional parameters</span>
+<span class="k">var</span> <span class="n">products</span> = <span class="n">connection</span>.<span class="n">Query</span>&lt;<span class="kt">Product</span>&gt;(
+    <span class="s">"SELECT * FROM products WHERE category_id = @Id"</span>,
+    <span class="m">5</span>);</code></pre>
+
+      <h3>Single Result</h3>
+      <pre><code><span class="c">// Get first product (throws if none found)</span>
+<span class="k">var</span> <span class="n">product</span> = <span class="n">connection</span>.<span class="n">QueryFirst</span>&lt;<span class="kt">Product</span>&gt;(
+    <span class="s">"SELECT * FROM products WHERE id = @Id"</span>,
+    <span class="k">new</span> { <span class="n">Id</span> = <span class="m">1</span> });
+
+<span class="c">// Get first or null</span>
+<span class="k">var</span> <span class="n">product</span> = <span class="n">connection</span>.<span class="n">QueryFirstOrDefault</span>&lt;<span class="kt">Product</span>&gt;(
+    <span class="s">"SELECT * FROM products WHERE id = @Id"</span>,
+    <span class="k">new</span> { <span class="n">Id</span> = <span class="m">1</span> });</code></pre>
+
+      <h2>Step 4: Insert Data</h2>
+      <pre><code><span class="k">var</span> <span class="n">newProduct</span> = <span class="k">new</span> <span class="kt">Product</span>
+{
+    <span class="n">Name</span> = <span class="s">"Widget"</span>,
+    <span class="n">Price</span> = <span class="m">19.99</span>m,
+    <span class="n">CategoryId</span> = <span class="m">5</span>
+};
+
+<span class="c">// Insert returns the new identity value</span>
+<span class="k">var</span> <span class="n">newId</span> = <span class="n">connection</span>.<span class="n">Insert</span>(<span class="n">newProduct</span>);
+<span class="n">Console</span>.<span class="n">WriteLine</span>(<span class="s">$"Created product with ID: {newId}"</span>);</code></pre>
+
+      <h2>Step 5: Update Data</h2>
+      <pre><code><span class="c">// Update requires [Key] attribute or Id property</span>
+<span class="n">product</span>.<span class="n">Price</span> = <span class="m">24.99</span>m;
+<span class="k">var</span> <span class="n">rowsAffected</span> = <span class="n">connection</span>.<span class="n">Update</span>(<span class="n">product</span>);
+<span class="n">Console</span>.<span class="n">WriteLine</span>(<span class="s">$"Updated {rowsAffected} rows"</span>);</code></pre>
+
+      <h2>Step 6: Delete Data</h2>
+      <pre><code><span class="c">// Delete by entity</span>
+<span class="k">var</span> <span class="n">rowsAffected</span> = <span class="n">connection</span>.<span class="n">Delete</span>(<span class="n">product</span>);
+
+<span class="c">// Delete by ID</span>
+<span class="n">rowsAffected</span> = <span class="n">connection</span>.<span class="n">Delete</span>&lt;<span class="kt">Product</span>&gt;(<span class="m">1</span>);</code></pre>
+
+      <h2>Async Example</h2>
+      <pre><code><span class="c">// All methods have async variants</span>
+<span class="k">var</span> <span class="n">products</span> = <span class="k">await</span> <span class="n">connection</span>.<span class="n">QueryAsync</span>&lt;<span class="kt">Product</span>&gt;(
+    <span class="s">"SELECT * FROM products"</span>,
+    <span class="n">cancellationToken</span>: <span class="n">CancellationToken</span>.<span class="n">None</span>);
+
+<span class="k">var</span> <span class="n">newId</span> = <span class="k">await</span> <span class="n">connection</span>.<span class="n">InsertAsync</span>(<span class="n">newProduct</span>);</code></pre>
+
+      <h2>What's Next?</h2>
+      <ul>
+        <li><a href="api/query.html">API Reference</a> - Explore all Query methods</li>
+        <li><a href="guides/attributes.html">Attributes</a> - Learn about [Table], [Column], [Key]</li>
+        <li><a href="guides/configuration.html">Configuration</a> - Customize naming conventions</li>
+      </ul>
+    </article>
+  </main>
+
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+     Toggle Theme
+  </button>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      if (newTheme === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+        localStorage.setItem('docent-theme', 'dark');
+      } else {
+        html.removeAttribute('data-theme');
+        localStorage.setItem('docent-theme', 'light');
+      }
+    }
+
+    (function() {
+      const savedTheme = localStorage.getItem('docent-theme');
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+</body>
+</html>
