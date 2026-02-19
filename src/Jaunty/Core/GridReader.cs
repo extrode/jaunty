@@ -7,64 +7,241 @@ using Jaunty.Internals.Enums;
 
 namespace Jaunty.Core;
 
+/// <summary>
+/// Represents a reader for multiple result sets returned from a query.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The <see cref="GridReader"/> is used to read multiple result sets from a single database query.
+/// It is returned by <see cref="Jaunty.QueryMultiple(IDbConnection, string)"/> and 
+/// <see cref="Jaunty.QueryMultipleAsync(IDbConnection, string, CancellationToken)"/>.
+/// </para>
+/// <para>
+/// <strong>Important:</strong> The <see cref="GridReader"/> must be disposed after use to properly 
+/// release database resources. Use a <c>using</c> statement or <c>await using</c> for async operations.
+/// </para>
+/// <para>
+/// Result sets are read sequentially. After reading a result set, the reader automatically advances 
+/// to the next result set. When all result sets have been consumed, the reader is automatically disposed.
+/// </para>
+/// </remarks>
+/// <example>
+/// <code>
+/// // Read multiple result sets
+/// using var grid = connection.QueryMultiple(
+///     "SELECT * FROM Products WHERE Id = @Id; SELECT * FROM Categories WHERE Id = @CategoryId");
+/// 
+/// var product = grid.ReadFirst&lt;Product&gt;();
+/// var category = grid.ReadFirst&lt;Category&gt;();
+/// 
+/// // GridReader is automatically disposed at the end of the using block
+/// </code>
+/// </example>
+/// <seealso cref="Jaunty.QueryMultiple(IDbConnection, string)"/>
+/// <seealso cref="Jaunty.QueryMultipleAsync(IDbConnection, string, CancellationToken)"/>
 public sealed class GridReader(IDataReader reader, IDbConnection connection, bool closeConnection) : IDisposable, IAsyncDisposable
 {
     private bool _consumed;
 
+    /// <summary>
+    /// Reads all rows from the current result set as a list of entities of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>A list of entities of type <typeparamref name="T"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method uses strict mapping mode. All properties on <typeparamref name="T"/> must have 
+    /// matching columns in the result set.
+    /// </para>
+    /// <para>
+    /// After calling this method, the reader advances to the next result set.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when all result sets have already been consumed.
+    /// </exception>
     public List<T> Read<T>(CommandOptions<T> options = default) where T : new()
     {
         return ReadCore(options, MappingMode.Strict);
     }
 
+    /// <summary>
+    /// Reads all rows from the current result set as a list of entities of type <typeparamref name="T"/> using partial mapping.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>A list of entities of type <typeparamref name="T"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method uses partial mapping mode. Only properties with matching columns are mapped; 
+    /// properties without matching columns are left with their default values.
+    /// </para>
+    /// </remarks>
     public List<T> ReadPartial<T>(CommandOptions<T> options = default) where T : new()
     {
         return ReadCore(options, MappingMode.Projection);
     }
 
+    /// <summary>
+    /// Reads the first row from the current result set as an entity of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>The first entity of type <typeparamref name="T"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Throws <see cref="InvalidOperationException"/> if no results are returned.</strong>
+    /// </para>
+    /// <para>
+    /// This method uses strict mapping mode.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the result set is empty or when all result sets have already been consumed.
+    /// </exception>
     public T ReadFirst<T>(CommandOptions<T> options = default) where T : new()
     {
         var result = ReadFirstOrDefaultCore(options, MappingMode.Strict);
         return result ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
+    /// <summary>
+    /// Reads the first row from the current result set as an entity of type <typeparamref name="T"/>, 
+    /// or returns <see langword="null"/> if no results are found.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>The first entity of type <typeparamref name="T"/>, or <see langword="null"/> if no results are found.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method uses strict mapping mode.
+    /// </para>
+    /// </remarks>
     public T? ReadFirstOrDefault<T>(CommandOptions<T> options = default) where T : new()
     {
         return ReadFirstOrDefaultCore(options, MappingMode.Strict);
     }
 
+    /// <summary>
+    /// Reads the first row from the current result set as an entity of type <typeparamref name="T"/> using partial mapping.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>The first entity of type <typeparamref name="T"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Throws <see cref="InvalidOperationException"/> if no results are returned.</strong>
+    /// </para>
+    /// </remarks>
     public T ReadPartialFirst<T>(CommandOptions<T> options = default) where T : new()
     {
         var result = ReadFirstOrDefaultCore(options, MappingMode.Projection);
         return result ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
+    /// <summary>
+    /// Reads the first row from the current result set as an entity of type <typeparamref name="T"/> using partial mapping,
+    /// or returns <see langword="null"/> if no results are found.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>The first entity of type <typeparamref name="T"/>, or <see langword="null"/> if no results are found.</returns>
     public T? ReadPartialFirstOrDefault<T>(CommandOptions<T> options = default) where T : new()
     {
         return ReadFirstOrDefaultCore(options, MappingMode.Projection);
     }
 
+    /// <summary>
+    /// Reads exactly one row from the current result set as an entity of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>The single entity of type <typeparamref name="T"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Throws <see cref="InvalidOperationException"/> if:</strong>
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>The result set is empty</description></item>
+    /// <item><description>The result set contains more than one row</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the result set contains zero or more than one row.
+    /// </exception>
     public T ReadSingle<T>(CommandOptions<T> options = default) where T : new()
     {
         var result = ReadSingleOrDefaultCore(options, MappingMode.Strict);
         return result ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
+    /// <summary>
+    /// Reads exactly one row from the current result set as an entity of type <typeparamref name="T"/>, 
+    /// or returns <see langword="null"/> if no results are found.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>
+    /// The single entity of type <typeparamref name="T"/>, or <see langword="null"/> if no results are found.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Throws <see cref="InvalidOperationException"/> if the result set contains more than one row.</strong>
+    /// </para>
+    /// </remarks>
     public T? ReadSingleOrDefault<T>(CommandOptions<T> options = default) where T : new()
     {
         return ReadSingleOrDefaultCore(options, MappingMode.Strict);
     }
 
+    /// <summary>
+    /// Reads exactly one row from the current result set as an entity of type <typeparamref name="T"/> using partial mapping.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>The single entity of type <typeparamref name="T"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Throws <see cref="InvalidOperationException"/> if the result set doesn't contain exactly one row.</strong>
+    /// </para>
+    /// </remarks>
     public T ReadPartialSingle<T>(CommandOptions<T> options = default) where T : new()
     {
         var result = ReadSingleOrDefaultCore(options, MappingMode.Projection);
         return result ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
+    /// <summary>
+    /// Reads exactly one row from the current result set as an entity of type <typeparamref name="T"/> using partial mapping,
+    /// or returns <see langword="null"/> if no results are found.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>
+    /// The single entity of type <typeparamref name="T"/>, or <see langword="null"/> if no results are found.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Throws <see cref="InvalidOperationException"/> if the result set contains more than one row.</strong>
+    /// </para>
+    /// </remarks>
     public T? ReadPartialSingleOrDefault<T>(CommandOptions<T> options = default) where T : new()
     {
         return ReadSingleOrDefaultCore(options, MappingMode.Projection);
     }
 
+    /// <summary>
+    /// Reads a scalar value from the first column of the first row of the current result set.
+    /// </summary>
+    /// <typeparam name="T">The type to convert the scalar value to.</typeparam>
+    /// <param name="options">Optional command options.</param>
+    /// <returns>The scalar value converted to type <typeparamref name="T"/>, or default if no results.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method reads a single value from the first column of the first row.
+    /// </para>
+    /// </remarks>
     public T? ReadScalar<T>(CommandOptions options = default)
     {
         EnsureNotConsumed();
@@ -110,11 +287,28 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         }
     }
 
+    /// <summary>
+    /// Streams all rows from the current result set as entities of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>An enumerable of entities of type <typeparamref name="T"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method uses strict mapping mode and streams results without buffering.
+    /// </para>
+    /// </remarks>
     public IEnumerable<T> ReadStream<T>(CommandOptions<T> options = default) where T : new()
     {
         return ReadStreamCore(options, MappingMode.Strict);
     }
 
+    /// <summary>
+    /// Streams all rows from the current result set as entities of type <typeparamref name="T"/> using partial mapping.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <returns>An enumerable of entities of type <typeparamref name="T"/>.</returns>
     public IEnumerable<T> ReadPartialStream<T>(CommandOptions<T> options = default) where T : new()
     {
         return ReadStreamCore(options, MappingMode.Projection);
@@ -184,48 +378,92 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         }
     }
 
+    /// <summary>
+    /// Asynchronously reads all rows from the current result set as a list of entities of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="options">Optional command options for custom mapping.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>A task containing a list of entities of type <typeparamref name="T"/>.</returns>
     public Task<List<T>> ReadAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
         => ReadAsyncCore(options, MappingMode.Strict, cancellationToken);
 
+    /// <summary>
+    /// Asynchronously reads all rows from the current result set as a list of entities of type <typeparamref name="T"/> using partial mapping.
+    /// </summary>
     public Task<List<T>> ReadPartialAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
         => ReadAsyncCore(options, MappingMode.Projection, cancellationToken);
 
+    /// <summary>
+    /// Asynchronously reads the first row from the current result set as an entity of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the result set is empty.
+    /// </exception>
     public async Task<T> ReadFirstAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
         var result = await ReadFirstOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken);
         return result ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
+    /// <summary>
+    /// Asynchronously reads the first row from the current result set as an entity of type <typeparamref name="T"/>, 
+    /// or returns <see langword="null"/> if no results are found.
+    /// </summary>
     public Task<T?> ReadFirstOrDefaultAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
         => ReadFirstOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken);
 
+    /// <summary>
+    /// Asynchronously reads the first row from the current result set using partial mapping.
+    /// </summary>
     public async Task<T> ReadPartialFirstAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
         var result = await ReadFirstOrDefaultAsyncCore(options, MappingMode.Projection, cancellationToken);
         return result ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
+    /// <summary>
+    /// Asynchronously reads the first row from the current result set using partial mapping, or returns <see langword="null"/>.
+    /// </summary>
     public Task<T?> ReadPartialFirstOrDefaultAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
         => ReadFirstOrDefaultAsyncCore(options, MappingMode.Projection, cancellationToken);
 
+    /// <summary>
+    /// Asynchronously reads exactly one row from the current result set.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the result set doesn't contain exactly one row.
+    /// </exception>
     public async Task<T> ReadSingleAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
         var result = await ReadSingleOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken);
         return result ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
+    /// <summary>
+    /// Asynchronously reads exactly one row from the current result set, or returns <see langword="null"/>.
+    /// </summary>
     public Task<T?> ReadSingleOrDefaultAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
         => ReadSingleOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken);
 
+    /// <summary>
+    /// Asynchronously reads exactly one row using partial mapping.
+    /// </summary>
     public async Task<T> ReadPartialSingleAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
         var result = await ReadSingleOrDefaultAsyncCore(options, MappingMode.Projection, cancellationToken);
         return result ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
+    /// <summary>
+    /// Asynchronously reads exactly one row using partial mapping, or returns <see langword="null"/>.
+    /// </summary>
     public Task<T?> ReadPartialSingleOrDefaultAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
         => ReadSingleOrDefaultAsyncCore(options, MappingMode.Projection, cancellationToken);
 
+    /// <summary>
+    /// Asynchronously reads a scalar value from the first column of the first row.
+    /// </summary>
     public async Task<T?> ReadScalarAsync<T>(CommandOptions options = default, CancellationToken cancellationToken = default)
     {
         EnsureNotConsumed();
@@ -240,17 +478,13 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
                 {
                     if (!await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
                     {
-                        // Use GetValue and Convert.ChangeType as fallback for better compatibility
-                        var value = await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
-                        result = value;
+                        result = await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 catch (Exception ex) when (ex is InvalidCastException or NullReferenceException or IndexOutOfRangeException)
                 {
-                    // Handle SQLite DataReader edge cases and type conversion issues
                     try
                     {
-                        // Fallback to GetValue + Convert.ChangeType for better compatibility
                         if (!await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
                         {
                             var rawValue = dbReader.GetValue(0);
@@ -259,7 +493,6 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
                     }
                     catch
                     {
-                        // If all else fails, return default
                         result = default;
                     }
                 }
@@ -272,6 +505,9 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         }
     }
 
+    /// <summary>
+    /// Asynchronously streams all rows from the current result set as entities of type <typeparamref name="T"/>.
+    /// </summary>
     public async IAsyncEnumerable<T> ReadStreamAsync<T>(CommandOptions<T> options = default, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
     {
         EnsureNotConsumed();
@@ -288,6 +524,9 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         await AdvanceAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Asynchronously streams all rows from the current result set using partial mapping.
+    /// </summary>
     public async IAsyncEnumerable<T> ReadPartialStreamAsync<T>(CommandOptions<T> options = default, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
     {
         EnsureNotConsumed();
@@ -322,8 +561,6 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
 
         if (!hasRead && results.Count == 0)
         {
-            // For empty result sets, we still need to handle the mapping properly
-            // but there's no data to map, so return empty list
             await AdvanceAsync(cancellationToken).ConfigureAwait(false);
             return results;
         }
@@ -385,7 +622,6 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         }
         catch (NullReferenceException)
         {
-            // Handle SQLite DataReader edge case where NextResult throws on empty result sets
             _consumed = true;
             await DisposeAsync();
         }
@@ -397,6 +633,9 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
             throw new InvalidOperationException("All result sets have already been consumed.");
     }
 
+    /// <summary>
+    /// Disposes the reader and closes the connection if requested.
+    /// </summary>
     public void Dispose()
     {
         reader.Dispose();
@@ -404,6 +643,9 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
             connection.Close();
     }
 
+    /// <summary>
+    /// Asynchronously disposes the reader and closes the connection if requested.
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);

@@ -10,15 +10,62 @@ namespace Jaunty;
 public static partial class Jaunty
 {
     /// <summary>
-    /// Executes a stored procedure with output parameters and returns the results as a list.
-    /// Output parameter values can be retrieved from the SpParameters object after execution.
+    /// Executes a stored procedure with output parameters and returns the results as a list of entities of type <typeparamref name="T"/>.
     /// </summary>
-    /// <typeparam name="T">The entity type to map results to.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="procedureName">The name of the stored procedure.</param>
-    /// <param name="parameters">The parameters including input and output parameters.</param>
-    /// <param name="options">Command options (transaction, timeout, mapper).</param>
-    /// <returns>A list of mapped entities.</returns>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the stored procedure against.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">
+    /// A <see cref="SpParameters"/> object containing input and output parameters for the stored procedure.
+    /// After execution, output parameter values can be retrieved using <c>parameters.Get&lt;T&gt;("parameterName")</c>.
+    /// </param>
+    /// <param name="options">
+    /// Optional command options for configuring the stored procedure execution. Use 
+    /// <see cref="CommandOptions{T}.WithTransaction(IDbTransaction)"/> for transactions or
+    /// <see cref="CommandOptions{T}.WithTimeout(int)"/> for command timeout.
+    /// </param>
+    /// <returns>A list of mapped entities of type <typeparamref name="T"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method executes a stored procedure using strict mapping mode. All public writable properties 
+    /// on <typeparamref name="T"/> must have matching columns in the result set.
+    /// </para>
+    /// <para>
+    /// <strong>Output Parameters:</strong> After execution, retrieve output parameter values using:
+    /// <code>
+    /// var outputValue = parameters.Get&lt;int&gt;("TotalCount");
+    /// </code>
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// public class Product
+    /// {
+    ///     public int Id { get; set; }
+    ///     public string Name { get; set; }
+    ///     public decimal Price { get; set; }
+    /// }
+    /// 
+    /// // Execute stored procedure with output parameters
+    /// var parameters = new SpParameters()
+    ///     .AddInput("CategoryId", 5)
+    ///     .AddOutput("TotalCount", DbType.Int32);
+    /// 
+    /// var products = connection.ExecuteStoredProcedure&lt;Product&gt;("GetProductsByCategoryWithTotal", parameters);
+    /// 
+    /// // Get output parameter value
+    /// int totalCount = parameters.Get&lt;int&gt;("TotalCount");
+    /// Console.WriteLine($"Total products: {totalCount}");
+    /// 
+    /// foreach (var product in products)
+    /// {
+    ///     Console.WriteLine($"{product.Id}: {product.Name}");
+    /// }
+    /// </code>
+    /// </example>
+    /// <seealso cref="SpParameters"/>
+    /// <seealso cref="ExecuteStoredProcedure{T}(IDbConnection, string, object?, CommandOptions{T})"/>
+    /// <seealso cref="ExecuteStoredProcedureAsync{T}(IDbConnection, string, SpParameters, CommandOptions{T}, CancellationToken)"/>
     public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
@@ -35,15 +82,45 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Executes a stored procedure with output parameters and returns the first result.
-    /// Output parameter values can be retrieved from the SpParameters object after execution.
+    /// Executes a stored procedure with output parameters and returns the first result mapped to an entity of type <typeparamref name="T"/>.
     /// </summary>
-    /// <typeparam name="T">The entity type to map results to.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="procedureName">The name of the stored procedure.</param>
-    /// <param name="parameters">The parameters including input and output parameters.</param>
-    /// <param name="options">Command options (transaction, timeout, mapper).</param>
-    /// <returns>The first mapped entity.</returns>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the stored procedure against.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">
+    /// A <see cref="SpParameters"/> object containing input and output parameters for the stored procedure.
+    /// </param>
+    /// <param name="options">
+    /// Optional command options for configuring the stored procedure execution.
+    /// </param>
+    /// <returns>The first mapped entity of type <typeparamref name="T"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Throws <see cref="InvalidOperationException"/> if no results are returned.</strong>
+    /// </para>
+    /// <para>
+    /// Output parameter values can be retrieved after execution using <c>parameters.Get&lt;T&gt;("parameterName")</c>.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Execute stored procedure with output parameters and get first result
+    /// var parameters = new SpParameters()
+    ///     .AddInput("CategoryId", 5)
+    ///     .AddOutput("HasMore", DbType.Boolean);
+    /// 
+    /// var product = connection.ExecuteStoredProcedureFirst&lt;Product&gt;("GetFirstProductByCategory", parameters);
+    /// 
+    /// // Get output parameter value
+    /// bool hasMore = parameters.Get&lt;bool&gt;("HasMore");
+    /// Console.WriteLine($"First product: {product.Name}, Has more: {hasMore}");
+    /// </code>
+    /// </example>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the stored procedure returns no results.
+    /// </exception>
+    /// <seealso cref="SpParameters"/>
+    /// <seealso cref="ExecuteStoredProcedureFirst{T}(IDbConnection, string, object?, CommandOptions{T})"/>
     public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
@@ -57,15 +134,47 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Executes a stored procedure with output parameters and returns the first result or default.
-    /// Output parameter values can be retrieved from the SpParameters object after execution.
+    /// Executes a stored procedure with output parameters and returns the first result mapped to an entity of type <typeparamref name="T"/>, 
+    /// or <see langword="null"/> if no results are found.
     /// </summary>
-    /// <typeparam name="T">The entity type to map results to.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="procedureName">The name of the stored procedure.</param>
-    /// <param name="parameters">The parameters including input and output parameters.</param>
-    /// <param name="options">Command options (transaction, timeout, mapper).</param>
-    /// <returns>The first mapped entity or default.</returns>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the stored procedure against.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">
+    /// A <see cref="SpParameters"/> object containing input and output parameters for the stored procedure.
+    /// </param>
+    /// <param name="options">
+    /// Optional command options for configuring the stored procedure execution.
+    /// </param>
+    /// <returns>
+    /// The first mapped entity of type <typeparamref name="T"/>, or <see langword="null"/> if no results are found.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// Returns <see langword="null"/> for empty result sets instead of throwing.
+    /// </para>
+    /// <para>
+    /// Output parameter values can be retrieved after execution using <c>parameters.Get&lt;T&gt;("parameterName")</c>.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Execute stored procedure with output parameters and get first or null
+    /// var parameters = new SpParameters()
+    ///     .AddInput("CategoryId", 999)
+    ///     .AddOutput("TotalCount", DbType.Int32);
+    /// 
+    /// var product = connection.ExecuteStoredProcedureFirstOrDefault&lt;Product&gt;("GetFirstProductByCategory", parameters);
+    /// 
+    /// if (product != null)
+    /// {
+    ///     int totalCount = parameters.Get&lt;int&gt;("TotalCount");
+    ///     Console.WriteLine($"Found: {product.Name}, Total: {totalCount}");
+    /// }
+    /// </code>
+    /// </example>
+    /// <seealso cref="SpParameters"/>
+    /// <seealso cref="ExecuteStoredProcedureFirstOrDefault{T}(IDbConnection, string, object?, CommandOptions{T})"/>
     public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
@@ -79,15 +188,42 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Executes a stored procedure with output parameters and returns a scalar value.
-    /// Output parameter values can be retrieved from the SpParameters object after execution.
+    /// Executes a stored procedure with output parameters and returns a scalar value of type <typeparamref name="T"/>.
     /// </summary>
     /// <typeparam name="T">The scalar type to return.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="procedureName">The name of the stored procedure.</param>
-    /// <param name="parameters">The parameters including input and output parameters.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
-    /// <returns>The scalar value.</returns>
+    /// <param name="connection">The database connection to execute the stored procedure against.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">
+    /// A <see cref="SpParameters"/> object containing input and output parameters for the stored procedure.
+    /// </param>
+    /// <param name="options">
+    /// Optional command options for configuring the stored procedure execution.
+    /// </param>
+    /// <returns>The scalar value returned by the stored procedure.</returns>
+    /// <remarks>
+    /// <para>
+    /// Use this method for stored procedures that return a single value along with output parameters.
+    /// </para>
+    /// <para>
+    /// Output parameter values can be retrieved after execution using <c>parameters.Get&lt;T&gt;("parameterName")</c>.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Execute stored procedure that returns scalar with output parameters
+    /// var parameters = new SpParameters()
+    ///     .AddInput("CategoryId", 5)
+    ///     .AddOutput("AveragePrice", DbType.Decimal);
+    /// 
+    /// var count = connection.ExecuteStoredProcedureScalar&lt;long&gt;("GetProductCountWithAverage", parameters);
+    /// 
+    /// // Get output parameter value
+    /// decimal avgPrice = parameters.Get&lt;decimal&gt;("AveragePrice");
+    /// Console.WriteLine($"Count: {count}, Average Price: ${avgPrice}");
+    /// </code>
+    /// </example>
+    /// <seealso cref="SpParameters"/>
+    /// <seealso cref="ExecuteStoredProcedureScalar{T}(IDbConnection, string, object?, CommandOptions)"/>
     public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default)
     {
         var spOptions = new CommandOptions(options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
@@ -95,14 +231,43 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Executes a stored procedure with output parameters that does not return results (INSERT, UPDATE, DELETE).
-    /// Output parameter values can be retrieved from the SpParameters object after execution.
+    /// Executes a stored procedure with output parameters that does not return results (INSERT, UPDATE, DELETE) 
+    /// and returns the number of rows affected.
     /// </summary>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="procedureName">The name of the stored procedure.</param>
-    /// <param name="parameters">The parameters including input and output parameters.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
-    /// <returns>The number of rows affected.</returns>
+    /// <param name="connection">The database connection to execute the stored procedure against.</param>
+    /// <param name="procedureName">The name of the stored procedure to execute.</param>
+    /// <param name="parameters">
+    /// A <see cref="SpParameters"/> object containing input and output parameters for the stored procedure.
+    /// </param>
+    /// <param name="options">
+    /// Optional command options for configuring the stored procedure execution.
+    /// </param>
+    /// <returns>The number of rows affected by the stored procedure.</returns>
+    /// <remarks>
+    /// <para>
+    /// Use this method for stored procedures that perform data modification operations with output parameters.
+    /// </para>
+    /// <para>
+    /// Output parameter values can be retrieved after execution using <c>parameters.Get&lt;T&gt;("parameterName")</c>.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Execute stored procedure that updates prices with output parameter
+    /// var parameters = new SpParameters()
+    ///     .AddInput("CategoryId", 5)
+    ///     .AddInput("PriceIncreasePercent", 10)
+    ///     .AddOutput("RowsUpdated", DbType.Int32);
+    /// 
+    /// int affected = connection.ExecuteStoredProcedureNonQuery("UpdatePricesByCategory", parameters);
+    /// 
+    /// // Get output parameter value (may differ from return value for complex procedures)
+    /// int rowsUpdated = parameters.Get&lt;int&gt;("RowsUpdated");
+    /// Console.WriteLine($"Rows updated: {rowsUpdated}");
+    /// </code>
+    /// </example>
+    /// <seealso cref="SpParameters"/>
+    /// <seealso cref="ExecuteStoredProcedureNonQuery(IDbConnection, string, object?, CommandOptions)"/>
     public static int ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default)
     {
         var spOptions = new CommandOptions(options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);

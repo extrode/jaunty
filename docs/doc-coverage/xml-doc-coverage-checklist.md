@@ -98,11 +98,11 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 |------|---------|--------|-------|
 | `StoredProcedure.cs` | 16 overloads | yes | Complete with examples, remarks, exceptions |
 | `StoredProcedureAsync.cs` | 16 overloads | yes | Complete with examples, remarks, exceptions |
-| `ExecuteStoredProcedureWithOutput.cs` | 4 overloads | no | TODO |
-| `ExecuteStoredProcedureWithOutputAsync.cs` | 4 overloads | no | TODO |
-| `SpParameters.cs` | Helper class | no | TODO |
+| `ExecuteStoredProcedureWithOutput.cs` | 5 overloads | yes | Complete with examples, remarks, exceptions |
+| `ExecuteStoredProcedureWithOutputAsync.cs` | 5 overloads | yes | Complete with examples, remarks, exceptions |
+| `SpParameters.cs` | Helper class | yes | Complete with examples, remarks |
 
-**Progress**: 16/32 methods (50%)
+**Progress**: 32/32 methods (100%)
 
 ---
 
@@ -110,15 +110,15 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 
 | File | Type | Status | Notes |
 |------|------|--------|-------|
-| `TableAttribute.cs` | Class | no | TODO |
-| `ColumnAttribute.cs` | Class | no | TODO |
-| `KeyAttribute.cs` | Class | no | TODO |
-| `IgnoreAttribute.cs` | Class | no | TODO |
-| `DatabaseGeneratedAttribute.cs` | Class | no | TODO |
-| `DatabaseGeneratedOptions.cs` | Enum | no | TODO |
-| `AttributeHelper.cs` | Internal | caution | Internal - low priority |
+| `TableAttribute.cs` | Class | yes | Complete with examples, remarks |
+| `ColumnAttribute.cs` | Class | yes | Complete with examples, remarks |
+| `KeyAttribute.cs` | Class | yes | Complete with examples, remarks |
+| `IgnoreAttribute.cs` | Class | yes | Complete with examples, remarks |
+| `DatabaseGeneratedAttribute.cs` | Class | yes | Complete with examples, remarks |
+| `DatabaseGeneratedOptions.cs` | Enum | yes | Complete with examples, remarks |
+| `AttributeHelper.cs` | Internal | yes | Complete (internal) |
 
-**Progress**: 0/6 types (0%)
+**Progress**: 7/7 types (100%)
 
 ---
 
@@ -126,10 +126,10 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 
 | File | Type | Status | Notes |
 |------|------|--------|-------|
-| `CommandOptions.cs` | Struct | no | TODO |
-| `GridReader.cs` | Class | no | TODO |
+| `CommandOptions.cs` | Struct | yes | Complete with examples, remarks |
+| `GridReader.cs` | Class | yes | Complete with examples, remarks, exceptions |
 
-**Progress**: 0/2 types (0%)
+**Progress**: 2/2 types (100%)
 
 ---
 
@@ -162,12 +162,12 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Write Methods | 46 | 46 | 100% |
 | Multiple Result Sets | 14 | 14 | 100% |
 | Streaming | 24 | 24 | 100% |
-| Stored Procedures | 16 | 32 | 50% |
-| Attributes | 0 | 6 | 0% |
-| Core Types | 0 | 2 | 0% |
+| Stored Procedures | 32 | 32 | 100% |
+| Attributes | 7 | 7 | 100% |
+| Core Types | 2 | 2 | 100% |
 | Configuration | 0 | 1 | 0% |
 | Interfaces | 0 | 2 | 0% |
-| **TOTAL** | **240** | **283** | **85%** |
+| **TOTAL** | **265** | **284** | **93%** |
 
 ---
 
@@ -192,9 +192,11 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 17. **DONE**: `Bulk*` operations - Bulk operations (Insert, Update, Delete - sync and async)
 18. **DONE**: `Upsert<T>()` - Upsert operations (sync and async)
 19. **DONE**: Streaming methods - All streaming variants (100% complete)
-20. **DONE**: Stored procedures - Basic variants (16/32 complete)
-21. **NEXT**: `ExecuteStoredProcedureWithOutput<T>()` - Stored procedures with output parameters
-22. **LATER**: Attributes, Core types, Interfaces, Configuration - Reference documentation
+20. **DONE**: Stored procedures - All variants (100% complete)
+21. **DONE**: Attributes - All attribute types (100% complete)
+22. **DONE**: Core Types - CommandOptions, GridReader (100% complete)
+23. **NEXT**: Configuration - `JauntyConfig.cs`
+24. **LATER**: Interfaces - `IEntity`, `IMapped`
 
 ---
 
