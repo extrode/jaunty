@@ -141,6 +141,34 @@ public class BulkOperationsTests : IDisposable
         Assert.Equal(2, GetRowCount());
     }
 
+    [Fact]
+    public void BulkInsertIgnoreConstraints_WithCommandOptions_Works()
+    {
+        using var transaction = _connection.BeginTransaction();
+        var entities = new List<BulkTestEntity>
+        {
+            new() { Name = "Test1", Value = 100 },
+            new() { Name = "Test2", Value = 200 }
+        };
+
+        int inserted = _connection.BulkInsertIgnoreConstraints(entities, new CommandOptions(transaction: transaction));
+        transaction.Commit();
+
+        Assert.Equal(2, inserted);
+        Assert.Equal(2, GetRowCount());
+    }
+
+    [Fact]
+    public void BulkInsertIgnoreConstraints_EmptyCollection_ReturnsZero()
+    {
+        var entities = new List<BulkTestEntity>();
+
+        int inserted = _connection.BulkInsertIgnoreConstraints(entities);
+
+        Assert.Equal(0, inserted);
+        Assert.Equal(0, GetRowCount());
+    }
+
     #endregion
 
     #region BulkUpdate Tests
@@ -240,6 +268,42 @@ public class BulkOperationsTests : IDisposable
         Assert.Equal(2, updated);
     }
 
+    [Fact]
+    public void BulkUpdateIgnoreConstraints_WithCommandOptions_Works()
+    {
+        var entities = new List<BulkTestEntity>
+        {
+            new() { Name = "Test1", Value = 100 },
+            new() { Name = "Test2", Value = 200 }
+        };
+        _connection.BulkInsert(entities);
+
+        var inserted = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+        foreach (var entity in inserted)
+        {
+            entity.Value *= 10;
+        }
+
+        using var transaction = _connection.BeginTransaction();
+        int updated = _connection.BulkUpdateIgnoreConstraints(inserted, new CommandOptions(transaction: transaction));
+        transaction.Commit();
+
+        Assert.Equal(2, updated);
+        var results = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test ORDER BY id");
+        Assert.Equal(1000, results[0].Value);
+        Assert.Equal(2000, results[1].Value);
+    }
+
+    [Fact]
+    public void BulkUpdateIgnoreConstraints_EmptyCollection_ReturnsZero()
+    {
+        var entities = new List<BulkTestEntity>();
+
+        int updated = _connection.BulkUpdateIgnoreConstraints(entities);
+
+        Assert.Equal(0, updated);
+    }
+
     #endregion
 
     #region BulkDelete Tests
@@ -337,6 +401,36 @@ public class BulkOperationsTests : IDisposable
 
         Assert.Equal(2, deleted);
         Assert.Equal(0, GetRowCount());
+    }
+
+    [Fact]
+    public void BulkDeleteIgnoreConstraints_WithCommandOptions_Works()
+    {
+        var entities = new List<BulkTestEntity>
+        {
+            new() { Name = "Test1", Value = 100 },
+            new() { Name = "Test2", Value = 200 }
+        };
+        _connection.BulkInsert(entities);
+
+        var toDelete = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+
+        using var transaction = _connection.BeginTransaction();
+        int deleted = _connection.BulkDeleteIgnoreConstraints(toDelete, new CommandOptions(transaction: transaction));
+        transaction.Commit();
+
+        Assert.Equal(2, deleted);
+        Assert.Equal(0, GetRowCount());
+    }
+
+    [Fact]
+    public void BulkDeleteIgnoreConstraints_EmptyCollection_ReturnsZero()
+    {
+        var entities = new List<BulkTestEntity>();
+
+        int deleted = _connection.BulkDeleteIgnoreConstraints(entities);
+
+        Assert.Equal(0, deleted);
     }
 
     #endregion

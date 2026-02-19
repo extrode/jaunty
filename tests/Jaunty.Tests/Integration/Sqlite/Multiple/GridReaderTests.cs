@@ -179,4 +179,125 @@ public class GridReaderTests : IDisposable
         Assert.Equal(3, summaries.Count);
         Assert.All(summaries, s => Assert.NotNull(s.CategoryName));
     }
+
+    #region ReadPartialFirst / ReadPartialFirstOrDefault
+
+    [Fact]
+    public void GridReader_ReadPartialFirst_ReturnsFirst()
+    {
+        using var gridReader = _db.Connection.QueryMultiple(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories ORDER BY category_id LIMIT 3");
+
+        var summary = gridReader.ReadPartialFirst<CategorySummary>();
+
+        Assert.NotNull(summary);
+        Assert.True(summary.CategoryId > 0);
+        Assert.NotNull(summary.CategoryName);
+    }
+
+    [Fact]
+    public void GridReader_ReadPartialFirst_NoResults_Throws()
+    {
+        using var gridReader = _db.Connection.QueryMultiple(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            new { Id = -999 });
+
+        Assert.Throws<InvalidOperationException>(() =>
+            gridReader.ReadPartialFirst<CategorySummary>());
+    }
+
+    [Fact]
+    public void GridReader_ReadPartialFirstOrDefault_ReturnsFirst()
+    {
+        using var gridReader = _db.Connection.QueryMultiple(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories ORDER BY category_id LIMIT 3");
+
+        var summary = gridReader.ReadPartialFirstOrDefault<CategorySummary>();
+
+        Assert.NotNull(summary);
+        Assert.True(summary.CategoryId > 0);
+        Assert.NotNull(summary.CategoryName);
+    }
+
+    [Fact]
+    public void GridReader_ReadPartialFirstOrDefault_NoResults_ReturnsNull()
+    {
+        using var gridReader = _db.Connection.QueryMultiple(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            new { Id = -999 });
+
+        var summary = gridReader.ReadPartialFirstOrDefault<CategorySummary>();
+
+        Assert.Null(summary);
+    }
+
+    #endregion
+
+    #region ReadPartialSingle / ReadPartialSingleOrDefault
+
+    [Fact]
+    public void GridReader_ReadPartialSingle_ReturnsSingle()
+    {
+        using var gridReader = _db.Connection.QueryMultiple(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            new { Id = 1 });
+
+        var summary = gridReader.ReadPartialSingle<CategorySummary>();
+
+        Assert.NotNull(summary);
+        Assert.Equal(1, summary.CategoryId);
+        Assert.NotNull(summary.CategoryName);
+    }
+
+    [Fact]
+    public void GridReader_ReadPartialSingle_MultipleResults_Throws()
+    {
+        using var gridReader = _db.Connection.QueryMultiple(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 2");
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            gridReader.ReadPartialSingle<CategorySummary>());
+
+        Assert.Contains("more than one element", ex.Message);
+    }
+
+    [Fact]
+    public void GridReader_ReadPartialSingle_NoResults_Throws()
+    {
+        using var gridReader = _db.Connection.QueryMultiple(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            new { Id = -999 });
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            gridReader.ReadPartialSingle<CategorySummary>());
+
+        Assert.Contains("no elements", ex.Message);
+    }
+
+    [Fact]
+    public void GridReader_ReadPartialSingleOrDefault_ReturnsSingle()
+    {
+        using var gridReader = _db.Connection.QueryMultiple(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            new { Id = 1 });
+
+        var summary = gridReader.ReadPartialSingleOrDefault<CategorySummary>();
+
+        Assert.NotNull(summary);
+        Assert.Equal(1, summary.CategoryId);
+    }
+
+    [Fact]
+    public void GridReader_ReadPartialSingleOrDefault_NoResults_ReturnsNull()
+    {
+        using var gridReader = _db.Connection.QueryMultiple(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            new { Id = -999 });
+
+        var summary = gridReader.ReadPartialSingleOrDefault<CategorySummary>();
+
+        Assert.Null(summary);
+    }
+
+    #endregion
 }

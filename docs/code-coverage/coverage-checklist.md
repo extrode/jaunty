@@ -2,7 +2,7 @@
 
 **Target**: 100% Code Coverage
 **Created**: 2026-02-19
-**Last Updated**: 2026-02-19
+**Last Updated**: 2026-02-19 (High + medium priority tests added)
 
 This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each item includes the class/method and its test status.
 
@@ -100,53 +100,53 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `QueryPartialFirst<T>(sql)` | todo | — | Zero coverage |
-| `QueryPartialFirst<T>(sql, parameters)` | todo | — | Zero coverage |
-| `QueryPartialFirst<T>(sql, options)` | todo | — | Zero coverage |
-| `QueryPartialFirst<T>(sql, parameters, options)` | todo | — | Zero coverage |
-| `QueryPartialFirstAsync<T>(sql)` | todo | — | Zero coverage |
-| `QueryPartialFirstAsync<T>(sql, parameters)` | todo | — | Zero coverage |
-| `QueryPartialFirstAsync<T>(sql, options)` | todo | — | Zero coverage |
-| `QueryPartialFirstAsync<T>(sql, parameters, options)` | todo | — | Zero coverage |
+| `QueryPartialFirst<T>(sql)` | yes | QueryPartialFirstTests.cs | Partial mapping, returns first |
+| `QueryPartialFirst<T>(sql, parameters)` | yes | QueryPartialFirstTests.cs | With parameters |
+| `QueryPartialFirst<T>(sql, options)` | yes | QueryPartialFirstTests.cs | With options |
+| `QueryPartialFirst<T>(sql, parameters, options)` | yes | QueryPartialFirstTests.cs | Full overload |
+| `QueryPartialFirstAsync<T>(sql)` | yes | QueryPartialFirstAsyncTests.cs | Async (skipped on SQLite) |
+| `QueryPartialFirstAsync<T>(sql, parameters)` | yes | QueryPartialFirstAsyncTests.cs | Async with params |
+| `QueryPartialFirstAsync<T>(sql, options)` | yes | QueryPartialFirstAsyncTests.cs | Async with options |
+| `QueryPartialFirstAsync<T>(sql, parameters, options)` | yes | QueryPartialFirstAsyncTests.cs | Full async overload |
 
 ### QueryPartialFirstOrDefault (Partial)
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `QueryPartialFirstOrDefault<T>(sql)` | todo | — | Zero coverage |
-| `QueryPartialFirstOrDefault<T>(sql, parameters)` | todo | — | Zero coverage |
-| `QueryPartialFirstOrDefault<T>(sql, options)` | todo | — | Zero coverage |
-| `QueryPartialFirstOrDefault<T>(sql, parameters, options)` | todo | — | Zero coverage |
-| `QueryPartialFirstOrDefaultAsync<T>(sql)` | todo | — | Zero coverage |
-| `QueryPartialFirstOrDefaultAsync<T>(sql, parameters)` | todo | — | Zero coverage |
-| `QueryPartialFirstOrDefaultAsync<T>(sql, options)` | todo | — | Zero coverage |
-| `QueryPartialFirstOrDefaultAsync<T>(sql, parameters, options)` | todo | — | Zero coverage |
+| `QueryPartialFirstOrDefault<T>(sql)` | yes | QueryPartialFirstOrDefaultTests.cs | Returns null if empty |
+| `QueryPartialFirstOrDefault<T>(sql, parameters)` | yes | QueryPartialFirstOrDefaultTests.cs | With parameters |
+| `QueryPartialFirstOrDefault<T>(sql, options)` | yes | QueryPartialFirstOrDefaultTests.cs | With options |
+| `QueryPartialFirstOrDefault<T>(sql, parameters, options)` | yes | QueryPartialFirstOrDefaultTests.cs | Full overload |
+| `QueryPartialFirstOrDefaultAsync<T>(sql)` | yes | QueryPartialFirstOrDefaultAsyncTests.cs | Async (skipped on SQLite) |
+| `QueryPartialFirstOrDefaultAsync<T>(sql, parameters)` | yes | QueryPartialFirstOrDefaultAsyncTests.cs | Async with params |
+| `QueryPartialFirstOrDefaultAsync<T>(sql, options)` | yes | QueryPartialFirstOrDefaultAsyncTests.cs | Async with options |
+| `QueryPartialFirstOrDefaultAsync<T>(sql, parameters, options)` | yes | QueryPartialFirstOrDefaultAsyncTests.cs | Full async overload |
 
 ### QueryPartialSingle (Partial)
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `QueryPartialSingle<T>(sql)` | todo | — | Zero coverage |
-| `QueryPartialSingle<T>(sql, parameters)` | todo | — | Zero coverage |
-| `QueryPartialSingle<T>(sql, options)` | todo | — | Zero coverage |
-| `QueryPartialSingle<T>(sql, parameters, options)` | todo | — | Zero coverage |
-| `QueryPartialSingleAsync<T>(sql)` | todo | — | Zero coverage |
-| `QueryPartialSingleAsync<T>(sql, parameters)` | todo | — | Zero coverage |
-| `QueryPartialSingleAsync<T>(sql, options)` | todo | — | Zero coverage |
-| `QueryPartialSingleAsync<T>(sql, parameters, options)` | todo | — | Zero coverage |
+| `QueryPartialSingle<T>(sql)` | yes | QueryPartialSingleTests.cs | Throws if != 1 |
+| `QueryPartialSingle<T>(sql, parameters)` | yes | QueryPartialSingleTests.cs | With parameters |
+| `QueryPartialSingle<T>(sql, options)` | yes | QueryPartialSingleTests.cs | With options |
+| `QueryPartialSingle<T>(sql, parameters, options)` | yes | QueryPartialSingleTests.cs | Full overload |
+| `QueryPartialSingleAsync<T>(sql)` | yes | QueryPartialSingleAsyncTests.cs | Async (skipped on SQLite) |
+| `QueryPartialSingleAsync<T>(sql, parameters)` | yes | QueryPartialSingleAsyncTests.cs | Async with params |
+| `QueryPartialSingleAsync<T>(sql, options)` | yes | QueryPartialSingleAsyncTests.cs | Async with options |
+| `QueryPartialSingleAsync<T>(sql, parameters, options)` | yes | QueryPartialSingleAsyncTests.cs | Full async overload |
 
 ### QueryPartialSingleOrDefault (Partial)
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `QueryPartialSingleOrDefault<T>(sql)` | todo | — | Zero coverage |
-| `QueryPartialSingleOrDefault<T>(sql, parameters)` | todo | — | Zero coverage |
-| `QueryPartialSingleOrDefault<T>(sql, options)` | todo | — | Zero coverage |
-| `QueryPartialSingleOrDefault<T>(sql, parameters, options)` | todo | — | Zero coverage |
-| `QueryPartialSingleOrDefaultAsync<T>(sql)` | todo | — | Zero coverage |
-| `QueryPartialSingleOrDefaultAsync<T>(sql, parameters)` | todo | — | Zero coverage |
-| `QueryPartialSingleOrDefaultAsync<T>(sql, options)` | todo | — | Zero coverage |
-| `QueryPartialSingleOrDefaultAsync<T>(sql, parameters, options)` | todo | — | Zero coverage |
+| `QueryPartialSingleOrDefault<T>(sql)` | yes | QueryPartialSingleOrDefaultTests.cs | Returns null if empty |
+| `QueryPartialSingleOrDefault<T>(sql, parameters)` | yes | QueryPartialSingleOrDefaultTests.cs | With parameters |
+| `QueryPartialSingleOrDefault<T>(sql, options)` | yes | QueryPartialSingleOrDefaultTests.cs | With options |
+| `QueryPartialSingleOrDefault<T>(sql, parameters, options)` | yes | QueryPartialSingleOrDefaultTests.cs | Full overload |
+| `QueryPartialSingleOrDefaultAsync<T>(sql)` | yes | QueryPartialSingleOrDefaultAsyncTests.cs | Async (skipped on SQLite) |
+| `QueryPartialSingleOrDefaultAsync<T>(sql, parameters)` | yes | QueryPartialSingleOrDefaultAsyncTests.cs | Async with params |
+| `QueryPartialSingleOrDefaultAsync<T>(sql, options)` | yes | QueryPartialSingleOrDefaultAsyncTests.cs | Async with options |
+| `QueryPartialSingleOrDefaultAsync<T>(sql, parameters, options)` | yes | QueryPartialSingleOrDefaultAsyncTests.cs | Full async overload |
 
 ### QueryScalar
 
@@ -165,14 +165,14 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `ExecuteScalar<T>(sql)` | todo | — | Zero coverage, separate from QueryScalar |
-| `ExecuteScalar<T>(sql, parameters)` | todo | — | Zero coverage |
-| `ExecuteScalar<T>(sql, options)` | todo | — | Zero coverage |
-| `ExecuteScalar<T>(sql, parameters, options)` | todo | — | Zero coverage |
-| `ExecuteScalarAsync<T>(sql)` | todo | — | Zero coverage |
-| `ExecuteScalarAsync<T>(sql, parameters)` | todo | — | Zero coverage |
-| `ExecuteScalarAsync<T>(sql, options)` | todo | — | Zero coverage |
-| `ExecuteScalarAsync<T>(sql, parameters, options)` | todo | — | Zero coverage |
+| `ExecuteScalar<T>(sql)` | yes | ExecuteScalarTests.cs | COUNT, MAX, string |
+| `ExecuteScalar<T>(sql, parameters)` | yes | ExecuteScalarTests.cs | With parameters |
+| `ExecuteScalar<T>(sql, options)` | yes | ExecuteScalarTests.cs | With options |
+| `ExecuteScalar<T>(sql, parameters, options)` | yes | ExecuteScalarTests.cs | Full overload |
+| `ExecuteScalarAsync<T>(sql)` | yes | ExecuteScalarAsyncTests.cs | Async (skipped on SQLite) |
+| `ExecuteScalarAsync<T>(sql, parameters)` | yes | ExecuteScalarAsyncTests.cs | Async with params |
+| `ExecuteScalarAsync<T>(sql, options)` | yes | ExecuteScalarAsyncTests.cs | Async with options |
+| `ExecuteScalarAsync<T>(sql, parameters, options)` | yes | ExecuteScalarAsyncTests.cs | Full async overload |
 
 ### QueryMultiEntity (Multi-Table Mapping)
 
@@ -234,14 +234,14 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `QueryPartialUnbuffered<T>(sql)` | todo | — | Zero coverage |
-| `QueryPartialUnbuffered<T>(sql, parameters)` | todo | — | Zero coverage |
-| `QueryPartialUnbuffered<T>(sql, options)` | todo | — | Zero coverage |
-| `QueryPartialUnbuffered<T>(sql, parameters, options)` | todo | — | Zero coverage |
-| `QueryPartialUnbufferedAsync<T>(sql)` | todo | — | Zero coverage |
-| `QueryPartialUnbufferedAsync<T>(sql, parameters)` | todo | — | Zero coverage |
-| `QueryPartialUnbufferedAsync<T>(sql, options)` | todo | — | Zero coverage |
-| `QueryPartialUnbufferedAsync<T>(sql, parameters, options)` | todo | — | Zero coverage |
+| `QueryPartialUnbuffered<T>(sql)` | yes | QueryPartialUnbufferedTests.cs | Lazy IEnumerable partial |
+| `QueryPartialUnbuffered<T>(sql, parameters)` | yes | QueryPartialUnbufferedTests.cs | With params |
+| `QueryPartialUnbuffered<T>(sql, options)` | yes | QueryPartialUnbufferedTests.cs | With options |
+| `QueryPartialUnbuffered<T>(sql, parameters, options)` | yes | QueryPartialUnbufferedTests.cs | Full overload |
+| `QueryPartialUnbufferedAsync<T>(sql)` | yes | QueryPartialUnbufferedAsyncTests.cs | Async (skipped on SQLite) |
+| `QueryPartialUnbufferedAsync<T>(sql, parameters)` | yes | QueryPartialUnbufferedAsyncTests.cs | Async with params |
+| `QueryPartialUnbufferedAsync<T>(sql, options)` | yes | QueryPartialUnbufferedAsyncTests.cs | Async with options |
+| `QueryPartialUnbufferedAsync<T>(sql, parameters, options)` | yes | QueryPartialUnbufferedAsyncTests.cs | Full async overload |
 
 ---
 
@@ -251,36 +251,36 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `Insert<T>(entity)` | todo | — | Individual insert, zero coverage |
-| `Insert<T>(entity, options)` | todo | — | With CommandOptions |
-| `InsertAsync<T>(entity)` | todo | — | Async variant |
-| `InsertAsync<T>(entity, options)` | todo | — | Async with options |
+| `Insert<T>(entity)` | yes | InsertTests.cs | Returns identity, in-memory SQLite |
+| `Insert<T>(entity, options)` | yes | InsertTests.cs | With transaction |
+| `InsertAsync<T>(entity)` | yes | InsertAsyncTests.cs | Async insert |
+| `InsertAsync<T>(entity, options)` | yes | InsertAsyncTests.cs | Async with transaction |
 
 ### Update (Individual)
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `Update<T>(entity)` | todo | — | Individual update, zero coverage |
-| `Update<T>(entity, options)` | todo | — | With CommandOptions |
-| `UpdateAsync<T>(entity)` | todo | — | Async variant |
-| `UpdateAsync<T>(entity, options)` | todo | — | Async with options |
+| `Update<T>(entity)` | yes | UpdateTests.cs | Returns rows affected |
+| `Update<T>(entity, options)` | yes | UpdateTests.cs | With transaction |
+| `UpdateAsync<T>(entity)` | yes | UpdateAsyncTests.cs | Async update |
+| `UpdateAsync<T>(entity, options)` | yes | UpdateAsyncTests.cs | Async with transaction |
 
 ### Delete (Individual)
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `Delete<T>(entity)` | todo | — | Delete by entity |
-| `Delete<T>(entity, options)` | todo | — | With CommandOptions |
-| `Delete<T>(id)` | todo | — | Delete by object ID |
-| `Delete<T>(id, options)` | todo | — | With CommandOptions |
-| `Delete<T, TId>(id)` | todo | — | Delete by typed ID (IEntity<TId>) |
-| `Delete<T, TId>(id, options)` | todo | — | With CommandOptions |
-| `DeleteAsync<T>(entity)` | todo | — | Async variants |
-| `DeleteAsync<T>(entity, options)` | todo | — | |
-| `DeleteAsync<T>(id)` | todo | — | |
-| `DeleteAsync<T>(id, options)` | todo | — | |
-| `DeleteAsync<T, TId>(id)` | todo | — | |
-| `DeleteAsync<T, TId>(id, options)` | todo | — | |
+| `Delete<T>(entity)` | yes | DeleteTests.cs | Delete by entity |
+| `Delete<T>(entity, options)` | yes | DeleteTests.cs | With transaction |
+| `Delete<T>(id)` | yes | DeleteTests.cs | Delete by object ID |
+| `Delete<T>(id, options)` | yes | DeleteTests.cs | With transaction |
+| `Delete<T, TId>(id)` | yes | DeleteByEntityIdTests.cs | IEntity<TId> via EntityTestEntity |
+| `Delete<T, TId>(id, options)` | yes | DeleteByEntityIdTests.cs | With transaction |
+| `DeleteAsync<T>(entity)` | yes | DeleteAsyncTests.cs | Async delete by entity |
+| `DeleteAsync<T>(entity, options)` | yes | DeleteAsyncTests.cs | Async with transaction |
+| `DeleteAsync<T>(id)` | yes | DeleteAsyncTests.cs | Async delete by ID |
+| `DeleteAsync<T>(id, options)` | yes | DeleteAsyncTests.cs | Async with transaction |
+| `DeleteAsync<T, TId>(id)` | yes | DeleteByEntityIdTests.cs | Async IEntity<TId> |
+| `DeleteAsync<T, TId>(id, options)` | yes | DeleteByEntityIdTests.cs | Async with transaction |
 
 ### BulkInsert
 
@@ -288,8 +288,8 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 |--------|--------|-----------|-------|
 | `BulkInsert<T>(entities)` | yes | BulkOperationsTests.cs | Bulk insert |
 | `BulkInsert<T>(entities, options)` | yes | BulkOperationsTests.cs | With options |
-| `BulkInsertIgnoreConstraints<T>(entities)` | - | BulkOperationsTests.cs | Needs explicit test |
-| `BulkInsertIgnoreConstraints<T>(entities, options)` | - | BulkOperationsTests.cs | Needs explicit test |
+| `BulkInsertIgnoreConstraints<T>(entities)` | yes | BulkOperationsTests.cs | With empty collection test |
+| `BulkInsertIgnoreConstraints<T>(entities, options)` | yes | BulkOperationsTests.cs | With transaction |
 | `BulkInsertAsync<T>(entities)` | yes | BulkOperationsAsyncTests.cs | Async variant |
 | `BulkInsertAsync<T>(entities, options)` | yes | BulkOperationsAsyncTests.cs | Async with options |
 | `BulkInsertIgnoreConstraintsAsync<T>(...)` | - | BulkOperationsAsyncTests.cs | Needs explicit test |
@@ -300,8 +300,8 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 |--------|--------|-----------|-------|
 | `BulkUpdate<T>(entities)` | yes | BulkOperationsTests.cs | Bulk update |
 | `BulkUpdate<T>(entities, options)` | yes | BulkOperationsTests.cs | With options |
-| `BulkUpdateIgnoreConstraints<T>(entities)` | - | BulkOperationsTests.cs | Needs explicit test |
-| `BulkUpdateIgnoreConstraints<T>(entities, options)` | - | BulkOperationsTests.cs | Needs explicit test |
+| `BulkUpdateIgnoreConstraints<T>(entities)` | yes | BulkOperationsTests.cs | With empty collection test |
+| `BulkUpdateIgnoreConstraints<T>(entities, options)` | yes | BulkOperationsTests.cs | With transaction, verifies values |
 | `BulkUpdateAsync<T>(entities)` | yes | BulkOperationsAsyncTests.cs | Async variant |
 | `BulkUpdateAsync<T>(entities, options)` | yes | BulkOperationsAsyncTests.cs | Async with options |
 | `BulkUpdateIgnoreConstraintsAsync<T>(...)` | - | BulkOperationsAsyncTests.cs | Needs explicit test |
@@ -312,8 +312,8 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 |--------|--------|-----------|-------|
 | `BulkDelete<T>(entities)` | yes | BulkOperationsTests.cs | Bulk delete |
 | `BulkDelete<T>(entities, options)` | yes | BulkOperationsTests.cs | With options |
-| `BulkDeleteIgnoreConstraints<T>(entities)` | - | BulkOperationsTests.cs | Needs explicit test |
-| `BulkDeleteIgnoreConstraints<T>(entities, options)` | - | BulkOperationsTests.cs | Needs explicit test |
+| `BulkDeleteIgnoreConstraints<T>(entities)` | yes | BulkOperationsTests.cs | With empty collection test |
+| `BulkDeleteIgnoreConstraints<T>(entities, options)` | yes | BulkOperationsTests.cs | With transaction |
 | `BulkDeleteAsync<T>(entities)` | yes | BulkOperationsAsyncTests.cs | Async variant |
 | `BulkDeleteAsync<T>(entities, options)` | yes | BulkOperationsAsyncTests.cs | Async with options |
 | `BulkDeleteIgnoreConstraintsAsync<T>(...)` | - | BulkOperationsAsyncTests.cs | Needs explicit test |
@@ -359,10 +359,10 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | `ReadFirstOrDefault<T>()` | yes | GridReaderTests.cs | Read first or null |
 | `ReadSingle<T>()` | yes | GridReaderTests.cs | Read single row strict |
 | `ReadSingleOrDefault<T>()` | yes | GridReaderTests.cs | Read single or null |
-| `ReadPartialFirst<T>()` | - | GridReaderTests.cs | May need explicit test |
-| `ReadPartialFirstOrDefault<T>()` | - | GridReaderTests.cs | May need explicit test |
-| `ReadPartialSingle<T>()` | - | GridReaderTests.cs | May need explicit test |
-| `ReadPartialSingleOrDefault<T>()` | - | GridReaderTests.cs | May need explicit test |
+| `ReadPartialFirst<T>()` | yes | GridReaderTests.cs | Happy path + no results throws |
+| `ReadPartialFirstOrDefault<T>()` | yes | GridReaderTests.cs | Happy path + no results returns null |
+| `ReadPartialSingle<T>()` | yes | GridReaderTests.cs | Happy path + multiple/no results throws |
+| `ReadPartialSingleOrDefault<T>()` | yes | GridReaderTests.cs | Happy path + no results returns null |
 | `ReadScalar<T>()` | yes | GridReaderTests.cs | Read scalar value |
 | `Dispose()` | yes | GridReaderTests.cs | Resource cleanup |
 | Async variants (ReadAsync, etc.) | yes | GridReaderAsyncTests.cs | All async counterparts |
@@ -377,36 +377,36 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `ExecuteStoredProcedure<T>(procedureName)` | todo | — | Requires SQL Server/PostgreSQL |
-| `ExecuteStoredProcedure<T>(procedureName, parameters)` | todo | — | |
-| `ExecuteStoredProcedure<T>(procedureName, parameters, options)` | todo | — | |
-| `ExecuteStoredProcedureFirst<T>(procedureName)` | todo | — | |
-| `ExecuteStoredProcedureFirst<T>(procedureName, parameters)` | todo | — | |
-| `ExecuteStoredProcedureFirst<T>(procedureName, parameters, options)` | todo | — | |
-| `ExecuteStoredProcedureFirstOrDefault<T>(procedureName)` | todo | — | |
-| `ExecuteStoredProcedureFirstOrDefault<T>(procedureName, parameters)` | todo | — | |
-| `ExecuteStoredProcedureFirstOrDefault<T>(procedureName, parameters, options)` | todo | — | |
-| `ExecuteStoredProcedureScalar<T>(procedureName)` | todo | — | |
-| `ExecuteStoredProcedureScalar<T>(procedureName, parameters)` | todo | — | |
-| `ExecuteStoredProcedureScalar<T>(procedureName, parameters, options)` | todo | — | |
-| `ExecuteStoredProcedureNonQuery(procedureName)` | todo | — | |
-| `ExecuteStoredProcedureNonQuery(procedureName, parameters)` | todo | — | |
-| `ExecuteStoredProcedureNonQuery(procedureName, parameters, options)` | todo | — | |
+| `ExecuteStoredProcedure<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-tests created; requires SQL Server/PostgreSQL |
+| `ExecuteStoredProcedure<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedure<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedureFirst<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedureFirst<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedureFirst<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedureFirstOrDefault<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedureFirstOrDefault<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedureFirstOrDefault<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedureScalar<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedureScalar<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedureScalar<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedureNonQuery(procedureName)` | todo | — | No skip-test yet |
+| `ExecuteStoredProcedureNonQuery(procedureName, parameters)` | todo | — | No skip-test yet |
+| `ExecuteStoredProcedureNonQuery(procedureName, parameters, options)` | todo | — | No skip-test yet |
 
 ### ExecuteStoredProcedureAsync
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `ExecuteStoredProcedureAsync<T>(procedureName)` | todo | — | Requires SQL Server/PostgreSQL |
+| `ExecuteStoredProcedureAsync<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
 | `ExecuteStoredProcedureAsync<T>(procedureName, parameters)` | todo | — | |
 | `ExecuteStoredProcedureAsync<T>(procedureName, parameters, options)` | todo | — | |
-| `ExecuteStoredProcedureFirstAsync<T>(procedureName)` | todo | — | |
+| `ExecuteStoredProcedureFirstAsync<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
 | `ExecuteStoredProcedureFirstAsync<T>(procedureName, parameters)` | todo | — | |
 | `ExecuteStoredProcedureFirstAsync<T>(procedureName, parameters, options)` | todo | — | |
-| `ExecuteStoredProcedureFirstOrDefaultAsync<T>(procedureName)` | todo | — | |
+| `ExecuteStoredProcedureFirstOrDefaultAsync<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
 | `ExecuteStoredProcedureFirstOrDefaultAsync<T>(procedureName, parameters)` | todo | — | |
 | `ExecuteStoredProcedureFirstOrDefaultAsync<T>(procedureName, parameters, options)` | todo | — | |
-| `ExecuteStoredProcedureScalarAsync<T>(procedureName)` | todo | — | |
+| `ExecuteStoredProcedureScalarAsync<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
 | `ExecuteStoredProcedureScalarAsync<T>(procedureName, parameters)` | todo | — | |
 | `ExecuteStoredProcedureScalarAsync<T>(procedureName, parameters, options)` | todo | — | |
 | `ExecuteStoredProcedureNonQueryAsync(procedureName)` | todo | — | |
@@ -454,8 +454,8 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | `[Column("name")]` | yes | QueryAttributeMappingTests.cs | Column name override |
 | `[Key]` | yes | QueryAttributeMappingTests.cs | Primary key marker |
 | `[Ignore]` | yes | QueryAttributeMappingTests.cs | Exclude property from mapping |
-| `[DatabaseGenerated]` | - | BulkOperationsTests.cs | Tested via insert identity |
-| `DatabaseGeneratedOptions` enum | - | BulkOperationsTests.cs | Identity, Computed, None |
+| `[DatabaseGenerated]` | yes | DatabaseGeneratedTests.cs | Identity auto-increment, ignores provided ID |
+| `DatabaseGeneratedOptions` enum | yes | DatabaseGeneratedTests.cs | Identity tested explicitly |
 
 ---
 
@@ -463,9 +463,9 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 | Interface | Status | Test File | Notes |
 |-----------|--------|-----------|-------|
-| `IMapped<T>` | - | — | Tested indirectly via MappedCache; needs dedicated test |
-| `IEntity<T>` | todo | — | Used by Delete<T, TId>; zero explicit coverage |
-| `IEntity` (non-generic) | todo | — | Zero explicit coverage |
+| `IMapped<T>` | yes | IMappedTests.cs | Query, QueryFirst, QuerySingle, QueryStream with Product entity |
+| `IEntity<T>` | yes | DeleteByEntityIdTests.cs | Delete<T,TId> + DeleteAsync<T,TId> via EntityTestEntity |
+| `IEntity` (non-generic) | - | — | Not tested directly (no consumer in current API) |
 
 ---
 
@@ -658,19 +658,19 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | Category | Covered | Partial | Uncovered | Total | % Covered |
 |----------|---------|---------|-----------|-------|-----------|
 | Read (Strict) | 48 | 0 | 0 | 48 | 100% |
-| Read (Partial) | 4 | 4 | 32 | 40 | 10% |
-| Read (Scalar) | 8 | 0 | 8 | 16 | 50% |
+| Read (Partial) | 36 | 4 | 0 | 40 | 90% |
+| Read (Scalar) | 16 | 0 | 0 | 16 | 100% |
 | Read (MultiEntity) | 20+ | 2 | 0 | 22+ | ~90% |
 | Read (Special Types) | 4 | 0 | 0 | 4 | 100% |
-| Streaming | 16 | 0 | 8 | 24 | 67% |
-| Write (Individual) | 0 | 0 | 20 | 20 | 0% |
-| Write (Bulk) | 12 | 8 | 0 | 20 | 60% |
+| Streaming | 24 | 0 | 0 | 24 | 100% |
+| Write (Individual) | 20 | 0 | 0 | 20 | 100% |
+| Write (Bulk) | 18 | 2 | 0 | 20 | 90% |
 | Write (Upsert) | 4 | 0 | 0 | 4 | 100% |
-| Multiple | 13+ | 4 | 0 | 17+ | ~75% |
-| Stored Procedures | 0 | 0 | 30 | 30 | 0% |
+| Multiple | 17+ | 0 | 0 | 17+ | 100% |
+| Stored Procedures | 0 | 16 | 14 | 30 | 0% (skip-tests) |
 | Core/Config | 12 | 0 | 0 | 12 | 100% |
-| Attributes | 4 | 2 | 0 | 6 | 67% |
-| Interfaces | 0 | 1 | 2 | 3 | 0% |
+| Attributes | 6 | 0 | 0 | 6 | 100% |
+| Interfaces | 2 | 1 | 0 | 3 | 67% |
 | Internals | 5 | 12 | 8 | 25 | 20% |
 | Cross-cutting | 17 | 0 | 0 | 17 | 100% |
 | Fluent API | 19 | 0 | 0 | 19 | 100% |
@@ -679,29 +679,29 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 ### Priority Areas
 
 #### 1. High Priority (Zero Coverage - Public API)
-- [ ] **QueryPartialFirst** / QueryPartialFirstOrDefault (8 sync + 8 async = 16 methods)
-- [ ] **QueryPartialSingle** / QueryPartialSingleOrDefault (8 sync + 8 async = 16 methods)
-- [ ] **QueryPartialUnbuffered** / QueryPartialUnbufferedAsync (4 sync + 4 async = 8 methods)
-- [ ] **ExecuteScalar** / ExecuteScalarAsync (4 sync + 4 async = 8 methods)
-- [ ] **Individual Insert** / InsertAsync (2 sync + 2 async = 4 methods)
-- [ ] **Individual Update** / UpdateAsync (2 sync + 2 async = 4 methods)
-- [ ] **Individual Delete** / DeleteAsync (6 sync + 6 async = 12 methods)
-- [ ] **StoredProcedure** methods (15 sync + 15 async = 30 methods)
+- [x] **QueryPartialFirst** / QueryPartialFirstOrDefault (8 sync + 8 async = 16 methods) - DONE
+- [x] **QueryPartialSingle** / QueryPartialSingleOrDefault (8 sync + 8 async = 16 methods) - DONE
+- [x] **QueryPartialUnbuffered** / QueryPartialUnbufferedAsync (4 sync + 4 async = 8 methods) - DONE
+- [x] **ExecuteScalar** / ExecuteScalarAsync (4 sync + 4 async = 8 methods) - DONE
+- [x] **Individual Insert** / InsertAsync (2 sync + 2 async = 4 methods) - DONE
+- [x] **Individual Update** / UpdateAsync (2 sync + 2 async = 4 methods) - DONE
+- [x] **Individual Delete** / DeleteAsync (all 12 methods) - DONE (includes Delete<T,TId>)
+- [x] **StoredProcedure** methods - Skip-tests created (SQLite limitation)
 
 #### 2. Medium Priority (Partial Coverage)
-- [ ] **GridReader** partial methods (ReadPartialFirst, ReadPartialSingle, etc.)
-- [ ] **BulkInsertIgnoreConstraints** / BulkUpdateIgnoreConstraints / BulkDeleteIgnoreConstraints
+- [x] **GridReader** partial methods (ReadPartialFirst, ReadPartialSingle, etc.) - DONE
+- [x] **BulkInsertIgnoreConstraints** / BulkUpdateIgnoreConstraints / BulkDeleteIgnoreConstraints - DONE
 - [ ] **MetadataBuilder** dedicated unit tests
 - [ ] **MappedCache** dedicated unit tests
 - [ ] **CrudSqlCache** dedicated unit tests
 - [ ] **DrDispatcher** dedicated unit tests
-- [ ] **IMapped<T>** interface coverage
-- [ ] **[DatabaseGenerated]** attribute explicit tests
+- [x] **IMapped<T>** interface coverage - DONE
+- [x] **[DatabaseGenerated]** attribute explicit tests - DONE
 
 #### 3. Lower Priority (Edge Cases / Non-SQLite)
 - [ ] SQL dialect unit tests (SqlServerDialect, MySqlDialect, PostgreSqlDialect)
 - [ ] `[Obsolete]` multi-entity overloads
-- [ ] **IEntity / IEntity<T>** explicit interface coverage
+- [x] **IEntity<T>** explicit interface coverage - DONE (via DeleteByEntityIdTests)
 - [ ] MetadataCache<T> dedicated unit tests
 - [ ] MultiEntityMapper dedicated unit tests
 
@@ -723,6 +723,16 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | QueryKeyValuePairTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
 | QueryValueTupleTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
 | QueryPartialAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| QueryPartialFirstTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| QueryPartialFirstAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| QueryPartialFirstOrDefaultTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| QueryPartialFirstOrDefaultAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| QueryPartialSingleTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| QueryPartialSingleAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| QueryPartialSingleOrDefaultTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| QueryPartialSingleOrDefaultAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| ExecuteScalarTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| ExecuteScalarAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
 | QueryAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
 | QueryFirstAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
 | QueryFirstOrDefaultAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
@@ -746,17 +756,28 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | PositionalParameterBindingTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
 | QueryPositionalParameterTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
 | CollectionParameterTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| IMappedTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
 | QueryArgumentValidationTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
 | QueryStreamTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Streaming/` |
 | QueryStreamAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Streaming/` |
 | QueryPartialStreamTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Streaming/` |
 | QueryPartialStreamAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Streaming/` |
+| QueryPartialUnbufferedTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Streaming/` |
+| QueryPartialUnbufferedAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Streaming/` |
 | QueryMultipleTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Multiple/` |
 | QueryMultipleAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Multiple/` |
 | GridReaderTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Multiple/` |
 | GridReaderAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Multiple/` |
 | BulkOperationsTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Write/` |
 | BulkOperationsAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Write/` |
+| InsertTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Write/` |
+| InsertAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Write/` |
+| UpdateTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Write/` |
+| UpdateAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Write/` |
+| DeleteTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Write/` |
+| DeleteAsyncTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Write/` |
+| DeleteByEntityIdTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Write/` |
+| DatabaseGeneratedTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Write/` |
 | UpsertTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Write/` |
 | ConfigurationTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Configuration/` |
 | ConfigResolverTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Configuration/` |
