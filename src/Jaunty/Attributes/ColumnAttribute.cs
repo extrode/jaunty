@@ -3,8 +3,43 @@ namespace Jaunty.Attributes;
 /// <summary>
 /// Specifies the database column that a property is mapped to.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Apply this attribute to a property to specify a custom column name in the database.
+/// If not specified, Jaunty will use the property name as the column name.
+/// </para>
+/// <para>
+/// This attribute is Jaunty's native column mapping attribute. It also supports the standard 
+/// <see cref="System.ComponentModel.DataAnnotations.Schema.ColumnAttribute"/> for compatibility.
+/// </para>
+/// </remarks>
+/// <example>
+/// <code>
+/// using Jaunty.Attributes;
+/// 
+/// public class Product
+/// {
+///     public int Id { get; set; }
+///     
+///     [Column("ProductName")]
+///     public string Name { get; set; }
+///     
+///     [Column("UnitPrice")]
+///     public decimal Price { get; set; }
+/// }
+/// 
+/// // The properties map to columns with different names
+/// var products = connection.Query&lt;Product&gt;("SELECT Id, ProductName, UnitPrice FROM Products");
+/// </code>
+/// </example>
+/// <seealso cref="TableAttribute"/>
+/// <seealso cref="KeyAttribute"/>
+/// <seealso cref="IgnoreAttribute"/>
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 public sealed class ColumnAttribute(string name) : Attribute
 {
+    /// <summary>
+    /// Gets the name of the database column.
+    /// </summary>
     public string Name { get; } = name ?? throw new ArgumentNullException(nameof(name));
 }

@@ -107,10 +107,10 @@ internal static class ParameterBinder
             if (value is null)
                 continue;
 
-            if (IsCollection(value, out var items))
+            if (IsCollection(value, out var items, out var count))
             {
                 expansions ??= new List<CollectionExpansion>(2);
-                expansions.Add(new CollectionExpansion(sqlName, items));
+                expansions.Add(new CollectionExpansion(sqlName, items, count));
             }
         }
 
@@ -127,26 +127,31 @@ internal static class ParameterBinder
             expandedOriginalNames.Add(expansion.Name);
 
             string replacement;
-            if (expansion.Items.Count == 0)
+            if (expansion.Count == 0)
             {
                 // Empty collection: use subquery that returns no rows
                 replacement = "(SELECT NULL WHERE 1 = 0)";
             }
             else
             {
-                // Build (@Name0, @Name1, @Name2, ...)
-                var parts = new string[expansion.Items.Count];
-                for (int i = 0; i < expansion.Items.Count; i++)
+                // Pre-size StringBuilder for replacement: (@Name0, @Name1, ...)
+                var sb = new StringBuilder(expansion.Count * (expansion.Name.Length + 5));
+                sb.Append('(');
+                int i = 0;
+                foreach (var item in expansion.Items)
                 {
-                    var expandedName = $"{expansion.Name}{i}";
-                    parts[i] = $"@{expandedName}";
-                    expandedParams[expandedName] = expansion.Items[i];
+                    if (i > 0) sb.Append(", ");
+                    var expandedName = expansion.Name + i;
+                    sb.Append('@').Append(expandedName);
+                    expandedParams[expandedName] = item;
+                    i++;
                 }
-                replacement = $"({string.Join(", ", parts)})";
+                sb.Append(')');
+                replacement = sb.ToString();
             }
 
             // Replace all occurrences (case-insensitive)
-            result = ReplaceCaseInsensitive(result, $"@{expansion.Name}", replacement);
+            result = ReplaceCaseInsensitive(result, "@" + expansion.Name, replacement);
         }
 
         return (result, expandedParams, expandedOriginalNames);
@@ -179,19 +184,29 @@ internal static class ParameterBinder
         return sb.ToString();
     }
 
-    private static bool IsCollection(object value, out List<object?> items)
+    private static bool IsCollection(object value, out IEnumerable items, out int count)
     {
         items = null!;
+        count = 0;
 
         // Exclude string and byte[] - they implement IEnumerable but aren't "collections" for our purposes
         if (value is string || value is byte[])
             return false;
 
+        if (value is ICollection collection)
+        {
+            items = collection;
+            count = collection.Count;
+            return true;
+        }
+
         if (value is IEnumerable enumerable)
         {
-            items = new List<object?>();
-            foreach (var item in enumerable)
-                items.Add(item);
+            items = enumerable;
+            // Count manually if not ICollection
+            int c = 0;
+            foreach (var _ in enumerable) c++;
+            count = c;
             return true;
         }
 
@@ -201,10 +216,11 @@ internal static class ParameterBinder
     private static bool IsParameterChar(char c) =>
         c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
 
-    private readonly struct CollectionExpansion(string name, List<object?> items)
+    private readonly struct CollectionExpansion(string name, IEnumerable items, int count)
     {
         public readonly string Name = name;
-        public readonly List<object?> Items = items;
+        public readonly IEnumerable Items = items;
+        public readonly int Count = count;
     }
 
     private static void BindFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)

@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 #if NET8_0_OR_GREATER
 using System.Collections.Frozen;
 #endif
@@ -11,7 +13,8 @@ namespace Jaunty.Internals.Entity;
 internal static class MetadataCache<T>
 {
     public static readonly EntityMetadata Metadata;
-    private static readonly PropertyContext<T>[] Properties;
+    internal static readonly PropertyContext<T>[] Properties;
+    private static readonly ConcurrentDictionary<string, PropertySetter<T>[]> SettersCache = new(StringComparer.Ordinal);
 
 #if NET8_0_OR_GREATER
     private static readonly FrozenDictionary<string, int> ColumnToIndex;
@@ -30,9 +33,10 @@ internal static class MetadataCache<T>
         {
             var column = columns[i];
             var setter = CreateSetter(column.Property);
+            var getter = CreateGetter(column.Property);
             var isNonNullable = IsNonNullableType(column.Property.PropertyType);
 
-            contexts.Add(new PropertyContext<T>(column.Property, setter, column.Property.Name, column.ColumnName, isNonNullable));
+            contexts.Add(new PropertyContext<T>(column.Property, setter, getter, column.Property.Name, column.ColumnName, isNonNullable));
 
             nameToIndex[column.ColumnName] = i;
 
@@ -49,14 +53,32 @@ internal static class MetadataCache<T>
 #endif
     }
 
-internal static PropertySetter<T>[] GetSetters(IDataReader reader, MappingMode mode)
+    internal static PropertySetter<T>[] GetSetters(IDataReader reader, MappingMode mode)
     {
         int fieldCount = reader.FieldCount;
-        
+
         // Handle empty result sets
         if (fieldCount == 0)
             return [];
-            
+
+        string signature = GetReaderSignature(reader, mode);
+        return SettersCache.GetOrAdd(signature, _ => BuildSetters(reader, mode));
+    }
+
+    private static string GetReaderSignature(IDataReader reader, MappingMode mode)
+    {
+        var sb = new StringBuilder();
+        sb.Append((int)mode).Append('|').Append(reader.FieldCount);
+        for (int i = 0; i < reader.FieldCount; i++)
+        {
+            sb.Append('|').Append(reader.GetName(i));
+        }
+        return sb.ToString();
+    }
+
+    private static PropertySetter<T>[] BuildSetters(IDataReader reader, MappingMode mode)
+    {
+        int fieldCount = reader.FieldCount;
         var settersBuffer = new PropertySetter<T>[fieldCount];
         int count = 0;
 
@@ -66,7 +88,7 @@ internal static PropertySetter<T>[] GetSetters(IDataReader reader, MappingMode m
         var matchedProperties = new bool[Properties.Length];
 #endif
 
-for (int i = 0; i < fieldCount; i++)
+        for (int i = 0; i < fieldCount; i++)
         {
             string columnName;
             try
@@ -76,14 +98,12 @@ for (int i = 0; i < fieldCount; i++)
             catch (NullReferenceException)
             {
                 // Handle SQLite async DataReader limitation: use position-based mapping
-                // When GetName() fails, map by position order instead of column name
                 if (i < Properties.Length)
                 {
                     settersBuffer[count++] = new PropertySetter<T>(Properties[i], i);
                     matchedProperties[i] = true;
                     continue;
                 }
-                // If we get here, we have more columns than properties
                 continue;
             }
             catch (Exception ex)
@@ -142,30 +162,94 @@ for (int i = 0; i < fieldCount; i++)
         var record = Expression.Parameter(typeof(IDataRecord), "record");
         var index = Expression.Parameter(typeof(int), "index");
 
-        var getValue = Expression.Call(record, typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!, index);
-
         var propertyType = property.PropertyType;
-        var underlyingType = Nullable.GetUnderlyingType(propertyType);
+        var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+        var isEnum = underlyingType.IsEnum;
+        var conversionType = isEnum ? Enum.GetUnderlyingType(underlyingType) : underlyingType;
+
+        var getValue = Expression.Call(record, typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!, index);
 
         Expression valueExpression;
 
-        if (underlyingType is not null)
+        if (conversionType == typeof(string))
         {
-            // Nullable<T>: (T?)Convert.ChangeType(value, typeof(T))
-            var changeType = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ChangeType), [typeof(object), typeof(Type)])!, getValue,
-                Expression.Constant(underlyingType, typeof(Type)));
-            valueExpression = Expression.Convert(changeType, propertyType);
+            valueExpression = Expression.Convert(getValue, typeof(string));
+        }
+        else if (conversionType == typeof(int))
+        {
+            valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToInt32), [typeof(object)])!, getValue);
+        }
+        else if (conversionType == typeof(long))
+        {
+            valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToInt64), [typeof(object)])!, getValue);
+        }
+        else if (conversionType == typeof(bool))
+        {
+            valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToBoolean), [typeof(object)])!, getValue);
+        }
+        else if (conversionType == typeof(DateTime))
+        {
+            valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToDateTime), [typeof(object)])!, getValue);
+        }
+        else if (conversionType == typeof(decimal))
+        {
+            valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToDecimal), [typeof(object)])!, getValue);
+        }
+        else if (conversionType == typeof(double))
+        {
+            valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToDouble), [typeof(object)])!, getValue);
+        }
+        else if (conversionType == typeof(float))
+        {
+            valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToSingle), [typeof(object)])!, getValue);
+        }
+        else if (conversionType == typeof(short))
+        {
+            valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToInt16), [typeof(object)])!, getValue);
+        }
+        else if (conversionType == typeof(byte))
+        {
+            valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToByte), [typeof(object)])!, getValue);
+        }
+        else if (conversionType == typeof(Guid))
+        {
+            valueExpression = Expression.Call(typeof(MetadataCache<T>).GetMethod(nameof(ParseGuid), BindingFlags.NonPublic | BindingFlags.Static)!, getValue);
         }
         else
         {
-            // Non-nullable: Convert.ChangeType(value, propertyType)
             var changeType = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ChangeType), [typeof(object), typeof(Type)])!, getValue,
-                Expression.Constant(propertyType, typeof(Type)));
-            valueExpression = Expression.Convert(changeType, propertyType);
+                Expression.Constant(conversionType, typeof(Type)));
+            valueExpression = Expression.Convert(changeType, conversionType);
+        }
+
+        if (isEnum)
+        {
+            valueExpression = Expression.Convert(valueExpression, underlyingType);
+        }
+
+        if (propertyType != underlyingType)
+        {
+            valueExpression = Expression.Convert(valueExpression, propertyType);
         }
 
         var assign = Expression.Assign(Expression.Property(target, property), valueExpression);
         return Expression.Lambda<Action<T, IDataRecord, int>>(assign, target, record, index).Compile();
+    }
+
+    private static Func<T, object?> CreateGetter(PropertyInfo property)
+    {
+        var target = Expression.Parameter(typeof(T), "target");
+        var access = Expression.Property(target, property);
+        var box = Expression.Convert(access, typeof(object));
+        return Expression.Lambda<Func<T, object?>>(box, target).Compile();
+    }
+
+    private static Guid ParseGuid(object value)
+    {
+        if (value is Guid g) return g;
+        if (value is string s) return Guid.Parse(s);
+        if (value is byte[] b) return new Guid(b);
+        return (Guid)Convert.ChangeType(value, typeof(Guid));
     }
 
 
@@ -175,10 +259,11 @@ for (int i = 0; i < fieldCount; i++)
     }
 }
 
-internal readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, string propertyName, string columnName, bool isNonNullable)
+internal readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
 {
     public PropertyInfo Property { get; } = property;
     public Action<T, IDataRecord, int> Setter { get; } = setter;
+    public Func<T, object?> Getter { get; } = getter;
     public string PropertyName { get; } = propertyName;
     public string ColumnName { get; } = columnName;
     public bool IsNonNullable { get; } = isNonNullable;
