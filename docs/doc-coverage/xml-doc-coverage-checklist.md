@@ -48,11 +48,11 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | File | Methods | Status | Notes |
 |------|---------|--------|-------|
 | `Insert.cs` | `Insert<T>(entity)`, `Insert<T>(entity, options)` | yes | Complete with examples, remarks, exceptions |
-| `InsertAsync.cs` | 2 overloads | no | TODO |
+| `InsertAsync.cs` | 2 overloads | yes | Complete with examples, remarks, exceptions |
 | `Update.cs` | `Update<T>(entity)`, `Update<T>(entity, options)` | yes | Complete with examples, remarks, exceptions |
-| `UpdateAsync.cs` | 2 overloads | no | TODO |
+| `UpdateAsync.cs` | 2 overloads | yes | Complete with examples, remarks, exceptions |
 | `Delete.cs` | 6 overloads | yes | Complete with examples, remarks, exceptions |
-| `DeleteAsync.cs` | 6 overloads | no | TODO |
+| `DeleteAsync.cs` | 6 overloads | yes | Complete with examples, remarks, exceptions |
 | `BulkInsert.cs` | 4 overloads | no | TODO |
 | `BulkInsertAsync.cs` | 4 overloads | no | TODO |
 | `BulkUpdate.cs` | 4 overloads | no | TODO |
@@ -62,7 +62,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | `Upsert.cs` | 2 overloads | no | TODO |
 | `UpsertAsync.cs` | 2 overloads | no | TODO |
 
-**Progress**: 10/46 methods (22%)
+**Progress**: 20/46 methods (43%)
 
 ---
 
@@ -159,7 +159,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Category | Documented | Total | Percentage |
 |----------|------------|-------|------------|
 | Query Methods | 140 | 156 | 90% |
-| Write Methods | 10 | 46 | 22% |
+| Write Methods | 20 | 46 | 43% |
 | Multiple Result Sets | 14 | 14 | 100% |
 | Streaming | 0 | 24 | 0% |
 | Stored Procedures | 0 | 16 | 0% |
@@ -167,7 +167,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Core Types | 0 | 2 | 0% |
 | Configuration | 0 | 1 | 0% |
 | Interfaces | 0 | 2 | 0% |
-| **TOTAL** | **164** | **267** | **61%** |
+| **TOTAL** | **174** | **267** | **65%** |
 
 ---
 
@@ -188,8 +188,8 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 13. **DONE**: `QueryScalar<T>()`, `ExecuteScalar<T>()` - Scalar queries (sync and async)
 14. **DONE**: `QueryMultiple<T>()` - Multiple result sets (100% complete)
 15. **DONE**: `QueryMultiEntity<T1, T2>()` - Multi-entity mapping (sync and async)
-16. **NEXT**: Async Write operations (Insert, Update, Delete)
-17. **LATER**: `Bulk*` operations - Bulk operations
+16. **DONE**: Async Write operations (Insert, Update, Delete)
+17. **NEXT**: `Bulk*` operations - Bulk operations
 18. **LATER**: `Upsert<T>()` - Upsert operations
 19. **LATER**: Streaming methods - Advanced scenarios
 20. **LATER**: Stored procedures - Specialized use cases
