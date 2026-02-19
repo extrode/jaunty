@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Data;
+using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -33,10 +34,11 @@ internal static class MetadataCache<T>
         {
             var column = columns[i];
             var setter = CreateSetter(column.Property);
+            var fastSetter = CreateFastSetter(column.Property);
             var getter = CreateGetter(column.Property);
             var isNonNullable = IsNonNullableType(column.Property.PropertyType);
 
-            contexts.Add(new PropertyContext<T>(column.Property, setter, getter, column.Property.Name, column.ColumnName, isNonNullable));
+            contexts.Add(new PropertyContext<T>(column.Property, setter, fastSetter, getter, column.Property.Name, column.ColumnName, isNonNullable));
 
             nameToIndex[column.ColumnName] = i;
 
@@ -236,6 +238,37 @@ internal static class MetadataCache<T>
         return Expression.Lambda<Action<T, IDataRecord, int>>(assign, target, record, index).Compile();
     }
 
+    private static Action<T, DbDataReader, int> CreateFastSetter(PropertyInfo property)
+    {
+        var target = Expression.Parameter(typeof(T), "target");
+        var reader = Expression.Parameter(typeof(DbDataReader), "reader");
+        var index = Expression.Parameter(typeof(int), "index");
+
+        var propertyType = property.PropertyType;
+        var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+        var isEnum = underlyingType.IsEnum;
+        var conversionType = isEnum ? Enum.GetUnderlyingType(underlyingType) : underlyingType;
+
+        // Fast path: reader.GetFieldValue<T>(index)
+        var getFieldValueMethod = typeof(DbDataReader).GetMethod(nameof(DbDataReader.GetFieldValue))!.MakeGenericMethod(conversionType);
+        var getValue = Expression.Call(reader, getFieldValueMethod, index);
+
+        Expression valueExpression = getValue;
+
+        if (isEnum)
+        {
+            valueExpression = Expression.Convert(valueExpression, underlyingType);
+        }
+
+        if (propertyType != underlyingType)
+        {
+            valueExpression = Expression.Convert(valueExpression, propertyType);
+        }
+
+        var assign = Expression.Assign(Expression.Property(target, property), valueExpression);
+        return Expression.Lambda<Action<T, DbDataReader, int>>(assign, target, reader, index).Compile();
+    }
+
     private static Func<T, object?> CreateGetter(PropertyInfo property)
     {
         var target = Expression.Parameter(typeof(T), "target");
@@ -259,10 +292,11 @@ internal static class MetadataCache<T>
     }
 }
 
-internal readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
+internal readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, Action<T, DbDataReader, int> fastSetter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
 {
     public PropertyInfo Property { get; } = property;
     public Action<T, IDataRecord, int> Setter { get; } = setter;
+    public Action<T, DbDataReader, int> FastSetter { get; } = fastSetter;
     public Func<T, object?> Getter { get; } = getter;
     public string PropertyName { get; } = propertyName;
     public string ColumnName { get; } = columnName;
@@ -275,6 +309,15 @@ internal readonly struct PropertySetter<T>(PropertyContext<T> context, int ordin
     {
         if (!record.IsDBNull(ordinal))
             context.Setter(target, record, ordinal);
+        else if (context.IsNonNullable)
+            throw new InvalidOperationException(
+                $"Cannot assign NULL to non-nullable property '{context.Property.Name}' on type '{typeof(T).Name}'.");
+    }
+
+    public void SetFast(T target, DbDataReader reader)
+    {
+        if (!reader.IsDBNull(ordinal))
+            context.FastSetter(target, reader, ordinal);
         else if (context.IsNonNullable)
             throw new InvalidOperationException(
                 $"Cannot assign NULL to non-nullable property '{context.Property.Name}' on type '{typeof(T).Name}'.");
