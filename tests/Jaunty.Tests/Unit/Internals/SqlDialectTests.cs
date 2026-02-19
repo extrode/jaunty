@@ -1,3 +1,5 @@
+using System.Data;
+
 using Jaunty.Internals.Dialects;
 
 namespace Jaunty.Tests.Unit.Internals;
@@ -672,6 +674,75 @@ public class SqlDialectTests
             Assert.True(new SQLiteDialect().SupportsForeignKeyToggle);
             Assert.True(new MySqlDialect().SupportsForeignKeyToggle);
             Assert.True(new PostgreSqlDialect().SupportsForeignKeyToggle);
+        }
+    }
+
+    #endregion
+
+    #region SqlDialectFactory
+
+    public class SqlDialectFactoryTests
+    {
+        [Fact]
+        public void GetDialect_SQLiteConnection_ReturnsSQLiteDialect()
+        {
+            var connection = new SQLiteConnection();
+            var dialect = SqlDialectFactory.GetDialect(connection);
+            Assert.IsType<SQLiteDialect>(dialect);
+        }
+
+        [Fact]
+        public void GetDialect_SqlConnection_ReturnsSqlServerDialect()
+        {
+            var connection = new SqlConnection();
+            var dialect = SqlDialectFactory.GetDialect(connection);
+            Assert.IsType<SqlServerDialect>(dialect);
+        }
+
+        [Fact]
+        public void GetDialect_NpgsqlConnection_ReturnsPostgreSqlDialect()
+        {
+            var connection = new NpgsqlConnection();
+            var dialect = SqlDialectFactory.GetDialect(connection);
+            Assert.IsType<PostgreSqlDialect>(dialect);
+        }
+
+        [Fact]
+        public void GetDialect_MySqlConnection_ReturnsMySqlDialect()
+        {
+            var connection = new MySqlConnection();
+            var dialect = SqlDialectFactory.GetDialect(connection);
+            Assert.IsType<MySqlDialect>(dialect);
+        }
+
+        [Fact]
+        public void GetDialect_UnknownConnection_DefaultsToSqlServer()
+        {
+            var connection = new UnknownConnection();
+            var dialect = SqlDialectFactory.GetDialect(connection);
+            Assert.IsType<SqlServerDialect>(dialect);
+        }
+
+        // Mock connection classes whose type names match the factory's switch cases
+        private class SQLiteConnection : MockConnectionBase { }
+        private class SqlConnection : MockConnectionBase { }
+        private class NpgsqlConnection : MockConnectionBase { }
+        private class MySqlConnection : MockConnectionBase { }
+        private class UnknownConnection : MockConnectionBase { }
+
+        private abstract class MockConnectionBase : IDbConnection
+        {
+            public string ConnectionString { get => ""; set { } }
+            public int ConnectionTimeout => 0;
+            public string Database => "";
+            public ConnectionState State => ConnectionState.Closed;
+            public IDbTransaction BeginTransaction() => throw new NotImplementedException();
+            public IDbTransaction BeginTransaction(IsolationLevel il) => throw new NotImplementedException();
+            public void ChangeDatabase(string databaseName) { }
+            public void Close() { }
+            public IDbCommand CreateCommand() => throw new NotImplementedException();
+            public void Dispose() { }
+            public void Open() { }
         }
     }
 
