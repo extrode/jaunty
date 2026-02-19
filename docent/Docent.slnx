@@ -1,8 +1,0 @@
-<Project Slnx="true" ToolsVersion="15.0">
-  <PropertyGroup>
-    <CurrentSlnxPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)'))</CurrentSlnxPath>
-  </PropertyGroup>
-  <ItemGroup>
-    <Project Include="tools\Docent.Generator.csproj" />
-  </ItemGroup>
-</Project>
