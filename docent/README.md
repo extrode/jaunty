@@ -7,24 +7,26 @@ Docent generates beautiful, accessible, static documentation sites from XML comm
 ## Features
 
 - **Multiple Themes** - Sage, Sepia, and more soothing color schemes
+- **Dark Mode Ready** - Themeable dark mode via CSS variables
 - **XML Comment Support** - Generate docs from C# XML documentation
 - **Static Output** - Pure HTML/CSS, minimal JavaScript
 - **Accessible** - WCAG 2.1 AA compliant
 - **Responsive** - Mobile-first design
 - **Themeable** - Easy to customize colors and layout
 - **Fast** - No build process required for simple setups
+- **CLI Tool** - Install as global .NET tool
 
 ## Quick Start
 
 ```bash
-# Clone or copy Docent to your project
-git clone https://github.com/yourorg/docent.git
+# Install the Docent CLI tool
+dotnet tool install -g Docent.Generator
 
 # Generate documentation
-dotnet run --project docent/tools/Docent.Generator.csproj \
-  --input ../YourProject/bin/Debug/net8.0/YourProject.dll \
-  --output ./docs \
-  --theme sage
+docent --input ./MyProject/bin/Debug/net8.0/ \
+       --output ./docs \
+       --theme sage \
+       --site-name "My Project"
 ```
 
 ## Project Structure
@@ -35,23 +37,50 @@ docent/
 │   ├── core/              # Core CSS and base styles
 │   └── themes/            # Theme definitions
 │       ├── base/          # Base theme (shared variables)
-│       ├── sage/          # Light green theme
+│       ├── sage/          # Light green theme (default)
 │       └── sepia/         # Warm sepia theme
 ├── templates/
 │   ├── api/               # API reference templates
 │   └── guide/             # Guide/tutorial templates
 ├── docs/                  # Generated documentation output
 └── tools/
-    └── Docent.Generator/  # Documentation generator tool
+    └── Docent.Generator/  # Documentation generator CLI
 ```
 
 ## Themes
 
-### Sage
+### Sage (Default)
 A calming light green theme perfect for technical documentation.
 
 ### Sepia  
 A warm, paper-like theme that's easy on the eyes for long reading sessions.
+
+### Dark Mode
+Both themes support dark mode with **dual activation methods**:
+
+**Manual Toggle** (for theme switchers):
+```html
+<html data-theme="dark">
+```
+
+**Auto-Detect** (respects system preference):
+```css
+@media (prefers-color-scheme: dark) { ... }
+```
+
+Use both for the best user experience - manual toggle overrides system preference.
+
+## Customization
+
+All colors are CSS custom properties. Override in your theme:
+
+```css
+:root {
+  --docent-primary: #your-color;
+  --docent-bg: #your-background;
+  /* ... more variables */
+}
+```
 
 ## License
 

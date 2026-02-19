@@ -1,6 +1,8 @@
 /* ============================================
    Docent - Sage Theme
    A calming light green color scheme
+   
+   Dark mode: Add data-theme="dark" to <html>
    ============================================ */
 
 :root {
@@ -63,7 +65,25 @@
   --docent-admonition-error-text: #8B5A5A;
 }
 
-/* Dark mode support (optional) */
+/* Dark Mode - Sage */
+
+/* Manual toggle: <html data-theme="dark"> */
+[data-theme="dark"] {
+  --docent-bg: #1A2421;
+  --docent-bg-alt: #24302D;
+  --docent-text: #E8F2EF;
+  --docent-text-secondary: #B8C9C4;
+  --docent-text-tertiary: #8FA399;
+  --docent-border: #3A4A45;
+  --docent-border-light: #2D3835;
+  --docent-primary-subtle: rgba(107, 144, 128, 0.15);
+  --docent-bg-code: #1A2421;
+  --docent-code-fg: #C9D5D0;
+  --docent-admonition-note-bg: rgba(107, 144, 128, 0.15);
+  --docent-admonition-tip-bg: rgba(164, 195, 178, 0.2);
+}
+
+/* Auto-detect: @media (prefers-color-scheme: dark) */
 @media (prefers-color-scheme: dark) {
   :root {
     --docent-bg: #1A2421;
@@ -72,6 +92,11 @@
     --docent-text-secondary: #B8C9C4;
     --docent-text-tertiary: #8FA399;
     --docent-border: #3A4A45;
+    --docent-border-light: #2D3835;
     --docent-primary-subtle: rgba(107, 144, 128, 0.15);
+    --docent-bg-code: #1A2421;
+    --docent-code-fg: #C9D5D0;
+    --docent-admonition-note-bg: rgba(107, 144, 128, 0.15);
+    --docent-admonition-tip-bg: rgba(164, 195, 178, 0.2);
   }
 }

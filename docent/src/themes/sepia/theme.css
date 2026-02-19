@@ -1,6 +1,8 @@
 /* ============================================
    Docent - Sepia Theme
    A warm, paper-like color scheme for comfortable reading
+   
+   Dark mode: Add data-theme="dark" to <html>
    ============================================ */
 
 :root {
@@ -63,7 +65,25 @@
   --docent-admonition-error-text: #8B5A5A;
 }
 
-/* Dark mode support (optional) */
+/* Dark Mode - Sepia */
+
+/* Manual toggle: <html data-theme="dark"> */
+[data-theme="dark"] {
+  --docent-bg: #24201D;
+  --docent-bg-alt: #2C2623;
+  --docent-text: #E8E0D8;
+  --docent-text-secondary: #C9B8A8;
+  --docent-text-tertiary: #9C8B7E;
+  --docent-border: #3C3430;
+  --docent-border-light: #2C2623;
+  --docent-primary-subtle: rgba(166, 123, 91, 0.15);
+  --docent-bg-code: #1A1816;
+  --docent-code-fg: #D4C8B8;
+  --docent-admonition-note-bg: rgba(166, 123, 91, 0.15);
+  --docent-admonition-tip-bg: rgba(139, 156, 107, 0.15);
+}
+
+/* Auto-detect: @media (prefers-color-scheme: dark) */
 @media (prefers-color-scheme: dark) {
   :root {
     --docent-bg: #24201D;
@@ -72,6 +92,11 @@
     --docent-text-secondary: #C9B8A8;
     --docent-text-tertiary: #9C8B7E;
     --docent-border: #3C3430;
+    --docent-border-light: #2C2623;
     --docent-primary-subtle: rgba(166, 123, 91, 0.15);
+    --docent-bg-code: #1A1816;
+    --docent-code-fg: #D4C8B8;
+    --docent-admonition-note-bg: rgba(166, 123, 91, 0.15);
+    --docent-admonition-tip-bg: rgba(139, 156, 107, 0.15);
   }
 }
