@@ -600,7 +600,7 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | `MySqlDialect` | yes | SqlDialectTests.cs | 14 tests: backticks, LAST_INSERT_ID, ON DUPLICATE KEY |
 | `PostgreSqlDialect` | yes | SqlDialectTests.cs | 17 tests: double-quotes, RETURNING, ILIKE, EXTRACT |
 | Cross-dialect comparisons | yes | SqlDialectTests.cs | 5 tests: COALESCE, NULLIF, window funcs, FK toggle |
-| `SqlDialectFactory.GetDialect()` | - | — | Only SQLite path tested via integration |
+| `SqlDialectFactory.GetDialect()` | yes | SqlDialectTests.cs | All 4 providers + unknown default tested |
 
 ### MultiEntityMapper
 
