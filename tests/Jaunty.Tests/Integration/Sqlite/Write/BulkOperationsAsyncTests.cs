@@ -112,7 +112,7 @@ public class BulkOperationsAsyncTests : IDisposable
 
         // TaskCanceledException derives from OperationCanceledException
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => _connection.BulkInsertAsync(entities, cts.Token));
+            () => _connection.BulkInsertAsync(entities, cts.Token).AsTask());
     }
 
     [Fact]
@@ -312,3 +312,4 @@ public class BulkOperationsAsyncTests : IDisposable
 
     #endregion
 }
+

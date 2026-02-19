@@ -44,7 +44,7 @@ public class QueryPartialFirstAsyncTests : IDisposable
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _db.Connection.QueryPartialFirstAsync<ProductSummary>(
-                "SELECT product_id AS ProductId FROM products WHERE product_id = -999"));
+                "SELECT product_id AS ProductId FROM products WHERE product_id = -999").AsTask());
     }
 
     [SkipSQLiteAsyncFact]
@@ -81,3 +81,4 @@ public class QueryPartialFirstAsyncTests : IDisposable
         Assert.True(product.ProductId > 0);
     }
 }
+
