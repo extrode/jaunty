@@ -188,3 +188,4 @@ public static partial class Jaunty
         return QueryStreamCore<T>(connection, sql, parameters, options, MappingMode.Strict);
     }
 }
+

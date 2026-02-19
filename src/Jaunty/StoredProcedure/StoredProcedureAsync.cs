@@ -43,7 +43,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="ExecuteStoredProcedureAsync{T}(IDbConnection, string, object?, CancellationToken)"/>
     /// <seealso cref="ExecuteStoredProcedure{T}(IDbConnection, string)"/>
-    public static Task<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
     {
         return ExecuteStoredProcedureAsync<T>(connection, procedureName, null, default, cancellationToken);
     }
@@ -76,7 +76,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="ExecuteStoredProcedureAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="ExecuteStoredProcedureAsync{T}(IDbConnection, string, object?, CommandOptions{T}, CancellationToken)"/>
-    public static Task<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default) where T : new()
     {
         return ExecuteStoredProcedureAsync<T>(connection, procedureName, parameters, default, cancellationToken);
     }
@@ -117,7 +117,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="ExecuteStoredProcedureAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static Task<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return connection.QueryAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
@@ -152,7 +152,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="ExecuteStoredProcedureFirstAsync{T}(IDbConnection, string, object?, CancellationToken)"/>
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefaultAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static Task<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
     {
         return ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, null, default, cancellationToken);
     }
@@ -188,7 +188,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="ExecuteStoredProcedureFirstAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="ExecuteStoredProcedureFirstAsync{T}(IDbConnection, string, object?, CommandOptions{T}, CancellationToken)"/>
-    public static Task<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default) where T : new()
     {
         return ExecuteStoredProcedureFirstAsync<T>(connection, procedureName, parameters, default, cancellationToken);
     }
@@ -229,7 +229,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="ExecuteStoredProcedureFirstAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static Task<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return connection.QueryFirstAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
@@ -270,7 +270,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefaultAsync{T}(IDbConnection, string, object?, CancellationToken)"/>
     /// <seealso cref="ExecuteStoredProcedureFirstAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static Task<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
     {
         return ExecuteStoredProcedureFirstOrDefaultAsync<T>(connection, procedureName, null, default, cancellationToken);
     }
@@ -311,7 +311,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefaultAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefaultAsync{T}(IDbConnection, string, object?, CommandOptions{T}, CancellationToken)"/>
-    public static Task<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default) where T : new()
     {
         return ExecuteStoredProcedureFirstOrDefaultAsync<T>(connection, procedureName, parameters, default, cancellationToken);
     }
@@ -352,7 +352,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefaultAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static Task<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return connection.QueryFirstOrDefaultAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
@@ -382,7 +382,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="ExecuteStoredProcedureScalarAsync{T}(IDbConnection, string, object?, CancellationToken)"/>
     /// <seealso cref="ExecuteStoredProcedureScalar{T}(IDbConnection, string)"/>
-    public static Task<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default)
+    public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default)
     {
         return ExecuteStoredProcedureScalarAsync<T>(connection, procedureName, (object?)null, default, cancellationToken);
     }
@@ -415,7 +415,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="ExecuteStoredProcedureScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="ExecuteStoredProcedureScalarAsync{T}(IDbConnection, string, object?, CommandOptions{T}, CancellationToken)"/>
-    public static Task<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default)
+    public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default)
     {
         return ExecuteStoredProcedureScalarAsync<T>(connection, procedureName, parameters, default, cancellationToken);
     }
@@ -453,7 +453,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="ExecuteStoredProcedureScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static Task<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)
+    public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return connection.QueryScalarAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
@@ -482,7 +482,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="ExecuteStoredProcedureNonQueryAsync(IDbConnection, string, object?, CancellationToken)"/>
     /// <seealso cref="ExecuteStoredProcedureNonQuery(IDbConnection, string)"/>
-    public static Task<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default)
+    public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default)
     {
         return ExecuteStoredProcedureNonQueryAsync(connection, procedureName, null, default, cancellationToken);
     }
@@ -515,7 +515,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="ExecuteStoredProcedureNonQueryAsync(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="ExecuteStoredProcedureNonQueryAsync(IDbConnection, string, object?, CommandOptions, CancellationToken)"/>
-    public static Task<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default)
+    public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default)
     {
         return ExecuteStoredProcedureNonQueryAsync(connection, procedureName, parameters, default, cancellationToken);
     }
@@ -553,8 +553,9 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="ExecuteStoredProcedureNonQueryAsync(IDbConnection, string, CancellationToken)"/>
-    public static Task<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = default)
+    public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = default)
     {
         return ExecuteNonQueryCoreAsync(connection, procedureName, parameters, options, CommandType.StoredProcedure, cancellationToken);
     }
 }
+

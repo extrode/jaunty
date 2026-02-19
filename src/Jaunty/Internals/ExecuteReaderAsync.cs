@@ -8,7 +8,7 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static async Task<TResult> ExecuteReaderAsync<TResult>(IDbConnection connection, string sql, object? parameters,
+    private static async ValueTask<TResult> ExecuteReaderAsync<TResult>(IDbConnection connection, string sql, object? parameters,
             CommandOptions options, Func<IDataReader, CancellationToken, Task<TResult>> handler, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
@@ -97,4 +97,6 @@ public static partial class Jaunty
         }
     }
 }
+
+
 

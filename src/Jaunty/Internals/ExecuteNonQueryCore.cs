@@ -51,7 +51,7 @@ public static partial class Jaunty
         }
     }
 
-    internal static async Task<int> ExecuteNonQueryCoreAsync(IDbConnection connection, string sql, object? parameters, CommandOptions options, CommandType commandType, CancellationToken cancellationToken)
+    internal static async ValueTask<int> ExecuteNonQueryCoreAsync(IDbConnection connection, string sql, object? parameters, CommandOptions options, CommandType commandType, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -134,3 +134,5 @@ public static partial class Jaunty
         }
     }
 }
+
+

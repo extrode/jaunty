@@ -49,7 +49,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="Insert{T}(IDbConnection, T)"/>
     /// <seealso cref="InsertAsync{T}(IDbConnection, T, CommandOptions, CancellationToken)"/>
-    public static Task<long> InsertAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<long> InsertAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -95,10 +95,11 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="InsertAsync{T}(IDbConnection, T, CancellationToken)"/>
-    public static Task<long> InsertAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<long> InsertAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : InsertCoreAsync(dbConnection, entity, options, cancellationToken);
     }
 }
+

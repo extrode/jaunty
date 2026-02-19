@@ -56,7 +56,7 @@ public static partial class Jaunty
         }
     }
 
-    private static async Task<int> DeleteByEntityCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+    private static async ValueTask<int> DeleteByEntityCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -177,7 +177,7 @@ public static partial class Jaunty
         }
     }
 
-    private static async Task<int> DeleteByIdCoreAsync<T>(DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+    private static async ValueTask<int> DeleteByIdCoreAsync<T>(DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -280,7 +280,7 @@ public static partial class Jaunty
         }
     }
 
-    private static async Task<int> DeleteByIdCoreAsync<T, TId>(DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>
+    private static async ValueTask<int> DeleteByIdCoreAsync<T, TId>(DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -333,3 +333,4 @@ public static partial class Jaunty
 
     #endregion
 }
+

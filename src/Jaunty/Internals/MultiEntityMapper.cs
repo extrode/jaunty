@@ -26,7 +26,14 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     internal static MultiEntityMapper<T1, T2> Build(IDataReader reader)
     {
         var signature = new ReaderSignature(reader);
+#if NET8_0_OR_GREATER
         return Cache.GetOrAdd(signature, static (sig, r) => CreateMapper(r), reader);
+#else
+        if (Cache.TryGetValue(signature, out var cached)) return cached;
+        var mapper = CreateMapper(reader);
+        Cache.TryAdd(signature, mapper);
+        return mapper;
+#endif
     }
 
     private readonly struct ReaderSignature : IEquatable<ReaderSignature>
@@ -36,6 +43,7 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
         public ReaderSignature(IDataReader reader)
         {
             int fieldCount = reader.FieldCount;
+#if NET8_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
             var hash = new HashCode();
             hash.Add(fieldCount);
 
@@ -45,6 +53,16 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
             }
 
             _hashCode = hash.ToHashCode();
+#else
+            int h = 17;
+            h = h * 31 + fieldCount;
+            for (int i = 0; i < fieldCount; i++)
+            {
+                var name = reader.GetName(i);
+                h = h * 31 + (name?.GetHashCode() ?? 0);
+            }
+            _hashCode = h;
+#endif
         }
 
         public bool Equals(ReaderSignature other) => _hashCode == other._hashCode;
