@@ -2,7 +2,7 @@
 
 **Target**: 100% Code Coverage
 **Created**: 2026-02-19
-**Last Updated**: 2026-02-20 (QueryPartial options, BulkIgnoreConstraintsAsync options, StoredProcedure skip-tests completed)
+**Last Updated**: 2026-02-20 (MappedCache open generic bug fixed, all IMapped/DrDispatcher tests un-skipped)
 
 This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each item includes the class/method and its test status.
 
@@ -467,9 +467,9 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 | Interface | Status | Test File | Notes |
 |-----------|--------|-----------|-------|
-| `IMapped<T>` | yes | IMappedTests.cs | Query, QueryFirst, QuerySingle, QueryStream with Product entity |
+| `IMapped<T>` | yes | IMappedTests.cs | Query, QueryFirst, QuerySingle, QueryStream with Product entity. MappedCache bug fixed — now uses interface enumeration to detect `IMapped<T>` implementations. |
 | `IEntity<T>` | yes | DeleteByEntityIdTests.cs | Delete<T,TId> + DeleteAsync<T,TId> via EntityTestEntity |
-| `IEntity` (non-generic) | - | — | Not tested directly (no consumer in current API) |
+| `IEntity` (non-generic) | yes | InsertTests.cs | Insert sets Id via IEntity cast in WriteParameterCache |
 
 ---
 
@@ -559,7 +559,7 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | KeyValuePair mapper | yes | DrDispatcherTests.cs + QueryKeyValuePairTests.cs | Two-column mapping |
 | ValueTuple mapper | yes | DrDispatcherTests.cs + QueryValueTupleTests.cs | Positional mapping |
 | ExpandoObject mapper | yes | QueryDynamicTests.cs | Via integration test |
-| IMapped<T> mapper resolution | - | DrDispatcherTests.cs | Skipped — MappedCache open generic bug |
+| IMapped<T> mapper resolution | yes | DrDispatcherTests.cs | Fixed — MappedCache bug resolved, test un-skipped |
 | Metadata reflection fallback (priority 4) | yes | DrDispatcherTests.cs | Plain entity mapping |
 | KeyValuePair insufficient columns | yes | DrDispatcherTests.cs | Throws InvalidOperationException |
 | ValueTuple insufficient columns | yes | DrDispatcherTests.cs | Throws InvalidOperationException |
@@ -569,8 +569,8 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | Feature | Status | Test File | Notes |
 |---------|--------|-----------|-------|
 | Plain entity returns null mapper | yes | MappedCacheTests.cs | Non-IMapped type |
-| IMapped entity mapper resolution | - | MappedCacheTests.cs | Skipped — `typeof(IMapped<>).IsAssignableFrom` returns false for open generics |
-| Mapper caching (same reference) | - | MappedCacheTests.cs | Skipped — depends on above bug fix |
+| IMapped entity mapper resolution | yes | MappedCacheTests.cs | Fixed — uses interface enumeration instead of IsAssignableFrom |
+| Mapper caching (same reference) | yes | MappedCacheTests.cs | Verified same delegate reference |
 
 ### CrudSqlCache
 
@@ -724,8 +724,8 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | Stored Procedures | 0 | 33 | 0 | 33 | 0% (all skip-tests) |
 | Core/Config | 12 | 0 | 0 | 12 | 100% |
 | Attributes | 6 | 0 | 0 | 6 | 100% |
-| Interfaces | 2 | 1 | 0 | 3 | 67% |
-| Internals | 102 | 6 | 1 | 109 | 94% |
+| Interfaces | 3 | 0 | 0 | 3 | 100% |
+| Internals | 106 | 2 | 1 | 109 | 97% |
 | Cross-cutting | 17 | 0 | 0 | 17 | 100% |
 | Fluent API | 19 | 0 | 0 | 19 | 100% |
 | Scaffolding | 6 | 0 | 0 | 6 | 100% |
@@ -746,9 +746,9 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 - [x] **GridReader** partial methods (ReadPartialFirst, ReadPartialSingle, etc.) - DONE
 - [x] **BulkInsertIgnoreConstraints** / BulkUpdateIgnoreConstraints / BulkDeleteIgnoreConstraints - DONE
 - [x] **MetadataBuilder** dedicated unit tests - DONE (18 tests)
-- [x] **MappedCache** dedicated unit tests - DONE (3 tests, 2 skipped due to open generic bug)
+- [x] **MappedCache** dedicated unit tests - DONE (3 tests, all passing — open generic bug fixed)
 - [x] **CrudSqlCache** dedicated unit tests - DONE (22 tests)
-- [x] **DrDispatcher** dedicated unit tests - DONE (9 tests, 1 skipped due to MappedCache bug)
+- [x] **DrDispatcher** dedicated unit tests - DONE (9 tests, all passing — IMapped test un-skipped)
 - [x] **IMapped<T>** interface coverage - DONE
 - [x] **[DatabaseGenerated]** attribute explicit tests - DONE
 
