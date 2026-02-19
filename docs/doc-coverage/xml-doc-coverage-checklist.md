@@ -96,13 +96,13 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 
 | File | Methods | Status | Notes |
 |------|---------|--------|-------|
-| `StoredProcedure.cs` | 4 overloads | no | TODO |
-| `StoredProcedureAsync.cs` | 4 overloads | no | TODO |
+| `StoredProcedure.cs` | 16 overloads | yes | Complete with examples, remarks, exceptions |
+| `StoredProcedureAsync.cs` | 16 overloads | yes | Complete with examples, remarks, exceptions |
 | `ExecuteStoredProcedureWithOutput.cs` | 4 overloads | no | TODO |
 | `ExecuteStoredProcedureWithOutputAsync.cs` | 4 overloads | no | TODO |
 | `SpParameters.cs` | Helper class | no | TODO |
 
-**Progress**: 0/16 methods (0%)
+**Progress**: 16/32 methods (50%)
 
 ---
 
@@ -162,12 +162,12 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Write Methods | 46 | 46 | 100% |
 | Multiple Result Sets | 14 | 14 | 100% |
 | Streaming | 24 | 24 | 100% |
-| Stored Procedures | 0 | 16 | 0% |
+| Stored Procedures | 16 | 32 | 50% |
 | Attributes | 0 | 6 | 0% |
 | Core Types | 0 | 2 | 0% |
 | Configuration | 0 | 1 | 0% |
 | Interfaces | 0 | 2 | 0% |
-| **TOTAL** | **224** | **267** | **84%** |
+| **TOTAL** | **240** | **283** | **85%** |
 
 ---
 
@@ -192,8 +192,9 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 17. **DONE**: `Bulk*` operations - Bulk operations (Insert, Update, Delete - sync and async)
 18. **DONE**: `Upsert<T>()` - Upsert operations (sync and async)
 19. **DONE**: Streaming methods - All streaming variants (100% complete)
-20. **NEXT**: Stored procedures - Specialized use cases
-21. **LATER**: Attributes, Core types, Interfaces, Configuration - Reference documentation
+20. **DONE**: Stored procedures - Basic variants (16/32 complete)
+21. **NEXT**: `ExecuteStoredProcedureWithOutput<T>()` - Stored procedures with output parameters
+22. **LATER**: Attributes, Core types, Interfaces, Configuration - Reference documentation
 
 ---
 
