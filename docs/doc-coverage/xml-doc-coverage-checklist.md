@@ -26,7 +26,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | `QueryFirstAsync.cs` | 4 overloads | caution | Basic docs present, needs examples |
 | `QueryFirstOrDefaultAsync.cs` | 4 overloads | caution | Basic docs present, needs examples |
 | `QuerySingleAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
-| `QuerySingleOrDefaultAsync.cs` | 4 overloads | no | TODO |
+| `QuerySingleOrDefaultAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryPartialAsync.cs` | 4 overloads | no | TODO |
 | `QueryPartialFirstAsync.cs` | 4 overloads | no | TODO |
 | `QueryPartialFirstOrDefaultAsync.cs` | 4 overloads | no | TODO |
@@ -156,7 +156,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 
 | Category | Documented | Total | Percentage |
 |----------|------------|-------|------------|
-| Query Methods | 44 | 104 | 42% |
+| Query Methods | 48 | 104 | 46% |
 | Write Methods | 10 | 46 | 22% |
 | Multiple Result Sets | 0 | 12 | 0% |
 | Streaming | 0 | 24 | 0% |
@@ -165,7 +165,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Core Types | 0 | 2 | 0% |
 | Configuration | 0 | 1 | 0% |
 | Interfaces | 0 | 2 | 0% |
-| **TOTAL** | **54** | **213** | **25%** |
+| **TOTAL** | **58** | **213** | **27%** |
 
 ---
 
@@ -178,9 +178,9 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 5. **DONE**: `QueryPartial<T>()` - Partial mapping support
 6. **DONE**: `QueryPartialFirst<T>()`, `QueryPartialSingle<T>()`, `QueryPartialSingleOrDefault<T>()` - Partial variants
 7. **DONE**: `QuerySingleAsync<T>()` - Async single variant
-8. **IN PROGRESS**: `QueryPartialFirstOrDefault<T>()` - Basic docs, needs examples
-9. **IN PROGRESS**: `QueryAsync<T>()`, `QueryFirstAsync<T>()`, `QueryFirstOrDefaultAsync<T>()` - Basic docs, needs examples
-10. **NEXT**: `QuerySingleOrDefaultAsync<T>()` - Async single variant
+8. **DONE**: `QuerySingleOrDefaultAsync<T>()` - Async single variant (returns null)
+9. **IN PROGRESS**: `QueryPartialFirstOrDefault<T>()` - Basic docs, needs examples
+10. **IN PROGRESS**: `QueryAsync<T>()`, `QueryFirstAsync<T>()`, `QueryFirstOrDefaultAsync<T>()` - Basic docs, needs examples
 11. **NEXT**: `QueryPartial*Async<T>()` - Async partial variants
 12. **LATER**: `QueryScalar<T>()`, `ExecuteScalar<T>()` - Scalar queries
 13. **LATER**: `QueryMultiple<T>()` - Multiple result sets
