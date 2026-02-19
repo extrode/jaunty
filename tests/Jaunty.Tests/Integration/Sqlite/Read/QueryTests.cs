@@ -1,3 +1,4 @@
+using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 
@@ -123,5 +124,28 @@ public class QueryTests : IDisposable
             new { Id = 1 });
 
         Assert.Single(categories);
+    }
+
+    [Fact]
+    public void QueryPartial_WithOptions_ReturnsEntities()
+    {
+        var summaries = _db.Connection.QueryPartial<ProductSummary>(
+            "SELECT product_id AS ProductId, product_name AS ProductName FROM products",
+            CommandOptions<ProductSummary>.WithTimeout(30));
+
+        Assert.NotEmpty(summaries);
+        Assert.All(summaries, s => Assert.True(s.ProductId > 0));
+    }
+
+    [Fact]
+    public void QueryPartial_WithParametersAndOptions_ReturnsFilteredEntities()
+    {
+        var summaries = _db.Connection.QueryPartial<ProductSummary>(
+            "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @Id",
+            new { Id = 1 },
+            CommandOptions<ProductSummary>.WithTimeout(30));
+
+        Assert.NotEmpty(summaries);
+        Assert.All(summaries, s => Assert.True(s.ProductId > 0));
     }
 }

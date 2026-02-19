@@ -78,16 +78,47 @@ public class StoredProcedureTests
 
     #endregion
 
+    #region ExecuteStoredProcedureNonQuery (Sync)
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureNonQuery_ExecutesSuccessfully() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureNonQuery_WithParameters_ExecutesSuccessfully() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureNonQuery_WithParametersAndOptions_ExecutesSuccessfully() { }
+
+    #endregion
+
     #region Async Variants
 
     [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
     public void ExecuteStoredProcedureAsync_WithResults_ReturnsEntities() { }
 
     [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureAsync_WithParametersAndOptions_Works() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
     public void ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst() { }
 
     [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureFirstAsync_WithParameters_ReturnsFirst() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
     public void ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureFirstOrDefaultAsync_WithParameters_ReturnsResult() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works() { }
 
     [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
     public void ExecuteStoredProcedureSingleAsync_WithExactlyOneResult_ReturnsEntity() { }
@@ -97,6 +128,25 @@ public class StoredProcedureTests
 
     [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
     public void ExecuteStoredProcedureScalarAsync_ReturnsScalarValue() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works() { }
+
+    #endregion
+
+    #region ExecuteStoredProcedureNonQueryAsync
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureNonQueryAsync_WithParameters_ExecutesSuccessfully() { }
+
+    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureNonQueryAsync_WithParametersAndOptions_ExecutesSuccessfully() { }
 
     #endregion
 }
