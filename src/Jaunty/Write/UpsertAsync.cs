@@ -9,14 +9,62 @@ namespace Jaunty;
 public static partial class Jaunty
 {
     /// <summary>
-    /// Asynchronously performs an upsert (INSERT or UPDATE if exists) operation on an entity.
-    /// If the entity exists (based on primary key), it updates; otherwise, it inserts.
+    /// Asynchronously performs an upsert (INSERT or UPDATE) operation on an entity.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection (must be DbConnection for async).</param>
-    /// <param name="entity">The entity to upsert.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Number of affected rows.</returns>
+    /// <typeparam name="T">The entity type to upsert. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the upsert against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entity">
+    /// The entity instance to upsert. The primary key property determines whether to insert or update:
+    /// <list type="bullet">
+    /// <item><description>If a row with the primary key exists, it is <strong>updated</strong></description></item>
+    /// <item><description>If no row with the primary key exists, a new row is <strong>inserted</strong></description></item>
+    /// </list>
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>
+    /// A task containing the number of affected rows. Typically <c>1</c> for either insert or update operations.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// An upsert (also known as MERGE or INSERT ... ON CONFLICT) is a database operation that combines 
+    /// INSERT and UPDATE. It's useful when you want to ensure a record exists with specific values, 
+    /// regardless of whether it already exists.
+    /// </para>
+    /// <para>
+    /// <strong>Requirements:</strong>
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>The entity must have a primary key defined</description></item>
+    /// <item><description>The database dialect must support upsert operations</description></item>
+    /// </list>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// public class Product
+    /// {
+    ///     public int Id { get; set; }
+    ///     public string Name { get; set; }
+    ///     public decimal Price { get; set; }
+    /// }
+    /// 
+    /// // Async upsert a product
+    /// var product = new Product { Id = 1, Name = "Widget", Price = 19.99m };
+    /// int affected = await connection.UpsertAsync(product);
+    /// 
+    /// // First call: inserts the product (affected = 1)
+    /// // Second call with same Id: updates the product (affected = 1)
+    /// </code>
+    /// </example>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown if the connection is not a <see cref="DbConnection"/>, if the entity has no primary key, 
+    /// if the database dialect doesn't support upsert operations, or if no upsertable columns are found.
+    /// </exception>
+    /// <seealso cref="UpsertAsync{T}(IDbConnection, T, CommandOptions, CancellationToken)"/>
+    /// <seealso cref="Upsert{T}(IDbConnection, T)"/>
+    /// <seealso cref="InsertAsync{T}(IDbConnection, T, CancellationToken)"/>
+    /// <seealso cref="UpdateAsync{T}(IDbConnection, T, CancellationToken)"/>
     public static Task<int> UpsertAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
@@ -25,14 +73,49 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Asynchronously performs an upsert (INSERT or UPDATE if exists) operation on an entity with command options.
+    /// Asynchronously performs an upsert (INSERT or UPDATE) operation on an entity with command options.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection (must be DbConnection for async).</param>
-    /// <param name="entity">The entity to upsert.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Number of affected rows.</returns>
+    /// <typeparam name="T">The entity type to upsert. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the upsert against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entity">The entity instance to upsert.</param>
+    /// <param name="options">
+    /// Command options for configuring the upsert execution. Use 
+    /// <see cref="CommandOptions{T}.WithTransaction(IDbTransaction)"/> for transactions or
+    /// <see cref="CommandOptions{T}.WithTimeout(int)"/> for command timeout.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>
+    /// A task containing the number of affected rows. Typically <c>1</c> for either insert or update operations.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// Use this overload when you need to execute the upsert within a transaction or with a specific timeout.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Async upsert with transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var product = new Product { Id = 1, Name = "Widget", Price = 19.99m };
+    /// int affected = await connection.UpsertAsync(product, CommandOptions.WithTransaction(tx));
+    /// tx.Commit();
+    /// 
+    /// // Async upsert with timeout
+    /// var product = new Product { Id = 1, Name = "Widget", Price = 19.99m };
+    /// int affected = await connection.UpsertAsync(
+    ///     product, 
+    ///     CommandOptions.WithTimeout(30));
+    /// </code>
+    /// </example>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown if the connection is not a <see cref="DbConnection"/>, if the entity has no primary key, 
+    /// if the database dialect doesn't support upsert operations, or if no upsertable columns are found.
+    /// </exception>
+    /// <seealso cref="CommandOptions{T}"/>
+    /// <seealso cref="UpsertAsync{T}(IDbConnection, T, CancellationToken)"/>
+    /// <seealso cref="Upsert{T}(IDbConnection, T, CommandOptions)"/>
     public static Task<int> UpsertAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
