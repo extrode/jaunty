@@ -126,17 +126,52 @@ internal static class ParameterBinder
 
     private class CommandTemplate(TemplateItem[] items)
     {
+        private IDbDataParameter[]? _templates;
+
         public void Bind(IDbCommand command, object parameters)
         {
+            _templates ??= CreateTemplates(command);
+
             var pCollection = command.Parameters;
             for (int i = 0; i < items.Length; i++)
             {
                 ref readonly var item = ref items[i];
-                var p = command.CreateParameter();
-                p.ParameterName = item.Name;
+                var template = _templates[i];
+                
+                // Clone the template to avoid thread safety issues
+                // and to prevent parameters from being bound to multiple commands
+                var p = CloneParameter(command, template);
                 p.Value = item.Getter(parameters) ?? DBNull.Value;
                 pCollection.Add(p);
             }
+        }
+
+        private IDbDataParameter[] CreateTemplates(IDbCommand command)
+        {
+            var templates = new IDbDataParameter[items.Length];
+            for (int i = 0; i < items.Length; i++)
+            {
+                var p = command.CreateParameter();
+                p.ParameterName = items[i].Name;
+                templates[i] = p;
+            }
+            return templates;
+        }
+
+        private static IDbDataParameter CloneParameter(IDbCommand command, IDbDataParameter template)
+        {
+            // If the provider supports ICloneable, use it (Fast Path)
+            if (template is ICloneable cloneable)
+            {
+                return (IDbDataParameter)cloneable.Clone();
+            }
+
+            // Fallback: Create new and copy basic properties (Slow Path)
+            var p = command.CreateParameter();
+            p.ParameterName = template.ParameterName;
+            p.DbType = template.DbType;
+            p.Direction = template.Direction;
+            return p;
         }
     }
 

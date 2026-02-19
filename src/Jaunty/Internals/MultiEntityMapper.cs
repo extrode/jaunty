@@ -12,7 +12,7 @@ namespace Jaunty;
 /// </summary>
 internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2>> Cache = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<ReaderSignature, MultiEntityMapper<T1, T2>> Cache = new();
 
     private readonly PropertySetter<T1>[] _t1Setters;
     private readonly PropertySetter<T2>[] _t2Setters;
@@ -25,19 +25,31 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
 
     internal static MultiEntityMapper<T1, T2> Build(IDataReader reader)
     {
-        string signature = GetReaderSignature(reader);
-        return Cache.GetOrAdd(signature, _ => CreateMapper(reader));
+        var signature = new ReaderSignature(reader);
+        return Cache.GetOrAdd(signature, static (sig, r) => CreateMapper(r), reader);
     }
 
-    private static string GetReaderSignature(IDataReader reader)
+    private readonly struct ReaderSignature : IEquatable<ReaderSignature>
     {
-        var sb = new StringBuilder();
-        for (int i = 0; i < reader.FieldCount; i++)
+        private readonly int _hashCode;
+
+        public ReaderSignature(IDataReader reader)
         {
-            if (i > 0) sb.Append('|');
-            sb.Append(reader.GetName(i));
+            int fieldCount = reader.FieldCount;
+            var hash = new HashCode();
+            hash.Add(fieldCount);
+
+            for (int i = 0; i < fieldCount; i++)
+            {
+                hash.Add(reader.GetName(i), StringComparer.OrdinalIgnoreCase);
+            }
+
+            _hashCode = hash.ToHashCode();
         }
-        return sb.ToString();
+
+        public bool Equals(ReaderSignature other) => _hashCode == other._hashCode;
+        public override bool Equals(object? obj) => obj is ReaderSignature other && Equals(other);
+        public override int GetHashCode() => _hashCode;
     }
 
     private static MultiEntityMapper<T1, T2> CreateMapper(IDataReader reader)
