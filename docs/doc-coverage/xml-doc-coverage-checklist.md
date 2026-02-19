@@ -34,12 +34,12 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | `QueryPartialSingleOrDefaultAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryScalarAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `ExecuteScalarAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
-| `QueryMultiEntity.cs` | 26 overloads | caution | Basic docs present, needs full examples |
-| `QueryMultiEntityAsync.cs` | 26 overloads | caution | Basic docs present, needs full examples |
+| `QueryMultiEntity.cs` | 26 overloads | yes | Complete with examples, remarks, exceptions |
+| `QueryMultiEntityAsync.cs` | 26 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryMultiple.cs` | 6 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryMultipleAsync.cs` | 8 overloads | yes | Complete with examples, remarks, exceptions |
 
-**Progress**: 102/120 methods (85%)
+**Progress**: 154/172 methods (89%)
 
 ---
 
@@ -158,7 +158,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 
 | Category | Documented | Total | Percentage |
 |----------|------------|-------|------------|
-| Query Methods | 88 | 104 | 85% |
+| Query Methods | 140 | 156 | 90% |
 | Write Methods | 10 | 46 | 22% |
 | Multiple Result Sets | 14 | 14 | 100% |
 | Streaming | 0 | 24 | 0% |
@@ -167,7 +167,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Core Types | 0 | 2 | 0% |
 | Configuration | 0 | 1 | 0% |
 | Interfaces | 0 | 2 | 0% |
-| **TOTAL** | **112** | **215** | **52%** |
+| **TOTAL** | **164** | **267** | **61%** |
 
 ---
 
@@ -187,12 +187,13 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 12. **DONE**: `QueryAsync<T>()`, `QueryFirstAsync<T>()`, `QueryFirstOrDefaultAsync<T>()` - Async query variants
 13. **DONE**: `QueryScalar<T>()`, `ExecuteScalar<T>()` - Scalar queries (sync and async)
 14. **DONE**: `QueryMultiple<T>()` - Multiple result sets (100% complete)
-15. **NEXT**: `QueryMultiEntity<T1, T2>()` - Multi-entity mapping (basic docs present)
-16. **LATER**: `Bulk*` operations - Bulk operations
-17. **LATER**: `Upsert<T>()` - Upsert operations
-18. **LATER**: Streaming methods - Advanced scenarios
-19. **LATER**: Stored procedures - Specialized use cases
-20. **LATER**: Attributes, Core types, Interfaces, Configuration - Reference documentation
+15. **DONE**: `QueryMultiEntity<T1, T2>()` - Multi-entity mapping (sync and async)
+16. **NEXT**: Async Write operations (Insert, Update, Delete)
+17. **LATER**: `Bulk*` operations - Bulk operations
+18. **LATER**: `Upsert<T>()` - Upsert operations
+19. **LATER**: Streaming methods - Advanced scenarios
+20. **LATER**: Stored procedures - Specialized use cases
+21. **LATER**: Attributes, Core types, Interfaces, Configuration - Reference documentation
 
 ---
 
