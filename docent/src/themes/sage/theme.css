@@ -1,0 +1,77 @@
+/* ============================================
+   Docent - Sage Theme
+   A calming light green color scheme
+   ============================================ */
+
+:root {
+  /* Primary Colors - Sage Green Palette */
+  --docent-primary: #6B9080;
+  --docent-primary-light: #A4C3B2;
+  --docent-primary-dark: #4A6F60;
+  --docent-primary-subtle: rgba(107, 144, 128, 0.08);
+  --docent-primary-muted: rgba(107, 144, 128, 0.15);
+  
+  /* Secondary/Accent Colors */
+  --docent-accent: #EAF4F4;
+  --docent-accent-dark: #D4E8E4;
+  
+  /* Text Colors */
+  --docent-text: #2F3E36;
+  --docent-text-secondary: #5C7A6F;
+  --docent-text-tertiary: #8FA399;
+  --docent-text-inverse: #FFFFFF;
+  
+  /* Background Colors */
+  --docent-bg: #F6FFF9;
+  --docent-bg-alt: #EAF4F4;
+  --docent-bg-code: #2D3835;
+  
+  /* Border Colors */
+  --docent-border: #D4E8E4;
+  --docent-border-light: #E8F2EF;
+  
+  /* Code Colors */
+  --docent-code-keyword: #C594E8;
+  --docent-code-type: #F4A8C4;
+  --docent-code-string: #A8E8B8;
+  --docent-code-comment: #8FA399;
+  --docent-code-number: #F9D784;
+  --docent-code-fg: #E8F2EF;
+  --docent-code-function: #A8C7E8;
+  
+  /* Status Colors */
+  --docent-success: #6B9080;
+  --docent-warning: #D4A373;
+  --docent-error: #C98B8B;
+  --docent-info: #6B9080;
+  
+  /* Admonition Colors */
+  --docent-admonition-note-bg: rgba(107, 144, 128, 0.08);
+  --docent-admonition-note-border: #6B9080;
+  --docent-admonition-note-text: #4A6F60;
+  
+  --docent-admonition-tip-bg: rgba(164, 195, 178, 0.15);
+  --docent-admonition-tip-border: #A4C3B2;
+  --docent-admonition-tip-text: #4A6F60;
+  
+  --docent-admonition-warning-bg: rgba(212, 163, 115, 0.1);
+  --docent-admonition-warning-border: #D4A373;
+  --docent-admonition-warning-text: #8B6F4A;
+  
+  --docent-admonition-error-bg: rgba(201, 139, 139, 0.1);
+  --docent-admonition-error-border: #C98B8B;
+  --docent-admonition-error-text: #8B5A5A;
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --docent-bg: #1A2421;
+    --docent-bg-alt: #24302D;
+    --docent-text: #E8F2EF;
+    --docent-text-secondary: #B8C9C4;
+    --docent-text-tertiary: #8FA399;
+    --docent-border: #3A4A45;
+    --docent-primary-subtle: rgba(107, 144, 128, 0.15);
+  }
+}

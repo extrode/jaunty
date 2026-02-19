@@ -1,0 +1,19 @@
+# Docent - Documentation Framework
+
+node_modules/
+dist/
+build/
+*.log
+
+# Generated documentation
+docs/output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
