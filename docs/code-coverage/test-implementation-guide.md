@@ -1,8 +1,8 @@
-# Test Implementation Guide
+# Jaunty Test Implementation Guide
 
-**Purpose**: Guide for agents and developers writing tests for FlatFile Editor  
-**Created**: 2026-02-17  
-**Last Updated**: 2026-02-17
+**Purpose**: Guide for agents and developers writing tests for the Jaunty micro-ORM
+**Created**: 2026-02-19
+**Last Updated**: 2026-02-19
 
 > **CRITICAL RULES** - Before writing any tests:
 > - **Never modify existing tests** without explicit user permission
@@ -11,7 +11,7 @@
 > - **Always read existing test files** before adding new tests
 > - **Never overwrite test files** - append to existing files
 
-This document provides patterns, examples, and best practices for writing tests to achieve 100% code coverage.
+This document provides patterns, examples, and best practices for writing tests to achieve 100% code coverage of the Jaunty micro-ORM.
 
 ---
 
@@ -19,11 +19,17 @@ This document provides patterns, examples, and best practices for writing tests 
 
 1. [Project Structure](#project-structure)
 2. [Test Frameworks](#test-frameworks)
-3. [Testing Patterns](#testing-patterns)
-4. [Service Tests](#service-tests)
-5. [ViewModel Tests](#viewmodel-tests)
-6. [Common Patterns](#common-patterns)
-7. [Troubleshooting](#troubleshooting)
+3. [Test Entities](#test-entities)
+4. [Helper Classes](#helper-classes)
+5. [Integration Test Patterns](#integration-test-patterns)
+6. [Unit Test Patterns](#unit-test-patterns)
+7. [Write Operation Patterns](#write-operation-patterns)
+8. [Streaming Test Patterns](#streaming-test-patterns)
+9. [Multiple Result Set Patterns](#multiple-result-set-patterns)
+10. [Stored Procedure Patterns](#stored-procedure-patterns)
+11. [SQLite-Specific Considerations](#sqlite-specific-considerations)
+12. [Common Patterns](#common-patterns)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -31,663 +37,882 @@ This document provides patterns, examples, and best practices for writing tests 
 
 ```
 tests/
-├── FlatFile.Services.Tests/       # Backend service tests
-│   ├── CsvParserTests.cs
-│   ├── CsvWriterTests.cs          # TODO
-│   ├── SqliteDataServiceTests.cs
-│   ├── RecentFilesServiceTests.cs # TODO
-│   ├── TypeInferenceServiceTests.cs # TODO
-│   └── LoadPerformanceTests.cs
+├── Jaunty.Tests/                          # Main test suite (~62 files, ~600+ tests)
+│   ├── Entities/                          # Test models
+│   │   ├── Product.cs                     # Full Northwind product (IEntity<int>, IMapped<Product>)
+│   │   ├── ProductSummary.cs              # Partial mapping (3 properties)
+│   │   ├── Category.cs                    # Northwind category with [Table], [Key], [Column]
+│   │   ├── CategorySummary.cs             # Partial category mapping
+│   │   ├── Customer.cs                    # Northwind customer
+│   │   ├── CustomerSummary.cs             # Partial customer mapping
+│   │   ├── Order.cs                       # Northwind order
+│   │   ├── OrderSummary.cs                # Partial order mapping
+│   │   ├── BulkTestEntity.cs              # Write test entity ([Table], [Key], [DatabaseGenerated])
+│   │   └── ProductWithAttributes.cs       # Attribute testing
+│   │
+│   ├── Helpers/
+│   │   ├── Database.cs                    # Northwind SQLite connection helper
+│   │   ├── SQLiteTestBase.cs              # Base classes for SQLite tests
+│   │   └── SkipSQLiteAsyncAttribute.cs    # Skip attributes for async limitations
+│   │
+│   ├── Integration/Sqlite/
+│   │   ├── Configuration/                 # ConfigurationTests, ConfigResolverTests
+│   │   ├── Infrastructure/                # QueryDatabaseConnectionTests
+│   │   ├── Multiple/                      # QueryMultipleTests, GridReaderTests (sync + async)
+│   │   ├── Read/                          # ~29 test files covering all Query* methods
+│   │   ├── Streaming/                     # QueryStream*, QueryPartialStream* (sync + async)
+│   │   └── Write/                         # BulkOperationsTests (sync + async), UpsertTests
+│   │
+│   └── Unit/Read/                         # CommandOptionsTests, SqlParameterParserTests, ParameterBinderTests
 │
-├── FlatFile.UI.Tests/             # ViewModel tests (Avalonia.Headless)
-│   └── ViewModels/
-│       ├── PreferencesViewModelTests.cs
-│       ├── DocumentViewModelTests.cs
-│       ├── MainViewModelTests.cs  # TODO
-│       └── DocumentLoadPerformanceTests.cs
+├── Jaunty.Fluent.Tests/                   # Fluent API tests (~18 files)
+│   └── Integration/                       # FluentSelect, FluentWhere, FluentJoin, etc.
 │
-└── FlatFile.E2E.Tests/            # End-to-end tests (FlaUI, Windows only)
-    └── BasicSmokeTests.cs
+└── Jaunty.Scaffolding.Tests/              # Scaffolding tests (~8 files)
+    ├── Integration/                       # ScaffolderIntegrationTests, SQLiteSchemaReaderTests
+    └── Unit/                              # EntityCodeGeneratorTests, NamingHelperTests, TypeMapperTests
 ```
 
 ---
 
 ## Test Frameworks
 
-### FlatFile.Services.Tests
+### Jaunty.Tests
 
 ```xml
 <PackageReference Include="xunit" Version="2.9.3" />
 <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" />
 <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+<PackageReference Include="System.Data.SQLite" Version="1.0.119" />
 ```
 
-### FlatFile.UI.Tests
+### Jaunty.Fluent.Tests
 
 ```xml
-<PackageReference Include="xunit" Version="2.9.3" />
-<PackageReference Include="Avalonia.Headless.XUnit" Version="11.3.0" />
-<!-- Use [AvaloniaFact] for tests that need Avalonia dispatcher -->
+<!-- Same as Jaunty.Tests plus FluentAssertions -->
+<PackageReference Include="FluentAssertions" Version="7.0.0" />
 ```
 
-### FlatFile.E2E.Tests (Windows only)
+### Assertion Styles
 
-```xml
-<PackageReference Include="FlaUI.Core" Version="4.0.0" />
-<PackageReference Include="FlaUI.UIA3" Version="4.0.0" />
-<!-- Target: net10.0-windows -->
+- **Jaunty.Tests**: xUnit assertions (`Assert.Equal`, `Assert.NotNull`, `Assert.Throws`)
+- **Jaunty.Fluent.Tests**: FluentAssertions (`Should().Be()`, `Should().NotBeEmpty()`)
+- **Jaunty.Scaffolding.Tests**: Mix of both
+
+**Match the assertion style of the test project you're adding to.**
+
+---
+
+## Test Entities
+
+### Product (Full Strict Mapping)
+
+```csharp
+// tests/Jaunty.Tests/Entities/Product.cs
+public class Product : IEntity<int>, IMapped<Product>
+{
+    [Ignore]
+    public int Id { get => ProductId; set => ProductId = value; }
+
+    public int ProductId { get; set; }
+    public string ProductName { get; set; } = null!;
+
+    [Column("supplier_id")]  public int? SupplierId { get; set; }
+    [Column("category_id")]  public short? CategoryId { get; set; }
+    [Column("quantity_per_unit")] public string? QuantityPerUnit { get; set; }
+    [Column("unit_price")]   public decimal? UnitPrice { get; set; }
+    [Column("units_in_stock")] public short? UnitsInStock { get; set; }
+    [Column("units_on_order")] public short? UnitsOnOrder { get; set; }
+    [Column("reorder_level")] public short? ReorderLevel { get; set; }
+    [Column("discontinued")] public bool Discontinued { get; set; }
+
+    // IMapped<Product> custom mapper
+    public static Product ReadEntity(IDataReader reader) { /* ... */ }
+}
+```
+
+### ProductSummary (Partial Mapping)
+
+```csharp
+// tests/Jaunty.Tests/Entities/ProductSummary.cs
+public class ProductSummary
+{
+    public long ProductId { get; set; }
+    public string ProductName { get; set; } = string.Empty;
+    public int CategoryId { get; set; }
+}
+```
+
+### BulkTestEntity (Write Operations)
+
+```csharp
+// tests/Jaunty.Tests/Entities/BulkTestEntity.cs
+[Table("bulk_test")]
+public class BulkTestEntity
+{
+    [Key]
+    [Column("id")]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public long Id { get; set; }
+
+    [Column("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [Column("value")]
+    public int Value { get; set; }
+}
+```
+
+### Category (CRUD Entity)
+
+```csharp
+// tests/Jaunty.Tests/Entities/Category.cs
+[Table("categories")]
+public class Category
+{
+    [Key]
+    [Column("category_id")]
+    public int CategoryId { get; set; }
+
+    [Column("category_name")]
+    public string CategoryName { get; set; } = string.Empty;
+
+    [Column("description")]
+    public string? Description { get; set; }
+}
+```
+
+### When to Use Each Entity
+
+| Entity | Use For | Mapping Mode |
+|--------|---------|-------------|
+| `Product` | Strict query tests, attribute tests, IMapped tests | Strict |
+| `ProductSummary` | Partial query tests (fewer columns than table) | Partial |
+| `Category` | CRUD tests, simpler strict queries | Strict |
+| `CategorySummary` | Partial category queries | Partial |
+| `BulkTestEntity` | Write operations (in-memory SQLite) | N/A |
+| `Customer` / `Order` | Multi-entity queries, joins | Strict |
+
+---
+
+## Helper Classes
+
+### Database.cs - Northwind Connection
+
+```csharp
+// tests/Jaunty.Tests/Helpers/Database.cs
+public class Database : IDisposable
+{
+    private readonly SQLiteConnection _connection;
+    public IDbConnection Connection => _connection;
+
+    public Database()
+    {
+        _connection = new SQLiteConnection("Data Source=../../../../../data/sqlite/Northwind.db");
+    }
+
+    public void Dispose() => _connection?.Dispose();
+}
+```
+
+**Usage**: All read-only integration tests use this. Connection opens lazily on first query.
+
+### SQLiteTestBase - Base Class
+
+```csharp
+// tests/Jaunty.Tests/Helpers/SQLiteTestBase.cs
+public abstract class SQLiteTestBase : IDisposable
+{
+    protected internal Database _db;
+    protected SQLiteTestBase() => _db = new Database();
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        _db.Dispose();
+    }
+}
+```
+
+### SkipSQLiteAsyncAttribute
+
+```csharp
+// For tests that hit SQLite async DataReader limitations
+[SkipSQLiteAsyncFact]
+public async Task SomeAsyncTest_ThatHitsLimitation() { }
+
+[SkipSQLiteAsyncTheory]
+[InlineData("test")]
+public async Task SomeAsyncTheory_ThatHitsLimitation(string input) { }
 ```
 
 ---
 
-## Testing Patterns
+## Integration Test Patterns
 
-### Basic Test Structure
+### Read Test (Northwind Database)
+
+This is the most common pattern. Uses the shared Northwind SQLite database for read-only queries.
 
 ```csharp
-using Xunit;
+using Jaunty;
+using Jaunty.Core;
+using Jaunty.Tests.Entities;
+using Jaunty.Tests.Helpers;
 
-namespace FlatFile.Services.Tests;
+namespace Jaunty.Tests.Integration.Sqlite.Read;
 
-public class MyServiceTests : IDisposable
+public class QueryPartialFirstTests : IDisposable
 {
-    public MyServiceTests()
+    private readonly Database _db;
+
+    private const string PartialColumns = @"
+        product_id AS ProductId,
+        product_name AS ProductName,
+        category_id AS CategoryId";
+
+    public QueryPartialFirstTests()
     {
-        // Initialize test fixtures
+        _db = new Database();
     }
 
     public void Dispose()
     {
-        // Clean up temp files, connections, etc.
+        GC.SuppressFinalize(this);
+        _db.Dispose();
     }
 
     [Fact]
-    public void MethodName_Scenario_ExpectedResult()
+    public void QueryPartialFirst_WithResults_ReturnsFirst()
     {
-        var sut = new MyService();
-        
-        var result = sut.DoSomething();
-        
-        Assert.NotNull(result);
+        var product = _db.Connection.QueryPartialFirst<ProductSummary>(
+            $"SELECT {PartialColumns} FROM products");
+
+        Assert.NotNull(product);
+        Assert.True(product.ProductId > 0);
+        Assert.NotNull(product.ProductName);
+    }
+
+    [Fact]
+    public void QueryPartialFirst_WithParameters_FiltersCorrectly()
+    {
+        var product = _db.Connection.QueryPartialFirst<ProductSummary>(
+            $"SELECT {PartialColumns} FROM products WHERE category_id = @CategoryId",
+            new { CategoryId = 1 });
+
+        Assert.Equal(1, product.CategoryId);
+    }
+
+    [Fact]
+    public void QueryPartialFirst_NoResults_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+            _db.Connection.QueryPartialFirst<ProductSummary>(
+                $"SELECT {PartialColumns} FROM products WHERE product_id = -1"));
+    }
+
+    [Fact]
+    public void QueryPartialFirst_WithCommandOptions_Works()
+    {
+        var product = _db.Connection.QueryPartialFirst<ProductSummary>(
+            $"SELECT {PartialColumns} FROM products WHERE product_id = @Id",
+            new { Id = 1 },
+            CommandOptions<ProductSummary>.WithTimeout(30));
+
+        Assert.Equal(1, product.ProductId);
     }
 }
 ```
 
-**Comment Policy**: 
-- Don't write obvious comments like `// Arrange`, `// Act`, `// Assert`
-- The AAA structure should be clear from whitespace separation
-- Only add comments to explain something unexpected or non-obvious
-- Follow the same patterns and style as existing tests in each file
-
-### Async Test Pattern
+### Async Read Test
 
 ```csharp
-[Fact]
-public async Task MethodAsync_Scenario_ExpectedResult()
+namespace Jaunty.Tests.Integration.Sqlite.Read;
+
+public class QueryPartialFirstAsyncTests : IDisposable
 {
-    var sut = new MyService();
-    
-    var result = await sut.DoSomethingAsync(CancellationToken.None);
-    
-    Assert.True(result);
+    private readonly Database _db;
+
+    public QueryPartialFirstAsyncTests() => _db = new Database();
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        _db.Dispose();
+    }
+
+    [SkipSQLiteAsyncFact]
+    public async Task QueryPartialFirstAsync_WithResults_ReturnsFirst()
+    {
+        var product = await _db.Connection.QueryPartialFirstAsync<ProductSummary>(
+            "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products");
+
+        Assert.NotNull(product);
+        Assert.True(product.ProductId > 0);
+    }
+
+    [SkipSQLiteAsyncFact]
+    public async Task QueryPartialFirstAsync_NoResults_Throws()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _db.Connection.QueryPartialFirstAsync<ProductSummary>(
+                "SELECT product_id AS ProductId FROM products WHERE product_id = -1"));
+    }
 }
 ```
 
-### Avalonia UI Test Pattern
+### SQL Column Constants
+
+For strict mapping tests, you must select ALL columns that the entity expects. Use a constant:
 
 ```csharp
-using Avalonia.Headless.XUnit;
+private const string FullProductColumns = @"
+    product_id AS ProductId,
+    product_name AS ProductName,
+    supplier_id, category_id, quantity_per_unit, unit_price,
+    units_in_stock, units_on_order, reorder_level, discontinued";
+```
 
-[AvaloniaFact]  // Required for UI thread operations
-public async Task LoadFileAsync_ValidFile_LoadsSuccessfully()
+For partial mapping tests, select only a subset:
+
+```csharp
+private const string PartialColumns = @"
+    product_id AS ProductId,
+    product_name AS ProductName";
+```
+
+---
+
+## Unit Test Patterns
+
+### Testing Internal Classes
+
+Unit tests go in `tests/Jaunty.Tests/Unit/{Category}/` and test internals without a database.
+
+```csharp
+namespace Jaunty.Tests.Unit.Read;
+
+public class CommandOptionsTests
 {
-    using var vm = new DocumentViewModel();
-    var path = CreateTempCsv("a,b,c\n1,2,3");
-    
-    var result = await vm.LoadFileAsync(path);
-    
-    Assert.True(result);
+    [Fact]
+    public void Default_HasNullValues()
+    {
+        var options = default(CommandOptions);
+
+        Assert.Null(options.Transaction);
+        Assert.Null(options.Timeout);
+    }
+
+    [Fact]
+    public void WithTimeout_SetsTimeoutOnly()
+    {
+        var options = CommandOptions.WithTimeout(30);
+
+        Assert.Equal(30, options.Timeout);
+        Assert.Null(options.Transaction);
+    }
+
+    [Fact]
+    public void IsReadonlyStruct()
+    {
+        var type = typeof(CommandOptions);
+
+        Assert.True(type.IsValueType);
+    }
+}
+```
+
+### Testing SqlParameterParser
+
+```csharp
+namespace Jaunty.Tests.Unit.Read;
+
+public class SqlParameterParserTests
+{
+    [Fact]
+    public void ExtractParameterNames_SingleParameter_ReturnsName()
+    {
+        var names = SqlParameterParser.ExtractParameterNames(
+            "SELECT * FROM products WHERE id = @Id");
+
+        Assert.Single(names);
+        Assert.Equal("Id", names[0]);
+    }
+
+    [Fact]
+    public void ExtractParameterNames_ParameterInBlockComment_Ignored()
+    {
+        var names = SqlParameterParser.ExtractParameterNames(
+            "SELECT * FROM products /* WHERE id = @Id */");
+
+        Assert.Empty(names);
+    }
 }
 ```
 
 ---
 
-## Service Tests
+## Write Operation Patterns
 
-### CsvParser Tests
+### In-Memory SQLite (for Write Tests)
+
+Write tests must NOT modify the shared Northwind database. Use an in-memory SQLite connection.
 
 ```csharp
-// tests/FlatFile.Services.Tests/CsvParserTests.cs
+using System.Data;
+using System.Data.SQLite;
+using Jaunty;
+using Jaunty.Core;
+using Jaunty.Tests.Entities;
 
-[Fact]
-public async Task ParseFileAsync_ValidCsv_ReturnsCorrectRowCount()
-{
-    var path = CreateTempCsv("Name,Age\nAlice,30\nBob,25");
-    var parser = new CsvParser(new CsvParseOptions());
-    
-    var result = await parser.ParseFileAsync(path, CancellationToken.None);
-    
-    Assert.Equal(2, result.RowCount);
-    Assert.Equal(2, result.Headers.Count);
-}
+namespace Jaunty.Tests.Integration.Sqlite.Write;
 
-[Fact]
-public async Task ParseWithStreamingAsync_LargeFile_StreamsRows()
+public class InsertTests : IDisposable
 {
-    var sb = new StringBuilder("Col1,Col2\n");
-    for (int i = 0; i < 1000; i++)
-        sb.AppendLine($"val{i},data{i}");
-    var path = CreateTempCsv(sb.ToString());
-    
-    var parser = new CsvParser(new CsvParseOptions());
-    var rowCount = 0;
-    
-    await foreach (var row in parser.StreamRowsAsync(path, CancellationToken.None))
+    private readonly SQLiteConnection _connection;
+    private bool _disposed;
+
+    public InsertTests()
     {
-        rowCount++;
+        _connection = new SQLiteConnection("Data Source=:memory:");
+        _connection.Open();
+        CreateTestTable();
     }
-    
-    Assert.Equal(1000, rowCount);
-}
-```
 
-### CsvWriter Tests
-
-```csharp
-// tests/FlatFile.Services.Tests/CsvWriterTests.cs
-
-[Fact]
-public async Task WriteFileAsync_ValidData_CreatesFile()
-{
-    var path = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
-    _tempFiles.Add(path);
-    
-    var writer = new CsvWriter(new CsvWriteOptions { Delimiter = ',' });
-    var headers = new[] { "Name", "Age" };
-    var rows = new List<string[]> { new[] { "Alice", "30" }, new[] { "Bob", "25" } };
-    
-    await writer.WriteFileAsync(path, headers, rows);
-    
-    Assert.True(File.Exists(path));
-    var content = await File.ReadAllTextAsync(path);
-    Assert.Contains("Name,Age", content);
-    Assert.Contains("Alice,30", content);
-}
-
-[Fact]
-public void EscapeField_ContainsComma_WrapsInQuotes()
-{
-    var writer = new CsvWriter(new CsvWriteOptions { Delimiter = ',' });
-    
-    var result = writer.WriteToString(
-        new[] { "Name" },
-        new List<string[]> { new[] { "Smith, John" } }
-    );
-    
-    Assert.Contains("\"Smith, John\"", result);
-}
-
-[Fact]
-public void EscapeField_ContainsQuote_EscapesQuote()
-{
-    var writer = new CsvWriter(new CsvWriteOptions());
-    
-    var result = writer.WriteToString(
-        new[] { "Quote" },
-        new List<string[]> { new[] { "He said \"Hello\"" } }
-    );
-    
-    Assert.Contains("\"\"Hello\"\"", result);
-}
-```
-
-### SqliteDataService Tests
-
-```csharp
-// tests/FlatFile.Services.Tests/SqliteDataServiceTests.cs
-
-[Fact]
-public void BeginEditTransaction_CreatesTransaction()
-{
-    var csvPath = CreateTempCsvPath();
-    _service.Open(csvPath);
-    _service.CreateDataTable(new[] { "Name" }.ToList());
-    
-    _service.BeginEditTransaction("Test Edit");
-    _service.InsertRow(new[] { "Name" }.ToList(), new[] { "Value" });
-    _service.CommitCurrentTransaction();
-    
-    var history = _service.GetTransactionHistory();
-    Assert.Single(history);
-    Assert.Equal("Test Edit", history[0].Description);
-}
-
-[Fact]
-public void UndoTransaction_RevertsAllActions()
-{
-    var csvPath = CreateTempCsvPath();
-    _service.Open(csvPath);
-    _service.CreateDataTable(new[] { "Name" }.ToList());
-    
-    _service.BeginEditTransaction("Multi-row insert");
-    _service.InsertRow(new[] { "Name" }.ToList(), new[] { "A" });
-    _service.InsertRow(new[] { "Name" }.ToList(), new[] { "B" });
-    _service.CommitCurrentTransaction();
-    
-    Assert.Equal(2, _service.GetTotalRowCount());
-    
-    var tx = _service.GetLastUndoableTransaction();
-    _service.UndoTransaction(tx!.Value.TransactionId);
-    
-    Assert.Equal(0, _service.GetTotalRowCount());
-}
-
-[Fact]
-public async Task CreateFtsIndexAsync_CreatesSearchableIndex()
-{
-    var csvPath = CreateTempCsvPath();
-    _service.Open(csvPath);
-    var headers = new List<string> { "Name", "Description" };
-    _service.CreateDataTable(headers);
-    _service.InsertRow(headers, new[] { "Alice", "Software Engineer" });
-    _service.InsertRow(headers, new[] { "Bob", "Data Scientist" });
-    
-    await _service.CreateFtsIndexAsync(headers.ToArray(), CancellationToken.None);
-    
-    Assert.True(_service.HasFtsIndex());
-}
-
-[Fact]
-public async Task SearchAsync_FindsMatchingRows()
-{
-    var csvPath = CreateTempCsvPath();
-    _service.Open(csvPath);
-    var headers = new List<string> { "Name", "Job" };
-    _service.CreateDataTable(headers);
-    _service.InsertRow(headers, new[] { "Alice", "Engineer" });
-    _service.InsertRow(headers, new[] { "Bob", "Designer" });
-    await _service.CreateFtsIndexAsync(headers.ToArray(), CancellationToken.None);
-    
-    var results = await _service.SearchAsync("Engineer", 10, CancellationToken.None);
-    
-    Assert.Single(results);
-    Assert.Contains("Alice", results[0].Values);
-}
-```
-
-### TypeInferenceService Tests
-
-```csharp
-// tests/FlatFile.Services.Tests/TypeInferenceServiceTests.cs
-
-[Theory]
-[InlineData("123", ColumnDataType.Integer)]
-[InlineData("-456", ColumnDataType.Integer)]
-[InlineData("12.34", ColumnDataType.Number)]
-[InlineData("-0.5", ColumnDataType.Number)]
-[InlineData("$100.00", ColumnDataType.Currency)]
-[InlineData("75%", ColumnDataType.Percent)]
-[InlineData("true", ColumnDataType.Boolean)]
-[InlineData("false", ColumnDataType.Boolean)]
-[InlineData("yes", ColumnDataType.Boolean)]
-[InlineData("2024-01-15", ColumnDataType.Date)]
-[InlineData("test@example.com", ColumnDataType.Email)]
-[InlineData("https://example.com", ColumnDataType.Url)]
-[InlineData("random text", ColumnDataType.String)]
-public void DetectType_VariousInputs_ReturnsCorrectType(string value, ColumnDataType expected)
-{
-    var result = TypeInferenceService.DetectType(value);
-    
-    Assert.Equal(expected, result);
-}
-
-[Fact]
-public void InferColumnTypes_MixedData_InfersCorrectTypes()
-{
-    var headers = new[] { "ID", "Name", "Amount", "Active" };
-    var rows = new List<string[]>
+    public void Dispose()
     {
-        new[] { "1", "Alice", "100.50", "true" },
-        new[] { "2", "Bob", "200.75", "false" },
-        new[] { "3", "Charlie", "300.00", "yes" }
-    };
-    
-    var results = TypeInferenceService.InferColumnTypes(headers, rows);
-    
-    Assert.Equal(4, results.Count);
-    Assert.Equal(ColumnDataType.Integer, results[0].DataType);
-    Assert.Equal(ColumnDataType.String, results[1].DataType);
-    Assert.Equal(ColumnDataType.Number, results[2].DataType);
-    Assert.Equal(ColumnDataType.Boolean, results[3].DataType);
+        if (_disposed) return;
+        _connection?.Dispose();
+        _disposed = true;
+        GC.SuppressFinalize(this);
+    }
+
+    private void CreateTestTable()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE bulk_test (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                value INTEGER NOT NULL
+            )";
+        cmd.ExecuteNonQuery();
+    }
+
+    private void ClearTestTable()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM bulk_test";
+        cmd.ExecuteNonQuery();
+    }
+
+    private int GetRowCount()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM bulk_test";
+        return Convert.ToInt32(cmd.ExecuteScalar());
+    }
+
+    [Fact]
+    public void Insert_SingleEntity_ReturnsIdentity()
+    {
+        var entity = new BulkTestEntity { Name = "Test", Value = 42 };
+
+        long id = _connection.Insert(entity);
+
+        Assert.True(id > 0);
+        Assert.Equal(1, GetRowCount());
+    }
+
+    [Fact]
+    public void Insert_WithCommandOptions_RespectsTransaction()
+    {
+        using var tx = _connection.BeginTransaction();
+        var entity = new BulkTestEntity { Name = "Test", Value = 42 };
+
+        long id = _connection.Insert(entity, CommandOptions.WithTransaction(tx));
+
+        Assert.True(id > 0);
+        tx.Commit();
+        Assert.Equal(1, GetRowCount());
+    }
 }
 ```
 
-### RecentFilesService Tests
+### Update Tests
 
 ```csharp
-// tests/FlatFile.Services.Tests/RecentFilesServiceTests.cs
-
 [Fact]
-public void AddRecentFile_NewFile_AddsToList()
+public void Update_ExistingEntity_ReturnsAffectedRows()
 {
-    var service = new RecentFilesService(_tempPath);
-    
-    service.AddRecentFile("/path/to/file.csv");
-    
-    Assert.Single(service.RecentFiles);
-    Assert.Equal("/path/to/file.csv", service.RecentFiles[0]);
+    var entity = new BulkTestEntity { Name = "Original", Value = 100 };
+    long id = _connection.Insert(entity);
+    entity.Id = id;
+
+    entity.Name = "Updated";
+    int rows = _connection.Update(entity);
+
+    Assert.Equal(1, rows);
+}
+```
+
+### Delete Tests
+
+```csharp
+[Fact]
+public void Delete_ExistingEntity_ReturnsAffectedRows()
+{
+    var entity = new BulkTestEntity { Name = "ToDelete", Value = 999 };
+    long id = _connection.Insert(entity);
+    entity.Id = id;
+
+    int rows = _connection.Delete(entity);
+
+    Assert.Equal(1, rows);
+    Assert.Equal(0, GetRowCount());
 }
 
 [Fact]
-public void AddRecentFile_DuplicateFile_MovesToTop()
+public void Delete_ById_ReturnsAffectedRows()
 {
-    var service = new RecentFilesService(_tempPath);
-    service.AddRecentFile("/path/file1.csv");
-    service.AddRecentFile("/path/file2.csv");
-    
-    service.AddRecentFile("/path/file1.csv");
-    
-    Assert.Equal(2, service.RecentFiles.Count);
-    Assert.Equal("/path/file1.csv", service.RecentFiles[0]);
-}
+    var entity = new BulkTestEntity { Name = "ToDelete", Value = 999 };
+    long id = _connection.Insert(entity);
 
-[Fact]
-public void AddRecentFile_ExceedsMax_RemovesOldest()
-{
-    var service = new RecentFilesService(_tempPath);
-    for (int i = 0; i < 15; i++)
-        service.AddRecentFile($"/path/file{i}.csv");
-    
-    Assert.Equal(10, service.RecentFiles.Count); // MaxRecentFiles = 10
-    Assert.Equal("/path/file14.csv", service.RecentFiles[0]);
-}
+    int rows = _connection.Delete<BulkTestEntity>(id);
 
-[Fact]
-public void Save_And_Load_PersistsFiles()
-{
-    var service1 = new RecentFilesService(_tempPath);
-    service1.AddRecentFile("/path/test.csv");
-    service1.Save();
-    
-    var service2 = new RecentFilesService(_tempPath);
-    
-    Assert.Single(service2.RecentFiles);
-    Assert.Equal("/path/test.csv", service2.RecentFiles[0]);
+    Assert.Equal(1, rows);
 }
 ```
 
 ---
 
-## ViewModel Tests
+## Streaming Test Patterns
 
-### DocumentViewModel Tests
+### QueryStream (Strict)
 
 ```csharp
-// tests/FlatFile.UI.Tests/ViewModels/DocumentViewModelTests.cs
+namespace Jaunty.Tests.Integration.Sqlite.Streaming;
 
-[AvaloniaFact]
-public async Task SaveFileAsync_DirtyDocument_SavesAndClearsDirty()
+public class QueryPartialUnbufferedTests : IDisposable
 {
-    var path = CreateTempCsv("a,b\n1,2");
-    using var vm = new DocumentViewModel();
-    await vm.LoadFileAsync(path);
-    
-    vm.UpdateCell(vm.Rows[0].RowId, 0, "1", "X");
-    Assert.True(vm.IsDirty);
-    
-    var result = await vm.SaveFileAsync();
-    
-    Assert.True(result);
-    Assert.False(vm.IsDirty);
-}
+    private readonly Database _db;
 
-[AvaloniaFact]
-public void AddRow_BlankDocument_AddsRowToGrid()
-{
-    using var vm = new DocumentViewModel();
-    var initialCount = vm.Rows.Count;
-    
-    vm.AddRow();
-    
-    Assert.Equal(initialCount + 1, vm.Rows.Count);
-    Assert.True(vm.IsDirty);
-}
+    public QueryPartialUnbufferedTests() => _db = new Database();
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        _db.Dispose();
+    }
 
-[AvaloniaFact]
-public void DeleteRow_ExistingRow_RemovesFromGrid()
-{
-    using var vm = new DocumentViewModel();
-    vm.AddRow();
-    var row = vm.Rows[0];
-    var initialCount = vm.Rows.Count;
-    
-    vm.DeleteRow(row.RowId);
-    
-    Assert.Equal(initialCount - 1, vm.Rows.Count);
-}
+    [Fact]
+    public void QueryPartialUnbuffered_ReturnsLazyEnumerable()
+    {
+        var products = _db.Connection.QueryPartialUnbuffered<ProductSummary>(
+            "SELECT product_id AS ProductId, product_name AS ProductName FROM products");
 
-[AvaloniaFact]
-public async Task Undo_AfterEdit_RevertsChange()
-{
-    var path = CreateTempCsv("Name\nAlice");
-    using var vm = new DocumentViewModel();
-    await vm.LoadFileAsync(path);
-    
-    var originalValue = vm.Rows[0].Values[0];
-    vm.TrackCellEdit(vm.Rows[0].RowId, 0, originalValue, "Bob");
-    vm.CommitAllPendingEdits();
-    
-    Assert.Equal("Bob", vm.Rows[0].Values[0]);
-    
-    vm.Undo();
-    
-    Assert.Equal("Alice", vm.Rows[0].Values[0]);
-}
+        Assert.NotNull(products);
 
-[AvaloniaFact]
-public async Task ExecuteQuery_ValidSql_ReturnsResults()
-{
-    var path = CreateTempCsv("Name,Age\nAlice,30\nBob,25");
-    using var vm = new DocumentViewModel();
-    await vm.LoadFileAsync(path);
-    
-    vm.SqlQuery = "SELECT * FROM data WHERE Age > 26";
-    
-    await vm.ExecuteQuery();
-    
-    Assert.True(vm.IsShowingQueryResults);
-    Assert.Equal(1, vm.QueryResultCount);
+        var list = products.ToList();
+        Assert.NotEmpty(list);
+        Assert.True(list[0].ProductId > 0);
+    }
+
+    [Fact]
+    public void QueryPartialUnbuffered_WithParameters_FiltersCorrectly()
+    {
+        var products = _db.Connection.QueryPartialUnbuffered<ProductSummary>(
+            "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @CatId",
+            new { CatId = 1 });
+
+        var list = products.ToList();
+        Assert.NotEmpty(list);
+    }
+
+    [Fact]
+    public void QueryPartialUnbuffered_NoResults_ReturnsEmptyEnumerable()
+    {
+        var products = _db.Connection.QueryPartialUnbuffered<ProductSummary>(
+            "SELECT product_id AS ProductId FROM products WHERE product_id = -1");
+
+        Assert.Empty(products);
+    }
 }
 ```
 
-### PreferencesService Tests
+---
+
+## Multiple Result Set Patterns
+
+### GridReader
 
 ```csharp
-// tests/FlatFile.UI.Tests/Preferences/PreferencesServiceTests.cs
+namespace Jaunty.Tests.Integration.Sqlite.Multiple;
 
-[Fact]
-public void ToToml_DefaultPreferences_GeneratesValidToml()
+public class GridReaderPartialTests : IDisposable
 {
-    var prefs = AppPreferences.CreateDefault();
-    var service = PreferencesService.Instance;
-    
-    var toml = service.ToToml(prefs);
-    
-    Assert.Contains("[grid]", toml);
-    Assert.Contains("page_size", toml);
-    Assert.Contains("initial_rows", toml);
-}
+    private readonly Database _db;
 
-[Fact]
-public void TryParseToml_ValidToml_ParsesCorrectly()
-{
-    var toml = @"
-[grid]
-page_size = 5000
-initial_rows = 10000
-show_row_numbers = true
-";
-    var service = PreferencesService.Instance;
-    
-    var result = service.TryParseToml(toml, out var prefs, out var error);
-    
-    Assert.True(result);
-    Assert.Null(error);
-    Assert.Equal(5000, prefs!.Grid.PageSize);
-    Assert.Equal(10000, prefs.Grid.InitialRows);
-}
+    public GridReaderPartialTests() => _db = new Database();
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        _db.Dispose();
+    }
 
-[Theory]
-[InlineData("Ctrl+S", "Ctrl+S")]
-[InlineData("ctrl+s", "Ctrl+S")]
-[InlineData("CTRL+S", "Ctrl+S")]
-[InlineData("Ctrl+Shift+S", "Ctrl+Shift+S")]
-[InlineData("Alt+F4", "Alt+F4")]
-public void NormalizeGesture_VariousInputs_NormalizesCorrectly(string input, string expected)
-{
-    var service = PreferencesService.Instance;
-    
-    var result = service.NormalizeGesture(input);
-    
-    Assert.Equal(expected, result);
-}
+    [Fact]
+    public void ReadPartialFirst_ReturnsFirstRow()
+    {
+        const string sql = @"
+            SELECT product_id AS ProductId, product_name AS ProductName FROM products;
+            SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories;";
 
-[Theory]
-[InlineData("page_size = 1000 # comment", "page_size = 1000")]
-[InlineData("# full line comment", "")]
-[InlineData("value = \"string with # inside\"", "value = \"string with # inside\"")]
-public void StripComment_VariousInputs_StripsCorrectly(string input, string expected)
-{
-    var service = PreferencesService.Instance;
-    
-    var result = service.StripComment(input);
-    
-    Assert.Equal(expected, result.Trim());
+        using var reader = _db.Connection.QueryMultiple(sql);
+
+        var product = reader.ReadPartialFirst<ProductSummary>();
+        Assert.True(product.ProductId > 0);
+
+        var category = reader.ReadPartialFirst<CategorySummary>();
+        Assert.True(category.CategoryId > 0);
+    }
 }
 ```
+
+---
+
+## Stored Procedure Patterns
+
+SQLite does not support stored procedures. StoredProcedure tests require SQL Server or PostgreSQL.
+
+### Skip Pattern (SQLite)
+
+```csharp
+namespace Jaunty.Tests.Integration.Sqlite.StoredProcedure;
+
+public class StoredProcedureTests
+{
+    [Fact(Skip = "Requires SQL Server - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedure_WithResults_ReturnsEntities() { }
+
+    [Fact(Skip = "Requires SQL Server - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureFirst_ReturnsFirstEntity() { }
+
+    [Fact(Skip = "Requires SQL Server - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureScalar_ReturnsScalarValue() { }
+
+    [Fact(Skip = "Requires SQL Server - SQLite does not support stored procedures")]
+    public void ExecuteStoredProcedureNonQuery_ReturnsAffectedRows() { }
+}
+```
+
+### SQL Server Pattern (if available)
+
+```csharp
+// Only when SQL Server connection is available
+public class StoredProcedureSqlServerTests : IDisposable
+{
+    private readonly IDbConnection _connection;
+
+    public StoredProcedureSqlServerTests()
+    {
+        _connection = new SqlConnection("Server=...;Database=Northwind;...");
+        _connection.Open();
+    }
+
+    [Fact]
+    public void ExecuteStoredProcedure_CustOrderHist_ReturnsResults()
+    {
+        var results = _connection.ExecuteStoredProcedure<OrderHistory>(
+            "CustOrderHist",
+            new { CustomerID = "ALFKI" });
+
+        Assert.NotEmpty(results);
+    }
+}
+```
+
+---
+
+## SQLite-Specific Considerations
+
+### Async Limitations
+
+SQLite's `System.Data.SQLite` provider has known async `DataReader` limitations. The `GetName()` method fails in async contexts.
+
+**When to use `[SkipSQLiteAsyncFact]`:**
+- Any `QueryMultipleAsync` test that reads column metadata
+- Tests that call async methods which internally access `DataReader.GetName()`
+
+```csharp
+[SkipSQLiteAsyncFact]
+public async Task QueryFirstAsync_WithResults_ReturnsFirst()
+{
+    // This test is skipped on SQLite due to async DataReader limitation
+    var product = await _db.Connection.QueryFirstAsync<Product>(
+        $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
+        new { Id = 1 });
+
+    Assert.Equal(1, product.ProductId);
+}
+```
+
+### Connection State
+
+Jaunty automatically manages connection state (opens if closed, closes after if it was closed). This is tested in `QueryConnectionStateTests.cs`. You do NOT need to manually open connections for read tests using `Database.cs`.
+
+### In-Memory vs File-Based SQLite
+
+| Scenario | Connection String | Notes |
+|----------|------------------|-------|
+| Read-only queries | `Data Source=../../../../../data/sqlite/Northwind.db` | Shared Northwind database |
+| Write operations | `Data Source=:memory:` | In-memory, isolated per test |
+| Concurrent tests | `Data Source=:memory:` | Each test gets its own database |
 
 ---
 
 ## Common Patterns
 
-### Temp File Helper
+### Test Naming Convention
 
-**CRITICAL**: Tests run in parallel. Each test MUST use unique file paths (GUIDs) and properly close database connections before cleanup.
+All tests follow: `Method_Scenario_ExpectedResult`
+
+```
+QueryPartialFirst_WithResults_ReturnsFirst
+QueryPartialFirst_NoResults_Throws
+Insert_SingleEntity_ReturnsIdentity
+Delete_ById_ReturnsAffectedRows
+BulkInsert_EmptyCollection_ReturnsZero
+```
+
+### Comment Policy
+
+- No `// Arrange`, `// Act`, `// Assert` comments
+- The AAA structure should be obvious from whitespace
+- Only comment unexpected or non-obvious behavior
+
+### Test Class Structure
 
 ```csharp
-private readonly List<string> _tempFiles = [];
-private SqliteDataService? _service;
-
-private string CreateTempCsv(string content, Encoding? encoding = null)
+public class SomeTests : IDisposable
 {
-    var path = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
-    File.WriteAllText(path, content, encoding ?? Encoding.UTF8);
-    _tempFiles.Add(path);
-    return path;
-}
+    // Fields
+    private readonly Database _db;
 
-private string CreateTempCsvPath()
-{
-    var path = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
-    _tempFiles.Add(path);
-    return path;
-}
+    // Constants for reusable SQL
+    private const string PartialColumns = "...";
 
-public void Dispose()
-{
-    // IMPORTANT: Close database connections FIRST
-    try
+    // Constructor (setup)
+    public SomeTests() => _db = new Database();
+
+    // Dispose (teardown)
+    public void Dispose()
     {
-        _service?.Close();
-        _service?.Dispose();
+        GC.SuppressFinalize(this);
+        _db.Dispose();
     }
-    catch { /* Ignore */ }
 
-    // Then clean up files (wrapped in try-catch for parallel test safety)
-    foreach (var file in _tempFiles)
-    {
-        try
-        {
-            if (File.Exists(file)) File.Delete(file);
-            var cacheFile = file + ".ff";
-            if (File.Exists(cacheFile)) File.Delete(cacheFile);
-        }
-        catch { /* Ignore - file may be locked by parallel test */ }
-    }
+    // Helper methods (private)
+    private void CreateTestTable() { /* ... */ }
+
+    // Tests (public, [Fact] or [Theory])
+    [Fact]
+    public void Method_Scenario_Expected() { /* ... */ }
 }
 ```
 
-### File Locking Prevention
+### Testing Each Overload
 
-Tests fail with "file is being used by another process" when SQLite connections aren't properly closed. Follow these rules:
+Many Jaunty methods have 4 overloads: `(sql)`, `(sql, params)`, `(sql, options)`, `(sql, params, options)`. Test at least the first two. The options overload can be tested with a simple timeout or transaction:
 
-1. **Always call `Close()` before `Dispose()`** on SqliteDataService
-2. **Use GUIDs in file paths** - never use predictable/shared paths
-3. **Wrap cleanup in try-catch** - don't fail tests on cleanup errors
-4. **For DocumentViewModel**, use `using var vm = ...` pattern
-5. **Don't share state between tests** - each test creates its own files
+```csharp
+[Fact]
+public void QueryPartialFirst_WithSqlOnly_Works()
+{
+    var result = _db.Connection.QueryPartialFirst<ProductSummary>(
+        "SELECT product_id AS ProductId, product_name AS ProductName FROM products");
 
-### Theory Tests for Multiple Scenarios
+    Assert.NotNull(result);
+}
+
+[Fact]
+public void QueryPartialFirst_WithParameters_Works()
+{
+    var result = _db.Connection.QueryPartialFirst<ProductSummary>(
+        "SELECT product_id AS ProductId FROM products WHERE product_id = @Id",
+        new { Id = 1 });
+
+    Assert.Equal(1, result.ProductId);
+}
+
+[Fact]
+public void QueryPartialFirst_WithCommandOptions_Works()
+{
+    var result = _db.Connection.QueryPartialFirst<ProductSummary>(
+        "SELECT product_id AS ProductId FROM products WHERE product_id = @Id",
+        new { Id = 1 },
+        CommandOptions<ProductSummary>.WithTimeout(30));
+
+    Assert.Equal(1, result.ProductId);
+}
+```
+
+### Testing Exception Scenarios
+
+```csharp
+[Fact]
+public void QueryFirst_NoResults_ThrowsInvalidOperation()
+{
+    var ex = Assert.Throws<InvalidOperationException>(() =>
+        _db.Connection.QueryFirst<Product>(
+            $"SELECT {FullProductColumns} FROM products WHERE product_id = -999"));
+
+    Assert.Contains("Sequence contains no elements", ex.Message);
+}
+
+[Fact]
+public void QuerySingle_MultipleResults_ThrowsInvalidOperation()
+{
+    Assert.Throws<InvalidOperationException>(() =>
+        _db.Connection.QuerySingle<Product>(
+            $"SELECT {FullProductColumns} FROM products"));
+}
+```
+
+### Testing OrDefault Variants
+
+```csharp
+[Fact]
+public void QueryFirstOrDefault_NoResults_ReturnsNull()
+{
+    var result = _db.Connection.QueryFirstOrDefault<Product>(
+        $"SELECT {FullProductColumns} FROM products WHERE product_id = -999");
+
+    Assert.Null(result);
+}
+
+[Fact]
+public void QueryFirstOrDefault_WithResults_ReturnsEntity()
+{
+    var result = _db.Connection.QueryFirstOrDefault<Product>(
+        $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
+        new { Id = 1 });
+
+    Assert.NotNull(result);
+    Assert.Equal(1, result.ProductId);
+}
+```
+
+### Theory Tests for Reusable Scenarios
 
 ```csharp
 [Theory]
-[InlineData(",", "a,b,c")]
-[InlineData("\t", "a\tb\tc")]
-[InlineData(";", "a;b;c")]
-[InlineData("|", "a|b|c")]
-public async Task DetectDelimiter_VariousDelimiters_DetectsCorrectly(
-    string delimiter, string headerRow)
+[InlineData(1)]
+[InlineData(2)]
+[InlineData(3)]
+public void QueryPartialFirst_ByCategory_ReturnsCorrectCategory(int categoryId)
 {
-    var content = $"{headerRow}\n1{delimiter}2{delimiter}3";
-    var path = CreateTempCsv(content);
-    
-    var detected = await CsvParser.DetectDelimiterAsync(
-        path, Encoding.UTF8, CancellationToken.None);
-    
-    Assert.Equal(delimiter[0], detected);
-}
-```
+    var product = _db.Connection.QueryPartialFirst<ProductSummary>(
+        "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products WHERE category_id = @CatId",
+        new { CatId = categoryId });
 
-### Testing Exceptions
-
-```csharp
-[Fact]
-public async Task LoadFileAsync_NullPath_ThrowsArgumentNullException()
-{
-    using var vm = new DocumentViewModel();
-    
-    await Assert.ThrowsAsync<ArgumentNullException>(
-        () => vm.LoadFileAsync(null!));
-}
-
-[Fact]
-public void UpdateCell_ReadOnlyMode_RaisesEvent()
-{
-    using var vm = new DocumentViewModel();
-    vm.ToggleReadOnly();
-    var eventRaised = false;
-    vm.ReadOnlyEditAttempted += (_, _) => eventRaised = true;
-    
-    vm.UpdateCell(1, 0, "old", "new");
-    
-    Assert.True(eventRaised);
-}
-```
-
-### Testing Event Handlers
-
-```csharp
-[Fact]
-public void PropertyChanged_WhenModified_RaisesEvent()
-{
-    var vm = new PreferencesViewModel(PreferencesService.Instance);
-    var propertyNames = new List<string>();
-    vm.PropertyChanged += (_, e) => propertyNames.Add(e.PropertyName!);
-    
-    vm.PageSize = 999;
-    
-    Assert.Contains("PageSize", propertyNames);
-    Assert.Contains("IsDirty", propertyNames);
+    Assert.Equal(categoryId, product.CategoryId);
 }
 ```
 
@@ -697,54 +922,59 @@ public void PropertyChanged_WhenModified_RaisesEvent()
 
 ### Common Issues
 
-**1. Avalonia not initialized**
+**1. Strict mapping failure**
 ```
-Error: Avalonia application has not been initialized
+Error: Strict mapping failed: entity property X has no matching column
 ```
-Solution: Use `[AvaloniaFact]` instead of `[Fact]` for tests that need UI thread.
+Solution: Use `QueryPartial<T>()` instead of `Query<T>()` if you're selecting a subset of columns, OR select ALL columns that the entity requires.
 
-**2. File locked / Used by another process**
+**2. SQLite async DataReader limitation**
 ```
-Error: The process cannot access the file because it is being used by another process
+Error: GetName() not supported in async contexts
 ```
-Solution: This is the most common issue. Fix by:
-- Call `_service.Close()` BEFORE `_service.Dispose()`
-- Use unique GUIDs in all file paths: `$"test_{Guid.NewGuid()}.csv"`
-- Wrap file cleanup in try-catch blocks
-- Use `using var vm = new DocumentViewModel()` for auto-disposal
+Solution: Use `[SkipSQLiteAsyncFact]` attribute. This is a known SQLite provider limitation.
 
-**3. SQLite database locked**
+**3. Stored procedure not supported**
 ```
-Error: Database is locked
+Error: SQLite does not support stored procedures
 ```
-Solution: 
-- Ensure `SqliteDataService.Close()` is called before Dispose
-- Don't share database paths between tests
-- Each test must create its own unique .ff file path
+Solution: Use `[Fact(Skip = "Requires SQL Server")]` for stored procedure tests.
 
-**4. Test isolation**
+**4. In-memory database loses data**
 ```
-Error: Test depends on state from another test
+Error: Table not found / no such table
 ```
-Solution: Each test should create its own temp files and service instances. Never use shared paths like `test.csv` - always use `$"test_{Guid.NewGuid()}.csv"`.
+Solution: In-memory SQLite databases only persist while the connection is open. Create tables in the test constructor and keep the connection open for the test's lifetime.
 
-**5. Cleanup failures causing test failures**
+**5. Column name mismatch**
 ```
-Error: Cannot delete file during Dispose
+Error: Strict mapping failed for column 'product_name'
 ```
-Solution: Wrap ALL cleanup code in try-catch. Tests should pass even if cleanup fails - the next test uses different files anyway.
+Solution: Use SQL aliases (`product_name AS ProductName`) or `[Column("product_name")]` attributes on the entity.
 
 ### Running Specific Tests
 
 ```bash
-# Run single test
-dotnet test --filter "FullyQualifiedName=FlatFile.Services.Tests.CsvParserTests.DetectDelimiterAsync_CommaDelimited_ReturnsComma"
+# Run all tests
+dotnet test
 
-# Run test class
-dotnet test --filter "ClassName=CsvParserTests"
+# Run specific test project
+dotnet test tests/Jaunty.Tests
 
-# Run tests matching pattern
-dotnet test --filter "Name~Delimiter"
+# Run specific test class
+dotnet test --filter "ClassName=QueryPartialFirstTests"
+
+# Run specific test method
+dotnet test --filter "FullyQualifiedName=Jaunty.Tests.Integration.Sqlite.Read.QueryPartialFirstTests.QueryPartialFirst_WithResults_ReturnsFirst"
+
+# Run by pattern
+dotnet test --filter "FullyQualifiedName~QueryPartialFirst"
+
+# Verbose output
+dotnet test --logger "console;verbosity=detailed"
+
+# With code coverage
+dotnet test --collect:"XPlat Code Coverage"
 ```
 
 ---
@@ -753,29 +983,28 @@ dotnet test --filter "Name~Delimiter"
 
 Before submitting tests, verify:
 
-- [ ] Test follows AAA pattern (Arrange, Act, Assert)
+- [ ] Test follows AAA pattern (whitespace-separated, no comments)
 - [ ] Test has descriptive name: `Method_Scenario_ExpectedResult`
-- [ ] Test uses `[AvaloniaFact]` if it needs UI thread
+- [ ] Test uses correct entity (strict vs partial)
 - [ ] Test doesn't depend on other tests
-- [ ] Test handles async properly with `await`
-- [ ] No obvious comments (structure is clear from whitespace)
-- [ ] Follows same style as existing tests in the file
-- [ ] **File paths use GUIDs** - `$"test_{Guid.NewGuid()}.csv"`
-- [ ] **Close() called before Dispose()** for SqliteDataService
-- [ ] **Cleanup wrapped in try-catch** - don't fail on cleanup errors
+- [ ] Read tests use `Database.cs` (Northwind)
+- [ ] Write tests use in-memory SQLite (`Data Source=:memory:`)
+- [ ] Async tests use `[SkipSQLiteAsyncFact]` if needed
+- [ ] Dispose calls `GC.SuppressFinalize(this)` before `_db.Dispose()`
+- [ ] Follows same assertion style as existing tests in the project
+- [ ] No duplicate tests (read existing file first)
+- [ ] SQL aliases match entity property names for strict mapping
 
 ---
 
-## Handling Failures and Edge Cases
-
-### When Existing Tests Fail
+## When Existing Tests Fail
 
 **DO NOT modify or delete existing tests.** Instead:
 
 1. Document the failure:
    ```
-   Test: SqliteDataServiceTests.UpdateCell_ModifiesValue
-   Error: Assert.Equal() Failure - Expected: "Bob", Actual: "Alice"
+   Test: QueryFirstTests.QueryFirst_NoResults_Throws
+   Error: Assert.Contains() Failure - Expected: "Sequence contains no elements"
    ```
 
 2. Analyze the cause:
@@ -785,49 +1014,17 @@ Before submitting tests, verify:
 
 3. Report to user and wait for permission:
    ```
-   "Test X is failing. Analysis: [your analysis]. 
-   May I fix [the test / the code]?"
+   "Test X is failing because Y. May I [fix the test / fix the code]?"
    ```
-
-### When Your New Tests Fail
-
-1. First, check your test logic
-2. If your test is correct, you may have found a bug
-3. Document the bug and ask before fixing production code:
-   ```
-   "My test for LoadPage() found that it returns null when offset > rowcount.
-   This appears to be a bug. May I fix SqliteDataService.cs?"
-   ```
-
-### When Adding Tests to Existing Files
-
-```bash
-# First, check if file exists
-ls tests/FlatFile.Services.Tests/CsvWriterTests.cs
-
-# If it exists, READ it first
-cat tests/FlatFile.Services.Tests/CsvWriterTests.cs
-
-# Then ADD your tests to the existing class, don't overwrite
-```
-
-### Never Do These Things
-
-- Delete a failing test to make the suite pass
-- Change assertions to match broken behavior
-- Overwrite an existing test file with a new one
-- Create duplicate tests with slightly different names
-- Modify production code without documenting why
 
 ---
 
 ## Next Steps
 
 1. Review [coverage-checklist.md](./coverage-checklist.md) for uncovered methods
-2. Pick items marked (uncovered)
-3. **Read existing test files** to see what's already covered
+2. Pick items marked (uncovered) - start with **High Priority** items
+3. Read existing test files in the same area to match patterns
 4. Write tests following patterns in this guide
 5. Run tests: `dotnet test`
 6. Update checklist to when complete
-7. Verify with `git diff` that you only added, not deleted
-8. Commit with message: `test: add tests for [ClassName]`
+7. Commit: `git commit -m "test: add tests for [ClassName]"`
