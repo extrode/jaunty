@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 using System.Reflection;
 
 using Jaunty.Interfaces;
@@ -29,8 +30,8 @@ internal static class WriteParameterCache<T> where T : class
         for (int i = 0; i < properties.Length; i++)
         {
             var ctx = properties[i];
-            var col = metadata.Columns.First(c => c.Property == ctx.Property);
-            if (!col.IsIdentity && !col.IsComputed)
+            var col = metadata.Columns.FirstOrDefault(c => c.Property == ctx.Property);
+            if (col != null && !col.IsIdentity && !col.IsComputed)
             {
                 insertList.Add(new WriteColumnContext<T>("@" + ctx.PropertyName, ctx.Getter));
             }
@@ -42,8 +43,8 @@ internal static class WriteParameterCache<T> where T : class
         for (int i = 0; i < properties.Length; i++)
         {
             var ctx = properties[i];
-            var col = metadata.Columns.First(c => c.Property == ctx.Property);
-            if (!col.IsPrimaryKey && !col.IsIdentity && !col.IsComputed)
+            var col = metadata.Columns.FirstOrDefault(c => c.Property == ctx.Property);
+            if (col != null && !col.IsPrimaryKey && !col.IsIdentity && !col.IsComputed)
             {
                 updateSetList.Add(new WriteColumnContext<T>("@" + ctx.PropertyName, ctx.Getter));
             }
@@ -55,8 +56,8 @@ internal static class WriteParameterCache<T> where T : class
         for (int i = 0; i < properties.Length; i++)
         {
             var ctx = properties[i];
-            var col = metadata.Columns.First(c => c.Property == ctx.Property);
-            if (col.IsPrimaryKey)
+            var col = metadata.Columns.FirstOrDefault(c => c.Property == ctx.Property);
+            if (col != null && col.IsPrimaryKey)
             {
                 updateKeyList.Add(new WriteColumnContext<T>("@" + ctx.PropertyName, ctx.Getter));
             }
@@ -132,7 +133,6 @@ internal static class WriteParameterCache<T> where T : class
         }
 
         // 2. Fallback to more complex IEntity<T> or "Id" property if needed
-        // Reusing the logic from previous implementation for completeness
         return CreateComplexIdSetter();
     }
 
