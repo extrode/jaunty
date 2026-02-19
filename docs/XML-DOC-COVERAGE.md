@@ -12,10 +12,10 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 |------|---------|--------|-------|
 | `Query.cs` | `Query<T>(sql)`, `Query<T>(sql, params)`, `Query<T>(sql, options)`, `Query<T>(sql, params, options)` | yes | Complete with examples, remarks, exceptions |
 | `QueryFirst.cs` | `QueryFirst<T>(sql)`, `QueryFirst<T>(sql, params)`, `QueryFirst<T>(sql, options)`, `QueryFirst<T>(sql, params, options)` | yes | Complete with examples, remarks, exceptions |
-| `QueryFirstOrDefault.cs` | 4 overloads | no | TODO |
-| `QuerySingle.cs` | 4 overloads | no | TODO |
-| `QuerySingleOrDefault.cs` | 4 overloads | no | TODO |
-| `QueryPartial.cs` | 4 overloads | no | TODO |
+| `QueryFirstOrDefault.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
+| `QuerySingle.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
+| `QuerySingleOrDefault.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
+| `QueryPartial.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryPartialFirst.cs` | 4 overloads | no | TODO |
 | `QueryPartialFirstOrDefault.cs` | 4 overloads | no | TODO |
 | `QueryPartialSingle.cs` | 4 overloads | no | TODO |
@@ -37,7 +37,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | `QueryMultiEntity.cs` | 8 overloads | no | TODO |
 | `QueryMultiEntityAsync.cs` | 8 overloads | no | TODO |
 
-**Progress**: 8/104 methods (8%)
+**Progress**: 24/104 methods (23%)
 
 ---
 
@@ -47,9 +47,9 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 |------|---------|--------|-------|
 | `Insert.cs` | `Insert<T>(entity)`, `Insert<T>(entity, options)` | yes | Complete with examples, remarks, exceptions |
 | `InsertAsync.cs` | 2 overloads | no | TODO |
-| `Update.cs` | 2 overloads | no | TODO |
+| `Update.cs` | `Update<T>(entity)`, `Update<T>(entity, options)` | yes | Complete with examples, remarks, exceptions |
 | `UpdateAsync.cs` | 2 overloads | no | TODO |
-| `Delete.cs` | 6 overloads | no | TODO |
+| `Delete.cs` | 6 overloads | yes | Complete with examples, remarks, exceptions |
 | `DeleteAsync.cs` | 6 overloads | no | TODO |
 | `BulkInsert.cs` | 4 overloads | no | TODO |
 | `BulkInsertAsync.cs` | 4 overloads | no | TODO |
@@ -60,7 +60,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | `Upsert.cs` | 2 overloads | no | TODO |
 | `UpsertAsync.cs` | 2 overloads | no | TODO |
 
-**Progress**: 2/46 methods (4%)
+**Progress**: 10/46 methods (22%)
 
 ---
 
@@ -157,7 +157,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Category | Documented | Total | Percentage |
 |----------|------------|-------|------------|
 | Query Methods | 24 | 104 | 23% |
-| Write Methods | 2 | 46 | 4% |
+| Write Methods | 10 | 46 | 22% |
 | Multiple Result Sets | 0 | 12 | 0% |
 | Streaming | 0 | 24 | 0% |
 | Stored Procedures | 0 | 16 | 0% |
@@ -165,7 +165,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Core Types | 0 | 2 | 0% |
 | Configuration | 0 | 1 | 0% |
 | Interfaces | 0 | 2 | 0% |
-| **TOTAL** | **26** | **213** | **12%** |
+| **TOTAL** | **34** | **213** | **16%** |
 
 ---
 
@@ -174,16 +174,17 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 1. **DONE**: `Query<T>()` and `QueryFirst<T>()` - Most commonly used
 2. **DONE**: `Insert<T>()` - Core CRUD operation
 3. **DONE**: `QueryFirstOrDefault<T>()`, `QuerySingle<T>()`, `QuerySingleOrDefault<T>()` - Common query methods
-4. **NEXT**: `Update<T>()`, `Delete<T>()` - Core CRUD operations
-5. **NEXT**: `QueryPartial<T>()` variants - Partial mapping support
-6. **NEXT**: All async variants - Async/await support
-7. **LATER**: `QueryScalar<T>()`, `ExecuteScalar<T>()` - Scalar queries
-8. **LATER**: `QueryMultiple<T>()` - Multiple result sets
-9. **LATER**: `Bulk*` operations - Bulk operations
-10. **LATER**: `Upsert<T>()` - Upsert operations
-11. **LATER**: Streaming methods - Advanced scenarios
-12. **LATER**: Stored procedures - Specialized use cases
-13. **LATER**: Attributes, Core types, Interfaces - Reference documentation
+4. **DONE**: `Update<T>()`, `Delete<T>()` - Core CRUD operations
+5. **DONE**: `QueryPartial<T>()` - Partial mapping support
+6. **NEXT**: `QueryPartialFirst<T>()`, `QueryPartialSingle<T>()` variants
+7. **NEXT**: All async variants - Async/await support
+8. **LATER**: `QueryScalar<T>()`, `ExecuteScalar<T>()` - Scalar queries
+9. **LATER**: `QueryMultiple<T>()` - Multiple result sets
+10. **LATER**: `Bulk*` operations - Bulk operations
+11. **LATER**: `Upsert<T>()` - Upsert operations
+12. **LATER**: Streaming methods - Advanced scenarios
+13. **LATER**: Stored procedures - Specialized use cases
+14. **LATER**: Attributes, Core types, Interfaces - Reference documentation
 
 ---
 
