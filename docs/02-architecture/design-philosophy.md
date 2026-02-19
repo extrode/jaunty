@@ -107,6 +107,19 @@ Good: "Strict mapping failed: property 'Price' on type 'Product' has no matching
 
 **Benefit**: Faster debugging.
 
+## API Design Principles
+
+### 1. Consistent Parameter Order
+All public extension methods follow a predictable parameter sequence:
+`connection, sql/entity, [parameters], [options], [cancellationToken]`
+
+### 2. Explicit Return Types
+We choose return types that accurately reflect the underlying database operation while maximizing range:
+
+- **Insert**: Returns `long`. This accommodates 64-bit identity values (BigInt) common in modern databases (PostgreSQL, SQL Server).
+- **Update/Delete**: Returns `int`. These operations return affected row counts, which are extremely unlikely to exceed 2.1 billion in a single non-bulk execution.
+- **Bulk Operations**: Always return `int`. Bulk operations return the total count of processed rows.
+
 ## What Jaunty Is NOT
 
 | Feature | Jaunty's Stance |
