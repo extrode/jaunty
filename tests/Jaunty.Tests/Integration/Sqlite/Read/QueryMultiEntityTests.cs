@@ -186,7 +186,8 @@ public class QueryMultiEntityTests : IDisposable
                 c.category_name AS CategoryName
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
-              LIMIT 3");
+              LIMIT 3",
+            cancellationToken: CancellationToken.None);
 
         Assert.Equal(3, results.Count);
     }
@@ -202,7 +203,8 @@ public class QueryMultiEntityTests : IDisposable
                 c.category_name AS CategoryName
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
-              ORDER BY p.product_id");
+              ORDER BY p.product_id",
+            cancellationToken: CancellationToken.None);
 
         Assert.Equal(1, product.ProductId);
     }

@@ -103,4 +103,133 @@ public static partial class Jaunty
                 connection.Close();
         }
     }
+
+    #region Multi-Entity Core Methods
+
+    private static List<(T1, T2)> QueryMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            var results = new List<(T1, T2)>();
+
+            if (!reader.Read())
+                return results;
+
+            // Build mapping on first row
+            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+
+                results.Add((t1, t2));
+            }
+            while (reader.Read());
+
+            return results;
+        });
+    }
+
+    private static (T1, T2) QueryFirstMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
+    {
+        var result = QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, mode);
+        return result is null ? throw new InvalidOperationException("Sequence contains no elements") : result.Value;
+    }
+
+    private static (T1, T2)? QueryFirstOrDefaultMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return ((T1, T2)?)null;
+
+            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+
+            mapping.ApplyT1(t1, reader);
+            mapping.ApplyT2(t2, reader);
+
+            return (t1, t2);
+        });
+    }
+
+    private static (T1, T2) QuerySingleMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
+    {
+        var result = QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, mode);
+        return result is null ? throw new InvalidOperationException("Sequence contains no elements") : result.Value;
+    }
+
+    private static (T1, T2)? QuerySingleOrDefaultMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return ((T1, T2)?)null;
+
+            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
+
+            var t1 = new T1();
+            var t2 = new T2();
+
+            mapping.ApplyT1(t1, reader);
+            mapping.ApplyT2(t2, reader);
+
+            return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : ((T1, T2)?)(t1, t2);
+        });
+    }
+
+    private static IEnumerable<(T1, T2)> QueryStreamMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
+    {
+        var wasClosed = connection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (wasClosed) connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = sql;
+
+            if (options.Transaction is DbTransaction dbTransaction)
+                command.Transaction = dbTransaction;
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            using var reader = command.ExecuteReader();
+
+            if (!reader.Read())
+                yield break;
+
+            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+
+                yield return (t1, t2);
+            }
+            while (reader.Read());
+        }
+        finally
+        {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
+        }
+    }
+
+    #endregion
 }
+
