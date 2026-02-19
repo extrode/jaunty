@@ -1,6 +1,11 @@
 /* ============================================
    Docent - Core Styles
    Base styles for all documentation pages
+   
+   IMPORTANT: Load theme CSS AFTER this file!
+   Example:
+   <link rel="stylesheet" href="core/styles.css">
+   <link rel="stylesheet" href="themes/sage/theme.css">
    ============================================ */
 
 @import '../themes/base/variables.css';
