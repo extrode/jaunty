@@ -64,6 +64,9 @@ A natural green theme that's easy on the eyes. Perfect for eco-friendly projects
 ### Lavender
 A soft purple theme inspired by flowers. Elegant and distinctive.
 
+### VitePress (NEW)
+A clean, modern theme inspired by VitePress. Features vibrant green accents and excellent readability. Perfect for developer documentation.
+
 ### Dark Mode
 All themes support dark mode with **dual activation methods**:
 
