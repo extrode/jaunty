@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Data;
 using System.Text;
 
@@ -6,6 +7,8 @@ namespace Jaunty.Internals.Parameters;
 
 internal static class ParameterBinder
 {
+    private static readonly ConcurrentDictionary<(string, Type), CommandTemplate> TemplateCache = new();
+
     internal static void Bind(IDbCommand command, object parameters)
     {
         // Handle IDictionary<string, object?> directly (e.g., ExpandoObject, Dictionary)
@@ -15,8 +18,19 @@ internal static class ParameterBinder
             return;
         }
 
-        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText);
-        var meta = ParameterCache.Get(parameters.GetType());
+        var type = parameters.GetType();
+        var sql = command.CommandText;
+
+        // Try get cached template
+        if (TemplateCache.TryGetValue((sql, type), out var template))
+        {
+            template.Bind(command, parameters);
+            return;
+        }
+
+        // Slow path: parse and bind, then cache if no collection expansion happened
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(sql);
+        var meta = ParameterCache.Get(type);
 
         // Build lookup from property names
         var propertyLookup = new Dictionary<string, ParameterMetadata>(meta.Length, StringComparer.OrdinalIgnoreCase);
@@ -27,61 +41,109 @@ internal static class ParameterBinder
 
         // Check for collection parameters and expand SQL if needed
         var (expandedSql, expandedParams, expandedOriginalNames) = ExpandCollectionParameters(
-            command.CommandText, sqlParamNames, propertyLookup, parameters);
+            sql, sqlParamNames, propertyLookup, parameters);
 
         if (expandedSql is not null)
         {
+            // Dynamic expansion: cannot cache this specific execution
             command.CommandText = expandedSql;
-            // Re-parse the expanded SQL for binding
-            sqlParamNames = SqlParameterParser.ExtractParameterNames(expandedSql);
+            BindDynamic(command, parameters, expandedSql, expandedParams, propertyLookup, meta, expandedOriginalNames);
+            return;
         }
 
-        // Dedupe SQL params and validate all exist
+        // Standard query: build and cache template
+        template = BuildTemplate(sql, sqlParamNames, propertyLookup, meta);
+        TemplateCache.TryAdd((sql, type), template);
+        template.Bind(command, parameters);
+    }
+
+    private static CommandTemplate BuildTemplate(string sql, string[] sqlParamNames, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] allMeta)
+    {
+        var boundNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var items = new List<TemplateItem>();
+
+        for (int i = 0; i < sqlParamNames.Length; i++)
+        {
+            string sqlName = sqlParamNames[i];
+            if (!boundNames.Add(sqlName)) continue;
+
+            if (propertyLookup.TryGetValue(sqlName, out var m))
+            {
+                items.Add(new TemplateItem(sqlName, m.Getter));
+            }
+            else
+            {
+                throw new ArgumentException($"No property found matching SQL parameter '@{sqlName}'.");
+            }
+        }
+
+        // Validate unused
+        var unused = new List<string>();
+        for (int i = 0; i < allMeta.Length; i++)
+        {
+            if (!boundNames.Contains(allMeta[i].Name))
+                unused.Add(allMeta[i].Name);
+        }
+
+        if (unused.Count > 0)
+        {
+            throw new ArgumentException($"Unused parameter properties: {string.Join(", ", unused)}. SQL contains no matching parameters.");
+        }
+
+        return new CommandTemplate(items.ToArray());
+    }
+
+    private static void BindDynamic(IDbCommand command, object parameters, string expandedSql, Dictionary<string, object?>? expandedParams, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] meta, HashSet<string>? expandedOriginalNames)
+    {
+        var sqlParamNames = SqlParameterParser.ExtractParameterNames(expandedSql);
         var bound = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         for (int i = 0; i < sqlParamNames.Length; i++)
         {
             string sqlName = sqlParamNames[i];
             if (!bound.Add(sqlName)) continue;
 
-            // Check expanded params first, then original properties
             if (expandedParams is not null && expandedParams.TryGetValue(sqlName, out var expandedValue))
             {
-                IDbDataParameter p = command.CreateParameter();
+                var p = command.CreateParameter();
                 p.ParameterName = sqlName;
                 p.Value = expandedValue ?? DBNull.Value;
                 command.Parameters.Add(p);
             }
             else if (propertyLookup.TryGetValue(sqlName, out var m))
             {
-                IDbDataParameter p = command.CreateParameter();
+                var p = command.CreateParameter();
                 p.ParameterName = sqlName;
                 p.Value = m.Getter(parameters) ?? DBNull.Value;
                 command.Parameters.Add(p);
             }
             else
             {
-                throw new ArgumentException(
-                    $"No property found matching SQL parameter '@{sqlName}'.");
+                throw new ArgumentException($"No property found matching SQL parameter '@{sqlName}'.");
             }
         }
+    }
 
-        // Only check for truly unused properties (exclude collection params that were expanded)
-        var unused = new List<string>();
-        for (int i = 0; i < meta.Length; i++)
+    private class CommandTemplate(TemplateItem[] items)
+    {
+        public void Bind(IDbCommand command, object parameters)
         {
-            var name = meta[i].Name;
-            if (!bound.Contains(name) &&
-                (expandedOriginalNames is null || !expandedOriginalNames.Contains(name)))
+            var pCollection = command.Parameters;
+            for (int i = 0; i < items.Length; i++)
             {
-                unused.Add(name);
+                ref readonly var item = ref items[i];
+                var p = command.CreateParameter();
+                p.ParameterName = item.Name;
+                p.Value = item.Getter(parameters) ?? DBNull.Value;
+                pCollection.Add(p);
             }
         }
+    }
 
-        if (unused.Count > 0)
-        {
-            throw new ArgumentException(
-                $"Unused parameter properties: {string.Join(", ", unused)}. SQL contains no matching parameters.");
-        }
+    private readonly struct TemplateItem(string name, Func<object, object?> getter)
+    {
+        public readonly string Name = name;
+        public readonly Func<object, object?> Getter = getter;
     }
 
     private static (string? expandedSql, Dictionary<string, object?>? expandedParams, HashSet<string>? expandedOriginalNames)
