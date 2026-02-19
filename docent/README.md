@@ -4,6 +4,8 @@
 
 Docent generates beautiful, accessible, static documentation sites from XML comments and Markdown. Built with simplicity and flexibility in mind.
 
+> **Standalone Project**: Docent was originally part of the Jaunty project and is now a standalone documentation framework.
+
 ## Features
 
 - **Multiple Themes** - Sage, Sepia, and more soothing color schemes
