@@ -66,8 +66,24 @@ public static partial class Jaunty
 
     private static T QuerySingleCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
-        T? entity = QueryFirstOrDefaultCore<T>(connection, sql, parameters, options, mode);
-        return entity is null ? throw new InvalidOperationException("Sequence contains no elements") : entity;
+        if (connection is DbConnection dbConnection)
+        {
+            return ExecuteReader(dbConnection, sql, parameters, options, reader =>
+            {
+                if (!reader.Read()) throw new InvalidOperationException("Sequence contains no elements");
+                var map = DrDispatcher.Resolve(reader, options, mode);
+                T entity = map(reader);
+                return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : entity;
+            });
+        }
+
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read()) throw new InvalidOperationException("Sequence contains no elements");
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
+            T entity = map(reader);
+            return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : entity;
+        });
     }
 
     private static T? QuerySingleOrDefaultCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()

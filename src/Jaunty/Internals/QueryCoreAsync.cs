@@ -37,8 +37,20 @@ public static partial class Jaunty
 
     private static async ValueTask<T> QueryFirstCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        T? entity = await QueryFirstOrDefaultCoreAsync<T>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
-        return entity is null ? throw new InvalidOperationException("Sequence contains no elements") : entity;
+        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        {
+            if (reader is DbDataReader dbReader)
+            {
+                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                    throw new InvalidOperationException("Sequence contains no elements");
+                var map = DrDispatcher.Resolve(dbReader, options, mode);
+                return map(dbReader);
+            }
+            
+            if (!reader.Read()) throw new InvalidOperationException("Sequence contains no elements");
+            var mapFallback = DrDispatcher.Resolve(reader, options, mode);
+            return mapFallback(reader);
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     private static async ValueTask<T?> QueryFirstOrDefaultCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
@@ -61,8 +73,27 @@ public static partial class Jaunty
 
     private static async ValueTask<T> QuerySingleCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        T? entity = await QuerySingleOrDefaultCoreAsync<T>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
-        return entity ?? throw new InvalidOperationException("Sequence contains no elements");
+        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        {
+            if (reader is DbDataReader dbReader)
+            {
+                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                    throw new InvalidOperationException("Sequence contains no elements");
+
+                var map = DrDispatcher.Resolve(dbReader, options, mode);
+                T? entity = map(dbReader);
+                return await dbReader.ReadAsync(ct).ConfigureAwait(false)
+                    ? throw new InvalidOperationException("Sequence contains more than one element")
+                    : entity!;
+            }
+            
+            if (!reader.Read()) throw new InvalidOperationException("Sequence contains no elements");
+            var mapFallback = DrDispatcher.Resolve(reader, options, mode);
+            T? entityFallback = mapFallback(reader);
+            return reader.Read()
+                ? throw new InvalidOperationException("Sequence contains more than one element")
+                : entityFallback!;
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     private static async ValueTask<T?> QuerySingleOrDefaultCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()

@@ -4,6 +4,7 @@ using System.Data.Common;
 using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
+using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
 
 namespace Jaunty;
@@ -363,6 +364,8 @@ public static partial class Jaunty
 #endif
             }
         }
+    }
+
     private static async ValueTask<int> ExecutePostgreSqlBinaryImportAsync<T>(DbConnection connection, IList<T> entities, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
     {
         var metadata = cached.Metadata;
@@ -461,18 +464,24 @@ public static partial class Jaunty
         // Default options: KeepIdentity | CheckConstraints
         object bulkOptions = optionsType != null ? Enum.ToObject(optionsType, 0) : 0;
 
-        using var bulkCopy = Activator.CreateInstance(bulkCopyType, connection, bulkOptions, options.Transaction)!;
-        
-        bulkCopyType.GetProperty("DestinationTableName")!.SetValue(bulkCopy, tableName);
-        if (options.CommandTimeout.HasValue)
-            bulkCopyType.GetProperty("BulkCopyTimeout")!.SetValue(bulkCopy, options.CommandTimeout.Value);
+        var bulkCopy = Activator.CreateInstance(bulkCopyType, connection, bulkOptions, options.Transaction)!;
+        try
+        {
+            bulkCopyType.GetProperty("DestinationTableName")!.SetValue(bulkCopy, tableName);
+            if (options.CommandTimeout.HasValue)
+                bulkCopyType.GetProperty("BulkCopyTimeout")!.SetValue(bulkCopy, options.CommandTimeout.Value);
 
-        var writeToServerAsyncMethod = bulkCopyType.GetMethod("WriteToServerAsync", [typeof(DataTable), typeof(CancellationToken)]);
-        if (writeToServerAsyncMethod == null) return -1;
+            var writeToServerAsyncMethod = bulkCopyType.GetMethod("WriteToServerAsync", [typeof(DataTable), typeof(CancellationToken)]);
+            if (writeToServerAsyncMethod == null) return -1;
 
-        await (Task)writeToServerAsyncMethod.Invoke(bulkCopy, [dt, cancellationToken])!;
-        
-        return entities.Count;
+            await (Task)writeToServerAsyncMethod.Invoke(bulkCopy, [dt, cancellationToken])!;
+            
+            return entities.Count;
+        }
+        finally
+        {
+            if (bulkCopy is IDisposable disposable) disposable.Dispose();
+        }
     }
 }
 
