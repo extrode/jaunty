@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Query&lt;T&gt; Method - Jaunty Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --docfx-primary: #6366f1;
+      --docfx-primary-dark: #4f46e5;
+      --docfx-primary-light: #818cf8;
+      --docfx-text: #1e293b;
+      --docfx-text-light: #64748b;
+      --docfx-bg: #ffffff;
+      --docfx-border: #e2e8f0;
+      --docfx-code-bg: #0f172a;
+      --docfx-code-text: #e2e8f0;
+      --docfx-sidebar-bg: #f8fafc;
+      --docfx-alert-info-bg: #eef2ff;
+      --docfx-alert-info-border: #6366f1;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--docfx-text);
+      background: var(--docfx-bg);
+    }
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: var(--docfx-bg);
+      border-bottom: 1px solid var(--docfx-border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      z-index: 100;
+    }
+    .navbar-brand {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--docfx-primary);
+      text-decoration: none;
+      margin-right: 48px;
+    }
+    .navbar-nav {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+    .navbar-nav a {
+      color: var(--docfx-text);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .navbar-nav a:hover { color: var(--docfx-primary); }
+    .container {
+      display: flex;
+      margin-top: 60px;
+      min-height: calc(100vh - 60px);
+    }
+    .sidebar {
+      width: 280px;
+      background: var(--docfx-sidebar-bg);
+      border-right: 1px solid var(--docfx-border);
+      padding: 24px 0;
+      position: fixed;
+      top: 60px;
+      bottom: 0;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .sidebar-group { margin-bottom: 20px; }
+    .sidebar-group-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--docfx-text-light);
+      padding: 8px 24px;
+    }
+    .sidebar-nav { list-style: none; }
+    .sidebar-nav li a {
+      display: block;
+      padding: 8px 24px;
+      color: var(--docfx-text);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+    .sidebar-nav li a:hover {
+      background: rgba(99, 102, 241, 0.1);
+      border-left-color: var(--docfx-primary);
+    }
+    .sidebar-nav li a.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-left-color: var(--docfx-primary);
+      color: var(--docfx-primary);
+      font-weight: 500;
+    }
+    .sidebar-nav .sidebar-nav {
+      padding-left: 16px;
+      margin-top: 4px;
+    }
+    .article {
+      margin-left: 280px;
+      flex: 1;
+      max-width: 900px;
+      padding: 40px 48px;
+    }
+    .breadcrumb {
+      font-size: 13px;
+      color: var(--docfx-text-light);
+      margin-bottom: 16px;
+    }
+    .breadcrumb a {
+      color: var(--docfx-primary);
+      text-decoration: none;
+    }
+    .article h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--docfx-text);
+    }
+    .article .lead {
+      font-size: 16px;
+      color: var(--docfx-text-light);
+      margin-bottom: 32px;
+    }
+    .alert {
+      padding: 16px 20px;
+      margin: 24px 0;
+      border-left: 4px solid;
+      border-radius: 0 6px 6px 0;
+      background: var(--docfx-alert-info-bg);
+      border-color: var(--docfx-alert-info-border);
+    }
+    .alert-title {
+      font-weight: 600;
+      color: var(--docfx-primary);
+      margin-bottom: 8px;
+    }
+    .article h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 40px 0 20px 0;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--docfx-border);
+    }
+    .article h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin: 28px 0 14px 0;
+    }
+    .article p { margin: 16px 0; }
+    .article code {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85em;
+      background: rgba(99, 102, 241, 0.1);
+      padding: 3px 8px;
+      border-radius: 4px;
+      color: #a855f7;
+    }
+    .article pre {
+      background: var(--docfx-code-bg);
+      color: var(--docfx-code-text);
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 20px 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .article pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+    .article table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    .article table th {
+      background: rgba(99, 102, 241, 0.08);
+      color: var(--docfx-primary);
+      font-weight: 600;
+      text-align: left;
+      padding: 14px 16px;
+      border-bottom: 2px solid var(--docfx-border);
+    }
+    .article table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--docfx-border);
+      vertical-align: top;
+    }
+    .article table tr:hover { background: rgba(0,0,0,0.02); }
+    .article ul { padding-left: 24px; margin: 16px 0; }
+    .article li { margin: 10px 0; }
+    .article a {
+      color: var(--docfx-primary);
+      text-decoration: none;
+    }
+    .article a:hover { text-decoration: underline; }
+    .keyword { color: #c084fc; }
+    .type { color: #f472b6; }
+    .string { color: #86efac; }
+    .comment { color: #64748b; font-style: italic; }
+    .number { color: #fbbf24; }
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .article { margin-left: 0; padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="#" class="navbar-brand">Jaunty</a>
+    <ul class="navbar-nav">
+      <li><a href="#">Docs</a></li>
+      <li><a href="#">API</a></li>
+      <li><a href="#">GitHub</a></li>
+    </ul>
+  </nav>
+  
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Getting Started</div>
+        <ul class="sidebar-nav">
+          <li><a href="#">Installation</a></li>
+          <li><a href="#">Quick Start</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">API Reference</div>
+        <ul class="sidebar-nav">
+          <li>
+            <a href="#" class="active">Query&lt;T&gt;</a>
+            <ul class="sidebar-nav">
+              <li><a href="#">QueryPartial&lt;T&gt;</a></li>
+              <li><a href="#">QueryFirst&lt;T&gt;</a></li>
+              <li><a href="#">QueryFirstOrDefault&lt;T&gt;</a></li>
+              <li><a href="#">QuerySingle&lt;T&gt;</a></li>
+              <li><a href="#">QueryAsync&lt;T&gt;</a></li>
+            </ul>
+          </li>
+          <li><a href="#">Insert&lt;T&gt;</a></li>
+          <li><a href="#">Update&lt;T&gt;</a></li>
+          <li><a href="#">Delete&lt;T&gt;</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">Guides</div>
+        <ul class="sidebar-nav">
+          <li><a href="#">Configuration</a></li>
+          <li><a href="#">Attributes</a></li>
+          <li><a href="#">Parameter Binding</a></li>
+        </ul>
+      </div>
+    </aside>
+    
+    <article class="article">
+      <div class="breadcrumb">
+        <a href="#">Docs</a> / <a href="#">API Reference</a> / Query&lt;T&gt;
+      </div>
+      
+      <h1>Query&lt;T&gt; Method</h1>
+      <p class="lead">Executes a SQL query and returns a list of mapped entities with strict type safety.</p>
+      
+      <div class="alert">
+        <div class="alert-title">ⓘ Strict Mapping Mode</div>
+        <p>By default, <code>Query&lt;T&gt;</code> uses strict mapping. All properties on <code>T</code> must have matching columns in the result set, or an <code>InvalidOperationException</code> is thrown.</p>
+      </div>
+
+      <h2>Declaration</h2>
+      <pre><code><span class="keyword">public static</span> <span class="type">List</span>&lt;<span class="type">T</span>&gt; <span class="type">Query</span>&lt;<span class="type">T</span>&gt;(
+    <span class="keyword">this</span> <span class="type">IDbConnection</span> <span class="type">connection</span>,
+    <span class="type">string</span> <span class="type">sql</span>,
+    <span class="type">object</span>? <span class="type">parameters</span> = <span class="keyword">null</span>,
+    <span class="type">CommandOptions</span>&lt;<span class="type">T</span>&gt;? <span class="type">options</span> = <span class="keyword">null</span>,
+    <span class="type">CancellationToken</span> <span class="type">cancellationToken</span> = <span class="keyword">default</span>)
+<span class="keyword">where</span> <span class="type">T</span> : <span class="keyword">new</span>()</code></pre>
+
+      <h2>Parameters</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>connection</code></td>
+            <td><code>IDbConnection</code></td>
+            <td>The database connection to execute the query against.</td>
+          </tr>
+          <tr>
+            <td><code>sql</code></td>
+            <td><code>string</code></td>
+            <td>The SQL query to execute. Supports both named (<code>@param</code>) and positional parameters.</td>
+          </tr>
+          <tr>
+            <td><code>parameters</code></td>
+            <td><code>object?</code></td>
+            <td>Optional parameters for the query. Can be an anonymous object or array of values for positional parameters.</td>
+          </tr>
+          <tr>
+            <td><code>options</code></td>
+            <td><code>CommandOptions&lt;T&gt;?</code></td>
+            <td>Optional command options for transaction, timeout, or custom mapper configuration.</td>
+          </tr>
+          <tr>
+            <td><code>cancellationToken</code></td>
+            <td><code>CancellationToken</code></td>
+            <td>Optional token to cancel the query operation.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Return Value</h2>
+      <p><code>List&lt;T&gt;</code> - A list of entities mapped from the query results.</p>
+
+      <h2>Examples</h2>
+      
+      <h3>Basic Query</h3>
+      <pre><code><span class="keyword">public class</span> <span class="type">Product</span>
+{
+    <span class="keyword">public</span> <span class="type">int</span> <span class="type">Id</span> { <span class="keyword">get</span>; <span class="keyword">set</span>; }
+    <span class="keyword">public</span> <span class="type">string</span> <span class="type">Name</span> { <span class="keyword">get</span>; <span class="keyword">set</span>; }
+    <span class="keyword">public</span> <span class="type">decimal</span> <span class="type">Price</span> { <span class="keyword">get</span>; <span class="keyword">set</span>; }
+}
+
+<span class="comment">// Execute a simple query</span>
+<span class="keyword">var</span> <span class="type">products</span> = <span class="type">connection</span>.<span class="type">Query</span>&lt;<span class="type">Product</span>&gt;(<span class="string">"SELECT * FROM products"</span>);</code></pre>
+
+      <h3>Query with Named Parameters</h3>
+      <pre><code><span class="comment">// Using anonymous object for named parameters</span>
+<span class="keyword">var</span> <span class="type">products</span> = <span class="type">connection</span>.<span class="type">Query</span>&lt;<span class="type">Product</span>&gt;(
+    <span class="string">"SELECT * FROM products WHERE category_id = @CategoryId AND price &gt; @MinPrice"</span>,
+    <span class="keyword">new</span> { <span class="type">CategoryId</span> = <span class="number">5</span>, <span class="type">MinPrice</span> = <span class="number">100.00</span>m });</code></pre>
+
+      <h3>Query with Positional Parameters</h3>
+      <pre><code><span class="comment">// Positional parameters (values bound in order)</span>
+<span class="keyword">var</span> <span class="type">products</span> = <span class="type">connection</span>.<span class="type">Query</span>&lt;<span class="type">Product</span>&gt;(
+    <span class="string">"SELECT * FROM products WHERE category_id = @CategoryId AND price &gt; @MinPrice"</span>,
+    <span class="number">5</span>, <span class="number">100.00</span>m);</code></pre>
+
+      <h3>Query with Transaction</h3>
+      <pre><code><span class="keyword">using</span> <span class="keyword">var</span> <span class="type">transaction</span> = <span class="type">connection</span>.<span class="type">BeginTransaction</span>();
+
+<span class="keyword">var</span> <span class="type">products</span> = <span class="type">connection</span>.<span class="type">Query</span>&lt;<span class="type">Product</span>&gt;(
+    <span class="string">"SELECT * FROM products WHERE category_id = @CategoryId"</span>,
+    <span class="keyword">new</span> { <span class="type">CategoryId</span> = <span class="number">5</span> },
+    <span class="type">CommandOptions</span>&lt;<span class="type">Product</span>&gt;.<span class="type">WithTransaction</span>(<span class="type">transaction</span>));
+
+<span class="type">transaction</span>.<span class="type">Commit</span>();</code></pre>
+
+      <h2>Exceptions</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Condition</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>InvalidOperationException</code></td>
+            <td>Thrown when a property on <code>T</code> has no matching column in the result set (strict mapping mode).</td>
+          </tr>
+          <tr>
+            <td><code>InvalidOperationException</code></td>
+            <td>Thrown when a non-nullable property receives a NULL value from the database.</td>
+          </tr>
+          <tr>
+            <td><code>ArgumentException</code></td>
+            <td>Thrown when the number of provided parameters doesn't match the number of parameters in the SQL.</td>
+          </tr>
+          <tr>
+            <td><code>ArgumentNullException</code></td>
+            <td>Thrown when <code>connection</code> or <code>sql</code> is null.</td>
+          </tr>
+          <tr>
+            <td><code>DbException</code></td>
+            <td>Thrown when the database operation fails (e.g., syntax error, constraint violation).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Remarks</h2>
+      <ul>
+        <li><strong>Connection Management:</strong> If the connection is closed, Jaunty opens it before execution and closes it after. If the connection is already open, it remains open after execution.</li>
+        <li><strong>Mapping Mode:</strong> This method uses strict mapping by default. For partial mapping (where only existing columns are mapped), use <a href="#"><code>QueryPartial&lt;T&gt;</code></a> instead.</li>
+        <li><strong>Performance:</strong> Entity metadata is cached on first use. Subsequent queries of the same type have minimal overhead.</li>
+        <li><strong>Special Types:</strong> Query also supports <code>Dictionary&lt;string, object&gt;</code>, <code>ExpandoObject</code>, <code>KeyValuePair&lt;TKey, TValue&gt;</code>, and <code>ValueTuple</code> as generic type arguments.</li>
+      </ul>
+
+      <h2>See Also</h2>
+      <ul>
+        <li><a href="#"><code>QueryPartial&lt;T&gt;</code></a> - Partial mapping mode</li>
+        <li><a href="#"><code>QueryFirst&lt;T&gt;</code></a> - Returns first result</li>
+        <li><a href="#"><code>QueryAsync&lt;T&gt;</code></a> - Async variant</li>
+        <li><a href="#"><code>QueryStream&lt;T&gt;</code></a> - Streaming results</li>
+      </ul>
+    </article>
+  </div>
+</body>
+</html>

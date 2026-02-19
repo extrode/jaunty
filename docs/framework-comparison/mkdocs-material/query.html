@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Query&lt;T&gt; - Jaunty Documentation</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+  <style>
+    :root {
+      --md-primary-fg-color: #6366f1;
+      --md-primary-fg-color--light: #818cf8;
+      --md-primary-fg-color--dark: #4f46e5;
+      --md-accent-fg-color: #818cf8;
+      --md-default-fg-color: #1e293b;
+      --md-default-fg-color--light: #475569;
+      --md-default-bg-color: #ffffff;
+      --md-code-fg-color: #e2e8f0;
+      --md-code-bg-color: #1e293b;
+      --md-code-hl-color: rgba(99, 102, 241, 0.2);
+      --md-typeset-a-color: #6366f1;
+      --md-typeset-table-color: rgba(0,0,0,0.12);
+    }
+    *,*::before,*::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--md-default-fg-color);
+      background: var(--md-default-bg-color);
+      display: flex;
+    }
+    .md-sidebar {
+      width: 242px;
+      padding: 24px 0;
+      background: #f8fafc;
+      border-right: 1px solid #e2e8f0;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .md-sidebar__scrollwrap { padding: 0 16px; }
+    .md-sidebar__title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--md-primary-fg-color);
+      margin: 0 0 16px 0;
+      padding: 8px;
+    }
+    .md-nav { font-size: 14px; }
+    .md-nav__list { list-style: none; padding: 0; margin: 0; }
+    .md-nav__item { padding: 4px 0; }
+    .md-nav__link {
+      display: block;
+      padding: 8px 16px;
+      color: var(--md-default-fg-color--light);
+      text-decoration: none;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .md-nav__link:hover {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--md-primary-fg-color);
+    }
+    .md-nav__link--active {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--md-primary-fg-color);
+      font-weight: 500;
+    }
+    .md-nav__item--nested .md-nav__list {
+      padding-left: 16px;
+      margin-top: 4px;
+    }
+    .md-main {
+      flex: 1;
+      max-width: 1200px;
+      padding: 32px 48px;
+    }
+    .md-content { max-width: 800px; }
+    .md-content__header {
+      border-bottom: 1px solid var(--md-typeset-table-color);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+    .md-content__title {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--md-default-fg-color);
+    }
+    .md-content__subtitle {
+      font-size: 16px;
+      color: var(--md-default-fg-color--light);
+      margin: 8px 0 0 0;
+    }
+    .md-typeset h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 32px 0 16px 0;
+      color: var(--md-default-fg-color);
+    }
+    .md-typeset h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 24px 0 12px 0;
+      color: var(--md-default-fg-color);
+    }
+    .md-typeset p { margin: 16px 0; }
+    .md-typeset code {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85em;
+      background: rgba(99, 102, 241, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #c084fc;
+    }
+    .md-typeset pre {
+      background: var(--md-code-bg-color);
+      color: var(--md-code-fg-color);
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+    .md-typeset pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+    .md-typeset table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    .md-typeset th {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--md-primary-fg-color);
+      font-weight: 600;
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 2px solid var(--md-typeset-table-color);
+    }
+    .md-typeset td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--md-typeset-table-color);
+    }
+    .md-typeset tr:hover { background: rgba(0,0,0,0.02); }
+    .md-typeset .admonition {
+      padding: 16px;
+      margin: 16px 0;
+      border-left: 4px solid;
+      border-radius: 0 8px 8px 0;
+      background: rgba(99, 102, 241, 0.05);
+    }
+    .md-typeset .admonition--info { border-color: var(--md-primary-fg-color); }
+    .md-typeset .admonition-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--md-primary-fg-color);
+    }
+    .md-typeset ul { padding-left: 24px; }
+    .md-typeset li { margin: 8px 0; }
+    .md-typeset a {
+      color: var(--md-typeset-a-color);
+      text-decoration: none;
+    }
+    .md-typeset a:hover { text-decoration: underline; }
+    .highlight .k { color: #c084fc; }
+    .highlight .kt { color: #f472b6; }
+    .highlight .s { color: #86efac; }
+    .highlight .n { color: #e2e8f0; }
+    .highlight .p { color: #94a3b8; }
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .md-sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .md-main { padding: 24px; }
+      .md-content__title { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="md-sidebar">
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__title">Jaunty</div>
+      <nav class="md-nav">
+        <ul class="md-nav__list">
+          <li class="md-nav__item"><a href="#" class="md-nav__link">Home</a></li>
+          <li class="md-nav__item md-nav__item--nested">
+            <span class="md-nav__link">Getting Started</span>
+            <ul class="md-nav__list">
+              <li class="md-nav__item"><a href="#" class="md-nav__link">Installation</a></li>
+              <li class="md-nav__item"><a href="#" class="md-nav__link">Quick Start</a></li>
+            </ul>
+          </li>
+          <li class="md-nav__item md-nav__item--nested">
+            <span class="md-nav__link md-nav__link--active">API Reference</span>
+            <ul class="md-nav__list">
+              <li class="md-nav__item"><a href="#" class="md-nav__link md-nav__link--active">Query&lt;T&gt;</a></li>
+              <li class="md-nav__item"><a href="#" class="md-nav__link">QueryPartial&lt;T&gt;</a></li>
+              <li class="md-nav__item"><a href="#" class="md-nav__link">QueryFirst&lt;T&gt;</a></li>
+              <li class="md-nav__item"><a href="#" class="md-nav__link">QueryAsync&lt;T&gt;</a></li>
+              <li class="md-nav__item"><a href="#" class="md-nav__link">Insert&lt;T&gt;</a></li>
+              <li class="md-nav__item"><a href="#" class="md-nav__link">Update&lt;T&gt;</a></li>
+              <li class="md-nav__item"><a href="#" class="md-nav__link">Delete&lt;T&gt;</a></li>
+            </ul>
+          </li>
+          <li class="md-nav__item md-nav__item--nested">
+            <span class="md-nav__link">Guides</span>
+            <ul class="md-nav__list">
+              <li class="md-nav__item"><a href="#" class="md-nav__link">Configuration</a></li>
+              <li class="md-nav__item"><a href="#" class="md-nav__link">Attributes</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </nav>
+  
+  <main class="md-main">
+    <div class="md-content">
+      <header class="md-content__header">
+        <h1 class="md-content__title">Query&lt;T&gt;</h1>
+        <p class="md-content__subtitle">Executes a SQL query and returns a list of mapped entities.</p>
+      </header>
+      
+      <article class="md-content__body md-typeset">
+        <div class="admonition admonition--info">
+          <div class="admonition-title">Strict Mapping Mode</div>
+          <p>By default, <code>Query&lt;T&gt;</code> uses strict mapping. All properties on <code>T</code> must have matching columns in the result set, or an <code>InvalidOperationException</code> is thrown.</p>
+        </div>
+
+        <h2>Declaration</h2>
+        <pre><code class="language-csharp"><span class="highlight"><span class="k">public static</span> <span class="n">List</span>&lt;<span class="n">T</span>&gt; <span class="n">Query</span>&lt;<span class="n">T</span>&gt;(
+    <span class="k">this</span> <span class="n">IDbConnection</span> <span class="n">connection</span>,
+    <span class="kt">string</span> <span class="n">sql</span>,
+    <span class="kt">object</span>? <span class="n">parameters</span> = <span class="k">null</span>,
+    <span class="n">CommandOptions</span>&lt;<span class="n">T</span>&gt;? <span class="n">options</span> = <span class="k">null</span>,
+    <span class="n">CancellationToken</span> <span class="n">cancellationToken</span> = <span class="k">default</span>)
+<span class="k">where</span> <span class="n">T</span> : <span class="k">new</span>()</span></code></pre>
+
+        <h2>Parameters</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>connection</code></td>
+              <td><code>IDbConnection</code></td>
+              <td>The database connection to execute the query against.</td>
+            </tr>
+            <tr>
+              <td><code>sql</code></td>
+              <td><code>string</code></td>
+              <td>The SQL query to execute. Supports both named (<code>@param</code>) and positional parameters.</td>
+            </tr>
+            <tr>
+              <td><code>parameters</code></td>
+              <td><code>object?</code></td>
+              <td>Optional parameters for the query. Can be an anonymous object or array of values for positional parameters.</td>
+            </tr>
+            <tr>
+              <td><code>options</code></td>
+              <td><code>CommandOptions&lt;T&gt;?</code></td>
+              <td>Optional command options for transaction, timeout, or custom mapper configuration.</td>
+            </tr>
+            <tr>
+              <td><code>cancellationToken</code></td>
+              <td><code>CancellationToken</code></td>
+              <td>Optional token to cancel the query operation.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Returns</h2>
+        <p><code>List&lt;T&gt;</code> - A list of entities mapped from the query results.</p>
+
+        <h2>Examples</h2>
+        
+        <h3>Basic Query</h3>
+        <pre><code class="language-csharp"><span class="highlight"><span class="k">public class</span> <span class="n">Product</span>
+{
+    <span class="k">public</span> <span class="kt">int</span> <span class="n">Id</span> { <span class="k">get</span>; <span class="k">set</span>; }
+    <span class="k">public</span> <span class="kt">string</span> <span class="n">Name</span> { <span class="k">get</span>; <span class="k">set</span>; }
+    <span class="k">public</span> <span class="kt">decimal</span> <span class="n">Price</span> { <span class="k">get</span>; <span class="k">set</span>; }
+}
+
+<span class="c">// Execute a simple query</span>
+<span class="k">var</span> <span class="n">products</span> = <span class="n">connection</span>.<span class="n">Query</span>&lt;<span class="n">Product</span>&gt;(<span class="s">"SELECT * FROM products"</span>);</span></code></pre>
+
+        <h3>Query with Named Parameters</h3>
+        <pre><code class="language-csharp"><span class="highlight"><span class="c">// Using anonymous object for named parameters</span>
+<span class="k">var</span> <span class="n">products</span> = <span class="n">connection</span>.<span class="n">Query</span>&lt;<span class="n">Product</span>&gt;(
+    <span class="s">"SELECT * FROM products WHERE category_id = @CategoryId AND price &gt; @MinPrice"</span>,
+    <span class="k">new</span> { <span class="n">CategoryId</span> = <span class="m">5</span>, <span class="n">MinPrice</span> = <span class="m">100.00</span>m });</span></code></pre>
+
+        <h3>Query with Positional Parameters</h3>
+        <pre><code class="language-csharp"><span class="highlight"><span class="c">// Positional parameters (values bound in order)</span>
+<span class="k">var</span> <span class="n">products</span> = <span class="n">connection</span>.<span class="n">Query</span>&lt;<span class="n">Product</span>&gt;(
+    <span class="s">"SELECT * FROM products WHERE category_id = @CategoryId AND price &gt; @MinPrice"</span>,
+    <span class="m">5</span>, <span class="m">100.00</span>m);</span></code></pre>
+
+        <h3>Query with Transaction</h3>
+        <pre><code class="language-csharp"><span class="highlight"><span class="k">using</span> <span class="k">var</span> <span class="n">transaction</span> = <span class="n">connection</span>.<span class="n">BeginTransaction</span>();
+
+<span class="k">var</span> <span class="n">products</span> = <span class="n">connection</span>.<span class="n">Query</span>&lt;<span class="n">Product</span>&gt;(
+    <span class="s">"SELECT * FROM products WHERE category_id = @CategoryId"</span>,
+    <span class="k">new</span> { <span class="n">CategoryId</span> = <span class="m">5</span> },
+    <span class="n">CommandOptions</span>&lt;<span class="n">Product</span>&gt;.<span class="n">WithTransaction</span>(<span class="n">transaction</span>));
+
+<span class="n">transaction</span>.<span class="n">Commit</span>();</span></code></pre>
+
+        <h3>Query with Timeout</h3>
+        <pre><code class="language-csharp"><span class="highlight"><span class="c">// Set command timeout to 30 seconds</span>
+<span class="k">var</span> <span class="n">products</span> = <span class="n">connection</span>.<span class="n">Query</span>&lt;<span class="n">Product</span>&gt;(
+    <span class="s">"SELECT * FROM products"</span>,
+    <span class="n">options</span>: <span class="n">CommandOptions</span>&lt;<span class="n">Product</span>&gt;.<span class="n">WithTimeout</span>(<span class="m">30</span>));</span></code></pre>
+
+        <h2>Exceptions</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Exception Type</th>
+              <th>Condition</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>InvalidOperationException</code></td>
+              <td>Thrown when a property on <code>T</code> has no matching column in the result set (strict mapping mode).</td>
+            </tr>
+            <tr>
+              <td><code>InvalidOperationException</code></td>
+              <td>Thrown when a non-nullable property receives a NULL value from the database.</td>
+            </tr>
+            <tr>
+              <td><code>ArgumentException</code></td>
+              <td>Thrown when the number of provided parameters doesn't match the number of parameters in the SQL.</td>
+            </tr>
+            <tr>
+              <td><code>ArgumentNullException</code></td>
+              <td>Thrown when <code>connection</code> or <code>sql</code> is null.</td>
+            </tr>
+            <tr>
+              <td><code>DbException</code></td>
+              <td>Thrown when the database operation fails (e.g., syntax error, constraint violation).</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Remarks</h2>
+        <ul>
+          <li><strong>Connection Management:</strong> If the connection is closed, Jaunty opens it before execution and closes it after. If the connection is already open, it remains open after execution.</li>
+          <li><strong>Mapping Mode:</strong> This method uses strict mapping by default. For partial mapping (where only existing columns are mapped), use <a href="#"><code>QueryPartial&lt;T&gt;</code></a> instead.</li>
+          <li><strong>Performance:</strong> Entity metadata is cached on first use. Subsequent queries of the same type have minimal overhead.</li>
+          <li><strong>Special Types:</strong> Query also supports <code>Dictionary&lt;string, object&gt;</code>, <code>ExpandoObject</code>, <code>KeyValuePair&lt;TKey, TValue&gt;</code>, and <code>ValueTuple</code> as generic type arguments.</li>
+        </ul>
+
+        <h2>See Also</h2>
+        <ul>
+          <li><a href="#"><code>QueryPartial&lt;T&gt;</code></a> - Partial mapping mode</li>
+          <li><a href="#"><code>QueryFirst&lt;T&gt;</code></a> - Returns first result</li>
+          <li><a href="#"><code>QueryAsync&lt;T&gt;</code></a> - Async variant</li>
+          <li><a href="#"><code>QueryStream&lt;T&gt;</code></a> - Streaming results</li>
+        </ul>
+      </article>
+    </div>
+  </main>
+</body>
+</html>
