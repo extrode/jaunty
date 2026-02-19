@@ -11,12 +11,48 @@ public static partial class Jaunty
 {
     /// <summary>
     /// Deletes multiple entities from the database in a single transaction.
-    /// Foreign key constraints are enforced.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to delete.</param>
+    /// <typeparam name="T">The entity type to delete. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk delete against.</param>
+    /// <param name="entities">The collection of entities to delete. Each entity's primary key is used to identify the row to delete.</param>
     /// <returns>The number of rows deleted.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method performs a bulk delete operation within a transaction. All entities are deleted 
+    /// atomically - if any delete fails, the entire operation is rolled back.
+    /// </para>
+    /// <para>
+    /// <strong>Foreign key constraints are enforced.</strong> All dependent records must be deleted 
+    /// first, or the delete will fail.
+    /// </para>
+    /// <para>
+    /// Each entity must have its primary key property set to identify the row to delete.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// public class Product
+    /// {
+    ///     public int Id { get; set; }
+    ///     public string Name { get; set; }
+    ///     public decimal Price { get; set; }
+    /// }
+    /// 
+    /// // Bulk delete multiple products
+    /// var productsToDelete = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1 },
+    ///     new Product { Id = 2 },
+    ///     new Product { Id = 3 }
+    /// };
+    /// 
+    /// int deleted = connection.BulkDelete(productsToDelete);
+    /// Console.WriteLine($"Deleted {deleted} products");
+    /// </code>
+    /// </example>
+    /// <seealso cref="BulkDelete{T}(IDbConnection, IEnumerable{T}, CommandOptions)"/>
+    /// <seealso cref="BulkDeleteIgnoreConstraints{T}(IDbConnection, IEnumerable{T})"/>
+    /// <seealso cref="BulkDeleteAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static int BulkDelete<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
     {
         return BulkDelete(connection, entities, default);
@@ -24,13 +60,37 @@ public static partial class Jaunty
 
     /// <summary>
     /// Deletes multiple entities from the database in a single transaction with command options.
-    /// Foreign key constraints are enforced.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to delete.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
+    /// <typeparam name="T">The entity type to delete. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk delete against.</param>
+    /// <param name="entities">The collection of entities to delete.</param>
+    /// <param name="options">
+    /// Command options for configuring the bulk delete execution. Use 
+    /// <see cref="CommandOptions{T}.WithTransaction(IDbTransaction)"/> for transactions or
+    /// <see cref="CommandOptions{T}.WithTimeout(int)"/> for command timeout.
+    /// </param>
     /// <returns>The number of rows deleted.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Foreign key constraints are enforced.</strong>
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Bulk delete with transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var productsToDelete = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1 },
+    ///     new Product { Id = 2 }
+    /// };
+    /// 
+    /// int deleted = connection.BulkDelete(productsToDelete, CommandOptions.WithTransaction(tx));
+    /// tx.Commit();
+    /// </code>
+    /// </example>
+    /// <seealso cref="CommandOptions{T}"/>
+    /// <seealso cref="BulkDelete{T}(IDbConnection, IEnumerable{T})"/>
     public static int BulkDelete<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
     {
         return BulkDeleteCore(connection, entities, options, ignoreConstraints: false);
@@ -38,32 +98,90 @@ public static partial class Jaunty
 
     /// <summary>
     /// Deletes multiple entities from the database, bypassing foreign key constraint checks.
-    /// WARNING: This temporarily disables referential integrity. Use only for migrations,
-    /// cleanup operations, or scenarios where you explicitly don't need FK validation.
-    /// This can leave orphaned records in child tables.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to delete.</param>
+    /// <typeparam name="T">The entity type to delete. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk delete against.</param>
+    /// <param name="entities">The collection of entities to delete.</param>
     /// <returns>The number of rows deleted.</returns>
-    /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
+    /// <remarks>
+    /// <para>
+    /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use only for:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>Database migrations</description></item>
+    /// <item><description>Cleanup operations where you will manually clean up child records</description></item>
+    /// <item><description>Scenarios where you explicitly don't need FK validation</description></item>
+    /// </list>
+    /// <para>
+    /// <strong>Caution:</strong> This can leave orphaned records in child tables.
+    /// </para>
+    /// <para>
+    /// <strong>Note:</strong> This method is not supported on SQL Server and other databases that 
+    /// don't support session-level foreign key toggling.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Bulk delete without FK checks (useful for cleanup during migrations)
+    /// var productsToDelete = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1 },
+    ///     new Product { Id = 2 }
+    /// };
+    /// 
+    /// int deleted = connection.BulkDeleteIgnoreConstraints(productsToDelete);
+    /// // Note: Child records (e.g., OrderItems) may now be orphaned
+    /// </code>
+    /// </example>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling (e.g., SQL Server).
+    /// </exception>
+    /// <seealso cref="BulkDeleteIgnoreConstraints{T}(IDbConnection, IEnumerable{T}, CommandOptions)"/>
+    /// <seealso cref="BulkDelete{T}(IDbConnection, IEnumerable{T})"/>
     public static int BulkDeleteIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
     {
         return BulkDeleteIgnoreConstraints(connection, entities, default);
     }
 
     /// <summary>
-    /// Deletes multiple entities from the database, bypassing foreign key constraint checks.
-    /// WARNING: This temporarily disables referential integrity. Use only for migrations,
-    /// cleanup operations, or scenarios where you explicitly don't need FK validation.
-    /// This can leave orphaned records in child tables.
+    /// Deletes multiple entities from the database, bypassing foreign key constraint checks, with command options.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to delete.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
+    /// <typeparam name="T">The entity type to delete. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk delete against.</param>
+    /// <param name="entities">The collection of entities to delete.</param>
+    /// <param name="options">
+    /// Command options for configuring the bulk delete execution.
+    /// </param>
     /// <returns>The number of rows deleted.</returns>
-    /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
+    /// <remarks>
+    /// <para>
+    /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use with caution.
+    /// </para>
+    /// <para>
+    /// This can leave orphaned records in child tables. Ensure you handle child records appropriately.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Bulk delete without FK checks with transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var productsToDelete = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1 },
+    ///     new Product { Id = 2 }
+    /// };
+    /// 
+    /// int deleted = connection.BulkDeleteIgnoreConstraints(
+    ///     productsToDelete, 
+    ///     CommandOptions.WithTransaction(tx));
+    /// tx.Commit();
+    /// </code>
+    /// </example>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling.
+    /// </exception>
+    /// <seealso cref="BulkDeleteIgnoreConstraints{T}(IDbConnection, IEnumerable{T})"/>
+    /// <seealso cref="CommandOptions{T}"/>
     public static int BulkDeleteIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
     {
         return BulkDeleteCore(connection, entities, options, ignoreConstraints: true);

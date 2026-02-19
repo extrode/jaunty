@@ -4,6 +4,7 @@ using System.Data.Common;
 using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
+using Jaunty.Internals.Entity;
 
 namespace Jaunty;
 
@@ -11,30 +12,84 @@ public static partial class Jaunty
 {
     /// <summary>
     /// Asynchronously deletes multiple entities from the database in a single transaction.
-    /// Foreign key constraints are enforced.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to delete.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows deleted.</returns>
+    /// <typeparam name="T">The entity type to delete. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk delete against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to delete. Each entity's primary key is used to identify the row to delete.</param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows deleted.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method performs a bulk delete operation within a transaction. All entities are deleted 
+    /// atomically - if any delete fails, the entire operation is rolled back.
+    /// </para>
+    /// <para>
+    /// <strong>Foreign key constraints are enforced.</strong>
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Async bulk delete multiple products
+    /// var productsToDelete = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1 },
+    ///     new Product { Id = 2 },
+    ///     new Product { Id = 3 }
+    /// };
+    /// 
+    /// int deleted = await connection.BulkDeleteAsync(productsToDelete);
+    /// Console.WriteLine($"Deleted {deleted} products");
+    /// </code>
+    /// </example>
+    /// <seealso cref="BulkDeleteAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
+    /// <seealso cref="BulkDelete{T}(IDbConnection, IEnumerable{T})"/>
     public static Task<int> BulkDeleteAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : BulkDeleteAsync(dbConnection, entities, default, cancellationToken);
+            : BulkDeleteCoreAsync(dbConnection, entities, default, ignoreConstraints: false, cancellationToken);
     }
 
     /// <summary>
     /// Asynchronously deletes multiple entities from the database in a single transaction with command options.
-    /// Foreign key constraints are enforced.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to delete.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows deleted.</returns>
+    /// <typeparam name="T">The entity type to delete. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk delete against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to delete.</param>
+    /// <param name="options">
+    /// Command options for configuring the bulk delete execution. Use 
+    /// <see cref="CommandOptions{T}.WithTransaction(IDbTransaction)"/> for transactions or
+    /// <see cref="CommandOptions{T}.WithTimeout(int)"/> for command timeout.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows deleted.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Foreign key constraints are enforced.</strong>
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Async bulk delete with transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var productsToDelete = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1 },
+    ///     new Product { Id = 2 }
+    /// };
+    /// 
+    /// int deleted = await connection.BulkDeleteAsync(
+    ///     productsToDelete, 
+    ///     CommandOptions.WithTransaction(tx));
+    /// tx.Commit();
+    /// </code>
+    /// </example>
+    /// <seealso cref="CommandOptions{T}"/>
+    /// <seealso cref="BulkDeleteAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static Task<int> BulkDeleteAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
@@ -44,36 +99,89 @@ public static partial class Jaunty
 
     /// <summary>
     /// Asynchronously deletes multiple entities from the database, bypassing foreign key constraint checks.
-    /// WARNING: This temporarily disables referential integrity. Use only for migrations,
-    /// cleanup operations, or scenarios where you explicitly don't need FK validation.
-    /// This can leave orphaned records in child tables.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to delete.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows deleted.</returns>
-    /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
+    /// <typeparam name="T">The entity type to delete. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk delete against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to delete.</param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows deleted.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use only for migrations,
+    /// cleanup operations, or scenarios where you explicitly don't need FK validation.
+    /// </para>
+    /// <para>
+    /// <strong>Caution:</strong> This can leave orphaned records in child tables.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Async bulk delete without FK checks
+    /// var productsToDelete = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1 },
+    ///     new Product { Id = 2 }
+    /// };
+    /// 
+    /// int deleted = await connection.BulkDeleteIgnoreConstraintsAsync(productsToDelete);
+    /// </code>
+    /// </example>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling (e.g., SQL Server).
+    /// </exception>
+    /// <seealso cref="BulkDeleteIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
+    /// <seealso cref="BulkDeleteAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static Task<int> BulkDeleteIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : BulkDeleteIgnoreConstraintsAsync(dbConnection, entities, default, cancellationToken);
+            : BulkDeleteCoreAsync(dbConnection, entities, default, ignoreConstraints: true, cancellationToken);
     }
 
     /// <summary>
-    /// Asynchronously deletes multiple entities from the database, bypassing foreign key constraint checks.
-    /// WARNING: This temporarily disables referential integrity. Use only for migrations,
-    /// cleanup operations, or scenarios where you explicitly don't need FK validation.
-    /// This can leave orphaned records in child tables.
+    /// Asynchronously deletes multiple entities from the database, bypassing foreign key constraint checks, with command options.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to delete.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows deleted.</returns>
-    /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
+    /// <typeparam name="T">The entity type to delete. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk delete against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to delete.</param>
+    /// <param name="options">
+    /// Command options for configuring the bulk delete execution.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows deleted.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use with caution.
+    /// </para>
+    /// <para>
+    /// This can leave orphaned records in child tables.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Async bulk delete without FK checks with transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var productsToDelete = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1 },
+    ///     new Product { Id = 2 }
+    /// };
+    /// 
+    /// int deleted = await connection.BulkDeleteIgnoreConstraintsAsync(
+    ///     productsToDelete, 
+    ///     CommandOptions.WithTransaction(tx));
+    /// tx.Commit();
+    /// </code>
+    /// </example>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling.
+    /// </exception>
+    /// <seealso cref="BulkDeleteIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
+    /// <seealso cref="CommandOptions{T}"/>
     public static Task<int> BulkDeleteIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
