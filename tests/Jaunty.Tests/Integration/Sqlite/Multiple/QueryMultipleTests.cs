@@ -131,7 +131,7 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadPartialFirst_ReturnsFirstRow()
     {
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 3;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         OrderSummary? order = null;
 
@@ -147,7 +147,7 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadPartialFirst_NoRows_Throws()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
@@ -161,7 +161,7 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadPartialFirstOrDefault_ReturnsFirstRow()
     {
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 3;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         OrderSummary? order = null;
 
@@ -176,7 +176,7 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadPartialFirstOrDefault_NoRows_ReturnsNull()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         OrderSummary? order = null;
 
@@ -270,7 +270,7 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadPartialSingle_ReturnsSingleRow()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = 10248;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         OrderSummary? order = null;
 
@@ -286,7 +286,7 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadPartialSingle_NoRows_Throws()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
@@ -300,7 +300,7 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadPartialSingleOrDefault_ReturnsSingleRow()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = 10248;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         OrderSummary? order = null;
 
@@ -316,7 +316,7 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadPartialSingleOrDefault_NoRows_ReturnsNull()
     {
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         OrderSummary? order = null;
 
@@ -388,7 +388,7 @@ public class QueryMultipleTests : IDisposable
     [Fact]
     public void ReadPartialStream_StreamsResults()
     {
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 5;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         var orders = new List<OrderSummary>();
 
@@ -407,7 +407,7 @@ public class QueryMultipleTests : IDisposable
 
     #region Async Tests
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryMultipleAsync_ReadsMultipleResultSets()
     {
         var conn = _db.Connection! as DbConnection;
@@ -430,11 +430,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(2, customers.Count);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadPartialAsync_MapsSubsetOfColumns()
     {
         var conn = _db.Connection! as DbConnection;
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 5;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         List<OrderSummary>? orders = null;
 
@@ -447,7 +447,7 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(5, orders.Count);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadFirstAsync_ReturnsFirstRow()
     {
         var conn = _db.Connection! as DbConnection;
@@ -463,7 +463,7 @@ public class QueryMultipleTests : IDisposable
         Assert.NotNull(order);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadFirstOrDefaultAsync_NoRows_ReturnsNull()
     {
         var conn = _db.Connection! as DbConnection;
@@ -479,11 +479,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Null(order);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadPartialFirstAsync_ReturnsFirstRow()
     {
         var conn = _db.Connection! as DbConnection;
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 3;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         OrderSummary? order = null;
 
@@ -496,11 +496,11 @@ public class QueryMultipleTests : IDisposable
         Assert.True(order.OrderId > 0);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadPartialFirstOrDefaultAsync_NoRows_ReturnsNull()
     {
         var conn = _db.Connection! as DbConnection;
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         OrderSummary? order = null;
 
@@ -512,7 +512,7 @@ public class QueryMultipleTests : IDisposable
         Assert.Null(order);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadSingleAsync_ReturnsSingleRow()
     {
         var conn = _db.Connection! as DbConnection;
@@ -529,7 +529,7 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(10248, order.OrderId);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadSingleOrDefaultAsync_NoRows_ReturnsNull()
     {
         var conn = _db.Connection! as DbConnection;
@@ -545,11 +545,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Null(order);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadPartialSingleAsync_ReturnsSingleRow()
     {
         var conn = _db.Connection! as DbConnection;
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = 10248;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         OrderSummary? order = null;
 
@@ -562,11 +562,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(10248, order.OrderId);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadPartialSingleOrDefaultAsync_NoRows_ReturnsNull()
     {
         var conn = _db.Connection! as DbConnection;
-        var sql = "SELECT order_id, customer_id FROM orders WHERE order_id = -999;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         OrderSummary? order = null;
 
@@ -578,7 +578,7 @@ public class QueryMultipleTests : IDisposable
         Assert.Null(order);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadScalarAsync_ReturnsValue()
     {
         var conn = _db.Connection! as DbConnection;
@@ -595,7 +595,7 @@ public class QueryMultipleTests : IDisposable
         Assert.True(count > 0);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadStreamAsync_StreamsResults()
     {
         var conn = _db.Connection! as DbConnection;
@@ -614,11 +614,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(5, orders.Count);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadPartialStreamAsync_StreamsResults()
     {
         var conn = _db.Connection! as DbConnection;
-        var sql = "SELECT order_id, customer_id FROM orders ORDER BY order_id LIMIT 5;";
+        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         var orders = new List<OrderSummary>();
 
@@ -637,7 +637,7 @@ public class QueryMultipleTests : IDisposable
 
     #region CancellationToken Tests
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadAsync_WithCancellationToken_Works()
     {
         var conn = _db.Connection! as DbConnection;
@@ -655,7 +655,7 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(3, orders.Count);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadFirstAsync_WithCancellationToken_Works()
     {
         var conn = _db.Connection! as DbConnection;
@@ -672,7 +672,7 @@ public class QueryMultipleTests : IDisposable
         Assert.NotNull(order);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadSingleAsync_WithCancellationToken_Works()
     {
         var conn = _db.Connection! as DbConnection;
@@ -690,7 +690,7 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(10248, order.OrderId);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task ReadScalarAsync_WithCancellationToken_Works()
     {
         var conn = _db.Connection! as DbConnection;

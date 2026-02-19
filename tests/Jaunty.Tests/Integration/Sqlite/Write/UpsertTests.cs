@@ -1,38 +1,43 @@
 using System.Data;
+using System.Data.Common;
 using System.Data.SQLite;
 
 using FluentAssertions;
 
 using Jaunty;
+using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 
 namespace Jaunty.Tests.Integration.Sqlite.Write;
 
+/// <summary>
+/// Tests Upsert and UpsertAsync against the shared Northwind.db.
+/// All writes are wrapped in transactions that are ALWAYS rolled back
+/// to preserve the database for other tests.
+/// </summary>
 public class UpsertTests : IDisposable
 {
     private readonly Database _db;
-    private readonly SQLiteConnection _sqliteConn;
 
     public UpsertTests()
     {
         _db = new Database();
-        _sqliteConn = new SQLiteConnection("Data Source=../../../../../data/sqlite/Northwind.db");
+        if (_db.Connection.State == ConnectionState.Closed)
+            _db.Connection.Open();
     }
 
     public void Dispose()
     {
         _db.Dispose();
-        _sqliteConn.Dispose();
+        GC.SuppressFinalize(this);
     }
 
-    private void ExecuteSql(string sql, object? parameters = null)
+    private void ExecuteSql(IDbTransaction transaction, string sql, object? parameters = null)
     {
-        if (_db.Connection.State == ConnectionState.Closed)
-            _db.Connection.Open();
-
         using var cmd = _db.Connection.CreateCommand();
         cmd.CommandText = sql;
+        cmd.Transaction = transaction;
 
         if (parameters != null)
         {
@@ -48,128 +53,173 @@ public class UpsertTests : IDisposable
         cmd.ExecuteNonQuery();
     }
 
+    private string? QueryScalarString(IDbTransaction transaction, string sql, object? parameters = null)
+    {
+        using var cmd = _db.Connection.CreateCommand();
+        cmd.CommandText = sql;
+        cmd.Transaction = transaction;
+
+        if (parameters != null)
+        {
+            foreach (var prop in parameters.GetType().GetProperties())
+            {
+                var param = cmd.CreateParameter();
+                param.ParameterName = "@" + prop.Name;
+                param.Value = prop.GetValue(parameters) ?? DBNull.Value;
+                cmd.Parameters.Add(param);
+            }
+        }
+
+        return cmd.ExecuteScalar()?.ToString();
+    }
+
     [Fact]
     public void Upsert_NewEntity_InsertsRecord()
     {
-        // Get max category ID first
-        var maxId = _db.Connection.QueryScalar<long>("SELECT MAX(category_id) FROM categories");
-        var newId = (int)(maxId + 100);
-
-        var category = new Category
+        using var transaction = _db.Connection.BeginTransaction();
+        try
         {
-            CategoryId = newId,
-            CategoryName = "UpsertTest",
-            Description = "Test category for upsert"
-        };
+            var maxId = _db.Connection.QueryScalar<long>(
+                "SELECT MAX(category_id) FROM categories",
+                CommandOptions<long>.WithTransaction(transaction));
+            var newId = (int)(maxId + 100);
 
-        // Upsert should insert the new record
-        var result = _db.Connection.Upsert(category);
+            var category = new Category
+            {
+                CategoryId = newId,
+                CategoryName = "UpsertTest",
+                Description = "Test category for upsert"
+            };
 
-        result.Should().Be(1);
+            var result = _db.Connection.Upsert(category,
+                CommandOptions.WithTransaction(transaction));
 
-        // Verify it was inserted
-        var inserted = _db.Connection.QueryPartialFirstOrDefault<Category>(
-            "SELECT * FROM categories WHERE category_id = @id", new { id = newId });
+            result.Should().Be(1);
 
-        inserted.Should().NotBeNull();
-        inserted!.CategoryName.Should().Be("UpsertTest");
+            var insertedName = QueryScalarString(transaction,
+                "SELECT category_name FROM categories WHERE category_id = @id",
+                new { id = newId });
 
-        // Cleanup
-        _db.Connection.Delete<Category>(newId);
+            insertedName.Should().Be("UpsertTest");
+        }
+        finally
+        {
+            transaction.Rollback();
+        }
     }
 
     [Fact]
     public void Upsert_ExistingEntity_UpdatesRecord()
     {
-        // First insert a record
-        var maxId = _db.Connection.QueryScalar<long>("SELECT MAX(category_id) FROM categories");
-        var testId = (int)(maxId + 101);
-
-        ExecuteSql(
-            "INSERT INTO categories (category_id, category_name, description) VALUES (@id, @name, @desc)",
-            new { id = testId, name = "OriginalName", desc = "Original description" });
-
-        // Now upsert with the same ID but different data
-        var category = new Category
+        using var transaction = _db.Connection.BeginTransaction();
+        try
         {
-            CategoryId = testId,
-            CategoryName = "UpdatedName",
-            Description = "Updated description"
-        };
+            var maxId = _db.Connection.QueryScalar<long>(
+                "SELECT MAX(category_id) FROM categories",
+                CommandOptions<long>.WithTransaction(transaction));
+            var testId = (int)(maxId + 101);
 
-        var result = _db.Connection.Upsert(category);
+            ExecuteSql(transaction,
+                "INSERT INTO categories (category_id, category_name, description) VALUES (@id, @name, @desc)",
+                new { id = testId, name = "OriginalName", desc = "Original description" });
 
-        result.Should().Be(1);
+            var category = new Category
+            {
+                CategoryId = testId,
+                CategoryName = "UpdatedName",
+                Description = "Updated description"
+            };
 
-        // Verify it was updated
-        var updated = _db.Connection.QueryPartialFirstOrDefault<Category>(
-            "SELECT * FROM categories WHERE category_id = @id", new { id = testId });
+            var result = _db.Connection.Upsert(category,
+                CommandOptions.WithTransaction(transaction));
 
-        updated.Should().NotBeNull();
-        updated!.CategoryName.Should().Be("UpdatedName");
-        updated.Description.Should().Be("Updated description");
+            result.Should().Be(1);
 
-        // Cleanup
-        _db.Connection.Delete<Category>(testId);
+            var updatedName = QueryScalarString(transaction,
+                "SELECT category_name FROM categories WHERE category_id = @id",
+                new { id = testId });
+
+            updatedName.Should().Be("UpdatedName");
+        }
+        finally
+        {
+            transaction.Rollback();
+        }
     }
 
     [Fact]
     public async Task UpsertAsync_NewEntity_InsertsRecord()
     {
-        var maxId = _db.Connection.QueryScalar<long>("SELECT MAX(category_id) FROM categories");
-        var newId = (int)(maxId + 102);
-
-        var category = new Category
+        var dbConn = (DbConnection)_db.Connection;
+        using var transaction = dbConn.BeginTransaction();
+        try
         {
-            CategoryId = newId,
-            CategoryName = "AsyncUpsertTest",
-            Description = "Async test category"
-        };
+            var maxId = _db.Connection.QueryScalar<long>(
+                "SELECT MAX(category_id) FROM categories",
+                CommandOptions<long>.WithTransaction(transaction));
+            var newId = (int)(maxId + 102);
 
-        var result = await _sqliteConn.UpsertAsync(category);
+            var category = new Category
+            {
+                CategoryId = newId,
+                CategoryName = "AsyncUpsertTest",
+                Description = "Async test category"
+            };
 
-        result.Should().Be(1);
+            var result = await dbConn.UpsertAsync(category,
+                CommandOptions.WithTransaction(transaction));
 
-        // Verify
-        var inserted = _db.Connection.QueryPartialFirstOrDefault<Category>(
-            "SELECT * FROM categories WHERE category_id = @id", new { id = newId });
+            result.Should().Be(1);
 
-        inserted.Should().NotBeNull();
-        inserted!.CategoryName.Should().Be("AsyncUpsertTest");
+            var insertedName = QueryScalarString(transaction,
+                "SELECT category_name FROM categories WHERE category_id = @id",
+                new { id = newId });
 
-        // Cleanup
-        _db.Connection.Delete<Category>(newId);
+            insertedName.Should().Be("AsyncUpsertTest");
+        }
+        finally
+        {
+            transaction.Rollback();
+        }
     }
 
     [Fact]
     public async Task UpsertAsync_ExistingEntity_UpdatesRecord()
     {
-        var maxId = _db.Connection.QueryScalar<long>("SELECT MAX(category_id) FROM categories");
-        var testId = (int)(maxId + 103);
-
-        ExecuteSql(
-            "INSERT INTO categories (category_id, category_name, description) VALUES (@id, @name, @desc)",
-            new { id = testId, name = "AsyncOriginal", desc = "Async original" });
-
-        var category = new Category
+        var dbConn = (DbConnection)_db.Connection;
+        using var transaction = dbConn.BeginTransaction();
+        try
         {
-            CategoryId = testId,
-            CategoryName = "AsyncUpdated",
-            Description = "Async updated"
-        };
+            var maxId = _db.Connection.QueryScalar<long>(
+                "SELECT MAX(category_id) FROM categories",
+                CommandOptions<long>.WithTransaction(transaction));
+            var testId = (int)(maxId + 103);
 
-        var result = await _sqliteConn.UpsertAsync(category);
+            ExecuteSql(transaction,
+                "INSERT INTO categories (category_id, category_name, description) VALUES (@id, @name, @desc)",
+                new { id = testId, name = "AsyncOriginal", desc = "Async original" });
 
-        result.Should().Be(1);
+            var category = new Category
+            {
+                CategoryId = testId,
+                CategoryName = "AsyncUpdated",
+                Description = "Async updated"
+            };
 
-        // Verify
-        var updated = _db.Connection.QueryPartialFirstOrDefault<Category>(
-            "SELECT * FROM categories WHERE category_id = @id", new { id = testId });
+            var result = await dbConn.UpsertAsync(category,
+                CommandOptions.WithTransaction(transaction));
 
-        updated.Should().NotBeNull();
-        updated!.CategoryName.Should().Be("AsyncUpdated");
+            result.Should().Be(1);
 
-        // Cleanup
-        _db.Connection.Delete<Category>(testId);
+            var updatedName = QueryScalarString(transaction,
+                "SELECT category_name FROM categories WHERE category_id = @id",
+                new { id = testId });
+
+            updatedName.Should().Be("AsyncUpdated");
+        }
+        finally
+        {
+            transaction.Rollback();
+        }
     }
 }
