@@ -4,6 +4,7 @@ using System.Data.Common;
 using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
+using Jaunty.Internals.Write;
 
 namespace Jaunty;
 
@@ -11,13 +12,46 @@ public static partial class Jaunty
 {
     /// <summary>
     /// Asynchronously inserts multiple entities into the database in a single transaction.
-    /// Foreign key constraints are enforced.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to insert.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows inserted.</returns>
+    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk insert against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to insert.</param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows inserted.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method performs a bulk insert operation within a transaction. All entities are inserted 
+    /// atomically - if any insert fails, the entire operation is rolled back.
+    /// </para>
+    /// <para>
+    /// <strong>Foreign key constraints are enforced.</strong>
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// public class Product
+    /// {
+    ///     public int Id { get; set; }
+    ///     public string Name { get; set; }
+    ///     public decimal Price { get; set; }
+    /// }
+    /// 
+    /// // Async bulk insert multiple products
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Name = "Widget", Price = 19.99m },
+    ///     new Product { Name = "Gadget", Price = 29.99m },
+    ///     new Product { Name = "Gizmo", Price = 39.99m }
+    /// };
+    /// 
+    /// int inserted = await connection.BulkInsertAsync(products);
+    /// Console.WriteLine($"Inserted {inserted} products");
+    /// </code>
+    /// </example>
+    /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
+    /// <seealso cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/>
     public static Task<int> BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
@@ -27,14 +61,42 @@ public static partial class Jaunty
 
     /// <summary>
     /// Asynchronously inserts multiple entities into the database in a single transaction with command options.
-    /// Foreign key constraints are enforced.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to insert.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows inserted.</returns>
+    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk insert against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to insert.</param>
+    /// <param name="options">
+    /// Command options for configuring the bulk insert execution. Use 
+    /// <see cref="CommandOptions{T}.WithTransaction(IDbTransaction)"/> for transactions or
+    /// <see cref="CommandOptions{T}.WithTimeout(int)"/> for command timeout.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows inserted.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Foreign key constraints are enforced.</strong>
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Async bulk insert with transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Name = "Widget", Price = 19.99m },
+    ///     new Product { Name = "Gadget", Price = 29.99m }
+    /// };
+    /// 
+    /// int inserted = await connection.BulkInsertAsync(
+    ///     products, 
+    ///     CommandOptions.WithTransaction(tx));
+    /// tx.Commit();
+    /// </code>
+    /// </example>
+    /// <seealso cref="CommandOptions{T}"/>
+    /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static Task<int> BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
@@ -44,15 +106,37 @@ public static partial class Jaunty
 
     /// <summary>
     /// Asynchronously inserts multiple entities into the database, bypassing foreign key constraint checks.
-    /// WARNING: This temporarily disables referential integrity. Use only for migrations,
-    /// data imports, or scenarios where you explicitly don't need FK validation.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to insert.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows inserted.</returns>
-    /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
+    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk insert against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to insert.</param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows inserted.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use only for migrations,
+    /// data imports, or scenarios where you explicitly don't need FK validation.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Async bulk insert without FK checks
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1, Name = "Widget", CategoryId = 999 },
+    ///     new Product { Id = 2, Name = "Gadget", CategoryId = 999 }
+    /// };
+    /// 
+    /// int inserted = await connection.BulkInsertIgnoreConstraintsAsync(products);
+    /// </code>
+    /// </example>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling (e.g., SQL Server).
+    /// </exception>
+    /// <seealso cref="BulkInsertIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
+    /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static Task<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
@@ -61,17 +145,44 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Asynchronously inserts multiple entities into the database, bypassing foreign key constraint checks.
-    /// WARNING: This temporarily disables referential integrity. Use only for migrations,
-    /// data imports, or scenarios where you explicitly don't need FK validation.
+    /// Asynchronously inserts multiple entities into the database, bypassing foreign key constraint checks, with command options.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to insert.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows inserted.</returns>
-    /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
+    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk insert against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to insert.</param>
+    /// <param name="options">
+    /// Command options for configuring the bulk insert execution.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows inserted.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use with caution.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Async bulk insert without FK checks with transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1, Name = "Widget", CategoryId = 999 },
+    ///     new Product { Id = 2, Name = "Gadget", CategoryId = 999 }
+    /// };
+    /// 
+    /// int inserted = await connection.BulkInsertIgnoreConstraintsAsync(
+    ///     products, 
+    ///     CommandOptions.WithTransaction(tx));
+    /// tx.Commit();
+    /// </code>
+    /// </example>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling.
+    /// </exception>
+    /// <seealso cref="BulkInsertIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
+    /// <seealso cref="CommandOptions{T}"/>
     public static Task<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
@@ -152,10 +263,13 @@ public static partial class Jaunty
 
                 PrepareInsertParameters(command, cached.Metadata);
 
+                var valueSetter = WriteParameterCache<T>.InsertValueSetter;
+                var pCollection = command.Parameters;
+
                 foreach (var entity in entityList)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    SetInsertParameterValues(command, entity, cached.Metadata);
+                    valueSetter(pCollection, entity);
                     totalInserted += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                 }
 

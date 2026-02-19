@@ -1,5 +1,4 @@
 using System.Data;
-using System.Data.Common;
 using System.Reflection;
 
 using Jaunty.Interfaces;
@@ -18,6 +17,12 @@ internal static class WriteParameterCache<T> where T : class
 
     public static readonly Action<IDbCommand, T> InsertBinder;
     public static readonly Action<IDbCommand, T> UpdateBinder;
+    public static readonly Action<IDbCommand, T> DeleteBinder;
+    
+    public static readonly Action<IDataParameterCollection, T> InsertValueSetter;
+    public static readonly Action<IDataParameterCollection, T> UpdateValueSetter;
+    public static readonly Action<IDataParameterCollection, T> DeleteValueSetter;
+
     public static readonly Action<T, long>? IdSetter;
 
     static WriteParameterCache()
@@ -66,6 +71,12 @@ internal static class WriteParameterCache<T> where T : class
 
         InsertBinder = CreateInsertBinder();
         UpdateBinder = CreateUpdateBinder();
+        DeleteBinder = CreateDeleteBinder();
+
+        InsertValueSetter = CreateInsertValueSetter();
+        UpdateValueSetter = CreateUpdateValueSetter();
+        DeleteValueSetter = CreateDeleteValueSetter();
+
         IdSetter = CreateIdSetter();
     }
 
@@ -84,6 +95,21 @@ internal static class WriteParameterCache<T> where T : class
                 p.ParameterName = col.ParameterName;
                 p.Value = col.Getter(entity) ?? DBNull.Value;
                 parameters.Add(p);
+            }
+        };
+    }
+
+    private static Action<IDataParameterCollection, T> CreateInsertValueSetter()
+    {
+        if (_insertColumns.Length == 0)
+            return static (_, _) => { };
+
+        return static (paramsCollection, entity) =>
+        {
+            for (int i = 0; i < _insertColumns.Length; i++)
+            {
+                ref readonly var col = ref _insertColumns[i];
+                ((IDataParameter)paramsCollection[i]!).Value = col.Getter(entity) ?? DBNull.Value;
             }
         };
     }
@@ -119,11 +145,65 @@ internal static class WriteParameterCache<T> where T : class
         };
     }
 
+    private static Action<IDataParameterCollection, T> CreateUpdateValueSetter()
+    {
+        if (_updateSetColumns.Length == 0 && _updateKeyColumns.Length == 0)
+            return static (_, _) => { };
+
+        return static (paramsCollection, entity) =>
+        {
+            int index = 0;
+            for (int i = 0; i < _updateSetColumns.Length; i++)
+            {
+                ref readonly var col = ref _updateSetColumns[i];
+                ((IDataParameter)paramsCollection[index++]!).Value = col.Getter(entity) ?? DBNull.Value;
+            }
+            for (int i = 0; i < _updateKeyColumns.Length; i++)
+            {
+                ref readonly var col = ref _updateKeyColumns[i];
+                ((IDataParameter)paramsCollection[index++]!).Value = col.Getter(entity) ?? DBNull.Value;
+            }
+        };
+    }
+
+    private static Action<IDbCommand, T> CreateDeleteBinder()
+    {
+        if (_updateKeyColumns.Length == 0)
+            return static (_, _) => { };
+
+        return static (cmd, entity) =>
+        {
+            var parameters = cmd.Parameters;
+            for (int i = 0; i < _updateKeyColumns.Length; i++)
+            {
+                ref readonly var col = ref _updateKeyColumns[i];
+                var p = cmd.CreateParameter();
+                p.ParameterName = col.ParameterName;
+                p.Value = col.Getter(entity) ?? DBNull.Value;
+                parameters.Add(p);
+            }
+        };
+    }
+
+    private static Action<IDataParameterCollection, T> CreateDeleteValueSetter()
+    {
+        if (_updateKeyColumns.Length == 0)
+            return static (_, _) => { };
+
+        return static (paramsCollection, entity) =>
+        {
+            for (int i = 0; i < _updateKeyColumns.Length; i++)
+            {
+                ref readonly var col = ref _updateKeyColumns[i];
+                ((IDataParameter)paramsCollection[i]!).Value = col.Getter(entity) ?? DBNull.Value;
+            }
+        };
+    }
+
     private static Action<T, long>? CreateIdSetter()
     {
         var type = typeof(T);
         
-        // 1. IEntity
         if (typeof(IEntity).IsAssignableFrom(type))
         {
             return static (target, value) =>
@@ -132,7 +212,6 @@ internal static class WriteParameterCache<T> where T : class
             };
         }
 
-        // 2. Fallback to more complex IEntity<T> or "Id" property if needed
         return CreateComplexIdSetter();
     }
 
@@ -142,7 +221,6 @@ internal static class WriteParameterCache<T> where T : class
         var target = System.Linq.Expressions.Expression.Parameter(type, "target");
         var value = System.Linq.Expressions.Expression.Parameter(typeof(long), "value");
 
-        // 2. IEntity<TId>
         var iEntityGeneric = type.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntity<>));
         if (iEntityGeneric != null)
         {
@@ -153,7 +231,6 @@ internal static class WriteParameterCache<T> where T : class
             return System.Linq.Expressions.Expression.Lambda<Action<T, long>>(assign, target, value).Compile();
         }
 
-        // 3. Just "Id" property if it exists and is writable
         var idProp = type.GetProperty("Id", BindingFlags.Public | BindingFlags.Instance);
         if (idProp != null && idProp.CanWrite)
         {

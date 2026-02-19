@@ -5,6 +5,7 @@ using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Write;
 
 namespace Jaunty;
 
@@ -31,6 +32,13 @@ public static partial class Jaunty
     /// </remarks>
     /// <example>
     /// <code>
+    /// public class Product
+    /// {
+    ///     public int Id { get; set; }
+    ///     public string Name { get; set; }
+    ///     public decimal Price { get; set; }
+    /// }
+    /// 
     /// // Async bulk delete multiple products
     /// var productsToDelete = new List&lt;Product&gt;
     /// {
@@ -49,7 +57,7 @@ public static partial class Jaunty
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : BulkDeleteCoreAsync(dbConnection, entities, default, ignoreConstraints: false, cancellationToken);
+            : BulkDeleteAsync(dbConnection, entities, default, cancellationToken);
     }
 
     /// <summary>
@@ -110,7 +118,7 @@ public static partial class Jaunty
     /// <remarks>
     /// <para>
     /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use only for migrations,
-    /// cleanup operations, or scenarios where you explicitly don't need FK validation.
+    /// data cleanup, or scenarios where you explicitly don't need FK validation.
     /// </para>
     /// <para>
     /// <strong>Caution:</strong> This can leave orphaned records in child tables.
@@ -137,7 +145,7 @@ public static partial class Jaunty
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : BulkDeleteCoreAsync(dbConnection, entities, default, ignoreConstraints: true, cancellationToken);
+            : BulkDeleteIgnoreConstraintsAsync(dbConnection, entities, default, cancellationToken);
     }
 
     /// <summary>
@@ -232,7 +240,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 #else
-                transaction = connection.BeginTransaction();
+                transaction = (DbTransaction)connection.BeginTransaction();
 #endif
             }
 
@@ -265,10 +273,13 @@ public static partial class Jaunty
 
                 PrepareDeleteParameters(command, cached.Metadata);
 
+                var valueSetter = WriteParameterCache<T>.DeleteValueSetter;
+                var pCollection = command.Parameters;
+
                 foreach (var entity in entityList)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    SetDeleteParameterValues(command, entity, cached.Metadata);
+                    valueSetter(pCollection, entity);
                     totalDeleted += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                 }
 

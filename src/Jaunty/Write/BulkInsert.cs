@@ -4,6 +4,7 @@ using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Write;
 
 namespace Jaunty;
 
@@ -11,12 +12,49 @@ public static partial class Jaunty
 {
     /// <summary>
     /// Inserts multiple entities into the database in a single transaction.
-    /// Foreign key constraints are enforced.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to insert.</param>
+    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk insert against.</param>
+    /// <param name="entities">The collection of entities to insert.</param>
     /// <returns>The number of rows inserted.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method performs a bulk insert operation within a transaction. All entities are inserted 
+    /// atomically - if any insert fails, the entire operation is rolled back.
+    /// </para>
+    /// <para>
+    /// <strong>Foreign key constraints are enforced.</strong> All referenced entities must exist 
+    /// in the database before calling this method.
+    /// </para>
+    /// <para>
+    /// For inserting entities without foreign key validation, use 
+    /// <see cref="BulkInsertIgnoreConstraints{T}(IDbConnection, IEnumerable{T})"/>.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// public class Product
+    /// {
+    ///     public int Id { get; set; }
+    ///     public string Name { get; set; }
+    ///     public decimal Price { get; set; }
+    /// }
+    /// 
+    /// // Bulk insert multiple products
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Name = "Widget", Price = 19.99m },
+    ///     new Product { Name = "Gadget", Price = 29.99m },
+    ///     new Product { Name = "Gizmo", Price = 39.99m }
+    /// };
+    /// 
+    /// int inserted = connection.BulkInsert(products);
+    /// Console.WriteLine($"Inserted {inserted} products");
+    /// </code>
+    /// </example>
+    /// <seealso cref="BulkInsert{T}(IDbConnection, IEnumerable{T}, CommandOptions)"/>
+    /// <seealso cref="BulkInsertIgnoreConstraints{T}(IDbConnection, IEnumerable{T})"/>
+    /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static int BulkInsert<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
     {
         return BulkInsert(connection, entities, default);
@@ -24,13 +62,47 @@ public static partial class Jaunty
 
     /// <summary>
     /// Inserts multiple entities into the database in a single transaction with command options.
-    /// Foreign key constraints are enforced.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to insert.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
+    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk insert against.</param>
+    /// <param name="entities">The collection of entities to insert.</param>
+    /// <param name="options">
+    /// Command options for configuring the bulk insert execution. Use 
+    /// <see cref="CommandOptions{T}.WithTransaction(IDbTransaction)"/> to use an existing transaction or
+    /// <see cref="CommandOptions{T}.WithTimeout(int)"/> for command timeout.
+    /// </param>
     /// <returns>The number of rows inserted.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Foreign key constraints are enforced.</strong>
+    /// </para>
+    /// <para>
+    /// If no transaction is provided via <paramref name="options"/>, a new transaction is created 
+    /// automatically for the bulk operation.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Bulk insert with existing transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Name = "Widget", Price = 19.99m },
+    ///     new Product { Name = "Gadget", Price = 29.99m }
+    /// };
+    /// 
+    /// int inserted = connection.BulkInsert(products, CommandOptions.WithTransaction(tx));
+    /// tx.Commit();
+    /// 
+    /// // Bulk insert with timeout
+    /// int inserted = connection.BulkInsert(
+    ///     products, 
+    ///     CommandOptions.WithTimeout(60));
+    /// </code>
+    /// </example>
+    /// <seealso cref="CommandOptions{T}"/>
+    /// <seealso cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/>
+    /// <seealso cref="BulkInsertIgnoreConstraints{T}(IDbConnection, IEnumerable{T}, CommandOptions)"/>
     public static int BulkInsert<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
     {
         return BulkInsertCore(connection, entities, options, ignoreConstraints: false);
@@ -38,30 +110,88 @@ public static partial class Jaunty
 
     /// <summary>
     /// Inserts multiple entities into the database, bypassing foreign key constraint checks.
-    /// WARNING: This temporarily disables referential integrity. Use only for migrations,
-    /// data imports, or scenarios where you explicitly don't need FK validation.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to insert.</param>
+    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk insert against.</param>
+    /// <param name="entities">The collection of entities to insert.</param>
     /// <returns>The number of rows inserted.</returns>
-    /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
+    /// <remarks>
+    /// <para>
+    /// <strong>WARNING:</strong> This method temporarily disables referential integrity during the insert. 
+    /// Use only for:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>Database migrations</description></item>
+    /// <item><description>Data imports where you control referential integrity manually</description></item>
+    /// <item><description>Scenarios where you explicitly don't need FK validation</description></item>
+    /// </list>
+    /// <para>
+    /// <strong>Note:</strong> This method is not supported on SQL Server and other databases that 
+    /// don't support session-level foreign key toggling.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Bulk insert without FK checks (useful for data migrations)
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1, Name = "Widget", CategoryId = 999 }, // Category 999 may not exist
+    ///     new Product { Id = 2, Name = "Gadget", CategoryId = 999 }
+    /// };
+    /// 
+    /// int inserted = connection.BulkInsertIgnoreConstraints(products);
+    /// Console.WriteLine($"Inserted {inserted} products (FK checks bypassed)");
+    /// </code>
+    /// </example>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling (e.g., SQL Server).
+    /// </exception>
+    /// <seealso cref="BulkInsertIgnoreConstraints{T}(IDbConnection, IEnumerable{T}, CommandOptions)"/>
+    /// <seealso cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/>
     public static int BulkInsertIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
     {
         return BulkInsertIgnoreConstraints(connection, entities, default);
     }
 
     /// <summary>
-    /// Inserts multiple entities into the database, bypassing foreign key constraint checks.
-    /// WARNING: This temporarily disables referential integrity. Use only for migrations,
-    /// data imports, or scenarios where you explicitly don't need FK validation.
+    /// Inserts multiple entities into the database, bypassing foreign key constraint checks, with command options.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to insert.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
+    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk insert against.</param>
+    /// <param name="entities">The collection of entities to insert.</param>
+    /// <param name="options">
+    /// Command options for configuring the bulk insert execution.
+    /// </param>
     /// <returns>The number of rows inserted.</returns>
-    /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
+    /// <remarks>
+    /// <para>
+    /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use with caution.
+    /// </para>
+    /// <para>
+    /// Foreign key checks are automatically re-enabled after the insert completes (or fails).
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Bulk insert without FK checks with transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1, Name = "Widget", CategoryId = 999 },
+    ///     new Product { Id = 2, Name = "Gadget", CategoryId = 999 }
+    /// };
+    /// 
+    /// int inserted = connection.BulkInsertIgnoreConstraints(
+    ///     products, 
+    ///     CommandOptions.WithTransaction(tx));
+    /// tx.Commit();
+    /// </code>
+    /// </example>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling.
+    /// </exception>
+    /// <seealso cref="BulkInsertIgnoreConstraints{T}(IDbConnection, IEnumerable{T})"/>
+    /// <seealso cref="CommandOptions{T}"/>
     public static int BulkInsertIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
     {
         return BulkInsertCore(connection, entities, options, ignoreConstraints: true);
@@ -130,9 +260,12 @@ public static partial class Jaunty
                 // Prepare parameters once, reuse for each entity
                 PrepareInsertParameters(command, cached.Metadata);
 
+                var valueSetter = WriteParameterCache<T>.InsertValueSetter;
+                var pCollection = command.Parameters;
+
                 foreach (var entity in entityList)
                 {
-                    SetInsertParameterValues(command, entity, cached.Metadata);
+                    valueSetter(pCollection, entity);
                     totalInserted += command.ExecuteNonQuery();
                 }
 
@@ -178,38 +311,6 @@ public static partial class Jaunty
 
             if (wasClosed && connection.State != ConnectionState.Closed)
                 connection.Close();
-        }
-    }
-
-    private static void PrepareInsertParameters(IDbCommand command, EntityMetadata metadata)
-    {
-        IReadOnlyList<ColumnMetadata> columns = metadata.NonIdentityColumns;
-
-        for (int i = 0; i < columns.Count; i++)
-        {
-            ColumnMetadata col = columns[i];
-            if (col.IsComputed)
-                continue;
-
-            IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + col.Property.Name;
-            command.Parameters.Add(param);
-        }
-    }
-
-    private static void SetInsertParameterValues<T>(IDbCommand command, T entity, EntityMetadata metadata) where T : class
-    {
-        IReadOnlyList<ColumnMetadata> columns = metadata.NonIdentityColumns;
-        int paramIndex = 0;
-
-        for (int i = 0; i < columns.Count; i++)
-        {
-            ColumnMetadata col = columns[i];
-            if (col.IsComputed)
-                continue;
-
-            var param = (IDbDataParameter)command.Parameters[paramIndex++]!;
-            param.Value = col.Property.GetValue(entity) ?? DBNull.Value;
         }
     }
 }
