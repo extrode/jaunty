@@ -8,7 +8,7 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static async Task<GridReader> ExecuteQueryMultipleAsync(DbConnection connection, string sql, object? parameters, CommandOptions options, CancellationToken cancellationToken)
+    private static async ValueTask<GridReader> ExecuteQueryMultipleAsync(DbConnection connection, string sql, object? parameters, CommandOptions options, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -47,3 +47,5 @@ public static partial class Jaunty
         return new GridReader(reader, connection, wasClosed);
     }
 }
+
+

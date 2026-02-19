@@ -217,7 +217,7 @@ public static partial class Jaunty
     /// </remarks>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, object, CancellationToken)"/>
     /// <seealso cref="QueryPartialAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static Task<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -244,7 +244,7 @@ public static partial class Jaunty
     /// </remarks>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, object, CommandOptions{T}, CancellationToken)"/>
-    public static Task<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -273,7 +273,7 @@ public static partial class Jaunty
     /// </remarks>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static Task<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -303,7 +303,7 @@ public static partial class Jaunty
     /// </remarks>
     /// <seealso cref="QueryPartialUnbufferedAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static Task<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<IEnumerable<T>> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -311,3 +311,5 @@ public static partial class Jaunty
     }
 #endif
 }
+
+

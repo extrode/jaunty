@@ -56,7 +56,7 @@ public static partial class Jaunty
         }
     }
 
-    private static async Task<int> UpdateCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+    private static async ValueTask<int> UpdateCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -112,4 +112,5 @@ public static partial class Jaunty
         }
     }
 }
+
 

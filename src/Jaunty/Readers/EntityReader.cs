@@ -25,7 +25,7 @@ internal static class EntityReader
             yield return mapper(reader);
     }
 #else
-    public static async Task<List<T>> ReadEntitiesAsync<T>(DbDataReader reader, CancellationToken cancellationToken = default)
+    public static async ValueTask<List<T>> ReadEntitiesAsync<T>(DbDataReader reader, CancellationToken cancellationToken = default)
         where T : IMapped<T>, new()
     {
         var mapper = MappedCache<T>.Mapper!;
@@ -36,3 +36,5 @@ internal static class EntityReader
     }
 #endif
 }
+
+

@@ -37,7 +37,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, object, CancellationToken)"/>
     /// <seealso cref="QueryMultiple(IDbConnection, string)"/>
-    public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
+    public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -77,7 +77,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, object, CommandOptions, CancellationToken)"/>
-    public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
+    public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -117,7 +117,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, CancellationToken)"/>
-    public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
+    public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -162,7 +162,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+    public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -197,7 +197,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, object, CommandOptions, CancellationToken)"/>
-    public static async Task QueryMultipleAsync(this IDbConnection connection, string sql, Action<GridReader> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
+    public static async ValueTask QueryMultipleAsync(this IDbConnection connection, string sql, Action<GridReader> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(reader);
@@ -240,7 +240,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, Action{GridReader}, object, CommandOptions, CancellationToken)"/>
-    public static async Task QueryMultipleAsync(this IDbConnection connection, string sql, Func<GridReader, Task> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
+    public static async ValueTask QueryMultipleAsync(this IDbConnection connection, string sql, Func<GridReader, Task> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(reader);
@@ -285,7 +285,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, Func{GridReader, Task}, object, CommandOptions, CancellationToken)"/>
-    public static async Task<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, TResult> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
+    public static async ValueTask<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, TResult> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(reader);
@@ -330,7 +330,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, Func{GridReader, TResult}, object, CommandOptions, CancellationToken)"/>
-    public static async Task<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, Task<TResult>> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
+    public static async ValueTask<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, Task<TResult>> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(reader);
@@ -344,3 +344,4 @@ public static partial class Jaunty
         return await reader(gridReader);
     }
 }
+

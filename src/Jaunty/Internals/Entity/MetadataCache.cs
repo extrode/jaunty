@@ -64,7 +64,14 @@ internal static class MetadataCache<T>
             return [];
 
         var signature = new ReaderSignature(reader, mode);
+#if NET8_0_OR_GREATER
         return SettersCache.GetOrAdd(signature, static (sig, state) => BuildSetters(state.reader, state.mode), (reader, mode));
+#else
+        if (SettersCache.TryGetValue(signature, out var cached)) return cached;
+        var setters = BuildSetters(reader, mode);
+        SettersCache.TryAdd(signature, setters);
+        return setters;
+#endif
     }
 
     private readonly struct ReaderSignature : IEquatable<ReaderSignature>
@@ -74,6 +81,7 @@ internal static class MetadataCache<T>
         public ReaderSignature(IDataReader reader, MappingMode mode)
         {
             int fieldCount = reader.FieldCount;
+#if NET8_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
             var hash = new HashCode();
             hash.Add((int)mode);
             hash.Add(fieldCount);
@@ -84,6 +92,17 @@ internal static class MetadataCache<T>
             }
 
             _hashCode = hash.ToHashCode();
+#else
+            int h = 17;
+            h = h * 31 + (int)mode;
+            h = h * 31 + fieldCount;
+            for (int i = 0; i < fieldCount; i++)
+            {
+                var name = reader.GetName(i);
+                h = h * 31 + (name?.GetHashCode() ?? 0);
+            }
+            _hashCode = h;
+#endif
         }
 
         public bool Equals(ReaderSignature other) => _hashCode == other._hashCode;
@@ -206,6 +225,14 @@ internal static class MetadataCache<T>
         {
             valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToDateTime), [typeof(object)])!, getValue);
         }
+        else if (conversionType == typeof(DateTimeOffset))
+        {
+            valueExpression = Expression.Convert(getValue, typeof(DateTimeOffset));
+        }
+        else if (conversionType == typeof(TimeSpan))
+        {
+            valueExpression = Expression.Convert(getValue, typeof(TimeSpan));
+        }
         else if (conversionType == typeof(decimal))
         {
             valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToDecimal), [typeof(object)])!, getValue);
@@ -225,6 +252,10 @@ internal static class MetadataCache<T>
         else if (conversionType == typeof(byte))
         {
             valueExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToByte), [typeof(object)])!, getValue);
+        }
+        else if (conversionType == typeof(byte[]))
+        {
+            valueExpression = Expression.Convert(getValue, typeof(byte[]));
         }
         else if (conversionType == typeof(Guid))
         {
@@ -275,11 +306,14 @@ internal static class MetadataCache<T>
         else if (conversionType == typeof(long)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToInt64), [typeof(object)])!, getValueCall);
         else if (conversionType == typeof(bool)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToBoolean), [typeof(object)])!, getValueCall);
         else if (conversionType == typeof(DateTime)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToDateTime), [typeof(object)])!, getValueCall);
+        else if (conversionType == typeof(DateTimeOffset)) fallbackExpression = Expression.Convert(getValueCall, typeof(DateTimeOffset));
+        else if (conversionType == typeof(TimeSpan)) fallbackExpression = Expression.Convert(getValueCall, typeof(TimeSpan));
         else if (conversionType == typeof(decimal)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToDecimal), [typeof(object)])!, getValueCall);
         else if (conversionType == typeof(double)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToDouble), [typeof(object)])!, getValueCall);
         else if (conversionType == typeof(float)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToSingle), [typeof(object)])!, getValueCall);
         else if (conversionType == typeof(short)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToInt16), [typeof(object)])!, getValueCall);
         else if (conversionType == typeof(byte)) fallbackExpression = Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ToByte), [typeof(object)])!, getValueCall);
+        else if (conversionType == typeof(byte[])) fallbackExpression = Expression.Convert(getValueCall, typeof(byte[]));
         else if (conversionType == typeof(Guid)) fallbackExpression = Expression.Call(typeof(MetadataCache<T>).GetMethod(nameof(ParseGuid), BindingFlags.NonPublic | BindingFlags.Static)!, getValueCall);
         else
         {
@@ -346,6 +380,7 @@ internal readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDa
 
 internal readonly struct PropertySetter<T>(PropertyContext<T> context, int ordinal)
 {
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public void Set(T target, IDataRecord record)
     {
         if (!record.IsDBNull(ordinal))
@@ -355,6 +390,7 @@ internal readonly struct PropertySetter<T>(PropertyContext<T> context, int ordin
                 $"Cannot assign NULL to non-nullable property '{context.Property.Name}' on type '{typeof(T).Name}'.");
     }
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public void SetFast(T target, DbDataReader reader)
     {
         if (!reader.IsDBNull(ordinal))

@@ -79,7 +79,7 @@ public static partial class Jaunty
         }
     }
 
-    private static async Task<long> InsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+    private static async ValueTask<long> InsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -155,4 +155,5 @@ public static partial class Jaunty
         return Convert.ToInt64(value);
     }
 }
+
 

@@ -43,7 +43,7 @@ public static partial class Jaunty
     /// <seealso cref="QueryScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryScalar{T}(IDbConnection, string)"/>
     /// <seealso cref="ExecuteScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
+    public static ValueTask<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -83,7 +83,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="QueryScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryScalar{T}(IDbConnection, string, object)"/>
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
+    public static ValueTask<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -128,7 +128,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="QueryScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)
+    public static ValueTask<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -173,10 +173,11 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="QueryScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)
+    public static ValueTask<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)
     {
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryScalarCoreAsync(dbConnection, sql, parameters, options, cancellationToken);
     }
 }
+
