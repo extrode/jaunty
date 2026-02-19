@@ -250,6 +250,18 @@ public static partial class Jaunty
 
             try
             {
+                // PostgreSQL Fast Path: COPY (Binary Import)
+                if (connection.GetType().Name == "NpgsqlConnection" && !ignoreConstraints)
+                {
+                    return await ExecutePostgreSqlBinaryImportAsync(connection, entityList, cached, options, cancellationToken);
+                }
+
+                // SQL Server Fast Path: SqlBulkCopy
+                if (connection.GetType().Name == "SqlConnection" && !ignoreConstraints)
+                {
+                    return await ExecuteSqlServerBulkInsertAsync(connection, entityList, cached, options, cancellationToken);
+                }
+
 #if NET8_0_OR_GREATER
                 await using var command = connection.CreateCommand();
 #else
@@ -351,6 +363,116 @@ public static partial class Jaunty
 #endif
             }
         }
+    private static async ValueTask<int> ExecutePostgreSqlBinaryImportAsync<T>(DbConnection connection, IList<T> entities, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+    {
+        var metadata = cached.Metadata;
+        var columns = metadata.NonIdentityColumns;
+        var columnNames = string.Join(", ", columns.Select(c => $"\"{c.ColumnName}\""));
+        var tableName = string.IsNullOrEmpty(metadata.SchemaName) 
+            ? $"\"{metadata.TableName}\"" 
+            : $"\"{metadata.SchemaName}\".\"{metadata.TableName}\"";
+        var copySql = $"COPY {tableName} ({columnNames}) FROM STDIN (FORMAT BINARY)";
+
+        // Reflection to call Npgsql methods without direct dependency
+        var beginBinaryImportMethod = connection.GetType().GetMethod("BeginBinaryImport", [typeof(string)]);
+        if (beginBinaryImportMethod == null) return -1; // Fallback to standard loop if method not found
+
+        var writer = beginBinaryImportMethod.Invoke(connection, [copySql]);
+        if (writer == null) return -1;
+
+        var writerType = writer.GetType();
+        var writeAsyncMethod = writerType.GetMethod("WriteAsync");
+        var startRowAsyncMethod = writerType.GetMethod("StartRowAsync");
+        var completeAsyncMethod = writerType.GetMethod("CompleteAsync");
+        var disposeAsyncMethod = writerType.GetMethod("DisposeAsync");
+
+        if (writeAsyncMethod == null || startRowAsyncMethod == null || completeAsyncMethod == null) return -1;
+
+        var properties = MetadataCache<T>.Properties;
+        var writeColumns = new List<PropertyContext<T>>();
+        foreach (var col in columns)
+        {
+            var prop = properties.FirstOrDefault(p => p.Property == col.Property);
+            writeColumns.Add(prop);
+        }
+
+        try
+        {
+            foreach (var entity in entities)
+            {
+                await (Task)startRowAsyncMethod.Invoke(writer, [cancellationToken])!;
+                foreach (var col in writeColumns)
+                {
+                    var value = col.Getter(entity);
+                    await (Task)writeAsyncMethod.MakeGenericMethod(value?.GetType() ?? typeof(object))
+                        .Invoke(writer, [value, cancellationToken])!;
+                }
+            }
+
+            return (int)await (Task<ulong>)completeAsyncMethod.Invoke(writer, [cancellationToken])!;
+        }
+        finally
+        {
+            if (disposeAsyncMethod != null)
+                await (ValueTask)disposeAsyncMethod.Invoke(writer, [])!;
+        }
+    }
+
+    private static async ValueTask<int> ExecuteSqlServerBulkInsertAsync<T>(DbConnection connection, IList<T> entities, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+    {
+        var metadata = cached.Metadata;
+        var columns = metadata.NonIdentityColumns;
+        var tableName = string.IsNullOrEmpty(metadata.SchemaName) 
+            ? $"[{metadata.TableName}]" 
+            : $"[{metadata.SchemaName}].[{metadata.TableName}]";
+
+        // Create DataTable for SqlBulkCopy
+        var dt = new DataTable();
+        var properties = MetadataCache<T>.Properties;
+        var writeColumns = new List<PropertyContext<T>>();
+        
+        foreach (var col in columns)
+        {
+            var prop = properties.FirstOrDefault(p => p.Property == col.Property);
+            writeColumns.Add(prop);
+            dt.Columns.Add(col.ColumnName, Nullable.GetUnderlyingType(prop.Property.PropertyType) ?? prop.Property.PropertyType);
+        }
+
+        foreach (var entity in entities)
+        {
+            var row = dt.NewRow();
+            for (int i = 0; i < writeColumns.Count; i++)
+            {
+                row[i] = writeColumns[i].Getter(entity) ?? DBNull.Value;
+            }
+            dt.Rows.Add(row);
+        }
+
+        // Reflection to call SqlBulkCopy methods
+        var assembly = connection.GetType().Assembly;
+        var bulkCopyType = assembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopy") 
+                          ?? assembly.GetType("System.Data.SqlClient.SqlBulkCopy");
+        
+        if (bulkCopyType == null) return -1;
+
+        var optionsType = assembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions")
+                         ?? assembly.GetType("System.Data.SqlClient.SqlBulkCopyOptions");
+        
+        // Default options: KeepIdentity | CheckConstraints
+        object bulkOptions = optionsType != null ? Enum.ToObject(optionsType, 0) : 0;
+
+        using var bulkCopy = Activator.CreateInstance(bulkCopyType, connection, bulkOptions, options.Transaction)!;
+        
+        bulkCopyType.GetProperty("DestinationTableName")!.SetValue(bulkCopy, tableName);
+        if (options.CommandTimeout.HasValue)
+            bulkCopyType.GetProperty("BulkCopyTimeout")!.SetValue(bulkCopy, options.CommandTimeout.Value);
+
+        var writeToServerAsyncMethod = bulkCopyType.GetMethod("WriteToServerAsync", [typeof(DataTable), typeof(CancellationToken)]);
+        if (writeToServerAsyncMethod == null) return -1;
+
+        await (Task)writeToServerAsyncMethod.Invoke(bulkCopy, [dt, cancellationToken])!;
+        
+        return entities.Count;
     }
 }
 

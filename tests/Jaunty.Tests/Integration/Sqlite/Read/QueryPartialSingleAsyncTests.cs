@@ -44,7 +44,7 @@ public class QueryPartialSingleAsyncTests : IDisposable
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _db.Connection.QueryPartialSingleAsync<ProductSummary>(
-                "SELECT product_id AS ProductId FROM products WHERE product_id = -999"));
+                "SELECT product_id AS ProductId FROM products WHERE product_id = -999").AsTask());
     }
 
     [SkipSQLiteAsyncFact]
@@ -52,7 +52,7 @@ public class QueryPartialSingleAsyncTests : IDisposable
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _db.Connection.QueryPartialSingleAsync<ProductSummary>(
-                "SELECT product_id AS ProductId, product_name AS ProductName FROM products"));
+                "SELECT product_id AS ProductId, product_name AS ProductName FROM products").AsTask());
     }
 
     [SkipSQLiteAsyncFact]
@@ -87,3 +87,4 @@ public class QueryPartialSingleAsyncTests : IDisposable
         Assert.Equal(2, product.ProductId);
     }
 }
+

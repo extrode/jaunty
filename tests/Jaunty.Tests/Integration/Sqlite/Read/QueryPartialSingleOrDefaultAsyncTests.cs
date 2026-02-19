@@ -53,7 +53,7 @@ public class QueryPartialSingleOrDefaultAsyncTests : IDisposable
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _db.Connection.QueryPartialSingleOrDefaultAsync<ProductSummary>(
-                "SELECT product_id AS ProductId, product_name AS ProductName FROM products"));
+                "SELECT product_id AS ProductId, product_name AS ProductName FROM products").AsTask());
     }
 
     [SkipSQLiteAsyncFact]
@@ -100,3 +100,4 @@ public class QueryPartialSingleOrDefaultAsyncTests : IDisposable
         Assert.Null(product);
     }
 }
+
