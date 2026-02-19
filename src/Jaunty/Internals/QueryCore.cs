@@ -12,6 +12,20 @@ public static partial class Jaunty
 {
     private static List<T> QueryCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
+        if (connection is DbConnection dbConnection)
+        {
+            return ExecuteReader(dbConnection, sql, parameters, options, reader =>
+            {
+                var results = new List<T>();
+                var map = DrDispatcher.Resolve(reader, options, mode);
+
+                while (reader.Read())
+                    results.Add(map(reader));
+
+                return results;
+            });
+        }
+
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             var results = new List<T>();
@@ -32,6 +46,16 @@ public static partial class Jaunty
 
     private static T? QueryFirstOrDefaultCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
+        if (connection is DbConnection dbConnection)
+        {
+            return ExecuteReader(dbConnection, sql, parameters, options, reader =>
+            {
+                if (!reader.Read()) return default;
+                var map = DrDispatcher.Resolve(reader, options, mode);
+                return map(reader);
+            });
+        }
+
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             if (!reader.Read()) return default;
@@ -42,12 +66,23 @@ public static partial class Jaunty
 
     private static T QuerySingleCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
-        T? entity = QuerySingleOrDefaultCore<T>(connection, sql, parameters, options, mode);
+        T? entity = QueryFirstOrDefaultCore<T>(connection, sql, parameters, options, mode);
         return entity is null ? throw new InvalidOperationException("Sequence contains no elements") : entity;
     }
 
     private static T? QuerySingleOrDefaultCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
+        if (connection is DbConnection dbConnection)
+        {
+            return ExecuteReader(dbConnection, sql, parameters, options, reader =>
+            {
+                if (!reader.Read()) return default;
+                var map = DrDispatcher.Resolve(reader, options, mode);
+                T entity = map(reader);
+                return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : entity;
+            });
+        }
+
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             if (!reader.Read()) return default;
@@ -72,6 +107,46 @@ public static partial class Jaunty
     }
 
     private static IEnumerable<T> QueryStreamCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
+    {
+        if (connection is DbConnection dbConnection)
+        {
+            foreach (var item in QueryStreamCoreFast<T>(dbConnection, sql, parameters, options, mode))
+                yield return item;
+            yield break;
+        }
+
+        var wasClosed = connection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (wasClosed) connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = sql;
+
+            if (options.Transaction is DbTransaction dbTransaction)
+                command.Transaction = dbTransaction;
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            using var reader = command.ExecuteReader();
+            var map = DrDispatcher.Resolve(reader, options, mode);
+
+            while (reader.Read())
+                yield return map(reader);
+        }
+        finally
+        {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
+        }
+    }
+
+    private static IEnumerable<T> QueryStreamCoreFast<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         var wasClosed = connection.State == ConnectionState.Closed;
 
@@ -108,6 +183,33 @@ public static partial class Jaunty
 
     private static List<(T1, T2)> QueryMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
+        if (connection is DbConnection dbConnection)
+        {
+            return ExecuteReader(dbConnection, sql, parameters, options, reader =>
+            {
+                var results = new List<(T1, T2)>();
+
+                if (!reader.Read())
+                    return results;
+
+                var mapping = MultiEntityMapper<T1, T2>.Build(reader);
+
+                do
+                {
+                    var t1 = new T1();
+                    var t2 = new T2();
+
+                    mapping.ApplyT1(t1, reader);
+                    mapping.ApplyT2(t2, reader);
+
+                    results.Add((t1, t2));
+                }
+                while (reader.Read());
+
+                return results;
+            });
+        }
+
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             var results = new List<(T1, T2)>();
@@ -142,6 +244,25 @@ public static partial class Jaunty
 
     private static (T1, T2)? QueryFirstOrDefaultMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
+        if (connection is DbConnection dbConnection)
+        {
+            return ExecuteReader(dbConnection, sql, parameters, options, reader =>
+            {
+                if (!reader.Read())
+                    return ((T1, T2)?)null;
+
+                var mapping = MultiEntityMapper<T1, T2>.Build(reader);
+
+                var t1 = new T1();
+                var t2 = new T2();
+
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+
+                return (t1, t2);
+            });
+        }
+
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             if (!reader.Read())
@@ -167,6 +288,25 @@ public static partial class Jaunty
 
     private static (T1, T2)? QuerySingleOrDefaultMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
+        if (connection is DbConnection dbConnection)
+        {
+            return ExecuteReader(dbConnection, sql, parameters, options, reader =>
+            {
+                if (!reader.Read())
+                    return ((T1, T2)?)null;
+
+                var mapping = MultiEntityMapper<T1, T2>.Build(reader);
+
+                var t1 = new T1();
+                var t2 = new T2();
+
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+
+                return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : ((T1, T2)?)(t1, t2);
+            });
+        }
+
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             if (!reader.Read())
@@ -185,6 +325,59 @@ public static partial class Jaunty
     }
 
     private static IEnumerable<(T1, T2)> QueryStreamMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
+    {
+        if (connection is DbConnection dbConnection)
+        {
+            foreach (var item in QueryStreamMultiEntityCoreFast<T1, T2>(dbConnection, sql, parameters, options, mode))
+                yield return item;
+            yield break;
+        }
+
+        var wasClosed = connection.State == ConnectionState.Closed;
+
+        try
+        {
+            if (wasClosed) connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = sql;
+
+            if (options.Transaction is DbTransaction dbTransaction)
+                command.Transaction = dbTransaction;
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            using var reader = command.ExecuteReader();
+
+            if (!reader.Read())
+                yield break;
+
+            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+
+                yield return (t1, t2);
+            }
+            while (reader.Read());
+        }
+        finally
+        {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
+        }
+    }
+
+    private static IEnumerable<(T1, T2)> QueryStreamMultiEntityCoreFast<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
         var wasClosed = connection.State == ConnectionState.Closed;
 

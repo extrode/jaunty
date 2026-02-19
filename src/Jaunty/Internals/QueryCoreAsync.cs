@@ -16,15 +16,15 @@ public static partial class Jaunty
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
             var list = new List<T>();
-            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
-
             if (reader is DbDataReader dbReader)
             {
+                var map = DrDispatcher.Resolve(dbReader, options, mode);
                 while (await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    list.Add(map(reader));
+                    list.Add(map(dbReader));
             }
             else
             {
+                var map = DrDispatcher.Resolve(reader, options, mode);
                 while (reader.Read())
                 {
                     ct.ThrowIfCancellationRequested();
@@ -49,12 +49,12 @@ public static partial class Jaunty
             {
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
                     return default;
-                Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
-                return map(reader);
+                var map = DrDispatcher.Resolve(dbReader, options, mode);
+                return map(dbReader);
             }
-            // Fallback for non-DbDataReader
+            
             if (!reader.Read()) return default;
-            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
+            var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             return mapFallback(reader);
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -74,15 +74,15 @@ public static partial class Jaunty
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
                     return default;
 
-                Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
-                T? entity = map(reader);
+                var map = DrDispatcher.Resolve(dbReader, options, mode);
+                T? entity = map(dbReader);
                 return await dbReader.ReadAsync(ct).ConfigureAwait(false)
                     ? throw new InvalidOperationException("Sequence contains more than one element")
                     : entity;
             }
-            // Fallback for non-DbDataReader
+            
             if (!reader.Read()) return default;
-            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
+            var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             T? entityFallback = mapFallback(reader);
             return reader.Read()
                 ? throw new InvalidOperationException("Sequence contains more than one element")
@@ -100,7 +100,6 @@ public static partial class Jaunty
                     : await dbReader.GetFieldValueAsync<T>(0, ct).ConfigureAwait(false);
             }
 
-            // Fallback for non-DbDataReader
             if (!reader.Read() || reader.IsDBNull(0)) return default!;
             var obj = reader.GetValue(0);
             return (T)Convert.ChangeType(obj, typeof(T));
@@ -183,11 +182,14 @@ public static partial class Jaunty
         }
         finally
         {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+            {
 #if NET8_0_OR_GREATER
                 await connection.CloseAsync().ConfigureAwait(false);
 #else
                 connection.Close();
 #endif
+            }
         }
 
         return results;
@@ -202,22 +204,44 @@ public static partial class Jaunty
         {
             var results = new List<(T1, T2)>();
 
-            if (!await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
-                return results;
-
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
-
-            do
+            if (reader is DbDataReader dbReader)
             {
-                var t1 = new T1();
-                var t2 = new T2();
+                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                    return results;
 
-                mapping.ApplyT1(t1, reader);
-                mapping.ApplyT2(t2, reader);
+                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
 
-                results.Add((t1, t2));
+                do
+                {
+                    var t1 = new T1();
+                    var t2 = new T2();
+
+                    mapping.ApplyT1(t1, dbReader);
+                    mapping.ApplyT2(t2, dbReader);
+
+                    results.Add((t1, t2));
+                }
+                while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
             }
-            while (await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false));
+            else
+            {
+                if (!reader.Read())
+                    return results;
+
+                var mapping = MultiEntityMapper<T1, T2>.Build(reader);
+
+                do
+                {
+                    var t1 = new T1();
+                    var t2 = new T2();
+
+                    mapping.ApplyT1(t1, reader);
+                    mapping.ApplyT2(t2, reader);
+
+                    results.Add((t1, t2));
+                }
+                while (reader.Read());
+            }
 
             return results;
         }, cancellationToken).ConfigureAwait(false);
@@ -233,18 +257,34 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            if (!await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
+            if (reader is DbDataReader dbReader)
+            {
+                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                    return ((T1, T2)?)null;
+
+                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
+
+                var t1 = new T1();
+                var t2 = new T2();
+
+                mapping.ApplyT1(t1, dbReader);
+                mapping.ApplyT2(t2, dbReader);
+
+                return (t1, t2);
+            }
+            
+            if (!reader.Read())
                 return ((T1, T2)?)null;
 
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
+            var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
 
-            var t1 = new T1();
-            var t2 = new T2();
+            var t1Fallback = new T1();
+            var t2Fallback = new T2();
 
-            mapping.ApplyT1(t1, reader);
-            mapping.ApplyT2(t2, reader);
+            mappingFallback.ApplyT1(t1Fallback, reader);
+            mappingFallback.ApplyT2(t2Fallback, reader);
 
-            return (t1, t2);
+            return (t1Fallback, t2Fallback);
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -258,21 +298,40 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            if (!await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
+            if (reader is DbDataReader dbReader)
+            {
+                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                    return ((T1, T2)?)null;
+
+                var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
+
+                var t1 = new T1();
+                var t2 = new T2();
+
+                mapping.ApplyT1(t1, dbReader);
+                mapping.ApplyT2(t2, dbReader);
+
+                if (await dbReader.ReadAsync(ct).ConfigureAwait(false))
+                    throw new InvalidOperationException("Sequence contains more than one element");
+
+                return (t1, t2);
+            }
+            
+            if (!reader.Read())
                 return ((T1, T2)?)null;
 
-            var mapping = MultiEntityMapper<T1, T2>.Build(reader);
+            var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
 
-            var t1 = new T1();
-            var t2 = new T2();
+            var t1Fallback = new T1();
+            var t2Fallback = new T2();
 
-            mapping.ApplyT1(t1, reader);
-            mapping.ApplyT2(t2, reader);
+            mappingFallback.ApplyT1(t1Fallback, reader);
+            mappingFallback.ApplyT2(t2Fallback, reader);
 
-            if (await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
+            if (reader.Read())
                 throw new InvalidOperationException("Sequence contains more than one element");
 
-            return (t1, t2);
+            return (t1Fallback, t2Fallback);
         }, cancellationToken).ConfigureAwait(false);
     }
 
