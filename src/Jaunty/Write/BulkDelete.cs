@@ -4,6 +4,7 @@ using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Write;
 
 namespace Jaunty;
 
@@ -249,9 +250,12 @@ public static partial class Jaunty
 
                 PrepareDeleteParameters(command, cached.Metadata);
 
+                var valueSetter = WriteParameterCache<T>.DeleteValueSetter;
+                var pCollection = command.Parameters;
+
                 foreach (var entity in entityList)
                 {
-                    SetDeleteParameterValues(command, entity, cached.Metadata);
+                    valueSetter(pCollection, entity);
                     totalDeleted += command.ExecuteNonQuery();
                 }
 
@@ -295,31 +299,6 @@ public static partial class Jaunty
 
             if (wasClosed && connection.State != ConnectionState.Closed)
                 connection.Close();
-        }
-    }
-
-    private static void PrepareDeleteParameters(IDbCommand command, EntityMetadata metadata)
-    {
-        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
-
-        for (int i = 0; i < primaryKeys.Count; i++)
-        {
-            ColumnMetadata key = primaryKeys[i];
-            IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + key.Property.Name;
-            command.Parameters.Add(param);
-        }
-    }
-
-    private static void SetDeleteParameterValues<T>(IDbCommand command, T entity, EntityMetadata metadata) where T : class
-    {
-        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
-
-        for (int i = 0; i < primaryKeys.Count; i++)
-        {
-            ColumnMetadata key = primaryKeys[i];
-            var param = (IDbDataParameter)command.Parameters[i]!;
-            param.Value = key.Property.GetValue(entity) ?? DBNull.Value;
         }
     }
 }

@@ -5,6 +5,7 @@ using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Write;
 
 namespace Jaunty;
 
@@ -12,13 +13,45 @@ public static partial class Jaunty
 {
     /// <summary>
     /// Asynchronously updates multiple entities in the database in a single transaction.
-    /// Foreign key constraints are enforced.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to update.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows updated.</returns>
+    /// <typeparam name="T">The entity type to update. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk update against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to update. Each entity's primary key is used to identify the row to update.</param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows updated.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method performs a bulk update operation within a transaction. All entities are updated 
+    /// atomically - if any update fails, the entire operation is rolled back.
+    /// </para>
+    /// <para>
+    /// <strong>Foreign key constraints are enforced.</strong>
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// public class Product
+    /// {
+    ///     public int Id { get; set; }
+    ///     public string Name { get; set; }
+    ///     public decimal Price { get; set; }
+    /// }
+    /// 
+    /// // Async bulk update multiple products
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1, Name = "Widget Pro", Price = 24.99m },
+    ///     new Product { Id = 2, Name = "Gadget Plus", Price = 34.99m }
+    /// };
+    /// 
+    /// int updated = await connection.BulkUpdateAsync(products);
+    /// Console.WriteLine($"Updated {updated} products");
+    /// </code>
+    /// </example>
+    /// <seealso cref="BulkUpdateAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
+    /// <seealso cref="BulkUpdate{T}(IDbConnection, IEnumerable{T})"/>
     public static Task<int> BulkUpdateAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
@@ -28,14 +61,42 @@ public static partial class Jaunty
 
     /// <summary>
     /// Asynchronously updates multiple entities in the database in a single transaction with command options.
-    /// Foreign key constraints are enforced.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to update.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows updated.</returns>
+    /// <typeparam name="T">The entity type to update. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk update against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to update.</param>
+    /// <param name="options">
+    /// Command options for configuring the bulk update execution. Use 
+    /// <see cref="CommandOptions{T}.WithTransaction(IDbTransaction)"/> for transactions or
+    /// <see cref="CommandOptions{T}.WithTimeout(int)"/> for command timeout.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows updated.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Foreign key constraints are enforced.</strong>
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Async bulk update with transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1, Name = "Widget Pro", Price = 24.99m },
+    ///     new Product { Id = 2, Name = "Gadget Plus", Price = 34.99m }
+    /// };
+    /// 
+    /// int updated = await connection.BulkUpdateAsync(
+    ///     products, 
+    ///     CommandOptions.WithTransaction(tx));
+    /// tx.Commit();
+    /// </code>
+    /// </example>
+    /// <seealso cref="CommandOptions{T}"/>
+    /// <seealso cref="BulkUpdateAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static Task<int> BulkUpdateAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
@@ -45,15 +106,37 @@ public static partial class Jaunty
 
     /// <summary>
     /// Asynchronously updates multiple entities in the database, bypassing foreign key constraint checks.
-    /// WARNING: This temporarily disables referential integrity. Use only for migrations,
-    /// data corrections, or scenarios where you explicitly don't need FK validation.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to update.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows updated.</returns>
-    /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
+    /// <typeparam name="T">The entity type to update. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk update against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to update.</param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows updated.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use only for migrations,
+    /// data corrections, or scenarios where you explicitly don't need FK validation.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Async bulk update without FK checks
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1, Name = "Widget", CategoryId = 999 },
+    ///     new Product { Id = 2, Name = "Gadget", CategoryId = 999 }
+    /// };
+    /// 
+    /// int updated = await connection.BulkUpdateIgnoreConstraintsAsync(products);
+    /// </code>
+    /// </example>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling (e.g., SQL Server).
+    /// </exception>
+    /// <seealso cref="BulkUpdateIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
+    /// <seealso cref="BulkUpdateAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static Task<int> BulkUpdateIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
@@ -62,17 +145,44 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Asynchronously updates multiple entities in the database, bypassing foreign key constraint checks.
-    /// WARNING: This temporarily disables referential integrity. Use only for migrations,
-    /// data corrections, or scenarios where you explicitly don't need FK validation.
+    /// Asynchronously updates multiple entities in the database, bypassing foreign key constraint checks, with command options.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
-    /// <param name="entities">The entities to update.</param>
-    /// <param name="options">Command options (transaction, timeout).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The number of rows updated.</returns>
-    /// <exception cref="NotSupportedException">Thrown if the database doesn't support FK toggling (e.g., SQL Server).</exception>
+    /// <typeparam name="T">The entity type to update. Must be a class with a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the bulk update against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="entities">The collection of entities to update.</param>
+    /// <param name="options">
+    /// Command options for configuring the bulk update execution.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the number of rows updated.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use with caution.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Async bulk update without FK checks with transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var products = new List&lt;Product&gt;
+    /// {
+    ///     new Product { Id = 1, Name = "Widget", CategoryId = 999 },
+    ///     new Product { Id = 2, Name = "Gadget", CategoryId = 999 }
+    /// };
+    /// 
+    /// int updated = await connection.BulkUpdateIgnoreConstraintsAsync(
+    ///     products, 
+    ///     CommandOptions.WithTransaction(tx));
+    /// tx.Commit();
+    /// </code>
+    /// </example>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling.
+    /// </exception>
+    /// <seealso cref="BulkUpdateIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
+    /// <seealso cref="CommandOptions{T}"/>
     public static Task<int> BulkUpdateIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
         return connection is not DbConnection dbConnection
@@ -123,7 +233,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 #else
-                transaction = connection.BeginTransaction();
+                transaction = (DbTransaction)connection.BeginTransaction();
 #endif
             }
 
@@ -156,10 +266,13 @@ public static partial class Jaunty
 
                 PrepareUpdateParameters(command, cached.Metadata);
 
+                var valueSetter = WriteParameterCache<T>.UpdateValueSetter;
+                var pCollection = command.Parameters;
+
                 foreach (var entity in entityList)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    SetUpdateParameterValues(command, entity, cached.Metadata);
+                    valueSetter(pCollection, entity);
                     totalUpdated += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                 }
 
