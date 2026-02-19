@@ -59,10 +59,10 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | `BulkUpdateAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `BulkDelete.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `BulkDeleteAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
-| `Upsert.cs` | 2 overloads | no | TODO |
-| `UpsertAsync.cs` | 2 overloads | no | TODO |
+| `Upsert.cs` | 2 overloads | yes | Complete with examples, remarks, exceptions |
+| `UpsertAsync.cs` | 2 overloads | yes | Complete with examples, remarks, exceptions |
 
-**Progress**: 44/46 methods (96%)
+**Progress**: 46/46 methods (100%)
 
 ---
 
@@ -159,7 +159,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Category | Documented | Total | Percentage |
 |----------|------------|-------|------------|
 | Query Methods | 140 | 156 | 90% |
-| Write Methods | 44 | 46 | 96% |
+| Write Methods | 46 | 46 | 100% |
 | Multiple Result Sets | 14 | 14 | 100% |
 | Streaming | 0 | 24 | 0% |
 | Stored Procedures | 0 | 16 | 0% |
@@ -167,7 +167,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Core Types | 0 | 2 | 0% |
 | Configuration | 0 | 1 | 0% |
 | Interfaces | 0 | 2 | 0% |
-| **TOTAL** | **198** | **267** | **74%** |
+| **TOTAL** | **200** | **267** | **75%** |
 
 ---
 
@@ -190,8 +190,8 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 15. **DONE**: `QueryMultiEntity<T1, T2>()` - Multi-entity mapping (sync and async)
 16. **DONE**: Async Write operations (Insert, Update, Delete)
 17. **DONE**: `Bulk*` operations - Bulk operations (Insert, Update, Delete - sync and async)
-18. **NEXT**: `Upsert<T>()` - Upsert operations
-19. **LATER**: Streaming methods - Advanced scenarios
+18. **DONE**: `Upsert<T>()` - Upsert operations (sync and async)
+19. **NEXT**: Streaming methods - Advanced scenarios
 20. **LATER**: Stored procedures - Specialized use cases
 21. **LATER**: Attributes, Core types, Interfaces, Configuration - Reference documentation
 
