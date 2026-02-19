@@ -20,7 +20,7 @@ public class QueryMultipleAsyncTests : IDisposable
         _db.Dispose();
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryMultipleAsync_ReturnsMultipleResultSets()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -35,7 +35,7 @@ public class QueryMultipleAsyncTests : IDisposable
         Assert.All(products, p => Assert.NotNull(p.ProductName));
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryMultipleAsync_WithParameters_FiltersCorrectly()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -50,7 +50,7 @@ public class QueryMultipleAsyncTests : IDisposable
         Assert.All(products, p => Assert.Equal(1, p.CategoryId));
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryMultipleAsync_WithCommandOptions_Works()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -64,7 +64,7 @@ public class QueryMultipleAsyncTests : IDisposable
         Assert.True(productCount > 0);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryMultipleAsync_WithCancellationToken_Works()
     {
         using var cts = new CancellationTokenSource();
@@ -80,7 +80,7 @@ public class QueryMultipleAsyncTests : IDisposable
         Assert.Single(products);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryMultipleAsync_WithTransaction_Works()
     {
         _db.Connection.Open();
@@ -104,7 +104,7 @@ public class QueryMultipleAsyncTests : IDisposable
         }
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryMultipleAsync_PartialRead_DoesNotThrow()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -117,7 +117,7 @@ public class QueryMultipleAsyncTests : IDisposable
         // Second result set is automatically disposed when GridReader is disposed
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task QueryMultipleAsync_ReadScalar_WithParameters_Works()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(

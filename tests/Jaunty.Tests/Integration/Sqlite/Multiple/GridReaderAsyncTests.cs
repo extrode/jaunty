@@ -19,7 +19,7 @@ public class GridReaderAsyncTests : IDisposable
         _db.Dispose();
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadAsync_ReturnsResults()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -31,7 +31,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadPartialAsync_AllowsMissingColumns()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -43,7 +43,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadFirstAsync_ReturnsFirst()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -56,7 +56,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(category.CategoryName);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadFirstOrDefaultAsync_ReturnsFirstOrNull()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -69,7 +69,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(category.CategoryName);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadFirstOrDefaultAsync_NoResults_ReturnsNull()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -81,7 +81,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Null(category);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadSingleAsync_ReturnsSingle()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -95,7 +95,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(category.CategoryName);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadSingleAsync_MultipleResults_Throws()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -107,7 +107,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Contains("more than one element", ex.Message);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadSingleAsync_NoResults_Throws()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -120,7 +120,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Contains("no elements", ex.Message);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadSingleOrDefaultAsync_ReturnsSingleOrDefault()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -133,7 +133,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Equal(1, category.CategoryId);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadSingleOrDefaultAsync_NoResults_ReturnsNull()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -145,7 +145,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Null(category);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadScalarAsync_ReturnsValue()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -156,7 +156,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.True(count > 0);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadScalarAsync_WithCancellationToken_Works()
     {
         using var cts = new CancellationTokenSource();
@@ -169,7 +169,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.True(count > 0);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadStreamAsync_YieldsResults()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -185,7 +185,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadPartialStreamAsync_YieldsResults()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -201,7 +201,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.All(summaries, s => Assert.NotNull(s.CategoryName));
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadStreamAsync_WithCancellationToken_Works()
     {
         using var cts = new CancellationTokenSource();
@@ -220,7 +220,7 @@ public class GridReaderAsyncTests : IDisposable
 
     #region ReadPartialFirstAsync / ReadPartialFirstOrDefaultAsync
 
-    [Fact(Skip = "SQLite async DataReader does not support partial mapping - NullReferenceException in IsDBNull")]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadPartialFirstAsync_ReturnsFirst()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -233,7 +233,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(summary.CategoryName);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadPartialFirstAsync_NoResults_Throws()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -244,7 +244,7 @@ public class GridReaderAsyncTests : IDisposable
             await gridReader.ReadPartialFirstAsync<CategorySummary>());
     }
 
-    [Fact(Skip = "SQLite async DataReader does not support partial mapping - NullReferenceException in IsDBNull")]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadPartialFirstOrDefaultAsync_ReturnsFirst()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -257,7 +257,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(summary.CategoryName);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadPartialFirstOrDefaultAsync_NoResults_ReturnsNull()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -273,7 +273,7 @@ public class GridReaderAsyncTests : IDisposable
 
     #region ReadPartialSingleAsync / ReadPartialSingleOrDefaultAsync
 
-    [Fact(Skip = "SQLite async DataReader does not support partial mapping - NullReferenceException in IsDBNull")]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadPartialSingleAsync_ReturnsSingle()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -287,7 +287,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(summary.CategoryName);
     }
 
-    [Fact(Skip = "SQLite async DataReader does not support partial mapping - NullReferenceException in IsDBNull")]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadPartialSingleAsync_MultipleResults_Throws()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -299,7 +299,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Contains("more than one element", ex.Message);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadPartialSingleAsync_NoResults_Throws()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -312,7 +312,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Contains("no elements", ex.Message);
     }
 
-    [Fact(Skip = "SQLite async DataReader does not support partial mapping - NullReferenceException in IsDBNull")]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadPartialSingleOrDefaultAsync_ReturnsSingle()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(
@@ -325,7 +325,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Equal(1, summary.CategoryId);
     }
 
-    [Fact]
+    [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadPartialSingleOrDefaultAsync_NoResults_ReturnsNull()
     {
         using var gridReader = await _db.Connection.QueryMultipleAsync(

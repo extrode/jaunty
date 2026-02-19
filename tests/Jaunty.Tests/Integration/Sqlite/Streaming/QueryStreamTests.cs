@@ -72,7 +72,7 @@ public class QueryStreamTests : IDisposable
     [Fact]
     public void QueryStream_PartialMapping_YieldsResults()
     {
-        var summaries = _db.Connection.QueryStream<ProductSummary>(
+        var summaries = _db.Connection.QueryPartialStream<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 5");
 
         var list = summaries.ToList();

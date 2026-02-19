@@ -112,7 +112,7 @@ public class QueryStreamAsyncTests : IDisposable
     [Fact]
     public async Task QueryStreamAsync_PartialMapping_YieldsResults()
     {
-        var summaries = _db.Connection.QueryStreamAsync<ProductSummary>(
+        var summaries = _db.Connection.QueryPartialStreamAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 5");
 
         var list = new List<ProductSummary>();

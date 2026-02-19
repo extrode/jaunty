@@ -48,13 +48,14 @@ public class QueryMappingModeTests : IDisposable
     }
 
     [Fact]
-    public void Query_ExtraColumnsInResult_Ignored()
+    public void Query_ExactColumnMatch_Succeeds()
     {
-        // Query returns extra column not in entity - should be ignored
+        // Strict mode requires exact match: all entity properties present, no unmapped columns
         var summaries = _db.Connection.Query<ProductSummary>(
-            "SELECT product_id AS ProductId, product_name AS ProductName FROM products");
+            "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products");
 
         Assert.NotEmpty(summaries);
+        Assert.All(summaries, s => Assert.True(s.ProductId > 0));
     }
 
     #endregion

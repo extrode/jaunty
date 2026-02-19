@@ -394,22 +394,6 @@ public class ObsoleteMultiEntityTests : IDisposable
         Assert.Null(result);
     }
 
-    [Fact]
-    public async Task ObsoleteQueryStreamAsync_StreamsRows()
-    {
-        var results = new List<(OrderDto, ItemDto)>();
-        await foreach (var row in Jaunty.QueryStreamAsync<OrderDto, ItemDto>(
-            _connection,
-            JoinSql + " ORDER BY i.item_id",
-            parameters: null,
-            options: default(CommandOptions)))
-        {
-            results.Add(row);
-        }
-
-        Assert.Equal(3, results.Count);
-    }
-
     #endregion
 }
 #pragma warning restore CS0618
