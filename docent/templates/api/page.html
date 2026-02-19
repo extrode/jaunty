@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="{{ description }}">
+  <title>{{ title }} - {{ siteName }}</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Theme -->
+  <link rel="stylesheet" href="{{ themePath }}">
+  
+  <!-- Core Styles -->
+  <link rel="stylesheet" href="../src/core/styles.css">
+</head>
+<body>
+  <!-- Skip Link -->
+  <a href="#main-content" class="skip-link">Skip to content</a>
+  
+  <!-- Sidebar -->
+  <aside class="sidebar" role="navigation" aria-label="Documentation navigation">
+    <a href="/" class="sidebar-brand" aria-label="{{ siteName }} Home">{{ siteName }}</a>
+    
+    <nav>
+      {{#each navSections}}
+      <div class="nav-section">
+        <div class="nav-section-title">{{ title }}</div>
+        <ul class="nav-list">
+          {{#each items}}
+          <li class="nav-item">
+            <a href="{{ href }}" class="nav-link{{#if active}} active{{/if}}"{{#if active}} aria-current="page"{{/if}}>{{ label }}</a>
+            {{#if children}}
+            <ul class="nav-sublist">
+              {{#each children}}
+              <li class="nav-item">
+                <a href="{{ href }}" class="nav-link{{#if active}} active{{/if}}">{{ label }}</a>
+              </li>
+              {{/each}}
+            </ul>
+            {{/if}}
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+      {{/each}}
+    </nav>
+  </aside>
+  
+  <!-- Main Content -->
+  <main class="main" id="main-content">
+    <article class="content">
+      {{> content }}
+    </article>
+  </main>
+</body>
+</html>
