@@ -81,14 +81,14 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 
 | File | Methods | Status | Notes |
 |------|---------|--------|-------|
-| `QueryStream.cs` | 4 overloads | no | TODO |
-| `QueryStreamAsync.cs` | 4 overloads | no | TODO |
-| `QueryPartialStream.cs` | 4 overloads | no | TODO |
-| `QueryPartialStreamAsync.cs` | 4 overloads | no | TODO |
-| `QueryPartialUnbuffered.cs` | 4 overloads | no | TODO |
-| `QueryPartialUnbufferedAsync.cs` | 4 overloads | no | TODO |
+| `QueryStream.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
+| `QueryStreamAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
+| `QueryPartialStream.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
+| `QueryPartialStreamAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
+| `QueryPartialUnbuffered.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
+| `QueryPartialUnbufferedAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 
-**Progress**: 0/24 methods (0%)
+**Progress**: 24/24 methods (100%)
 
 ---
 
@@ -161,13 +161,13 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Query Methods | 140 | 156 | 90% |
 | Write Methods | 46 | 46 | 100% |
 | Multiple Result Sets | 14 | 14 | 100% |
-| Streaming | 0 | 24 | 0% |
+| Streaming | 24 | 24 | 100% |
 | Stored Procedures | 0 | 16 | 0% |
 | Attributes | 0 | 6 | 0% |
 | Core Types | 0 | 2 | 0% |
 | Configuration | 0 | 1 | 0% |
 | Interfaces | 0 | 2 | 0% |
-| **TOTAL** | **200** | **267** | **75%** |
+| **TOTAL** | **224** | **267** | **84%** |
 
 ---
 
@@ -191,8 +191,8 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 16. **DONE**: Async Write operations (Insert, Update, Delete)
 17. **DONE**: `Bulk*` operations - Bulk operations (Insert, Update, Delete - sync and async)
 18. **DONE**: `Upsert<T>()` - Upsert operations (sync and async)
-19. **NEXT**: Streaming methods - Advanced scenarios
-20. **LATER**: Stored procedures - Specialized use cases
+19. **DONE**: Streaming methods - All streaming variants (100% complete)
+20. **NEXT**: Stored procedures - Specialized use cases
 21. **LATER**: Attributes, Core types, Interfaces, Configuration - Reference documentation
 
 ---
