@@ -46,7 +46,7 @@ body {
 
 /* Sidebar Navigation */
 .sidebar {
-  background: var(--docent-bg-alt);
+  background: var(--docent-bg);
   border-right: 1px solid var(--docent-border);
   padding: var(--docent-spacing-lg);
   position: sticky;
@@ -181,6 +181,7 @@ pre {
   font-size: var(--docent-font-size-sm);
   line-height: var(--docent-line-height-base);
   box-shadow: var(--docent-shadow-sm);
+  border: 1px solid var(--docent-border);
 }
 
 pre code {
@@ -276,8 +277,9 @@ tr:hover { background: var(--docent-bg-alt); }
 
 .admonition-title {
   font-weight: 600;
-  margin-bottom: 0.5rem;
-  font-size: var(--docent-font-size-sm);
+  margin-bottom: 0.75rem;
+  font-size: var(--docent-font-size-lg);
+  color: inherit;
 }
 
 .admonition p { margin: 0; }

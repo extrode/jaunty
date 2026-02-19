@@ -55,8 +55,17 @@ A calming light green theme perfect for technical documentation.
 ### Sepia  
 A warm, paper-like theme that's easy on the eyes for long reading sessions.
 
+### Ocean
+A cool blue theme inspired by the sea. Great for a modern, tech feel.
+
+### Forest
+A natural green theme that's easy on the eyes. Perfect for eco-friendly projects.
+
+### Lavender
+A soft purple theme inspired by flowers. Elegant and distinctive.
+
 ### Dark Mode
-Both themes support dark mode with **dual activation methods**:
+All themes support dark mode with **dual activation methods**:
 
 **Manual Toggle** (for theme switchers):
 ```html
