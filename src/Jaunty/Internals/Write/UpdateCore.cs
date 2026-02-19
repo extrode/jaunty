@@ -4,6 +4,7 @@ using System.Data.Common;
 using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Write;
 
 namespace Jaunty;
 
@@ -43,7 +44,9 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            BindUpdateParameters(command, entity, cached.Metadata);
+            // Bind parameters from entity properties using compiled delegate
+            WriteParameterCache<T>.UpdateBinder(command, entity);
+            
             return command.ExecuteNonQuery();
         }
         finally
@@ -91,7 +94,8 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            BindUpdateParameters(command, entity, cached.Metadata);
+            // Bind parameters from entity properties using compiled delegate
+            WriteParameterCache<T>.UpdateBinder(command, entity);
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -107,35 +111,5 @@ public static partial class Jaunty
             }
         }
     }
-
-    private static void BindUpdateParameters<T>(IDbCommand command, T entity, EntityMetadata metadata) where T : class
-    {
-        IReadOnlyList<ColumnMetadata> allColumns = metadata.Columns;
-        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
-
-        // Bind SET clause parameters (non-key, non-identity, non-computed)
-        for (int i = 0; i < allColumns.Count; i++)
-        {
-            ColumnMetadata col = allColumns[i];
-
-            if (col.IsPrimaryKey || col.IsIdentity || col.IsComputed)
-                continue;
-
-            IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + col.Property.Name;
-            param.Value = col.Property.GetValue(entity) ?? DBNull.Value;
-            command.Parameters.Add(param);
-        }
-
-        // Bind WHERE clause parameters (primary keys)
-        for (int i = 0; i < primaryKeys.Count; i++)
-        {
-            ColumnMetadata key = primaryKeys[i];
-
-            IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + key.Property.Name;
-            param.Value = key.Property.GetValue(entity) ?? DBNull.Value;
-            command.Parameters.Add(param);
-        }
-    }
 }
+
