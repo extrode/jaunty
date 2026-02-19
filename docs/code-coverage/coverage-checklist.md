@@ -2,7 +2,7 @@
 
 **Target**: 100% Code Coverage
 **Created**: 2026-02-19
-**Last Updated**: 2026-02-19 (High + medium priority tests added)
+**Last Updated**: 2026-02-19 (High + medium priority + internal unit tests added)
 
 This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each item includes the class/method and its test status.
 
@@ -499,10 +499,24 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 | Feature | Status | Test File | Notes |
 |---------|--------|-----------|-------|
-| `Build<T>()` | - | — | Tested only via integration tests (Query, Insert, etc.) |
-| Column name resolution | - | ConfigResolverTests.cs | Via JauntyConfig integration |
-| Attribute reading | - | QueryAttributeMappingTests.cs | Via attribute mapping tests |
-| Dedicated unit tests | todo | — | No isolated unit tests |
+| `Build<T>()` | yes | MetadataBuilderTests.cs | 18 dedicated unit tests |
+| Table name from type name | yes | MetadataBuilderTests.cs | Default convention |
+| Table name from `[Table]` | yes | MetadataBuilderTests.cs | Attribute override |
+| Schema from `[Table]` | yes | MetadataBuilderTests.cs | Schema parameter |
+| Column name from `[Column]` | yes | MetadataBuilderTests.cs | Column attribute |
+| Column name default | yes | MetadataBuilderTests.cs | Uses property name |
+| `[Key]` attribute detection | yes | MetadataBuilderTests.cs | Key attribute |
+| `Id` convention key detection | yes | MetadataBuilderTests.cs | Convention-based |
+| `{Type}Id` convention key detection | yes | MetadataBuilderTests.cs | Convention-based |
+| Composite keys | yes | MetadataBuilderTests.cs | Multiple keys |
+| `[Ignore]` attribute | yes | MetadataBuilderTests.cs | Excluded from columns |
+| `[DatabaseGenerated(Identity)]` | yes | MetadataBuilderTests.cs | IsIdentity flag |
+| `[DatabaseGenerated(Computed)]` | yes | MetadataBuilderTests.cs | IsComputed flag |
+| NonIdentityColumns filtering | yes | MetadataBuilderTests.cs | Identity excluded |
+| NonPrimaryKeyColumns filtering | yes | MetadataBuilderTests.cs | Keys excluded |
+| Read-only properties excluded | yes | MetadataBuilderTests.cs | CanWrite check |
+| Indexer properties excluded | yes | MetadataBuilderTests.cs | GetIndexParameters check |
+| Abstract type throws | yes | MetadataBuilderTests.cs | InvalidOperationException |
 
 ### MetadataCache<T>
 
@@ -517,45 +531,54 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 | Feature | Status | Test File | Notes |
 |---------|--------|-----------|-------|
-| `Resolve<T>()` dispatcher | - | — | Tested via integration tests |
-| Dictionary mapper | yes | QueryDictionaryTests.cs | Via integration test |
+| `Resolve<T>()` dispatcher | yes | DrDispatcherTests.cs | 9 dedicated tests |
+| User override mapper (priority 1) | yes | DrDispatcherTests.cs | CommandOptions.Mapper takes priority |
+| Dictionary mapper (priority 2) | yes | DrDispatcherTests.cs + QueryDictionaryTests.cs | Special type resolution |
+| KeyValuePair mapper | yes | DrDispatcherTests.cs + QueryKeyValuePairTests.cs | Two-column mapping |
+| ValueTuple mapper | yes | DrDispatcherTests.cs + QueryValueTupleTests.cs | Positional mapping |
 | ExpandoObject mapper | yes | QueryDynamicTests.cs | Via integration test |
-| KeyValuePair mapper | yes | QueryKeyValuePairTests.cs | Via integration test |
-| ValueTuple mapper | yes | QueryValueTupleTests.cs | Via integration test |
-| IMapped<T> mapper resolution | - | — | Needs dedicated test |
-| Dedicated unit tests | todo | — | No isolated unit tests |
+| IMapped<T> mapper resolution | - | DrDispatcherTests.cs | Skipped — MappedCache open generic bug |
+| Metadata reflection fallback (priority 4) | yes | DrDispatcherTests.cs | Plain entity mapping |
+| KeyValuePair insufficient columns | yes | DrDispatcherTests.cs | Throws InvalidOperationException |
+| ValueTuple insufficient columns | yes | DrDispatcherTests.cs | Throws InvalidOperationException |
 
 ### MappedCache<T>
 
 | Feature | Status | Test File | Notes |
 |---------|--------|-----------|-------|
-| `Mapper` resolution | - | — | Tested indirectly via DrDispatcher |
-| `ResolveMapper()` | - | — | Tested indirectly |
-| Dedicated unit tests | todo | — | No isolated unit tests |
+| Plain entity returns null mapper | yes | MappedCacheTests.cs | Non-IMapped type |
+| IMapped entity mapper resolution | - | MappedCacheTests.cs | Skipped — `typeof(IMapped<>).IsAssignableFrom` returns false for open generics |
+| Mapper caching (same reference) | - | MappedCacheTests.cs | Skipped — depends on above bug fix |
 
 ### CrudSqlCache
 
 | Feature | Status | Test File | Notes |
 |---------|--------|-----------|-------|
-| `GetSql<T>()` | - | — | Tested via Insert/Update/Delete integration |
-| `BuildInsertSql` | - | — | Tested via BulkInsert integration |
-| `BuildUpdateSql` | - | — | Tested via BulkUpdate integration |
-| `BuildDeleteSql` | - | — | Tested via BulkDelete integration |
-| `BuildDeleteByIdSql` | todo | — | Not tested (Delete by ID not tested) |
-| `BuildUpsertSql` | - | — | Tested via Upsert integration |
-| Dedicated unit tests | todo | — | No isolated unit tests |
+| `GetSql<T>()` | yes | CrudSqlCacheTests.cs | 22 dedicated unit tests |
+| `BuildInsertSql` | yes | CrudSqlCacheTests.cs | Simple, identity, computed entities |
+| `BuildUpdateSql` | yes | CrudSqlCacheTests.cs | WHERE clause, key exclusion, composite keys |
+| `BuildDeleteSql` | yes | CrudSqlCacheTests.cs | DELETE with WHERE, no-key returns empty |
+| `BuildDeleteByIdSql` | yes | CrudSqlCacheTests.cs | Single key only, composite returns empty |
+| `BuildUpsertSql` | yes | CrudSqlCacheTests.cs | ON CONFLICT / DO UPDATE SET |
+| Identity column exclusion | yes | CrudSqlCacheTests.cs | Not in INSERT or UPDATE SET |
+| Computed column exclusion | yes | CrudSqlCacheTests.cs | Not in INSERT |
+| No-key entity (empty SQL) | yes | CrudSqlCacheTests.cs | Update/Delete return empty |
+| Caching (same instance) | yes | CrudSqlCacheTests.cs | Same type returns cached |
+| Caching (different types) | yes | CrudSqlCacheTests.cs | Different types differ |
+| HasPrimaryKey / HasSinglePrimaryKey | yes | CrudSqlCacheTests.cs | Metadata properties |
+| HasIdentityKey | yes | CrudSqlCacheTests.cs | Identity detection |
+| LastInsertIdSql | yes | CrudSqlCacheTests.cs | SQLite dialect |
 
 ### Dialects (ISqlDialect implementations)
 
 | Dialect | Status | Test File | Notes |
 |---------|--------|-----------|-------|
-| `ISqlDialect` interface | - | — | Tested indirectly via SQLite |
-| `SQLiteDialect` | - | — | Tested indirectly (all SQLite tests) |
-| `SqlServerDialect` | todo | — | Zero coverage, no SQL Server test infra |
-| `MySqlDialect` | todo | — | Zero coverage, no MySQL test infra |
-| `PostgreSqlDialect` | todo | — | Zero coverage, no PostgreSQL test infra |
-| `SqlDialectFactory.GetDialect()` | - | — | Only SQLite path tested |
-| Dedicated unit tests | todo | — | No isolated unit tests |
+| `SQLiteDialect` | yes | SqlDialectTests.cs | 24 tests: escaping, paging, FK, upsert, functions, window |
+| `SqlServerDialect` | yes | SqlDialectTests.cs | 17 tests: brackets, SCOPE_IDENTITY, MERGE, collations |
+| `MySqlDialect` | yes | SqlDialectTests.cs | 14 tests: backticks, LAST_INSERT_ID, ON DUPLICATE KEY |
+| `PostgreSqlDialect` | yes | SqlDialectTests.cs | 17 tests: double-quotes, RETURNING, ILIKE, EXTRACT |
+| Cross-dialect comparisons | yes | SqlDialectTests.cs | 5 tests: COALESCE, NULLIF, window funcs, FK toggle |
+| `SqlDialectFactory.GetDialect()` | - | — | Only SQLite path tested via integration |
 
 ### MultiEntityMapper
 
@@ -671,7 +694,7 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | Core/Config | 12 | 0 | 0 | 12 | 100% |
 | Attributes | 6 | 0 | 0 | 6 | 100% |
 | Interfaces | 2 | 1 | 0 | 3 | 67% |
-| Internals | 5 | 12 | 8 | 25 | 20% |
+| Internals | 70 | 9 | 3 | 82 | 85% |
 | Cross-cutting | 17 | 0 | 0 | 17 | 100% |
 | Fluent API | 19 | 0 | 0 | 19 | 100% |
 | Scaffolding | 6 | 0 | 0 | 6 | 100% |
@@ -691,15 +714,15 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 #### 2. Medium Priority (Partial Coverage)
 - [x] **GridReader** partial methods (ReadPartialFirst, ReadPartialSingle, etc.) - DONE
 - [x] **BulkInsertIgnoreConstraints** / BulkUpdateIgnoreConstraints / BulkDeleteIgnoreConstraints - DONE
-- [ ] **MetadataBuilder** dedicated unit tests
-- [ ] **MappedCache** dedicated unit tests
-- [ ] **CrudSqlCache** dedicated unit tests
-- [ ] **DrDispatcher** dedicated unit tests
+- [x] **MetadataBuilder** dedicated unit tests - DONE (18 tests)
+- [x] **MappedCache** dedicated unit tests - DONE (3 tests, 2 skipped due to open generic bug)
+- [x] **CrudSqlCache** dedicated unit tests - DONE (22 tests)
+- [x] **DrDispatcher** dedicated unit tests - DONE (9 tests, 1 skipped due to MappedCache bug)
 - [x] **IMapped<T>** interface coverage - DONE
 - [x] **[DatabaseGenerated]** attribute explicit tests - DONE
 
 #### 3. Lower Priority (Edge Cases / Non-SQLite)
-- [ ] SQL dialect unit tests (SqlServerDialect, MySqlDialect, PostgreSqlDialect)
+- [x] SQL dialect unit tests (SqlServerDialect, MySqlDialect, PostgreSqlDialect) - DONE (77 tests across 5 nested classes)
 - [ ] `[Obsolete]` multi-entity overloads
 - [x] **IEntity<T>** explicit interface coverage - DONE (via DeleteByEntityIdTests)
 - [ ] MetadataCache<T> dedicated unit tests
@@ -785,6 +808,11 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | CommandOptionsTests.cs | `tests/Jaunty.Tests/Unit/Read/` |
 | SqlParameterParserTests.cs | `tests/Jaunty.Tests/Unit/Read/` |
 | ParameterBinderTests.cs | `tests/Jaunty.Tests/Unit/Read/` |
+| MetadataBuilderTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
+| MappedCacheTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
+| CrudSqlCacheTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
+| DrDispatcherTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
+| SqlDialectTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
 
 ---
 
