@@ -1,6 +1,7 @@
 using System.Data.SQLite;
 
 using Jaunty;
+using Jaunty.Core;
 using Jaunty.Tests.Entities;
 
 namespace Jaunty.Tests.Integration.Sqlite.Write;
@@ -130,6 +131,23 @@ public class BulkOperationsAsyncTests : IDisposable
         Assert.Equal(2, GetRowCount());
     }
 
+    [Fact]
+    public async Task BulkInsertIgnoreConstraintsAsync_WithOptions_InsertsEntities()
+    {
+        var entities = new List<BulkTestEntity>
+        {
+            new() { Name = "Test1", Value = 100 },
+            new() { Name = "Test2", Value = 200 }
+        };
+
+        using var transaction = _connection.BeginTransaction();
+        int inserted = await _connection.BulkInsertIgnoreConstraintsAsync(entities, CommandOptions.WithTransaction(transaction));
+        transaction.Commit();
+
+        Assert.Equal(2, inserted);
+        Assert.Equal(2, GetRowCount());
+    }
+
     #endregion
 
     #region BulkUpdateAsync Tests
@@ -220,6 +238,33 @@ public class BulkOperationsAsyncTests : IDisposable
         Assert.Equal(2, updated);
     }
 
+    [Fact]
+    public async Task BulkUpdateIgnoreConstraintsAsync_WithOptions_UpdatesEntities()
+    {
+        var entities = new List<BulkTestEntity>
+        {
+            new() { Name = "Test1", Value = 100 },
+            new() { Name = "Test2", Value = 200 }
+        };
+        await _connection.BulkInsertAsync(entities);
+
+        var inserted = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+        foreach (var entity in inserted)
+        {
+            entity.Value *= 10;
+        }
+
+        using var transaction = _connection.BeginTransaction();
+        int updated = await _connection.BulkUpdateIgnoreConstraintsAsync(inserted, CommandOptions.WithTransaction(transaction));
+        transaction.Commit();
+
+        Assert.Equal(2, updated);
+
+        var results = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test ORDER BY id");
+        Assert.Equal(1000, results[0].Value);
+        Assert.Equal(2000, results[1].Value);
+    }
+
     #endregion
 
     #region BulkDeleteAsync Tests
@@ -305,6 +350,26 @@ public class BulkOperationsAsyncTests : IDisposable
         var toDelete = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
 
         int deleted = await _connection.BulkDeleteIgnoreConstraintsAsync(toDelete);
+
+        Assert.Equal(2, deleted);
+        Assert.Equal(0, GetRowCount());
+    }
+
+    [Fact]
+    public async Task BulkDeleteIgnoreConstraintsAsync_WithOptions_DeletesEntities()
+    {
+        var entities = new List<BulkTestEntity>
+        {
+            new() { Name = "Test1", Value = 100 },
+            new() { Name = "Test2", Value = 200 }
+        };
+        await _connection.BulkInsertAsync(entities);
+
+        var toDelete = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+
+        using var transaction = _connection.BeginTransaction();
+        int deleted = await _connection.BulkDeleteIgnoreConstraintsAsync(toDelete, CommandOptions.WithTransaction(transaction));
+        transaction.Commit();
 
         Assert.Equal(2, deleted);
         Assert.Equal(0, GetRowCount());
