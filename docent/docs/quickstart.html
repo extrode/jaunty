@@ -51,7 +51,7 @@
       </header>
 
       <aside class="admonition admonition--tip">
-        <p class="admonition-title"> Time: 5 minutes</p>
+        <h3 class="admonition-title"> Time: 5 minutes</h3>
         <p>This guide covers the essential Jaunty operations: Query, Insert, Update, and Delete.</p>
       </aside>
 
@@ -68,8 +68,7 @@
       <pre><code><span class="k">using</span> <span class="n">System</span>.<span class="n">Data</span>.<span class="n">SQLite</span>;
 <span class="k">using</span> <span class="n">Jaunty</span>;
 
-<span class="k">using</span> <span class="k">var</span> <span class="n">connection</span> = <span class="k">new</span> <span class="n">SQLiteConnection</span>(
-    <span class="s">"Data Source=products.db"</span>);
+<span class="k">using</span> <span class="k">var</span> <span class="n">connection</span> = <span class="k">new</span> <span class="n">SQLiteConnection</span>(<span class="s">"Data Source=products.db"</span>);
 <span class="n">connection</span>.<span class="n">Open</span>();</code></pre>
 
       <h2>Step 3: Query Data</h2>

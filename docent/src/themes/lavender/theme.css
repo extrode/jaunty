@@ -1,0 +1,100 @@
+/* ============================================
+   Docent - Lavender Theme
+   A soft purple color scheme inspired by flowers
+   
+   Dark mode: Add data-theme="dark" to <html>
+   ============================================ */
+
+:root {
+  /* Primary Colors - Lavender Purple Palette */
+  --docent-primary: #8b5cf6;
+  --docent-primary-light: #a78bfa;
+  --docent-primary-dark: #7c3aed;
+  --docent-primary-subtle: rgba(139, 92, 246, 0.08);
+  --docent-primary-muted: rgba(139, 92, 246, 0.15);
+  
+  /* Secondary/Accent Colors */
+  --docent-accent: #faf5ff;
+  --docent-accent-dark: #f3e8ff;
+  
+  /* Text Colors */
+  --docent-text: #4c1d95;
+  --docent-text-secondary: #5b21b6;
+  --docent-text-tertiary: #a78bfa;
+  --docent-text-inverse: #FFFFFF;
+  
+  /* Background Colors */
+  --docent-bg: #fafaf9;
+  --docent-bg-alt: #f5f3ff;
+  --docent-bg-code: #4c1d95;
+  
+  /* Border Colors */
+  --docent-border: #ddd6fe;
+  --docent-border-light: #ede9fe;
+  
+  /* Code Colors */
+  --docent-code-keyword: #c084fc;
+  --docent-code-type: #f472b6;
+  --docent-code-string: #86efac;
+  --docent-code-comment: #a78bfa;
+  --docent-code-number: #fbbf24;
+  --docent-code-fg: #ede9fe;
+  --docent-code-function: #93c5fd;
+  
+  /* Status Colors */
+  --docent-success: #16a34a;
+  --docent-warning: #ca8a04;
+  --docent-error: #dc2626;
+  --docent-info: #8b5cf6;
+  
+  /* Admonition Colors */
+  --docent-admonition-note-bg: rgba(139, 92, 246, 0.08);
+  --docent-admonition-note-border: #8b5cf6;
+  --docent-admonition-note-text: #7c3aed;
+  
+  --docent-admonition-tip-bg: rgba(34, 197, 94, 0.1);
+  --docent-admonition-tip-border: #22c55e;
+  --docent-admonition-tip-text: #15803d;
+  
+  --docent-admonition-warning-bg: rgba(202, 138, 4, 0.1);
+  --docent-admonition-warning-border: #ca8a04;
+  --docent-admonition-warning-text: #a16207;
+  
+  --docent-admonition-error-bg: rgba(220, 38, 38, 0.1);
+  --docent-admonition-error-border: #dc2626;
+  --docent-admonition-error-text: #b91c1c;
+}
+
+/* Dark Mode - Lavender */
+[data-theme="dark"] {
+  --docent-bg: #4c1d95;
+  --docent-bg-alt: #5b21b6;
+  --docent-text: #ede9fe;
+  --docent-text-secondary: #ddd6fe;
+  --docent-text-tertiary: #a78bfa;
+  --docent-border: #5b21b6;
+  --docent-border-light: #4c1d95;
+  --docent-primary-subtle: rgba(139, 92, 246, 0.25);
+  --docent-bg-code: #2e1065;
+  --docent-code-fg: #ddd6fe;
+  --docent-admonition-note-bg: rgba(139, 92, 246, 0.25);
+  --docent-admonition-tip-bg: rgba(34, 197, 94, 0.2);
+}
+
+/* Auto-detect: @media (prefers-color-scheme: dark) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --docent-bg: #4c1d95;
+    --docent-bg-alt: #5b21b6;
+    --docent-text: #ede9fe;
+    --docent-text-secondary: #ddd6fe;
+    --docent-text-tertiary: #a78bfa;
+    --docent-border: #5b21b6;
+    --docent-border-light: #4c1d95;
+    --docent-primary-subtle: rgba(139, 92, 246, 0.25);
+    --docent-bg-code: #2e1065;
+    --docent-code-fg: #ddd6fe;
+    --docent-admonition-note-bg: rgba(139, 92, 246, 0.25);
+    --docent-admonition-tip-bg: rgba(34, 197, 94, 0.2);
+  }
+}
