@@ -2,6 +2,11 @@
    Docent - Sage Theme
    A calming light green color scheme
    
+   NOTE: This file ONLY defines color variables.
+   Layout-critical properties (spacing, font-sizes)
+   are defined in base/variables.css and should NOT
+   be overridden here to prevent layout shift.
+   
    Dark mode: Add data-theme="dark" to <html>
    ============================================ */
 

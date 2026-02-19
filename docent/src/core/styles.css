@@ -130,46 +130,58 @@ body {
 
 /* Typography */
 .page-header {
-  margin-bottom: var(--docent-spacing-xl);
-  padding-bottom: var(--docent-spacing-md);
+  margin-bottom: var(--docent-spacing-12);
+  padding-bottom: var(--docent-spacing-6);
   border-bottom: 1px solid var(--docent-border);
 }
 
 h1 {
-  font-size: var(--docent-font-size-3xl);
+  font-size: var(--docent-font-size-4xl);
   font-weight: 700;
-  margin: 0 0 var(--docent-spacing-xs) 0;
+  margin: 0 0 var(--docent-spacing-2) 0;
   letter-spacing: -0.02em;
   color: var(--docent-text);
+  line-height: var(--docent-line-height-tight);
 }
 
 .lead {
   font-size: var(--docent-font-size-lg);
   color: var(--docent-text-secondary);
   margin: 0;
+  line-height: var(--docent-line-height-relaxed);
 }
 
 h2 {
-  font-size: var(--docent-font-size-xl);
+  font-size: var(--docent-font-size-2xl);
   font-weight: 600;
-  margin: var(--docent-spacing-xl) 0 var(--docent-spacing-md) 0;
-  padding-bottom: var(--docent-spacing-xs);
+  margin: var(--docent-spacing-12) 0 var(--docent-spacing-6) 0;
+  padding-bottom: var(--docent-spacing-3);
   border-bottom: 1px solid var(--docent-border-light);
+  line-height: var(--docent-line-height-tight);
 }
 
 h3 {
-  font-size: var(--docent-font-size-lg);
+  font-size: var(--docent-font-size-xl);
   font-weight: 600;
-  margin: var(--docent-spacing-lg) 0 var(--docent-spacing-sm) 0;
+  margin: var(--docent-spacing-8) 0 var(--docent-spacing-4) 0;
+  line-height: var(--docent-line-height-snug);
 }
 
-p { margin: var(--docent-spacing-sm) 0; }
+/* Reset h3 margin inside admonition-title */
+.admonition h3.admonition-title {
+  margin: 0 0 var(--docent-spacing-2) 0;
+}
+
+p { 
+  margin: var(--docent-spacing-4) 0;
+  line-height: var(--docent-line-height-relaxed);
+}
 
 /* Code */
 code, pre { font-family: var(--docent-font-mono); }
 
 :not(pre) > code {
-  font-size: 0.85em;
+  font-size: var(--docent-font-size-sm);
   background: var(--docent-primary-subtle);
   padding: 0.2em 0.5em;
   border-radius: var(--docent-radius-sm);
@@ -179,12 +191,12 @@ code, pre { font-family: var(--docent-font-mono); }
 pre {
   background: var(--docent-bg-code);
   color: var(--docent-code-fg);
-  padding: var(--docent-spacing-md);
+  padding: var(--docent-spacing-6);
   border-radius: var(--docent-radius-lg);
   overflow-x: auto;
-  margin: var(--docent-spacing-md) 0;
+  margin: var(--docent-spacing-6) 0;
   font-size: var(--docent-font-size-sm);
-  line-height: var(--docent-line-height-base);
+  line-height: var(--docent-line-height-relaxed);
   box-shadow: var(--docent-shadow-sm);
   border: 1px solid var(--docent-border);
 }
@@ -207,7 +219,7 @@ pre code {
 /* Tables */
 .table-wrapper {
   overflow-x: auto;
-  margin: var(--docent-spacing-md) 0;
+  margin: var(--docent-spacing-6) 0;
   border-radius: var(--docent-radius-md);
   border: 1px solid var(--docent-border);
 }
@@ -223,12 +235,12 @@ th {
   color: var(--docent-primary-dark);
   font-weight: 600;
   text-align: left;
-  padding: var(--docent-spacing-sm) var(--docent-spacing-md);
+  padding: var(--docent-spacing-4) var(--docent-spacing-6);
   border-bottom: 2px solid var(--docent-border);
 }
 
 td {
-  padding: var(--docent-spacing-sm) var(--docent-spacing-md);
+  padding: var(--docent-spacing-4) var(--docent-spacing-6);
   border-bottom: 1px solid var(--docent-border);
   vertical-align: top;
 }
@@ -238,8 +250,8 @@ tr:hover { background: var(--docent-bg-alt); }
 
 /* Admonition */
 .admonition {
-  padding: 1rem 1.25rem;
-  margin: 1.5rem 0;
+  padding: var(--docent-spacing-6) var(--docent-spacing-8);
+  margin: var(--docent-spacing-8) 0;
   border-left: 4px solid;
   border-radius: 0 var(--docent-radius-md) var(--docent-radius-md) 0;
 }
@@ -282,8 +294,9 @@ tr:hover { background: var(--docent-bg-alt); }
 
 .admonition-title {
   font-weight: 600;
-  margin-bottom: 0.75rem;
-  font-size: var(--docent-font-size-lg);
+  margin: 0 0 var(--docent-spacing-2) 0;
+  font-size: var(--docent-font-size-md);
+  line-height: var(--docent-line-height-normal);
   color: inherit;
 }
 
@@ -291,11 +304,14 @@ tr:hover { background: var(--docent-bg-alt); }
 
 /* Lists */
 ul {
-  padding-left: var(--docent-spacing-lg);
-  margin: var(--docent-spacing-sm) 0;
+  padding-left: var(--docent-spacing-8);
+  margin: var(--docent-spacing-4) 0;
 }
 
-li { margin: var(--docent-spacing-xs) 0; }
+li { 
+  margin: var(--docent-spacing-2) 0;
+  line-height: var(--docent-line-height-relaxed);
+}
 
 /* Links */
 a {

@@ -2,32 +2,59 @@
    Docent - Base Theme Variables
    Shared CSS custom properties for all themes
    
+   IMPORTANT: Layout-critical properties (spacing,
+   font-sizes, layout) are defined here and should
+   NOT be overridden by themes to prevent layout shift.
+   
    Dark mode support: Override these variables
    in your theme's dark mode section or via
    a separate dark theme file.
    ============================================ */
 
 :root {
-  /* Typography */
+  /* ============================================
+     TYPE SCALE SYSTEM (Modular Scale 1.250)
+     Based on major third ratio for readability
+     DO NOT override in themes - prevents layout shift
+     ============================================ */
+  --docent-font-size-base: 16px;
+  --docent-font-size-xs: 0.8rem;      /* 12.8px */
+  --docent-font-size-sm: 0.889rem;    /* 14.2px */
+  --docent-font-size-md: 1rem;        /* 16px - base */
+  --docent-font-size-lg: 1.1rem;      /* 17.6px */
+  --docent-font-size-xl: 1.375rem;    /* 22px */
+  --docent-font-size-2xl: 1.722rem;   /* 27.5px */
+  --docent-font-size-3xl: 2.153rem;   /* 34.4px */
+  --docent-font-size-4xl: 2.691rem;   /* 43px */
+  
+  /* Line Heights - Tight for headings, relaxed for body */
+  --docent-line-height-tight: 1.25;
+  --docent-line-height-snug: 1.375;
+  --docent-line-height-normal: 1.5;
+  --docent-line-height-relaxed: 1.625;
+  --docent-line-height-loose: 1.75;
+  
+  /* Font Families */
   --docent-font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --docent-font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  --docent-font-size-base: 16px;
-  --docent-font-size-sm: 0.875rem;
-  --docent-font-size-lg: 1.125rem;
-  --docent-font-size-xl: 1.25rem;
-  --docent-font-size-2xl: 1.5rem;
-  --docent-font-size-3xl: 1.875rem;
-  --docent-line-height-base: 1.7;
-  --docent-line-height-tight: 1.4;
   
-  /* Spacing */
-  --docent-spacing-xs: 0.5rem;
-  --docent-spacing-sm: 1rem;
-  --docent-spacing-md: 1.5rem;
-  --docent-spacing-lg: 2rem;
-  --docent-spacing-xl: 3rem;
+  /* ============================================
+     SPACING SYSTEM (8px base unit)
+     DO NOT override in themes - prevents layout shift
+     ============================================ */
+  --docent-spacing-0: 0;
+  --docent-spacing-1: 0.25rem;   /* 4px */
+  --docent-spacing-2: 0.5rem;    /* 8px */
+  --docent-spacing-3: 0.75rem;   /* 12px */
+  --docent-spacing-4: 1rem;      /* 16px */
+  --docent-spacing-5: 1.25rem;   /* 20px */
+  --docent-spacing-6: 1.5rem;    /* 24px */
+  --docent-spacing-8: 2rem;      /* 32px */
+  --docent-spacing-10: 2.5rem;   /* 40px */
+  --docent-spacing-12: 3rem;     /* 48px */
+  --docent-spacing-16: 4rem;     /* 64px */
   
-  /* Layout */
+  /* Layout - DO NOT override */
   --docent-sidebar-width: 280px;
   --docent-content-max-width: 800px;
   --docent-header-height: 64px;
@@ -36,18 +63,21 @@
   --docent-radius-sm: 4px;
   --docent-radius-md: 8px;
   --docent-radius-lg: 12px;
+  --docent-radius-xl: 16px;
   
   /* Shadows */
   --docent-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --docent-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --docent-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
   
   /* Transitions */
   --docent-transition-fast: 150ms ease;
   --docent-transition-normal: 250ms ease;
+  --docent-transition-slow: 350ms ease;
   
   /* ============================================
-     Color Variables (Theme-Defined)
-     These are overridden by theme CSS files.
+     COLOR VARIABLES (Theme-Defined)
+     These ARE overridden by theme CSS files.
      Default to Sage theme values.
      ============================================ */
   
