@@ -9,15 +9,56 @@ namespace Jaunty;
 public static partial class Jaunty
 {
     /// <summary>
-    /// Executes a query asynchronously and returns the single entity from the result set.
-    /// Throws an exception if the result set is empty or contains more than one element.
-    /// Uses strict mapping mode where all entity properties must have matching columns in the result set.
+    /// Executes a SQL query asynchronously and returns the single result mapped to an entity of type <typeparamref name="T"/>.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
     /// <param name="sql">The SQL query to execute.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The single entity of type T from the result set.</returns>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the single entity mapped from the query results.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method uses <strong>strict mapping mode</strong> by default. All public writable properties 
+    /// on <typeparamref name="T"/> must have matching columns in the result set.
+    /// </para>
+    /// <para>
+    /// <strong>Throws <see cref="InvalidOperationException"/> if:</strong>
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>The query returns no results</description></item>
+    /// <item><description>The query returns more than one result</description></item>
+    /// </list>
+    /// <para>
+    /// For a method that returns <see langword="null"/> for empty results, use 
+    /// <see cref="QuerySingleOrDefaultAsync{T}(IDbConnection, string, CancellationToken)"/>.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// public class Product
+    /// {
+    ///     public int Id { get; set; }
+    ///     public string Name { get; set; }
+    ///     public decimal Price { get; set; }
+    /// }
+    /// 
+    /// // Get single product by ID (expects exactly one match)
+    /// var product = await connection.QuerySingleAsync&lt;Product&gt;(
+    ///     "SELECT * FROM products WHERE id = @Id", 
+    ///     new { Id = 1 });
+    /// </code>
+    /// </example>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns no results or more than one result, 
+    /// or when a property has no matching column.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the number of provided parameters doesn't match the SQL.
+    /// </exception>
+    /// <seealso cref="QuerySingleOrDefaultAsync{T}(IDbConnection, string, CancellationToken)"/>
+    /// <seealso cref="QuerySingle{T}(IDbConnection, string)"/>
     public static Task<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
@@ -26,16 +67,40 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Executes a query with parameters asynchronously and returns the single entity from the result set.
-    /// Throws an exception if the result set is empty or contains more than one element.
-    /// Uses strict mapping mode where all entity properties must have matching columns in the result set.
+    /// Executes a SQL query with parameters asynchronously and returns the single result mapped to an entity of type <typeparamref name="T"/>.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
     /// <param name="sql">The SQL query to execute.</param>
-    /// <param name="parameters">Parameters for the query.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The single entity of type T from the result set.</returns>
+    /// <param name="parameters">
+    /// An anonymous object or dictionary containing parameter values.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the single entity mapped from the query results.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Throws <see cref="InvalidOperationException"/> if the query doesn't return exactly one result.</strong>
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Get single product by SKU (expects exactly one match)
+    /// var product = await connection.QuerySingleAsync&lt;Product&gt;(
+    ///     "SELECT * FROM products WHERE sku = @Sku",
+    ///     new { Sku = "WIDGET-001" });
+    /// </code>
+    /// </example>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns no results or more than one result, 
+    /// or when a property has no matching column.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when parameter count doesn't match the SQL.
+    /// </exception>
+    /// <seealso cref="QuerySingleAsync{T}(IDbConnection, string, CancellationToken)"/>
+    /// <seealso cref="QuerySingleOrDefaultAsync{T}(IDbConnection, string, object, CancellationToken)"/>
     public static Task<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
@@ -44,16 +109,40 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Executes a query with command options asynchronously and returns the single entity from the result set.
-    /// Throws an exception if the result set is empty or contains more than one element.
-    /// Uses strict mapping mode where all entity properties must have matching columns in the result set.
+    /// Executes a SQL query with command options asynchronously and returns the single result mapped to an entity of type <typeparamref name="T"/>.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
     /// <param name="sql">The SQL query to execute.</param>
-    /// <param name="options">Command options (transaction, timeout, custom mapper).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The single entity of type T from the result set.</returns>
+    /// <param name="options">
+    /// Command options for configuring the query execution. Use 
+    /// <see cref="CommandOptions{T}.WithTransaction(IDbTransaction)"/> for transactions or
+    /// <see cref="CommandOptions{T}.WithTimeout(int)"/> for command timeout.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the single entity mapped from the query results.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Throws <see cref="InvalidOperationException"/> if the query doesn't return exactly one result.</strong>
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Get single product with transaction
+    /// using var tx = connection.BeginTransaction();
+    /// var product = await connection.QuerySingleAsync&lt;Product&gt;(
+    ///     "SELECT * FROM products WHERE id = @Id",
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
+    /// </code>
+    /// </example>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns no results or more than one result, 
+    /// or when a property has no matching column.
+    /// </exception>
+    /// <seealso cref="CommandOptions{T}"/>
+    /// <seealso cref="QuerySingleAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static Task<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
@@ -62,17 +151,45 @@ public static partial class Jaunty
     }
 
     /// <summary>
-    /// Executes a query with parameters and command options asynchronously and returns the single entity from the result set.
-    /// Throws an exception if the result set is empty or contains more than one element.
-    /// Uses strict mapping mode where all entity properties must have matching columns in the result set.
+    /// Executes a SQL query with parameters and command options asynchronously, returning the single result mapped to an entity of type <typeparamref name="T"/>.
     /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <param name="connection">The database connection.</param>
+    /// <typeparam name="T">The entity type to map results to. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
     /// <param name="sql">The SQL query to execute.</param>
-    /// <param name="parameters">Parameters for the query.</param>
-    /// <param name="options">Command options (transaction, timeout, custom mapper).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The single entity of type T from the result set.</returns>
+    /// <param name="parameters">
+    /// An anonymous object or dictionary containing parameter values.
+    /// </param>
+    /// <param name="options">
+    /// Command options for transaction, timeout, or custom mapper configuration.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>A task containing the single entity mapped from the query results.</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Throws <see cref="InvalidOperationException"/> if the query doesn't return exactly one result.</strong>
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Full example with transaction and parameters
+    /// using var tx = connection.BeginTransaction();
+    /// var product = await connection.QuerySingleAsync&lt;Product&gt;(
+    ///     "SELECT * FROM products WHERE id = @Id",
+    ///     new { Id = 1 },
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
+    /// </code>
+    /// </example>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when the query returns no results or more than one result, 
+    /// or when a property has no matching column.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when parameter count doesn't match the SQL.
+    /// </exception>
+    /// <seealso cref="QuerySingleAsync{T}(IDbConnection, string, CancellationToken)"/>
+    /// <seealso cref="CommandOptions{T}"/>
     public static Task<T> QuerySingleAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
         return connection is not DbConnection dbConnection
