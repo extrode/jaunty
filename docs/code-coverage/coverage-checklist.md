@@ -2,7 +2,7 @@
 
 **Target**: 100% Code Coverage
 **Created**: 2026-02-19
-**Last Updated**: 2026-02-19 (High + medium priority + internal unit tests added)
+**Last Updated**: 2026-02-19 (All priority items completed — MetadataCache, MultiEntityMapper, Obsolete overloads added)
 
 This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each item includes the class/method and its test status.
 
@@ -189,7 +189,8 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | `QuerySingleOrDefault<T1, T2>(sql)` | yes | QueryMultiEntityTests.cs | Single or null |
 | `QueryStream<T1, T2>(sql)` | yes | QueryMultiEntityTests.cs | Streaming tuples |
 | Async variants (all) | yes | QueryMultiEntityTests.cs | Async counterparts |
-| `[Obsolete]` overloads | - | — | Legacy overloads, low priority |
+| `[Obsolete]` overloads (sync) | yes | ObsoleteMultiEntityTests.cs | 14 sync tests (Query, QueryFirst, QuerySingle, QueryStream, combiner) |
+| `[Obsolete]` overloads (async) | yes | ObsoleteMultiEntityTests.cs | 7 async tests |
 
 ### Special Type Queries
 
@@ -522,10 +523,28 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 | Feature | Status | Test File | Notes |
 |---------|--------|-----------|-------|
-| Static constructor caching | - | — | Tested only indirectly |
-| `GetSetters()` | - | — | Tested via Query* integration |
-| `CreateSetter()` (expression tree) | - | — | Tested via Query* integration |
-| Dedicated unit tests | todo | — | No isolated unit tests |
+| Static constructor caching | yes | MetadataCacheTests.cs | Same reference verified |
+| Metadata contains correct columns | yes | MetadataCacheTests.cs | Column count and names |
+| Column attribute uses column names | yes | MetadataCacheTests.cs | [Column] name in metadata |
+| `GetSetters()` strict - all match | yes | MetadataCacheTests.cs | Returns correct count |
+| `GetSetters()` strict - missing column | yes | MetadataCacheTests.cs | Throws InvalidOperationException |
+| `GetSetters()` strict - extra column | yes | MetadataCacheTests.cs | Throws InvalidOperationException |
+| `GetSetters()` strict - [Column] mapping | yes | MetadataCacheTests.cs | Maps via attribute name |
+| `GetSetters()` strict - case insensitive | yes | MetadataCacheTests.cs | UPPER column names match |
+| `GetSetters()` projection - extra columns | yes | MetadataCacheTests.cs | Ignored silently |
+| `GetSetters()` projection - missing columns | yes | MetadataCacheTests.cs | Partial setters returned |
+| `GetSetters()` projection - subset entity | yes | MetadataCacheTests.cs | Extra columns ignored |
+| `GetSetters()` empty result set | yes | MetadataCacheTests.cs | Still returns setters for field count |
+| `PropertySetter.Set()` applies values | yes | MetadataCacheTests.cs | Int, string, all types |
+| `PropertySetter.Set()` nullable null | yes | MetadataCacheTests.cs | NULL leaves property null |
+| `PropertySetter.Set()` nullable non-null | yes | MetadataCacheTests.cs | Non-null sets value |
+| `PropertySetter.Set()` non-nullable null throws | yes | MetadataCacheTests.cs | InvalidOperationException |
+| `PropertySetter.Set()` column attribute | yes | MetadataCacheTests.cs | Maps via [Column] name |
+| `PropertySetter.Set()` multiple rows | yes | MetadataCacheTests.cs | Reuses setters across rows |
+| `CreateSetter()` int property | yes | MetadataCacheTests.cs | Expression tree compiled |
+| `CreateSetter()` string property | yes | MetadataCacheTests.cs | Expression tree compiled |
+| `CreateSetter()` nullable int property | yes | MetadataCacheTests.cs | Nullable expression tree |
+| ColumnToIndex dual registration | yes | MetadataCacheTests.cs | Both column and property name |
 
 ### DrDispatcher
 
@@ -584,9 +603,18 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 | Feature | Status | Test File | Notes |
 |---------|--------|-----------|-------|
-| `Build(reader)` | yes | QueryMultiEntityTests.cs | Via multi-entity integration |
-| `ApplyT1()` / `ApplyT2()` | yes | QueryMultiEntityTests.cs | Via multi-entity integration |
-| Dedicated unit tests | todo | — | No isolated unit tests |
+| `Build(reader)` disjoint columns | yes | MultiEntityMapperTests.cs | 14 dedicated unit tests |
+| `Build(reader)` multiple rows reuse | yes | MultiEntityMapperTests.cs | Same mapper across rows |
+| `Build(reader)` T1 priority | yes | MultiEntityMapperTests.cs | Overlapping column goes to T1 |
+| `Build(reader)` unmatched column ignored | yes | MultiEntityMapperTests.cs | Partial mapping behavior |
+| `Build(reader)` [Column] attribute | yes | MultiEntityMapperTests.cs | Maps via column name |
+| `Build(reader)` property name fallback | yes | MultiEntityMapperTests.cs | Maps via property name |
+| `Build(reader)` case insensitive | yes | MultiEntityMapperTests.cs | UPPER names match |
+| `ApplyT1()` / `ApplyT2()` values | yes | MultiEntityMapperTests.cs | Correct property assignment |
+| `ApplyT1/T2` nullable null | yes | MultiEntityMapperTests.cs | NULL leaves property null |
+| `ApplyT1/T2` nullable non-null | yes | MultiEntityMapperTests.cs | Sets value correctly |
+| `ApplyT2` non-nullable null throws | yes | MultiEntityMapperTests.cs | InvalidOperationException |
+| `Build` no matching columns | yes | MultiEntityMapperTests.cs | Empty setters, defaults remain |
 
 ### QueryCore / QueryCoreAsync (Private)
 
@@ -683,7 +711,7 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | Read (Strict) | 48 | 0 | 0 | 48 | 100% |
 | Read (Partial) | 36 | 4 | 0 | 40 | 90% |
 | Read (Scalar) | 16 | 0 | 0 | 16 | 100% |
-| Read (MultiEntity) | 20+ | 2 | 0 | 22+ | ~90% |
+| Read (MultiEntity) | 22+ | 0 | 0 | 22+ | 100% |
 | Read (Special Types) | 4 | 0 | 0 | 4 | 100% |
 | Streaming | 24 | 0 | 0 | 24 | 100% |
 | Write (Individual) | 20 | 0 | 0 | 20 | 100% |
@@ -694,7 +722,7 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | Core/Config | 12 | 0 | 0 | 12 | 100% |
 | Attributes | 6 | 0 | 0 | 6 | 100% |
 | Interfaces | 2 | 1 | 0 | 3 | 67% |
-| Internals | 70 | 9 | 3 | 82 | 85% |
+| Internals | 102 | 6 | 1 | 109 | 94% |
 | Cross-cutting | 17 | 0 | 0 | 17 | 100% |
 | Fluent API | 19 | 0 | 0 | 19 | 100% |
 | Scaffolding | 6 | 0 | 0 | 6 | 100% |
@@ -723,10 +751,10 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 #### 3. Lower Priority (Edge Cases / Non-SQLite)
 - [x] SQL dialect unit tests (SqlServerDialect, MySqlDialect, PostgreSqlDialect) - DONE (77 tests across 5 nested classes)
-- [ ] `[Obsolete]` multi-entity overloads
+- [x] `[Obsolete]` multi-entity overloads - DONE (21 tests: 14 sync + 7 async)
 - [x] **IEntity<T>** explicit interface coverage - DONE (via DeleteByEntityIdTests)
-- [ ] MetadataCache<T> dedicated unit tests
-- [ ] MultiEntityMapper dedicated unit tests
+- [x] MetadataCache<T> dedicated unit tests - DONE (22 tests)
+- [x] MultiEntityMapper dedicated unit tests - DONE (14 tests)
 
 ---
 
@@ -813,6 +841,9 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | CrudSqlCacheTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
 | DrDispatcherTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
 | SqlDialectTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
+| MetadataCacheTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
+| MultiEntityMapperTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
+| ObsoleteMultiEntityTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
 
 ---
 
