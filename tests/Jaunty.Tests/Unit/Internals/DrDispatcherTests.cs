@@ -142,7 +142,7 @@ public class DrDispatcherTests : IDisposable
 
     #region Priority 3: IMapped<T>
 
-    [Fact(Skip = "MappedCache<T>.ResolveMapper uses typeof(IMapped<>).IsAssignableFrom which returns false for open generics - mapper is never resolved")]
+    [Fact]
     public void Resolve_IMappedEntity_UsesCustomMapper()
     {
         var results = _connection.Query<MappedItem>(

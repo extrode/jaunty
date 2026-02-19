@@ -95,4 +95,15 @@ public class InsertTests : IDisposable
 
         Assert.Equal(0, GetRowCount());
     }
+
+    [Fact]
+    public void Insert_IEntityNonGeneric_SetsIdAfterInsert()
+    {
+        var entity = new IEntityTestEntity { Name = "TestIEntity", Value = 42 };
+
+        long id = _connection.Insert(entity);
+
+        Assert.True(id > 0);
+        Assert.Equal(id, entity.Id);
+    }
 }

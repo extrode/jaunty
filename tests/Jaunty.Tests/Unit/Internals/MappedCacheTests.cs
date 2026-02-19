@@ -40,7 +40,7 @@ public class MappedCacheTests
         Assert.Null(mapper);
     }
 
-    [Fact(Skip = "MappedCache<T>.ResolveMapper uses typeof(IMapped<>).IsAssignableFrom which returns false for open generics")]
+    [Fact]
     public void MappedCache_MappedEntity_MapperIsNotNull()
     {
         var mapper = MappedCache<MappedEntity>.Mapper;
@@ -48,7 +48,7 @@ public class MappedCacheTests
         Assert.NotNull(mapper);
     }
 
-    [Fact(Skip = "MappedCache<T>.ResolveMapper uses typeof(IMapped<>).IsAssignableFrom which returns false for open generics")]
+    [Fact]
     public void MappedCache_MappedEntity_MapperIsCachedSameReference()
     {
         var mapper1 = MappedCache<MappedEntity>.Mapper;
