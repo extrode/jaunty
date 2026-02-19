@@ -20,8 +20,8 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | `QueryPartialFirstOrDefault.cs` | 4 overloads | caution | Basic docs present, needs examples |
 | `QueryPartialSingle.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryPartialSingleOrDefault.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
-| `QueryScalar.cs` | 4 overloads | no | TODO |
-| `ExecuteScalar.cs` | 4 overloads | no | TODO |
+| `QueryScalar.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
+| `ExecuteScalar.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryFirstAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryFirstOrDefaultAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
@@ -32,12 +32,12 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | `QueryPartialFirstOrDefaultAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryPartialSingleAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryPartialSingleOrDefaultAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
-| `QueryScalarAsync.cs` | 4 overloads | no | TODO |
-| `ExecuteScalarAsync.cs` | 4 overloads | no | TODO |
+| `QueryScalarAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
+| `ExecuteScalarAsync.cs` | 4 overloads | yes | Complete with examples, remarks, exceptions |
 | `QueryMultiEntity.cs` | 8 overloads | no | TODO |
 | `QueryMultiEntityAsync.cs` | 8 overloads | no | TODO |
 
-**Progress**: 24/104 methods (23%)
+**Progress**: 88/104 methods (85%)
 
 ---
 
@@ -156,7 +156,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 
 | Category | Documented | Total | Percentage |
 |----------|------------|-------|------------|
-| Query Methods | 80 | 104 | 77% |
+| Query Methods | 88 | 104 | 85% |
 | Write Methods | 10 | 46 | 22% |
 | Multiple Result Sets | 0 | 12 | 0% |
 | Streaming | 0 | 24 | 0% |
@@ -165,7 +165,7 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 | Core Types | 0 | 2 | 0% |
 | Configuration | 0 | 1 | 0% |
 | Interfaces | 0 | 2 | 0% |
-| **TOTAL** | **90** | **213** | **42%** |
+| **TOTAL** | **98** | **213** | **46%** |
 
 ---
 
@@ -183,14 +183,13 @@ Tracks XML documentation coverage for all public API methods in Jaunty.
 10. **DONE**: `QueryPartialSingleAsync<T>()`, `QueryPartialSingleOrDefaultAsync<T>()` - Async partial single variants
 11. **DONE**: `QueryPartialAsync<T>()`, `QueryPartialFirstOrDefaultAsync<T>()` - Async partial variants
 12. **DONE**: `QueryAsync<T>()`, `QueryFirstAsync<T>()`, `QueryFirstOrDefaultAsync<T>()` - Async query variants
-13. **NEXT**: `QuerySingleAsync<T>()`, `QuerySingleOrDefaultAsync<T>()` - Already done, verify
-14. **LATER**: `QueryScalar<T>()`, `ExecuteScalar<T>()` - Scalar queries
-15. **LATER**: `QueryMultiple<T>()` - Multiple result sets
-16. **LATER**: `Bulk*` operations - Bulk operations
-17. **LATER**: `Upsert<T>()` - Upsert operations
-18. **LATER**: Streaming methods - Advanced scenarios
-19. **LATER**: Stored procedures - Specialized use cases
-20. **LATER**: Attributes, Core types, Interfaces - Reference documentation
+13. **DONE**: `QueryScalar<T>()`, `ExecuteScalar<T>()` - Scalar queries (sync and async)
+14. **NEXT**: `QueryMultiple<T>()` - Multiple result sets
+15. **LATER**: `Bulk*` operations - Bulk operations
+16. **LATER**: `Upsert<T>()` - Upsert operations
+17. **LATER**: Streaming methods - Advanced scenarios
+18. **LATER**: Stored procedures - Specialized use cases
+19. **LATER**: Attributes, Core types, Interfaces, Configuration - Reference documentation
 
 ---
 
