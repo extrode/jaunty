@@ -34,7 +34,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     {
         _connection = connection;
         _dialect = dialect;
-        _metadata = MetadataCache<T>.Metadata;
+        _metadata = FluentMetadataCache.GetMetadata<T>();
         _whereConditions = whereConditions;
         _parameters = parameters;
         _keySelector = keySelector;

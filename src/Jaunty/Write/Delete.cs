@@ -72,7 +72,7 @@ public static partial class Jaunty
     /// <seealso cref="DeleteAsync{T}(IDbConnection, T)"/>
     /// <seealso cref="Attributes.KeyAttribute"/>
     /// <seealso cref="Attributes.TableAttribute"/>
-    public static int Delete<T>(this IDbConnection connection, T entity) where T : class, new()
+    public static int Delete<T>(this IDbConnection connection, T entity) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -128,7 +128,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="Delete{T}(IDbConnection, T)"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static int Delete<T>(this IDbConnection connection, T entity, CommandOptions options) where T : class, new()
+    public static int Delete<T>(this IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -190,7 +190,7 @@ public static partial class Jaunty
     /// <seealso cref="Delete{T}(IDbConnection, T)"/>
     /// <seealso cref="Delete{T, TId}(IDbConnection, TId)"/>
     /// <seealso cref="DeleteAsync{T}(IDbConnection, object)"/>
-    public static int Delete<T>(this IDbConnection connection, object id) where T : class, new()
+    public static int Delete<T>(this IDbConnection connection, object id) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -242,7 +242,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="Delete{T}(IDbConnection, object)"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static int Delete<T>(this IDbConnection connection, object id, CommandOptions options) where T : class, new()
+    public static int Delete<T>(this IDbConnection connection, object id, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -299,7 +299,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="IEntity{TId}"/>
     /// <seealso cref="Delete{T}(IDbConnection, object)"/>
-    public static int Delete<T, TId>(this IDbConnection connection, TId id) where T : IEntity<TId>
+    public static int Delete<T, TId>(this IDbConnection connection, TId id) where T : IEntity<TId>, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -347,7 +347,7 @@ public static partial class Jaunty
     /// <seealso cref="IEntity{TId}"/>
     /// <seealso cref="Delete{T, TId}(IDbConnection, TId)"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static int Delete<T, TId>(this IDbConnection connection, TId id, CommandOptions options) where T : IEntity<TId>
+    public static int Delete<T, TId>(this IDbConnection connection, TId id, CommandOptions options) where T : IEntity<TId>, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);

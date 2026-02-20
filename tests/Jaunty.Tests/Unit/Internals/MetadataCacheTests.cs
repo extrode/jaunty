@@ -3,6 +3,7 @@ using System.Data.SQLite;
 
 using Jaunty;
 using Jaunty.Attributes;
+using Jaunty.Extensions.Reflection;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 

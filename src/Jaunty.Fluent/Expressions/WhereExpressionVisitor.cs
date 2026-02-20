@@ -5,6 +5,7 @@ using System.Text;
 using Jaunty.Fluent;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Fluent.Internals;
 
 namespace Jaunty.Fluent.Expressions;
 
@@ -643,7 +644,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         var propertyName = member.Member.Name;
 
         // Look up the actual column name from metadata
-        var metadata = MetadataCache<T>.Metadata;
+        var metadata = FluentMetadataCache.GetMetadata<T>();
         var column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
 
         return column?.ColumnName ?? propertyName;

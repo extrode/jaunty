@@ -3,6 +3,7 @@ using System.Text;
 
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Fluent.Internals;
 
 namespace Jaunty.Fluent.Expressions;
 
@@ -19,7 +20,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
     public SelectExpressionVisitor(ISqlDialect dialect)
     {
         _dialect = dialect;
-        _metadata = MetadataCache<T>.Metadata;
+        _metadata = FluentMetadataCache.GetMetadata<T>();
     }
 
     /// <summary>

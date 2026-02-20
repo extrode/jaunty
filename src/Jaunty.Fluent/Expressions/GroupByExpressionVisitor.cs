@@ -4,6 +4,7 @@ using System.Text;
 
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Fluent.Internals;
 
 namespace Jaunty.Fluent.Expressions;
 
@@ -23,7 +24,7 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
     public GroupByExpressionVisitor(ISqlDialect dialect, string[] groupByColumns)
     {
         _dialect = dialect;
-        _metadata = MetadataCache<T>.Metadata;
+        _metadata = FluentMetadataCache.GetMetadata<T>();
         _groupByColumns = groupByColumns;
     }
 

@@ -35,8 +35,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         _connection = connection;
         _dialect = SqlDialectFactory.GetDialect(connection);
-        _metadata = MetadataCache<T>.Metadata;
-        _cache = FluentMetadataCache<T>.GetForDialect(_dialect);
+        _metadata = FluentMetadataCache.GetMetadata<T>();
+        _cache = FluentMetadataCache.GetForDialect<T>(_dialect);
         _alias = alias;
     }
 
@@ -51,7 +51,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     /// </summary>
     internal ParameterCollection GetParameters() => _parameters.Clone();
 
-    private string[] GetAllColumnNames() => _cache.ColumnNames;
+    private string[] GetAllColumnNames() => _cache.ColumnNames.ToArray();
 
     private string[] ResolveColumns(Expression<Func<T, object?>>[] expressions)
     {
@@ -1352,7 +1352,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     private string BuildExistsClause<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate, bool negate)
         where TSubquery : new()
     {
-        var subqueryMetadata = MetadataCache<TSubquery>.Metadata;
+        var subqueryMetadata = FluentMetadataCache.GetMetadata<TSubquery>();
         var subqueryTable = _dialect.EscapeTableName(subqueryMetadata.SchemaName, subqueryMetadata.TableName);
 
         // Use ExistsExpressionVisitor to translate the correlation predicate
@@ -1383,7 +1383,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         // Get subquery column name
         var subqueryPropertyName = PropertyExtractor.ExtractPropertyName(subquerySelector);
-        var subqueryMetadata = MetadataCache<TSubquery>.Metadata;
+        var subqueryMetadata = FluentMetadataCache.GetMetadata<TSubquery>();
         var subqueryColumnName = GetColumnNameFromMetadata(subqueryMetadata, subqueryPropertyName);
         var escapedSubqueryColumn = _dialect.EscapeColumnName(subqueryColumnName);
 

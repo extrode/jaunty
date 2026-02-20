@@ -1,4 +1,5 @@
 using Jaunty.Tests.Helpers;
+using Jaunty.Extensions.Reflection;
 using Xunit;
 
 namespace Jaunty.Tests.Helpers;
@@ -12,6 +13,7 @@ public abstract class SQLiteAsyncAwareTest : IDisposable
 
     protected SQLiteAsyncAwareTest()
     {
+        TestInitializer.Initialize();
         _db = new Database();
     }
 
@@ -37,6 +39,7 @@ public abstract class SQLiteTestBase : IDisposable
 
     protected SQLiteTestBase()
     {
+        TestInitializer.Initialize();
         _db = new Database();
     }
 

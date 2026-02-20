@@ -53,7 +53,7 @@ public static partial class Jaunty
     /// <seealso cref="BulkUpdate{T}(IDbConnection, IEnumerable{T}, CommandOptions)"/>
     /// <seealso cref="BulkUpdateIgnoreConstraints{T}(IDbConnection, IEnumerable{T})"/>
     /// <seealso cref="BulkUpdateAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
-    public static int BulkUpdate<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
+    public static int BulkUpdate<T>(this IDbConnection connection, IEnumerable<T> entities) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -98,7 +98,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="BulkUpdate{T}(IDbConnection, IEnumerable{T})"/>
-    public static int BulkUpdate<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
+    public static int BulkUpdate<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -148,7 +148,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="BulkUpdateIgnoreConstraints{T}(IDbConnection, IEnumerable{T}, CommandOptions)"/>
     /// <seealso cref="BulkUpdate{T}(IDbConnection, IEnumerable{T})"/>
-    public static int BulkUpdateIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
+    public static int BulkUpdateIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -199,7 +199,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="BulkUpdateIgnoreConstraints{T}(IDbConnection, IEnumerable{T})"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static int BulkUpdateIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
+    public static int BulkUpdateIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -211,7 +211,7 @@ public static partial class Jaunty
         return BulkUpdateCore(connection, entities, options, ignoreConstraints: true);
     }
 
-    private static int BulkUpdateCore<T>(IDbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints) where T : class, new()
+    private static int BulkUpdateCore<T>(IDbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -274,6 +274,11 @@ public static partial class Jaunty
                 PrepareUpdateParameters(command, cached.Metadata);
 
                 var valueSetter = WriteParameterCache<T>.UpdateValueSetter;
+                if (valueSetter == null)
+                {
+                    throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
+                }
+
                 var pCollection = command.Parameters;
 
                 foreach (var entity in entityList)

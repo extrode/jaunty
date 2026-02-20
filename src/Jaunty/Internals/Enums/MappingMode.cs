@@ -1,6 +1,6 @@
 namespace Jaunty.Internals.Enums;
 
-internal enum MappingMode
+public enum MappingMode
 {
     Strict,
     Projection

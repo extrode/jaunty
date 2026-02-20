@@ -5,12 +5,13 @@ using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
+using JauntyConfig = Jaunty.Configuration.JauntyConfig;
 
 namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static int UpdateCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : class, new()
+    private static int UpdateCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -47,7 +48,7 @@ public static partial class Jaunty
             // Bind parameters from entity properties using compiled delegate
             WriteParameterCache<T>.UpdateBinder(command, entity);
 
-            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, entity);
+            JauntyConfig.Logger?.Invoke(command.CommandText, entity);
             
             return command.ExecuteNonQuery();
         }
@@ -58,7 +59,7 @@ public static partial class Jaunty
         }
     }
 
-    private static async ValueTask<int> UpdateCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+    private static async ValueTask<int> UpdateCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -99,7 +100,7 @@ public static partial class Jaunty
             // Bind parameters from entity properties using compiled delegate
             WriteParameterCache<T>.UpdateBinder(command, entity);
 
-            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, entity);
+            JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }

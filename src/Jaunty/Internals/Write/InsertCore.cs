@@ -6,12 +6,13 @@ using Jaunty.Interfaces;
 using Jaunty.Internals;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
+using JauntyConfig = Jaunty.Configuration.JauntyConfig;
 
 namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static long InsertCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : class, new()
+    private static long InsertCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -54,7 +55,7 @@ public static partial class Jaunty
             // Bind parameters from entity properties using compiled delegate
             WriteParameterCache<T>.InsertBinder(command, entity);
 
-            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, entity);
+            JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
             if (cached.HasIdentityKey)
             {
@@ -81,7 +82,7 @@ public static partial class Jaunty
         }
     }
 
-    private static async ValueTask<long> InsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+    private static async ValueTask<long> InsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -120,7 +121,7 @@ public static partial class Jaunty
             // Bind parameters from entity properties using compiled delegate
             WriteParameterCache<T>.InsertBinder(command, entity);
 
-            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, entity);
+            JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
             if (cached.HasIdentityKey)
             {

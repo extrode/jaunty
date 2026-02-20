@@ -11,6 +11,7 @@ using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
+using Jaunty.Internals.Read;
 
 namespace Jaunty.Fluent;
 
@@ -39,8 +40,8 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         _fromSchema = fromSchema;
         _fromAlias = fromAlias;
         _joins.Add(firstJoin);
-        _fromMetadata = MetadataCache<TFrom>.Metadata;
-        _joinMetadata = MetadataCache<TJoin>.Metadata;
+        _fromMetadata = FluentMetadataCache.GetMetadata<TFrom>();
+        _joinMetadata = FluentMetadataCache.GetMetadata<TJoin>();
     }
 
     private string JoinAlias => _joins[0].Alias ?? _joinMetadata.TableName;
@@ -396,21 +397,8 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         {
             using var reader = command.ExecuteReader();
 
-            // Resolve mapper: IMapped<T> > Reflection
-            Func<IDataReader, T>? mapper = MappedCache<T>.Mapper;
-
-            if (mapper is null)
-            {
-                // Use reflection-based mapping
-                var setters = MetadataCache<T>.GetSetters(reader, mode);
-                mapper = r =>
-                {
-                    var entity = new T();
-                    for (int i = 0; i < setters.Length; i++)
-                        setters[i].Set(entity, r);
-                    return entity;
-                };
-            }
+            // Resolve mapper using our new decision tree
+            var mapper = DrDispatcher.Resolve<T>(reader, default, mode);
 
             while (reader.Read())
             {
@@ -1219,7 +1207,7 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         _parent = parent;
         _joinType = joinType;
         _alias = alias;
-        _metadata = MetadataCache<T3>.Metadata;
+        _metadata = FluentMetadataCache.GetMetadata<T3>();
     }
 
     public IJoinedQuery3<T1, T2, T3> On<TLeftKey, TRightKey>(Expression<Func<T1, TLeftKey>> leftKey, Expression<Func<T3, TRightKey>> rightKey)
@@ -1227,7 +1215,7 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         var leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
         var rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
-        var leftColumn = GetColumnName(MetadataCache<T1>.Metadata, leftProp, _parent.FromAlias);
+        var leftColumn = GetColumnName(FluentMetadataCache.GetMetadata<T1>(), leftProp, _parent.FromAlias);
         var rightColumn = GetColumnName(_metadata, rightProp, _alias);
 
         var condition = $"{leftColumn} = {rightColumn}";
@@ -1239,7 +1227,7 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         var leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
         var rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
-        var leftColumn = GetColumnName(MetadataCache<T2>.Metadata, leftProp, _parent.Joins[0].Alias);
+        var leftColumn = GetColumnName(FluentMetadataCache.GetMetadata<T2>(), leftProp, _parent.Joins[0].Alias);
         var rightColumn = GetColumnName(_metadata, rightProp, _alias);
 
         var condition = $"{leftColumn} = {rightColumn}";

@@ -62,7 +62,7 @@ public static partial class Jaunty
     /// <seealso cref="UpsertAsync{T}(IDbConnection, T, CancellationToken)"/>
     /// <seealso cref="Insert{T}(IDbConnection, T)"/>
     /// <seealso cref="Update{T}(IDbConnection, T)"/>
-    public static int Upsert<T>(this IDbConnection connection, T entity) where T : class, new()
+    public static int Upsert<T>(this IDbConnection connection, T entity) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -115,7 +115,7 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="Upsert{T}(IDbConnection, T)"/>
     /// <seealso cref="UpsertAsync{T}(IDbConnection, T, CommandOptions, CancellationToken)"/>
-    public static int Upsert<T>(this IDbConnection connection, T entity, CommandOptions options) where T : class, new()
+    public static int Upsert<T>(this IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -127,7 +127,7 @@ public static partial class Jaunty
         return UpsertCore(connection, entity, options);
     }
 
-    private static int UpsertCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : class, new()
+    private static int UpsertCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -173,7 +173,7 @@ public static partial class Jaunty
         }
     }
 
-    private static void BindUpsertParameters<T>(IDbCommand command, T entity, EntityMetadata metadata) where T : class
+    private static void BindUpsertParameters<T>(IDbCommand command, T entity, EntityMetadata metadata) where T : new()
     {
         IReadOnlyList<ColumnMetadata> columns = metadata.NonIdentityColumns;
 

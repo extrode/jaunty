@@ -21,7 +21,7 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
         _fromBuilder = fromBuilder;
         _joinType = joinType;
         _joinAlias = joinAlias;
-        _joinMetadata = MetadataCache<TJoin>.Metadata;
+        _joinMetadata = FluentMetadataCache.GetMetadata<TJoin>();
     }
 
     public IJoinedQuery<TFrom, TJoin> On<TLeftKey, TRightKey>(Expression<Func<TFrom, TLeftKey>> leftKey,         Expression<Func<TJoin, TRightKey>> rightKey)
@@ -85,7 +85,7 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
 
     private string GetColumnName<T>(string propertyName, string? alias) where T : new()
     {
-        var metadata = MetadataCache<T>.Metadata;
+        var metadata = FluentMetadataCache.GetMetadata<T>();
         var columns = metadata.Columns;
 
         string columnName = propertyName;

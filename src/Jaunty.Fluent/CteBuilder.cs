@@ -31,8 +31,8 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
     {
         _connection = connection;
         _dialect = SqlDialectFactory.GetDialect(connection);
-        _metadata = MetadataCache<T>.Metadata;
-        _cache = FluentMetadataCache<T>.GetForDialect(_dialect);
+        _metadata = FluentMetadataCache.GetMetadata<T>();
+        _cache = FluentMetadataCache.GetForDialect<T>(_dialect);
         _cteName = cteName;
     }
 

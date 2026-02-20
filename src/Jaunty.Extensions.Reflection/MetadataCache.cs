@@ -3,7 +3,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+#if NET5_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -12,10 +14,14 @@ using Jaunty.Internals.Enums;
 
 namespace Jaunty.Extensions.Reflection;
 
-internal static class MetadataCache<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>
+public static class MetadataCache<
+#if NET5_0_OR_GREATER
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+    T>
 {
     public static readonly EntityMetadata Metadata;
-    internal static readonly PropertyContext<T>[] Properties;
+    public static readonly PropertyContext<T>[] Properties;
     private static readonly ConcurrentDictionary<ReaderSignature, PropertySetter<T>[]> SettersCache = new();
 
     private static readonly Dictionary<string, int> ColumnToIndex;
@@ -47,7 +53,7 @@ internal static class MetadataCache<[DynamicallyAccessedMembers(DynamicallyAcces
         ColumnToIndex = nameToIndex;
     }
 
-    internal static PropertySetter<T>[] GetSetters(IDataReader reader, MappingMode mode)
+    public static PropertySetter<T>[] GetSetters(IDataReader reader, MappingMode mode)
     {
         int fieldCount = reader.FieldCount;
         if (fieldCount == 0) return Array.Empty<PropertySetter<T>>();
@@ -135,7 +141,6 @@ internal static class MetadataCache<[DynamicallyAccessedMembers(DynamicallyAcces
 
     private static Action<T, DbDataReader, int> CreateFastSetter(PropertyInfo property)
     {
-        // For simplicity in extension, we'll just wrap the standard setter
         var standard = CreateSetter(property);
         return (target, reader, index) => standard(target, reader, index);
     }
@@ -151,7 +156,7 @@ internal static class MetadataCache<[DynamicallyAccessedMembers(DynamicallyAcces
     private static bool IsNonNullableType(Type type) => type.IsValueType && Nullable.GetUnderlyingType(type) is null;
 }
 
-internal readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, Action<T, DbDataReader, int> fastSetter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
+public readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, Action<T, DbDataReader, int> fastSetter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
 {
     public PropertyInfo Property { get; } = property;
     public Action<T, IDataRecord, int> Setter { get; } = setter;
@@ -161,7 +166,7 @@ internal readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDa
     public bool IsNonNullable { get; } = isNonNullable;
 }
 
-internal readonly struct PropertySetter<T>(PropertyContext<T> context, int ordinal)
+public readonly struct PropertySetter<T>(PropertyContext<T> context, int ordinal)
 {
     public void Set(T target, IDataRecord record)
     {

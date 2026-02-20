@@ -1,5 +1,6 @@
 using Jaunty.Attributes;
 using Jaunty.Configuration;
+using Jaunty.Extensions.Reflection;
 using Jaunty.Internals.Entity;
 
 namespace Jaunty.Tests.Unit.Internals;
