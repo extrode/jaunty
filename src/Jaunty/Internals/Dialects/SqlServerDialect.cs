@@ -39,7 +39,7 @@ internal sealed class SqlServerDialect : ISqlDialect
 
     public string GetDefaultSchema() => "dbo";
 
-    public bool IsKeyword(string identifier) => Keywords.Contains(identifier);
+    public bool IsKeyword(string identifier) => identifier is not null && Keywords.Contains(identifier);
 
     public string EscapeTableName(string? schemaName, string tableName)
     {
@@ -48,7 +48,7 @@ internal sealed class SqlServerDialect : ISqlDialect
         if (string.IsNullOrWhiteSpace(schemaName))
             return escapedTable;
 
-        var escapedSchema = IsKeyword(schemaName) ? $"[{schemaName}]" : schemaName;
+        var escapedSchema = (schemaName is not null && IsKeyword(schemaName)) ? $"[{schemaName}]" : schemaName;
         return $"{escapedSchema}.{escapedTable}";
     }
 

@@ -10,6 +10,7 @@ This document establishes guidelines for designing and evolving the Jaunty API. 
 - [Async Design](#async-design)
 - [Extension Methods](#extension-methods)
 - [Generic Type Constraints](#generic-type-constraints)
+- [LINQ Usage Policy](#linq-usage-policy)
 - [Documentation Standards](#documentation-standards)
 
 ---
@@ -286,6 +287,47 @@ public static List<T> Query<T>(...) where T : new()
 
 ```csharp
 public static long Insert<T>(...) where T : class, new()
+```
+
+---
+
+## LINQ Usage Policy
+
+### Performance Considerations
+
+Jaunty is designed for high performance and low allocations. LINQ, while expressive, often introduces unnecessary heap allocations (enumerators, closures, delegate instances) that can degrade performance in hot paths.
+
+### Prohibited Usage
+
+**Do NOT use LINQ in high-frequency execution paths:**
+
+- Inside `while(reader.Read())` loops (result mapping)
+- Inside `foreach(var entity in entities)` loops (bulk operations)
+- Inside parameter binding loops
+- In metadata resolution that happens per-query
+
+### Permitted Usage
+
+**LINQ is acceptable in the following scenarios:**
+
+- **One-time Initialization**: Building cached SQL statements, parsing type metadata for the first time.
+- **Exception Messages**: Formatting error details (where allocation is expected and non-critical).
+- **Public API Surface**: Returning `IEnumerable<T>` or `IAsyncEnumerable<T>` where users expect LINQ compatibility.
+
+### Preferred Alternatives
+
+Use structured loops on concrete collections to minimize overhead:
+
+```csharp
+// Good: Minimal allocation
+for (int i = 0; i < list.Count; i++)
+{
+    var item = list[i];
+    // process
+}
+
+// Avoid: Allocates enumerator and potential closures
+var results = list.Where(x => x.IsActive).Select(x => x.Name);
 ```
 
 ---

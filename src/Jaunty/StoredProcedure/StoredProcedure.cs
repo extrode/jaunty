@@ -52,7 +52,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
 #endif
-        return ExecuteStoredProcedure<T>(connection, procedureName, null, default);
+        return ExecuteStoredProcedure<T>(connection, procedureName, (object?)null, default(CommandOptions<T>));
     }
 
     /// <summary>
@@ -188,7 +188,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
 #endif
-        return ExecuteStoredProcedureFirst<T>(connection, procedureName, null, default);
+        return ExecuteStoredProcedureFirst<T>(connection, procedureName, (object?)null, default(CommandOptions<T>));
     }
 
     /// <summary>
@@ -316,7 +316,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
 #endif
-        return ExecuteStoredProcedureFirstOrDefault<T>(connection, procedureName, null, default);
+        return ExecuteStoredProcedureFirstOrDefault<T>(connection, procedureName, (object?)null, default(CommandOptions<T>));
     }
 
     /// <summary>
@@ -524,7 +524,7 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureNonQueryAsync(IDbConnection, string, CancellationToken)"/>
     public static int ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName)
     {
-        return ExecuteStoredProcedureNonQuery(connection, procedureName, null, default);
+        return ExecuteStoredProcedureNonQuery(connection, procedureName, (object?)null, default(CommandOptions));
     }
 
     /// <summary>
