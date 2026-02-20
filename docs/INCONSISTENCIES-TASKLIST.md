@@ -70,12 +70,12 @@
 ---
 
 ### 4. Missing Null Checks in Public APIs
-**Status:** PARTIALLY COMPLETED  
+**Status:** COMPLETED  
 **Files:** `Read/Query.cs`, `Read/QueryFirst.cs`, `Read/QuerySingle.cs`, etc.
 
 - [x] Audit all public methods for null checks
 - [x] Add missing null checks using NET8_0_OR_GREATER pattern (Applied to Query.cs, QueryFirst.cs, QueryFirstOrDefault.cs, QuerySingle.cs, QuerySingleOrDefault.cs)
-- [ ] Add unit tests for null parameter scenarios
+- [x] Add unit tests for null parameter scenarios (56 tests covering all public APIs)
 
 ---
 
@@ -548,23 +548,23 @@
 
 | Priority | Total | Completed | In Progress | Not Started |
 |----------|-------|-----------|-------------|-------------|
-| P0 - Critical | 8 | 7 | 1 (partial) | 0 |
+| P0 - Critical | 8 | 8 | 0 | 0 |
 | P1 - High | 15 | 8 | 4 | 3 |
 | P2 - Medium | 16 | 0 | 0 | 16 |
 | P3 - Low | 8 | 0 | 0 | 8 |
-| **TOTAL** | **47** | **15** | **5** | **27** |
+| **TOTAL** | **47** | **16** | **4** | **27** |
 
-**Overall Progress:** 32% complete (15/47 issues fully resolved)
+**Overall Progress:** 34% complete (16/47 issues fully resolved)
 
 ---
 
 ## Next Session Priorities
 
 ### Immediate (Next Session)
-1. **Complete P0 #4** - Add unit tests for null parameter scenarios
-2. **Complete P1 #13** - Finish standardizing exception message format
-3. **Start P1 #14** - Team discussion on return type inconsistency (Insert long vs int)
-4. **Start P1 #19** - Add tests for edge cases
+1. **Complete P1 #13** - Finish standardizing exception message format
+2. **Start P1 #14** - Team discussion on return type inconsistency (Insert long vs int)
+3. **Start P1 #19** - Add tests for edge cases
+4. **Start P1 #23-25** - Improve error messages and document bulk operation semantics
 
 ### Short Term (1-2 weeks)
 5. **P1 #23-25** - Improve error messages and document bulk operation semantics
