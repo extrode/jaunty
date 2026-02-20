@@ -8,11 +8,11 @@
     <CodeAnalysisRuleSet>None.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
-  <!-- net8.0-specific settings -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <NoWarn>CS1591;CS8618</NoWarn>
+    <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
   </PropertyGroup>
 
   <!-- net472-specific settings (loads netstandard2.0 assembly) -->

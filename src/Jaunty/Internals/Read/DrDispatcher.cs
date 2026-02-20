@@ -1,6 +1,9 @@
 using System.Collections;
 using System.Data;
 using System.Data.Common;
+#if NET5_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Dynamic;
 
 using Jaunty.Core;
@@ -11,7 +14,11 @@ namespace Jaunty.Internals.Read;
 
 internal static class DrDispatcher
 {
-    internal static Func<IDataReader, T> Resolve<T>(IDataReader reader, CommandOptions<T> options, MappingMode mode) where T : new()
+    internal static Func<IDataReader, T> Resolve<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.Interfaces | DynamicallyAccessedMemberTypes.PublicMethods)] 
+#endif
+        T>(IDataReader reader, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         if (reader is DbDataReader dbDataReader)
         {
@@ -59,7 +66,11 @@ internal static class DrDispatcher
         };
     }
 
-    internal static Func<DbDataReader, T> Resolve<T>(DbDataReader reader, CommandOptions<T> options, MappingMode mode) where T : new()
+    internal static Func<DbDataReader, T> Resolve<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.Interfaces | DynamicallyAccessedMemberTypes.PublicMethods)] 
+#endif
+        T>(DbDataReader reader, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         // 1. User override
         if (options.Mapper is not null)
@@ -100,7 +111,11 @@ internal static class DrDispatcher
         };
     }
 
-    private static Func<IDataReader, T>? TryResolveSpecialType<T>(IDataReader reader) where T : new()
+    private static Func<IDataReader, T>? TryResolveSpecialType<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+        T>(IDataReader reader) where T : new()
     {
         var type = typeof(T);
 
@@ -139,7 +154,11 @@ internal static class DrDispatcher
         return type == typeof(object) ? CreateExpandoMapper<T>(reader) : null;
     }
 
-    private static Func<IDataReader, T> CreateKeyValuePairMapper<T>(IDataReader reader, Type[] typeArgs) where T : new()
+    private static Func<IDataReader, T> CreateKeyValuePairMapper<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] 
+#endif
+        T>(IDataReader reader, Type[] typeArgs) where T : new()
     {
         var keyType = typeArgs[0];
         var valueType = typeArgs[1];
@@ -155,7 +174,11 @@ internal static class DrDispatcher
         };
     }
 
-    private static Func<IDataReader, T> CreateValueTupleMapper<T>(IDataReader reader, Type[] typeArgs) where T : new()
+    private static Func<IDataReader, T> CreateValueTupleMapper<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] 
+#endif
+        T>(IDataReader reader, Type[] typeArgs) where T : new()
     {
         var itemCount = typeArgs.Length;
 
@@ -173,12 +196,20 @@ internal static class DrDispatcher
         };
     }
 
-    private static object? GetDefault(Type type)
+    private static object? GetDefault(
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+        Type type)
     {
         return type.IsValueType ? Activator.CreateInstance(type) : null;
     }
 
-    private static object? ConvertValue(object value, Type targetType)
+    private static object? ConvertValue(object value, 
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+        Type targetType)
     {
         if (value is null)
             return GetDefault(targetType);
@@ -213,7 +244,14 @@ internal static class DrDispatcher
         };
     }
 
-    private static Func<IDataReader, T> CreateDictionaryMapper<T>(IDataReader reader, Type valueType) where T : new()
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode("Reflection-based dictionary mapping is not AOT-safe.")]
+#endif
+    private static Func<IDataReader, T> CreateDictionaryMapper<T>(IDataReader reader, 
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+        Type valueType) where T : new()
     {
         // Cache column names and ordinals
         var fieldCount = reader.FieldCount;

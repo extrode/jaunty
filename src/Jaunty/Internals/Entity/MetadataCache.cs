@@ -1,6 +1,9 @@
 using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
+#if NET5_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -11,7 +14,11 @@ using System.Collections.Frozen;
 using Jaunty.Internals.Enums;
 namespace Jaunty.Internals.Entity;
 
-internal static class MetadataCache<T>
+internal static class MetadataCache<
+#if NET5_0_OR_GREATER
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+    T>
 {
     public static readonly EntityMetadata Metadata;
     internal static readonly PropertyContext<T>[] Properties;
@@ -367,7 +374,11 @@ internal static class MetadataCache<T>
     }
 }
 
-internal readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, Action<T, DbDataReader, int> fastSetter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
+internal readonly struct PropertyContext<
+#if NET5_0_OR_GREATER
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+    T>(PropertyInfo property, Action<T, IDataRecord, int> setter, Action<T, DbDataReader, int> fastSetter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
 {
     public PropertyInfo Property { get; } = property;
     public Action<T, IDataRecord, int> Setter { get; } = setter;
@@ -378,7 +389,11 @@ internal readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDa
     public bool IsNonNullable { get; } = isNonNullable;
 }
 
-internal readonly struct PropertySetter<T>(PropertyContext<T> context, int ordinal)
+internal readonly struct PropertySetter<
+#if NET5_0_OR_GREATER
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+    T>(PropertyContext<T> context, int ordinal)
 {
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public void Set(T target, IDataRecord record)
