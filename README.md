@@ -78,110 +78,19 @@ var filtered = connection.Query<Product>(sql, 1, "active", 50.00m);  // multiple
 
 // Async with cancellation
 var products = await connection.QueryAsync<Product>(sql, cancellationToken);
-```
 
-## Comprehensive Examples
+// Insert, Update, Delete
+var id = connection.Insert(product);        // Returns identity value
+var rows = connection.Update(product);      // Returns rows affected
+var rows = connection.Delete(product);      // Returns rows affected
 
-### Advanced Parameter Binding
+// Bulk operations
+var rows = connection.BulkInsert(products);   // Fast bulk insert
+var rows = connection.BulkUpdate(products);   // Fast bulk update
+var rows = connection.BulkDelete(products);   // Fast bulk delete
 
-**Multiple positional parameters:**
-```csharp
-var products = connection.Query<Product>(
-    "SELECT * FROM products WHERE price BETWEEN @MinPrice AND @MaxPrice AND category_id = @CategoryId",
-    10.00m, 100.00m, 2);  // @MinPrice=10.00, @MaxPrice=100.00, @CategoryId=2
-```
-
-**Array parameters:**
-```csharp
-var products = connection.Query<Product>(
-    "SELECT * FROM products WHERE category_id = @CategoryId",
-    new object[] { 1 });
-```
-
-**Parameter validation:**
-```csharp
-// This will throw immediately with a clear error message
-try
-{
-    connection.Query<Product>(sql, 1, 2, 3);  // If SQL only has 2 parameters
-}
-catch (ArgumentException ex)
-{
-    // "Parameter count mismatch: SQL contains 2 unique parameter(s), but 3 value(s) provided."
-}
-```
-
-### Working with Different Data Types
-
-**Nullable types:**
-```csharp
-public class Product
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public decimal Price { get; set; }
-    public int? CategoryId { get; set; }  // Nullable - NULL becomes null
-    public DateTime? DiscontinuedDate { get; set; }  // Nullable - NULL becomes null
-}
-
-var products = connection.Query<Product>("SELECT id, name, price, category_id, discontinued_date FROM products");
-```
-
-**Handling NULL values:**
-```csharp
-// Non-nullable value types will throw if database returns NULL
-public class Product
-{
-    public int Id { get; set; }        // If database returns NULL for 'id', throws InvalidOperationException
-    public string Name { get; set; }   // NULL becomes null (reference type)
-    public int? CategoryId { get; set; } // NULL becomes null (nullable)
-}
-```
-
-### Complex Transaction and Timeout Scenarios
-
-**Combining transaction and timeout:**
-```csharp
-using var transaction = connection.BeginTransaction();
-
-var orders = connection.Query<Order>(
-    "SELECT * FROM orders WHERE customer_id = @CustomerId",
-    new { CustomerId = 123 },
-    CommandOptions.With(transaction, timeoutSeconds: 30));
-
-transaction.Commit();
-```
-
-**Async with custom timeout:**
-```csharp
-var products = await connection.QueryAsync<Product>(
-    "SELECT * FROM products WHERE category_id = @CategoryId",
-    new { CategoryId = 1 },
-    CommandOptions.WithTimeout(15),
-    cancellationToken);
-```
-
-### Configuration Examples
-
-**Custom naming conventions:**
-```csharp
-// At application startup
-JauntyConfig.ColumnNameResolver = propertyName => $"col_{propertyName.ToLower()}";
-JauntyConfig.TableNameResolver = type => $"tbl_{type.Name.ToLower()}";
-
-// Now property 'ProductName' maps to column 'col_productname'
-// And class 'Product' maps to table 'tbl_product'
-```
-
-**Using built-in conventions:**
-```csharp
-// Snake case for columns
-JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
-// Results in 'ProductName' -> 'product_name'
-
-// Plural table names
-JauntyConfig.TableNameResolver = NamingConvention.SnakeCasePluralTable;
-// Results in 'Product' -> 'products'
+// Upsert (insert or update)
+var rows = connection.Upsert(product);  // Inserts if new, updates if exists
 ```
 
 ---
@@ -232,6 +141,58 @@ var summaries = connection.QueryPartial<OrderSummary>(
 ```
 
 **Use partial mode when:** You're intentionally selecting a subset of columns, using DTOs, or working with projections.
+
+---
+
+## Complete API Reference
+
+### Query Methods (Read Operations)
+
+| Method | Returns | Mapping | Description |
+|--------|---------|---------|-------------|
+| `Query<T>()` | `List<T>` | Strict | All properties must have columns |
+| `QueryPartial<T>()` | `List<T>` | Partial | Map only matching columns |
+| `QueryFirst<T>()` | `T` | Strict | First row, throws if empty |
+| `QueryFirstOrDefault<T>()` | `T?` | Strict | First row, null if empty |
+| `QuerySingle<T>()` | `T` | Strict | Exactly one row, throws otherwise |
+| `QuerySingleOrDefault<T>()` | `T?` | Strict | Single or null |
+| `QueryScalar<T>()` | `T` | — | First column of first row |
+| `QueryStream<T>()` | `IEnumerable<T>` | Strict | Streaming results |
+| `QueryPartialStream<T>()` | `IEnumerable<T>` | Partial | Streaming partial results |
+| `QueryMultiple()` | `GridReader` | — | Multiple result sets |
+
+All methods have async counterparts (`QueryAsync<T>()`, etc.) with `CancellationToken` support.
+
+### Write Operations
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Insert<T>()` | `long` | Insert entity, returns identity value |
+| `Update<T>()` | `int` | Update entity by primary key |
+| `Delete<T>()` | `int` | Delete entity by primary key |
+| `Delete<T>(id)` | `int` | Delete by ID value |
+| `BulkInsert<T>()` | `int` | Bulk insert multiple entities |
+| `BulkUpdate<T>()` | `int` | Bulk update multiple entities |
+| `BulkDelete<T>()` | `int` | Bulk delete multiple entities |
+| `Upsert<T>()` | `int` | Insert or update by primary key |
+
+All write methods have async counterparts.
+
+### Stored Procedures
+
+```csharp
+// Execute stored procedure
+var results = connection.ExecuteStoredProcedure<Product>("GetProductsByCategory", 
+    new { CategoryId = 1 });
+
+// With output parameters
+var parameters = new SpParameters()
+    .AddInput("CategoryId", 1)
+    .AddOutput("TotalCount", DbType.Int32);
+
+connection.ExecuteStoredProcedureWithOutput("GetProductCount", parameters);
+var count = parameters.Get<int>("TotalCount");
+```
 
 ---
 
@@ -309,6 +270,24 @@ var orders = connection.Query<Order>(sql, parameters,
 transaction.Commit();
 ```
 
+### Bulk Operations with Transaction
+
+```csharp
+using var transaction = connection.BeginTransaction();
+
+try
+{
+    connection.BulkInsert(products, CommandOptions.WithTransaction(transaction));
+    connection.BulkInsert(orders, CommandOptions.WithTransaction(transaction));
+    transaction.Commit();
+}
+catch
+{
+    transaction.Rollback();
+    throw;
+}
+```
+
 ---
 
 ## Attribute Mapping
@@ -332,6 +311,12 @@ public class OrderItem
 
     [Ignore]  // Not mapped from database
     public decimal CalculatedDiscount { get; set; }
+    
+    [Key]  // Primary key
+    public int OrderId { get; set; }
+    
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; }
 }
 
 // SQL uses database column names
@@ -379,19 +364,66 @@ JauntyConfig.ColumnNameResolver = prop => $"col_{prop.ToLower()}";
 
 ## Async Support
 
-Every method has an async counterpart. CancellationToken is optional.
+Every method has an async counterpart. `CancellationToken` is optional.
 
 ```csharp
-// Without cancellation token
+// Query async
 var products = await connection.QueryAsync<Product>(sql);
-var count = await connection.QueryScalarAsync<long>(sql);
-
-// With cancellation token
 var products = await connection.QueryAsync<Product>(sql, cancellationToken);
-var products = await connection.QueryAsync<Product>(sql, parameters, cancellationToken);
 
-// Partial mapping async
-var summaries = await connection.QueryPartialAsync<ProductSummary>(sql, cancellationToken);
+// Write async
+var id = await connection.InsertAsync(product);
+var rows = await connection.BulkInsertAsync(products);
+var rows = await connection.UpsertAsync(product);
+
+// Streaming async
+await foreach (var product in connection.QueryStreamAsync<Product>(sql, cancellationToken))
+{
+    Console.WriteLine($"{product.Id}: {product.Name}");
+}
+
+// Multiple result sets async
+using var grid = await connection.QueryMultipleAsync(sql);
+var products = grid.Read<Product>();
+var categories = grid.Read<Category>();
+```
+
+---
+
+## Multiple Result Sets
+
+Execute multiple queries in a single round-trip.
+
+```csharp
+using var grid = connection.QueryMultiple(@"
+    SELECT * FROM products WHERE category_id = @CategoryId;
+    SELECT * FROM categories WHERE id = @CategoryId;
+    SELECT COUNT(*) FROM products;
+", new { CategoryId = 1 });
+
+var products = grid.Read<Product>().ToList();
+var category = grid.ReadFirst<Category>();
+var totalProducts = grid.ReadScalar<int>();
+```
+
+---
+
+## Streaming Large Result Sets
+
+For large result sets, use streaming to avoid buffering everything in memory.
+
+```csharp
+// Synchronous streaming
+foreach (var product in connection.QueryStream<Product>("SELECT * FROM products"))
+{
+    Process(product);
+}
+
+// Async streaming (.NET 8+)
+await foreach (var product in connection.QueryStreamAsync<Product>("SELECT * FROM products"))
+{
+    await ProcessAsync(product);
+}
 ```
 
 ---
@@ -416,6 +448,8 @@ No surprises. No leaked connections.
 
 4. **SQL Parsing** — Parameter extraction skips string literals, comments, and quoted identifiers. Cheap compared to network roundtrip.
 
+5. **Command Template Caching** — SQL parameter templates cached per query type.
+
 ### NULL Handling
 
 - **Nullable types** (`int?`, `string`, etc.): NULL becomes `default`
@@ -429,38 +463,6 @@ public class Product
     public string Name { get; set; }      // NULL becomes null
 }
 ```
-
----
-
-## API Reference
-
-### Query Methods
-
-| Method | Mapping | Description |
-|--------|---------|-------------|
-| `Query<T>` | Strict | All properties must have columns |
-| `QueryPartial<T>` | Partial | Map only matching columns |
-| `QueryScalar<T>` | — | First column of first row |
-| `QueryAsync<T>` | Strict | Async strict mapping |
-| `QueryPartialAsync<T>` | Partial | Async partial mapping |
-| `QueryScalarAsync<T>` | — | Async scalar |
-
-### Attributes
-
-| Attribute | Target | Purpose |
-|-----------|--------|---------|
-| `[Table("name")]` | Class | Override table name |
-| `[Column("name")]` | Property | Override column name |
-| `[Ignore]` | Property | Exclude from mapping |
-
-### Configuration
-
-| Member | Purpose |
-|--------|---------|
-| `JauntyConfig.TableNameResolver` | `Func<Type, string>` for table names |
-| `JauntyConfig.ColumnNameResolver` | `Func<string, string>` for column names |
-| `JauntyConfig.Reset()` | Clear configuration |
-| `NamingConvention.*` | Built-in naming helpers |
 
 ---
 
@@ -482,6 +484,10 @@ Overloads for every combination of transaction/timeout/parameters create ambigui
 
 Performance. Static generic classes initialize once per type and live for the application lifetime. Configuration should happen at startup before queries run—this is a feature, not a limitation.
 
+### Why separate Bulk operations?
+
+Bulk operations use optimized paths for batch inserts/updates/deletes. They're faster than individual operations when working with collections.
+
 ---
 
 ## Comparison
@@ -494,8 +500,24 @@ Performance. Static generic classes initialize once per type and live for the ap
 | Positional parameters | Yes | No | No |
 | Zero dependencies | Yes | Yes | No |
 | Connection state management | Yes | Yes | Yes |
+| Bulk operations | Yes | No | Yes |
+| Upsert support | Yes | No | Yes |
+| Streaming (IAsyncEnumerable) | Yes | No | Yes |
+| Multiple result sets | Yes | Yes | Limited |
+| Stored procedures | Yes | Yes | Yes |
 | LINQ translation | No | No | Yes |
 | Change tracking | No | No | Yes |
+
+---
+
+## Documentation
+
+For more detailed documentation, see:
+
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) - Contributing guide
+- [`docs/API-DESIGN.md`](docs/API-DESIGN.md) - API design guidelines
+- [`docs/CODE-REVIEW.md`](docs/CODE-REVIEW.md) - Code review checklist
+- [`docs/ARCHITECTURE-DECISIONS.md`](docs/ARCHITECTURE-DECISIONS.md) - Architecture decision records
 
 ---
 
