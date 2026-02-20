@@ -269,7 +269,7 @@ public class SqlDialectTests
         [Fact]
         public void GetLastInsertIdSql_ReturnsScopeIdentity()
         {
-            Assert.Equal("SELECT CAST(SCOPE_IDENTITY() AS INT);", _dialect.GetLastInsertIdSql());
+            Assert.Equal("SELECT CAST(SCOPE_IDENTITY() AS BIGINT);", _dialect.GetLastInsertIdSql());
         }
 
         [Fact]
