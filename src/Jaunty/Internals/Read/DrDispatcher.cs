@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Data;
 using System.Data.Common;
 using System.Dynamic;
@@ -6,7 +7,7 @@ using Jaunty.Core;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 
-namespace Jaunty.Internals;
+namespace Jaunty.Internals.Read;
 
 internal static class DrDispatcher
 {
@@ -109,20 +110,18 @@ internal static class DrDispatcher
             var keyType = type.GetGenericArguments()[0];
             var valueType = type.GetGenericArguments()[1];
 
-            if (keyType != typeof(string))
-                throw new NotSupportedException($"Dictionary key type must be string, got {keyType.Name}");
-
-            return CreateDictionaryMapper<T>(reader, valueType);
+            return keyType != typeof(string)
+                ? throw new NotSupportedException($"Dictionary key type must be string, got {keyType.Name}")
+                : CreateDictionaryMapper<T>(reader, valueType);
         }
 
         // KeyValuePair<TKey, TValue> - two columns: first is Key, second is Value
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
         {
-            if (reader.FieldCount < 2)
-                throw new InvalidOperationException(
-                    $"Type '{type.Name}' requires at least 2 columns, but query returned {reader.FieldCount}.");
-
-            return CreateKeyValuePairMapper<T>(reader, type.GetGenericArguments());
+            return reader.FieldCount < 2
+                ? throw new InvalidOperationException(
+                    $"Type '{type.Name}' requires at least 2 columns, but query returned {reader.FieldCount}.")
+                : CreateKeyValuePairMapper<T>(reader, type.GetGenericArguments());
         }
 
         // ValueTuple - positional mapping
@@ -137,12 +136,7 @@ internal static class DrDispatcher
         }
 
         // dynamic (object at compile time) - return ExpandoObject
-        if (type == typeof(object))
-        {
-            return CreateExpandoMapper<T>(reader);
-        }
-
-        return null;
+        return type == typeof(object) ? CreateExpandoMapper<T>(reader) : null;
     }
 
     private static Func<IDataReader, T> CreateKeyValuePairMapper<T>(IDataReader reader, Type[] typeArgs) where T : new()
@@ -251,7 +245,7 @@ internal static class DrDispatcher
             return r =>
             {
                 // Create Dictionary<string, TValue> with case-insensitive comparer
-                var dict = (System.Collections.IDictionary)Activator.CreateInstance(
+                var dict = (IDictionary)Activator.CreateInstance(
                     dictType,
                     fieldCount,
                     StringComparer.OrdinalIgnoreCase)!;

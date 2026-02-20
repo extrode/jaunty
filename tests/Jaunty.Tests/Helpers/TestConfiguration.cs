@@ -21,9 +21,11 @@ public static class TestConfiguration
 
     public static string SqlServerConnectionString => _connectionStrings.Value.SqlServer;
     public static string PostgreSqlConnectionString => _connectionStrings.Value.PostgreSql;
+    public static string MySqlConnectionString => _connectionStrings.Value.MySql;
 
     public static bool HasSqlServer => !string.IsNullOrWhiteSpace(SqlServerConnectionString);
     public static bool HasPostgreSql => !string.IsNullOrWhiteSpace(PostgreSqlConnectionString);
+    public static bool HasMySql => !string.IsNullOrWhiteSpace(MySqlConnectionString);
 
     private static TestConnectionStrings Load()
     {
@@ -32,9 +34,10 @@ public static class TestConfiguration
         // Priority 1: Environment variables
         result.SqlServer = Environment.GetEnvironmentVariable("JAUNTY_TEST_SQLSERVER") ?? "";
         result.PostgreSql = Environment.GetEnvironmentVariable("JAUNTY_TEST_POSTGRESQL") ?? "";
+        result.MySql = Environment.GetEnvironmentVariable("JAUNTY_TEST_MYSQL") ?? "";
 
         // Priority 2: appsettings.json (if env vars not set)
-        if (string.IsNullOrWhiteSpace(result.SqlServer) || string.IsNullOrWhiteSpace(result.PostgreSql))
+        if (string.IsNullOrWhiteSpace(result.SqlServer) || string.IsNullOrWhiteSpace(result.PostgreSql) || string.IsNullOrWhiteSpace(result.MySql))
         {
             LoadFromAppSettings(result);
         }
@@ -82,6 +85,12 @@ public static class TestConfiguration
                 {
                     result.PostgreSql = postgres.GetString() ?? "";
                 }
+
+                if (string.IsNullOrWhiteSpace(result.MySql) &&
+                    connStrings.TryGetProperty("MySql", out var mysql))
+                {
+                    result.MySql = mysql.GetString() ?? "";
+                }
             }
         }
         catch
@@ -99,6 +108,9 @@ public static class TestConfiguration
 
             if (string.IsNullOrWhiteSpace(result.PostgreSql))
                 result.PostgreSql = ExtractJsonValue(json, "PostgreSql");
+
+            if (string.IsNullOrWhiteSpace(result.MySql))
+                result.MySql = ExtractJsonValue(json, "MySql");
         }
         catch
         {
@@ -135,5 +147,6 @@ public static class TestConfiguration
     {
         public string SqlServer { get; set; } = "";
         public string PostgreSql { get; set; } = "";
+        public string MySql { get; set; } = "";
     }
 }

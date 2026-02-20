@@ -3,9 +3,9 @@ using System.Data.Common;
 using System.Runtime.CompilerServices;
 
 using Jaunty.Core;
-using Jaunty.Internals;
 using Jaunty.Internals.Enums;
 using Jaunty.Internals.Parameters;
+using Jaunty.Internals.Read;
 
 namespace Jaunty;
 
