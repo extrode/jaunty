@@ -2,9 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
-#if NET5_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
-#endif
 using System.Reflection;
 using Jaunty.Internals.Entity;
 
