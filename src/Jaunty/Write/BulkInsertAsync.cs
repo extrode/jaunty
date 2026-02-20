@@ -1,6 +1,8 @@
 using System.Data;
 using System.Data.Common;
+#if NET5_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
+#endif
 
 using Jaunty.Core;
 using Jaunty.Internals;
@@ -15,53 +17,11 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database in a single transaction.
     /// </summary>
-    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
-    /// <param name="connection">The database connection to execute the bulk insert against. Must be a <see cref="DbConnection"/>.</param>
-    /// <param name="entities">The collection of entities to insert.</param>
-    /// <param name="cancellationToken">
-    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
-    /// </param>
-    /// <returns>A task containing the number of rows inserted.</returns>
-    /// <remarks>
-    /// <para>
-    /// This method performs a bulk insert operation within a transaction. All entities are inserted 
-    /// atomically - if any insert fails, the entire operation is rolled back.
-    /// </para>
-    /// <para>
-    /// <strong>Foreign key constraints are enforced.</strong>
-    /// </para>
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// public class Product
-    /// {
-    ///     public int Id { get; set; }
-    ///     public string Name { get; set; }
-    ///     public decimal Price { get; set; }
-    /// }
-    /// 
-    /// // Async bulk insert multiple products
-    /// var products = new List&lt;Product&gt;
-    /// {
-    ///     new Product { Name = "Widget", Price = 19.99m },
-    ///     new Product { Name = "Gadget", Price = 29.99m },
-    ///     new Product { Name = "Gizmo", Price = 39.99m }
-    /// };
-    /// 
-    /// int inserted = await connection.BulkInsertAsync(products);
-    /// Console.WriteLine($"Inserted {inserted} products");
-    /// </code>
-    /// </example>
-    /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
-    /// <seealso cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/>
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Reflection-based bulk insert may be broken in trimmed/AOT environments.")]
-#endif
     public static ValueTask<int> BulkInsertAsync<
 #if NET5_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
 #endif
-        T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
+        T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -78,49 +38,11 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database in a single transaction with command options.
     /// </summary>
-    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
-    /// <param name="connection">The database connection to execute the bulk insert against. Must be a <see cref="DbConnection"/>.</param>
-    /// <param name="entities">The collection of entities to insert.</param>
-    /// <param name="options">
-    /// Command options for configuring the bulk insert execution. Use 
-    /// <see cref="CommandOptions{T}.WithTransaction(IDbTransaction)"/> for transactions or
-    /// <see cref="CommandOptions{T}.WithTimeout(int)"/> for command timeout.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
-    /// </param>
-    /// <returns>A task containing the number of rows inserted.</returns>
-    /// <remarks>
-    /// <para>
-    /// <strong>Foreign key constraints are enforced.</strong>
-    /// </para>
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// // Async bulk insert with transaction
-    /// using var tx = connection.BeginTransaction();
-    /// var products = new List&lt;Product&gt;
-    /// {
-    ///     new Product { Name = "Widget", Price = 19.99m },
-    ///     new Product { Name = "Gadget", Price = 29.99m }
-    /// };
-    /// 
-    /// int inserted = await connection.BulkInsertAsync(
-    ///     products, 
-    ///     CommandOptions.WithTransaction(tx));
-    /// tx.Commit();
-    /// </code>
-    /// </example>
-    /// <seealso cref="CommandOptions{T}"/>
-    /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Reflection-based bulk insert may be broken in trimmed/AOT environments.")]
-#endif
     public static ValueTask<int> BulkInsertAsync<
 #if NET5_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
 #endif
-        T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+        T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -137,44 +59,11 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database, bypassing foreign key constraint checks.
     /// </summary>
-    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
-    /// <param name="connection">The database connection to execute the bulk insert against. Must be a <see cref="DbConnection"/>.</param>
-    /// <param name="entities">The collection of entities to insert.</param>
-    /// <param name="cancellationToken">
-    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
-    /// </param>
-    /// <returns>A task containing the number of rows inserted.</returns>
-    /// <remarks>
-    /// <para>
-    /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use only for migrations,
-    /// data imports, or scenarios where you explicitly don't need FK validation.
-    /// </para>
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// // Async bulk insert without FK checks
-    /// var products = new List&lt;Product&gt;
-    /// {
-    ///     new Product { Id = 1, Name = "Widget", CategoryId = 999 },
-    ///     new Product { Id = 2, Name = "Gadget", CategoryId = 999 }
-    /// };
-    /// 
-    /// int inserted = await connection.BulkInsertIgnoreConstraintsAsync(products);
-    /// </code>
-    /// </example>
-    /// <exception cref="NotSupportedException">
-    /// Thrown if the database provider doesn't support foreign key toggling (e.g., SQL Server).
-    /// </exception>
-    /// <seealso cref="BulkInsertIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
-    /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Reflection-based bulk insert may be broken in trimmed/AOT environments.")]
-#endif
     public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<
 #if NET5_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
 #endif
-        T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
+        T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -191,50 +80,11 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database, bypassing foreign key constraint checks, with command options.
     /// </summary>
-    /// <typeparam name="T">The entity type to insert. Must be a class with a parameterless constructor.</typeparam>
-    /// <param name="connection">The database connection to execute the bulk insert against. Must be a <see cref="DbConnection"/>.</param>
-    /// <param name="entities">The collection of entities to insert.</param>
-    /// <param name="options">
-    /// Command options for configuring the bulk insert execution.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
-    /// </param>
-    /// <returns>A task containing the number of rows inserted.</returns>
-    /// <remarks>
-    /// <para>
-    /// <strong>WARNING:</strong> This method temporarily disables referential integrity. Use with caution.
-    /// </para>
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// // Async bulk insert without FK checks with transaction
-    /// using var tx = connection.BeginTransaction();
-    /// var products = new List&lt;Product&gt;
-    /// {
-    ///     new Product { Id = 1, Name = "Widget", CategoryId = 999 },
-    ///     new Product { Id = 2, Name = "Gadget", CategoryId = 999 }
-    /// };
-    /// 
-    /// int inserted = await connection.BulkInsertIgnoreConstraintsAsync(
-    ///     products, 
-    ///     CommandOptions.WithTransaction(tx));
-    /// tx.Commit();
-    /// </code>
-    /// </example>
-    /// <exception cref="NotSupportedException">
-    /// Thrown if the database provider doesn't support foreign key toggling.
-    /// </exception>
-    /// <seealso cref="BulkInsertIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
-    /// <seealso cref="CommandOptions{T}"/>
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Reflection-based bulk insert may be broken in trimmed/AOT environments.")]
-#endif
     public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<
 #if NET5_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
 #endif
-        T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+        T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -248,14 +98,11 @@ public static partial class Jaunty
             : BulkInsertCoreAsync(dbConnection, entities, options, ignoreConstraints: true, cancellationToken);
     }
 
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Reflection-based bulk insert may be broken in trimmed/AOT environments.")]
-#endif
     private static async ValueTask<int> BulkInsertCoreAsync<
 #if NET5_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
 #endif
-        T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : class, new()
+        T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -315,17 +162,8 @@ public static partial class Jaunty
 
             try
             {
-                // PostgreSQL Fast Path: COPY (Binary Import)
-                if (connection.GetType().Name == "NpgsqlConnection" && !ignoreConstraints)
-                {
-                    return await ExecutePostgreSqlBinaryImportAsync(connection, entityList, cached, options, cancellationToken);
-                }
-
-                // SQL Server Fast Path: SqlBulkCopy
-                if (connection.GetType().Name == "SqlConnection" && !ignoreConstraints)
-                {
-                    return await ExecuteSqlServerBulkInsertAsync(connection, entityList, cached, options, cancellationToken);
-                }
+                // Provider-specific fast paths removed from core to ensure 100% NativeAOT/Zero-Reflection compatibility.
+                // Use explicit provider extensions if specialized bulk operations are needed.
 
 #if NET8_0_OR_GREATER
                 await using var command = connection.CreateCommand();
@@ -341,6 +179,11 @@ public static partial class Jaunty
                 PrepareInsertParameters(command, cached.Metadata);
 
                 var valueSetter = WriteParameterCache<T>.InsertValueSetter;
+                if (valueSetter == null)
+                {
+                    throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure the class is source-generated or reflection extension is loaded.");
+                }
+
                 var pCollection = command.Parameters;
 
                 foreach (var entity in entityList)
@@ -429,137 +272,4 @@ public static partial class Jaunty
             }
         }
     }
-
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Calls runtime-discovered provider methods via reflection for PostgreSQL binary import.")]
-#endif
-    private static async ValueTask<int> ExecutePostgreSqlBinaryImportAsync<
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] 
-#endif
-        T>(DbConnection connection, IList<T> entities, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
-    {
-        var metadata = cached.Metadata;
-        var columns = metadata.NonIdentityColumns;
-        var columnNames = string.Join(", ", columns.Select(c => $"\"{c.ColumnName}\""));
-        var tableName = string.IsNullOrEmpty(metadata.SchemaName) 
-            ? $"\"{metadata.TableName}\"" 
-            : $"\"{metadata.SchemaName}\".\"{metadata.TableName}\"";
-        var copySql = $"COPY {tableName} ({columnNames}) FROM STDIN (FORMAT BINARY)";
-
-        // Reflection to call Npgsql methods without direct dependency
-        var beginBinaryImportMethod = connection.GetType().GetMethod("BeginBinaryImport", [typeof(string)]);
-        if (beginBinaryImportMethod == null) return -1; // Fallback to standard loop if method not found
-
-        var writer = beginBinaryImportMethod.Invoke(connection, [copySql]);
-        if (writer == null) return -1;
-
-        var writerType = writer.GetType();
-        var writeAsyncMethod = writerType.GetMethod("WriteAsync");
-        var startRowAsyncMethod = writerType.GetMethod("StartRowAsync");
-        var completeAsyncMethod = writerType.GetMethod("CompleteAsync");
-        var disposeAsyncMethod = writerType.GetMethod("DisposeAsync");
-
-        if (writeAsyncMethod == null || startRowAsyncMethod == null || completeAsyncMethod == null) return -1;
-
-        var properties = MetadataCache<T>.Properties;
-        var writeColumns = new List<PropertyContext<T>>();
-        foreach (var col in columns)
-        {
-            var prop = properties.FirstOrDefault(p => p.Property == col.Property);
-            writeColumns.Add(prop);
-        }
-
-        try
-        {
-            foreach (var entity in entities)
-            {
-                await (Task)startRowAsyncMethod.Invoke(writer, [cancellationToken])!;
-                foreach (var col in writeColumns)
-                {
-                    var value = col.Getter(entity);
-                    await (Task)writeAsyncMethod.MakeGenericMethod(value?.GetType() ?? typeof(object))
-                        .Invoke(writer, [value, cancellationToken])!;
-                }
-            }
-
-            return (int)await (Task<ulong>)completeAsyncMethod.Invoke(writer, [cancellationToken])!;
-        }
-        finally
-        {
-            if (disposeAsyncMethod != null)
-                await (ValueTask)disposeAsyncMethod.Invoke(writer, [])!;
-        }
-    }
-
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Calls runtime-discovered provider methods via reflection for SQL Server SqlBulkCopy.")]
-#endif
-    private static async ValueTask<int> ExecuteSqlServerBulkInsertAsync<
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] 
-#endif
-        T>(DbConnection connection, IList<T> entities, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
-    {
-        var metadata = cached.Metadata;
-        var columns = metadata.NonIdentityColumns;
-        var tableName = string.IsNullOrEmpty(metadata.SchemaName) 
-            ? $"[{metadata.TableName}]" 
-            : $"[{metadata.SchemaName}].[{metadata.TableName}]";
-
-        // Create DataTable for SqlBulkCopy
-        var dt = new DataTable();
-        var properties = MetadataCache<T>.Properties;
-        var writeColumns = new List<PropertyContext<T>>();
-        
-        foreach (var col in columns)
-        {
-            var prop = properties.FirstOrDefault(p => p.Property == col.Property);
-            writeColumns.Add(prop);
-            dt.Columns.Add(col.ColumnName, Nullable.GetUnderlyingType(prop.Property.PropertyType) ?? prop.Property.PropertyType);
-        }
-
-        foreach (var entity in entities)
-        {
-            var row = dt.NewRow();
-            for (int i = 0; i < writeColumns.Count; i++)
-            {
-                row[i] = writeColumns[i].Getter(entity) ?? DBNull.Value;
-            }
-            dt.Rows.Add(row);
-        }
-
-        // Reflection to call SqlBulkCopy methods
-        var assembly = connection.GetType().Assembly;
-        var bulkCopyType = assembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopy") 
-                          ?? assembly.GetType("System.Data.SqlClient.SqlBulkCopy");
-        
-        if (bulkCopyType == null) return -1;
-
-        var optionsType = assembly.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions")
-                         ?? assembly.GetType("System.Data.SqlClient.SqlBulkCopyOptions");
-        
-        // Default options: KeepIdentity | CheckConstraints
-        object bulkOptions = optionsType != null ? Enum.ToObject(optionsType, 0) : 0;
-
-        var bulkCopy = Activator.CreateInstance(bulkCopyType, connection, bulkOptions, options.Transaction)!;
-        try
-        {
-            bulkCopyType.GetProperty("DestinationTableName")!.SetValue(bulkCopy, tableName);
-            if (options.CommandTimeout.HasValue)
-                bulkCopyType.GetProperty("BulkCopyTimeout")!.SetValue(bulkCopy, options.CommandTimeout.Value);
-
-            var writeToServerAsyncMethod = bulkCopyType.GetMethod("WriteToServerAsync", [typeof(DataTable), typeof(CancellationToken)]);
-            if (writeToServerAsyncMethod == null) return -1;
-
-            await (Task)writeToServerAsyncMethod.Invoke(bulkCopy, [dt, cancellationToken])!;
-            
-            return entities.Count;
-        }
-        finally
-        {
-            if (bulkCopy is IDisposable disposable) disposable.Dispose();
-        }
-    }
 }
-

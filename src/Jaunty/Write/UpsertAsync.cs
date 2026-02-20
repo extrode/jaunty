@@ -65,7 +65,7 @@ public static partial class Jaunty
     /// <seealso cref="Upsert{T}(IDbConnection, T)"/>
     /// <seealso cref="InsertAsync{T}(IDbConnection, T, CancellationToken)"/>
     /// <seealso cref="UpdateAsync{T}(IDbConnection, T, CancellationToken)"/>
-    public static ValueTask<int> UpsertAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> UpsertAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -123,7 +123,7 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="UpsertAsync{T}(IDbConnection, T, CancellationToken)"/>
     /// <seealso cref="Upsert{T}(IDbConnection, T, CommandOptions)"/>
-    public static ValueTask<int> UpsertAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> UpsertAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -137,7 +137,7 @@ public static partial class Jaunty
             : UpsertCoreAsync(dbConnection, entity, options, cancellationToken);
     }
 
-    private static async ValueTask<int> UpsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+    private static async ValueTask<int> UpsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);

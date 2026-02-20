@@ -49,7 +49,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="DeleteAsync{T}(IDbConnection, T, CommandOptions, CancellationToken)"/>
     /// <seealso cref="DeleteAsync{T}(IDbConnection, object, CancellationToken)"/>
-    public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -102,7 +102,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="DeleteAsync{T}(IDbConnection, T, CancellationToken)"/>
-    public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -152,7 +152,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="DeleteAsync{T}(IDbConnection, T, CancellationToken)"/>
     /// <seealso cref="DeleteAsync{T}(IDbConnection, object, CommandOptions, CancellationToken)"/>
-    public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, object id, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, object id, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -200,7 +200,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="DeleteAsync{T}(IDbConnection, object, CancellationToken)"/>
-    public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -254,7 +254,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="DeleteAsync{T}(IDbConnection, object, CancellationToken)"/>
     /// <seealso cref="DeleteAsync{T, TId}(IDbConnection, TId, CommandOptions, CancellationToken)"/>
-    public static ValueTask<int> DeleteAsync<T, TId>(this IDbConnection connection, TId id, CancellationToken cancellationToken = default) where T : IEntity<TId>
+    public static ValueTask<int> DeleteAsync<T, TId>(this IDbConnection connection, TId id, CancellationToken cancellationToken = default) where T : IEntity<TId>, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -294,7 +294,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="DeleteAsync{T, TId}(IDbConnection, TId, CancellationToken)"/>
-    public static ValueTask<int> DeleteAsync<T, TId>(this IDbConnection connection, TId id, CommandOptions options, CancellationToken cancellationToken = default) where T : IEntity<TId>
+    public static ValueTask<int> DeleteAsync<T, TId>(this IDbConnection connection, TId id, CommandOptions options, CancellationToken cancellationToken = default) where T : IEntity<TId>, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);

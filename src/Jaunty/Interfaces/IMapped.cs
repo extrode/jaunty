@@ -70,7 +70,7 @@ namespace Jaunty.Interfaces;
 /// var products = connection.Query("SELECT * FROM Products", options: options);
 /// </code>
 /// </example>
-public interface IMapped<T> where T : IMapped<T>, new()
+public interface IMapped<T> where T : new()
 {
 #if NET8_0_OR_GREATER
     /// <summary>

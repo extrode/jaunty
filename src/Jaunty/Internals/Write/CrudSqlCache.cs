@@ -20,7 +20,7 @@ internal static class CrudSqlCache
     /// <summary>
     /// Gets or creates cached SQL for the specified entity type and connection.
     /// </summary>
-    public static CachedCrudSql GetSql<T>(IDbConnection connection) where T : class, new()
+    public static CachedCrudSql GetSql<T>(IDbConnection connection) where T : new()
     {
         ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
         Type dialectType = dialect.GetType();
@@ -34,7 +34,7 @@ internal static class CrudSqlCache
         return cached;
     }
 
-    private static CachedCrudSql BuildCachedSql<T>(ISqlDialect dialect) where T : class, new()
+    private static CachedCrudSql BuildCachedSql<T>(ISqlDialect dialect) where T : new()
     {
         EntityMetadata? metadata = TryResolveMetadata<T>();
         
@@ -60,7 +60,7 @@ internal static class CrudSqlCache
         return new CachedCrudSql(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, metadata, dialect.SupportsUpsert);
     }
 
-    private static EntityMetadata? TryResolveMetadata<T>() where T : class, new()
+    private static EntityMetadata? TryResolveMetadata<T>() where T : new()
     {
         // 1. Check if IMapped<T> provides metadata (Source Gen path)
         // Our source gen could implement a GetMetadata() on IMapped, but for now we'll rely on the extension hook

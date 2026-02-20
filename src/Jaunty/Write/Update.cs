@@ -80,7 +80,7 @@ public static partial class Jaunty
     /// <seealso cref="UpdateAsync{T}(IDbConnection, T)"/>
     /// <seealso cref="Attributes.KeyAttribute"/>
     /// <seealso cref="Attributes.TableAttribute"/>
-    public static int Update<T>(this IDbConnection connection, T entity) where T : class, new()
+    public static int Update<T>(this IDbConnection connection, T entity) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -137,7 +137,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="Update{T}(IDbConnection, T)"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static int Update<T>(this IDbConnection connection, T entity, CommandOptions options) where T : class, new()
+    public static int Update<T>(this IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);

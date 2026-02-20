@@ -85,7 +85,7 @@ public static partial class Jaunty
     /// <seealso cref="Attributes.TableAttribute"/>
     /// <seealso cref="Attributes.ColumnAttribute"/>
     /// <seealso cref="Attributes.DatabaseGeneratedAttribute"/>
-    public static long Insert<T>(this IDbConnection connection, T entity) where T : class, new()
+    public static long Insert<T>(this IDbConnection connection, T entity) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -141,7 +141,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="Insert{T}(IDbConnection, T)"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static long Insert<T>(this IDbConnection connection, T entity, CommandOptions options) where T : class, new()
+    public static long Insert<T>(this IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);

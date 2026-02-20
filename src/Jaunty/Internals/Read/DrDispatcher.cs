@@ -9,6 +9,7 @@ using System.Dynamic;
 using Jaunty.Core;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
+using JauntyConfig = Jaunty.Configuration.JauntyConfig;
 
 namespace Jaunty.Internals.Read;
 
@@ -34,7 +35,7 @@ internal static class DrDispatcher
             return specialMapper;
 
         // 4. Fallback to Reflection Extension (if loaded)
-        if (Jaunty.Configuration.JauntyConfig.ReflectionMapperResolver?.Invoke(typeof(T)) is Func<IDataReader, T> reflectionMapper)
+        if (JauntyConfig.ReflectionMapperResolver?.Invoke(typeof(T)) is Func<IDataReader, T> reflectionMapper)
             return reflectionMapper;
 
         // 5. Fail - No mapper available
@@ -65,7 +66,7 @@ internal static class DrDispatcher
             return dbReader => specialMapper(dbReader);
 
         // 4. Fallback to Reflection Extension
-        if (Jaunty.Configuration.JauntyConfig.ReflectionMapperResolver?.Invoke(typeof(T)) is Func<DbDataReader, T> reflectionMapper)
+        if (JauntyConfig.ReflectionMapperResolver?.Invoke(typeof(T)) is Func<DbDataReader, T> reflectionMapper)
             return reflectionMapper;
 
         // 5. Fail

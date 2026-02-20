@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+#if NET5_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Reflection;
 using Jaunty.Attributes;
 using Jaunty.Configuration;
@@ -8,9 +10,13 @@ using Jaunty.Internals.Entity;
 
 namespace Jaunty.Extensions.Reflection;
 
-internal static class MetadataBuilder
+public static class MetadataBuilder
 {
-    public static EntityMetadata Build<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>()
+    public static EntityMetadata Build<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+        T>()
     {
         var type = typeof(T);
         string? schemaName = JauntyConfig.SchemaNameResolver?.Invoke(type);
@@ -37,9 +43,8 @@ internal static class MetadataBuilder
             bool isKey = p.GetCustomAttribute<KeyAttribute>() != null || p.Name.Equals("Id", StringComparison.OrdinalIgnoreCase);
             
             var genAttr = p.GetCustomAttribute<DatabaseGeneratedAttribute>();
-            DatabaseGeneratedOption? genOption = genAttr?.Option;
-
-            columns.Add(new ColumnMetadata(p, colName, isKey, genOption));
+            
+            columns.Add(new ColumnMetadata(p, colName, isKey, genAttr?.Option));
         }
 
         return new EntityMetadata(tableName, schemaName, columns);

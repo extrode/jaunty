@@ -3,6 +3,7 @@ using System.Text;
 
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Fluent.Internals;
 
 namespace Jaunty.Fluent.Expressions;
 
@@ -28,8 +29,8 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         _dialect = dialect;
         _alias1 = alias1;
         _alias2 = alias2;
-        _metadata1 = MetadataCache<T1>.Metadata;
-        _metadata2 = MetadataCache<T2>.Metadata;
+        _metadata1 = FluentMetadataCache.GetMetadata<T1>();
+        _metadata2 = FluentMetadataCache.GetMetadata<T2>();
     }
 
     public string Translate(Expression<Func<T1, T2, bool>> predicate)

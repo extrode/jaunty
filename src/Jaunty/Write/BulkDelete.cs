@@ -54,7 +54,7 @@ public static partial class Jaunty
     /// <seealso cref="BulkDelete{T}(IDbConnection, IEnumerable{T}, CommandOptions)"/>
     /// <seealso cref="BulkDeleteIgnoreConstraints{T}(IDbConnection, IEnumerable{T})"/>
     /// <seealso cref="BulkDeleteAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
-    public static int BulkDelete<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
+    public static int BulkDelete<T>(this IDbConnection connection, IEnumerable<T> entities) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -99,7 +99,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="BulkDelete{T}(IDbConnection, IEnumerable{T})"/>
-    public static int BulkDelete<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
+    public static int BulkDelete<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -153,7 +153,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="BulkDeleteIgnoreConstraints{T}(IDbConnection, IEnumerable{T}, CommandOptions)"/>
     /// <seealso cref="BulkDelete{T}(IDbConnection, IEnumerable{T})"/>
-    public static int BulkDeleteIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
+    public static int BulkDeleteIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -204,7 +204,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="BulkDeleteIgnoreConstraints{T}(IDbConnection, IEnumerable{T})"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static int BulkDeleteIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
+    public static int BulkDeleteIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -216,7 +216,7 @@ public static partial class Jaunty
         return BulkDeleteCore(connection, entities, options, ignoreConstraints: true);
     }
 
-    private static int BulkDeleteCore<T>(IDbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints) where T : class, new()
+    private static int BulkDeleteCore<T>(IDbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -279,6 +279,11 @@ public static partial class Jaunty
                 PrepareDeleteParameters(command, cached.Metadata);
 
                 var valueSetter = WriteParameterCache<T>.DeleteValueSetter;
+                if (valueSetter == null)
+                {
+                    throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
+                }
+
                 var pCollection = command.Parameters;
 
                 foreach (var entity in entityList)

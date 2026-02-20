@@ -64,7 +64,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     {
         _connection = connection;
         _dialect = dialect;
-        _metadata = MetadataCache<T>.Metadata;
+        _metadata = FluentMetadataCache.GetMetadata<T>();
 
         // Rename first query parameters with prefix "p0_"
         var (renamedSql, renamedParams) = RenameParameters(firstQuerySql, firstQueryParameters, "p0");

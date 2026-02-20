@@ -1,14 +1,22 @@
 using System.Reflection;
-
 using Jaunty.Attributes;
 
 namespace Jaunty.Internals.Entity;
 
-internal sealed class ColumnMetadata(PropertyInfo property, string columnName, bool isPrimaryKey, DatabaseGeneratedOption? databaseGeneratedOption)
+public sealed class ColumnMetadata
 {
-    public PropertyInfo Property { get; } = property;
-    public string ColumnName { get; } = columnName;
-    public bool IsPrimaryKey { get; } = isPrimaryKey;
-    public bool IsIdentity { get; } = databaseGeneratedOption == DatabaseGeneratedOption.Identity;
-    public bool IsComputed { get; } = databaseGeneratedOption == DatabaseGeneratedOption.Computed;
+    public PropertyInfo Property { get; }
+    public string ColumnName { get; }
+    public bool IsPrimaryKey { get; }
+    public bool IsIdentity { get; }
+    public bool IsComputed { get; }
+
+    public ColumnMetadata(PropertyInfo property, string columnName, bool isPrimaryKey, DatabaseGeneratedOption? databaseGeneratedOption)
+    {
+        Property = property;
+        ColumnName = columnName;
+        IsPrimaryKey = isPrimaryKey;
+        IsIdentity = databaseGeneratedOption == DatabaseGeneratedOption.Identity;
+        IsComputed = databaseGeneratedOption == DatabaseGeneratedOption.Computed;
+    }
 }

@@ -52,7 +52,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="BulkUpdateAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
     /// <seealso cref="BulkUpdate{T}(IDbConnection, IEnumerable{T})"/>
-    public static ValueTask<int> BulkUpdateAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> BulkUpdateAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -104,7 +104,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="BulkUpdateAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
-    public static ValueTask<int> BulkUpdateAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> BulkUpdateAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -151,7 +151,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="BulkUpdateIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
     /// <seealso cref="BulkUpdateAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
-    public static ValueTask<int> BulkUpdateIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> BulkUpdateIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -204,7 +204,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="BulkUpdateIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static ValueTask<int> BulkUpdateIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> BulkUpdateIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -218,7 +218,7 @@ public static partial class Jaunty
             : BulkUpdateCoreAsync(dbConnection, entities, options, ignoreConstraints: true, cancellationToken);
     }
 
-    private static async ValueTask<int> BulkUpdateCoreAsync<T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : class, new()
+    private static async ValueTask<int> BulkUpdateCoreAsync<T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -295,6 +295,11 @@ public static partial class Jaunty
                 PrepareUpdateParameters(command, cached.Metadata);
 
                 var valueSetter = WriteParameterCache<T>.UpdateValueSetter;
+                if (valueSetter == null)
+                {
+                    throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
+                }
+
                 var pCollection = command.Parameters;
 
                 foreach (var entity in entityList)

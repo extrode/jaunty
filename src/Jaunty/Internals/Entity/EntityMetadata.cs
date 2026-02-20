@@ -1,6 +1,9 @@
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Jaunty.Internals.Entity;
 
-internal sealed class EntityMetadata
+public sealed class EntityMetadata
 {
     public string TableName { get; }
     public string? SchemaName { get; }
@@ -9,13 +12,14 @@ internal sealed class EntityMetadata
     public IReadOnlyList<ColumnMetadata> PrimaryKeys { get; }
     public IReadOnlyList<ColumnMetadata> NonPrimaryKeyColumns { get; }
     public IReadOnlyList<ColumnMetadata> NonIdentityColumns { get; }
+    public bool HasIdentityKey => PrimaryKeys.Any(c => c.IsIdentity);
 
     public EntityMetadata(string tableName, string? schemaName, IEnumerable<ColumnMetadata> columns)
     {
         TableName = tableName;
         SchemaName = schemaName;
 
-        var colList = columns is List<ColumnMetadata> list ? list : [.. columns];
+        var colList = columns is List<ColumnMetadata> list ? list : columns.ToList();
 
         Columns = colList.AsReadOnly();
 

@@ -47,7 +47,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="Update{T}(IDbConnection, T)"/>
     /// <seealso cref="UpdateAsync{T}(IDbConnection, T, CommandOptions, CancellationToken)"/>
-    public static ValueTask<int> UpdateAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> UpdateAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -100,7 +100,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="UpdateAsync{T}(IDbConnection, T, CancellationToken)"/>
-    public static ValueTask<int> UpdateAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    public static ValueTask<int> UpdateAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
