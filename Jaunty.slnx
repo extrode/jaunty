@@ -1,13 +1,14 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/Jaunty/Jaunty.csproj" />
+    <Project Path="src/Jaunty.Extensions.Reflection/Jaunty.Extensions.Reflection.csproj" />
     <Project Path="src/Jaunty.Fluent/Jaunty.Fluent.csproj" />
-    <Project Path="src/Jaunty.Scaffolding/Jaunty.Scaffolding.csproj" />
     <Project Path="src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj" />
+    <Project Path="src/Jaunty.Scaffolding/Jaunty.Scaffolding.csproj" />
+    <Project Path="src/Jaunty/Jaunty.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Jaunty.Tests/Jaunty.Tests.csproj" />
     <Project Path="tests/Jaunty.Fluent.Tests/Jaunty.Fluent.Tests.csproj" />
     <Project Path="tests/Jaunty.Scaffolding.Tests/Jaunty.Scaffolding.Tests.csproj" />
+    <Project Path="tests/Jaunty.Tests/Jaunty.Tests.csproj" />
   </Folder>
 </Solution>

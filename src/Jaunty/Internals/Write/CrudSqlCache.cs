@@ -2,8 +2,10 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Text;
 
+using Jaunty.Configuration;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Interfaces;
 
 namespace Jaunty.Internals;
 
@@ -18,7 +20,7 @@ internal static class CrudSqlCache
     /// <summary>
     /// Gets or creates cached SQL for the specified entity type and connection.
     /// </summary>
-    public static CachedCrudSql GetSql<T>(IDbConnection connection)
+    public static CachedCrudSql GetSql<T>(IDbConnection connection) where T : class, new()
     {
         ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
         Type dialectType = dialect.GetType();
@@ -32,9 +34,18 @@ internal static class CrudSqlCache
         return cached;
     }
 
-    private static CachedCrudSql BuildCachedSql<T>(ISqlDialect dialect)
+    private static CachedCrudSql BuildCachedSql<T>(ISqlDialect dialect) where T : class, new()
     {
-        EntityMetadata metadata = MetadataCache<T>.Metadata;
+        EntityMetadata? metadata = TryResolveMetadata<T>();
+        
+        if (metadata == null)
+        {
+            throw new InvalidOperationException(
+                $"Cannot build CRUD SQL for type '{typeof(T).Name}'. " +
+                "The type is not source-generated and no reflection fallback is registered. " +
+                "Ensure the class has [Table] attribute or 'Jaunty.Extensions.Reflection' is loaded.");
+        }
+
         string escapedTableName = dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
 
         string insertSql = BuildInsertSql(metadata, dialect, escapedTableName);
@@ -47,6 +58,21 @@ internal static class CrudSqlCache
         string lastInsertIdSql = dialect.GetLastInsertIdSql(identityColumnNames);
 
         return new CachedCrudSql(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, metadata, dialect.SupportsUpsert);
+    }
+
+    private static EntityMetadata? TryResolveMetadata<T>() where T : class, new()
+    {
+        // 1. Check if IMapped<T> provides metadata (Source Gen path)
+        // Our source gen could implement a GetMetadata() on IMapped, but for now we'll rely on the extension hook
+        // for complex metadata like PrimaryKeys/Identity.
+        
+        // 2. Fallback to extension hook
+        if (JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is EntityMetadata metadata)
+        {
+            return metadata;
+        }
+
+        return null;
     }
 
     private static string BuildInsertSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)

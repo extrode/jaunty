@@ -20,50 +20,29 @@ internal static class DrDispatcher
 #endif
         T>(IDataReader reader, CommandOptions<T> options, MappingMode mode) where T : new()
     {
-        if (reader is DbDataReader dbDataReader)
-        {
-            var fastMap = Resolve(dbDataReader, options, mode);
-            return r => fastMap((DbDataReader)r);
-        }
-
-        // 1. User override
+        // 1. User override (Zero Reflection)
         if (options.Mapper is not null)
             return options.Mapper;
 
-        // 2. Check for special types (Dictionary, dynamic)
+        // 2. IMapped<T> implementation (Source Generated - Zero Reflection)
+        if (MappedCache<T>.Mapper is not null)
+            return MappedCache<T>.Mapper;
+
+        // 3. Special Types (Dictionary, dynamic - uses minimal reflection)
         var specialMapper = TryResolveSpecialType<T>(reader);
         if (specialMapper is not null)
             return specialMapper;
 
-        // 3. IMapped<T> implementation (cached)
-        if (MappedCache<T>.Mapper is not null)
-            return MappedCache<T>.Mapper;
+        // 4. Fallback to Reflection Extension (if loaded)
+        if (Jaunty.Configuration.JauntyConfig.ReflectionMapperResolver?.Invoke(typeof(T)) is Func<IDataReader, T> reflectionMapper)
+            return reflectionMapper;
 
-        // 4. Metadata reflection fallback
-        PropertySetter<T>[] setters;
-        try
-        {
-            setters = MetadataCache<T>.GetSetters(reader, mode);
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("Failed to get column name") && reader.GetType().Name.Contains("SQLite"))
-        {
-            // Handle SQLite async DataReader issue by providing a helpful error message
-            throw new InvalidOperationException($"SQLite async DataReader issue: {ex.Message}. This may be a limitation of SQLite's async DataReader implementation. Consider using synchronous methods or ensuring the reader state is valid.", ex);
-        }
-
-        return reader =>
-        {
-            var entity = new T();
-#if NET8_0_OR_GREATER
-            ReadOnlySpan<PropertySetter<T>> localSetters = setters;
-            foreach (ref readonly var setter in localSetters)
-                setter.Set(entity, reader);
-#else
-            for (int i = 0; i < setters.Length; i++)
-                setters[i].Set(entity, reader);
-#endif
-            return entity;
-        };
+        // 5. Fail - No mapper available
+        throw new InvalidOperationException(
+            $"No mapper found for type '{typeof(T).Name}'. " +
+            "Ensure the class is marked with [Table] for source generation, " +
+            "provide a manual mapper in CommandOptions, " +
+            "or add the 'Jaunty.Extensions.Reflection' package for runtime mapping.");
     }
 
     internal static Func<DbDataReader, T> Resolve<
@@ -76,39 +55,25 @@ internal static class DrDispatcher
         if (options.Mapper is not null)
             return dbReader => options.Mapper(dbReader);
 
-        // 2. Check for special types (Dictionary, dynamic)
+        // 2. IMapped<T> implementation (Source Generated)
+        if (MappedCache<T>.Mapper is not null)
+            return dbReader => MappedCache<T>.Mapper(dbReader);
+
+        // 3. Special Types
         var specialMapper = TryResolveSpecialType<T>(reader);
         if (specialMapper is not null)
             return dbReader => specialMapper(dbReader);
 
-        // 3. IMapped<T> implementation (cached)
-        if (MappedCache<T>.Mapper is not null)
-            return dbReader => MappedCache<T>.Mapper(dbReader);
+        // 4. Fallback to Reflection Extension
+        if (Jaunty.Configuration.JauntyConfig.ReflectionMapperResolver?.Invoke(typeof(T)) is Func<DbDataReader, T> reflectionMapper)
+            return reflectionMapper;
 
-        // 4. Metadata reflection fallback
-        PropertySetter<T>[] setters;
-        try
-        {
-            setters = MetadataCache<T>.GetSetters(reader, mode);
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("Failed to get column name") && reader.GetType().Name.Contains("SQLite"))
-        {
-            throw new InvalidOperationException($"SQLite async DataReader issue: {ex.Message}. This may be a limitation of SQLite's async DataReader implementation. Consider using synchronous methods or ensuring the reader state is valid.", ex);
-        }
-
-        return reader =>
-        {
-            var entity = new T();
-#if NET8_0_OR_GREATER
-            ReadOnlySpan<PropertySetter<T>> localSetters = setters;
-            foreach (ref readonly var setter in localSetters)
-                setter.SetFast(entity, reader);
-#else
-            for (int i = 0; i < setters.Length; i++)
-                setters[i].SetFast(entity, reader);
-#endif
-            return entity;
-        };
+        // 5. Fail
+        throw new InvalidOperationException(
+            $"No mapper found for type '{typeof(T).Name}'. " +
+            "Ensure the class is marked with [Table] for source generation, " +
+            "provide a manual mapper in CommandOptions, " +
+            "or add the 'Jaunty.Extensions.Reflection' package for runtime mapping.");
     }
 
     private static Func<IDataReader, T>? TryResolveSpecialType<
