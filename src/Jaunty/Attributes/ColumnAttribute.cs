@@ -36,10 +36,24 @@ namespace Jaunty.Attributes;
 /// <seealso cref="KeyAttribute"/>
 /// <seealso cref="IgnoreAttribute"/>
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-public sealed class ColumnAttribute(string name) : Attribute
+public sealed class ColumnAttribute : Attribute
 {
+    /// <summary>
+    /// Specifies the database column that a property is mapped to.
+    /// </summary>
+    /// <param name="name">The name of the database column.</param>
+    public ColumnAttribute(string name)
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(name);
+#else
+        if (name is null) throw new ArgumentNullException(nameof(name));
+#endif
+        Name = name;
+    }
+
     /// <summary>
     /// Gets the name of the database column.
     /// </summary>
-    public string Name { get; } = name ?? throw new ArgumentNullException(nameof(name));
+    public string Name { get; }
 }

@@ -272,7 +272,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         // For other types, use standard Jaunty mapping
         var results = SelectWithMapping<T>(MappingMode.Strict, limit: 1);
         if (results.Count == 0)
-            throw new InvalidOperationException("Sequence contains no elements");
+            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
         return results[0];
     }
 
@@ -280,7 +280,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     {
         var results = SelectWithMapper(mapper, limit: 1);
         if (results.Count == 0)
-            throw new InvalidOperationException("Sequence contains no elements");
+            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
         return results[0];
     }
 
@@ -313,7 +313,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     {
         var result = SelectBothInternal();
         if (result.Count == 0)
-            throw new InvalidOperationException("Sequence contains no elements");
+            throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(TFrom).Name}, {typeof(TJoin).Name})'.");
         return result[0];
     }
 
@@ -649,7 +649,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     {
         var result = SelectPartialFirstOrDefault(columns);
         if (result is null)
-            throw new InvalidOperationException("Sequence contains no elements");
+            throw new InvalidOperationException("Sequence contains no elements of type 'dynamic'.");
         return result;
     }
 
@@ -657,7 +657,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     {
         var result = SelectPartialFirstOrDefault(columns, mapper);
         if (result is null)
-            throw new InvalidOperationException("Sequence contains no elements");
+            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
         return result;
     }
 
@@ -715,7 +715,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     {
         var result = SelectPartialSingleOrDefault(columns);
         if (result is null)
-            throw new InvalidOperationException("Sequence contains no elements");
+            throw new InvalidOperationException("Sequence contains no elements of type 'dynamic'.");
         return result;
     }
 
@@ -723,7 +723,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     {
         var result = SelectPartialSingleOrDefault(columns, mapper);
         if (result is null)
-            throw new InvalidOperationException("Sequence contains no elements");
+            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
         return result;
     }
 
@@ -746,7 +746,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             {
                 count++;
                 if (count > 1)
-                    throw new InvalidOperationException("Sequence contains more than one element");
+                    throw new InvalidOperationException("Sequence contains more than one element of type 'dynamic'.");
                 result = MapToDynamic(reader);
             }
         }
@@ -777,7 +777,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             {
                 count++;
                 if (count > 1)
-                    throw new InvalidOperationException("Sequence contains more than one element");
+                    throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.");
                 result = mapper(reader);
             }
         }

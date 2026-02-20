@@ -32,12 +32,28 @@ namespace Jaunty.Attributes;
 /// <seealso cref="ColumnAttribute"/>
 /// <seealso cref="KeyAttribute"/>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-public sealed class TableAttribute(string name, string? schema = null) : Attribute
+public sealed class TableAttribute : Attribute
 {
+    /// <summary>
+    /// Specifies the database table that a class is mapped to.
+    /// </summary>
+    /// <param name="name">The name of the database table.</param>
+    /// <param name="schema">The optional schema name.</param>
+    public TableAttribute(string name, string? schema = null)
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(name);
+#else
+        if (name is null) throw new ArgumentNullException(nameof(name));
+#endif
+        Name = name;
+        Schema = schema;
+    }
+
     /// <summary>
     /// Gets the name of the database table.
     /// </summary>
-    public string Name { get; } = name ?? throw new ArgumentNullException(nameof(name));
+    public string Name { get; }
 
     /// <summary>
     /// Gets the optional schema name for the table.
@@ -45,5 +61,5 @@ public sealed class TableAttribute(string name, string? schema = null) : Attribu
     /// <remarks>
     /// If not specified, the default schema for the database connection will be used.
     /// </remarks>
-    public string? Schema { get; } = schema;
+    public string? Schema { get; }
 }

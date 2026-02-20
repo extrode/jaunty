@@ -74,7 +74,7 @@ public class QuerySingleOrDefaultTests : IDisposable
                 $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
                 new { CategoryId = 1 }));
 
-        Assert.Contains("Sequence contains more than one element", ex.Message);
+        Assert.Contains("Sequence contains more than one element of type 'Product'", ex.Message);
     }
 
     [Fact]

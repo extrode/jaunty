@@ -54,6 +54,8 @@ public static partial class Jaunty
             // Bind parameters from entity properties using compiled delegate
             WriteParameterCache<T>.InsertBinder(command, entity);
 
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, entity);
+
             if (cached.HasIdentityKey)
             {
                 // Execute and get identity
@@ -117,6 +119,8 @@ public static partial class Jaunty
 
             // Bind parameters from entity properties using compiled delegate
             WriteParameterCache<T>.InsertBinder(command, entity);
+
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
             if (cached.HasIdentityKey)
             {

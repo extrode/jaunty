@@ -175,11 +175,13 @@ public static partial class Jaunty
         finally
         {
             if (wasClosed && connection.State != ConnectionState.Closed)
+            {
 #if NET8_0_OR_GREATER
                 await connection.CloseAsync().ConfigureAwait(false);
 #else
                 connection.Close();
 #endif
+            }
         }
     }
 #else
@@ -408,11 +410,14 @@ public static partial class Jaunty
         }
         finally
         {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+            {
 #if NET8_0_OR_GREATER
-            await connection.CloseAsync().ConfigureAwait(false);
+                await connection.CloseAsync().ConfigureAwait(false);
 #else
-            connection.Close();
+                connection.Close();
 #endif
+            }
         }
     }
 #endif

@@ -46,6 +46,8 @@ public static partial class Jaunty
 
             // Bind parameters from entity properties using compiled delegate
             WriteParameterCache<T>.UpdateBinder(command, entity);
+
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, entity);
             
             return command.ExecuteNonQuery();
         }
@@ -96,6 +98,8 @@ public static partial class Jaunty
 
             // Bind parameters from entity properties using compiled delegate
             WriteParameterCache<T>.UpdateBinder(command, entity);
+
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }

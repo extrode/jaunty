@@ -64,7 +64,7 @@ public class QuerySingleAsyncTests : IDisposable
                 $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
                 new { Id = -999 }));
 
-        Assert.Contains("Sequence contains no elements", ex.Message);
+        Assert.Contains("Sequence contains no elements of type 'Product'", ex.Message);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class QuerySingleAsyncTests : IDisposable
                 $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
                 new { CategoryId = 1 }));
 
-        Assert.Contains("Sequence contains more than one element", ex.Message);
+        Assert.Contains("Sequence contains more than one element of type 'Product'", ex.Message);
     }
 
     [Fact]

@@ -49,7 +49,12 @@ public sealed class SpParameter
 
     internal SpParameter(string name, object? value, ParameterDirection direction, DbType? dbType, int? size)
     {
-        Name = name ?? throw new ArgumentNullException(nameof(name));
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(name);
+#else
+        if (name is null) throw new ArgumentNullException(nameof(name));
+#endif
+        Name = name;
         Value = value;
         Direction = direction;
         DbType = dbType;
@@ -260,6 +265,11 @@ public sealed class SpParameters
     /// </exception>
     public T? Get<T>(string name)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(name);
+#else
+        if (name is null) throw new ArgumentNullException(nameof(name));
+#endif
         SpParameter? param = null;
         for (int i = 0; i < _parameters.Count; i++)
         {

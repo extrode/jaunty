@@ -62,7 +62,7 @@ public class QueryFirstTests : IDisposable
                 $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
                 new { Id = -999 }));
 
-        Assert.Contains("Sequence contains no elements", ex.Message);
+        Assert.Contains("Sequence contains no elements of type 'Product'", ex.Message);
     }
 
     [Fact]
