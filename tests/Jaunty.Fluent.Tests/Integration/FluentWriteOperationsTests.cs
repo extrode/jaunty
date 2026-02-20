@@ -9,33 +9,20 @@ namespace Jaunty.Fluent.Tests.Integration;
 
 /// <summary>
 /// Tests for Fluent Write Operations: Delete, Update, Insert.
+/// Uses in-memory SQLite for complete data isolation — no shared database is modified.
 /// </summary>
 public class FluentWriteOperationsTests : IDisposable
 {
-    private readonly Database _db;
-    private readonly string _testId;
+    private readonly InMemoryDatabase _db;
 
     public FluentWriteOperationsTests()
     {
-        _db = new Database();
-        _testId = Guid.NewGuid().ToString("N")[..8]; // Short unique ID for this test run
-        CleanupTestData();
+        _db = new InMemoryDatabase();
     }
 
     public void Dispose()
     {
-        CleanupTestData();
         _db.Dispose();
-    }
-
-    private void CleanupTestData()
-    {
-        // Clean up any test data from this test class
-        using var cmd = _db.Connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM products WHERE product_name LIKE 'Test%'";
-        _db.Connection.Open();
-        cmd.ExecuteNonQuery();
-        _db.Connection.Close();
     }
 
     #region Delete Tests
@@ -43,86 +30,94 @@ public class FluentWriteOperationsTests : IDisposable
     [Fact]
     public void Delete_WithWhereCondition_DeletesMatchingRows()
     {
-        // Arrange - Insert a test product to delete
-        var sql = "INSERT INTO products (product_name, supplier_id, category_id, quantity_per_unit, unit_price, units_in_stock, discontinued) VALUES ('TestDeleteProduct', 1, 1, '10 boxes', 9.99, 10, 0)";
-        using (var cmd = _db.Connection.CreateCommand())
-        {
-            cmd.CommandText = sql;
-            _db.Connection.Open();
-            cmd.ExecuteNonQuery();
-            _db.Connection.Close();
-        }
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestDeleteProduct",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 9.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
 
-        // Act
         var rowsDeleted = _db.Connection.From<Product>()
             .Where(p => p.ProductName == "TestDeleteProduct")
             .Delete();
 
-        // Assert
         rowsDeleted.Should().Be(1);
 
-        // Verify it's gone
         var remaining = _db.Connection.From<Product>()
             .Where(p => p.ProductName == "TestDeleteProduct")
             .Select();
         remaining.Should().BeEmpty();
     }
 
-    // Note: Delete() without WHERE is compile-time prevented (Delete is on IWhereClause, not IFromClause)
-    // Similarly, DeleteAll() is available on IFromClause for explicit "delete all" operations
-
     [Fact]
     public void Delete_WithMultipleConditions_DeletesMatchingRows()
     {
-        // Arrange - Insert test products
-        var sql = @"
-            INSERT INTO products (product_name, supplier_id, category_id, quantity_per_unit, unit_price, units_in_stock, discontinued)
-            VALUES ('TestMultiDelete1', 1, 1, '10 boxes', 9.99, 10, 0);
-            INSERT INTO products (product_name, supplier_id, category_id, quantity_per_unit, unit_price, units_in_stock, discontinued)
-            VALUES ('TestMultiDelete2', 1, 1, '10 boxes', 19.99, 10, 0);
-        ";
-        using (var cmd = _db.Connection.CreateCommand())
-        {
-            cmd.CommandText = sql;
-            _db.Connection.Open();
-            cmd.ExecuteNonQuery();
-            _db.Connection.Close();
-        }
+        _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestMultiDelete1",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 9.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
 
-        // Act - Delete only products with price < 15
+        _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestMultiDelete2",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 19.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
+
         var rowsDeleted = _db.Connection.From<Product>()
             .Where(p => p.ProductName!.StartsWith("TestMultiDelete"))
             .And(p => p.UnitPrice < 15)
             .Delete();
 
-        // Assert
         rowsDeleted.Should().Be(1);
 
-        // Cleanup
-        _db.Connection.From<Product>()
+        var remaining = _db.Connection.From<Product>()
             .Where(p => p.ProductName!.StartsWith("TestMultiDelete"))
-            .Delete();
+            .Select();
+        remaining.Should().HaveCount(1);
+        remaining[0].UnitPrice.Should().Be(19.99m);
     }
 
     [Fact]
     public async Task DeleteAsync_WithWhereCondition_DeletesMatchingRows()
     {
-        // Arrange
-        var sql = "INSERT INTO products (product_name, supplier_id, category_id, quantity_per_unit, unit_price, units_in_stock, discontinued) VALUES ('TestDeleteAsync', 1, 1, '10 boxes', 9.99, 10, 0)";
-        using (var cmd = _db.Connection.CreateCommand())
-        {
-            cmd.CommandText = sql;
-            _db.Connection.Open();
-            cmd.ExecuteNonQuery();
-            _db.Connection.Close();
-        }
+        _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestDeleteAsync",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 9.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
 
-        // Act
         var rowsDeleted = await _db.Connection.From<Product>()
             .Where(p => p.ProductName == "TestDeleteAsync")
             .DeleteAsync();
 
-        // Assert
         rowsDeleted.Should().Be(1);
     }
 
@@ -133,12 +128,10 @@ public class FluentWriteOperationsTests : IDisposable
     [Fact]
     public void Update_WithSetAndWhere_UpdatesMatchingRows()
     {
-        // Arrange - Insert a test product to update
-        var testName = $"TestUpdateProduct_{_testId}";
         var insertedId = _db.Connection.Into<Product>()
             .Values(new
             {
-                ProductName = testName,
+                ProductName = "TestUpdateProduct",
                 SupplierId = 1,
                 CategoryId = (short)1,
                 UnitPrice = 10.00m,
@@ -149,36 +142,26 @@ public class FluentWriteOperationsTests : IDisposable
             })
             .Insert();
 
-        // Act
         var rowsUpdated = _db.Connection.From<Product>()
             .Set(p => p.UnitPrice, 999.99m)
             .Where(p => p.ProductId == (int)insertedId)
             .Update();
 
-        // Assert
         rowsUpdated.Should().Be(1);
 
-        // Verify
         var updated = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)insertedId)
             .SelectFirst();
         updated.UnitPrice.Should().Be(999.99m);
-
-        // Cleanup
-        _db.Connection.From<Product>()
-            .Where(p => p.ProductId == (int)insertedId)
-            .Delete();
     }
 
     [Fact]
     public void Update_WithMultipleSets_UpdatesAllColumns()
     {
-        // Arrange - Insert a test product
-        var testName = $"TestUpdateMulti_{_testId}";
         var insertedId = _db.Connection.Into<Product>()
             .Values(new
             {
-                ProductName = testName,
+                ProductName = "TestUpdateMulti",
                 SupplierId = 1,
                 CategoryId = (short)1,
                 UnitPrice = 10.00m,
@@ -189,42 +172,28 @@ public class FluentWriteOperationsTests : IDisposable
             })
             .Insert();
 
-        // Act
         var rowsUpdated = _db.Connection.From<Product>()
             .Set(p => p.UnitPrice, 888.88m)
             .Set(p => p.UnitsInStock, (short)999)
             .Where(p => p.ProductId == (int)insertedId)
             .Update();
 
-        // Assert
         rowsUpdated.Should().Be(1);
 
-        // Verify
         var updated = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)insertedId)
             .SelectFirst();
         updated.UnitPrice.Should().Be(888.88m);
         updated.UnitsInStock.Should().Be(999);
-
-        // Cleanup
-        _db.Connection.From<Product>()
-            .Where(p => p.ProductId == (int)insertedId)
-            .Delete();
     }
-
-    // Note: Update() without WHERE is compile-time prevented (Update is on IUpdateWhereClause, not ISetClause)
-    // Similarly, UpdateAll() is available on ISetClause for explicit "update all" operations
-    // Update without Set is compile-time prevented (you must call Set before reaching Update)
 
     [Fact]
     public void Update_WithAnonymousObject_UpdatesAllProperties()
     {
-        // Arrange - Insert a test product
-        var testName = $"TestUpdateAnon_{_testId}";
         var insertedId = _db.Connection.Into<Product>()
             .Values(new
             {
-                ProductName = testName,
+                ProductName = "TestUpdateAnon",
                 SupplierId = 1,
                 CategoryId = (short)1,
                 UnitPrice = 10.00m,
@@ -235,37 +204,27 @@ public class FluentWriteOperationsTests : IDisposable
             })
             .Insert();
 
-        // Act
         var rowsUpdated = _db.Connection.From<Product>()
             .Set(new { UnitPrice = 777.77m, UnitsInStock = (short)777 })
             .Where(p => p.ProductId == (int)insertedId)
             .Update();
 
-        // Assert
         rowsUpdated.Should().Be(1);
 
-        // Verify
         var updated = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)insertedId)
             .SelectFirst();
         updated.UnitPrice.Should().Be(777.77m);
         updated.UnitsInStock.Should().Be(777);
-
-        // Cleanup
-        _db.Connection.From<Product>()
-            .Where(p => p.ProductId == (int)insertedId)
-            .Delete();
     }
 
     [Fact]
     public async Task UpdateAsync_WithSetAndWhere_UpdatesMatchingRows()
     {
-        // Arrange - Insert a test product
-        var testName = $"TestUpdateAsync_{_testId}";
         var insertedId = _db.Connection.Into<Product>()
             .Values(new
             {
-                ProductName = testName,
+                ProductName = "TestUpdateAsync",
                 SupplierId = 1,
                 CategoryId = (short)1,
                 UnitPrice = 10.00m,
@@ -276,30 +235,21 @@ public class FluentWriteOperationsTests : IDisposable
             })
             .Insert();
 
-        // Act
         var rowsUpdated = await _db.Connection.From<Product>()
             .Set(p => p.UnitPrice, 666.66m)
             .Where(p => p.ProductId == (int)insertedId)
             .UpdateAsync();
 
-        // Assert
         rowsUpdated.Should().Be(1);
-
-        // Cleanup
-        _db.Connection.From<Product>()
-            .Where(p => p.ProductId == (int)insertedId)
-            .Delete();
     }
 
     [Fact]
     public void Update_ToSql_ReturnsCorrectSql()
     {
-        // Act
         var sql = ((ISetClause<Product>)_db.Connection.From<Product>()
             .Set(p => p.UnitPrice, 100m))
             .ToSql();
 
-        // Assert
         sql.Should().Contain("UPDATE");
         sql.Should().Contain("products");
         sql.Should().Contain("SET");
@@ -313,7 +263,6 @@ public class FluentWriteOperationsTests : IDisposable
     [Fact]
     public void Insert_WithEntity_InsertsAndReturnsId()
     {
-        // Arrange
         var product = new Product
         {
             ProductName = "TestInsertProduct",
@@ -327,30 +276,21 @@ public class FluentWriteOperationsTests : IDisposable
             Discontinued = false
         };
 
-        // Act
         var id = _db.Connection.Into<Product>()
             .Values(product)
             .Insert();
 
-        // Assert
         id.Should().BeGreaterThan(0);
 
-        // Verify
         var inserted = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)id)
             .SelectFirst();
         inserted.ProductName.Should().Be("TestInsertProduct");
-
-        // Cleanup
-        _db.Connection.From<Product>()
-            .Where(p => p.ProductId == (int)id)
-            .Delete();
     }
 
     [Fact]
     public void Insert_WithAnonymousObject_InsertsAndReturnsId()
     {
-        // Act
         var id = _db.Connection.Into<Product>()
             .Values(new
             {
@@ -366,26 +306,18 @@ public class FluentWriteOperationsTests : IDisposable
             })
             .Insert();
 
-        // Assert
         id.Should().BeGreaterThan(0);
 
-        // Verify
         var inserted = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)id)
             .SelectFirst();
         inserted.ProductName.Should().Be("TestInsertAnon");
         inserted.UnitPrice.Should().Be(29.99m);
-
-        // Cleanup
-        _db.Connection.From<Product>()
-            .Where(p => p.ProductId == (int)id)
-            .Delete();
     }
 
     [Fact]
     public void Insert_WithIndividualValues_InsertsAndReturnsId()
     {
-        // Act - Use string column names for nullable columns to avoid type inference issues
         var id = _db.Connection.Into<Product>()
             .Value(p => p.ProductName, "TestInsertIndividual")
             .Value("supplier_id", 1)
@@ -398,25 +330,17 @@ public class FluentWriteOperationsTests : IDisposable
             .Value(p => p.Discontinued, false)
             .Insert();
 
-        // Assert
         id.Should().BeGreaterThan(0);
 
-        // Verify
         var inserted = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)id)
             .SelectFirst();
         inserted.ProductName.Should().Be("TestInsertIndividual");
-
-        // Cleanup
-        _db.Connection.From<Product>()
-            .Where(p => p.ProductId == (int)id)
-            .Delete();
     }
 
     [Fact]
     public async Task InsertAsync_WithEntity_InsertsAndReturnsId()
     {
-        // Arrange
         var product = new Product
         {
             ProductName = "TestInsertAsync",
@@ -430,39 +354,27 @@ public class FluentWriteOperationsTests : IDisposable
             Discontinued = false
         };
 
-        // Act
         var id = await _db.Connection.Into<Product>()
             .Values(product)
             .InsertAsync();
 
-        // Assert
         id.Should().BeGreaterThan(0);
-
-        // Cleanup
-        _db.Connection.From<Product>()
-            .Where(p => p.ProductId == (int)id)
-            .Delete();
     }
 
     [Fact]
     public void Insert_ToSql_ReturnsCorrectSql()
     {
-        // Act
         var sql = _db.Connection.Into<Product>()
             .Value(p => p.ProductName, "Test")
             .Value(p => p.UnitPrice, 10m)
             .ToSql();
 
-        // Assert
         sql.Should().Contain("INSERT INTO");
         sql.Should().Contain("products");
         sql.Should().Contain("product_name");
         sql.Should().Contain("unit_price");
         sql.Should().Contain("VALUES");
     }
-
-    // Note: Insert() without Values is compile-time prevented (Insert is on IValuesClause, not IIntoClause)
-    // You must call Values() or Value() before reaching Insert()
 
     #endregion
 }
