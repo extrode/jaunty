@@ -87,7 +87,7 @@ internal static class ParameterBinder
 
         if (unused.Count > 0)
         {
-            throw new ArgumentException($"Unused parameter properties on type '{type.Name}': {string.Join(", ", unused)}. SQL contains no matching parameters.");
+            throw new ArgumentException($"Unused parameter properties on type '{type.Name}': {string.Join(", ", unused)}. SQL contains no matching parameters.", nameof(parameters));
         }
 
         return new CommandTemplate(items.ToArray());
@@ -351,7 +351,7 @@ internal static class ParameterBinder
             }
             else
             {
-                throw new ArgumentException($"No value found in dictionary for SQL parameter '@{sqlName}'.");
+                throw new ArgumentException($"No value found in dictionary for SQL parameter '@{sqlName}'.", nameof(parameters));
             }
         }
     }
