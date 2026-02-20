@@ -123,7 +123,7 @@ public static partial class Jaunty
         return ExecuteWithOutputParametersAsync(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
         {
             if (!await ReadAsync(reader, ct).ConfigureAwait(false))
-                throw new InvalidOperationException("Sequence contains no elements.");
+                throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
             var map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
             return map(reader);
         }, cancellationToken);

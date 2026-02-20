@@ -151,9 +151,20 @@ internal sealed class MySqlDialect : ISqlDialect
         sb.Append("INSERT INTO ");
         sb.Append(tableName);
         sb.Append(" (");
-        sb.Append(string.Join(", ", insertColumns));
+        
+        for (int i = 0; i < insertColumns.Length; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            sb.Append(insertColumns[i]);
+        }
+
         sb.Append(") VALUES (");
-        sb.Append(string.Join(", ", insertParams));
+        for (int i = 0; i < insertParams.Length; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            sb.Append(insertParams[i]);
+        }
+
         sb.Append(") ON DUPLICATE KEY UPDATE ");
 
         for (int i = 0; i < updateColumns.Length; i++)
@@ -182,7 +193,11 @@ internal sealed class MySqlDialect : ISqlDialect
         if (partitionBy is { Length: > 0 })
         {
             sb.Append("PARTITION BY ");
-            sb.Append(string.Join(", ", partitionBy));
+            for (int i = 0; i < partitionBy.Length; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                sb.Append(partitionBy[i]);
+            }
         }
 
         if (orderBy is { Length: > 0 })

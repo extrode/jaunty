@@ -48,6 +48,8 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
             using var reader = command.ExecuteReader();
             return handler(reader);
         }
@@ -90,6 +92,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using var reader = command.ExecuteReader();
             return handler(reader);

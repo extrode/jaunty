@@ -499,7 +499,7 @@ public static partial class Jaunty
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             if (!reader.Read())
-                throw new InvalidOperationException("Sequence contains no elements");
+                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
 
             var mapping = MultiEntityMapper<T1, T2>.Build(reader);
 
@@ -943,7 +943,7 @@ public static partial class Jaunty
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             if (!reader.Read())
-                throw new InvalidOperationException("Sequence contains no elements");
+                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
 
             var mapping = MultiEntityMapper<T1, T2>.Build(reader);
 
@@ -953,7 +953,7 @@ public static partial class Jaunty
             mapping.ApplyT1(t1, reader);
             mapping.ApplyT2(t2, reader);
 
-            return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : (t1, t2);
+            return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : (t1, t2);
         });
     }
 
@@ -1186,7 +1186,7 @@ public static partial class Jaunty
             mapping.ApplyT1(t1, reader);
             mapping.ApplyT2(t2, reader);
 
-            return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : ((T1, T2)?)(t1, t2);
+            return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : ((T1, T2)?)(t1, t2);
         });
     }
 

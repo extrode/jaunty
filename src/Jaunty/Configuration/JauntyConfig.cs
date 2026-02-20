@@ -63,6 +63,7 @@ public static class JauntyConfig
     private static Func<Type, string>? _schemaNameResolver;
     private static Func<Type, string>? _tableNameResolver;
     private static Func<string, string>? _columnNameResolver;
+    private static Action<string, object?>? _logger;
 
     /// <summary>
     /// Gets or sets a custom resolver for schema names.
@@ -169,6 +170,39 @@ public static class JauntyConfig
     }
 
     /// <summary>
+    /// Gets or sets a global diagnostic logger for SQL commands.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This action is invoked every time a SQL command is executed by Jaunty. 
+    /// It can be used for debugging, performance monitoring, or audit logging.
+    /// </para>
+    /// <para>
+    /// The first parameter is the SQL string (potentially with expanded collection parameters), 
+    /// and the second parameter is the original parameters object passed to the method.
+    /// </para>
+    /// </remarks>
+    /// <value>
+    /// An action that receives the SQL string and parameters object, or <see langword="null"/> 
+    /// to disable logging.
+    /// </value>
+    /// <example>
+    /// <code>
+    /// // Simple console logger
+    /// JauntyConfig.Logger = (sql, params) => 
+    /// {
+    ///     Console.WriteLine($"Executing SQL: {sql}");
+    ///     if (params != null) Console.WriteLine($"With parameters: {params}");
+    /// };
+    /// </code>
+    /// </example>
+    public static Action<string, object?>? Logger
+    {
+        get => _logger;
+        set => _logger = value;
+    }
+
+    /// <summary>
     /// Resets all configuration options to their default values.
     /// </summary>
     /// <remarks>
@@ -199,5 +233,6 @@ public static class JauntyConfig
         _schemaNameResolver = null;
         _tableNameResolver = null;
         _columnNameResolver = null;
+        _logger = null;
     }
 }

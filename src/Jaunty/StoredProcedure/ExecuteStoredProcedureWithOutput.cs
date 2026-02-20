@@ -127,7 +127,7 @@ public static partial class Jaunty
         return ExecuteWithOutputParameters(connection, procedureName, parameters, spOptions, (reader, _) =>
         {
             if (!reader.Read())
-                throw new InvalidOperationException("Sequence contains no elements.");
+                throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
             var map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
             return map(reader);
         });

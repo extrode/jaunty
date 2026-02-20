@@ -150,9 +150,20 @@ internal sealed class SqlServerDialect : ISqlDialect
         sb.Append("MERGE INTO ");
         sb.Append(tableName);
         sb.Append(" AS target USING (VALUES (");
-        sb.Append(string.Join(", ", insertParams));
+        
+        for (int i = 0; i < insertParams.Length; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            sb.Append(insertParams[i]);
+        }
+
         sb.Append(")) AS source (");
-        sb.Append(string.Join(", ", insertColumns));
+        for (int i = 0; i < insertColumns.Length; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            sb.Append(insertColumns[i]);
+        }
+
         sb.Append(") ON ");
 
         for (int i = 0; i < keyColumns.Length; i++)
@@ -175,7 +186,12 @@ internal sealed class SqlServerDialect : ISqlDialect
         }
 
         sb.Append(" WHEN NOT MATCHED THEN INSERT (");
-        sb.Append(string.Join(", ", insertColumns));
+        for (int i = 0; i < insertColumns.Length; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            sb.Append(insertColumns[i]);
+        }
+
         sb.Append(") VALUES (");
         for (int i = 0; i < insertColumns.Length; i++)
         {
@@ -202,7 +218,11 @@ internal sealed class SqlServerDialect : ISqlDialect
         if (partitionBy is { Length: > 0 })
         {
             sb.Append("PARTITION BY ");
-            sb.Append(string.Join(", ", partitionBy));
+            for (int i = 0; i < partitionBy.Length; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                sb.Append(partitionBy[i]);
+            }
         }
 
         if (orderBy is { Length: > 0 })

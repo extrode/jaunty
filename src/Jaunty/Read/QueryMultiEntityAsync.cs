@@ -590,7 +590,7 @@ public static partial class Jaunty
         return await ExecuteReaderAsync<(T1, T2)>(connection, sql, parameters, options, async (reader, ct) =>
         {
             if (!await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
-                throw new InvalidOperationException("Sequence contains no elements");
+                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
 
             var mapping = MultiEntityMapper<T1, T2>.Build(reader);
 
@@ -1139,7 +1139,7 @@ public static partial class Jaunty
         return await ExecuteReaderAsync<(T1, T2)>(connection, sql, parameters, options, async (reader, ct) =>
         {
             if (!await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
-                throw new InvalidOperationException("Sequence contains no elements");
+                throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
 
             var mapping = MultiEntityMapper<T1, T2>.Build(reader);
 
@@ -1150,7 +1150,7 @@ public static partial class Jaunty
             mapping.ApplyT2(t2, reader);
 
             if (await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
-                throw new InvalidOperationException("Sequence contains more than one element");
+                throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
 
             return (t1, t2);
         }, cancellationToken).ConfigureAwait(false);
@@ -1436,7 +1436,7 @@ public static partial class Jaunty
             mapping.ApplyT2(t2, reader);
 
             if (await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
-                throw new InvalidOperationException("Sequence contains more than one element");
+                throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
 
             return (t1, t2);
         }, cancellationToken).ConfigureAwait(false);

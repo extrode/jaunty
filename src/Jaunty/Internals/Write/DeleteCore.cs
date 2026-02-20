@@ -47,9 +47,13 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            // Bind parameters from entity properties using compiled delegate
-            WriteParameterCache<T>.DeleteBinder(command, entity);
-            return command.ExecuteNonQuery();
+                        // Bind parameters from entity properties using compiled delegate
+                        WriteParameterCache<T>.DeleteBinder(command, entity);
+            
+                        Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, entity);
+            
+                        return command.ExecuteNonQuery();
+            
         }
         finally
         {
@@ -96,9 +100,13 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            // Bind parameters from entity properties using compiled delegate
-            WriteParameterCache<T>.DeleteBinder(command, entity);
-            return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                        // Bind parameters from entity properties using compiled delegate
+                        WriteParameterCache<T>.DeleteBinder(command, entity);
+            
+                        Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, entity);
+            
+                        return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            
         }
         finally
         {
@@ -156,6 +164,8 @@ public static partial class Jaunty
             param.Value = id;
             command.Parameters.Add(param);
 
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+
             return command.ExecuteNonQuery();
         }
         finally
@@ -208,6 +218,8 @@ public static partial class Jaunty
             param.Value = id;
             command.Parameters.Add(param);
 
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -259,6 +271,8 @@ public static partial class Jaunty
             param.Value = id;
             command.Parameters.Add(param);
 
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+
             return command.ExecuteNonQuery();
         }
         finally
@@ -303,6 +317,8 @@ public static partial class Jaunty
             param.ParameterName = "@Id";
             param.Value = id;
             command.Parameters.Add(param);
+
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
