@@ -1,241 +1,82 @@
-using System;
-using System.Data;
+using System.Data.Common;
 using System.Threading.Tasks;
 using Npgsql;
-using Jaunty;
-using Jaunty.Core;
 using Jaunty.Tests.Helpers;
-using Jaunty.Tests.Entities;
-using Xunit;
 
 namespace Jaunty.Tests.Integration.Postgres.StoredProcedure;
 
 /// <summary>
-/// Async tests for Jaunty stored procedure methods against PostgreSQL.
+/// Async stored procedure tests against PostgreSQL.
+/// Delegates all test logic to <see cref="StoredProcedureAsyncTestBase"/>.
+/// PostgreSQL uses p_ parameter prefix and INOUT for output parameters.
 /// </summary>
-public class PostgresStoredProcedureAsyncTests : IDisposable
+public class PostgresStoredProcedureAsyncTests : Integration.StoredProcedure.StoredProcedureAsyncTestBase
 {
-    private readonly NpgsqlConnection _connection;
+    protected override DbConnection CreateConnection() =>
+        new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString);
 
-    public PostgresStoredProcedureAsyncTests()
-    {
-        _connection = new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString);
-    }
+    protected override object CategoryParam(int id) => new { p_category_id = id };
+    protected override object ProductParam(int id) => new { p_product_id = id };
+    protected override object UpdatePriceParam(int productId, decimal newPrice) =>
+        new { p_product_id = productId, p_new_price = newPrice };
 
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-        _connection.Dispose();
-    }
-
-    #region ExecuteStoredProcedureAsync (returns List<T>)
+    protected override bool UsesInOutForOutput => true;
+    protected override string OutputCategoryParamName => "p_category_id";
+    protected override string OutputCountParamName => "p_product_count";
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureAsync_WithResults_ReturnsEntities()
-    {
-        var products = await _connection.ExecuteStoredProcedureAsync<Product>("GetAllProducts");
-
-        Assert.NotEmpty(products);
-        Assert.All(products, p => Assert.True(p.ProductId > 0));
-    }
+    public Task ExecuteStoredProcedureAsync_WithResults_ReturnsEntities() =>
+        ExecuteStoredProcedureAsync_WithResults_ReturnsEntities_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults()
-    {
-        var products = await _connection.ExecuteStoredProcedureAsync<Product>(
-            "GetProductsByCategory",
-            new { p_category_id = 1 });
-
-        Assert.NotEmpty(products);
-        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
-    }
+    public Task ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults() =>
+        ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureAsync_WithParametersAndOptions_Works()
-    {
-        await _connection.OpenAsync();
-        using var transaction = _connection.BeginTransaction();
-        try
-        {
-            var products = await _connection.ExecuteStoredProcedureAsync<Product>(
-                "GetProductsByCategory",
-                new { p_category_id = 1 },
-                CommandOptions<Product>.WithTransaction(transaction));
-
-            Assert.NotEmpty(products);
-        }
-        finally
-        {
-            transaction.Rollback();
-        }
-    }
-
-    #endregion
-
-    #region ExecuteStoredProcedureFirstAsync
+    public Task ExecuteStoredProcedureAsync_WithParametersAndOptions_Works() =>
+        ExecuteStoredProcedureAsync_WithParametersAndOptions_Works_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst()
-    {
-        var product = await _connection.ExecuteStoredProcedureFirstAsync<Product>(
-            "GetProductById",
-            new { p_product_id = 1 });
-
-        Assert.NotNull(product);
-        Assert.Equal(1, product.ProductId);
-    }
+    public Task ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst() =>
+        ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works()
-    {
-        await _connection.OpenAsync();
-        using var transaction = _connection.BeginTransaction();
-        try
-        {
-            var product = await _connection.ExecuteStoredProcedureFirstAsync<Product>(
-                "GetProductById",
-                new { p_product_id = 1 },
-                CommandOptions<Product>.WithTransaction(transaction));
-
-            Assert.NotNull(product);
-            Assert.Equal(1, product.ProductId);
-        }
-        finally
-        {
-            transaction.Rollback();
-        }
-    }
+    public Task ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works() =>
+        ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureFirstAsync_NoResults_Throws()
-    {
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            await _connection.ExecuteStoredProcedureFirstAsync<Product>("GetNoResults"));
-    }
-
-    #endregion
-
-    #region ExecuteStoredProcedureFirstOrDefaultAsync
+    public Task ExecuteStoredProcedureFirstAsync_NoResults_Throws() =>
+        ExecuteStoredProcedureFirstAsync_NoResults_Throws_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureFirstOrDefaultAsync_WithResults_ReturnsFirst()
-    {
-        var product = await _connection.ExecuteStoredProcedureFirstOrDefaultAsync<Product>(
-            "GetProductById",
-            new { p_product_id = 1 });
-
-        Assert.NotNull(product);
-        Assert.Equal(1, product.ProductId);
-    }
+    public Task ExecuteStoredProcedureFirstOrDefaultAsync_WithResults_ReturnsFirst() =>
+        ExecuteStoredProcedureFirstOrDefaultAsync_WithResults_ReturnsFirst_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull()
-    {
-        var product = await _connection.ExecuteStoredProcedureFirstOrDefaultAsync<Product>("GetNoResults");
-
-        Assert.Null(product);
-    }
+    public Task ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull() =>
+        ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works()
-    {
-        await _connection.OpenAsync();
-        using var transaction = _connection.BeginTransaction();
-        try
-        {
-            var product = await _connection.ExecuteStoredProcedureFirstOrDefaultAsync<Product>(
-                "GetProductById",
-                new { p_product_id = 1 },
-                CommandOptions<Product>.WithTransaction(transaction));
-
-            Assert.NotNull(product);
-        }
-        finally
-        {
-            transaction.Rollback();
-        }
-    }
-
-    #endregion
-
-    #region ExecuteStoredProcedureScalarAsync
+    public Task ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works() =>
+        ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureScalarAsync_ReturnsScalarValue()
-    {
-        var count = await _connection.ExecuteStoredProcedureScalarAsync<int>("GetProductCount");
-
-        Assert.True(count > 0);
-    }
+    public Task ExecuteStoredProcedureScalarAsync_ReturnsScalarValue() =>
+        ExecuteStoredProcedureScalarAsync_ReturnsScalarValue_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue()
-    {
-        var count = await _connection.ExecuteStoredProcedureScalarAsync<int>(
-            "GetProductCountByCategory",
-            new { p_category_id = 1 });
-
-        Assert.True(count > 0);
-    }
+    public Task ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue() =>
+        ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works()
-    {
-        await _connection.OpenAsync();
-        using var transaction = _connection.BeginTransaction();
-        try
-        {
-            var count = await _connection.ExecuteStoredProcedureScalarAsync<int>(
-                "GetProductCountByCategory",
-                new { p_category_id = 1 },
-                CommandOptions<int>.WithTransaction(transaction));
-
-            Assert.True(count > 0);
-        }
-        finally
-        {
-            transaction.Rollback();
-        }
-    }
-
-    #endregion
-
-    #region ExecuteStoredProcedureNonQueryAsync
+    public Task ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works() =>
+        ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully()
-    {
-        await _connection.OpenAsync();
-        using var transaction = _connection.BeginTransaction();
-        try
-        {
-            await _connection.ExecuteStoredProcedureNonQueryAsync(
-                "UpdateProductPrice",
-                new { p_product_id = 1, p_new_price = 99.99m },
-                CommandOptions.WithTransaction(transaction));
-        }
-        finally
-        {
-            transaction.Rollback();
-        }
-    }
-
-    #endregion
-
-    #region ExecuteStoredProcedure with SpParameters (Output via INOUT) - Async
+    public Task ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully() =>
+        ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully_Core();
 
     [SkipIfNoPostgresFact]
-    public async Task ExecuteStoredProcedureNonQueryAsync_WithOutputParameter_ReturnsOutputValue()
-    {
-        var parameters = new SpParameters()
-            .AddInput("p_category_id", 1)
-            .AddInputOutput("p_product_count", 0, DbType.Int32);
-
-        await _connection.ExecuteStoredProcedureNonQueryAsync("GetProductCountWithOutput", parameters);
-
-        var count = parameters.Get<int>("p_product_count");
-        Assert.True(count > 0);
-    }
-
-    #endregion
+    public Task ExecuteStoredProcedureNonQueryAsync_WithOutputParameter_ReturnsOutputValue() =>
+        ExecuteStoredProcedureNonQueryAsync_WithOutputParameter_ReturnsOutputValue_Core();
 }
