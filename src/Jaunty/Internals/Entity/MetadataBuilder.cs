@@ -1,3 +1,6 @@
+#if NET5_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Reflection;
 
 using Jaunty.Attributes;
@@ -7,7 +10,11 @@ namespace Jaunty.Internals.Entity;
 
 internal static class MetadataBuilder
 {
-    public static EntityMetadata Build<T>()
+    public static EntityMetadata Build<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+        T>()
     {
         var type = typeof(T);
 

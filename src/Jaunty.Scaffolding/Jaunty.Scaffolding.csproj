@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Jaunty\Jaunty.csproj" />
+    <ProjectReference Include="..\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 using Jaunty.Core;
 using Jaunty.Internals;
@@ -53,7 +54,14 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
     /// <seealso cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/>
-    public static ValueTask<int> BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode("Reflection-based bulk insert may be broken in trimmed/AOT environments.")]
+#endif
+    public static ValueTask<int> BulkInsertAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+        T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -105,7 +113,14 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
-    public static ValueTask<int> BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode("Reflection-based bulk insert may be broken in trimmed/AOT environments.")]
+#endif
+    public static ValueTask<int> BulkInsertAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+        T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -152,7 +167,14 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="BulkInsertIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CommandOptions, CancellationToken)"/>
     /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
-    public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode("Reflection-based bulk insert may be broken in trimmed/AOT environments.")]
+#endif
+    public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+        T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -205,7 +227,14 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="BulkInsertIgnoreConstraintsAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     /// <seealso cref="CommandOptions{T}"/>
-    public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode("Reflection-based bulk insert may be broken in trimmed/AOT environments.")]
+#endif
+    public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+        T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -219,7 +248,14 @@ public static partial class Jaunty
             : BulkInsertCoreAsync(dbConnection, entities, options, ignoreConstraints: true, cancellationToken);
     }
 
-    private static async ValueTask<int> BulkInsertCoreAsync<T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : class, new()
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode("Reflection-based bulk insert may be broken in trimmed/AOT environments.")]
+#endif
+    private static async ValueTask<int> BulkInsertCoreAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+        T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : class, new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -394,7 +430,14 @@ public static partial class Jaunty
         }
     }
 
-    private static async ValueTask<int> ExecutePostgreSqlBinaryImportAsync<T>(DbConnection connection, IList<T> entities, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode("Calls runtime-discovered provider methods via reflection for PostgreSQL binary import.")]
+#endif
+    private static async ValueTask<int> ExecutePostgreSqlBinaryImportAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] 
+#endif
+        T>(DbConnection connection, IList<T> entities, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
     {
         var metadata = cached.Metadata;
         var columns = metadata.NonIdentityColumns;
@@ -449,7 +492,14 @@ public static partial class Jaunty
         }
     }
 
-    private static async ValueTask<int> ExecuteSqlServerBulkInsertAsync<T>(DbConnection connection, IList<T> entities, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode("Calls runtime-discovered provider methods via reflection for SQL Server SqlBulkCopy.")]
+#endif
+    private static async ValueTask<int> ExecuteSqlServerBulkInsertAsync<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] 
+#endif
+        T>(DbConnection connection, IList<T> entities, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
     {
         var metadata = cached.Metadata;
         var columns = metadata.NonIdentityColumns;

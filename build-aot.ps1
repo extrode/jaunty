@@ -13,9 +13,11 @@ Write-Host "--- Attempting NativeAOT Publish for Jaunty.Scaffolding.Cli ---" -Fo
 dotnet publish $Project `
     -c Release `
     -r $Runtime `
+    -f net8.0 `
     --self-contained `
     -p:PublishAot=true `
     -p:IsTrimmable=true `
+    -p:TargetFrameworks=net8.0 `
     -o "./publish-aot"
 
 if ($LASTEXITCODE -eq 0) {

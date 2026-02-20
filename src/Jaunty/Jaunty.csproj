@@ -27,11 +27,15 @@
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
-		<!--<DefineConstants>NET8_0</DefineConstants>-->
+		<DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+  <ItemGroup>
+    <ProjectReference Include="..\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
 			<_Parameter1>Jaunty.Tests</_Parameter1>
 		</AssemblyAttribute>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">

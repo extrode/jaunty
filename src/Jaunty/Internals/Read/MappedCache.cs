@@ -1,4 +1,7 @@
 using System.Data;
+#if NET5_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Reflection;
 
 using Jaunty.Interfaces;
@@ -19,7 +22,11 @@ namespace Jaunty.Internals;
 /// For other types, <see cref="Mapper"/> will be <see langword="null"/>.
 /// </para>
 /// </remarks>
-internal static class MappedCache<T> where T : new()
+internal static class MappedCache<
+#if NET5_0_OR_GREATER
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+    T> where T : new()
 {
     /// <summary>
     /// The cached mapper delegate for type <typeparamref name="T"/>, or <see langword="null"/> if the type does not implement <see cref="IMapped{T}"/>.

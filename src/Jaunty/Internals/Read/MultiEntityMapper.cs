@@ -1,5 +1,8 @@
 using System.Collections.Concurrent;
 using System.Data;
+#if NET5_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Text;
 
 using Jaunty.Internals.Entity;
@@ -10,7 +13,15 @@ namespace Jaunty;
 /// Builds and caches column-to-property mappings for two entity types.
 /// Uses property-name matching: each column is mapped to the first type that has a matching property.
 /// </summary>
-internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new()
+internal sealed class MultiEntityMapper<
+#if NET5_0_OR_GREATER
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+    T1, 
+#if NET5_0_OR_GREATER
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+#endif
+    T2> where T1 : new() where T2 : new()
 {
     private static readonly ConcurrentDictionary<ReaderSignature, MultiEntityMapper<T1, T2>> Cache = new();
 

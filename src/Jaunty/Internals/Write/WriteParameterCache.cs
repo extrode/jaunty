@@ -1,4 +1,7 @@
 using System.Data;
+#if NET5_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Reflection;
 
 using Jaunty.Interfaces;
@@ -9,7 +12,11 @@ namespace Jaunty.Internals.Write;
 /// <summary>
 /// Caches compiled column metadata and binders for high-performance write operations.
 /// </summary>
-internal static class WriteParameterCache<T> where T : class
+internal static class WriteParameterCache<
+#if NET5_0_OR_GREATER
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.Interfaces)] 
+#endif
+    T> where T : class
 {
     private static readonly WriteColumnContext<T>[] _insertColumns;
     private static readonly WriteColumnContext<T>[] _updateSetColumns;
@@ -69,15 +76,21 @@ internal static class WriteParameterCache<T> where T : class
         }
         _updateKeyColumns = [.. updateKeyList];
 
-        InsertBinder = CreateInsertBinder();
-        UpdateBinder = CreateUpdateBinder();
-        DeleteBinder = CreateDeleteBinder();
+        InsertBinder = TryGetGeneratedBinder("BindInsert") ?? CreateInsertBinder();
+        UpdateBinder = TryGetGeneratedBinder("BindUpdate") ?? CreateUpdateBinder();
+        DeleteBinder = TryGetGeneratedBinder("BindDelete") ?? CreateDeleteBinder();
 
         InsertValueSetter = CreateInsertValueSetter();
         UpdateValueSetter = CreateUpdateValueSetter();
         DeleteValueSetter = CreateDeleteValueSetter();
 
         IdSetter = CreateIdSetter();
+    }
+
+    private static Action<IDbCommand, T>? TryGetGeneratedBinder(string methodName)
+    {
+        var method = typeof(T).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static, null, [typeof(IDbCommand), typeof(T)], null);
+        return (Action<IDbCommand, T>?)method?.CreateDelegate(typeof(Action<IDbCommand, T>));
     }
 
     private static Action<IDbCommand, T> CreateInsertBinder()
@@ -251,7 +264,11 @@ internal static class WriteParameterCache<T> where T : class
     }
 }
 
-internal readonly struct WriteColumnContext<T>(string parameterName, Func<T, object?> getter)
+internal readonly struct WriteColumnContext<
+#if NET5_0_OR_GREATER
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] 
+#endif
+    T>(string parameterName, Func<T, object?> getter)
 {
     public readonly string ParameterName = parameterName;
     public readonly Func<T, object?> Getter = getter;
