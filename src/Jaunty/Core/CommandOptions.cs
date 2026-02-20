@@ -44,11 +44,8 @@ namespace Jaunty.Core;
 /// </code>
 /// </example>
 /// <seealso cref="CommandOptions"/>
-public readonly struct CommandOptions<T>(
-    Func<IDataReader, T>? mapper = null,
-    IDbTransaction? transaction = null,
-    int? commandTimeout = null,
-    CommandType commandType = CommandType.Text)
+public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, IDbTransaction? transaction = null,
+    int? commandTimeout = null, CommandType commandType = CommandType.Text)
 {
     /// <summary>
     /// Gets the custom mapper function, if specified.
@@ -168,10 +165,7 @@ public readonly struct CommandOptions<T>(
 /// </code>
 /// </example>
 /// <seealso cref="CommandOptions{T}"/>
-public readonly struct CommandOptions(
-    IDbTransaction? transaction = null,
-    int? commandTimeout = null,
-    CommandType commandType = CommandType.Text)
+public readonly struct CommandOptions(IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text)
 {
     /// <summary>
     /// Gets the transaction to use for command execution, if specified.
