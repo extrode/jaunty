@@ -40,6 +40,15 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteScalar{T}(IDbConnection, string)"/>
     public static T QueryScalar<T>(this IDbConnection connection, string sql)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryScalarCore<T>(connection, sql, null, default);
     }
 
@@ -81,6 +90,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryScalarAsync{T}(IDbConnection, string, object, CancellationToken)"/>
     public static T QueryScalar<T>(this IDbConnection connection, string sql, object parameters)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryScalarCore<T>(connection, sql, parameters, default);
     }
 
@@ -119,6 +135,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryScalar{T}(IDbConnection, string)"/>
     public static T QueryScalar<T>(this IDbConnection connection, string sql, CommandOptions<T> options)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryScalarCore(connection, sql, null, options);
     }
 
@@ -157,6 +180,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static T QueryScalar<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryScalarCore(connection, sql, parameters, options);
     }
 }

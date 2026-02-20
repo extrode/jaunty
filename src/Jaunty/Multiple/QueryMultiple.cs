@@ -35,6 +35,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, CancellationToken)"/>
     public static GridReader QueryMultiple(this IDbConnection connection, string sql)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return ExecuteQueryMultiple(connection, sql, null, default);
     }
 
@@ -74,6 +81,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryMultiple(IDbConnection, string, object, CommandOptions)"/>
     public static GridReader QueryMultiple(this IDbConnection connection, string sql, object parameters)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return ExecuteQueryMultiple(connection, sql, parameters, default);
     }
 
@@ -109,6 +123,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryMultiple(IDbConnection, string)"/>
     public static GridReader QueryMultiple(this IDbConnection connection, string sql, CommandOptions options)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return ExecuteQueryMultiple(connection, sql, null, options);
     }
 
@@ -149,6 +170,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static GridReader QueryMultiple(this IDbConnection connection, string sql, object parameters, CommandOptions options)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return ExecuteQueryMultiple(connection, sql, parameters, options);
     }
 
@@ -181,8 +209,12 @@ public static partial class Jaunty
     public static void QueryMultiple(this IDbConnection connection, string sql, Action<GridReader> reader, object? parameters = null, CommandOptions options = default)
     {
 #if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         using var gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
@@ -222,8 +254,12 @@ public static partial class Jaunty
     public static TResult QueryMultiple<TResult>(this IDbConnection connection, string sql, Func<GridReader, TResult> reader, object? parameters = null, CommandOptions options = default)
     {
 #if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         using var gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);

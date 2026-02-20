@@ -41,7 +41,7 @@ public static partial class Jaunty
     private static T QueryFirstCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         T? entity = QueryFirstOrDefaultCore<T>(connection, sql, parameters, options, mode);
-        return entity is null ? throw new InvalidOperationException("Sequence contains no elements") : entity;
+        return entity is null ? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.") : entity;
     }
 
     private static T? QueryFirstOrDefaultCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
@@ -70,19 +70,19 @@ public static partial class Jaunty
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
-                if (!reader.Read()) throw new InvalidOperationException("Sequence contains no elements");
+                if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
                 var map = DrDispatcher.Resolve(reader, options, mode);
                 T entity = map(reader);
-                return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : entity;
+                return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.") : entity;
             });
         }
 
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            if (!reader.Read()) throw new InvalidOperationException("Sequence contains no elements");
+            if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
             Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
             T entity = map(reader);
-            return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : entity;
+            return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.") : entity;
         });
     }
 
@@ -95,7 +95,7 @@ public static partial class Jaunty
                 if (!reader.Read()) return default;
                 var map = DrDispatcher.Resolve(reader, options, mode);
                 T entity = map(reader);
-                return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : entity;
+                return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.") : entity;
             });
         }
 
@@ -104,7 +104,7 @@ public static partial class Jaunty
             if (!reader.Read()) return default;
             Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
             T entity = map(reader);
-            return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : entity;
+            return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.") : entity;
         });
     }
 
@@ -255,7 +255,7 @@ public static partial class Jaunty
     private static (T1, T2) QueryFirstMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
         var result = QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, mode);
-        return result is null ? throw new InvalidOperationException("Sequence contains no elements") : result.Value;
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : result.Value;
     }
 
     private static (T1, T2)? QueryFirstOrDefaultMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
@@ -299,7 +299,7 @@ public static partial class Jaunty
     private static (T1, T2) QuerySingleMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
         var result = QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, mode);
-        return result is null ? throw new InvalidOperationException("Sequence contains no elements") : result.Value;
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : result.Value;
     }
 
     private static (T1, T2)? QuerySingleOrDefaultMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
@@ -319,7 +319,7 @@ public static partial class Jaunty
                 mapping.ApplyT1(t1, reader);
                 mapping.ApplyT2(t2, reader);
 
-                return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : ((T1, T2)?)(t1, t2);
+                return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : ((T1, T2)?)(t1, t2);
             });
         }
 
@@ -336,7 +336,7 @@ public static partial class Jaunty
             mapping.ApplyT1(t1, reader);
             mapping.ApplyT2(t2, reader);
 
-            return reader.Read() ? throw new InvalidOperationException("Sequence contains more than one element") : ((T1, T2)?)(t1, t2);
+            return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : ((T1, T2)?)(t1, t2);
         });
     }
 

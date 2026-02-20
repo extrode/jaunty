@@ -50,6 +50,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryFirst{T}(IDbConnection, string)"/>
     public static T QueryPartialFirst<T>(this IDbConnection connection, string sql) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstCore<T>(connection, sql, null, default, MappingMode.Projection);
     }
 
@@ -89,6 +96,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryPartialFirstOrDefault{T}(IDbConnection, string, object)"/>
     public static T QueryPartialFirst<T>(this IDbConnection connection, string sql, object parameters) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstCore<T>(connection, sql, parameters, default, MappingMode.Projection);
     }
 
@@ -125,6 +139,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryPartialFirst{T}(IDbConnection, string)"/>
     public static T QueryPartialFirst<T>(this IDbConnection connection, string sql, CommandOptions<T> options) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstCore<T>(connection, sql, null, options, MappingMode.Projection);
     }
 
@@ -172,6 +193,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static T QueryPartialFirst<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstCore<T>(connection, sql, parameters, options, MappingMode.Projection);
     }
 }

@@ -48,9 +48,10 @@ internal sealed class PostgreSqlDialect : ISqlDialect
         return IsKeyword(columnName) ? $"\"{columnName}\"" : columnName;
     }
 
-    public string GetLastInsertIdSql()
+    public string GetLastInsertIdSql(params string[] columnNames)
     {
-        return "RETURNING id;";
+        if (columnNames.Length == 0) return "RETURNING id;";
+        return $"RETURNING {string.Join(", ", columnNames)};";
     }
 
     public string GetPagingSql(string baseSql, int offset, int fetchNext)

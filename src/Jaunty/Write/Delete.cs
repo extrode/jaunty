@@ -74,6 +74,13 @@ public static partial class Jaunty
     /// <seealso cref="Attributes.TableAttribute"/>
     public static int Delete<T>(this IDbConnection connection, T entity) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entity);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
+#endif
         return DeleteByEntityCore(connection, entity, default);
     }
 
@@ -123,6 +130,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static int Delete<T>(this IDbConnection connection, T entity, CommandOptions options) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entity);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
+#endif
         return DeleteByEntityCore(connection, entity, options);
     }
 
@@ -178,6 +192,13 @@ public static partial class Jaunty
     /// <seealso cref="DeleteAsync{T}(IDbConnection, object)"/>
     public static int Delete<T>(this IDbConnection connection, object id) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(id);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (id is null) throw new ArgumentNullException(nameof(id));
+#endif
         return DeleteByIdCore<T>(connection, id, default);
     }
 
@@ -223,6 +244,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static int Delete<T>(this IDbConnection connection, object id, CommandOptions options) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(id);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (id is null) throw new ArgumentNullException(nameof(id));
+#endif
         return DeleteByIdCore<T>(connection, id, options);
     }
 
@@ -273,6 +301,13 @@ public static partial class Jaunty
     /// <seealso cref="Delete{T}(IDbConnection, object)"/>
     public static int Delete<T, TId>(this IDbConnection connection, TId id) where T : IEntity<TId>
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(id);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (id is null) throw new ArgumentNullException(nameof(id));
+#endif
         return DeleteByIdCore<T, TId>(connection, id, default);
     }
 
@@ -314,6 +349,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static int Delete<T, TId>(this IDbConnection connection, TId id, CommandOptions options) where T : IEntity<TId>
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(id);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (id is null) throw new ArgumentNullException(nameof(id));
+#endif
         return DeleteByIdCore<T, TId>(connection, id, options);
     }
 

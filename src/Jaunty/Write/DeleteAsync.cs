@@ -51,6 +51,13 @@ public static partial class Jaunty
     /// <seealso cref="DeleteAsync{T}(IDbConnection, object, CancellationToken)"/>
     public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entity);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : DeleteByEntityCoreAsync(dbConnection, entity, default, cancellationToken);
@@ -97,6 +104,13 @@ public static partial class Jaunty
     /// <seealso cref="DeleteAsync{T}(IDbConnection, T, CancellationToken)"/>
     public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entity);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : DeleteByEntityCoreAsync(dbConnection, entity, options, cancellationToken);
@@ -140,6 +154,13 @@ public static partial class Jaunty
     /// <seealso cref="DeleteAsync{T}(IDbConnection, object, CommandOptions, CancellationToken)"/>
     public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, object id, CancellationToken cancellationToken = default) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(id);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (id is null) throw new ArgumentNullException(nameof(id));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : DeleteByIdCoreAsync<T>(dbConnection, id, default, cancellationToken);
@@ -181,6 +202,13 @@ public static partial class Jaunty
     /// <seealso cref="DeleteAsync{T}(IDbConnection, object, CancellationToken)"/>
     public static ValueTask<int> DeleteAsync<T>(this IDbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(id);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (id is null) throw new ArgumentNullException(nameof(id));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : DeleteByIdCoreAsync<T>(dbConnection, id, options, cancellationToken);
@@ -226,11 +254,18 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="DeleteAsync{T}(IDbConnection, object, CancellationToken)"/>
     /// <seealso cref="DeleteAsync{T, TId}(IDbConnection, TId, CommandOptions, CancellationToken)"/>
-    public static async ValueTask<int> DeleteAsync<T, TId>(this IDbConnection connection, TId id, CancellationToken cancellationToken = default) where T : IEntity<TId>
+    public static ValueTask<int> DeleteAsync<T, TId>(this IDbConnection connection, TId id, CancellationToken cancellationToken = default) where T : IEntity<TId>
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(id);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (id is null) throw new ArgumentNullException(nameof(id));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : await DeleteByIdCoreAsync<T, TId>(dbConnection, id, default, cancellationToken);
+            : DeleteByIdCoreAsync<T, TId>(dbConnection, id, default, cancellationToken);
     }
 
     /// <summary>
@@ -259,11 +294,18 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="DeleteAsync{T, TId}(IDbConnection, TId, CancellationToken)"/>
-    public static async ValueTask<int> DeleteAsync<T, TId>(this IDbConnection connection, TId id, CommandOptions options, CancellationToken cancellationToken = default) where T : IEntity<TId>
+    public static ValueTask<int> DeleteAsync<T, TId>(this IDbConnection connection, TId id, CommandOptions options, CancellationToken cancellationToken = default) where T : IEntity<TId>
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(id);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (id is null) throw new ArgumentNullException(nameof(id));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
-            : await DeleteByIdCoreAsync<T, TId>(dbConnection, id, options, cancellationToken);
+            : DeleteByIdCoreAsync<T, TId>(dbConnection, id, options, cancellationToken);
     }
 
     #endregion

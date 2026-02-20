@@ -39,6 +39,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryMultiple(IDbConnection, string)"/>
     public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteQueryMultipleAsync(dbConnection, sql, null, default, cancellationToken);
@@ -79,6 +86,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, object, CommandOptions, CancellationToken)"/>
     public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteQueryMultipleAsync(dbConnection, sql, parameters, default, cancellationToken);
@@ -119,6 +133,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryMultipleAsync(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteQueryMultipleAsync(dbConnection, sql, null, options, cancellationToken);
@@ -164,6 +185,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
