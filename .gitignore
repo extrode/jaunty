@@ -363,3 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 /.idea/.idea.Jaunty/.idea
 /.worktrees/settings.local.json
+
+# Test configuration (may contain connection strings with credentials)
+**/appsettings.json
+!**/appsettings.example.json

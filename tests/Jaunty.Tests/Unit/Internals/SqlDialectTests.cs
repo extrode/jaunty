@@ -473,6 +473,160 @@ public class SqlDialectTests
         {
             Assert.Equal("%test%", _dialect.FormatContainsPattern("test"));
         }
+
+        [Fact]
+        public void FormatStartsWithPattern_UsesTrailingPercent()
+        {
+            Assert.Equal("test%", _dialect.FormatStartsWithPattern("test"));
+        }
+
+        [Fact]
+        public void FormatEndsWithPattern_UsesLeadingPercent()
+        {
+            Assert.Equal("%test", _dialect.FormatEndsWithPattern("test"));
+        }
+
+        [Fact]
+        public void EscapeTableName_NonKeyword_ReturnsUnescaped()
+        {
+            Assert.Equal("products", _dialect.EscapeTableName(null, "products"));
+        }
+
+        [Fact]
+        public void EscapeColumnName_NonKeyword_ReturnsUnescaped()
+        {
+            Assert.Equal("product_name", _dialect.EscapeColumnName("product_name"));
+        }
+
+        [Fact]
+        public void EscapeTableName_KeywordSchema_KeywordTable_EscapesBoth()
+        {
+            Assert.Equal("`DATABASE`.`ORDER`", _dialect.EscapeTableName("DATABASE", "ORDER"));
+        }
+
+        [Fact]
+        public void GenerateCaseInsensitiveLike_UsesStandardLike()
+        {
+            var result = _dialect.GenerateCaseInsensitiveLike("col", "@p", "\\");
+            Assert.Equal("col LIKE @p ESCAPE '\\'", result);
+        }
+
+        [Fact]
+        public void GenerateNullIf_UsesNullIf()
+        {
+            Assert.Equal("NULLIF(a, b)", _dialect.GenerateNullIf("a", "b"));
+        }
+
+        [Fact]
+        public void GenerateCoalesce_UsesCoalesce()
+        {
+            Assert.Equal("COALESCE(a, b, c)", _dialect.GenerateCoalesce("a", "b", "c"));
+        }
+
+        [Fact]
+        public void GenerateUpper_UsesUpper()
+        {
+            Assert.Equal("UPPER(col)", _dialect.GenerateUpper("col"));
+        }
+
+        [Fact]
+        public void GenerateLower_UsesLower()
+        {
+            Assert.Equal("LOWER(col)", _dialect.GenerateLower("col"));
+        }
+
+        [Fact]
+        public void GenerateTrim_UsesTrim()
+        {
+            Assert.Equal("TRIM(col)", _dialect.GenerateTrim("col"));
+        }
+
+        [Fact]
+        public void GenerateSubstring_UsesSubstring()
+        {
+            Assert.Equal("SUBSTRING(col, 1, 5)", _dialect.GenerateSubstring("col", "1", "5"));
+        }
+
+        [Fact]
+        public void GenerateYear_UsesYear()
+        {
+            Assert.Equal("YEAR(col)", _dialect.GenerateYear("col"));
+        }
+
+        [Fact]
+        public void GenerateMonth_UsesMonth()
+        {
+            Assert.Equal("MONTH(col)", _dialect.GenerateMonth("col"));
+        }
+
+        [Fact]
+        public void GenerateDay_UsesDay()
+        {
+            Assert.Equal("DAY(col)", _dialect.GenerateDay("col"));
+        }
+
+        [Fact]
+        public void GenerateRowNumber_ReturnsRowNumber()
+        {
+            Assert.Equal("ROW_NUMBER()", _dialect.GenerateRowNumber());
+        }
+
+        [Fact]
+        public void GenerateRank_ReturnsRank()
+        {
+            Assert.Equal("RANK()", _dialect.GenerateRank());
+        }
+
+        [Fact]
+        public void GenerateDenseRank_ReturnsDenseRank()
+        {
+            Assert.Equal("DENSE_RANK()", _dialect.GenerateDenseRank());
+        }
+
+        [Fact]
+        public void GenerateNTile_ReturnsNTile()
+        {
+            Assert.Equal("NTILE(4)", _dialect.GenerateNTile(4));
+        }
+
+        [Fact]
+        public void GenerateOverClause_PartitionOnly_NoOrder()
+        {
+            var result = _dialect.GenerateOverClause(
+                new[] { "department" },
+                null);
+            Assert.Equal(" OVER (PARTITION BY department)", result);
+        }
+
+        [Fact]
+        public void GenerateOverClause_OrderOnly_NoPartition()
+        {
+            var result = _dialect.GenerateOverClause(
+                null,
+                new[] { ("salary", true) });
+            Assert.Equal(" OVER (ORDER BY salary DESC)", result);
+        }
+
+        [Fact]
+        public void GenerateOverClause_PartitionAndOrder()
+        {
+            var result = _dialect.GenerateOverClause(
+                new[] { "department" },
+                new[] { ("salary", false) });
+            Assert.Equal(" OVER (PARTITION BY department ORDER BY salary)", result);
+        }
+
+        [Fact]
+        public void GenerateWindowAggregate_WithExpression_ReturnsFunction()
+        {
+            Assert.Equal("SUM(salary)", _dialect.GenerateWindowAggregate("SUM", "salary"));
+        }
+
+        [Fact]
+        public void GenerateWindowAggregate_NullExpression_ReturnsStar()
+        {
+            Assert.Equal("COUNT(*)", _dialect.GenerateWindowAggregate("COUNT", null));
+        }
     }
 
     #endregion
@@ -716,6 +870,14 @@ public class SqlDialectTests
         }
 
         [Fact]
+        public void GetDialect_SqliteConnection_MicrosoftDataSqlite_ReturnsSQLiteDialect()
+        {
+            var connection = new SqliteConnection();
+            var dialect = SqlDialectFactory.GetDialect(connection);
+            Assert.IsType<SQLiteDialect>(dialect);
+        }
+
+        [Fact]
         public void GetDialect_UnknownConnection_DefaultsToSqlServer()
         {
             var connection = new UnknownConnection();
@@ -725,6 +887,7 @@ public class SqlDialectTests
 
         // Mock connection classes whose type names match the factory's switch cases
         private class SQLiteConnection : MockConnectionBase { }
+        private class SqliteConnection : MockConnectionBase { } // Microsoft.Data.Sqlite uses this name
         private class SqlConnection : MockConnectionBase { }
         private class NpgsqlConnection : MockConnectionBase { }
         private class MySqlConnection : MockConnectionBase { }

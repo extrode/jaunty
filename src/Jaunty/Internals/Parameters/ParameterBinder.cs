@@ -128,20 +128,26 @@ internal static class ParameterBinder
     private class CommandTemplate(TemplateItem[] items)
     {
         private IDbDataParameter[]? _templates;
+        private Type? _templateParameterType;
 
         public void Bind(IDbCommand command, object parameters)
         {
             _templates ??= CreateTemplates(command);
+
+            // Check if the command's parameter type matches the cached template type.
+            // This prevents cross-provider bugs when multiple providers (e.g.,
+            // System.Data.SQLite and Microsoft.Data.Sqlite) share the same SQL cache key.
+            bool sameProvider = command.CreateParameter().GetType() == _templateParameterType;
 
             var pCollection = command.Parameters;
             for (int i = 0; i < items.Length; i++)
             {
                 ref readonly var item = ref items[i];
                 var template = _templates[i];
-                
+
                 // Clone the template to avoid thread safety issues
                 // and to prevent parameters from being bound to multiple commands
-                var p = CloneParameter(command, template);
+                var p = sameProvider ? CloneParameter(command, template) : CreateParameter(command, template);
                 p.Value = item.Getter(parameters) ?? DBNull.Value;
                 pCollection.Add(p);
             }
@@ -156,6 +162,7 @@ internal static class ParameterBinder
                 p.ParameterName = items[i].Name;
                 templates[i] = p;
             }
+            _templateParameterType = templates.Length > 0 ? templates[0].GetType() : null;
             return templates;
         }
 
@@ -167,7 +174,11 @@ internal static class ParameterBinder
                 return (IDbDataParameter)cloneable.Clone();
             }
 
-            // Fallback: Create new and copy basic properties (Slow Path)
+            return CreateParameter(command, template);
+        }
+
+        private static IDbDataParameter CreateParameter(IDbCommand command, IDbDataParameter template)
+        {
             var p = command.CreateParameter();
             p.ParameterName = template.ParameterName;
             p.DbType = template.DbType;
