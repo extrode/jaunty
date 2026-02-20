@@ -2,7 +2,7 @@
 
 **Target**: 100% Code Coverage
 **Created**: 2026-02-19
-**Last Updated**: 2026-02-20 (MappedCache open generic bug fixed, all IMapped/DrDispatcher tests un-skipped)
+**Last Updated**: 2026-02-20 (Steps 1-7 complete: multi-target, IDbConnection fallback, Microsoft.Data.Sqlite, 4 production bugs fixed, GridReader async, SQL Server/PostgreSQL SP tests with skip infrastructure)
 
 This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each item includes the class/method and its test status.
 
@@ -369,53 +369,53 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | `ReadPartialSingleOrDefault<T>()` | yes | GridReaderTests.cs | Happy path + no results returns null |
 | `ReadScalar<T>()` | yes | GridReaderTests.cs | Read scalar value |
 | `Dispose()` | yes | GridReaderTests.cs | Resource cleanup |
-| Async variants (ReadAsync, etc.) | yes | GridReaderAsyncTests.cs | All async counterparts |
+| Async variants (ReadAsync, etc.) | yes | GridReaderAsyncTests.cs, MicrosoftSqliteGridReaderAsyncTests.cs | All async counterparts (19 async tests via Microsoft.Data.Sqlite) |
 
 ---
 
 ## 5. Stored Procedures (`src/Jaunty/StoredProcedure/`)
 
-> **Note**: SQLite does not support stored procedures. These methods require SQL Server or PostgreSQL for testing.
+> **Note**: SQLite does not support stored procedures. Real implementations exist for SQL Server and PostgreSQL.
+> Tests auto-skip when the database is not configured. Configure via environment variables or `appsettings.json`.
+> See `data/sqlserver/create-stored-procedures.sql` and `data/postgres/create-stored-procedures.sql` for setup.
 
 ### ExecuteStoredProcedure (Sync)
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `ExecuteStoredProcedure<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-tests created; requires SQL Server/PostgreSQL |
-| `ExecuteStoredProcedure<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedure<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirst<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirst<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirst<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirstOrDefault<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirstOrDefault<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirstOrDefault<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureScalar<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureScalar<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureScalar<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureNonQuery(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureNonQuery(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureNonQuery(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedure<T>(procedureName)` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | Auto-skips without DB |
+| `ExecuteStoredProcedure<T>(procedureName, parameters)` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | With parameter binding |
+| `ExecuteStoredProcedure<T>(procedureName, parameters, options)` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | With transaction |
+| `ExecuteStoredProcedureFirst<T>(procedureName, parameters)` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | Returns first |
+| `ExecuteStoredProcedureFirst<T>(procedureName, parameters, options)` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | With transaction |
+| `ExecuteStoredProcedureFirst<T> - no results` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | Throws InvalidOperationException |
+| `ExecuteStoredProcedureFirstOrDefault<T>(procedureName, parameters)` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | Returns first or null |
+| `ExecuteStoredProcedureFirstOrDefault<T> - no results` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | Returns null |
+| `ExecuteStoredProcedureFirstOrDefault<T>(procedureName, parameters, options)` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | With transaction |
+| `ExecuteStoredProcedureScalar<T>(procedureName)` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | Scalar count |
+| `ExecuteStoredProcedureScalar<T>(procedureName, parameters)` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | Scalar with params |
+| `ExecuteStoredProcedureScalar<T>(procedureName, parameters, options)` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | With transaction |
+| `ExecuteStoredProcedureNonQuery(procedureName, parameters, options)` | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | Update with rollback |
+| `SpParameters` output parameter binding | yes | SqlServerStoredProcedureTests.cs, PostgresStoredProcedureTests.cs | AddOutput/AddInputOutput + Get |
 
 ### ExecuteStoredProcedureAsync
 
 | Method | Status | Test File | Notes |
 |--------|--------|-----------|-------|
-| `ExecuteStoredProcedureAsync<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureAsync<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureAsync<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirstAsync<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirstAsync<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirstAsync<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirstOrDefaultAsync<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirstOrDefaultAsync<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureFirstOrDefaultAsync<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureScalarAsync<T>(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureScalarAsync<T>(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureScalarAsync<T>(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureNonQueryAsync(procedureName)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureNonQueryAsync(procedureName, parameters)` | - | StoredProcedureTests.cs | Skip-test placeholder |
-| `ExecuteStoredProcedureNonQueryAsync(procedureName, parameters, options)` | - | StoredProcedureTests.cs | Skip-test placeholder |
+| `ExecuteStoredProcedureAsync<T>(procedureName)` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async list |
+| `ExecuteStoredProcedureAsync<T>(procedureName, parameters)` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async with params |
+| `ExecuteStoredProcedureAsync<T>(procedureName, parameters, options)` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async with transaction |
+| `ExecuteStoredProcedureFirstAsync<T>(procedureName, parameters)` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async first |
+| `ExecuteStoredProcedureFirstAsync<T>(procedureName, parameters, options)` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async with transaction |
+| `ExecuteStoredProcedureFirstAsync<T> - no results` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Throws async |
+| `ExecuteStoredProcedureFirstOrDefaultAsync<T>(procedureName, parameters)` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async first or null |
+| `ExecuteStoredProcedureFirstOrDefaultAsync<T> - no results` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Returns null async |
+| `ExecuteStoredProcedureFirstOrDefaultAsync<T>(procedureName, parameters, options)` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async with transaction |
+| `ExecuteStoredProcedureScalarAsync<T>(procedureName)` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async scalar |
+| `ExecuteStoredProcedureScalarAsync<T>(procedureName, parameters)` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async scalar with params |
+| `ExecuteStoredProcedureScalarAsync<T>(procedureName, parameters, options)` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async with transaction |
+| `ExecuteStoredProcedureNonQueryAsync(procedureName, parameters, options)` | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async update with rollback |
+| `SpParameters` output parameter binding (async) | yes | SqlServerStoredProcedureAsyncTests.cs, PostgresStoredProcedureAsyncTests.cs | Async output param |
 
 ---
 
@@ -641,7 +641,38 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 ---
 
-## 11. Cross-Cutting Integration Tests
+## 11. IDbConnection Fallback Path Tests
+
+> Tests using `IDbConnectionWrapper` (wraps a real connection but does NOT extend `DbConnection`), forcing all `if (connection is DbConnection)` checks to fail and exercising IDbConnection-only code paths.
+
+| Feature | Status | Test File | Notes |
+|---------|--------|-----------|-------|
+| Query via IDbConnection | yes | QueryFallbackTests.cs | IDataReader fallback |
+| QueryFirst via IDbConnection | yes | QueryFallbackTests.cs | First row fallback |
+| QuerySingle via IDbConnection | yes | QueryFallbackTests.cs | Single row fallback |
+| QueryScalar via IDbConnection | yes | QueryFallbackTests.cs | Scalar fallback |
+| QueryStream via IDbConnection | yes | QueryFallbackTests.cs | Streaming fallback |
+| Insert via IDbConnection | yes | WriteFallbackTests.cs | Write fallback |
+| Update via IDbConnection | yes | WriteFallbackTests.cs | Write fallback |
+| Delete via IDbConnection | yes | WriteFallbackTests.cs | Write fallback |
+| Multi-entity via IDbConnection | yes | MultiEntityFallbackTests.cs | Deprecated API fallback |
+| Async write throws for non-DbConnection | yes | AsyncWriteFallbackTests.cs | Validates async requires DbConnection |
+
+---
+
+## 12. Microsoft.Data.Sqlite Provider Tests (net8.0 only)
+
+| Feature | Status | Test File | Notes |
+|---------|--------|-----------|-------|
+| Query (sync + async) | yes | MicrosoftSqliteTests.cs | 14 tests, proper async support |
+| Write operations | yes | MicrosoftSqliteTests.cs | Insert/Update/Delete |
+| Streaming | yes | MicrosoftSqliteTests.cs | QueryStream + QueryPartialStream |
+| GridReader async (all methods) | yes | MicrosoftSqliteGridReaderAsyncTests.cs | 19 async tests (ReadAsync, ReadPartialAsync, ReadFirstAsync, etc.) |
+| Cross-provider parameter safety | yes | MicrosoftSqliteTests.cs | ParameterBinder type check fix verified |
+
+---
+
+## 13. Cross-Cutting Integration Tests
 
 | Feature | Status | Test File | Notes |
 |---------|--------|-----------|-------|
@@ -666,7 +697,7 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 ---
 
-## 12. Jaunty.Fluent.Tests
+## 14. Jaunty.Fluent.Tests
 
 | Feature | Status | Test File | Notes |
 |---------|--------|-----------|-------|
@@ -692,7 +723,7 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 
 ---
 
-## 13. Jaunty.Scaffolding.Tests
+## 15. Jaunty.Scaffolding.Tests
 
 | Feature | Status | Test File | Notes |
 |---------|--------|-----------|-------|
@@ -721,11 +752,13 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | Write (Bulk) | 24 | 0 | 0 | 24 | 100% |
 | Write (Upsert) | 4 | 0 | 0 | 4 | 100% |
 | Multiple | 17+ | 0 | 0 | 17+ | 100% |
-| Stored Procedures | 0 | 33 | 0 | 33 | 0% (all skip-tests) |
+| Stored Procedures | 28 | 0 | 0 | 28 | 100% (auto-skip without DB) |
 | Core/Config | 12 | 0 | 0 | 12 | 100% |
 | Attributes | 6 | 0 | 0 | 6 | 100% |
 | Interfaces | 3 | 0 | 0 | 3 | 100% |
 | Internals | 106 | 2 | 1 | 109 | 97% |
+| IDbConnection Fallback | 10 | 0 | 0 | 10 | 100% |
+| Microsoft.Data.Sqlite | 5 | 0 | 0 | 5 | 100% |
 | Cross-cutting | 17 | 0 | 0 | 17 | 100% |
 | Fluent API | 19 | 0 | 0 | 19 | 100% |
 | Scaffolding | 6 | 0 | 0 | 6 | 100% |
@@ -847,6 +880,17 @@ This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each i
 | MetadataCacheTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
 | MultiEntityMapperTests.cs | `tests/Jaunty.Tests/Unit/Internals/` |
 | ObsoleteMultiEntityTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| StoredProcedureTests.cs | `tests/Jaunty.Tests/Integration/Sqlite/Read/` |
+| MicrosoftSqliteTests.cs | `tests/Jaunty.Tests/Integration/MicrosoftSqlite/` |
+| MicrosoftSqliteGridReaderAsyncTests.cs | `tests/Jaunty.Tests/Integration/MicrosoftSqlite/` |
+| QueryFallbackTests.cs | `tests/Jaunty.Tests/Integration/IDbConnectionFallback/` |
+| WriteFallbackTests.cs | `tests/Jaunty.Tests/Integration/IDbConnectionFallback/` |
+| MultiEntityFallbackTests.cs | `tests/Jaunty.Tests/Integration/IDbConnectionFallback/` |
+| AsyncWriteFallbackTests.cs | `tests/Jaunty.Tests/Integration/IDbConnectionFallback/` |
+| SqlServerStoredProcedureTests.cs | `tests/Jaunty.Tests/Integration/SqlServer/StoredProcedure/` |
+| SqlServerStoredProcedureAsyncTests.cs | `tests/Jaunty.Tests/Integration/SqlServer/StoredProcedure/` |
+| PostgresStoredProcedureTests.cs | `tests/Jaunty.Tests/Integration/Postgres/StoredProcedure/` |
+| PostgresStoredProcedureAsyncTests.cs | `tests/Jaunty.Tests/Integration/Postgres/StoredProcedure/` |
 
 ---
 

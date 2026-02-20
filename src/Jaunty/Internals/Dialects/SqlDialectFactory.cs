@@ -17,7 +17,7 @@ internal static class SqlDialectFactory
             "SqlConnection" or "Microsoft.Data.SqlClient.SqlConnection" => new SqlServerDialect(),
             "NpgsqlConnection" => new PostgreSqlDialect(),
             "MySqlConnection" => new MySqlDialect(),
-            "SQLiteConnection" => new SQLiteDialect(),
+            "SQLiteConnection" or "SqliteConnection" => new SQLiteDialect(),
             _ => new SqlServerDialect() // Default to SQL Server
         };
     }
