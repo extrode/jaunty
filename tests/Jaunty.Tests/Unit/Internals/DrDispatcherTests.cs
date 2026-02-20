@@ -61,7 +61,11 @@ public class DrDispatcherTests : IDisposable
         [Ignore]
         public bool WasMappedByCustomMapper { get; set; }
 
+#if NET8_0_OR_GREATER
         public static MappedItem ReadEntity(IDataReader reader)
+#else
+        public MappedItem ReadEntity(IDataReader reader)
+#endif
         {
             return new MappedItem
             {

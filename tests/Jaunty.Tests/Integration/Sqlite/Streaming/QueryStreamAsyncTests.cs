@@ -1,3 +1,4 @@
+#if NET8_0_OR_GREATER
 using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
@@ -149,3 +150,4 @@ public class QueryStreamAsyncTests : IDisposable
         Assert.Empty(list);
     }
 }
+#endif

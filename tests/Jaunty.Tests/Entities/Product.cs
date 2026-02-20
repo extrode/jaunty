@@ -16,36 +16,40 @@ public class Product : IEntity<int>, IMapped<Product>
 
     public int ProductId { get; set; }
     public string ProductName { get; set; } = null!;
-    
+
     [Column("supplier_id")]
     public int? SupplierId { get; set; }
-    
+
     [Column("category_id")]
     public short? CategoryId { get; set; }
-    
+
     [Column("quantity_per_unit")]
     public string? QuantityPerUnit { get; set; }
-    
+
     [Column("unit_price")]
     public decimal? UnitPrice { get; set; }
-    
+
     [Column("units_in_stock")]
     public short? UnitsInStock { get; set; }
-    
+
     [Column("units_on_order")]
     public short? UnitsOnOrder { get; set; }
-    
+
     [Column("reorder_level")]
     public short? ReorderLevel { get; set; }
-    
+
     [Column("discontinued")]
     public bool Discontinued { get; set; }
 
+#if NET8_0_OR_GREATER
     public static Product ReadEntity(IDataReader reader)
+#else
+    public Product ReadEntity(IDataReader reader)
+#endif
     {
         var ordinal = new OrdinalCache(reader);
 
-        return new()
+        return new Product
         {
             ProductId = reader.GetInt32(ordinal["ProductId"]),
             ProductName = reader.GetString(ordinal["ProductName"]),
@@ -60,10 +64,17 @@ public class Product : IEntity<int>, IMapped<Product>
         };
     }
 
-    private readonly struct OrdinalCache(IDataReader reader)
+    private readonly struct OrdinalCache
     {
-        private readonly Dictionary<string, int> _cache = [];
+        private readonly IDataReader _reader;
+        private readonly Dictionary<string, int> _cache;
 
-        public int this[string columnName] => _cache.TryGetValue(columnName, out var ordinal) ? ordinal : _cache[columnName] = reader.GetOrdinal(columnName);
+        public OrdinalCache(IDataReader reader)
+        {
+            _reader = reader;
+            _cache = new Dictionary<string, int>();
+        }
+
+        public int this[string columnName] => _cache.TryGetValue(columnName, out var ordinal) ? ordinal : _cache[columnName] = _reader.GetOrdinal(columnName);
     }
 }

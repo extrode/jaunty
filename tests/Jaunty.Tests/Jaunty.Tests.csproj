@@ -1,13 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>net8.0;net472</TargetFrameworks>
     <IsPackable>false</IsPackable>
-    <NoWarn>CS1591;CS8618</NoWarn>
+    <LangVersion>latest</LangVersion>
     <EnableAnalyzers>false</EnableAnalyzers>
     <CodeAnalysisRuleSet>None.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+
+  <!-- net8.0-specific settings -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NoWarn>CS1591;CS8618</NoWarn>
+  </PropertyGroup>
+
+  <!-- net472-specific settings (loads netstandard2.0 assembly) -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net472'">
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <NoWarn>CS1591;CS8618;CS8632;CS8669</NoWarn>
+  </PropertyGroup>
+
+  <!-- Async enumerable support (net8.0 Debug only) -->
+  <PropertyGroup Condition="'$(Configuration)'=='Debug' AND '$(TargetFramework)' == 'net8.0'">
+    <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,10 +36,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
-
-  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
-  </PropertyGroup>
 
   <ItemGroup>
     <!-- Assertion Libraries -->
@@ -45,11 +58,8 @@
     <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Using Include="Xunit" />
-  </ItemGroup>
 
-  <ItemGroup>
+<ItemGroup>
     <Folder Include="Integration\Maria\" />
     <Folder Include="Integration\Postgres\" />
     <Folder Include="Integration\SqlServer\" />

@@ -25,15 +25,24 @@ internal static class MappedCache<T> where T : new()
         if (!implementsIMapped)
             return null;
 
-        var readMethod = entityType.GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Static, null, [typeof(IDataReader)], null);
+#if NET8_0_OR_GREATER
+        var readMethod = entityType.GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(IDataReader) }, null);
 
         if (readMethod is null)
             return null;
 
-#if NET8_0_OR_GREATER
         return readMethod.CreateDelegate<Func<IDataReader, T>>();
 #else
-        return (Func<IDataReader, T>)Delegate.CreateDelegate(typeof(Func<IDataReader, T>), readMethod);
+        var readMethod = entityType.GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(IDataReader) }, null);
+
+        if (readMethod is null)
+            return null;
+
+        return reader =>
+        {
+            var instance = new T();
+            return (T)readMethod.Invoke(instance, new object[] { reader });
+        };
 #endif
     }
 }

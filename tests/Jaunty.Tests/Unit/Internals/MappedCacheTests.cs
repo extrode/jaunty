@@ -20,7 +20,11 @@ public class MappedCacheTests
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
 
+#if NET8_0_OR_GREATER
         public static MappedEntity ReadEntity(IDataReader reader)
+#else
+        public MappedEntity ReadEntity(IDataReader reader)
+#endif
         {
             return new MappedEntity
             {

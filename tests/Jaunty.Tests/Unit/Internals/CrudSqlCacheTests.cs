@@ -150,7 +150,7 @@ public class CrudSqlCacheTests : IDisposable
         var sql = CrudSqlCache.GetSql<SimpleItem>(_connection);
 
         // The SET clause should not contain the key column
-        var setClause = sql.UpdateSql.Split("WHERE")[0];
+        var setClause = sql.UpdateSql.Split(new[] { "WHERE" }, StringSplitOptions.None)[0];
         Assert.DoesNotContain("id =", setClause);
     }
 
@@ -159,7 +159,7 @@ public class CrudSqlCacheTests : IDisposable
     {
         var sql = CrudSqlCache.GetSql<IdentityItem>(_connection);
 
-        var setClause = sql.UpdateSql.Split("WHERE")[0];
+        var setClause = sql.UpdateSql.Split(new[] { "WHERE" }, StringSplitOptions.None)[0];
         Assert.DoesNotContain("@Id", setClause);
     }
 

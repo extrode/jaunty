@@ -35,8 +35,8 @@ public class QueryMultipleTests : IDisposable
 
         _db.Connection.QueryMultiple(sql, reader =>
         {
-            orders = [.. reader.ReadPartial<Order>()];
-            customers = [.. reader.ReadPartial<Customer>()];
+            orders = reader.ReadPartial<Order>().ToList();
+            customers = reader.ReadPartial<Customer>().ToList();
         });
 
         _db.Connection.QueryMultiple(sql);
@@ -595,6 +595,7 @@ public class QueryMultipleTests : IDisposable
         Assert.True(count > 0);
     }
 
+#if NET8_0_OR_GREATER
     [SkipSQLiteAsyncFact]
     public async Task ReadStreamAsync_StreamsResults()
     {
@@ -632,6 +633,7 @@ public class QueryMultipleTests : IDisposable
 
         Assert.Equal(5, orders.Count);
     }
+#endif
 
     #endregion
 
