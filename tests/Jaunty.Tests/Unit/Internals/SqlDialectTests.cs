@@ -626,7 +626,7 @@ public class SqlDialectTests
         [Fact]
         public void AllDialects_GenerateCoalesce()
         {
-            ISqlDialect[] dialects = [new SQLiteDialect(), new SqlServerDialect(), new MySqlDialect(), new PostgreSqlDialect()];
+            ISqlDialect[] dialects = new ISqlDialect[] { new SQLiteDialect(), new SqlServerDialect(), new MySqlDialect(), new PostgreSqlDialect() };
 
             foreach (var dialect in dialects)
             {
@@ -638,7 +638,7 @@ public class SqlDialectTests
         [Fact]
         public void AllDialects_GenerateNullIf()
         {
-            ISqlDialect[] dialects = [new SQLiteDialect(), new SqlServerDialect(), new MySqlDialect(), new PostgreSqlDialect()];
+            ISqlDialect[] dialects = new ISqlDialect[] { new SQLiteDialect(), new SqlServerDialect(), new MySqlDialect(), new PostgreSqlDialect() };
 
             foreach (var dialect in dialects)
             {
@@ -649,7 +649,7 @@ public class SqlDialectTests
         [Fact]
         public void AllDialects_WindowFunctions()
         {
-            ISqlDialect[] dialects = [new SQLiteDialect(), new SqlServerDialect(), new MySqlDialect(), new PostgreSqlDialect()];
+            ISqlDialect[] dialects = new ISqlDialect[] { new SQLiteDialect(), new SqlServerDialect(), new MySqlDialect(), new PostgreSqlDialect() };
 
             foreach (var dialect in dialects)
             {

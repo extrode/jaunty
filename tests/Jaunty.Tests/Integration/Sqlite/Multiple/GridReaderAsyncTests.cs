@@ -169,6 +169,7 @@ public class GridReaderAsyncTests : IDisposable
         Assert.True(count > 0);
     }
 
+#if NET8_0_OR_GREATER
     [SkipSQLiteAsyncFact]
     public async Task GridReader_ReadStreamAsync_YieldsResults()
     {
@@ -217,6 +218,7 @@ public class GridReaderAsyncTests : IDisposable
 
         Assert.Equal(3, categories.Count);
     }
+#endif
 
     #region ReadPartialFirstAsync / ReadPartialFirstOrDefaultAsync
 

@@ -1,4 +1,6 @@
+#if NET8_0_OR_GREATER
 using System.Buffers;
+#endif
 
 using Jaunty;
 using Jaunty.Configuration;
@@ -55,33 +57,23 @@ public class ConfigResolverTests : IDisposable
     private static string ToSnakeCase(string source)
     {
         int maxLen = source.Length * 2;
-        var buffer = ArrayPool<char>.Shared.Rent(maxLen);
-        try
+        var buffer = new char[maxLen];
+        int dst = 0;
+        bool prevIsUpper = false;
+
+        for (int i = 0; i < source.Length; i++)
         {
-            int dst = 0;
-            bool prevIsUpper = false;
+            char ch = source[i];
+            bool isUpper = char.IsUpper(ch);
 
-            for (int i = 0; i < source.Length; i++)
-            {
-                char ch = source[i];
-                bool isUpper = char.IsUpper(ch);
+            if (isUpper && i > 0 && (!prevIsUpper || (i + 1 < source.Length && char.IsLower(source[i + 1]))))
+                buffer[dst++] = '_';
 
-                // Insert '_' before an upper case that follows a lower case
-                // or another upper case that is followed by a lower case.
-                if (isUpper && i > 0 && (!prevIsUpper || (i + 1 < source.Length && char.IsLower(source[i + 1]))))
-                    buffer[dst++] = '_';
-
-                // Write lower‑cased character
-                buffer[dst++] = char.ToLowerInvariant(ch);
-                prevIsUpper = isUpper;
-            }
-
-            return new string(buffer, 0, dst);
+            buffer[dst++] = char.ToLowerInvariant(ch);
+            prevIsUpper = isUpper;
         }
-        finally
-        {
-            ArrayPool<char>.Shared.Return(buffer);
-        }
+
+        return new string(buffer, 0, dst);
     }
 }
 
