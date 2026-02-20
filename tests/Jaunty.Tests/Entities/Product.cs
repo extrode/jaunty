@@ -1,5 +1,3 @@
-using System.Data;
-
 using Jaunty.Attributes;
 using Jaunty.Interfaces;
 
@@ -72,7 +70,7 @@ public class Product : IEntity<int>, IMapped<Product>
         public OrdinalCache(IDataReader reader)
         {
             _reader = reader;
-            _cache = new Dictionary<string, int>();
+            _cache = [];
         }
 
         public int this[string columnName] => _cache.TryGetValue(columnName, out var ordinal) ? ordinal : _cache[columnName] = _reader.GetOrdinal(columnName);
