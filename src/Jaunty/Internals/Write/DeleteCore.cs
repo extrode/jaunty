@@ -5,6 +5,7 @@ using Jaunty.Core;
 using Jaunty.Interfaces;
 using Jaunty.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Write;
 
 namespace Jaunty;
 
@@ -46,7 +47,8 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            BindDeleteParameters(command, entity, cached.Metadata);
+            // Bind parameters from entity properties using compiled delegate
+            WriteParameterCache<T>.DeleteBinder(command, entity);
             return command.ExecuteNonQuery();
         }
         finally
@@ -94,7 +96,8 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            BindDeleteParameters(command, entity, cached.Metadata);
+            // Bind parameters from entity properties using compiled delegate
+            WriteParameterCache<T>.DeleteBinder(command, entity);
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -107,21 +110,6 @@ public static partial class Jaunty
                 connection.Close();
 #endif
             }
-        }
-    }
-
-    private static void BindDeleteParameters<T>(IDbCommand command, T entity, EntityMetadata metadata) where T : class
-    {
-        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
-
-        for (int i = 0; i < primaryKeys.Count; i++)
-        {
-            ColumnMetadata key = primaryKeys[i];
-
-            IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + key.Property.Name;
-            param.Value = key.Property.GetValue(entity) ?? DBNull.Value;
-            command.Parameters.Add(param);
         }
     }
 

@@ -42,7 +42,9 @@ internal static class CrudSqlCache
         string deleteSql = BuildDeleteSql(metadata, dialect, escapedTableName);
         string deleteByIdSql = BuildDeleteByIdSql(metadata, dialect, escapedTableName);
         string upsertSql = dialect.SupportsUpsert ? BuildUpsertSql(metadata, dialect, escapedTableName) : string.Empty;
-        string lastInsertIdSql = dialect.GetLastInsertIdSql();
+        
+        var identityColumnNames = metadata.PrimaryKeys.Where(c => c.IsIdentity).Select(c => dialect.EscapeColumnName(c.ColumnName)).ToArray();
+        string lastInsertIdSql = dialect.GetLastInsertIdSql(identityColumnNames);
 
         return new CachedCrudSql(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, metadata, dialect.SupportsUpsert);
     }

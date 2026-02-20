@@ -66,6 +66,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryPartialStreamAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryStreamCoreAsync<T>(dbConnection, sql, null, default, MappingMode.Strict, cancellationToken);
@@ -111,6 +118,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, object, CommandOptions{T}, CancellationToken)"/>
     public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryStreamCoreAsync<T>(dbConnection, sql, parameters, default, MappingMode.Strict, cancellationToken);
@@ -156,6 +170,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryStreamCoreAsync<T>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
@@ -206,6 +227,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryStreamCoreAsync<T>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
@@ -234,6 +262,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<IEnumerable<T>> QueryStreamAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryStreamCoreAsync<T>(dbConnection, sql, null, default, MappingMode.Strict, cancellationToken);
@@ -261,6 +296,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, object, CommandOptions{T}, CancellationToken)"/>
     public static ValueTask<IEnumerable<T>> QueryStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryStreamCoreAsync<T>(dbConnection, sql, parameters, default, MappingMode.Strict, cancellationToken);
@@ -290,6 +332,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<IEnumerable<T>> QueryStreamAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryStreamCoreAsync<T>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
@@ -320,6 +369,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static ValueTask<IEnumerable<T>> QueryStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryStreamCoreAsync<T>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);

@@ -70,6 +70,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryFirst{T1, T2}(IDbConnection, string)"/>
     public static List<(T1, T2)> Query<T1, T2>(this IDbConnection connection, string sql) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
 
@@ -109,6 +116,13 @@ public static partial class Jaunty
     /// <seealso cref="Query{T1, T2}(IDbConnection, string, object, CommandOptions{(T1, T2)})"/>
     public static List<(T1, T2)> Query<T1, T2>(this IDbConnection connection, string sql, object parameters) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
 
@@ -147,6 +161,13 @@ public static partial class Jaunty
     /// <seealso cref="Query{T1, T2}(IDbConnection, string)"/>
     public static List<(T1, T2)> Query<T1, T2>(this IDbConnection connection, string sql, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
 
@@ -191,6 +212,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static List<(T1, T2)> Query<T1, T2>(this IDbConnection connection, string sql, object parameters, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
@@ -308,6 +336,13 @@ public static partial class Jaunty
     /// <seealso cref="Query{T1, T2}(IDbConnection, string)"/>
     public static (T1, T2) QueryFirst<T1, T2>(this IDbConnection connection, string sql) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
 
@@ -348,6 +383,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryFirstOrDefault{T1, T2}(IDbConnection, string, object)"/>
     public static (T1, T2) QueryFirst<T1, T2>(this IDbConnection connection, string sql, object parameters) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
 
@@ -385,6 +427,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static (T1, T2) QueryFirst<T1, T2>(this IDbConnection connection, string sql, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
 
@@ -430,6 +479,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static (T1, T2) QueryFirst<T1, T2>(this IDbConnection connection, string sql, object parameters, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
@@ -502,6 +558,13 @@ public static partial class Jaunty
     /// <seealso cref="Query{T1, T2}(IDbConnection, string)"/>
     public static (T1, T2)? QueryFirstOrDefault<T1, T2>(this IDbConnection connection, string sql) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
 
@@ -543,6 +606,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryFirst{T1, T2}(IDbConnection, string, object)"/>
     public static (T1, T2)? QueryFirstOrDefault<T1, T2>(this IDbConnection connection, string sql, object parameters) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
 
@@ -581,6 +651,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static (T1, T2)? QueryFirstOrDefault<T1, T2>(this IDbConnection connection, string sql, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
 
@@ -627,6 +704,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static (T1, T2)? QueryFirstOrDefault<T1, T2>(this IDbConnection connection, string sql, object parameters, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
@@ -695,6 +779,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryFirst{T1, T2}(IDbConnection, string)"/>
     public static (T1, T2) QuerySingle<T1, T2>(this IDbConnection connection, string sql) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
 
@@ -735,6 +826,13 @@ public static partial class Jaunty
     /// <seealso cref="QuerySingleOrDefault{T1, T2}(IDbConnection, string, object)"/>
     public static (T1, T2) QuerySingle<T1, T2>(this IDbConnection connection, string sql, object parameters) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
 
@@ -773,6 +871,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static (T1, T2) QuerySingle<T1, T2>(this IDbConnection connection, string sql, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
 
@@ -818,6 +923,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static (T1, T2) QuerySingle<T1, T2>(this IDbConnection connection, string sql, object parameters, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
@@ -894,6 +1006,13 @@ public static partial class Jaunty
     /// <seealso cref="QueryFirstOrDefault{T1, T2}(IDbConnection, string)"/>
     public static (T1, T2)? QuerySingleOrDefault<T1, T2>(this IDbConnection connection, string sql) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
 
@@ -936,6 +1055,13 @@ public static partial class Jaunty
     /// <seealso cref="QuerySingle{T1, T2}(IDbConnection, string, object)"/>
     public static (T1, T2)? QuerySingleOrDefault<T1, T2>(this IDbConnection connection, string sql, object parameters) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
 
@@ -976,6 +1102,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static (T1, T2)? QuerySingleOrDefault<T1, T2>(this IDbConnection connection, string sql, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
 
@@ -1023,6 +1156,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static (T1, T2)? QuerySingleOrDefault<T1, T2>(this IDbConnection connection, string sql, object parameters, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
@@ -1089,6 +1229,13 @@ public static partial class Jaunty
     /// <seealso cref="Query{T1, T2}(IDbConnection, string)"/>
     public static IEnumerable<(T1, T2)> QueryStream<T1, T2>(this IDbConnection connection, string sql) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryStreamMultiEntityCore<T1, T2>(connection, sql, null, default, MappingMode.Strict);
     }
 
@@ -1131,6 +1278,13 @@ public static partial class Jaunty
     /// <seealso cref="Query{T1, T2}(IDbConnection, string, object)"/>
     public static IEnumerable<(T1, T2)> QueryStream<T1, T2>(this IDbConnection connection, string sql, object parameters) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryStreamMultiEntityCore<T1, T2>(connection, sql, parameters, default, MappingMode.Strict);
     }
 
@@ -1170,6 +1324,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static IEnumerable<(T1, T2)> QueryStream<T1, T2>(this IDbConnection connection, string sql, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryStreamMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
     }
 
@@ -1217,6 +1378,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static IEnumerable<(T1, T2)> QueryStream<T1, T2>(this IDbConnection connection, string sql, object parameters, CommandOptions<(T1, T2)> options) where T1 : new() where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QueryStreamMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 

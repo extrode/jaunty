@@ -55,6 +55,13 @@ public static partial class Jaunty
     /// <seealso cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/>
     public static ValueTask<int> BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : BulkInsertAsync(dbConnection, entities, default, cancellationToken);
@@ -100,6 +107,13 @@ public static partial class Jaunty
     /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static ValueTask<int> BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : BulkInsertCoreAsync(dbConnection, entities, options, ignoreConstraints: false, cancellationToken);
@@ -140,6 +154,13 @@ public static partial class Jaunty
     /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : BulkInsertIgnoreConstraintsAsync(dbConnection, entities, default, cancellationToken);
@@ -186,6 +207,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : BulkInsertCoreAsync(dbConnection, entities, options, ignoreConstraints: true, cancellationToken);

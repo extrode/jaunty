@@ -82,6 +82,13 @@ public static partial class Jaunty
     /// <seealso cref="Attributes.TableAttribute"/>
     public static int Update<T>(this IDbConnection connection, T entity) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entity);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
+#endif
         return UpdateCore(connection, entity, default);
     }
 
@@ -132,6 +139,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static int Update<T>(this IDbConnection connection, T entity, CommandOptions options) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entity);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
+#endif
         return UpdateCore(connection, entity, options);
     }
 }

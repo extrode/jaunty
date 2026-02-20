@@ -60,7 +60,7 @@ internal sealed class MySqlDialect : ISqlDialect
         return IsKeyword(columnName) ? $"`{columnName}`" : columnName;
     }
 
-    public string GetLastInsertIdSql()
+    public string GetLastInsertIdSql(params string[] columnNames)
     {
         return "SELECT LAST_INSERT_ID();";
     }

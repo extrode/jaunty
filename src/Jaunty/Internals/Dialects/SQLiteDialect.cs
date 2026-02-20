@@ -40,7 +40,7 @@ internal sealed class SQLiteDialect : ISqlDialect
         return IsKeyword(columnName) ? $"\"{columnName}\"" : columnName;
     }
 
-    public string GetLastInsertIdSql()
+    public string GetLastInsertIdSql(params string[] columnNames)
     {
         return "SELECT last_insert_rowid();";
     }

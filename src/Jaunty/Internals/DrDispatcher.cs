@@ -120,7 +120,7 @@ internal static class DrDispatcher
         {
             if (reader.FieldCount < 2)
                 throw new InvalidOperationException(
-                    $"KeyValuePair requires at least 2 columns, but query returned {reader.FieldCount}.");
+                    $"Type '{type.Name}' requires at least 2 columns, but query returned {reader.FieldCount}.");
 
             return CreateKeyValuePairMapper<T>(reader, type.GetGenericArguments());
         }
@@ -131,7 +131,7 @@ internal static class DrDispatcher
             var typeArgs = type.GetGenericArguments();
             if (reader.FieldCount < typeArgs.Length)
                 throw new InvalidOperationException(
-                    $"ValueTuple<{string.Join(", ", typeArgs.Select(t => t.Name))}> requires {typeArgs.Length} columns, but query returned {reader.FieldCount}.");
+                    $"Type 'ValueTuple<{string.Join(", ", typeArgs.Select(t => t.Name))}>' requires {typeArgs.Length} columns, but query returned {reader.FieldCount}.");
 
             return CreateValueTupleMapper<T>(reader, typeArgs);
         }

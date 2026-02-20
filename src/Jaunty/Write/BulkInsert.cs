@@ -57,6 +57,13 @@ public static partial class Jaunty
     /// <seealso cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static int BulkInsert<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return BulkInsert(connection, entities, default);
     }
 
@@ -105,6 +112,13 @@ public static partial class Jaunty
     /// <seealso cref="BulkInsertIgnoreConstraints{T}(IDbConnection, IEnumerable{T}, CommandOptions)"/>
     public static int BulkInsert<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return BulkInsertCore(connection, entities, options, ignoreConstraints: false);
     }
 
@@ -150,6 +164,13 @@ public static partial class Jaunty
     /// <seealso cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/>
     public static int BulkInsertIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return BulkInsertIgnoreConstraints(connection, entities, default);
     }
 
@@ -194,6 +215,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static int BulkInsertIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return BulkInsertCore(connection, entities, options, ignoreConstraints: true);
     }
 

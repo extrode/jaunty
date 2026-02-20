@@ -49,6 +49,13 @@ public static partial class Jaunty
     /// <seealso cref="UpdateAsync{T}(IDbConnection, T, CommandOptions, CancellationToken)"/>
     public static ValueTask<int> UpdateAsync<T>(this IDbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entity);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : UpdateCoreAsync(dbConnection, entity, default, cancellationToken);
@@ -95,6 +102,13 @@ public static partial class Jaunty
     /// <seealso cref="UpdateAsync{T}(IDbConnection, T, CancellationToken)"/>
     public static ValueTask<int> UpdateAsync<T>(this IDbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entity);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entity is null) throw new ArgumentNullException(nameof(entity));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : UpdateCoreAsync(dbConnection, entity, options, cancellationToken);

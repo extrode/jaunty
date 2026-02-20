@@ -57,6 +57,15 @@ public static partial class Jaunty
     /// <seealso cref="QuerySingle{T}(IDbConnection, string)"/>
     public static T QueryPartialSingle<T>(this IDbConnection connection, string sql) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleCore<T>(connection, sql, null, default, MappingMode.Projection);
     }
 
@@ -93,6 +102,15 @@ public static partial class Jaunty
     /// <seealso cref="QueryPartialSingleOrDefault{T}(IDbConnection, string, object)"/>
     public static T QueryPartialSingle<T>(this IDbConnection connection, string sql, object parameters) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleCore<T>(connection, sql, parameters, default, MappingMode.Projection);
     }
 
@@ -129,6 +147,15 @@ public static partial class Jaunty
     /// <seealso cref="QueryPartialSingle{T}(IDbConnection, string)"/>
     public static T QueryPartialSingle<T>(this IDbConnection connection, string sql, CommandOptions<T> options) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleCore<T>(connection, sql, null, options, MappingMode.Projection);
     }
 
@@ -170,6 +197,15 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static T QueryPartialSingle<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+#endif
         return QuerySingleCore<T>(connection, sql, parameters, options, MappingMode.Projection);
     }
 }

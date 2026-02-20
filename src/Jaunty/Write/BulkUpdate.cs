@@ -55,6 +55,13 @@ public static partial class Jaunty
     /// <seealso cref="BulkUpdateAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>
     public static int BulkUpdate<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return BulkUpdate(connection, entities, default);
     }
 
@@ -93,6 +100,13 @@ public static partial class Jaunty
     /// <seealso cref="BulkUpdate{T}(IDbConnection, IEnumerable{T})"/>
     public static int BulkUpdate<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return BulkUpdateCore(connection, entities, options, ignoreConstraints: false);
     }
 
@@ -136,6 +150,13 @@ public static partial class Jaunty
     /// <seealso cref="BulkUpdate{T}(IDbConnection, IEnumerable{T})"/>
     public static int BulkUpdateIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return BulkUpdateIgnoreConstraints(connection, entities, default);
     }
 
@@ -180,6 +201,13 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static int BulkUpdateIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : class, new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
         return BulkUpdateCore(connection, entities, options, ignoreConstraints: true);
     }
 

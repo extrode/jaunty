@@ -24,7 +24,8 @@ internal interface ISqlDialect
     /// <summary>
     /// Returns SQL to retrieve the last inserted identity value.
     /// </summary>
-    string GetLastInsertIdSql();
+    /// <param name="columnNames">The primary key column names (escaped if necessary).</param>
+    string GetLastInsertIdSql(params string[] columnNames);
 
     /// <summary>
     /// Generates paging SQL (OFFSET/FETCH or LIMIT).

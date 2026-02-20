@@ -42,12 +42,12 @@ public static partial class Jaunty
             if (reader is DbDataReader dbReader)
             {
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    throw new InvalidOperationException("Sequence contains no elements");
+                    throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
                 var map = DrDispatcher.Resolve(dbReader, options, mode);
                 return map(dbReader);
             }
             
-            if (!reader.Read()) throw new InvalidOperationException("Sequence contains no elements");
+            if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
             var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             return mapFallback(reader);
         }, cancellationToken).ConfigureAwait(false);
@@ -78,20 +78,20 @@ public static partial class Jaunty
             if (reader is DbDataReader dbReader)
             {
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    throw new InvalidOperationException("Sequence contains no elements");
+                    throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
 
                 var map = DrDispatcher.Resolve(dbReader, options, mode);
                 T? entity = map(dbReader);
                 return await dbReader.ReadAsync(ct).ConfigureAwait(false)
-                    ? throw new InvalidOperationException("Sequence contains more than one element")
+                    ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
                     : entity!;
             }
             
-            if (!reader.Read()) throw new InvalidOperationException("Sequence contains no elements");
+            if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
             var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             T? entityFallback = mapFallback(reader);
             return reader.Read()
-                ? throw new InvalidOperationException("Sequence contains more than one element")
+                ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
                 : entityFallback!;
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -108,7 +108,7 @@ public static partial class Jaunty
                 var map = DrDispatcher.Resolve(dbReader, options, mode);
                 T? entity = map(dbReader);
                 return await dbReader.ReadAsync(ct).ConfigureAwait(false)
-                    ? throw new InvalidOperationException("Sequence contains more than one element")
+                    ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
                     : entity;
             }
             
@@ -116,7 +116,7 @@ public static partial class Jaunty
             var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             T? entityFallback = mapFallback(reader);
             return reader.Read()
-                ? throw new InvalidOperationException("Sequence contains more than one element")
+                ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
                 : entityFallback;
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -281,7 +281,7 @@ public static partial class Jaunty
     private static async ValueTask<(T1, T2)> QueryFirstMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
         var result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
-        return result is null ? throw new InvalidOperationException("Sequence contains no elements") : result.Value;
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : result.Value;
     }
 
     private static async ValueTask<(T1, T2)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
@@ -322,7 +322,7 @@ public static partial class Jaunty
     private static async ValueTask<(T1, T2)> QuerySingleMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
         var result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
-        return result is null ? throw new InvalidOperationException("Sequence contains no elements") : result.Value;
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : result.Value;
     }
 
     private static async ValueTask<(T1, T2)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
@@ -343,7 +343,7 @@ public static partial class Jaunty
                 mapping.ApplyT2(t2, dbReader);
 
                 if (await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    throw new InvalidOperationException("Sequence contains more than one element");
+                    throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
 
                 return (t1, t2);
             }
@@ -360,7 +360,7 @@ public static partial class Jaunty
             mappingFallback.ApplyT2(t2Fallback, reader);
 
             if (reader.Read())
-                throw new InvalidOperationException("Sequence contains more than one element");
+                throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
 
             return (t1Fallback, t2Fallback);
         }, cancellationToken).ConfigureAwait(false);

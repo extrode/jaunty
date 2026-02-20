@@ -57,9 +57,9 @@ internal sealed class SqlServerDialect : ISqlDialect
         return IsKeyword(columnName) ? $"[{columnName}]" : columnName;
     }
 
-    public string GetLastInsertIdSql()
+    public string GetLastInsertIdSql(params string[] columnNames)
     {
-        return "SELECT CAST(SCOPE_IDENTITY() AS INT);";
+        return "SELECT CAST(SCOPE_IDENTITY() AS BIGINT);";
     }
 
     public string GetPagingSql(string baseSql, int offset, int fetchNext)

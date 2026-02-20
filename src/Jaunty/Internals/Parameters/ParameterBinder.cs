@@ -52,12 +52,12 @@ internal static class ParameterBinder
         }
 
         // Standard query: build and cache template
-        template = BuildTemplate(sql, sqlParamNames, propertyLookup, meta);
+        template = BuildTemplate(type, sql, sqlParamNames, propertyLookup, meta);
         TemplateCache.TryAdd((sql, type), template);
         template.Bind(command, parameters);
     }
 
-    private static CommandTemplate BuildTemplate(string sql, string[] sqlParamNames, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] allMeta)
+    private static CommandTemplate BuildTemplate(Type type, string sql, string[] sqlParamNames, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] allMeta)
     {
         var boundNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var items = new List<TemplateItem>();
@@ -73,7 +73,7 @@ internal static class ParameterBinder
             }
             else
             {
-                throw new ArgumentException($"No property found matching SQL parameter '@{sqlName}'.");
+                throw new ArgumentException($"No property found on type '{type.Name}' matching SQL parameter '@{sqlName}'. Available properties: {string.Join(", ", propertyLookup.Keys)}");
             }
         }
 
@@ -87,7 +87,7 @@ internal static class ParameterBinder
 
         if (unused.Count > 0)
         {
-            throw new ArgumentException($"Unused parameter properties: {string.Join(", ", unused)}. SQL contains no matching parameters.");
+            throw new ArgumentException($"Unused parameter properties on type '{type.Name}': {string.Join(", ", unused)}. SQL contains no matching parameters.");
         }
 
         return new CommandTemplate(items.ToArray());
@@ -95,6 +95,7 @@ internal static class ParameterBinder
 
     private static void BindDynamic(IDbCommand command, object parameters, string expandedSql, Dictionary<string, object?>? expandedParams, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] meta, HashSet<string>? expandedOriginalNames)
     {
+        var type = parameters.GetType();
         var sqlParamNames = SqlParameterParser.ExtractParameterNames(expandedSql);
         var bound = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -119,7 +120,7 @@ internal static class ParameterBinder
             }
             else
             {
-                throw new ArgumentException($"No property found matching SQL parameter '@{sqlName}'.");
+                throw new ArgumentException($"No property found on type '{type.Name}' matching SQL parameter '@{sqlName}'. Available properties: {string.Join(", ", propertyLookup.Keys)}");
             }
         }
     }

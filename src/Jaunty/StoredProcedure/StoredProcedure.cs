@@ -45,6 +45,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+#endif
         return ExecuteStoredProcedure<T>(connection, procedureName, null, default);
     }
 
@@ -85,6 +92,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedure{T}(IDbConnection, string, object?, CommandOptions{T})"/>
     public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName, object? parameters) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+#endif
         return ExecuteStoredProcedure<T>(connection, procedureName, parameters, default);
     }
 
@@ -128,6 +142,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedure{T}(IDbConnection, string)"/>
     public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+#endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return connection.Query<T>(procedureName, parameters!, spOptions);
     }
@@ -160,6 +181,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefault{T}(IDbConnection, string)"/>
     public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+#endif
         return ExecuteStoredProcedureFirst<T>(connection, procedureName, null, default);
     }
 
@@ -193,6 +221,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirst{T}(IDbConnection, string, object?, CommandOptions{T})"/>
     public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName, object? parameters) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+#endif
         return ExecuteStoredProcedureFirst<T>(connection, procedureName, parameters, default);
     }
 
@@ -231,6 +266,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirst{T}(IDbConnection, string)"/>
     public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+#endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return connection.QueryFirst<T>(procedureName, parameters!, spOptions);
     }
@@ -267,6 +309,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirst{T}(IDbConnection, string)"/>
     public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+#endif
         return ExecuteStoredProcedureFirstOrDefault<T>(connection, procedureName, null, default);
     }
 
@@ -303,6 +352,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefault{T}(IDbConnection, string, object?, CommandOptions{T})"/>
     public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, object? parameters) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+#endif
         return ExecuteStoredProcedureFirstOrDefault<T>(connection, procedureName, parameters, default);
     }
 
@@ -339,6 +395,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefault{T}(IDbConnection, string)"/>
     public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
+#endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return connection.QueryFirstOrDefault<T>(procedureName, parameters!, spOptions);
     }
