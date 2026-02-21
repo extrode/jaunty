@@ -144,7 +144,7 @@ public class MetadataCacheTests : IDisposable
 
         var ex = Assert.Throws<InvalidOperationException>(
             () => MetadataCache<SimpleItem>.GetSetters(reader, MappingMode.Strict));
-        Assert.Contains("was missing from the result set", ex.Message);
+        Assert.Contains("has no matching column in result set", ex.Message);
     }
 
     [Fact]

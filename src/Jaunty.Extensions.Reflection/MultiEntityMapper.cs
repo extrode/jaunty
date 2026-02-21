@@ -45,28 +45,46 @@ internal sealed class MultiEntityMapper<
         return Cache.GetOrAdd(hash, _ => Create(reader));
     }
 
+    /// <summary>Alias for Get — builds or retrieves a cached mapper for the reader schema.</summary>
+    public static MultiEntityMapper<T1, T2> Build(IDataReader reader) => Get(reader);
+
     private static MultiEntityMapper<T1, T2> Create(IDataReader reader)
     {
         // Build setter arrays using MetadataCache for each type.
         // Using Projection mode to allow columns to be missing if they match the other type.
         var t1Setters = MetadataCache<T1>.GetSetters(reader, MappingMode.Projection);
-        var t2Setters = MetadataCache<T2>.GetSetters(reader, MappingMode.Projection);
 
-        return new MultiEntityMapper<T1, T2>(t1Setters, t2Setters);
+        // T1 has priority: exclude from T2 any ordinals already claimed by T1.
+        var t1Ordinals = new HashSet<int>(t1Setters.Length);
+        for (int i = 0; i < t1Setters.Length; i++)
+            t1Ordinals.Add(t1Setters[i].Ordinal);
+
+        var allT2Setters = MetadataCache<T2>.GetSetters(reader, MappingMode.Projection);
+        var filteredT2 = new List<PropertySetter<T2>>(allT2Setters.Length);
+        for (int i = 0; i < allT2Setters.Length; i++)
+        {
+            if (!t1Ordinals.Contains(allT2Setters[i].Ordinal))
+                filteredT2.Add(allT2Setters[i]);
+        }
+
+        return new MultiEntityMapper<T1, T2>(t1Setters, filteredT2.ToArray());
     }
 
     public void Map(T1? t1, T2? t2, IDataRecord record)
     {
-        if (t1 != null)
-        {
-            for (int i = 0; i < _t1Setters.Length; i++)
-                _t1Setters[i].Set(t1, record);
-        }
+        if (t1 != null) ApplyT1(t1, record);
+        if (t2 != null) ApplyT2(t2, record);
+    }
 
-        if (t2 != null)
-        {
-            for (int i = 0; i < _t2Setters.Length; i++)
-                _t2Setters[i].Set(t2, record);
-        }
+    public void ApplyT1(T1 target, IDataRecord record)
+    {
+        for (int i = 0; i < _t1Setters.Length; i++)
+            _t1Setters[i].Set(target, record);
+    }
+
+    public void ApplyT2(T2 target, IDataRecord record)
+    {
+        for (int i = 0; i < _t2Setters.Length; i++)
+            _t2Setters[i].Set(target, record);
     }
 }

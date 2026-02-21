@@ -1,9 +1,6 @@
 using System.Data;
 using System.Data.Common;
-using System.Linq;
-using System.Reflection;
 using Jaunty.Interfaces;
-using Jaunty.Internals;
 using Jaunty.Core;
 
 namespace Jaunty;
@@ -62,20 +59,9 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
-        if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-        
-        // Use reflection to invoke DeleteByIdCoreAsync since T doesn't satisfy IEntity constraint at compile time
-        var iEntityInterface = typeof(T).GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntity<>));
-        if (iEntityInterface is null)
-            throw new InvalidOperationException($"Type '{typeof(T).Name}' must implement IEntity to use Delete by ID.");
-        
-        var idType = iEntityInterface.GetGenericArguments()[0];
-        var method = typeof(Jaunty).GetMethod(nameof(DeleteByIdCoreAsync), BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new InvalidOperationException("DeleteByIdCoreAsync method not found.");
-        var genericMethod = method.MakeGenericMethod(typeof(T), idType);
-        var result = genericMethod.Invoke(null, new object[] { dbConnection, id, default(CommandOptions), cancellationToken });
-        return (ValueTask<int>)result!;
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : DeleteByIdSimpleCoreAsync<T>(dbConnection, id, default, cancellationToken);
     }
 
     /// <summary>
@@ -90,19 +76,9 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
-        if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-        
-        var iEntityInterface = typeof(T).GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntity<>));
-        if (iEntityInterface is null)
-            throw new InvalidOperationException($"Type '{typeof(T).Name}' must implement IEntity to use Delete by ID.");
-        
-        var idType = iEntityInterface.GetGenericArguments()[0];
-        var method = typeof(Jaunty).GetMethod(nameof(DeleteByIdCoreAsync), BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new InvalidOperationException("DeleteByIdCoreAsync method not found.");
-        var genericMethod = method.MakeGenericMethod(typeof(T), idType);
-        var result = genericMethod.Invoke(null, new object[] { dbConnection, id, options, cancellationToken });
-        return (ValueTask<int>)result!;
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : DeleteByIdSimpleCoreAsync<T>(dbConnection, id, options, cancellationToken);
     }
 
     #endregion

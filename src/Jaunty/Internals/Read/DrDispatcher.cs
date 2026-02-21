@@ -66,8 +66,14 @@ internal static class DrDispatcher
             return dbReader => specialMapper(dbReader);
 
         // 4. Fallback to Reflection Extension (if loaded)
-        if (JauntyConfig.ReflectionMapperResolver?.Invoke(typeof(T), mode) is Func<DbDataReader, T> reflectionMapper)
-            return reflectionMapper;
+        if (JauntyConfig.ReflectionMapperResolver != null)
+        {
+            var resolved = JauntyConfig.ReflectionMapperResolver(typeof(T), mode);
+            if (resolved is Func<DbDataReader, T> dbMapper)
+                return dbMapper;
+            if (resolved is Func<IDataReader, T> dataReaderMapper)
+                return dbReader => dataReaderMapper(dbReader);
+        }
 
         // 5. Fail
         throw new InvalidOperationException(
