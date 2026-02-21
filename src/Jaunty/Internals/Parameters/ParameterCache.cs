@@ -31,11 +31,7 @@ internal static class ParameterCache
     /// </summary>
     /// <param name="type">The entity type to get parameter metadata for.</param>
     /// <returns>An array of parameter metadata for all public properties.</returns>
-    public static ParameterMetadata[] Get(
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] 
-#endif
-        Type type)
+    public static ParameterMetadata[] Get(Type type)
     {
         return Cache.GetOrAdd(type, BuildMetadata);
     }
@@ -45,11 +41,7 @@ internal static class ParameterCache
     /// </summary>
     /// <param name="type">The entity type to build metadata for.</param>
     /// <returns>An array of parameter metadata, one per public property.</returns>
-    private static ParameterMetadata[] BuildMetadata(
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] 
-#endif
-        Type type)
+    private static ParameterMetadata[] BuildMetadata(Type type)
     {
         var props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
         var result = new ParameterMetadata[props.Length];
