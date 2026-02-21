@@ -12,11 +12,15 @@ public static class MetadataBuilder
 {
     public static EntityMetadata Build<
 #if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 #endif
         T>()
     {
         var type = typeof(T);
+
+        if (type.IsAbstract)
+            throw new InvalidOperationException($"Type '{type.Name}' cannot be abstract. Only concrete types can be mapped.");
+
         string? schemaName = JauntyConfig.SchemaNameResolver?.Invoke(type);
         string tableName = JauntyConfig.TableNameResolver?.Invoke(type) ?? type.Name;
 

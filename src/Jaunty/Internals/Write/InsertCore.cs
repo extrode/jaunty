@@ -26,7 +26,9 @@ public static partial class Jaunty
 
             using var command = connection.CreateCommand();
             command.Transaction = options.Transaction;
-            command.CommandText = cached.InsertSql;
+            command.CommandText = cached.HasIdentityKey
+                ? cached.InsertSql + "; " + cached.LastInsertIdSql
+                : cached.InsertSql;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -85,7 +87,9 @@ public static partial class Jaunty
             using var command = connection.CreateCommand();
 #endif
             command.Transaction = options.Transaction as DbTransaction;
-            command.CommandText = cached.InsertSql;
+            command.CommandText = cached.HasIdentityKey
+                ? cached.InsertSql + "; " + cached.LastInsertIdSql
+                : cached.InsertSql;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;

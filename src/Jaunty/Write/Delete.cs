@@ -1,9 +1,5 @@
 using System.Data;
-using System.Data.Common;
-using System.Linq;
-using System.Reflection;
 using Jaunty.Interfaces;
-using Jaunty.Internals;
 using Jaunty.Core;
 
 namespace Jaunty;
@@ -58,17 +54,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
-        // Internal decision: DeleteByIdCore requires T : IEntity<TId>.
-        // For simple Delete<T>(object id), we use reflection to invoke the generic method.
-        var iEntityInterface = typeof(T).GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntity<>));
-        if (iEntityInterface is null)
-            throw new InvalidOperationException($"Type '{typeof(T).Name}' must implement IEntity to use Delete by ID.");
-        
-        var idType = iEntityInterface.GetGenericArguments()[0];
-        var method = typeof(Jaunty).GetMethod(nameof(DeleteByIdCore), BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new InvalidOperationException("DeleteByIdCore method not found.");
-        var genericMethod = method.MakeGenericMethod(typeof(T), idType);
-        return (int)genericMethod.Invoke(null, new object[] { connection, id, default(CommandOptions) })!;
+        return DeleteByIdSimpleCore<T>(connection, id, default);
     }
 
     /// <summary>
@@ -83,15 +69,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
-        var iEntityInterface = typeof(T).GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntity<>));
-        if (iEntityInterface is null)
-            throw new InvalidOperationException($"Type '{typeof(T).Name}' must implement IEntity to use Delete by ID.");
-        
-        var idType = iEntityInterface.GetGenericArguments()[0];
-        var method = typeof(Jaunty).GetMethod(nameof(DeleteByIdCore), BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new InvalidOperationException("DeleteByIdCore method not found.");
-        var genericMethod = method.MakeGenericMethod(typeof(T), idType);
-        return (int)genericMethod.Invoke(null, new object[] { connection, id, options })!;
+        return DeleteByIdSimpleCore<T>(connection, id, options);
     }
 
     #endregion
