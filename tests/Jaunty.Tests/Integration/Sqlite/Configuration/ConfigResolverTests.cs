@@ -23,6 +23,7 @@ public class ConfigResolverTests : IDisposable
         _db.Dispose();
         JauntyConfig.Reset();
         JauntyReflectionExtensions.UseReflectionMapping();
+        SpecialTypeMappers.Register();
     }
 
     [Fact]

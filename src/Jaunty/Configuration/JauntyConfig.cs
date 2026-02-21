@@ -1,6 +1,7 @@
 namespace Jaunty.Configuration;
 
 using System.Data;
+using System.Data.Common;
 
 /// <summary>
 /// Provides global configuration options for Jaunty's entity-to-database mapping behavior.
@@ -12,6 +13,7 @@ public static class JauntyConfig
     private static Func<string, string>? _columnNameResolver;
     private static Action<string, object?>? _logger;
     private static Func<Type, global::Jaunty.Internals.Enums.MappingMode, object>? _reflectionMapperResolver;
+    private static Func<Type, IDataReader, object>? _specialTypeMapperResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionInsertBinderResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionUpdateBinderResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionDeleteBinderResolver;
@@ -103,6 +105,17 @@ public static class JauntyConfig
     public static Func<Type, Type, object>? ReflectionMultiMapperResolver { get; set; }
 
     /// <summary>
+    /// Optional resolver for special types (Dictionary, KeyValuePair, ValueTuple, ExpandoObject).
+    /// Typically provided by Jaunty.Extensions.Reflection.SpecialTypeMappers.Register().
+    /// Returns a Func&lt;IDataReader, object&gt; that creates the special type instance.
+    /// </summary>
+    public static Func<Type, IDataReader, object>? SpecialTypeMapperResolver
+    {
+        get => _specialTypeMapperResolver;
+        set => _specialTypeMapperResolver = value;
+    }
+
+    /// <summary>
     /// Resets all configuration options to their default values.
     /// </summary>
     public static void Reset()
@@ -112,6 +125,7 @@ public static class JauntyConfig
         _columnNameResolver = null;
         _logger = null;
         _reflectionMapperResolver = null;
+        _specialTypeMapperResolver = null;
         _reflectionInsertBinderResolver = null;
         _reflectionUpdateBinderResolver = null;
         _reflectionDeleteBinderResolver = null;

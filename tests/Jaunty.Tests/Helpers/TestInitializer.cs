@@ -10,5 +10,6 @@ public static class TestInitializer
     public static void Initialize()
     {
         JauntyReflectionExtensions.UseReflectionMapping();
+        SpecialTypeMappers.Register();
     }
 }
