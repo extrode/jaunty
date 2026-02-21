@@ -13,6 +13,8 @@ public static class JauntyConfig
     private static Action<string, object?>? _logger;
     private static Func<Type, object>? _reflectionMapperResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionInsertBinderResolver;
+    private static Func<Type, Action<IDbCommand, object>>? _reflectionUpdateBinderResolver;
+    private static Func<Type, Action<IDbCommand, object>>? _reflectionDeleteBinderResolver;
 
     /// <summary>
     /// Gets or sets a custom resolver for schema names.
@@ -72,6 +74,26 @@ public static class JauntyConfig
     }
 
     /// <summary>
+    /// Optional fallback update parameter binder resolver for types that are not source-generated.
+    /// Typically provided by Jaunty.Extensions.Reflection.
+    /// </summary>
+    public static Func<Type, Action<IDbCommand, object>>? ReflectionUpdateBinderResolver
+    {
+        get => _reflectionUpdateBinderResolver;
+        set => _reflectionUpdateBinderResolver = value;
+    }
+
+    /// <summary>
+    /// Optional fallback delete parameter binder resolver for types that are not source-generated.
+    /// Typically provided by Jaunty.Extensions.Reflection.
+    /// </summary>
+    public static Func<Type, Action<IDbCommand, object>>? ReflectionDeleteBinderResolver
+    {
+        get => _reflectionDeleteBinderResolver;
+        set => _reflectionDeleteBinderResolver = value;
+    }
+
+    /// <summary>
     /// Optional fallback table metadata resolver for types that are not source-generated.
     /// Returns an EntityMetadata object.
     /// </summary>
@@ -94,6 +116,8 @@ public static class JauntyConfig
         _logger = null;
         _reflectionMapperResolver = null;
         _reflectionInsertBinderResolver = null;
+        _reflectionUpdateBinderResolver = null;
+        _reflectionDeleteBinderResolver = null;
         ReflectionTableMetadataResolver = null;
         ReflectionMultiMapperResolver = null;
     }

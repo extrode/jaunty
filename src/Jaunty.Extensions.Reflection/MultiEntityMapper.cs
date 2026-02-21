@@ -3,12 +3,20 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
+
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Enums;
 
 namespace Jaunty.Extensions.Reflection;
 
 internal sealed class MultiEntityMapper<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T2> where T1 : new() where T2 : new()
+{
+    private static readonly ConcurrentDictionary<int, MultiEntityMapper<T1, T2>> Cache = new();
+
+    private readonly PropertySetter<T1>[] _t1Setters;
+    private readonly PropertySetter<T2>[] _t2Setters;
+
+    internal sealed class MultiEntityMapper<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T2> where T1 : new() where T2 : new()
 {
     private static readonly ConcurrentDictionary<int, MultiEntityMapper<T1, T2>> Cache = new();
 
@@ -20,6 +28,41 @@ internal sealed class MultiEntityMapper<[DynamicallyAccessedMembers(DynamicallyA
         _t1Setters = t1Setters;
         _t2Setters = t2Setters;
     }
+
+    public static MultiEntityMapper<T1, T2> Get(IDataReader reader)
+    {
+        // Simple hash for reader schema
+        int hash = reader.FieldCount;
+        for (int i = 0; i < reader.FieldCount; i++) hash = hash * 31 + reader.GetName(i).GetHashCode();
+
+        return Cache.GetOrAdd(hash, _ => Create(reader));
+    }
+
+    private static MultiEntityMapper<T1, T2> Create(IDataReader reader)
+    {
+        // Build setter arrays using MetadataCache for each type.
+        // Both types can match the same columns.
+        var t1Setters = MetadataCache<T1>.GetSetters(reader, MappingMode.Projection);
+        var t2Setters = MetadataCache<T2>.GetSetters(reader, MappingMode.Projection);
+
+        return new MultiEntityMapper<T1, T2>(t1Setters, t2Setters);
+    }
+
+    public void Map(T1? t1, T2? t2, IDataRecord record)
+    {
+        if (t1 != null)
+        {
+            for (int i = 0; i < _t1Setters.Length; i++)
+                _t1Setters[i].Set(t1, record);
+        }
+
+        if (t2 != null)
+        {
+            for (int i = 0; i < _t2Setters.Length; i++)
+                _t2Setters[i].Set(t2, record);
+        }
+    }
+}
 
     public static MultiEntityMapper<T1, T2> Get(IDataReader reader)
     {
