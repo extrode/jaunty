@@ -17,11 +17,7 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database in a single transaction.
     /// </summary>
-    public static ValueTask<int> BulkInsertAsync<
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
-#endif
-        T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<int> BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -38,11 +34,7 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database in a single transaction with command options.
     /// </summary>
-    public static ValueTask<int> BulkInsertAsync<
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
-#endif
-        T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<int> BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -59,11 +51,7 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database, bypassing foreign key constraint checks.
     /// </summary>
-    public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
-#endif
-        T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -80,11 +68,7 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database, bypassing foreign key constraint checks, with command options.
     /// </summary>
-    public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
-#endif
-        T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -98,11 +82,7 @@ public static partial class Jaunty
             : BulkInsertCoreAsync(dbConnection, entities, options, ignoreConstraints: true, cancellationToken);
     }
 
-    private static async ValueTask<int> BulkInsertCoreAsync<
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
-#endif
-        T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : new()
+    private static async ValueTask<int> BulkInsertCoreAsync<T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
