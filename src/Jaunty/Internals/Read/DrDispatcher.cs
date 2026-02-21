@@ -15,11 +15,7 @@ namespace Jaunty.Internals.Read;
 
 internal static class DrDispatcher
 {
-    internal static Func<IDataReader, T> Resolve<
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.Interfaces | DynamicallyAccessedMemberTypes.PublicMethods)] 
-#endif
-        T>(IDataReader reader, CommandOptions<T> options, MappingMode mode) where T : new()
+    internal static Func<IDataReader, T> Resolve<T>(IDataReader reader, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         // 1. User override (Zero Reflection)
         if (options.Mapper is not null)
