@@ -113,6 +113,18 @@ public static class MetadataCache<
             }
         }
 
+        // In strict mode, verify all properties have matching columns
+        if (mode == MappingMode.Strict)
+        {
+            for (int i = 0; i < matchedProperties.Length; i++)
+            {
+                if (!matchedProperties[i])
+                {
+                    throw new InvalidOperationException($"Strict mapping failed: property '{Properties[i].Property.Name}' has no matching column in result set for type '{typeof(T).FullName}'.");
+                }
+            }
+        }
+
         var result = new PropertySetter<T>[count];
         Array.Copy(settersBuffer, result, count);
         return result;

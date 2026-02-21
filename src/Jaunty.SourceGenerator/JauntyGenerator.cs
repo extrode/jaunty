@@ -14,18 +14,15 @@ public class JauntyGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Filter for classes that might need a mapper
         IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (s, _) => IsSyntaxTargetForGeneration(s),
                 transform: static (ctx, _) => GetSemanticTargetForGeneration(ctx))
             .Where(static m => m is not null)!;
 
-        // Combine with compilation
         IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses
             = context.CompilationProvider.Combine(classDeclarations.Collect());
 
-        // Register the source output
         context.RegisterSourceOutput(compilationAndClasses,
             static (spc, source) => Execute(source.Item1, source.Item2, spc));
     }
@@ -42,7 +39,7 @@ public class JauntyGenerator : IIncrementalGenerator
             foreach (var attribute in attributeList.Attributes)
             {
                 var name = attribute.Name.ToString();
-                if (name is "Table" or "Jaunty.Attributes.Table" or "TableAttribute")
+                if (name is "Table" or "Jaunty.Attributes.Table" or "TableAttribute" or "System.ComponentModel.DataAnnotations.Schema.TableAttribute")
                 {
                     return classDeclaration;
                 }
@@ -80,17 +77,23 @@ public class JauntyGenerator : IIncrementalGenerator
         var properties = new List<PropertyMetadata>();
         foreach (var prop in allProperties)
         {
-            if (HasAttribute(prop, "IgnoreAttribute")) continue;
+            // Support [Ignore] and [NotMapped]
+            if (HasAttribute(prop, "IgnoreAttribute") || HasAttribute(prop, "NotMappedAttribute")) continue;
 
+            // Support [Column] from both
             var columnAttr = GetAttribute(prop, "ColumnAttribute");
             var columnName = columnAttr?.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? prop.Name;
+            
+            // Support [Key] from both, plus conventions
             var isKey = HasAttribute(prop, "KeyAttribute") || prop.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) || prop.Name.Equals($"{className}Id", StringComparison.OrdinalIgnoreCase);
             
+            // Support [DatabaseGenerated] from both
             var dbGenAttr = GetAttribute(prop, "DatabaseGeneratedAttribute");
             var isIdentity = false;
             if (dbGenAttr != null)
             {
                 var arg = dbGenAttr.ConstructorArguments.FirstOrDefault();
+                // Both Jaunty and DataAnnotations use 1 for Identity
                 if (arg.Value is int val && val == 1) isIdentity = true;
             }
             else if (isKey && (prop.Type.SpecialType == SpecialType.System_Int32 || prop.Type.SpecialType == SpecialType.System_Int64))
@@ -98,7 +101,7 @@ public class JauntyGenerator : IIncrementalGenerator
                 isIdentity = true;
             }
 
-            properties.Add(new PropertyMetadata(prop.Name, columnName, isKey, isIdentity, prop.Type.ToDisplayString(), IsNullable(prop.Type)));
+            properties.Add(new PropertyMetadata(prop.Name, columnName, isKey, isIdentity, prop.Type.ToDisplayString()));
         }
 
         var sb = new StringBuilder();
@@ -147,12 +150,10 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        public static void BindUpdate(IDbCommand command, {className} entity)");
         sb.AppendLine("        {");
         sb.AppendLine("            var p = command.Parameters;");
-        // SET
         foreach (var p in properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity))
         {
             sb.AppendLine($"            AddParam(command, p, \"@{p.PropertyName}\", entity.{p.PropertyName});");
         }
-        // WHERE
         foreach (var p in properties.Where(x => x.IsPrimaryKey))
         {
             sb.AppendLine($"            AddParam(command, p, \"@{p.PropertyName}\", entity.{p.PropertyName});");
@@ -169,7 +170,6 @@ public class JauntyGenerator : IIncrementalGenerator
         }
         sb.AppendLine("        }");
 
-        // Helper: AddParam
         sb.AppendLine("        private static void AddParam(IDbCommand cmd, IDataParameterCollection pc, string name, object? value)");
         sb.AppendLine("        {");
         sb.AppendLine("            var p = cmd.CreateParameter();");
@@ -178,7 +178,6 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            pc.Add(p);");
         sb.AppendLine("        }");
 
-        // Helper: OrdinalCache (Inlined per class for AOT safety)
         sb.AppendLine("        private readonly struct OrdinalCache(IDataReader reader)");
         sb.AppendLine("        {");
         sb.AppendLine("            private readonly IDataReader _reader = reader;");
@@ -198,8 +197,6 @@ public class JauntyGenerator : IIncrementalGenerator
     private static AttributeData? GetAttribute(ISymbol symbol, string attributeName)
         => symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == attributeName);
 
-    private static bool IsNullable(ITypeSymbol type) => type.NullableAnnotation == NullableAnnotation.Annotated || type.IsReferenceType || type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
-
     private static string GetReaderMethod(string typeName)
     {
         return typeName switch
@@ -215,17 +212,16 @@ public class JauntyGenerator : IIncrementalGenerator
             "byte" or "Byte" or "byte?" => "reader.GetByte",
             "Guid" or "Guid?" => "reader.GetGuid",
             "DateTime" or "DateTime?" => "reader.GetDateTime",
-            _ => "((" + typeName + ")reader.GetValue)" // Fallback
+            _ => "((" + typeName + ")reader.GetValue)"
         };
     }
 
-    private struct PropertyMetadata(string propertyName, string columnName, bool isPrimaryKey, bool isIdentity, string typeName, bool isNullable)
+    private struct PropertyMetadata(string propertyName, string columnName, bool isPrimaryKey, bool isIdentity, string typeName)
     {
         public string PropertyName = propertyName;
         public string ColumnName = columnName;
         public bool IsPrimaryKey = isPrimaryKey;
         public bool IsIdentity = isIdentity;
         public string TypeName = typeName;
-        public bool IsNullable = isNullable;
     }
 }
