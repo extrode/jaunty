@@ -1,6 +1,5 @@
 using System.Data;
 using System.Data.Common;
-
 using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Entity;
@@ -11,71 +10,53 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static int UpdateCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : new()
+    internal static int UpdateCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(entity);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (entity is null) throw new ArgumentNullException(nameof(entity));
-#endif
-
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
-        if (!cached.HasPrimaryKey)
-            throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No primary key found.");
-
         if (string.IsNullOrEmpty(cached.UpdateSql))
-            throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No updateable columns found.");
+            throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No primary key found or no columns to update.");
 
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
         {
-            if (wasClosed)
-                connection.Open();
+            if (wasClosed) connection.Open();
 
-            using IDbCommand command = connection.CreateCommand();
+            using var command = connection.CreateCommand();
+            command.Transaction = options.Transaction;
             command.CommandText = cached.UpdateSql;
-
-            if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            // Bind parameters from entity properties using compiled delegate
-            WriteParameterCache<T>.UpdateBinder(command, entity);
+            // Bind parameters
+            var binder = WriteParameterCache<T>.UpdateBinder;
+            if (binder != null)
+            {
+                binder(command, entity);
+            }
+            else
+            {
+                throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'.");
+            }
 
             JauntyConfig.Logger?.Invoke(command.CommandText, entity);
-            
+
             return command.ExecuteNonQuery();
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
-                connection.Close();
+            if (wasClosed && connection.State != ConnectionState.Closed) connection.Close();
         }
     }
 
-    private static async ValueTask<int> UpdateCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    internal static async ValueTask<int> UpdateCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(entity);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (entity is null) throw new ArgumentNullException(nameof(entity));
-#endif
-
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
-        if (!cached.HasPrimaryKey)
-            throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No primary key found.");
-
         if (string.IsNullOrEmpty(cached.UpdateSql))
-            throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No updateable columns found.");
+            throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No primary key found or no columns to update.");
 
         bool wasClosed = connection.State == ConnectionState.Closed;
 
@@ -85,20 +66,26 @@ public static partial class Jaunty
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using DbCommand command = connection.CreateCommand();
+            await using var command = connection.CreateCommand();
 #else
-            using DbCommand command = connection.CreateCommand();
+            using var command = connection.CreateCommand();
 #endif
+            command.Transaction = options.Transaction as DbTransaction;
             command.CommandText = cached.UpdateSql;
-
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            // Bind parameters from entity properties using compiled delegate
-            WriteParameterCache<T>.UpdateBinder(command, entity);
+            // Bind parameters
+            var binder = WriteParameterCache<T>.UpdateBinder;
+            if (binder != null)
+            {
+                binder(command, entity);
+            }
+            else
+            {
+                throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'.");
+            }
 
             JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
@@ -117,5 +104,3 @@ public static partial class Jaunty
         }
     }
 }
-
-

@@ -26,94 +26,23 @@ internal static class WriteParameterCache<T> where T : new()
         UpdateBinder = TryGetGeneratedBinder("BindUpdate") ?? TryGetReflectionBinder(JauntyConfig.ReflectionUpdateBinderResolver);
         DeleteBinder = TryGetGeneratedBinder("BindDelete") ?? TryGetReflectionBinder(JauntyConfig.ReflectionDeleteBinderResolver);
 
-        // Value setters for bulk operations: update values on existing parameters by index.
-        // PrepareXxxParameters has already created provider-native parameters on the command;
-        // the value setter just walks the collection and sets .Value for each matching param.
-        InsertValueSetter = InsertBinder != null ? CreateInsertValueSetter() : null;
-        UpdateValueSetter = UpdateBinder != null ? CreateUpdateValueSetter() : null;
-        DeleteValueSetter = DeleteBinder != null ? CreateDeleteValueSetter() : null;
+        // Bridges for Bulk operations
+        InsertValueSetter = InsertBinder != null ? (pc, entity) => {
+            using var cmd = new BridgeCommand(pc);
+            InsertBinder(cmd, entity);
+        } : null;
+
+        UpdateValueSetter = UpdateBinder != null ? (pc, entity) => {
+            using var cmd = new BridgeCommand(pc);
+            UpdateBinder(cmd, entity);
+        } : null;
+
+        DeleteValueSetter = DeleteBinder != null ? (pc, entity) => {
+            using var cmd = new BridgeCommand(pc);
+            DeleteBinder(cmd, entity);
+        } : null;
 
         IdSetter = CreateIdSetter();
-    }
-
-    private static Action<IDataParameterCollection, T>? CreateInsertValueSetter()
-    {
-        var metadata = ResolveMetadata();
-        if (metadata == null) return null;
-
-        // Insert uses NonIdentityColumns (excluding computed)
-        var columns = metadata.NonIdentityColumns;
-        return (pc, entity) => SetParameterValues(pc, entity, columns, skipComputed: true);
-    }
-
-    private static Action<IDataParameterCollection, T>? CreateUpdateValueSetter()
-    {
-        var metadata = ResolveMetadata();
-        if (metadata == null) return null;
-
-        // Update uses non-key/non-identity/non-computed columns for SET, then primary keys for WHERE
-        var allColumns = metadata.Columns;
-        var primaryKeys = metadata.PrimaryKeys;
-        return (pc, entity) =>
-        {
-            int paramIndex = 0;
-            // SET clause parameters
-            for (int i = 0; i < allColumns.Count; i++)
-            {
-                var col = allColumns[i];
-                if (col.IsPrimaryKey || col.IsIdentity || col.IsComputed) continue;
-                if (paramIndex < pc.Count)
-                    ((IDbDataParameter)pc[paramIndex]).Value = col.Property.GetValue(entity) ?? DBNull.Value;
-                paramIndex++;
-            }
-            // WHERE clause parameters (primary keys)
-            for (int i = 0; i < primaryKeys.Count; i++)
-            {
-                var key = primaryKeys[i];
-                if (paramIndex < pc.Count)
-                    ((IDbDataParameter)pc[paramIndex]).Value = key.Property.GetValue(entity) ?? DBNull.Value;
-                paramIndex++;
-            }
-        };
-    }
-
-    private static Action<IDataParameterCollection, T>? CreateDeleteValueSetter()
-    {
-        var metadata = ResolveMetadata();
-        if (metadata == null) return null;
-
-        // Delete uses only primary key columns
-        var primaryKeys = metadata.PrimaryKeys;
-        return (pc, entity) =>
-        {
-            for (int i = 0; i < primaryKeys.Count; i++)
-            {
-                var key = primaryKeys[i];
-                if (i < pc.Count)
-                    ((IDbDataParameter)pc[i]).Value = key.Property.GetValue(entity) ?? DBNull.Value;
-            }
-        };
-    }
-
-    private static Entity.EntityMetadata? ResolveMetadata()
-    {
-        // Try the reflection metadata resolver
-        if (JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is Entity.EntityMetadata meta)
-            return meta;
-        return null;
-    }
-
-    private static void SetParameterValues(IDataParameterCollection pc, T entity, IReadOnlyList<Entity.ColumnMetadata> columns, bool skipComputed)
-    {
-        int paramIndex = 0;
-        for (int i = 0; i < columns.Count; i++)
-        {
-            var col = columns[i];
-            if (skipComputed && col.IsComputed) continue;
-            if (paramIndex < pc.Count)
-                ((IDbDataParameter)pc[paramIndex]).Value = col.Property.GetValue(entity) ?? DBNull.Value;
-            paramIndex++;
-        }
     }
 
     private static Action<IDbCommand, T>? TryGetGeneratedBinder(string methodName)
@@ -124,7 +53,7 @@ internal static class WriteParameterCache<T> where T : new()
 
     private static Action<IDbCommand, T>? TryGetReflectionBinder(Func<Type, Action<IDbCommand, object>>? resolver)
     {
-        if (resolver?.Invoke(typeof(T)) is { } binder)
+        if (resolver?.Invoke(typeof(T)) is Action<IDbCommand, object> binder)
         {
             return (cmd, entity) => binder(cmd, entity);
         }
@@ -138,5 +67,38 @@ internal static class WriteParameterCache<T> where T : new()
             return static (target, value) => ((IEntity)target).Id = value;
         }
         return null;
+    }
+
+    private class BridgeCommand(IDataParameterCollection parameters) : IDbCommand
+    {
+        public IDbConnection? Connection { get; set; }
+        public IDbTransaction? Transaction { get; set; }
+        public string CommandText { get; set; } = "";
+        public int CommandTimeout { get; set; }
+        public CommandType CommandType { get; set; }
+        public IDataParameterCollection Parameters => parameters;
+        public UpdateRowSource UpdatedRowSource { get; set; }
+        public void Cancel() { }
+        public IDbDataParameter CreateParameter() => new BridgeParameter();
+        public int ExecuteNonQuery() => 0;
+        public IDataReader ExecuteReader() => null!;
+        public IDataReader ExecuteReader(CommandBehavior behavior) => null!;
+        public object? ExecuteScalar() => null;
+        public void Prepare() { }
+        public void Dispose() { }
+    }
+
+    private class BridgeParameter : IDbDataParameter
+    {
+        public DbType DbType { get; set; }
+        public ParameterDirection Direction { get; set; }
+        public bool IsNullable => true;
+        public string ParameterName { get; set; } = "";
+        public string SourceColumn { get; set; } = "";
+        public DataRowVersion SourceVersion { get; set; }
+        public object? Value { get; set; }
+        public byte Precision { get; set; }
+        public byte Scale { get; set; }
+        public int Size { get; set; }
     }
 }

@@ -11,7 +11,7 @@ public static class JauntyConfig
     private static Func<Type, string>? _tableNameResolver;
     private static Func<string, string>? _columnNameResolver;
     private static Action<string, object?>? _logger;
-    private static Func<Type, object>? _reflectionMapperResolver;
+    private static Func<Type, global::Jaunty.Internals.Enums.MappingMode, object>? _reflectionMapperResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionInsertBinderResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionUpdateBinderResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionDeleteBinderResolver;
@@ -57,15 +57,14 @@ public static class JauntyConfig
     /// Typically provided by Jaunty.Extensions.Reflection.
     /// Returns a Func&lt;IDataReader, T&gt; or Func&lt;DbDataReader, T&gt; cast to object.
     /// </summary>
-    public static Func<Type, object>? ReflectionMapperResolver
+    public static Func<Type, global::Jaunty.Internals.Enums.MappingMode, object>? ReflectionMapperResolver
     {
         get => _reflectionMapperResolver;
         set => _reflectionMapperResolver = value;
     }
 
     /// <summary>
-    /// Optional fallback parameter binder resolver for types that are not source-generated.
-    /// Typically provided by Jaunty.Extensions.Reflection.
+    /// Optional fallback parameter binder resolver for INSERT operations.
     /// </summary>
     public static Func<Type, Action<IDbCommand, object>>? ReflectionInsertBinderResolver
     {
@@ -74,8 +73,7 @@ public static class JauntyConfig
     }
 
     /// <summary>
-    /// Optional fallback update parameter binder resolver for types that are not source-generated.
-    /// Typically provided by Jaunty.Extensions.Reflection.
+    /// Optional fallback parameter binder resolver for UPDATE operations.
     /// </summary>
     public static Func<Type, Action<IDbCommand, object>>? ReflectionUpdateBinderResolver
     {
@@ -84,8 +82,7 @@ public static class JauntyConfig
     }
 
     /// <summary>
-    /// Optional fallback delete parameter binder resolver for types that are not source-generated.
-    /// Typically provided by Jaunty.Extensions.Reflection.
+    /// Optional fallback parameter binder resolver for DELETE operations.
     /// </summary>
     public static Func<Type, Action<IDbCommand, object>>? ReflectionDeleteBinderResolver
     {

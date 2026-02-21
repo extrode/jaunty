@@ -1,6 +1,5 @@
 using System.Data;
 using System.Data.Common;
-
 using Jaunty.Core;
 using Jaunty.Interfaces;
 using Jaunty.Internals;
@@ -12,16 +11,8 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static long InsertCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : new()
+    internal static long InsertCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(entity);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (entity is null) throw new ArgumentNullException(nameof(entity));
-#endif
-
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (string.IsNullOrEmpty(cached.InsertSql))
@@ -31,67 +22,51 @@ public static partial class Jaunty
 
         try
         {
-            if (wasClosed)
-                connection.Open();
+            if (wasClosed) connection.Open();
 
-            using IDbCommand command = connection.CreateCommand();
-
-            // For identity columns, append the last insert ID SQL
-            if (cached.HasIdentityKey)
-            {
-                command.CommandText = cached.InsertSql + "; " + cached.LastInsertIdSql;
-            }
-            else
-            {
-                command.CommandText = cached.InsertSql;
-            }
-
-            if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            using var command = connection.CreateCommand();
+            command.Transaction = options.Transaction;
+            command.CommandText = cached.InsertSql;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            // Bind parameters from entity properties using compiled delegate
-            WriteParameterCache<T>.InsertBinder(command, entity);
+            // Bind parameters using our decision tree
+            var binder = WriteParameterCache<T>.InsertBinder;
+            if (binder != null)
+            {
+                binder(command, entity);
+            }
+            else
+            {
+                throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
+            }
 
             JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
             if (cached.HasIdentityKey)
             {
-                // Execute and get identity
-                object? result = command.ExecuteScalar();
-                long generatedId = ConvertToLong(result);
-
-                // Populate IEntity.Id if applicable using compiled delegate
-                WriteParameterCache<T>.IdSetter?.Invoke(entity, generatedId);
-
-                return generatedId;
+                var result = command.ExecuteScalar();
+                long id = result == null || result == DBNull.Value ? 0 : Convert.ToInt64(result);
+                
+                if (id > 0)
+                {
+                    WriteParameterCache<T>.IdSetter?.Invoke(entity, id);
+                }
+                
+                return id;
             }
-            else
-            {
-                // Non-identity insert - just execute
-                int affectedRows = command.ExecuteNonQuery();
-                return affectedRows;
-            }
+
+            return command.ExecuteNonQuery();
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
-                connection.Close();
+            if (wasClosed && connection.State != ConnectionState.Closed) connection.Close();
         }
     }
 
-    private static async ValueTask<long> InsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    internal static async ValueTask<long> InsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(entity);
-#else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (entity is null) throw new ArgumentNullException(nameof(entity));
-#endif
-
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (string.IsNullOrEmpty(cached.InsertSql))
@@ -105,39 +80,43 @@ public static partial class Jaunty
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using DbCommand command = connection.CreateCommand();
+            await using var command = connection.CreateCommand();
 #else
-            using DbCommand command = connection.CreateCommand();
+            using var command = connection.CreateCommand();
 #endif
-
-            command.CommandText = cached.HasIdentityKey ? cached.InsertSql + "; " + cached.LastInsertIdSql : cached.InsertSql;
-
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            command.Transaction = options.Transaction as DbTransaction;
+            command.CommandText = cached.InsertSql;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            // Bind parameters from entity properties using compiled delegate
-            WriteParameterCache<T>.InsertBinder(command, entity);
+            // Bind parameters
+            var binder = WriteParameterCache<T>.InsertBinder;
+            if (binder != null)
+            {
+                binder(command, entity);
+            }
+            else
+            {
+                throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'.");
+            }
 
             JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
             if (cached.HasIdentityKey)
             {
-                object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-                long generatedId = ConvertToLong(result);
-
-                // Populate IEntity.Id if applicable using compiled delegate
-                WriteParameterCache<T>.IdSetter?.Invoke(entity, generatedId);
-
-                return generatedId;
+                var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+                long id = result == null || result == DBNull.Value ? 0 : Convert.ToInt64(result);
+                
+                if (id > 0)
+                {
+                    WriteParameterCache<T>.IdSetter?.Invoke(entity, id);
+                }
+                
+                return id;
             }
-            else
-            {
-                int affectedRows = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                return affectedRows;
-            }
+
+            return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -151,14 +130,4 @@ public static partial class Jaunty
             }
         }
     }
-
-    private static long ConvertToLong(object? value)
-    {
-        if (value is null || value == DBNull.Value)
-            return 0;
-
-        return Convert.ToInt64(value);
-    }
 }
-
-

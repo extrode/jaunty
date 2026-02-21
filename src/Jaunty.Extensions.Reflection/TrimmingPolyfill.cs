@@ -1,44 +1,28 @@
 #if !NET5_0_OR_GREATER
-// Polyfill for DynamicallyAccessedMembersAttribute so generic type constraints
-// using the attribute compile on netstandard2.0. The attribute is informational
-// only (used by the IL trimmer) and has no runtime behavior.
+namespace System.Diagnostics.CodeAnalysis;
 
-// ReSharper disable once CheckNamespace
-namespace System.Diagnostics.CodeAnalysis
+[AttributeUsage(AttributeTargets.GenericParameter | AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+internal sealed class DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes memberTypes) : Attribute
 {
-    [Flags]
-    internal enum DynamicallyAccessedMemberTypes
-    {
-        None = 0,
-        PublicParameterlessConstructor = 1,
-        PublicConstructors = 3,
-        NonPublicConstructors = 4,
-        PublicMethods = 8,
-        NonPublicMethods = 16,
-        PublicFields = 32,
-        NonPublicFields = 64,
-        PublicNestedTypes = 128,
-        NonPublicNestedTypes = 256,
-        PublicProperties = 512,
-        NonPublicProperties = 1024,
-        PublicEvents = 2048,
-        NonPublicEvents = 4096,
-        Interfaces = 8192,
-        All = -1
-    }
+    public DynamicallyAccessedMemberTypes MemberTypes { get; } = memberTypes;
+}
 
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter |
-                     AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.Method |
-                     AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct,
-                     Inherited = false)]
-    internal sealed class DynamicallyAccessedMembersAttribute : Attribute
-    {
-        public DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes memberTypes)
-        {
-            MemberTypes = memberTypes;
-        }
-
-        public DynamicallyAccessedMemberTypes MemberTypes { get; }
-    }
+[Flags]
+internal enum DynamicallyAccessedMemberTypes
+{
+    None = 0,
+    PublicParameterlessConstructor = 1,
+    PublicConstructors = 2,
+    NonPublicConstructors = 4,
+    PublicMethods = 8,
+    NonPublicMethods = 16,
+    PublicFields = 32,
+    NonPublicFields = 64,
+    PublicProperties = 128,
+    NonPublicProperties = 256,
+    PublicEvents = 512,
+    NonPublicEvents = 1024,
+    Interfaces = 2048,
+    All = -1
 }
 #endif

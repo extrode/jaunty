@@ -4,6 +4,7 @@ using System.Data;
 #if NET5_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
 #endif
+using System.Linq;
 using System.Reflection;
 using Jaunty.Configuration;
 using Jaunty.Internals.Enums;
@@ -39,11 +40,26 @@ public static class JauntyReflectionExtensions
         return generic.Invoke(null, null)!;
     }
 
-    private static object ResolveMapper(Type type)
+    private static object ResolveMapper(Type type, MappingMode mode)
     {
         var method = typeof(JauntyReflectionExtensions).GetMethod(nameof(GetTypedMapper), BindingFlags.NonPublic | BindingFlags.Static)!;
         var generic = method.MakeGenericMethod(type);
-        return generic.Invoke(null, null)!;
+        var mapperFactory = (Func<MappingMode, Func<IDataReader, object>>)generic.Invoke(null, null)!;
+        var mapper = mapperFactory(mode);
+        // Wrap to return correct type
+        return CreateTypedMapper(type, mapper);
+    }
+    
+    private static object CreateTypedMapper(Type type, Func<IDataReader, object> mapper)
+    {
+        var method = typeof(JauntyReflectionExtensions).GetMethod(nameof(WrapMapper), BindingFlags.NonPublic | BindingFlags.Static)!;
+        var generic = method.MakeGenericMethod(type);
+        return generic.Invoke(null, new object[] { mapper })!;
+    }
+    
+    private static Func<IDataReader, T> WrapMapper<T>(Func<IDataReader, object> mapper) where T : new()
+    {
+        return reader => (T)mapper(reader);
     }
 
     private static Action<IDbCommand, object> ResolveInsertBinder(Type type)
@@ -74,20 +90,20 @@ public static class JauntyReflectionExtensions
         return generic.Invoke(null, null)!;
     }
 
-    private static Func<IDataReader, T> GetTypedMapper<
+    private static Func<MappingMode, Func<IDataReader, object>> GetTypedMapper<
 #if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 #endif
         T>() where T : new()
     {
-        return (IDataReader reader) => {
-            var setters = MetadataCache<T>.GetSetters(reader, MappingMode.Strict);
+        return (MappingMode mode) => (IDataReader reader) => {
+            var setters = MetadataCache<T>.GetSetters(reader, mode);
             var entity = new T();
             foreach(var setter in setters)
             {
                 setter.Set(entity, reader);
             }
-            return entity;
+            return (object)entity;
         };
     }
 
@@ -99,15 +115,13 @@ public static class JauntyReflectionExtensions
     {
         return (cmd, entityObj) => {
             if (entityObj is not T entity) return;
-            
             var meta = MetadataCache<T>.Metadata;
             foreach (var col in meta.NonIdentityColumns)
             {
-                if (col.IsComputed) continue;
-                var param = cmd.CreateParameter();
-                param.ParameterName = "@" + col.ColumnName;
-                param.Value = col.Property.GetValue(entity) ?? DBNull.Value;
-                cmd.Parameters.Add(param);
+                var p = cmd.CreateParameter();
+                p.ParameterName = "@" + col.Property.Name;
+                p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+                cmd.Parameters.Add(p);
             }
         };
     }
@@ -120,26 +134,22 @@ public static class JauntyReflectionExtensions
     {
         return (cmd, entityObj) => {
             if (entityObj is not T entity) return;
-
             var meta = MetadataCache<T>.Metadata;
-
-            // SET clause parameters: non-key, non-identity, non-computed
-            foreach (var col in meta.Columns)
+            // SET
+            foreach (var col in meta.Columns.Where(c => !c.IsPrimaryKey && !c.IsIdentity))
             {
-                if (col.IsPrimaryKey || col.IsIdentity || col.IsComputed) continue;
-                var param = cmd.CreateParameter();
-                param.ParameterName = "@" + col.Property.Name;
-                param.Value = col.Property.GetValue(entity) ?? DBNull.Value;
-                cmd.Parameters.Add(param);
+                var p = cmd.CreateParameter();
+                p.ParameterName = "@" + col.Property.Name;
+                p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+                cmd.Parameters.Add(p);
             }
-
-            // WHERE clause parameters: primary keys
-            foreach (var key in meta.PrimaryKeys)
+            // WHERE
+            foreach (var col in meta.PrimaryKeys)
             {
-                var param = cmd.CreateParameter();
-                param.ParameterName = "@" + key.Property.Name;
-                param.Value = key.Property.GetValue(entity) ?? DBNull.Value;
-                cmd.Parameters.Add(param);
+                var p = cmd.CreateParameter();
+                p.ParameterName = "@" + col.Property.Name;
+                p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+                cmd.Parameters.Add(p);
             }
         };
     }
@@ -152,35 +162,29 @@ public static class JauntyReflectionExtensions
     {
         return (cmd, entityObj) => {
             if (entityObj is not T entity) return;
-
             var meta = MetadataCache<T>.Metadata;
-
-            // WHERE clause parameters: primary keys only
-            foreach (var key in meta.PrimaryKeys)
+            foreach (var col in meta.PrimaryKeys)
             {
-                var param = cmd.CreateParameter();
-                param.ParameterName = "@" + key.Property.Name;
-                param.Value = key.Property.GetValue(entity) ?? DBNull.Value;
-                cmd.Parameters.Add(param);
+                var p = cmd.CreateParameter();
+                p.ParameterName = "@" + col.Property.Name;
+                p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+                cmd.Parameters.Add(p);
             }
         };
     }
 
     private static Action<T1, T2, IDataRecord> GetTypedMultiMapper<
 #if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T1,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T2
+#else
+        T1, T2
 #endif
-        T1,
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-#endif
-        T2>() where T1 : new() where T2 : new()
+    >() where T1 : new() where T2 : new()
     {
-        // Return a delegate that maps a data record to both T1 and T2 by column name.
-        // The first time it's called for a reader schema, it builds setter arrays and caches them.
-        return (t1, t2, record) =>
-        {
-            var mapper = MultiEntityMapper<T1, T2>.Get((IDataReader)record);
+        return (t1, t2, record) => {
+            if (record is not IDataReader reader) return;
+            var mapper = MultiEntityMapper<T1, T2>.Get(reader);
             mapper.Map(t1, t2, record);
         };
     }

@@ -35,7 +35,7 @@ internal static class DrDispatcher
             return specialMapper;
 
         // 4. Fallback to Reflection Extension (if loaded)
-        if (JauntyConfig.ReflectionMapperResolver?.Invoke(typeof(T)) is Func<IDataReader, T> reflectionMapper)
+        if (JauntyConfig.ReflectionMapperResolver?.Invoke(typeof(T), mode) is Func<IDataReader, T> reflectionMapper)
             return reflectionMapper;
 
         // 5. Fail - No mapper available
@@ -65,8 +65,8 @@ internal static class DrDispatcher
         if (specialMapper is not null)
             return dbReader => specialMapper(dbReader);
 
-        // 4. Fallback to Reflection Extension
-        if (JauntyConfig.ReflectionMapperResolver?.Invoke(typeof(T)) is Func<DbDataReader, T> reflectionMapper)
+        // 4. Fallback to Reflection Extension (if loaded)
+        if (JauntyConfig.ReflectionMapperResolver?.Invoke(typeof(T), mode) is Func<DbDataReader, T> reflectionMapper)
             return reflectionMapper;
 
         // 5. Fail
