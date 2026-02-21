@@ -1,12 +1,10 @@
-using System.Collections;
 using System.Data;
 using System.Data.Common;
-using System.Dynamic;
 
 using Jaunty.Core;
 using Jaunty.Internals.Enums;
 
-using JauntyConfig = Jaunty.Configuration.JauntyConfig;
+using Jaunty.Configuration;
 
 namespace Jaunty.Internals.Read;
 
@@ -22,8 +20,8 @@ internal static class DrDispatcher
         if (MappedCache<T>.Mapper is not null)
             return MappedCache<T>.Mapper;
 
-        // 3. Special Types (Dictionary, dynamic - uses minimal reflection)
-        var specialMapper = TryResolveSpecialType<T>(reader);
+        // 3. Special Types (Dictionary, dynamic - uses extension hook)
+        var specialMapper = TryResolveSpecialTypeFromExtension<T>(reader);
         if (specialMapper is not null)
             return specialMapper;
 
@@ -39,6 +37,15 @@ internal static class DrDispatcher
             "or add the 'Jaunty.Extensions.Reflection' package for runtime mapping.");
     }
 
+    private static Func<IDataReader, T>? TryResolveSpecialTypeFromExtension<T>(IDataReader reader) where T : new()
+    {
+        if (JauntyConfig.SpecialTypeMapperResolver?.Invoke(typeof(T), reader) is Func<IDataReader, object> extensionMapper)
+        {
+            return reader => (T)extensionMapper(reader);
+        }
+        return null;
+    }
+
     internal static Func<DbDataReader, T> Resolve<T>(DbDataReader reader, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         // 1. User override
@@ -50,7 +57,7 @@ internal static class DrDispatcher
             return dbReader => MappedCache<T>.Mapper(dbReader);
 
         // 3. Special Types
-        var specialMapper = TryResolveSpecialType<T>(reader);
+        var specialMapper = TryResolveSpecialTypeFromExtension<T>(reader);
         if (specialMapper is not null)
             return dbReader => specialMapper(dbReader);
 
@@ -70,176 +77,5 @@ internal static class DrDispatcher
             "Ensure the class is marked with [Table] for source generation, " +
             "provide a manual mapper in CommandOptions, " +
             "or add the 'Jaunty.Extensions.Reflection' package for runtime mapping.");
-    }
-
-    private static Func<IDataReader, T>? TryResolveSpecialType<T>(IDataReader reader) where T : new()
-    {
-        var type = typeof(T);
-
-        // Dictionary<string, object> or Dictionary<string, TValue>
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
-        {
-            var keyType = type.GetGenericArguments()[0];
-            var valueType = type.GetGenericArguments()[1];
-
-            return keyType != typeof(string)
-                ? throw new NotSupportedException($"Dictionary key type must be string, got {keyType.Name}")
-                : CreateDictionaryMapper<T>(reader, valueType);
-        }
-
-        // KeyValuePair<TKey, TValue> - two columns: first is Key, second is Value
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
-        {
-            return reader.FieldCount < 2
-                ? throw new InvalidOperationException(
-                    $"Type '{type.Name}' requires at least 2 columns, but query returned {reader.FieldCount}.")
-                : CreateKeyValuePairMapper<T>(reader, type.GetGenericArguments());
-        }
-
-        // ValueTuple - positional mapping
-        if (type.IsValueType && type.FullName?.StartsWith("System.ValueTuple`") == true)
-        {
-            var typeArgs = type.GetGenericArguments();
-            if (reader.FieldCount < typeArgs.Length)
-                throw new InvalidOperationException(
-                    $"Type 'ValueTuple<{string.Join(", ", typeArgs.Select(t => t.Name))}>' requires {typeArgs.Length} columns, but query returned {reader.FieldCount}.");
-
-            return CreateValueTupleMapper<T>(reader, typeArgs);
-        }
-
-        // dynamic (object at compile time) - return ExpandoObject
-        return type == typeof(object) ? CreateExpandoMapper<T>(reader) : null;
-    }
-
-    private static Func<IDataReader, T> CreateKeyValuePairMapper<T>(IDataReader reader, Type[] typeArgs) where T : new()
-    {
-        var keyType = typeArgs[0];
-        var valueType = typeArgs[1];
-
-        return r =>
-        {
-            var key = r.IsDBNull(0) ? GetDefault(keyType) : ConvertValue(r.GetValue(0), keyType);
-            var value = r.IsDBNull(1) ? GetDefault(valueType) : ConvertValue(r.GetValue(1), valueType);
-
-            // Create KeyValuePair using reflection (it's a struct)
-            var kvp = Activator.CreateInstance(typeof(T), key, value);
-            return (T)kvp!;
-        };
-    }
-
-    private static Func<IDataReader, T> CreateValueTupleMapper<T>(IDataReader reader, Type[] typeArgs) where T : new()
-    {
-        var itemCount = typeArgs.Length;
-
-        return r =>
-        {
-            var values = new object?[itemCount];
-            for (int i = 0; i < itemCount; i++)
-            {
-                values[i] = r.IsDBNull(i) ? GetDefault(typeArgs[i]) : ConvertValue(r.GetValue(i), typeArgs[i]);
-            }
-
-            // Create ValueTuple using Activator
-            var tuple = Activator.CreateInstance(typeof(T), values);
-            return (T)tuple!;
-        };
-    }
-
-    private static object? GetDefault(Type type)
-    {
-        return type.IsValueType ? Activator.CreateInstance(type) : null;
-    }
-
-    private static object? ConvertValue(object value, Type targetType)
-    {
-        if (value is null)
-            return GetDefault(targetType);
-
-        var valueType = value.GetType();
-        if (targetType.IsAssignableFrom(valueType))
-            return value;
-
-        // Handle nullable types
-        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-
-        return Convert.ChangeType(value, underlyingType);
-    }
-
-    private static Func<IDataReader, T> CreateExpandoMapper<T>(IDataReader reader) where T : new()
-    {
-        // Cache column names
-        var fieldCount = reader.FieldCount;
-        var columnNames = new string[fieldCount];
-        for (int i = 0; i < fieldCount; i++)
-            columnNames[i] = reader.GetName(i);
-
-        return r =>
-        {
-            IDictionary<string, object?> expando = new ExpandoObject();
-            for (int i = 0; i < fieldCount; i++)
-            {
-                var value = r.IsDBNull(i) ? null : r.GetValue(i);
-                expando[columnNames[i]] = value;
-            }
-            return (T)(object)expando;
-        };
-    }
-
-    private static Func<IDataReader, T> CreateDictionaryMapper<T>(IDataReader reader, Type valueType) where T : new()
-    {
-        // Cache column names and ordinals
-        var fieldCount = reader.FieldCount;
-        var columnNames = new string[fieldCount];
-        for (int i = 0; i < fieldCount; i++)
-            columnNames[i] = reader.GetName(i);
-
-        if (valueType == typeof(object))
-        {
-            // Dictionary<string, object> - store values as-is
-            return r =>
-            {
-                var dict = new Dictionary<string, object?>(fieldCount, StringComparer.OrdinalIgnoreCase);
-                for (int i = 0; i < fieldCount; i++)
-                {
-                    var value = r.IsDBNull(i) ? null : r.GetValue(i);
-                    dict[columnNames[i]] = value;
-                }
-                return (T)(object)dict;
-            };
-        }
-        else
-        {
-            // Dictionary<string, TValue> - convert values to TValue
-            // We need to create the properly typed dictionary using reflection
-            var dictType = typeof(Dictionary<,>).MakeGenericType(typeof(string), valueType);
-            var addMethod = dictType.GetMethod("Add")!;
-
-            return r =>
-            {
-                // Create Dictionary<string, TValue> with case-insensitive comparer
-                var dict = (IDictionary)Activator.CreateInstance(
-                    dictType,
-                    fieldCount,
-                    StringComparer.OrdinalIgnoreCase)!;
-
-                for (int i = 0; i < fieldCount; i++)
-                {
-                    object? value;
-                    if (r.IsDBNull(i))
-                    {
-                        value = valueType.IsValueType ? Activator.CreateInstance(valueType) : null;
-                    }
-                    else
-                    {
-                        var raw = r.GetValue(i);
-                        value = valueType.IsAssignableFrom(raw.GetType())
-                            ? raw
-                            : Convert.ChangeType(raw, valueType);
-                    }
-                    dict[columnNames[i]] = value;
-                }
-                return (T)dict;
-            };
-        }
     }
 }
