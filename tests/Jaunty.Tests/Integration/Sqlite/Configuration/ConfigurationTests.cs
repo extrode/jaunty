@@ -1,4 +1,5 @@
 using Jaunty.Configuration;
+using Jaunty.Extensions.Reflection;
 using Jaunty.Tests.Helpers;
 
 namespace Jaunty.Tests.Integration.Sqlite.Configuration;
@@ -16,6 +17,8 @@ public class ConfigurationTests : IDisposable
     {
         GC.SuppressFinalize(this);
         _db.Dispose();
+        JauntyConfig.Reset();
+        JauntyReflectionExtensions.UseReflectionMapping();
     }
 
     [Fact]
@@ -49,6 +52,7 @@ public class ConfigurationTests : IDisposable
         
         // Reset to avoid affecting other tests
         JauntyConfig.Reset();
+        JauntyReflectionExtensions.UseReflectionMapping();
     }
 
     [Fact]
@@ -59,9 +63,10 @@ public class ConfigurationTests : IDisposable
 
         // Verify it's set
         Assert.NotNull(JauntyConfig.TableNameResolver);
-        
+
         // Reset to avoid affecting other tests
         JauntyConfig.Reset();
+        JauntyReflectionExtensions.UseReflectionMapping();
     }
 
     [Fact]
@@ -72,8 +77,9 @@ public class ConfigurationTests : IDisposable
 
         // Verify it's set
         Assert.NotNull(JauntyConfig.SchemaNameResolver);
-        
+
         // Reset to avoid affecting other tests
         JauntyConfig.Reset();
+        JauntyReflectionExtensions.UseReflectionMapping();
     }
 }

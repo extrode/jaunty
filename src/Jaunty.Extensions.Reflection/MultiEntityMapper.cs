@@ -55,7 +55,7 @@ internal sealed class MultiEntityMapper<
         var t1Setters = MetadataCache<T1>.GetSetters(reader, MappingMode.Projection);
 
         // T1 has priority: exclude from T2 any ordinals already claimed by T1.
-        var t1Ordinals = new HashSet<int>(t1Setters.Length);
+        var t1Ordinals = new HashSet<int>();
         for (int i = 0; i < t1Setters.Length; i++)
             t1Ordinals.Add(t1Setters[i].Ordinal);
 

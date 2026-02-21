@@ -180,6 +180,8 @@ public readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IData
 
 public readonly struct PropertySetter<T>(PropertyContext<T> context, int ordinal)
 {
+    public int Ordinal { get; } = ordinal;
+    
     public void Set(T target, IDataRecord record)
     {
         if (!record.IsDBNull(ordinal))

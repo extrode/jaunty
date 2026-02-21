@@ -22,6 +22,7 @@ public class ConfigResolverTests : IDisposable
     {
         _db.Dispose();
         JauntyConfig.Reset();
+        JauntyReflectionExtensions.UseReflectionMapping();
     }
 
     [Fact]
