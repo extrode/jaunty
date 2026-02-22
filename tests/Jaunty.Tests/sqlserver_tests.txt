@@ -1,0 +1,767 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.SourceGenerator\JauntyGenerator.cs(12,2): warning RS1041: This compiler extension should not be implemented in an assembly with target framework '.NET 8.0'. References to other target frameworks will cause the compiler to behave unpredictably. (https://github.com/dotnet/roslyn-analyzers/blob/main/docs/rules/RS1041.md) [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj::TargetFramework=net8.0]
+  Jaunty.SourceGenerator -> C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.SourceGenerator\bin\Debug\net8.0\Jaunty.SourceGenerator.dll
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\WriteParameterCache.cs(58,22): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Jaunty.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\WriteParameterCache.cs(58,22): warning CS8602: Dereference of a possibly null reference. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Jaunty.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\WriteParameterCache.cs(82,22): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Jaunty.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\WriteParameterCache.cs(82,22): warning CS8602: Dereference of a possibly null reference. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Jaunty.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\WriteParameterCache.cs(90,22): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Jaunty.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\WriteParameterCache.cs(90,22): warning CS8602: Dereference of a possibly null reference. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Jaunty.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\WriteParameterCache.cs(109,22): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Jaunty.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\WriteParameterCache.cs(109,22): warning CS8602: Dereference of a possibly null reference. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Jaunty.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\WriteParameterCache.cs(134,49): warning CS8604: Possible null reference argument for parameter 'arg2' in 'void Action<IDbCommand, object>.Invoke(IDbCommand arg1, object arg2)'. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Jaunty.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\WriteParameterCache.cs(143,47): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Jaunty.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\WriteParameterCache.cs(143,47): warning CS8602: Dereference of a possibly null reference. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Jaunty.csproj::TargetFramework=net8.0]
+  Jaunty -> C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\bin\Debug\net8.0\Jaunty.dll
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\MetadataCache.cs(205,35): warning CS9124: Parameter 'int ordinal' is captured into the state of the enclosing type and its value is also used to initialize a field, property, or event. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\MetadataCache.cs(193,131): warning CS9113: Parameter 'fastSetter' is unread. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\SpecialTypeMappers.cs(34,50): warning CS8621: Nullability of reference types in return type of 'object? SpecialTypeMappers.ResolveSpecialTypeMapper(Type type, IDataReader reader)' doesn't match the target delegate 'Func<Type, IDataReader, object>' (possibly because of nullability attributes). [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(39,23): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(46,23): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(56,23): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(68,23): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(75,23): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(82,23): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(89,23): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\SpecialTypeMappers.cs(92,23): warning IL2067: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicConstructors' in call to 'System.Activator.CreateInstance(Type, params Object[])'. The parameter 'type' of method 'Jaunty.Extensions.Reflection.SpecialTypeMappers.CreateKeyValuePairMapper(Type, IDataReader, Type[])' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\SpecialTypeMappers.cs(117,35): warning IL2067: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicParameterlessConstructor' in call to 'System.Activator.CreateInstance(Type)'. The parameter 'type' of method 'Jaunty.Extensions.Reflection.SpecialTypeMappers.GetDefault(Type)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\SpecialTypeMappers.cs(110,25): warning IL2067: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicConstructors' in call to 'System.Activator.CreateInstance(Type, params Object[])'. The parameter 'type' of method 'Jaunty.Extensions.Reflection.SpecialTypeMappers.CreateValueTupleMapper(Type, IDataReader, Type[])' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\SpecialTypeMappers.cs(181,28): warning IL3050: Using member 'System.Type.MakeGenericType(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(56,23): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicParameterlessConstructor' in call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])'. The parameter 'type' of method 'Jaunty.Extensions.Reflection.JauntyReflectionExtensions.CreateTypedMapper(Type, Func<IDataReader, Object>)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(39,23): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicParameterlessConstructor', 'DynamicallyAccessedMemberTypes.PublicProperties' in call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])'. The parameter 'type' of method 'Jaunty.Extensions.Reflection.JauntyReflectionExtensions.ResolveTableMetadata(Type)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(75,23): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicParameterlessConstructor', 'DynamicallyAccessedMemberTypes.PublicProperties' in call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])'. The parameter 'type' of method 'Jaunty.Extensions.Reflection.JauntyReflectionExtensions.ResolveUpdateBinder(Type)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(68,23): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicParameterlessConstructor', 'DynamicallyAccessedMemberTypes.PublicProperties' in call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])'. The parameter 'type' of method 'Jaunty.Extensions.Reflection.JauntyReflectionExtensions.ResolveInsertBinder(Type)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(82,23): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicParameterlessConstructor', 'DynamicallyAccessedMemberTypes.PublicProperties' in call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])'. The parameter 'type' of method 'Jaunty.Extensions.Reflection.JauntyReflectionExtensions.ResolveDeleteBinder(Type)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(46,23): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicParameterlessConstructor', 'DynamicallyAccessedMemberTypes.PublicProperties' in call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])'. The parameter 'type' of method 'Jaunty.Extensions.Reflection.JauntyReflectionExtensions.ResolveMapper(Type, MappingMode)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(89,23): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicParameterlessConstructor', 'DynamicallyAccessedMemberTypes.PublicProperties' in call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])'. The parameter 't1' of method 'Jaunty.Extensions.Reflection.JauntyReflectionExtensions.ResolveMultiMapper(Type, Type)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\JauntyReflectionExtensions.cs(89,23): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicParameterlessConstructor', 'DynamicallyAccessedMemberTypes.PublicProperties' in call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])'. The parameter 't2' of method 'Jaunty.Extensions.Reflection.JauntyReflectionExtensions.ResolveMultiMapper(Type, Type)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\SpecialTypeMappers.cs(196,57): warning IL2067: 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicParameterlessConstructor' in call to 'System.Activator.CreateInstance(Type)'. The parameter 'valueType' of method 'Jaunty.Extensions.Reflection.SpecialTypeMappers.CreateDictionaryMapper(Type, IDataReader, Type)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj::TargetFramework=net8.0]
+  Jaunty.Extensions.Reflection -> C:\home\extrode\code\jaunty.extrode.com\src\Jaunty.Extensions.Reflection\bin\Debug\net8.0\Jaunty.Extensions.Reflection.dll
+C:\Program Files\dotnet\sdk\10.0.103\Microsoft.CSharp.CurrentVersion.targets(130,9): warning MSB3884: Could not find rule set file "None.ruleset". [C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Jaunty.Tests.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Unit\Read\ParameterBinderTests.cs(699,38): warning CS8767: Nullability of reference types in type of parameter 'value' of 'void MockDbCommand.CommandText.set' doesn't match implicitly implemented member 'void IDbCommand.CommandText.set' (possibly because of nullability attributes). [C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Jaunty.Tests.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Helpers\IDbConnectionWrapper.cs(22,9): warning CS8767: Nullability of reference types in type of parameter 'value' of 'void IDbConnectionWrapper.ConnectionString.set' doesn't match implicitly implemented member 'void IDbConnection.ConnectionString.set' (possibly because of nullability attributes). [C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Jaunty.Tests.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Helpers\IDbConnectionWrapper.cs(54,9): warning CS8767: Nullability of reference types in type of parameter 'value' of 'void IDbCommandWrapper.CommandText.set' doesn't match implicitly implemented member 'void IDbCommand.CommandText.set' (possibly because of nullability attributes). [C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Jaunty.Tests.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Unit\Read\ParameterBinderTests.cs(735,40): warning CS8767: Nullability of reference types in type of parameter 'value' of 'void MockDbDataParameter.ParameterName.set' doesn't match implicitly implemented member 'void IDataParameter.ParameterName.set' (possibly because of nullability attributes). [C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Jaunty.Tests.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Unit\Read\ParameterBinderTests.cs(739,39): warning CS8767: Nullability of reference types in type of parameter 'value' of 'void MockDbDataParameter.SourceColumn.set' doesn't match implicitly implemented member 'void IDataParameter.SourceColumn.set' (possibly because of nullability attributes). [C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Jaunty.Tests.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Unit\Internals\SqlDialectTests.cs(898,57): warning CS8767: Nullability of reference types in type of parameter 'value' of 'void MockConnectionBase.ConnectionString.set' doesn't match implicitly implemented member 'void IDbConnection.ConnectionString.set' (possibly because of nullability attributes). [C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Jaunty.Tests.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Helpers\TestConfiguration.cs(52,23): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Jaunty.Tests.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Sqlite\NullParameterTests.cs(64,13): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Jaunty.Tests.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Sqlite\Read\QueryMultiEntityTests.cs(55,23): warning CS0618: 'Jaunty.Query<T1, T2, TResult>(IDbConnection, string, Func<T1, T2, TResult>, object?, CommandOptions)' is obsolete: 'Use the overload with CommandOptions<(T1, T2)> instead' [C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Jaunty.Tests.csproj::TargetFramework=net8.0]
+C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Unit\Read\ParameterBinderTests.cs(359,9): warning xUnit2013: Do not use Assert.Equal() to check for collection size. Use Assert.Empty instead. (https://xunit.net/xunit.analyzers/rules/xUnit2013) [C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Jaunty.Tests.csproj::TargetFramework=net8.0]
+  Jaunty.Tests -> C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\bin\Debug\net8.0\Jaunty.Tests.dll
+Test run for C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\bin\Debug\net8.0\Jaunty.Tests.dll (.NETCoreApp,Version=v8.0)
+VSTest version 18.0.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedure_WithResults_ReturnsEntities [135 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Could not find stored procedure 'GetAllProducts'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+   at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 98
+   at Jaunty.Jaunty.QueryCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 17
+   at Jaunty.Jaunty.Query[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\Query.cs:line 231
+   at Jaunty.Jaunty.ExecuteStoredProcedure[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 153
+   at Jaunty.Jaunty.ExecuteStoredProcedure[T](IDbConnection connection, String procedureName) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 47
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedure_WithResults_ReturnsEntities_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 63
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedure_WithResults_ReturnsEntities() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 22
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedure_WithParameters_ReturnsFilteredResults [4 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType1`1': CategoryId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 94
+   at Jaunty.Jaunty.QueryCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 17
+   at Jaunty.Jaunty.Query[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\Query.cs:line 231
+   at Jaunty.Jaunty.ExecuteStoredProcedure[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 153
+   at Jaunty.Jaunty.ExecuteStoredProcedure[T](IDbConnection connection, String procedureName, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 94
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedure_WithParameters_ReturnsFilteredResults_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 71
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedure_WithParameters_ReturnsFilteredResults() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 26
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureScalar_WithParametersAndOptions_Works [5 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType1`1': CategoryId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 94
+   at Jaunty.Jaunty.ExecuteReader[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 15
+   at Jaunty.Jaunty.QueryScalarCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 113
+   at Jaunty.Jaunty.QueryScalar[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryScalar.cs:line 190
+   at Jaunty.Jaunty.ExecuteStoredProcedureScalar[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 502
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedureScalar_WithParametersAndOptions_Works_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 204
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureScalar_WithParametersAndOptions_Works() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 66
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureNonQuery_ExecutesSuccessfully [1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType32`2': ProductId, NewPrice. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteNonQueryCore(IDbConnection connection, String sql, Object parameters, CommandOptions options, CommandType commandType) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\ExecuteNonQueryCore.cs:line 43
+   at Jaunty.Jaunty.ExecuteStoredProcedureNonQuery(IDbConnection connection, String procedureName, Object parameters, CommandOptions options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 592
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedureNonQuery_ExecutesSuccessfully_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 227
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureNonQuery_ExecutesSuccessfully() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 70
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureScalar_ReturnsScalarValue [< 1 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Could not find stored procedure 'GetProductCount'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+   at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 98
+   at Jaunty.Jaunty.ExecuteReader[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 15
+   at Jaunty.Jaunty.QueryScalarCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 113
+   at Jaunty.Jaunty.QueryScalar[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryScalar.cs:line 190
+   at Jaunty.Jaunty.ExecuteStoredProcedureScalar[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 502
+   at Jaunty.Jaunty.ExecuteStoredProcedureScalar[T](IDbConnection connection, String procedureName) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 436
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedureScalar_ReturnsScalarValue_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 184
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureScalar_ReturnsScalarValue() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 58
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirst_WithResults_ReturnsFirst [1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType0`1': ProductId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 94
+   at Jaunty.Jaunty.QueryFirstOrDefaultCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 51
+   at Jaunty.Jaunty.QueryFirstCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 43
+   at Jaunty.Jaunty.QueryFirst[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryFirst.cs:line 213
+   at Jaunty.Jaunty.ExecuteStoredProcedureFirst[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 277
+   at Jaunty.Jaunty.ExecuteStoredProcedureFirst[T](IDbConnection connection, String procedureName, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 223
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedureFirst_WithResults_ReturnsFirst_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 104
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirst_WithResults_ReturnsFirst() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 34
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirstOrDefault_WithResults_ReturnsFirst [< 1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType0`1': ProductId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 94
+   at Jaunty.Jaunty.QueryFirstOrDefaultCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 51
+   at Jaunty.Jaunty.QueryFirstOrDefault[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryFirstOrDefault.cs:line 226
+   at Jaunty.Jaunty.ExecuteStoredProcedureFirstOrDefault[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 406
+   at Jaunty.Jaunty.ExecuteStoredProcedureFirstOrDefault[T](IDbConnection connection, String procedureName, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 354
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedureFirstOrDefault_WithResults_ReturnsFirst_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 144
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirstOrDefault_WithResults_ReturnsFirst() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 46
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirst_NoResults_Throws [2 ms]
+  Error Message:
+   Assert.Throws() Failure: Exception type was not an exact match
+Expected: typeof(System.InvalidOperationException)
+Actual:   typeof(Microsoft.Data.SqlClient.SqlException)
+---- Microsoft.Data.SqlClient.SqlException : Could not find stored procedure 'GetNoResults'.
+  Stack Trace:
+     at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedureFirst_NoResults_Throws_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 134
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirst_NoResults_Throws() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 42
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+----- Inner Stack Trace -----
+   at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+   at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 98
+   at Jaunty.Jaunty.QueryFirstOrDefaultCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 51
+   at Jaunty.Jaunty.QueryFirstCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 43
+   at Jaunty.Jaunty.QueryFirst[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryFirst.cs:line 213
+   at Jaunty.Jaunty.ExecuteStoredProcedureFirst[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 277
+   at Jaunty.Jaunty.ExecuteStoredProcedureFirst[T](IDbConnection connection, String procedureName) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 183
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.<ExecuteStoredProcedureFirst_NoResults_Throws_Core>b__18_0() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 135
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.SpParameters_HasValue_ReturnsTrueForOutputWithValue [10 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Could not find stored procedure 'GetProductCountWithOutput'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.InternalExecuteNonQuery(TaskCompletionSource`1 completion, Boolean sendToPipe, Int32 timeout, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String methodName)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteNonQuery()
+   at Jaunty.Jaunty.ExecuteNonQueryWithOutputParameters(IDbConnection connection, String procedureName, SpParameters parameters, CommandOptions options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\ExecuteStoredProcedureWithOutput.cs:line 412
+   at Jaunty.Jaunty.ExecuteStoredProcedureNonQuery(IDbConnection connection, String procedureName, SpParameters parameters, CommandOptions options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\ExecuteStoredProcedureWithOutput.cs:line 274
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.SpParameters_HasValue_ReturnsTrueForOutputWithValue_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 268
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.SpParameters_HasValue_ReturnsTrueForOutputWithValue() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 78
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirst_WithParametersAndOptions_Works [1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType0`1': ProductId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 94
+   at Jaunty.Jaunty.QueryFirstOrDefaultCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 51
+   at Jaunty.Jaunty.QueryFirstCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 43
+   at Jaunty.Jaunty.QueryFirst[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryFirst.cs:line 213
+   at Jaunty.Jaunty.ExecuteStoredProcedureFirst[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 277
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedureFirst_WithParametersAndOptions_Works_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 118
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirst_WithParametersAndOptions_Works() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 38
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedure_WithParametersAndOptions_Works [< 1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType1`1': CategoryId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 94
+   at Jaunty.Jaunty.QueryCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 17
+   at Jaunty.Jaunty.Query[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\Query.cs:line 231
+   at Jaunty.Jaunty.ExecuteStoredProcedure[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 153
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedure_WithParametersAndOptions_Works_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 85
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedure_WithParametersAndOptions_Works() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 30
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureScalar_WithParameters_ReturnsValue [< 1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType1`1': CategoryId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 94
+   at Jaunty.Jaunty.ExecuteReader[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 15
+   at Jaunty.Jaunty.QueryScalarCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 113
+   at Jaunty.Jaunty.QueryScalar[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryScalar.cs:line 190
+   at Jaunty.Jaunty.ExecuteStoredProcedureScalar[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 502
+   at Jaunty.Jaunty.ExecuteStoredProcedureScalar[T](IDbConnection connection, String procedureName, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 466
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedureScalar_WithParameters_ReturnsValue_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 191
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureScalar_WithParameters_ReturnsValue() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 62
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirstOrDefault_NoResults_ReturnsNull [< 1 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Could not find stored procedure 'GetNoResults'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+   at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 98
+   at Jaunty.Jaunty.QueryFirstOrDefaultCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 51
+   at Jaunty.Jaunty.QueryFirstOrDefault[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryFirstOrDefault.cs:line 226
+   at Jaunty.Jaunty.ExecuteStoredProcedureFirstOrDefault[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 406
+   at Jaunty.Jaunty.ExecuteStoredProcedureFirstOrDefault[T](IDbConnection connection, String procedureName) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 311
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedureFirstOrDefault_NoResults_ReturnsNull_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 154
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirstOrDefault_NoResults_ReturnsNull() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 50
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureNonQuery_WithOutputParameter_ReturnsOutputValue [1 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Could not find stored procedure 'GetProductCountWithOutput'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.InternalExecuteNonQuery(TaskCompletionSource`1 completion, Boolean sendToPipe, Int32 timeout, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String methodName)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteNonQuery()
+   at Jaunty.Jaunty.ExecuteNonQueryWithOutputParameters(IDbConnection connection, String procedureName, SpParameters parameters, CommandOptions options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\ExecuteStoredProcedureWithOutput.cs:line 412
+   at Jaunty.Jaunty.ExecuteStoredProcedureNonQuery(IDbConnection connection, String procedureName, SpParameters parameters, CommandOptions options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\ExecuteStoredProcedureWithOutput.cs:line 274
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedureNonQuery_WithOutputParameter_ReturnsOutputValue_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 252
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureNonQuery_WithOutputParameter_ReturnsOutputValue() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 74
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirstOrDefault_WithParametersAndOptions_Works [< 1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType0`1': ProductId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 94
+   at Jaunty.Jaunty.QueryFirstOrDefaultCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 51
+   at Jaunty.Jaunty.QueryFirstOrDefault[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryFirstOrDefault.cs:line 226
+   at Jaunty.Jaunty.ExecuteStoredProcedureFirstOrDefault[T](IDbConnection connection, String procedureName, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\StoredProcedure.cs:line 406
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureTestBase.ExecuteStoredProcedureFirstOrDefault_WithParametersAndOptions_Works_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureTestBase.cs:line 165
+   at Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureTests.ExecuteStoredProcedureFirstOrDefault_WithParametersAndOptions_Works() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\StoredProcedure\SqlServerStoredProcedureTests.cs:line 54
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue [3 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType1`1': CategoryId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 51
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryScalarCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 126
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 174
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureAsync_WithParametersAndOptions_Works [3 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType1`1': CategoryId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 51
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 16
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureAsync_WithParametersAndOptions_Works_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 68
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully [2 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType32`2': ProductId, NewPrice. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteNonQueryCoreAsync(IDbConnection connection, String sql, Object parameters, CommandOptions options, CommandType commandType, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\ExecuteNonQueryCore.cs:line 94
+   at Jaunty.Jaunty.ExecuteNonQueryCoreAsync(IDbConnection connection, String sql, Object parameters, CommandOptions options, CommandType commandType, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\ExecuteNonQueryCore.cs:line 98
+   at Jaunty.Jaunty.ExecuteNonQueryCoreAsync(IDbConnection connection, String sql, Object parameters, CommandOptions options, CommandType commandType, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\ExecuteNonQueryCore.cs:line 140
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 210
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureScalarAsync_ReturnsScalarValue [9 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Could not find stored procedure 'GetProductCount'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 56
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryScalarCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 126
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureScalarAsync_ReturnsScalarValue_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 167
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureFirstAsync_NoResults_Throws [5 ms]
+  Error Message:
+   Assert.Throws() Failure: Exception type was not an exact match
+Expected: typeof(System.InvalidOperationException)
+Actual:   typeof(Microsoft.Data.SqlClient.SqlException)
+---- Microsoft.Data.SqlClient.SqlException : Could not find stored procedure 'GetNoResults'.
+  Stack Trace:
+     at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureFirstAsync_NoResults_Throws_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 117
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 56
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryFirstCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 40
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.<ExecuteStoredProcedureFirstAsync_NoResults_Throws_Core>b__18_0() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 118
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureNonQueryAsync_WithOutputParameter_ReturnsOutputValue [6 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Could not find stored procedure 'GetProductCountWithOutput'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.CompleteAsyncExecuteReader(Boolean isInternal, Boolean forDescribeParameterEncryption)
+   at Microsoft.Data.SqlClient.SqlCommand.InternalEndExecuteNonQuery(IAsyncResult asyncResult, Boolean isInternal, String endMethod)
+   at Microsoft.Data.SqlClient.SqlCommand.EndExecuteNonQueryInternal(IAsyncResult asyncResult)
+   at Microsoft.Data.SqlClient.SqlCommand.EndExecuteNonQueryAsync(IAsyncResult asyncResult)
+   at Microsoft.Data.SqlClient.SqlCommand.<>c.<InternalExecuteNonQueryAsync>b__193_1(IAsyncResult asyncResult)
+   at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
+--- End of stack trace from previous location ---
+   at Jaunty.Jaunty.ExecuteNonQueryWithOutputParametersAsync(IDbConnection connection, String procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\ExecuteStoredProcedureWithOutputAsync.cs:line 508
+   at Jaunty.Jaunty.ExecuteNonQueryWithOutputParametersAsync(IDbConnection connection, String procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\ExecuteStoredProcedureWithOutputAsync.cs:line 512
+   at Jaunty.Jaunty.ExecuteNonQueryWithOutputParametersAsync(IDbConnection connection, String procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\StoredProcedure\ExecuteStoredProcedureWithOutputAsync.cs:line 552
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureNonQueryAsync_WithOutputParameter_ReturnsOutputValue_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 235
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works [1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType1`1': CategoryId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 51
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryScalarCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 126
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 187
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst [< 1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType0`1': ProductId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 51
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryFirstCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 40
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 87
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults [< 1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType1`1': CategoryId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 51
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 16
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 54
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureFirstOrDefaultAsync_WithResults_ReturnsFirst [1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType0`1': ProductId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 51
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryFirstOrDefaultCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 58
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureFirstOrDefaultAsync_WithResults_ReturnsFirst_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 127
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureAsync_WithResults_ReturnsEntities [1 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Could not find stored procedure 'GetAllProducts'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 56
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 16
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureAsync_WithResults_ReturnsEntities_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 46
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull [1 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Could not find stored procedure 'GetNoResults'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 56
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryFirstOrDefaultCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 58
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 137
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works [1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType0`1': ProductId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 51
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryFirstCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 40
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 101
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.StoredProcedure.SqlServerStoredProcedureAsyncTests.ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works [1 ms]
+  Error Message:
+   System.ArgumentException : Unused parameter properties on type '<>f__AnonymousType0`1': ProductId. SQL contains no matching parameters.
+  Stack Trace:
+     at Jaunty.Internals.Parameters.ParameterBinder.BuildTemplate(Type type, String sql, String[] sqlParamNames, Dictionary`2 propertyLookup, ParameterMetadata[] allMeta) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 90
+   at Jaunty.Internals.Parameters.ParameterBinder.Bind(IDbCommand command, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Parameters\ParameterBinder.cs:line 55
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 51
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryFirstOrDefaultCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 58
+   at Jaunty.Tests.Integration.StoredProcedure.StoredProcedureAsyncTestBase.ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\StoredProcedure\StoredProcedureAsyncTestBase.cs:line 148
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryPartialFirstOrDefault_NoResults_ReturnsNull [5 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Invalid column name 'product_id'.
+Invalid column name 'product_name'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+   at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 98
+   at Jaunty.Jaunty.QueryFirstOrDefaultCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 51
+   at Jaunty.Jaunty.QueryPartialFirstOrDefault[T](IDbConnection connection, String sql) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryPartialFirstOrDefault.cs:line 20
+   at Jaunty.Tests.Integration.Core.CoreIntegrationTestBase.QueryPartialFirstOrDefault_NoResults_ReturnsNull_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Core\CoreIntegrationTestBase.cs:line 81
+   at Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryPartialFirstOrDefault_NoResults_ReturnsNull() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\SqlServerCoreTests.cs:line 31
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.InsertAsync_And_DeleteAsync_WithTransaction [21 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Invalid column name 'category_id'.
+Invalid column name 'category_name'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.CompleteAsyncExecuteReader(Boolean isInternal, Boolean forDescribeParameterEncryption)
+   at Microsoft.Data.SqlClient.SqlCommand.InternalEndExecuteNonQuery(IAsyncResult asyncResult, Boolean isInternal, String endMethod)
+   at Microsoft.Data.SqlClient.SqlCommand.EndExecuteNonQueryInternal(IAsyncResult asyncResult)
+   at Microsoft.Data.SqlClient.SqlCommand.EndExecuteNonQueryAsync(IAsyncResult asyncResult)
+   at Microsoft.Data.SqlClient.SqlCommand.<>c.<InternalExecuteNonQueryAsync>b__193_1(IAsyncResult asyncResult)
+   at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
+--- End of stack trace from previous location ---
+   at Jaunty.Jaunty.InsertCoreAsync[T](DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\InsertCore.cs:line 123
+   at Jaunty.Jaunty.InsertCoreAsync[T](DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\InsertCore.cs:line 123
+   at Jaunty.Jaunty.InsertCoreAsync[T](DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\InsertCore.cs:line 135
+   at Jaunty.Tests.Integration.Core.CoreIntegrationTestBase.InsertAsync_And_DeleteAsync_WithTransaction_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Core\CoreIntegrationTestBase.cs:line 234
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.Update_WithTransaction [2 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Invalid column name 'category_id'.
+Invalid column name 'category_id'.
+Invalid column name 'category_name'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+   at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 98
+   at Jaunty.Jaunty.QueryFirstOrDefaultCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 51
+   at Jaunty.Jaunty.QueryFirstCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 43
+   at Jaunty.Jaunty.QueryPartialFirst[T](IDbConnection connection, String sql, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryPartialFirst.cs:line 149
+   at Jaunty.Tests.Integration.Core.CoreIntegrationTestBase.Update_WithTransaction_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Core\CoreIntegrationTestBase.cs:line 195
+   at Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.Update_WithTransaction() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\SqlServerCoreTests.cs:line 61
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryPartialFirst_ReturnsFirst [1 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Invalid column name 'product_id'.
+Invalid column name 'product_name'.
+Invalid column name 'category_id'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+   at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 98
+   at Jaunty.Jaunty.QueryFirstOrDefaultCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 51
+   at Jaunty.Jaunty.QueryFirstCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 43
+   at Jaunty.Jaunty.QueryPartialFirst[T](IDbConnection connection, String sql) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryPartialFirst.cs:line 52
+   at Jaunty.Tests.Integration.Core.CoreIntegrationTestBase.QueryPartialFirst_ReturnsFirst_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Core\CoreIntegrationTestBase.cs:line 72
+   at Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryPartialFirst_ReturnsFirst() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\SqlServerCoreTests.cs:line 28
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.Insert_And_Delete_WithTransaction [1 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Invalid column name 'category_id'.
+Invalid column name 'category_name'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.InternalExecuteNonQuery(TaskCompletionSource`1 completion, Boolean sendToPipe, Int32 timeout, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String methodName)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteNonQuery()
+   at Jaunty.Jaunty.InsertCore[T](IDbConnection connection, T entity, CommandOptions options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Write\InsertCore.cs:line 62
+   at Jaunty.Jaunty.Insert[T](IDbConnection connection, T entity, CommandOptions options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Write\Insert.cs:line 153
+   at Jaunty.Tests.Integration.Core.CoreIntegrationTestBase.Insert_And_Delete_WithTransaction_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Core\CoreIntegrationTestBase.cs:line 173
+   at Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.Insert_And_Delete_WithTransaction() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\SqlServerCoreTests.cs:line 58
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryPartialFirstAsync_ReturnsFirst [1 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Invalid column name 'product_id'.
+Invalid column name 'product_name'.
+Invalid column name 'category_id'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 56
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryFirstCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 40
+   at Jaunty.Tests.Integration.Core.CoreIntegrationTestBase.QueryPartialFirstAsync_ReturnsFirst_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Core\CoreIntegrationTestBase.cs:line 111
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryPartialAsync_ReturnsResults [2 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Invalid column name 'product_id'.
+Invalid column name 'product_name'.
+Invalid column name 'category_id'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlCommand.<>c.<ExecuteDbDataReaderAsync>b__195_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 56
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 60
+   at Jaunty.Jaunty.ExecuteReaderAsync[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`3 handler, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReaderAsync.cs:line 101
+   at Jaunty.Jaunty.QueryCoreAsync[T](DbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode, CancellationToken cancellationToken) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCoreAsync.cs:line 16
+   at Jaunty.Tests.Integration.Core.CoreIntegrationTestBase.QueryPartialAsync_ReturnsResults_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Core\CoreIntegrationTestBase.cs:line 102
+--- End of stack trace from previous location ---
+  Failed Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryPartialSingle_WithUniqueResult_ReturnsSingle [3 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Invalid column name 'product_id'.
+Invalid column name 'product_id'.
+Invalid column name 'product_name'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+   at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 98
+   at Jaunty.Jaunty.QuerySingleCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 71
+   at Jaunty.Jaunty.QueryPartialSingle[T](IDbConnection connection, String sql, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryPartialSingle.cs:line 104
+   at Jaunty.Tests.Integration.Core.CoreIntegrationTestBase.QueryPartialSingle_WithUniqueResult_ReturnsSingle_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Core\CoreIntegrationTestBase.cs:line 89
+   at Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryPartialSingle_WithUniqueResult_ReturnsSingle() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\SqlServerCoreTests.cs:line 34
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryPartial_ReturnsResults [< 1 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Invalid column name 'product_id'.
+Invalid column name 'product_name'.
+Invalid column name 'category_id'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+   at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 98
+   at Jaunty.Jaunty.QueryCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options, MappingMode mode) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 17
+   at Jaunty.Jaunty.QueryPartial[T](IDbConnection connection, String sql) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryPartial.cs:line 74
+   at Jaunty.Tests.Integration.Core.CoreIntegrationTestBase.QueryPartial_ReturnsResults_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Core\CoreIntegrationTestBase.cs:line 58
+   at Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryPartial_ReturnsResults() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\SqlServerCoreTests.cs:line 25
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryScalar_WithParameters_ReturnsCount [< 1 ms]
+  Error Message:
+   Microsoft.Data.SqlClient.SqlException : Invalid column name 'category_id'.
+  Stack Trace:
+     at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+   at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+   at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& task, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Microsoft.Data.SqlClient.SqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Jaunty.Jaunty.ExecuteReader[TResult](DbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 98
+   at Jaunty.Jaunty.ExecuteReader[TResult](IDbConnection connection, String sql, Object parameters, CommandOptions options, Func`2 handler) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\ExecuteReader.cs:line 15
+   at Jaunty.Jaunty.QueryScalarCore[T](IDbConnection connection, String sql, Object parameters, CommandOptions`1 options) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Internals\Read\QueryCore.cs:line 113
+   at Jaunty.Jaunty.QueryScalar[T](IDbConnection connection, String sql, Object parameters) in C:\home\extrode\code\jaunty.extrode.com\src\Jaunty\Read\QueryScalar.cs:line 100
+   at Jaunty.Tests.Integration.Core.CoreIntegrationTestBase.QueryScalar_WithParameters_ReturnsCount_Core() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\Core\CoreIntegrationTestBase.cs:line 130
+   at Jaunty.Tests.Integration.SqlServer.SqlServerCoreTests.QueryScalar_WithParameters_ReturnsCount() in C:\home\extrode\code\jaunty.extrode.com\tests\Jaunty.Tests\Integration\SqlServer\SqlServerCoreTests.cs:line 46
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Failed!  - Failed:    39, Passed:    26, Skipped:     0, Total:    65, Duration: 392 ms - Jaunty.Tests.dll (net8.0)
