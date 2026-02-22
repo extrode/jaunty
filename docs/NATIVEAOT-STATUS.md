@@ -48,13 +48,20 @@ Jaunty is ready for NativeAOT compilation.
 
 ## Test Status
 
+**Visual Studio Test Explorer (with database connections configured):**
 ```
-Jaunty.Tests (net8.0):    877 passed, 0 failed, 249 skipped
-Jaunty.Tests (net472):    831 passed, 0 failed, 239 skipped
-Jaunty.Fluent.Tests:      395 passed, 0 failed,   0 skipped
+Total:    2768
+Passed:   2312 (83.5%)
+Failed:    224
+Skipped:   232
 ```
 
-All previously-failing tests are now fixed.
+**Note:** The 224 failing tests require investigation. Many are likely:
+- Integration tests with database-specific issues
+- Test isolation problems from configuration tests  
+- Tests requiring specific database server features
+
+Review failing tests in Visual Studio Test Explorer for details.
 
 ---
 
