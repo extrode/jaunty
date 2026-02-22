@@ -165,8 +165,9 @@ public class CollectionParameterTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public async Task QueryAsync_WithCollectionParameter_ReturnsMatchingRows()
+    public async Task QueryAsync_WithCollectionParameter_ReturnsMatchingRows(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var productIds = new[] { 1, 2, 3 };
 
         var products = await connection.QueryPartialAsync<Product>(

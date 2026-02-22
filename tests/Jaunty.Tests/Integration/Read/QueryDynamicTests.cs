@@ -115,8 +115,9 @@ public class QueryDynamicTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public async Task QueryAsync_Dynamic_Works()
+    public async Task QueryAsync_Dynamic_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var results = await connection.QueryAsync<dynamic>(
             "SELECT product_id, product_name FROM products LIMIT 3");
 
