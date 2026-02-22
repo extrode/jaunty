@@ -22,10 +22,12 @@ public static class TestConfiguration
     public static string SqlServerConnectionString => _connectionStrings.Value.SqlServer;
     public static string PostgreSqlConnectionString => _connectionStrings.Value.PostgreSql;
     public static string MySqlConnectionString => _connectionStrings.Value.MySql;
+    public static string MariaDbConnectionString => _connectionStrings.Value.MariaDb;
 
     public static bool HasSqlServer => !string.IsNullOrWhiteSpace(SqlServerConnectionString);
     public static bool HasPostgreSql => !string.IsNullOrWhiteSpace(PostgreSqlConnectionString);
     public static bool HasMySql => !string.IsNullOrWhiteSpace(MySqlConnectionString);
+    public static bool HasMariaDb => !string.IsNullOrWhiteSpace(MariaDbConnectionString);
 
     private static TestConnectionStrings Load()
     {
@@ -35,11 +37,23 @@ public static class TestConfiguration
         result.SqlServer = Environment.GetEnvironmentVariable("JAUNTY_TEST_SQLSERVER") ?? "";
         result.PostgreSql = Environment.GetEnvironmentVariable("JAUNTY_TEST_POSTGRESQL") ?? "";
         result.MySql = Environment.GetEnvironmentVariable("JAUNTY_TEST_MYSQL") ?? "";
+        result.MariaDb = Environment.GetEnvironmentVariable("JAUNTY_TEST_MARIADB") ?? "";
 
         // Priority 2: appsettings.json (if env vars not set)
-        if (string.IsNullOrWhiteSpace(result.SqlServer) || string.IsNullOrWhiteSpace(result.PostgreSql) || string.IsNullOrWhiteSpace(result.MySql))
+        if (string.IsNullOrWhiteSpace(result.SqlServer) || string.IsNullOrWhiteSpace(result.PostgreSql) || string.IsNullOrWhiteSpace(result.MySql) || string.IsNullOrWhiteSpace(result.MariaDb))
         {
             LoadFromAppSettings(result);
+        }
+
+        // Fallback aliases: allow either MySql or MariaDb to configure both.
+        if (string.IsNullOrWhiteSpace(result.MariaDb))
+        {
+            result.MariaDb = result.MySql;
+        }
+
+        if (string.IsNullOrWhiteSpace(result.MySql))
+        {
+            result.MySql = result.MariaDb;
         }
 
         return result;
@@ -91,6 +105,12 @@ public static class TestConfiguration
                 {
                     result.MySql = mysql.GetString() ?? "";
                 }
+
+                if (string.IsNullOrWhiteSpace(result.MariaDb) &&
+                    connStrings.TryGetProperty("MariaDb", out var mariadb))
+                {
+                    result.MariaDb = mariadb.GetString() ?? "";
+                }
             }
         }
         catch
@@ -111,6 +131,9 @@ public static class TestConfiguration
 
             if (string.IsNullOrWhiteSpace(result.MySql))
                 result.MySql = ExtractJsonValue(json, "MySql");
+
+            if (string.IsNullOrWhiteSpace(result.MariaDb))
+                result.MariaDb = ExtractJsonValue(json, "MariaDb");
         }
         catch
         {
@@ -148,5 +171,6 @@ public static class TestConfiguration
         public string SqlServer { get; set; } = "";
         public string PostgreSql { get; set; } = "";
         public string MySql { get; set; } = "";
+        public string MariaDb { get; set; } = "";
     }
 }
