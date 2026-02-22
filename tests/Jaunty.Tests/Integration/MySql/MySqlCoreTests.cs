@@ -1,8 +1,9 @@
 using System.Data.Common;
-using System.Threading.Tasks;
-using MySql.Data.MySqlClient;
+
 using Jaunty.Tests.Helpers;
 using Jaunty.Tests.Integration.Core;
+
+using MySql.Data.MySqlClient;
 
 namespace Jaunty.Tests.Integration.MySql;
 
