@@ -13,7 +13,8 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+
+    [Theory]
     [MicrosoftSqlite]
     public async Task QueryMultipleAsync_ReturnsMultipleResultSets(DialectInfo dialect)
     {
@@ -65,7 +66,7 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     public async Task QueryMultipleAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var cts = new CancellationTokenSource();
-        
+
         using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 1",
             cancellationToken: cts.Token);
