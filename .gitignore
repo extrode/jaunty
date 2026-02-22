@@ -367,3 +367,4 @@ FodyWeavers.xsd
 # Test configuration (may contain connection strings with credentials)
 **/appsettings.json
 !**/appsettings.example.json
+/publish-aot/
