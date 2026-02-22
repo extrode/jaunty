@@ -1,55 +1,38 @@
-using System.Data.SQLite;
+using System.Data;
+
 
 using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
-public class BulkOperationsAsyncTests : IDisposable
+public class BulkOperationsAsyncTests : IClassFixture<WriteDialectFixture>
 {
-    private readonly SQLiteConnection _connection;
-    private bool _disposed;
+    private readonly WriteDialectFixture _fixture;
 
-    public BulkOperationsAsyncTests()
+    public BulkOperationsAsyncTests(WriteDialectFixture fixture)
     {
-        _connection = new SQLiteConnection("Data Source=:memory:");
-        _connection.Open();
-        CreateTestTable();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+private static int GetRowCount(IDbConnection connection)
     {
-        if (_disposed) return;
-        _connection?.Dispose();
-        _disposed = true;
-        GC.SuppressFinalize(this);
-    }
-
-    private void CreateTestTable()
-    {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = @"
-            CREATE TABLE bulk_test (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                value INTEGER NOT NULL
-            )";
-        cmd.ExecuteNonQuery();
-    }
-
-    private int GetRowCount()
-    {
-        using var cmd = _connection.CreateCommand();
+        using var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT COUNT(*) FROM bulk_test";
         return Convert.ToInt32(cmd.ExecuteScalar());
     }
 
     #region BulkInsertAsync Tests
 
-    [Fact]
-    public async Task BulkInsertAsync_InsertsMultipleEntities()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertAsync_InsertsMultipleEntities(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var entities = new List<BulkTestEntity>
         {
             new() { Name = "Test1", Value = 100 },
@@ -57,53 +40,69 @@ public class BulkOperationsAsyncTests : IDisposable
             new() { Name = "Test3", Value = 300 }
         };
 
-        int inserted = await _connection.BulkInsertAsync(entities);
+        int inserted = await connection.BulkInsertAsync(entities);
 
         Assert.Equal(3, inserted);
-        Assert.Equal(3, GetRowCount());
+        Assert.Equal(3, GetRowCount(connection));
     }
 
-    [Fact]
-    public async Task BulkInsertAsync_EmptyCollection_ReturnsZero()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var entities = new List<BulkTestEntity>();
 
-        int inserted = await _connection.BulkInsertAsync(entities);
+        int inserted = await connection.BulkInsertAsync(entities);
 
         Assert.Equal(0, inserted);
-        Assert.Equal(0, GetRowCount());
+        Assert.Equal(0, GetRowCount(connection));
     }
 
-    [Fact]
-    public async Task BulkInsertAsync_SingleEntity_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertAsync_SingleEntity_Works(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var entities = new List<BulkTestEntity>
         {
             new() { Name = "Single", Value = 42 }
         };
 
-        int inserted = await _connection.BulkInsertAsync(entities);
+        int inserted = await connection.BulkInsertAsync(entities);
 
         Assert.Equal(1, inserted);
-        Assert.Equal(1, GetRowCount());
+        Assert.Equal(1, GetRowCount(connection));
     }
 
-    [Fact]
-    public async Task BulkInsertAsync_LargeCollection_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertAsync_LargeCollection_Works(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var entities = Enumerable.Range(1, 1000)
             .Select(i => new BulkTestEntity { Name = $"Item{i}", Value = i })
             .ToList();
 
-        int inserted = await _connection.BulkInsertAsync(entities);
+        int inserted = await connection.BulkInsertAsync(entities);
 
         Assert.Equal(1000, inserted);
-        Assert.Equal(1000, GetRowCount());
+        Assert.Equal(1000, GetRowCount(connection));
     }
 
-    [Fact]
-    public async Task BulkInsertAsync_CancellationToken_Respects()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertAsync_CancellationToken_Respects(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var entities = Enumerable.Range(1, 100)
             .Select(i => new BulkTestEntity { Name = $"Item{i}", Value = i })
             .ToList();
@@ -113,48 +112,60 @@ public class BulkOperationsAsyncTests : IDisposable
 
         // TaskCanceledException derives from OperationCanceledException
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => _connection.BulkInsertAsync(entities, cts.Token).AsTask());
+            () => connection.BulkInsertAsync(entities, cts.Token).AsTask());
     }
 
-    [Fact]
-    public async Task BulkInsertIgnoreConstraintsAsync_InsertsMultipleEntities()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertIgnoreConstraintsAsync_InsertsMultipleEntities(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var entities = new List<BulkTestEntity>
         {
             new() { Name = "Test1", Value = 100 },
             new() { Name = "Test2", Value = 200 }
         };
 
-        int inserted = await _connection.BulkInsertIgnoreConstraintsAsync(entities);
+        int inserted = await connection.BulkInsertIgnoreConstraintsAsync(entities);
 
         Assert.Equal(2, inserted);
-        Assert.Equal(2, GetRowCount());
+        Assert.Equal(2, GetRowCount(connection));
     }
 
-    [Fact]
-    public async Task BulkInsertIgnoreConstraintsAsync_WithOptions_InsertsEntities()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertIgnoreConstraintsAsync_WithOptions_InsertsEntities(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var entities = new List<BulkTestEntity>
         {
             new() { Name = "Test1", Value = 100 },
             new() { Name = "Test2", Value = 200 }
         };
 
-        using var transaction = _connection.BeginTransaction();
-        int inserted = await _connection.BulkInsertIgnoreConstraintsAsync(entities, CommandOptions.WithTransaction(transaction));
+        using var transaction = connection.BeginTransaction();
+        int inserted = await connection.BulkInsertIgnoreConstraintsAsync(entities, CommandOptions.WithTransaction(transaction));
         transaction.Commit();
 
         Assert.Equal(2, inserted);
-        Assert.Equal(2, GetRowCount());
+        Assert.Equal(2, GetRowCount(connection));
     }
 
     #endregion
 
     #region BulkUpdateAsync Tests
 
-    [Fact]
-    public async Task BulkUpdateAsync_UpdatesMultipleEntities()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkUpdateAsync_UpdatesMultipleEntities(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         // Insert initial data
         var entities = new List<BulkTestEntity>
         {
@@ -162,10 +173,10 @@ public class BulkOperationsAsyncTests : IDisposable
             new() { Name = "Test2", Value = 200 },
             new() { Name = "Test3", Value = 300 }
         };
-        await _connection.BulkInsertAsync(entities);
+        await connection.BulkInsertAsync(entities);
 
         // Get inserted entities with their IDs
-        var inserted = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+        var inserted = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
 
         // Update values
         foreach (var entity in inserted)
@@ -173,36 +184,44 @@ public class BulkOperationsAsyncTests : IDisposable
             entity.Value *= 2;
         }
 
-        int updated = await _connection.BulkUpdateAsync(inserted);
+        int updated = await connection.BulkUpdateAsync(inserted);
 
         Assert.Equal(3, updated);
 
         // Verify updates
-        var results = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test ORDER BY id");
+        var results = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test ORDER BY id");
         Assert.Equal(200, results[0].Value);
         Assert.Equal(400, results[1].Value);
         Assert.Equal(600, results[2].Value);
     }
 
-    [Fact]
-    public async Task BulkUpdateAsync_EmptyCollection_ReturnsZero()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkUpdateAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var entities = new List<BulkTestEntity>();
 
-        int updated = await _connection.BulkUpdateAsync(entities);
+        int updated = await connection.BulkUpdateAsync(entities);
 
         Assert.Equal(0, updated);
     }
 
-    [Fact]
-    public async Task BulkUpdateAsync_NonExistentEntity_ReturnsZeroForThatRow()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkUpdateAsync_NonExistentEntity_ReturnsZeroForThatRow(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         // Insert one entity
         var entities = new List<BulkTestEntity>
         {
             new() { Name = "Test1", Value = 100 }
         };
-        await _connection.BulkInsertAsync(entities);
+        await connection.BulkInsertAsync(entities);
 
         // Try to update a non-existent entity
         var toUpdate = new List<BulkTestEntity>
@@ -210,57 +229,65 @@ public class BulkOperationsAsyncTests : IDisposable
             new() { Id = 999, Name = "NonExistent", Value = 999 }
         };
 
-        int updated = await _connection.BulkUpdateAsync(toUpdate);
+        int updated = await connection.BulkUpdateAsync(toUpdate);
 
         Assert.Equal(0, updated);
     }
 
-    [Fact]
-    public async Task BulkUpdateIgnoreConstraintsAsync_UpdatesMultipleEntities()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkUpdateIgnoreConstraintsAsync_UpdatesMultipleEntities(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         // Insert initial data
         var entities = new List<BulkTestEntity>
         {
             new() { Name = "Test1", Value = 100 },
             new() { Name = "Test2", Value = 200 }
         };
-        await _connection.BulkInsertAsync(entities);
+        await connection.BulkInsertAsync(entities);
 
         // Get inserted entities and update them
-        var inserted = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+        var inserted = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
         foreach (var entity in inserted)
         {
             entity.Name = "Updated" + entity.Id;
         }
 
-        int updated = await _connection.BulkUpdateIgnoreConstraintsAsync(inserted);
+        int updated = await connection.BulkUpdateIgnoreConstraintsAsync(inserted);
 
         Assert.Equal(2, updated);
     }
 
-    [Fact]
-    public async Task BulkUpdateIgnoreConstraintsAsync_WithOptions_UpdatesEntities()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkUpdateIgnoreConstraintsAsync_WithOptions_UpdatesEntities(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var entities = new List<BulkTestEntity>
         {
             new() { Name = "Test1", Value = 100 },
             new() { Name = "Test2", Value = 200 }
         };
-        await _connection.BulkInsertAsync(entities);
+        await connection.BulkInsertAsync(entities);
 
-        var inserted = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+        var inserted = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
         foreach (var entity in inserted)
         {
             entity.Value *= 10;
         }
 
-        using var transaction = _connection.BeginTransaction();
-        int updated = await _connection.BulkUpdateIgnoreConstraintsAsync(inserted, CommandOptions.WithTransaction(transaction));
+        using var transaction = connection.BeginTransaction();
+        int updated = await connection.BulkUpdateIgnoreConstraintsAsync(inserted, CommandOptions.WithTransaction(transaction));
         transaction.Commit();
 
         Assert.Equal(2, updated);
 
-        var results = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test ORDER BY id");
+        var results = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test ORDER BY id");
         Assert.Equal(1000, results[0].Value);
         Assert.Equal(2000, results[1].Value);
     }
@@ -269,9 +296,13 @@ public class BulkOperationsAsyncTests : IDisposable
 
     #region BulkDeleteAsync Tests
 
-    [Fact]
-    public async Task BulkDeleteAsync_DeletesMultipleEntities()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkDeleteAsync_DeletesMultipleEntities(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         // Insert initial data
         var entities = new List<BulkTestEntity>
         {
@@ -279,31 +310,39 @@ public class BulkOperationsAsyncTests : IDisposable
             new() { Name = "Test2", Value = 200 },
             new() { Name = "Test3", Value = 300 }
         };
-        await _connection.BulkInsertAsync(entities);
-        Assert.Equal(3, GetRowCount());
+        await connection.BulkInsertAsync(entities);
+        Assert.Equal(3, GetRowCount(connection));
 
         // Get entities to delete
-        var toDelete = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+        var toDelete = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
 
-        int deleted = await _connection.BulkDeleteAsync(toDelete);
+        int deleted = await connection.BulkDeleteAsync(toDelete);
 
         Assert.Equal(3, deleted);
-        Assert.Equal(0, GetRowCount());
+        Assert.Equal(0, GetRowCount(connection));
     }
 
-    [Fact]
-    public async Task BulkDeleteAsync_EmptyCollection_ReturnsZero()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkDeleteAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var entities = new List<BulkTestEntity>();
 
-        int deleted = await _connection.BulkDeleteAsync(entities);
+        int deleted = await connection.BulkDeleteAsync(entities);
 
         Assert.Equal(0, deleted);
     }
 
-    [Fact]
-    public async Task BulkDeleteAsync_PartialDelete_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkDeleteAsync_PartialDelete_Works(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         // Insert initial data
         var entities = new List<BulkTestEntity>
         {
@@ -311,71 +350,84 @@ public class BulkOperationsAsyncTests : IDisposable
             new() { Name = "Test2", Value = 200 },
             new() { Name = "Test3", Value = 300 }
         };
-        await _connection.BulkInsertAsync(entities);
+        await connection.BulkInsertAsync(entities);
 
         // Delete only some entities
-        var all = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test ORDER BY id");
+        var all = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test ORDER BY id");
         var toDelete = all.Take(2).ToList();
 
-        int deleted = await _connection.BulkDeleteAsync(toDelete);
+        int deleted = await connection.BulkDeleteAsync(toDelete);
 
         Assert.Equal(2, deleted);
-        Assert.Equal(1, GetRowCount());
+        Assert.Equal(1, GetRowCount(connection));
     }
 
-    [Fact]
-    public async Task BulkDeleteAsync_NonExistentEntity_ReturnsZeroForThatRow()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkDeleteAsync_NonExistentEntity_ReturnsZeroForThatRow(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var toDelete = new List<BulkTestEntity>
         {
             new() { Id = 999, Name = "NonExistent", Value = 999 }
         };
 
-        int deleted = await _connection.BulkDeleteAsync(toDelete);
+        int deleted = await connection.BulkDeleteAsync(toDelete);
 
         Assert.Equal(0, deleted);
     }
 
-    [Fact]
-    public async Task BulkDeleteIgnoreConstraintsAsync_DeletesMultipleEntities()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkDeleteIgnoreConstraintsAsync_DeletesMultipleEntities(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         // Insert initial data
         var entities = new List<BulkTestEntity>
         {
             new() { Name = "Test1", Value = 100 },
             new() { Name = "Test2", Value = 200 }
         };
-        await _connection.BulkInsertAsync(entities);
+        await connection.BulkInsertAsync(entities);
 
-        var toDelete = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+        var toDelete = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
 
-        int deleted = await _connection.BulkDeleteIgnoreConstraintsAsync(toDelete);
+        int deleted = await connection.BulkDeleteIgnoreConstraintsAsync(toDelete);
 
         Assert.Equal(2, deleted);
-        Assert.Equal(0, GetRowCount());
+        Assert.Equal(0, GetRowCount(connection));
     }
 
-    [Fact]
-    public async Task BulkDeleteIgnoreConstraintsAsync_WithOptions_DeletesEntities()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkDeleteIgnoreConstraintsAsync_WithOptions_DeletesEntities(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
         var entities = new List<BulkTestEntity>
         {
             new() { Name = "Test1", Value = 100 },
             new() { Name = "Test2", Value = 200 }
         };
-        await _connection.BulkInsertAsync(entities);
+        await connection.BulkInsertAsync(entities);
 
-        var toDelete = _connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+        var toDelete = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
 
-        using var transaction = _connection.BeginTransaction();
-        int deleted = await _connection.BulkDeleteIgnoreConstraintsAsync(toDelete, CommandOptions.WithTransaction(transaction));
+        using var transaction = connection.BeginTransaction();
+        int deleted = await connection.BulkDeleteIgnoreConstraintsAsync(toDelete, CommandOptions.WithTransaction(transaction));
         transaction.Commit();
 
         Assert.Equal(2, deleted);
-        Assert.Equal(0, GetRowCount());
+        Assert.Equal(0, GetRowCount(connection));
     }
 
     #endregion
 }
+
 
 

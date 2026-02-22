@@ -1,159 +1,147 @@
 using System.Data;
-using System.Data.SQLite;
 
 using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
-public class DeleteTests : IDisposable
+public class DeleteTests : IClassFixture<WriteDialectFixture>
 {
-    private readonly SQLiteConnection _connection;
-    private bool _disposed;
+    private readonly WriteDialectFixture _fixture;
 
-    public DeleteTests()
+    public DeleteTests(WriteDialectFixture fixture)
     {
-        _connection = new SQLiteConnection("Data Source=:memory:");
-        _connection.Open();
-        CreateTestTable();
+        _fixture = fixture;
     }
 
-    public void Dispose()
-    {
-        if (_disposed) return;
-        _connection?.Dispose();
-        _disposed = true;
-        GC.SuppressFinalize(this);
-    }
-
-    private void CreateTestTable()
-    {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = @"
-            CREATE TABLE bulk_test (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                value INTEGER NOT NULL
-            )";
-        cmd.ExecuteNonQuery();
-    }
-
-    private BulkTestEntity InsertTestEntity(string name, int value)
+    private static BulkTestEntity InsertTestEntity(IDbConnection connection, string name, int value)
     {
         var entity = new BulkTestEntity { Name = name, Value = value };
-        entity.Id = _connection.Insert(entity);
+        entity.Id = connection.Insert(entity);
         return entity;
     }
 
-    private int GetRowCount()
+    private static int GetRowCount(IDbConnection connection)
     {
-        using var cmd = _connection.CreateCommand();
+        using var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT COUNT(*) FROM bulk_test";
         return Convert.ToInt32(cmd.ExecuteScalar());
     }
 
-    #region Delete By Entity
-
-    [Fact]
-    public void Delete_ExistingEntity_ReturnsRowsAffected()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Delete_ExistingEntity_ReturnsRowsAffected(DialectInfo dialect)
     {
-        var entity = InsertTestEntity("Test1", 100);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var entity = InsertTestEntity(ctx.Connection, "Test1", 100);
 
-        int rows = _connection.Delete(entity);
+        int rows = ctx.Connection.Delete(entity);
 
         Assert.Equal(1, rows);
-        Assert.Equal(0, GetRowCount());
+        Assert.Equal(0, GetRowCount(ctx.Connection));
     }
 
-    [Fact]
-    public void Delete_NonExistingEntity_ReturnsZero()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Delete_NonExistingEntity_ReturnsZero(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
         var entity = new BulkTestEntity { Id = 99999, Name = "DoesNotExist", Value = 0 };
 
-        int rows = _connection.Delete(entity);
+        int rows = ctx.Connection.Delete(entity);
 
         Assert.Equal(0, rows);
     }
 
-    [Fact]
-    public void Delete_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Delete_WithCommandOptions_Works(DialectInfo dialect)
     {
-        var entity = InsertTestEntity("Test1", 100);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var entity = InsertTestEntity(ctx.Connection, "Test1", 100);
 
-        using var transaction = _connection.BeginTransaction();
-        int rows = _connection.Delete(entity, CommandOptions.WithTransaction(transaction));
+        using var transaction = ctx.Connection.BeginTransaction();
+        int rows = ctx.Connection.Delete(entity, CommandOptions.WithTransaction(transaction));
         transaction.Commit();
 
         Assert.Equal(1, rows);
-        Assert.Equal(0, GetRowCount());
+        Assert.Equal(0, GetRowCount(ctx.Connection));
     }
 
-    [Fact]
-    public void Delete_WithTransaction_RollbackKeepsEntity()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Delete_WithTransaction_RollbackKeepsEntity(DialectInfo dialect)
     {
-        var entity = InsertTestEntity("Test1", 100);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var entity = InsertTestEntity(ctx.Connection, "Test1", 100);
 
-        using var transaction = _connection.BeginTransaction();
-        _connection.Delete(entity, CommandOptions.WithTransaction(transaction));
+        using var transaction = ctx.Connection.BeginTransaction();
+        ctx.Connection.Delete(entity, CommandOptions.WithTransaction(transaction));
         transaction.Rollback();
 
-        Assert.Equal(1, GetRowCount());
+        Assert.Equal(1, GetRowCount(ctx.Connection));
     }
 
-    #endregion
-
-    #region Delete By ID (object)
-
-    [Fact]
-    public void DeleteById_ExistingId_ReturnsRowsAffected()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void DeleteById_ExistingId_ReturnsRowsAffected(DialectInfo dialect)
     {
-        var entity = InsertTestEntity("Test1", 100);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var entity = InsertTestEntity(ctx.Connection, "Test1", 100);
 
-        int rows = _connection.Delete<BulkTestEntity>((object)entity.Id);
+        int rows = ctx.Connection.Delete<BulkTestEntity>((object)entity.Id);
 
         Assert.Equal(1, rows);
-        Assert.Equal(0, GetRowCount());
+        Assert.Equal(0, GetRowCount(ctx.Connection));
     }
 
-    [Fact]
-    public void DeleteById_NonExistingId_ReturnsZero()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void DeleteById_NonExistingId_ReturnsZero(DialectInfo dialect)
     {
-        int rows = _connection.Delete<BulkTestEntity>((object)99999L);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        int rows = ctx.Connection.Delete<BulkTestEntity>((object)99999L);
 
         Assert.Equal(0, rows);
     }
 
-    [Fact]
-    public void DeleteById_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void DeleteById_WithCommandOptions_Works(DialectInfo dialect)
     {
-        var entity = InsertTestEntity("Test1", 100);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var entity = InsertTestEntity(ctx.Connection, "Test1", 100);
 
-        using var transaction = _connection.BeginTransaction();
-        int rows = _connection.Delete<BulkTestEntity>((object)entity.Id, CommandOptions.WithTransaction(transaction));
+        using var transaction = ctx.Connection.BeginTransaction();
+        int rows = ctx.Connection.Delete<BulkTestEntity>((object)entity.Id, CommandOptions.WithTransaction(transaction));
         transaction.Commit();
 
         Assert.Equal(1, rows);
-        Assert.Equal(0, GetRowCount());
+        Assert.Equal(0, GetRowCount(ctx.Connection));
     }
 
-    #endregion
-
-    #region Multiple Deletes
-
-    [Fact]
-    public void Delete_MultipleEntities_DeletesEach()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Delete_MultipleEntities_DeletesEach(DialectInfo dialect)
     {
-        var entity1 = InsertTestEntity("Test1", 100);
-        var entity2 = InsertTestEntity("Test2", 200);
-        var entity3 = InsertTestEntity("Test3", 300);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var entity1 = InsertTestEntity(ctx.Connection, "Test1", 100);
+        var entity2 = InsertTestEntity(ctx.Connection, "Test2", 200);
+        _ = InsertTestEntity(ctx.Connection, "Test3", 300);
 
-        _connection.Delete(entity1);
-        _connection.Delete(entity2);
+        ctx.Connection.Delete(entity1);
+        ctx.Connection.Delete(entity2);
 
-        Assert.Equal(1, GetRowCount());
+        Assert.Equal(1, GetRowCount(ctx.Connection));
     }
-
-    #endregion
 }
-
