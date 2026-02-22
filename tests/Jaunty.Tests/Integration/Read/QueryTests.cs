@@ -181,7 +181,7 @@ public class QueryTests : IClassFixture<DialectFixture>
         using var connection = _fixture.GetConnection(dialect);
 
         var sql = dialect.Provider == DialectProvider.SqlServer
-            ? @"SELECT CustomerId, CompanyName, ContactName, ContactTitle, Address, City, Region, PostalCode, Country, Phone, Fax FROM customers WHERE customer_id = @Id"
+            ? @"SELECT CustomerId, CompanyName, ContactName, ContactTitle, Address, City, Region, PostalCode, Country, Phone, Fax FROM Customers WHERE CustomerId = @Id"
             : @"SELECT customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName, contact_title AS ContactTitle, address AS Address, city AS City, region AS Region, postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax FROM customers WHERE customer_id = @Id";
 
         var customers = connection.Query<Customer>(sql, new { Id = "ALFKI" });
