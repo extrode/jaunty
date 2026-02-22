@@ -7,7 +7,7 @@ namespace Jaunty.Internals.Parameters;
 
 internal static class ParameterBinder
 {
-    private static readonly ConcurrentDictionary<(string, Type), CommandTemplate> TemplateCache = new();
+    private static readonly ConcurrentDictionary<(string Sql, Type ParamType, Type CommandType), CommandTemplate> TemplateCache = new();
 
     internal static void Bind(IDbCommand command, object parameters)
     {
@@ -18,11 +18,12 @@ internal static class ParameterBinder
             return;
         }
 
-        var type = parameters.GetType();
         var sql = command.CommandText;
+        var type = parameters.GetType();
+        var commandType = command.GetType();
 
         // Try get cached template
-        if (TemplateCache.TryGetValue((sql, type), out var template))
+        if (TemplateCache.TryGetValue((sql, type, commandType), out var template))
         {
             template.Bind(command, parameters);
             return;
@@ -40,8 +41,7 @@ internal static class ParameterBinder
         }
 
         // Check for collection parameters and expand SQL if needed
-        var (expandedSql, expandedParams, expandedOriginalNames) = ExpandCollectionParameters(
-            sql, sqlParamNames, propertyLookup, parameters);
+        var (expandedSql, expandedParams, expandedOriginalNames) = ExpandCollectionParameters(sql, sqlParamNames, propertyLookup, parameters);
 
         if (expandedSql is not null)
         {
@@ -53,7 +53,7 @@ internal static class ParameterBinder
 
         // Standard query: build and cache template
         template = BuildTemplate(type, sql, sqlParamNames, propertyLookup, meta);
-        TemplateCache.TryAdd((sql, type), template);
+        TemplateCache.TryAdd((sql, type, commandType), template);
         template.Bind(command, parameters);
     }
 
@@ -181,7 +181,7 @@ internal static class ParameterBinder
         {
             var p = command.CreateParameter();
             p.ParameterName = template.ParameterName;
-            p.DbType = template.DbType;
+            // Intentionally do not copy DbType across providers; let provider infer from value.
             p.Direction = template.Direction;
             return p;
         }
