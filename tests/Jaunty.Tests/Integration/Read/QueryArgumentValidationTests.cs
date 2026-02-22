@@ -19,11 +19,10 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void Query_NullConnection_ThrowsArgumentNullException(DialectInfo dialect)
     {
-        using var connection = _fixture.GetConnection(dialect);
-        IDbConnection? connection = null;
+        IDbConnection? nullConnection = null;
 
         var ex = Assert.Throws<ArgumentNullException>(() =>
-            connection!.Query<Category>("SELECT * FROM categories"));
+            nullConnection!.Query<Category>("SELECT * FROM categories"));
 
         Assert.Equal("connection", ex.ParamName);
     }
@@ -69,11 +68,10 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void QueryScalar_NullConnection_ThrowsArgumentNullException(DialectInfo dialect)
     {
-        using var connection = _fixture.GetConnection(dialect);
-        IDbConnection? connection = null;
+        IDbConnection? nullConnection = null;
 
         var ex = Assert.Throws<ArgumentNullException>(() =>
-            connection!.QueryScalar<int>("SELECT 1"));
+            nullConnection!.QueryScalar<int>("SELECT 1"));
 
         Assert.Equal("connection", ex.ParamName);
     }

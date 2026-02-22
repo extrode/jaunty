@@ -196,8 +196,9 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public async Task QueryAsync_TwoEntities_Works()
+    public async Task QueryAsync_TwoEntities_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var results = await connection.QueryAsync<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
@@ -215,8 +216,9 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public async Task QueryFirstAsync_TwoEntities_Works()
+    public async Task QueryFirstAsync_TwoEntities_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var (product, category) = await connection.QueryFirstAsync<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
