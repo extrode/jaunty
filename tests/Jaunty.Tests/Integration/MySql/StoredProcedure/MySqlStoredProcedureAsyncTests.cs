@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.MySql.StoredProcedure;
 
@@ -23,59 +24,74 @@ public class MySqlStoredProcedureAsyncTests : Integration.StoredProcedure.Stored
     protected override string OutputCategoryParamName => "p_CategoryId";
     protected override string OutputCountParamName => "p_ProductCount";
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureAsync_WithResults_ReturnsEntities() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureAsync_WithResults_ReturnsEntities(DialectInfo _) =>
         ExecuteStoredProcedureAsync_WithResults_ReturnsEntities_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults(DialectInfo _) =>
         ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureAsync_WithParametersAndOptions_Works() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureAsync_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedureAsync_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst(DialectInfo _) =>
         ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureFirstAsync_NoResults_Throws() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureFirstAsync_NoResults_Throws(DialectInfo _) =>
         ExecuteStoredProcedureFirstAsync_NoResults_Throws_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureFirstOrDefaultAsync_WithResults_ReturnsFirst() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureFirstOrDefaultAsync_WithResults_ReturnsFirst(DialectInfo _) =>
         ExecuteStoredProcedureFirstOrDefaultAsync_WithResults_ReturnsFirst_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull(DialectInfo _) =>
         ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureScalarAsync_ReturnsScalarValue() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureScalarAsync_ReturnsScalarValue(DialectInfo _) =>
         ExecuteStoredProcedureScalarAsync_ReturnsScalarValue_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue(DialectInfo _) =>
         ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully(DialectInfo _) =>
         ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully_Core();
 
-    [SkipIfNoMySqlFact]
-    public Task ExecuteStoredProcedureNonQueryAsync_WithOutputParameter_ReturnsOutputValue() =>
+    [Theory]
+    [MariaDB]
+    public Task ExecuteStoredProcedureNonQueryAsync_WithOutputParameter_ReturnsOutputValue(DialectInfo _) =>
         ExecuteStoredProcedureNonQueryAsync_WithOutputParameter_ReturnsOutputValue_Core();
 }
+

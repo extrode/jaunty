@@ -1,6 +1,7 @@
 using System.Data;
 using Npgsql;
 using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Postgres.StoredProcedure;
 
@@ -27,59 +28,74 @@ public class PostgresStoredProcedureTests : Integration.StoredProcedure.StoredPr
     protected override string OutputCategoryParamName => "p_category_id";
     protected override string OutputCountParamName => "p_product_count";
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedure_WithResults_ReturnsEntities() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedure_WithResults_ReturnsEntities(DialectInfo _) =>
         ExecuteStoredProcedure_WithResults_ReturnsEntities_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedure_WithParameters_ReturnsFilteredResults() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedure_WithParameters_ReturnsFilteredResults(DialectInfo _) =>
         ExecuteStoredProcedure_WithParameters_ReturnsFilteredResults_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedure_WithParametersAndOptions_Works() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedure_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedure_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedureFirst_WithResults_ReturnsFirst() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedureFirst_WithResults_ReturnsFirst(DialectInfo _) =>
         ExecuteStoredProcedureFirst_WithResults_ReturnsFirst_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedureFirst_WithParametersAndOptions_Works() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedureFirst_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedureFirst_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedureFirst_NoResults_Throws() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedureFirst_NoResults_Throws(DialectInfo _) =>
         ExecuteStoredProcedureFirst_NoResults_Throws_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedureFirstOrDefault_WithResults_ReturnsFirst() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedureFirstOrDefault_WithResults_ReturnsFirst(DialectInfo _) =>
         ExecuteStoredProcedureFirstOrDefault_WithResults_ReturnsFirst_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedureFirstOrDefault_NoResults_ReturnsNull() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedureFirstOrDefault_NoResults_ReturnsNull(DialectInfo _) =>
         ExecuteStoredProcedureFirstOrDefault_NoResults_ReturnsNull_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedureFirstOrDefault_WithParametersAndOptions_Works() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedureFirstOrDefault_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedureFirstOrDefault_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedureScalar_ReturnsScalarValue() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedureScalar_ReturnsScalarValue(DialectInfo _) =>
         ExecuteStoredProcedureScalar_ReturnsScalarValue_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedureScalar_WithParameters_ReturnsValue() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedureScalar_WithParameters_ReturnsValue(DialectInfo _) =>
         ExecuteStoredProcedureScalar_WithParameters_ReturnsValue_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedureScalar_WithParametersAndOptions_Works() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedureScalar_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedureScalar_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedureNonQuery_ExecutesSuccessfully() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedureNonQuery_ExecutesSuccessfully(DialectInfo _) =>
         ExecuteStoredProcedureNonQuery_ExecutesSuccessfully_Core();
 
-    [SkipIfNoPostgresFact]
-    public void ExecuteStoredProcedureNonQuery_WithOutputParameter_ReturnsOutputValue() =>
+    [Theory]
+    [Postgres]
+    public void ExecuteStoredProcedureNonQuery_WithOutputParameter_ReturnsOutputValue(DialectInfo _) =>
         ExecuteStoredProcedureNonQuery_WithOutputParameter_ReturnsOutputValue_Core();
 }
+

@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Threading.Tasks;
 using Npgsql;
 using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Postgres.StoredProcedure;
 
@@ -24,59 +25,74 @@ public class PostgresStoredProcedureAsyncTests : Integration.StoredProcedure.Sto
     protected override string OutputCategoryParamName => "p_category_id";
     protected override string OutputCountParamName => "p_product_count";
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureAsync_WithResults_ReturnsEntities() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureAsync_WithResults_ReturnsEntities(DialectInfo _) =>
         ExecuteStoredProcedureAsync_WithResults_ReturnsEntities_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults(DialectInfo _) =>
         ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureAsync_WithParametersAndOptions_Works() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureAsync_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedureAsync_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst(DialectInfo _) =>
         ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureFirstAsync_NoResults_Throws() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureFirstAsync_NoResults_Throws(DialectInfo _) =>
         ExecuteStoredProcedureFirstAsync_NoResults_Throws_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureFirstOrDefaultAsync_WithResults_ReturnsFirst() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureFirstOrDefaultAsync_WithResults_ReturnsFirst(DialectInfo _) =>
         ExecuteStoredProcedureFirstOrDefaultAsync_WithResults_ReturnsFirst_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull(DialectInfo _) =>
         ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureScalarAsync_ReturnsScalarValue() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureScalarAsync_ReturnsScalarValue(DialectInfo _) =>
         ExecuteStoredProcedureScalarAsync_ReturnsScalarValue_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue(DialectInfo _) =>
         ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works(DialectInfo _) =>
         ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully(DialectInfo _) =>
         ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully_Core();
 
-    [SkipIfNoPostgresFact]
-    public Task ExecuteStoredProcedureNonQueryAsync_WithOutputParameter_ReturnsOutputValue() =>
+    [Theory]
+    [Postgres]
+    public Task ExecuteStoredProcedureNonQueryAsync_WithOutputParameter_ReturnsOutputValue(DialectInfo _) =>
         ExecuteStoredProcedureNonQueryAsync_WithOutputParameter_ReturnsOutputValue_Core();
 }
+
