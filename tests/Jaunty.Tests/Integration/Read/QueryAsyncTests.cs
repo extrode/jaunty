@@ -22,7 +22,7 @@ public class QueryAsyncTests : IClassFixture<DialectFixture>
         using var connection = _fixture.GetDbConnection(dialect);
 
         var categories = await connection.QueryAsync<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories");
+            dialect.NormalizeSql("SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories"));
 
         Assert.NotEmpty(categories);
         Assert.All(categories, c => Assert.False(string.IsNullOrEmpty(c.CategoryName)));
@@ -37,7 +37,7 @@ public class QueryAsyncTests : IClassFixture<DialectFixture>
         using var connection = _fixture.GetDbConnection(dialect);
 
         var categories = await connection.QueryAsync<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @CategoryId",
+            dialect.NormalizeSql("SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @CategoryId"),
             new { CategoryId = 1 });
 
         Assert.Single(categories);
@@ -53,7 +53,7 @@ public class QueryAsyncTests : IClassFixture<DialectFixture>
         using var connection = _fixture.GetDbConnection(dialect);
 
         var categories = await connection.QueryAsync<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id", new { Id = -999 });
+            dialect.NormalizeSql("SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id"), new { Id = -999 });
 
         Assert.Empty(categories);
     }
@@ -68,7 +68,7 @@ public class QueryAsyncTests : IClassFixture<DialectFixture>
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await connection.QueryAsync<Category>(
-                "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories"));
+                dialect.NormalizeSql("SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories")));
 
         Assert.Contains("Description", ex.Message);
         Assert.Contains("Strict mapping failed", ex.Message);
@@ -84,7 +84,7 @@ public class QueryAsyncTests : IClassFixture<DialectFixture>
         using var cts = new CancellationTokenSource();
 
         var categories = await connection.QueryAsync<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories",
+            dialect.NormalizeSql("SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories"),
             cts.Token);
 
         Assert.NotEmpty(categories);
