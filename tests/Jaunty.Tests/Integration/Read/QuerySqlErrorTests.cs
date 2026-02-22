@@ -1,41 +1,46 @@
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QuerySqlErrorTests : IDisposable
+public class QuerySqlErrorTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QuerySqlErrorTests()
+    public QuerySqlErrorTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_InvalidSql_ThrowsException(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_InvalidSql_ThrowsException()
-    {
+        using var connection = _fixture.GetConnection(dialect);
         Assert.ThrowsAny<Exception>(() =>
-            _db.Connection.Query<Category>("SELECT * FROM nonexistent_table"));
+            connection.Query<Category>("SELECT * FROM nonexistent_table"));
     }
 
-    [Fact]
-    public void Query_SyntaxError_ThrowsException()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_SyntaxError_ThrowsException(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         Assert.ThrowsAny<Exception>(() =>
-            _db.Connection.Query<Category>("SELEC * FRO categories"));
+            connection.Query<Category>("SELEC * FRO categories"));
     }
 
-    [Fact]
-    public void QueryScalar_InvalidSql_ThrowsException()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryScalar_InvalidSql_ThrowsException(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         Assert.ThrowsAny<Exception>(() =>
-            _db.Connection.QueryScalar<int>("SELECT COUNT(*) FROM nonexistent_table"));
+            connection.QueryScalar<int>("SELECT COUNT(*) FROM nonexistent_table"));
     }
 }
+
+

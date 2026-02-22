@@ -1,13 +1,13 @@
 using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QuerySingleTests : IDisposable
+public class QuerySingleTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
     
     private const string FullProductColumns = @"
         product_id AS ProductId,
@@ -21,21 +21,17 @@ public class QuerySingleTests : IDisposable
         reorder_level AS ReorderLevel,
         discontinued AS Discontinued";
 
-    public QuerySingleTests()
+    public QuerySingleTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QuerySingle_WithSingleResult_ReturnsResult(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void QuerySingle_WithSingleResult_ReturnsResult()
-    {
-var product = _db.Connection.QuerySingle<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+var product = connection.QuerySingle<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 });
 
@@ -44,10 +40,13 @@ var product = _db.Connection.QuerySingle<Product>(
         Assert.NotNull(product.ProductName);
     }
 
-    [Fact]
-    public void QuerySingle_WithParameters_FiltersCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QuerySingle_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
-var product = _db.Connection.QuerySingle<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+var product = connection.QuerySingle<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id AND category_id = @CategoryId",
             new { Id = 1, CategoryId = 1 });
 
@@ -56,32 +55,41 @@ var product = _db.Connection.QuerySingle<Product>(
         Assert.Equal((short?)1, product.CategoryId);
     }
 
-    [Fact]
-    public void QuerySingle_NoResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QuerySingle_NoResults_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.QuerySingle<Product>(
+            connection.QuerySingle<Product>(
                 "SELECT product_id AS ProductId, product_name AS ProductName, unit_price AS UnitPrice FROM products WHERE product_id = @Id",
                 new { Id = -999 }));
 
         Assert.Contains("Sequence contains no elements of type 'Product'", ex.Message);
     }
 
-    [Fact]
-    public void QuerySingle_MultipleResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QuerySingle_MultipleResults_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
 var ex = Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.QuerySingle<Product>(
+            connection.QuerySingle<Product>(
                 $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
                 new { CategoryId = 1 }));
 
         Assert.Contains("Sequence contains more than one element of type 'Product'", ex.Message);
     }
 
-    [Fact]
-    public void QuerySingle_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QuerySingle_WithCommandOptions_Works(DialectInfo dialect)
     {
-var product = _db.Connection.QuerySingle<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+var product = connection.QuerySingle<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             CommandOptions<Product>.WithTimeout(30));
@@ -90,15 +98,19 @@ var product = _db.Connection.QuerySingle<Product>(
         Assert.Equal(1, product.ProductId);
     }
 
-    [Fact]
-    public void QuerySingle_StrictMapping_MissingColumn_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QuerySingle_StrictMapping_MissingColumn_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // Product implements IMapped<Product>, so its ReadEntity mapper runs directly.
         // Missing columns cause GetOrdinal to throw IndexOutOfRangeException.
         Assert.ThrowsAny<Exception>(() =>
-            _db.Connection.QuerySingle<Product>(
+            connection.QuerySingle<Product>(
                 "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
                 new { Id = 1 }));
     }
 }
+
 

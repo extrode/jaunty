@@ -1,30 +1,27 @@
 using Jaunty;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class CollectionParameterTests : IDisposable
+public class CollectionParameterTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public CollectionParameterTests()
+    public CollectionParameterTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WithIntArrayParameter_ReturnsMatchingRows(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_WithIntArrayParameter_ReturnsMatchingRows()
-    {
+        using var connection = _fixture.GetConnection(dialect);
         var productIds = new[] { 1, 2, 3 };
 
-        var products = _db.Connection.QueryPartial<Product>(
+        var products = connection.QueryPartial<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId, " +
             "unit_price AS UnitPrice, discontinued AS Discontinued " +
             "FROM products WHERE product_id IN @ProductIds",
@@ -34,12 +31,15 @@ public class CollectionParameterTests : IDisposable
         Assert.All(products, p => Assert.Contains(p.ProductId, productIds));
     }
 
-    [Fact]
-    public void Query_WithListParameter_ReturnsMatchingRows()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WithListParameter_ReturnsMatchingRows(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var productIds = new List<int> { 1, 2, 3, 4, 5 };
 
-        var products = _db.Connection.QueryPartial<Product>(
+        var products = connection.QueryPartial<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId, " +
             "unit_price AS UnitPrice, discontinued AS Discontinued " +
             "FROM products WHERE product_id IN @ProductIds",
@@ -50,12 +50,15 @@ public class CollectionParameterTests : IDisposable
         Assert.All(products, p => Assert.Contains(p.ProductId, productIds));
     }
 
-    [Fact]
-    public void Query_WithEmptyArray_ReturnsNoRows()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WithEmptyArray_ReturnsNoRows(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var ids = Array.Empty<int>();
 
-        var products = _db.Connection.QueryPartial<Product>(
+        var products = connection.QueryPartial<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId, " +
             "unit_price AS UnitPrice, discontinued AS Discontinued " +
             "FROM products WHERE product_id IN @Ids",
@@ -64,12 +67,15 @@ public class CollectionParameterTests : IDisposable
         Assert.Empty(products);
     }
 
-    [Fact]
-    public void Query_WithSingleItemArray_ReturnsSingleRow()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WithSingleItemArray_ReturnsSingleRow(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var ids = new[] { 1 };
 
-        var products = _db.Connection.QueryPartial<Product>(
+        var products = connection.QueryPartial<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId, " +
             "unit_price AS UnitPrice, discontinued AS Discontinued " +
             "FROM products WHERE product_id IN @Ids",
@@ -79,12 +85,15 @@ public class CollectionParameterTests : IDisposable
         Assert.Equal(1, products[0].ProductId);
     }
 
-    [Fact]
-    public void Query_WithCollectionAndOtherParams_WorksTogether()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WithCollectionAndOtherParams_WorksTogether(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var productIds = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 
-        var products = _db.Connection.QueryPartial<Product>(
+        var products = connection.QueryPartial<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId, " +
             "unit_price AS UnitPrice, discontinued AS Discontinued " +
             "FROM products WHERE product_id IN @ProductIds AND discontinued = @Discontinued",
@@ -98,14 +107,17 @@ public class CollectionParameterTests : IDisposable
         });
     }
 
-    [Fact]
-    public void Query_WithMultipleCollections_WorksTogether()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WithMultipleCollections_WorksTogether(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var productIds1 = new[] { 1, 2, 3, 4, 5 };
         var productIds2 = new[] { 3, 4, 5, 6, 7 };
 
         // Products where product_id is in both lists (intersection)
-        var products = _db.Connection.QueryPartial<Product>(
+        var products = connection.QueryPartial<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId, " +
             "unit_price AS UnitPrice, discontinued AS Discontinued " +
             "FROM products WHERE product_id IN @Ids1 AND product_id IN @Ids2",
@@ -118,24 +130,30 @@ public class CollectionParameterTests : IDisposable
         });
     }
 
-    [Fact]
-    public void QueryScalar_WithCollectionParameter_ReturnsCorrectCount()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryScalar_WithCollectionParameter_ReturnsCorrectCount(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var productIds = new[] { 1, 2, 3 };
 
-        var count = _db.Connection.QueryScalar<long>(
+        var count = connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM products WHERE product_id IN @ProductIds",
             new { ProductIds = productIds });
 
         Assert.True(count > 0);
     }
 
-    [Fact]
-    public void QueryFirst_WithCollectionParameter_ReturnsFirstMatch()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirst_WithCollectionParameter_ReturnsFirstMatch(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var productIds = new[] { 1, 2, 3 };
 
-        var product = _db.Connection.QueryPartialFirst<Product>(
+        var product = connection.QueryPartialFirst<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId, " +
             "unit_price AS UnitPrice, discontinued AS Discontinued " +
             "FROM products WHERE product_id IN @ProductIds ORDER BY product_id",
@@ -144,12 +162,14 @@ public class CollectionParameterTests : IDisposable
         Assert.Contains(product.ProductId, productIds);
     }
 
-    [Fact]
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryAsync_WithCollectionParameter_ReturnsMatchingRows()
     {
         var productIds = new[] { 1, 2, 3 };
 
-        var products = await _db.Connection.QueryPartialAsync<Product>(
+        var products = await connection.QueryPartialAsync<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId, " +
             "unit_price AS UnitPrice, discontinued AS Discontinued " +
             "FROM products WHERE product_id IN @ProductIds",
@@ -159,12 +179,15 @@ public class CollectionParameterTests : IDisposable
         Assert.All(products, p => Assert.Contains(p.ProductId, productIds));
     }
 
-    [Fact]
-    public void QueryStream_WithCollectionParameter_StreamsMatchingRows()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryStream_WithCollectionParameter_StreamsMatchingRows(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var productIds = new[] { 1, 2, 3 };
 
-        var products = _db.Connection.QueryPartialStream<Product>(
+        var products = connection.QueryPartialStream<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId, " +
             "unit_price AS UnitPrice, discontinued AS Discontinued " +
             "FROM products WHERE product_id IN @ProductIds",
@@ -174,13 +197,16 @@ public class CollectionParameterTests : IDisposable
         Assert.All(products, p => Assert.Contains(p.ProductId, productIds));
     }
 
-    [Fact]
-    public void Query_WithLargeCollection_WorksCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WithLargeCollection_WorksCorrectly(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // Test with 50 items to ensure expansion handles larger collections
         var ids = Enumerable.Range(1, 50).ToArray();
 
-        var products = _db.Connection.QueryPartial<Product>(
+        var products = connection.QueryPartial<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId, " +
             "unit_price AS UnitPrice, discontinued AS Discontinued " +
             "FROM products WHERE product_id IN @Ids",
@@ -190,11 +216,14 @@ public class CollectionParameterTests : IDisposable
         Assert.All(products, p => Assert.Contains(p.ProductId, ids));
     }
 
-    [Fact]
-    public void Query_WithStringCollection_WorksCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WithStringCollection_WorksCorrectly(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // First get some actual customer IDs
-        var customerIds = _db.Connection.QueryPartial<Customer>(
+        var customerIds = connection.QueryPartial<Customer>(
             "SELECT customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName, " +
             "city AS City, region AS Region " +
             "FROM customers LIMIT 3")
@@ -204,7 +233,7 @@ public class CollectionParameterTests : IDisposable
         if (customerIds.Length == 0)
             return; // Skip if no customers
 
-        var customers = _db.Connection.QueryPartial<Customer>(
+        var customers = connection.QueryPartial<Customer>(
             "SELECT customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName, " +
             "city AS City, region AS Region " +
             "FROM customers WHERE customer_id IN @CustomerIds",
@@ -214,4 +243,6 @@ public class CollectionParameterTests : IDisposable
         Assert.All(customers, c => Assert.Contains(c.CustomerId, customerIds));
     }
 }
+
+
 

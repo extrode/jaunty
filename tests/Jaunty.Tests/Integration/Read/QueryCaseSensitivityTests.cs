@@ -1,28 +1,25 @@
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryCaseSensitivityTests : IDisposable
+public class QueryCaseSensitivityTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryCaseSensitivityTests()
+    public QueryCaseSensitivityTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_ColumnNameCaseInsensitive_MapsCorrectly(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_ColumnNameCaseInsensitive_MapsCorrectly()
-    {
+        using var connection = _fixture.GetConnection(dialect);
         // Tests case-insensitive matching in MetadataCache
-        var categories = _db.Connection.Query<Category>(
+        var categories = connection.Query<Category>(
             "SELECT category_id AS categoryid, category_name AS categoryname, description AS DESCRIPTION FROM categories WHERE category_id = @Id",
              new { Id = 1 });
 
@@ -30,3 +27,5 @@ public class QueryCaseSensitivityTests : IDisposable
         Assert.False(string.IsNullOrEmpty(categories[0].CategoryName));
     }
 }
+
+

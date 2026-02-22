@@ -224,3 +224,4 @@ public class QueryTests : IClassFixture<DialectFixture>
         Assert.All(summaries, s => Assert.True(s.ProductId > 0));
     }
 }
+

@@ -1,6 +1,6 @@
 using Jaunty;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
@@ -8,9 +8,9 @@ namespace Jaunty.Tests.Integration.Read;
 /// Tests that IMapped&lt;T&gt;.ReadEntity is used as the custom mapper
 /// when querying entities that implement the interface.
 /// </summary>
-public class IMappedTests : IDisposable
+public class IMappedTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
     private static readonly string FullProductColumns =
         "product_id AS ProductId, product_name AS ProductName, " +
@@ -19,21 +19,17 @@ public class IMappedTests : IDisposable
         "units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, " +
         "reorder_level AS ReorderLevel, discontinued AS Discontinued";
 
-    public IMappedTests()
+    public IMappedTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_IMappedEntity_UsesCustomMapper(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_IMappedEntity_UsesCustomMapper()
-    {
-        var products = _db.Connection.Query<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+        var products = connection.Query<Product>(
             $"SELECT {FullProductColumns} FROM products LIMIT 3");
 
         Assert.Equal(3, products.Count);
@@ -44,10 +40,13 @@ public class IMappedTests : IDisposable
         });
     }
 
-    [Fact]
-    public void QueryFirst_IMappedEntity_UsesCustomMapper()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirst_IMappedEntity_UsesCustomMapper(DialectInfo dialect)
     {
-        var product = _db.Connection.QueryFirst<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+        var product = connection.QueryFirst<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 2 });
 
@@ -56,20 +55,26 @@ public class IMappedTests : IDisposable
         Assert.NotNull(product.ProductName);
     }
 
-    [Fact]
-    public void QueryFirstOrDefault_IMappedEntity_UsesCustomMapper()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_IMappedEntity_UsesCustomMapper(DialectInfo dialect)
     {
-        var product = _db.Connection.QueryFirstOrDefault<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+        var product = connection.QueryFirstOrDefault<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = -999 });
 
         Assert.Null(product);
     }
 
-    [Fact]
-    public void QuerySingle_IMappedEntity_UsesCustomMapper()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QuerySingle_IMappedEntity_UsesCustomMapper(DialectInfo dialect)
     {
-        var product = _db.Connection.QuerySingle<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+        var product = connection.QuerySingle<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 2 });
 
@@ -78,10 +83,13 @@ public class IMappedTests : IDisposable
         Assert.NotNull(product.ProductName);
     }
 
-    [Fact]
-    public void QueryStream_IMappedEntity_UsesCustomMapper()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryStream_IMappedEntity_UsesCustomMapper(DialectInfo dialect)
     {
-        var products = _db.Connection.QueryStream<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+        var products = connection.QueryStream<Product>(
             $"SELECT {FullProductColumns} FROM products LIMIT 5").ToList();
 
         Assert.Equal(5, products.Count);
@@ -92,14 +100,18 @@ public class IMappedTests : IDisposable
         });
     }
 
-    [Fact]
-    public void Query_IMappedEntity_IgnoreAttributeWorks()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_IMappedEntity_IgnoreAttributeWorks(DialectInfo dialect)
     {
-        var product = _db.Connection.QueryFirst<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+        var product = connection.QueryFirst<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 2 });
 
         Assert.Equal(product.ProductId, product.Id);
     }
 }
+
 

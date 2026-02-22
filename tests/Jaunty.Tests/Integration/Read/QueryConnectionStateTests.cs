@@ -1,49 +1,51 @@
 using System.Data;
 
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryConnectionStateTests : IDisposable
+public class QueryConnectionStateTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryConnectionStateTests()
+    public QueryConnectionStateTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_ConnectionAlreadyOpen_LeavesOpen(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
+        using var connection = _fixture.GetConnection(dialect);
+        connection.Open();
+        var initialState = connection.State;
 
-    [Fact]
-    public void Query_ConnectionAlreadyOpen_LeavesOpen()
-    {
-        _db.Connection.Open();
-        var initialState = _db.Connection.State;
-
-        var categories = _db.Connection.Query<Category>(
+        var categories = connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories");
 
-        Assert.Equal(initialState, _db.Connection.State);
+        Assert.Equal(initialState, connection.State);
         Assert.NotEmpty(categories);
     }
 
-    [Fact]
-    public void Query_ConnectionClosed_OpensAndCloses()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_ConnectionClosed_OpensAndCloses(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // Connection starts closed
-        Assert.Equal(ConnectionState.Closed, _db.Connection.State);
+        Assert.Equal(ConnectionState.Closed, connection.State);
 
-        var categories = _db.Connection.Query<Category>(
+        var categories = connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories");
 
         // Should be closed again after query
-        Assert.Equal(ConnectionState.Closed, _db.Connection.State);
+        Assert.Equal(ConnectionState.Closed, connection.State);
         Assert.NotEmpty(categories);
     }
 }
+
+
