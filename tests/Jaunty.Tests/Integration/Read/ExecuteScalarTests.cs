@@ -1,55 +1,61 @@
 using Jaunty.Core;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class ExecuteScalarTests : IDisposable
+public class ExecuteScalarTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public ExecuteScalarTests()
+    public ExecuteScalarTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void ExecuteScalar_Count_ReturnsValue(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void ExecuteScalar_Count_ReturnsValue()
-    {
-        var count = _db.Connection.ExecuteScalar<long>("SELECT COUNT(*) FROM products");
+        using var connection = _fixture.GetConnection(dialect);
+        var count = connection.ExecuteScalar<long>("SELECT COUNT(*) FROM products");
 
         Assert.True(count > 0);
     }
 
-    [Fact]
-    public void ExecuteScalar_WithParameters_ReturnsValue()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void ExecuteScalar_WithParameters_ReturnsValue(DialectInfo dialect)
     {
-        var count = _db.Connection.ExecuteScalar<long>(
+        using var connection = _fixture.GetConnection(dialect);
+        var count = connection.ExecuteScalar<long>(
             "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
         Assert.True(count > 0);
     }
 
-    [Fact]
-    public void ExecuteScalar_WithOptionsOnly_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void ExecuteScalar_WithOptionsOnly_Works(DialectInfo dialect)
     {
-        var count = _db.Connection.ExecuteScalar<long>(
+        using var connection = _fixture.GetConnection(dialect);
+        var count = connection.ExecuteScalar<long>(
             "SELECT COUNT(*) FROM products",
             CommandOptions<long>.WithTimeout(30));
 
         Assert.True(count > 0);
     }
 
-    [Fact]
-    public void ExecuteScalar_WithParametersAndOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void ExecuteScalar_WithParametersAndOptions_Works(DialectInfo dialect)
     {
-        var count = _db.Connection.ExecuteScalar<long>(
+        using var connection = _fixture.GetConnection(dialect);
+        var count = connection.ExecuteScalar<long>(
             "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 },
             CommandOptions<long>.WithTimeout(30));
@@ -57,21 +63,29 @@ public class ExecuteScalarTests : IDisposable
         Assert.True(count > 0);
     }
 
-    [Fact]
-    public void ExecuteScalar_StringValue_ReturnsString()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void ExecuteScalar_StringValue_ReturnsString(DialectInfo dialect)
     {
-        var name = _db.Connection.ExecuteScalar<string>(
+        using var connection = _fixture.GetConnection(dialect);
+        var name = connection.ExecuteScalar<string>(
             "SELECT product_name FROM products ORDER BY product_id LIMIT 1");
 
         Assert.False(string.IsNullOrEmpty(name));
     }
 
-    [Fact]
-    public void ExecuteScalar_MaxValue_ReturnsCorrect()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void ExecuteScalar_MaxValue_ReturnsCorrect(DialectInfo dialect)
     {
-        var maxId = _db.Connection.ExecuteScalar<long>("SELECT MAX(product_id) FROM products");
+        using var connection = _fixture.GetConnection(dialect);
+        var maxId = connection.ExecuteScalar<long>("SELECT MAX(product_id) FROM products");
 
         Assert.True(maxId > 0);
     }
 }
+
+
 

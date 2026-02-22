@@ -1,30 +1,24 @@
 #if NET8_0_OR_GREATER
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Streaming;
 
-public class QueryPartialUnbufferedAsyncTests : IDisposable
+public class QueryPartialUnbufferedAsyncTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryPartialUnbufferedAsyncTests()
+    public QueryPartialUnbufferedAsyncTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialUnbufferedAsync_WithResults_YieldsResults()
+[Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialUnbufferedAsync_WithResults_YieldsResults(DialectInfo dialect)
     {
         var count = 0;
-        await foreach (var summary in _db.Connection.QueryPartialUnbufferedAsync<ProductSummary>(
+        await foreach (var summary in _fixture.GetDbConnection(dialect).QueryPartialUnbufferedAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 }))
         {
@@ -36,11 +30,12 @@ public class QueryPartialUnbufferedAsyncTests : IDisposable
         Assert.Equal(5, count);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialUnbufferedAsync_WithoutParameters_YieldsAll()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialUnbufferedAsync_WithoutParameters_YieldsAll(DialectInfo dialect)
     {
         var count = 0;
-        await foreach (var summary in _db.Connection.QueryPartialUnbufferedAsync<ProductSummary>(
+        await foreach (var summary in _fixture.GetDbConnection(dialect).QueryPartialUnbufferedAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 3"))
         {
             Assert.True(summary.ProductId > 0);
@@ -50,11 +45,12 @@ public class QueryPartialUnbufferedAsyncTests : IDisposable
         Assert.Equal(3, count);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialUnbufferedAsync_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialUnbufferedAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
         var count = 0;
-        await foreach (var summary in _db.Connection.QueryPartialUnbufferedAsync<ProductSummary>(
+        await foreach (var summary in _fixture.GetDbConnection(dialect).QueryPartialUnbufferedAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 },
             CommandOptions<ProductSummary>.WithTimeout(30)))
@@ -67,11 +63,12 @@ public class QueryPartialUnbufferedAsyncTests : IDisposable
         Assert.Equal(3, count);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialUnbufferedAsync_WithOptionsOnly_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialUnbufferedAsync_WithOptionsOnly_Works(DialectInfo dialect)
     {
         var count = 0;
-        await foreach (var summary in _db.Connection.QueryPartialUnbufferedAsync<ProductSummary>(
+        await foreach (var summary in _fixture.GetDbConnection(dialect).QueryPartialUnbufferedAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 3",
             CommandOptions<ProductSummary>.WithTimeout(30)))
         {
@@ -81,11 +78,12 @@ public class QueryPartialUnbufferedAsyncTests : IDisposable
         Assert.Equal(3, count);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialUnbufferedAsync_EmptyResult_YieldsNothing()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialUnbufferedAsync_EmptyResult_YieldsNothing(DialectInfo dialect)
     {
         var count = 0;
-        await foreach (var _ in _db.Connection.QueryPartialUnbufferedAsync<ProductSummary>(
+        await foreach (var _ in _fixture.GetDbConnection(dialect).QueryPartialUnbufferedAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
             new { Id = -999 }))
         {
@@ -96,4 +94,6 @@ public class QueryPartialUnbufferedAsyncTests : IDisposable
     }
 }
 #endif
+
+
 

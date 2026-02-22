@@ -1,27 +1,24 @@
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryNullHandlingTests : IDisposable
+public class QueryNullHandlingTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryNullHandlingTests()
+    public QueryNullHandlingTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_NullablePropertyWithNullValue_SetsToNull(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_NullablePropertyWithNullValue_SetsToNull()
-    {
-        var customers = _db.Connection.Query<Customer>(
+        using var connection = _fixture.GetConnection(dialect);
+        var customers = connection.Query<Customer>(
             @"SELECT customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName,
               contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
               postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
@@ -31,11 +28,14 @@ public class QueryNullHandlingTests : IDisposable
         Assert.Null(customers[0].Region);
     }
 
-    [Fact]
-    public void Query_NullableIntWithNullValue_SetsToNull()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_NullableIntWithNullValue_SetsToNull(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // Products with null supplier_id
-        var products = _db.Connection.QueryPartial<Product>(
+        var products = connection.QueryPartial<Product>(
             @"SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId,
               category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice,
               units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel,
@@ -46,4 +46,6 @@ public class QueryNullHandlingTests : IDisposable
         Assert.NotNull(products);
     }
 }
+
+
 

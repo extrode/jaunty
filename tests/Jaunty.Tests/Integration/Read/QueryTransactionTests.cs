@@ -1,31 +1,28 @@
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryTransactionTests : IDisposable
+public class QueryTransactionTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryTransactionTests()
+    public QueryTransactionTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WithTransaction_ExecutesCorrectly(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
+        using var connection = _fixture.GetConnection(dialect);
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
 
-    [Fact]
-    public void Query_WithTransaction_ExecutesCorrectly()
-    {
-        _db.Connection.Open();
-        using var transaction = _db.Connection.BeginTransaction();
-
-        var categories = _db.Connection.Query(
+        var categories = connection.Query(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories",
             new CommandOptions<Category>(transaction: transaction));
 
@@ -33,13 +30,16 @@ public class QueryTransactionTests : IDisposable
         transaction.Rollback();
     }
 
-    [Fact]
-    public void QueryScalar_WithTransaction_ExecutesCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryScalar_WithTransaction_ExecutesCorrectly(DialectInfo dialect)
     {
-        _db.Connection.Open();
-        using var transaction = _db.Connection.BeginTransaction();
+        using var connection = _fixture.GetConnection(dialect);
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
 
-        var count = _db.Connection.QueryScalar<long>(
+        var count = connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM products",
             new CommandOptions(transaction));
 
@@ -47,4 +47,6 @@ public class QueryTransactionTests : IDisposable
         transaction.Rollback();
     }
 }
+
+
 

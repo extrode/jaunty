@@ -1,27 +1,24 @@
 using Jaunty;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryKeyValuePairTests : IDisposable
+public class QueryKeyValuePairTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryKeyValuePairTests()
+    public QueryKeyValuePairTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_KeyValuePair_IntInt_ReturnsPairs(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_KeyValuePair_IntInt_ReturnsPairs()
-    {
-        var results = _db.Connection.Query<KeyValuePair<int, int>>(
+        using var connection = _fixture.GetConnection(dialect);
+        var results = connection.Query<KeyValuePair<int, int>>(
             "SELECT product_id, category_id FROM products LIMIT 5");
 
         Assert.Equal(5, results.Count);
@@ -32,10 +29,13 @@ public class QueryKeyValuePairTests : IDisposable
         });
     }
 
-    [Fact]
-    public void Query_KeyValuePair_IntString_ReturnsPairs()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_KeyValuePair_IntString_ReturnsPairs(DialectInfo dialect)
     {
-        var results = _db.Connection.Query<KeyValuePair<int, string>>(
+        using var connection = _fixture.GetConnection(dialect);
+        var results = connection.Query<KeyValuePair<int, string>>(
             "SELECT product_id, product_name FROM products LIMIT 3");
 
         Assert.Equal(3, results.Count);
@@ -46,10 +46,13 @@ public class QueryKeyValuePairTests : IDisposable
         });
     }
 
-    [Fact]
-    public void Query_KeyValuePair_StringString_ReturnsPairs()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_KeyValuePair_StringString_ReturnsPairs(DialectInfo dialect)
     {
-        var results = _db.Connection.Query<KeyValuePair<string, string>>(
+        using var connection = _fixture.GetConnection(dialect);
+        var results = connection.Query<KeyValuePair<string, string>>(
             "SELECT customer_id, company_name FROM customers LIMIT 3");
 
         Assert.Equal(3, results.Count);
@@ -60,20 +63,26 @@ public class QueryKeyValuePairTests : IDisposable
         });
     }
 
-    [Fact]
-    public void QueryFirst_KeyValuePair_ReturnsFirstPair()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirst_KeyValuePair_ReturnsFirstPair(DialectInfo dialect)
     {
-        var result = _db.Connection.QueryFirst<KeyValuePair<int, string>>(
+        using var connection = _fixture.GetConnection(dialect);
+        var result = connection.QueryFirst<KeyValuePair<int, string>>(
             "SELECT product_id, product_name FROM products ORDER BY product_id");
 
         Assert.Equal(1, result.Key);
         Assert.NotNull(result.Value);
     }
 
-    [Fact]
-    public void Query_KeyValuePair_WithParameters_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_KeyValuePair_WithParameters_Works(DialectInfo dialect)
     {
-        var results = _db.Connection.Query<KeyValuePair<int, string>>(
+        using var connection = _fixture.GetConnection(dialect);
+        var results = connection.Query<KeyValuePair<int, string>>(
             "SELECT product_id, product_name FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
@@ -85,29 +94,37 @@ public class QueryKeyValuePairTests : IDisposable
         });
     }
 
-    [Fact]
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryAsync_KeyValuePair_Works()
     {
-        var results = await _db.Connection.QueryAsync<KeyValuePair<int, string>>(
+        var results = await connection.QueryAsync<KeyValuePair<int, string>>(
             "SELECT product_id, product_name FROM products LIMIT 3");
 
         Assert.Equal(3, results.Count);
     }
 
-    [Fact]
-    public void QueryStream_KeyValuePair_Streams()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryStream_KeyValuePair_Streams(DialectInfo dialect)
     {
-        var results = _db.Connection.QueryStream<KeyValuePair<int, string>>(
+        using var connection = _fixture.GetConnection(dialect);
+        var results = connection.QueryStream<KeyValuePair<int, string>>(
             "SELECT product_id, product_name FROM products LIMIT 5").ToList();
 
         Assert.Equal(5, results.Count);
     }
 
-    [Fact]
-    public void Query_KeyValuePair_AggregateQuery()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_KeyValuePair_AggregateQuery(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // Get count per category
-        var results = _db.Connection.Query<KeyValuePair<int, long>>(
+        var results = connection.Query<KeyValuePair<int, long>>(
             @"SELECT category_id, COUNT(*) AS product_count
               FROM products
               GROUP BY category_id
@@ -121,25 +138,33 @@ public class QueryKeyValuePairTests : IDisposable
         });
     }
 
-    [Fact]
-    public void Query_KeyValuePair_TooFewColumns_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_KeyValuePair_TooFewColumns_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.Query<KeyValuePair<int, string>>(
+            connection.Query<KeyValuePair<int, string>>(
                 "SELECT product_id FROM products LIMIT 1"));
 
         Assert.Contains("at least 2 columns", ex.Message);
     }
 
-    [Fact]
-    public void Query_KeyValuePair_HandlesNullValue()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_KeyValuePair_HandlesNullValue(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // Get a supplier with NULL region
-        var result = _db.Connection.QueryFirst<KeyValuePair<int, string?>>(
+        var result = connection.QueryFirst<KeyValuePair<int, string?>>(
             @"SELECT supplier_id, region FROM suppliers WHERE region IS NULL LIMIT 1");
 
         Assert.True(result.Key > 0);
         Assert.Null(result.Value);
     }
 }
+
+
 

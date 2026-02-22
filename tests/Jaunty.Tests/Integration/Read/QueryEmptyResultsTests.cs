@@ -1,38 +1,38 @@
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryEmptyResultsTests : IDisposable
+public class QueryEmptyResultsTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryEmptyResultsTests()
+    public QueryEmptyResultsTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_NoMatchingRows_ReturnsEmptyList(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_NoMatchingRows_ReturnsEmptyList()
-    {
-        var results = _db.Connection.Query<Category>(
+        using var connection = _fixture.GetConnection(dialect);
+        var results = connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { @id = -99999 });
 
         Assert.Empty(results);
     }
 
-    [Fact]
-    public void Query_EmptyTable_ReturnsEmptyList()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_EmptyTable_ReturnsEmptyList(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // customer_customer_demo is typically empty in Northwind
-        var results = _db.Connection.Query<CustomerCustomerDemo>(
+        var results = connection.Query<CustomerCustomerDemo>(
             "SELECT customer_id AS CustomerId, customer_type_id AS CustomerTypeId FROM customer_customer_demo");
 
         Assert.Empty(results);
@@ -44,3 +44,5 @@ public class QueryEmptyResultsTests : IDisposable
         public string CustomerTypeId { get; set; } = string.Empty;
     }
 }
+
+

@@ -1,29 +1,23 @@
 using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Multiple;
 
-public class QueryMultipleAsyncTests : IDisposable
+public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryMultipleAsyncTests()
+    public QueryMultipleAsyncTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    public async Task QueryMultipleAsync_ReturnsMultipleResultSets(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [SkipSQLiteAsyncFact]
-    public async Task QueryMultipleAsync_ReturnsMultipleResultSets()
-    {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 2; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 3");
 
         var categories = (await gridReader.ReadAsync<Category>()).ToList();
@@ -35,10 +29,11 @@ public class QueryMultipleAsyncTests : IDisposable
         Assert.All(products, p => Assert.NotNull(p.ProductName));
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryMultipleAsync_WithParameters_FiltersCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryMultipleAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @CategoryId; SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
@@ -50,10 +45,11 @@ public class QueryMultipleAsyncTests : IDisposable
         Assert.All(products, p => Assert.Equal(1, p.CategoryId));
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryMultipleAsync_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryMultipleAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT COUNT(*) FROM categories; SELECT COUNT(*) FROM products",
             CommandOptions.WithTimeout(30));
 
@@ -64,12 +60,13 @@ public class QueryMultipleAsyncTests : IDisposable
         Assert.True(productCount > 0);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryMultipleAsync_WithCancellationToken_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryMultipleAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var cts = new CancellationTokenSource();
         
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 1",
             cancellationToken: cts.Token);
 
@@ -80,15 +77,16 @@ public class QueryMultipleAsyncTests : IDisposable
         Assert.Single(products);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryMultipleAsync_WithTransaction_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryMultipleAsync_WithTransaction_Works(DialectInfo dialect)
     {
-        _db.Connection.Open();
-        using var transaction = _db.Connection.BeginTransaction();
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var transaction = connection.BeginTransaction();
 
         try
         {
-            using var gridReader = await _db.Connection.QueryMultipleAsync(
+            using var gridReader = await connection.QueryMultipleAsync(
                 "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 1",
                 CommandOptions.WithTransaction(transaction));
 
@@ -104,10 +102,11 @@ public class QueryMultipleAsyncTests : IDisposable
         }
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryMultipleAsync_PartialRead_DoesNotThrow()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryMultipleAsync_PartialRead_DoesNotThrow(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 1");
 
         // Only read first result set, not second
@@ -117,10 +116,11 @@ public class QueryMultipleAsyncTests : IDisposable
         // Second result set is automatically disposed when GridReader is disposed
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryMultipleAsync_ReadScalar_WithParameters_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryMultipleAsync_ReadScalar_WithParameters_Works(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT COUNT(*) FROM categories; SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
@@ -131,4 +131,6 @@ public class QueryMultipleAsyncTests : IDisposable
         Assert.True(productCount > 0);
     }
 }
+
+
 

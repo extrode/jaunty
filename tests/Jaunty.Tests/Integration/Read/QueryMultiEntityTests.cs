@@ -1,6 +1,6 @@
 using Jaunty;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
@@ -8,26 +8,23 @@ namespace Jaunty.Tests.Integration.Read;
 /// Tests for multi-entity mapping (Query&lt;T1, T2&gt;).
 /// Uses property-name matching instead of Dapper's splitOn approach.
 /// </summary>
-public class QueryMultiEntityTests : IDisposable
+public class QueryMultiEntityTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryMultiEntityTests()
+    public QueryMultiEntityTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_TwoEntities_MapsByPropertyName(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_TwoEntities_MapsByPropertyName()
-    {
+        using var connection = _fixture.GetConnection(dialect);
         // Use explicit aliases to map to each entity's properties
-        var results = _db.Connection.Query<ProductInfo, CategoryInfo>(
+        var results = connection.Query<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -49,10 +46,13 @@ public class QueryMultiEntityTests : IDisposable
         });
     }
 
-    [Fact]
-    public void Query_TwoEntities_WithCombiner_BuildsObjectGraph()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_TwoEntities_WithCombiner_BuildsObjectGraph(DialectInfo dialect)
     {
-        var results = _db.Connection.Query<ProductInfo, CategoryInfo, ProductInfo>(
+        using var connection = _fixture.GetConnection(dialect);
+        var results = connection.Query<ProductInfo, CategoryInfo, ProductInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -76,10 +76,13 @@ public class QueryMultiEntityTests : IDisposable
         });
     }
 
-    [Fact]
-    public void QueryFirst_TwoEntities_ReturnsFirstRow()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirst_TwoEntities_ReturnsFirstRow(DialectInfo dialect)
     {
-        var (product, category) = _db.Connection.QueryFirst<ProductInfo, CategoryInfo>(
+        using var connection = _fixture.GetConnection(dialect);
+        var (product, category) = connection.QueryFirst<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -93,10 +96,13 @@ public class QueryMultiEntityTests : IDisposable
         Assert.NotNull(category.CategoryName);
     }
 
-    [Fact]
-    public void QueryFirstOrDefault_TwoEntities_ReturnsNullWhenEmpty()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_TwoEntities_ReturnsNullWhenEmpty(DialectInfo dialect)
     {
-        var result = _db.Connection.QueryFirstOrDefault<ProductInfo, CategoryInfo>(
+        using var connection = _fixture.GetConnection(dialect);
+        var result = connection.QueryFirstOrDefault<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -109,10 +115,13 @@ public class QueryMultiEntityTests : IDisposable
         Assert.Null(result);
     }
 
-    [Fact]
-    public void QuerySingle_TwoEntities_ReturnsSingleRow()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QuerySingle_TwoEntities_ReturnsSingleRow(DialectInfo dialect)
     {
-        var (product, category) = _db.Connection.QuerySingle<ProductInfo, CategoryInfo>(
+        using var connection = _fixture.GetConnection(dialect);
+        var (product, category) = connection.QuerySingle<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -126,11 +135,14 @@ public class QueryMultiEntityTests : IDisposable
         Assert.True(category.CategoryId > 0);
     }
 
-    [Fact]
-    public void QuerySingle_TwoEntities_ThrowsWhenMultiple()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QuerySingle_TwoEntities_ThrowsWhenMultiple(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.QuerySingle<ProductInfo, CategoryInfo>(
+            connection.QuerySingle<ProductInfo, CategoryInfo>(
                 @"SELECT
                     p.product_id AS ProductId,
                     p.product_name AS ProductName,
@@ -141,10 +153,13 @@ public class QueryMultiEntityTests : IDisposable
                   LIMIT 5"));
     }
 
-    [Fact]
-    public void QueryStream_TwoEntities_StreamsResults()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryStream_TwoEntities_StreamsResults(DialectInfo dialect)
     {
-        var results = _db.Connection.QueryStream<ProductInfo, CategoryInfo>(
+        using var connection = _fixture.GetConnection(dialect);
+        var results = connection.QueryStream<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -157,10 +172,13 @@ public class QueryMultiEntityTests : IDisposable
         Assert.Equal(5, results.Count);
     }
 
-    [Fact]
-    public void Query_TwoEntities_WithParameters()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_TwoEntities_WithParameters(DialectInfo dialect)
     {
-        var results = _db.Connection.Query<ProductInfo, CategoryInfo>(
+        using var connection = _fixture.GetConnection(dialect);
+        var results = connection.Query<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -175,10 +193,12 @@ public class QueryMultiEntityTests : IDisposable
         Assert.All(results, r => Assert.Equal(1, r.Item2.CategoryId));
     }
 
-    [Fact]
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryAsync_TwoEntities_Works()
     {
-        var results = await _db.Connection.QueryAsync<ProductInfo, CategoryInfo>(
+        var results = await connection.QueryAsync<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -192,10 +212,12 @@ public class QueryMultiEntityTests : IDisposable
         Assert.Equal(3, results.Count);
     }
 
-    [Fact]
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryFirstAsync_TwoEntities_Works()
     {
-        var (product, category) = await _db.Connection.QueryFirstAsync<ProductInfo, CategoryInfo>(
+        var (product, category) = await connection.QueryFirstAsync<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -209,12 +231,15 @@ public class QueryMultiEntityTests : IDisposable
         Assert.Equal(1, product.ProductId);
     }
 
-    [Fact]
-    public void Query_TwoEntities_T1HasPriority_WhenColumnMatchesBoth()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_TwoEntities_T1HasPriority_WhenColumnMatchesBoth(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // Both ProductInfo and CategoryInfo have no common properties in this test,
         // but if they did, T1 would win
-        var results = _db.Connection.Query<ProductInfo, CategoryInfo>(
+        var results = connection.Query<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -227,11 +252,14 @@ public class QueryMultiEntityTests : IDisposable
         Assert.Single(results);
     }
 
-    [Fact]
-    public void Query_TwoEntities_IgnoresUnmatchedColumns()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_TwoEntities_IgnoresUnmatchedColumns(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // Include extra columns that don't match any property - they should be ignored
-        var results = _db.Connection.Query<ProductInfo, CategoryInfo>(
+        var results = connection.Query<ProductInfo, CategoryInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -249,10 +277,13 @@ public class QueryMultiEntityTests : IDisposable
         Assert.True(category.CategoryId > 0);
     }
 
-    [Fact]
-    public void Query_TwoEntities_ThreeTableJoin()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_TwoEntities_ThreeTableJoin(DialectInfo dialect)
     {
-        var results = _db.Connection.Query<ProductInfo, SupplierInfo>(
+        using var connection = _fixture.GetConnection(dialect);
+        var results = connection.Query<ProductInfo, SupplierInfo>(
             @"SELECT
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -292,4 +323,6 @@ public class SupplierInfo
     public int SupplierId { get; set; }
     public string CompanyName { get; set; } = "";
 }
+
+
 
