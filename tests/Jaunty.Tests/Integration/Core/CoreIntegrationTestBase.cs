@@ -20,6 +20,8 @@ public abstract class CoreIntegrationTestBase : IDisposable
 {
     private readonly DbConnection _connection;
 
+    protected DbConnection Connection => _connection;
+
     protected CoreIntegrationTestBase()
     {
         _connection = CreateConnection();
@@ -77,16 +79,14 @@ public abstract class CoreIntegrationTestBase : IDisposable
 
     protected void QueryPartialFirstOrDefault_NoResults_ReturnsNull_Core()
     {
-        const string sql = "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE 1 = 0";
-        var product = _connection.QueryPartialFirstOrDefault<ProductSummary>(sql);
+        var product = _connection.QueryPartialFirstOrDefault<ProductSummary>(SelectEmptyProductSql);
 
         Assert.Null(product);
     }
 
     protected void QueryPartialSingle_WithUniqueResult_ReturnsSingle_Core()
     {
-        const string sql = "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @ProductId";
-        var product = _connection.QueryPartialSingle<ProductSummary>(sql, new { ProductId = 1 });
+        var product = _connection.QueryPartialSingle<ProductSummary>(SelectProductByIdSql, new { ProductId = 1 });
 
         Assert.NotNull(product);
         Assert.Equal(1, product.ProductId);
@@ -153,6 +153,22 @@ public abstract class CoreIntegrationTestBase : IDisposable
         Assert.True(result > 0);
     }
 
+    /// <summary>SQL for selecting a category by ID.</summary>
+    protected virtual string SelectCategoryByIdSql =>
+        "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = 1";
+
+    /// <summary>SQL for selecting category name only.</summary>
+    protected virtual string SelectCategoryNameOnlySql =>
+        "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = 1";
+
+    /// <summary>SQL for selecting empty product result.</summary>
+    protected virtual string SelectEmptyProductSql =>
+        "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE 1 = 0";
+
+    /// <summary>SQL for selecting product by ID.</summary>
+    protected virtual string SelectProductByIdSql =>
+        "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @ProductId";
+
     #endregion
 
     #region Write operations with transaction rollback
@@ -193,7 +209,7 @@ public abstract class CoreIntegrationTestBase : IDisposable
         try
         {
             var category = _connection.QueryPartialFirst<Category>(
-                "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = 1",
+                SelectCategoryByIdSql,
                 options: CommandOptions<Category>.WithTransaction(transaction));
 
             Assert.NotNull(category);
@@ -207,7 +223,7 @@ public abstract class CoreIntegrationTestBase : IDisposable
             Assert.True(result > 0);
 
             var updated = _connection.QueryPartialFirst<Category>(
-                "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = 1",
+                SelectCategoryNameOnlySql,
                 options: CommandOptions<Category>.WithTransaction(transaction));
 
             Assert.Equal("UpdatedCategory", updated.CategoryName);
