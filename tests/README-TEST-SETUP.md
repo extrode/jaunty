@@ -69,20 +69,34 @@ Download and run the Northwind database script for your database server:
 
 ### Step 3: Create Test Stored Procedures
 
-Run the setup script to create required stored procedures:
-
+**For SQL Server:**
 ```bash
-# SQL Server (using sqlcmd)
-sqlcmd -S localhost -d Northwind -i tests/database-setup.sql
-
-# Or in SQL Server Management Studio:
-# Open tests/database-setup.sql and execute
+# In SQL Server Management Studio:
+USE Northwind;
+GO
+-- Run: tests/database-setup.sql
 ```
 
-The script creates these stored procedures:
-- `GetAllProducts()` - Returns all products
-- `GetProductsByCategory(@CategoryId)` - Returns products by category
-- `GetProductCount()` - Returns product count
+**For PostgreSQL:**
+```bash
+# Using psql:
+psql -U postgres -f tests/postgres-setup.sql
+
+# Or in pgAdmin: Run tests/postgres-setup.sql
+```
+
+**For MySQL:**
+```bash
+# Using mysql client:
+mysql -u root -p < tests/mysql-setup.sql
+
+# Or in MySQL Workbench: Run tests/mysql-setup.sql
+```
+
+The scripts create these stored procedures:
+- `GetAllProducts()` / `get_all_products()` - Returns all products
+- `GetProductsByCategory(@CategoryId)` / `get_products_by_category(p_category_id)` - Returns products by category
+- `GetProductCount()` / `get_product_count()` - Returns product count
 - `GetCategoryWithProductCount(@CategoryId, @ProductCount OUTPUT)` - Returns category with output parameter
 
 ### Step 4: Configure Connection Strings
