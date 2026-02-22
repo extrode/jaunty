@@ -59,7 +59,7 @@ public static partial class Jaunty
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
         return QueryStreamCore<T>(connection, sql, null, default, MappingMode.Strict);
     }
@@ -108,7 +108,7 @@ public static partial class Jaunty
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
         return QueryStreamCore<T>(connection, sql, parameters, default, MappingMode.Strict);
     }
@@ -157,7 +157,7 @@ public static partial class Jaunty
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
         return QueryStreamCore<T>(connection, sql, null, options, MappingMode.Strict);
     }
@@ -211,7 +211,7 @@ public static partial class Jaunty
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
         return QueryStreamCore<T>(connection, sql, parameters, options, MappingMode.Strict);
     }

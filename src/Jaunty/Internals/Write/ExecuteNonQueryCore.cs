@@ -16,7 +16,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
 
         bool wasClosed = connection.State == ConnectionState.Closed;
@@ -61,7 +61,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
 
         bool wasClosed = connection.State == ConnectionState.Closed;

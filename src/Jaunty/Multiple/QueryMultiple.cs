@@ -40,7 +40,7 @@ public static partial class Jaunty
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
         return ExecuteQueryMultiple(connection, sql, null, default);
     }
@@ -86,7 +86,7 @@ public static partial class Jaunty
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
         return ExecuteQueryMultiple(connection, sql, parameters, default);
     }
@@ -128,7 +128,7 @@ public static partial class Jaunty
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
         return ExecuteQueryMultiple(connection, sql, null, options);
     }
@@ -175,7 +175,7 @@ public static partial class Jaunty
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
         return ExecuteQueryMultiple(connection, sql, parameters, options);
     }
@@ -214,7 +214,7 @@ public static partial class Jaunty
         ArgumentNullException.ThrowIfNull(reader);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         using var gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
@@ -259,7 +259,7 @@ public static partial class Jaunty
         ArgumentNullException.ThrowIfNull(reader);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         using var gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
