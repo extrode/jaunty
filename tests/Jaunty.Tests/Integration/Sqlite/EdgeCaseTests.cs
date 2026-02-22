@@ -54,7 +54,7 @@ public class EdgeCaseTests : IDisposable
         var ex = Assert.Throws<InvalidOperationException>(() =>
             _db.Connection.Delete<OrderDetail>(new { OrderId = 1, ProductId = 1 }));
 
-        Assert.Contains("composite", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("exactly one primary key", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     #endregion

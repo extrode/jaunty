@@ -32,6 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Jaunty.Fluent\Jaunty.Fluent.csproj" />
     <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" />
+    <ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" />
   </ItemGroup>
 
   <ItemGroup>

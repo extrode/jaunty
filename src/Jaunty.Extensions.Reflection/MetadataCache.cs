@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Jaunty.Configuration;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 
@@ -96,11 +97,17 @@ public static class MetadataCache<
         int count = 0;
         var matchedProperties = new bool[Properties.Length];
 
+        // Build a resolver-aware index if ColumnNameResolver is configured.
+        // This maps resolver(propertyName) -> property index so that
+        // snake_case columns can match PascalCase properties at query time.
+        var resolverIndex = BuildResolverIndex();
+
         for (int i = 0; i < fieldCount; i++)
         {
             string columnName = reader.GetName(i) ?? throw new InvalidOperationException($"Column {i} has no name");
 
-            if (ColumnToIndex.TryGetValue(columnName, out int propIndex))
+            if (ColumnToIndex.TryGetValue(columnName, out int propIndex)
+                || (resolverIndex != null && resolverIndex.TryGetValue(columnName, out propIndex)))
             {
                 if (matchedProperties[propIndex]) continue;
 
@@ -163,6 +170,21 @@ public static class MetadataCache<
         var access = Expression.Property(target, property);
         var box = Expression.Convert(access, typeof(object));
         return Expression.Lambda<Func<T, object?>>(box, target).Compile();
+    }
+
+    private static Dictionary<string, int>? BuildResolverIndex()
+    {
+        var resolver = JauntyConfig.ColumnNameResolver;
+        if (resolver == null) return null;
+
+        var index = new Dictionary<string, int>(Properties.Length, StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < Properties.Length; i++)
+        {
+            string resolved = resolver(Properties[i].Property.Name);
+            if (!string.IsNullOrEmpty(resolved))
+                index[resolved] = i;
+        }
+        return index;
     }
 
     private static bool IsNonNullableType(Type type) => type.IsValueType && Nullable.GetUnderlyingType(type) is null;
