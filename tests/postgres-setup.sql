@@ -1,11 +1,11 @@
 -- PostgreSQL Test Database Setup Script
 -- Run: psql -U postgres -d postgres -f postgres-setup.sql
 
--- Create northwind database if it doesn't exist
-SELECT 'CREATE DATABASE northwind' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'northwind')\gexec
+-- Create Northwind database if it doesn't exist
+SELECT 'CREATE DATABASE Northwind' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'Northwind')\gexec
 
--- Connect to northwind database
-\c northwind
+-- Connect to Northwind database
+\c Northwind
 
 -- Drop existing procedures
 DROP PROCEDURE IF EXISTS get_all_products();
