@@ -128,8 +128,9 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public async Task QueryAsync_DictionaryStringObject_Works()
+    public async Task QueryAsync_DictionaryStringObject_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var results = await connection.QueryAsync<Dictionary<string, object>>(
             "SELECT product_id, product_name FROM products LIMIT 3");
 

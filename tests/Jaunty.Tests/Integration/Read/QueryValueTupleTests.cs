@@ -100,8 +100,9 @@ public class QueryValueTupleTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public async Task QueryAsync_ValueTuple_Works()
+    public async Task QueryAsync_ValueTuple_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var results = await connection.QueryAsync<(int Id, string Name)>(
             "SELECT product_id, product_name FROM products LIMIT 3");
 
