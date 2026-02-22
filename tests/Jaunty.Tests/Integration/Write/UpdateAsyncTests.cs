@@ -1,54 +1,32 @@
 using System.Data;
-using System.Data.SQLite;
+using System.Data.Common;
 
 using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
-public class UpdateAsyncTests : IDisposable
+public class UpdateAsyncTests : IClassFixture<WriteDialectFixture>
 {
-    private readonly SQLiteConnection _connection;
-    private bool _disposed;
+    private readonly WriteDialectFixture _fixture;
 
-    public UpdateAsyncTests()
+    public UpdateAsyncTests(WriteDialectFixture fixture)
     {
-        _connection = new SQLiteConnection("Data Source=:memory:");
-        _connection.Open();
-        CreateTestTable();
+        _fixture = fixture;
     }
 
-    public void Dispose()
-    {
-        if (_disposed) return;
-        _connection?.Dispose();
-        _disposed = true;
-        GC.SuppressFinalize(this);
-    }
-
-    private void CreateTestTable()
-    {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = @"
-            CREATE TABLE bulk_test (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                value INTEGER NOT NULL
-            )";
-        cmd.ExecuteNonQuery();
-    }
-
-    private BulkTestEntity InsertTestEntity(string name, int value)
+    private static BulkTestEntity InsertTestEntity(IDbConnection connection, string name, int value)
     {
         var entity = new BulkTestEntity { Name = name, Value = value };
-        entity.Id = _connection.Insert(entity);
+        entity.Id = connection.Insert(entity);
         return entity;
     }
 
-    private string? GetNameById(long id)
+    private static string? GetNameById(IDbConnection connection, long id)
     {
-        using var cmd = _connection.CreateCommand();
+        using var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT name FROM bulk_test WHERE id = @Id";
         var param = cmd.CreateParameter();
         param.ParameterName = "@Id";
@@ -57,41 +35,52 @@ public class UpdateAsyncTests : IDisposable
         return cmd.ExecuteScalar()?.ToString();
     }
 
-    [Fact]
-    public async Task UpdateAsync_ExistingEntity_ReturnsRowsAffected()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task UpdateAsync_ExistingEntity_ReturnsRowsAffected(DialectInfo dialect)
     {
-        var entity = InsertTestEntity("Original", 100);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = (DbConnection)ctx.Connection;
+        var entity = InsertTestEntity(connection, "Original", 100);
         entity.Name = "Updated";
         entity.Value = 200;
 
-        int rows = await _connection.UpdateAsync(entity);
+        int rows = await connection.UpdateAsync(entity);
 
         Assert.Equal(1, rows);
-        Assert.Equal("Updated", GetNameById(entity.Id));
+        Assert.Equal("Updated", GetNameById(connection, entity.Id));
     }
 
-    [Fact]
-    public async Task UpdateAsync_NonExistingEntity_ReturnsZero()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task UpdateAsync_NonExistingEntity_ReturnsZero(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = (DbConnection)ctx.Connection;
         var entity = new BulkTestEntity { Id = 99999, Name = "DoesNotExist", Value = 0 };
 
-        int rows = await _connection.UpdateAsync(entity);
+        int rows = await connection.UpdateAsync(entity);
 
         Assert.Equal(0, rows);
     }
 
-    [Fact]
-    public async Task UpdateAsync_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task UpdateAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
-        var entity = InsertTestEntity("Original", 100);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = (DbConnection)ctx.Connection;
+        var entity = InsertTestEntity(connection, "Original", 100);
         entity.Name = "Updated";
 
-        using var transaction = _connection.BeginTransaction();
-        int rows = await _connection.UpdateAsync(entity, CommandOptions.WithTransaction(transaction));
+        using var transaction = connection.BeginTransaction();
+        int rows = await connection.UpdateAsync(entity, CommandOptions.WithTransaction(transaction));
         transaction.Commit();
 
         Assert.Equal(1, rows);
-        Assert.Equal("Updated", GetNameById(entity.Id));
+        Assert.Equal("Updated", GetNameById(connection, entity.Id));
     }
 }
-

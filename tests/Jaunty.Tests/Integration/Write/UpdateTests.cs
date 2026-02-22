@@ -1,54 +1,31 @@
 using System.Data;
-using System.Data.SQLite;
 
 using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
-public class UpdateTests : IDisposable
+public class UpdateTests : IClassFixture<WriteDialectFixture>
 {
-    private readonly SQLiteConnection _connection;
-    private bool _disposed;
+    private readonly WriteDialectFixture _fixture;
 
-    public UpdateTests()
+    public UpdateTests(WriteDialectFixture fixture)
     {
-        _connection = new SQLiteConnection("Data Source=:memory:");
-        _connection.Open();
-        CreateTestTable();
+        _fixture = fixture;
     }
 
-    public void Dispose()
-    {
-        if (_disposed) return;
-        _connection?.Dispose();
-        _disposed = true;
-        GC.SuppressFinalize(this);
-    }
-
-    private void CreateTestTable()
-    {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = @"
-            CREATE TABLE bulk_test (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                value INTEGER NOT NULL
-            )";
-        cmd.ExecuteNonQuery();
-    }
-
-    private BulkTestEntity InsertTestEntity(string name, int value)
+    private static BulkTestEntity InsertTestEntity(IDbConnection connection, string name, int value)
     {
         var entity = new BulkTestEntity { Name = name, Value = value };
-        entity.Id = _connection.Insert(entity);
+        entity.Id = connection.Insert(entity);
         return entity;
     }
 
-    private string? GetNameById(long id)
+    private static string? GetNameById(IDbConnection connection, long id)
     {
-        using var cmd = _connection.CreateCommand();
+        using var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT name FROM bulk_test WHERE id = @Id";
         var param = cmd.CreateParameter();
         param.ParameterName = "@Id";
@@ -57,54 +34,65 @@ public class UpdateTests : IDisposable
         return cmd.ExecuteScalar()?.ToString();
     }
 
-    [Fact]
-    public void Update_ExistingEntity_ReturnsRowsAffected()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Update_ExistingEntity_ReturnsRowsAffected(DialectInfo dialect)
     {
-        var entity = InsertTestEntity("Original", 100);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var entity = InsertTestEntity(ctx.Connection, "Original", 100);
         entity.Name = "Updated";
         entity.Value = 200;
 
-        int rows = Jaunty.Update(_connection, entity);
+        int rows = ctx.Connection.Update(entity);
 
         Assert.Equal(1, rows);
-        Assert.Equal("Updated", GetNameById(entity.Id));
+        Assert.Equal("Updated", GetNameById(ctx.Connection, entity.Id));
     }
 
-    [Fact]
-    public void Update_NonExistingEntity_ReturnsZero()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Update_NonExistingEntity_ReturnsZero(DialectInfo dialect)
     {
+        using var ctx = _fixture.GetWriteContext(dialect);
         var entity = new BulkTestEntity { Id = 99999, Name = "DoesNotExist", Value = 0 };
 
-        int rows = Jaunty.Update(_connection, entity);
+        int rows = ctx.Connection.Update(entity);
 
         Assert.Equal(0, rows);
     }
 
-    [Fact]
-    public void Update_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Update_WithCommandOptions_Works(DialectInfo dialect)
     {
-        var entity = InsertTestEntity("Original", 100);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var entity = InsertTestEntity(ctx.Connection, "Original", 100);
         entity.Name = "Updated";
 
-        using var transaction = _connection.BeginTransaction();
-        int rows = Jaunty.Update(_connection, entity, CommandOptions.WithTransaction(transaction));
+        using var transaction = ctx.Connection.BeginTransaction();
+        int rows = ctx.Connection.Update(entity, CommandOptions.WithTransaction(transaction));
         transaction.Commit();
 
         Assert.Equal(1, rows);
-        Assert.Equal("Updated", GetNameById(entity.Id));
+        Assert.Equal("Updated", GetNameById(ctx.Connection, entity.Id));
     }
 
-    [Fact]
-    public void Update_WithTransaction_RollbackKeepsOriginal()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Update_WithTransaction_RollbackKeepsOriginal(DialectInfo dialect)
     {
-        var entity = InsertTestEntity("Original", 100);
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var entity = InsertTestEntity(ctx.Connection, "Original", 100);
         entity.Name = "Updated";
 
-        using var transaction = _connection.BeginTransaction();
-        Jaunty.Update(_connection, entity, CommandOptions.WithTransaction(transaction));
+        using var transaction = ctx.Connection.BeginTransaction();
+        ctx.Connection.Update(entity, CommandOptions.WithTransaction(transaction));
         transaction.Rollback();
 
-        Assert.Equal("Original", GetNameById(entity.Id));
+        Assert.Equal("Original", GetNameById(ctx.Connection, entity.Id));
     }
 }
-
