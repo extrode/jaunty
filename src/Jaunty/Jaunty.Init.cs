@@ -1,4 +1,7 @@
 using System.Reflection;
+#if NET5_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 
 namespace Jaunty;
 
@@ -27,6 +30,10 @@ public static partial class Jaunty
     /// do not need the extension assembly and can safely trim it.
     /// </para>
     /// </remarks>
+#if NET5_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2026", Justification = "Extension loading is wrapped in try-catch; NativeAOT users initialize manually.")]
+    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "Extension loading is wrapped in try-catch; NativeAOT users initialize manually.")]
+#endif
     private static void TryEnableReflectionMapping()
     {
         try

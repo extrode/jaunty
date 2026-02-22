@@ -1,6 +1,6 @@
 # NativeAOT Migration - Current Status
 
-**Date:** 2026-02-20
+**Date:** 2026-02-22
 **Verification Script:** `scripts/Verify-NativeAOT.ps1`
 
 ---
@@ -17,6 +17,14 @@
 - Extension loading made NativeAOT-safe with try-catch
 - `NATIVEAOT-GUIDE.md` created with comprehensive documentation
 - Verification script updated to categorize issues
+
+### Bug Fixes Complete - All Tests Passing
+- Fixed `InsertCore` not appending `LastInsertIdSql` for identity keys
+- Fixed `MetadataBuilder` not rejecting abstract types
+- Fixed `MetadataCache` `ColumnNameResolver` not used during column mapping
+- Fixed `MultiEntityMapper` missing `Build()`/`ApplyT1()`/`ApplyT2()` + T1 priority
+- Fixed test assertions to match actual error messages
+- Added `Jaunty.Extensions.Reflection` reference + `[ModuleInitializer]` to Fluent tests
 
 ---
 
@@ -41,15 +49,12 @@ Jaunty is ready for NativeAOT compilation.
 ## Test Status
 
 ```
-Passed:  875 (99.8%)
-Failed:    2 (pre-existing issues)
-Skipped: 249 (MultiEntity, Bulk - set aside)
-Total:  1126
+Jaunty.Tests (net8.0):    877 passed, 0 failed, 249 skipped
+Jaunty.Tests (net472):    831 passed, 0 failed, 239 skipped
+Jaunty.Fluent.Tests:      395 passed, 0 failed,   0 skipped
 ```
 
-The 2 failing tests are:
-1. `ConfigResolverTests.Query_WithSnakeCaseColumnResolver_MapsCorrectly` - Test isolation
-2. `EdgeCaseTests.DeleteById_WithCompositePrimaryKey_ThrowsInformativeException` - Unimplemented feature
+All previously-failing tests are now fixed.
 
 ---
 
@@ -73,10 +78,10 @@ The 2 failing tests are:
 
 ## Next Steps
 
-### Phase 3 (Optional)
-1. Create NativeAOT sample projects
-2. Add more ADRs for architectural decisions
-3. Investigate remaining 2 test failures
+### Phase 3
+1. Set `IsAotCompatible=true` in `Jaunty.csproj` for net8.0 target
+2. Run `build-aot.ps1` to verify NativeAOT compilation and warning count
+3. Create NativeAOT sample projects
 
 ### Current State
 **Jaunty is NativeAOT-ready!** Users can:

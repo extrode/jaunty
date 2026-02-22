@@ -41,7 +41,14 @@ internal static class ParameterCache
     /// </summary>
     /// <param name="type">The entity type to build metadata for.</param>
     /// <returns>An array of parameter metadata, one per public property.</returns>
-    private static ParameterMetadata[] BuildMetadata(Type type)
+#if NET5_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Used for anonymous types whose properties are always preserved by the compiler.")]
+#endif
+    private static ParameterMetadata[] BuildMetadata(
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+#endif
+        Type type)
     {
         var props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
         var result = new ParameterMetadata[props.Length];

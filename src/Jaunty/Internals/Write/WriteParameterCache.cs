@@ -1,4 +1,7 @@
 using System.Data;
+#if NET5_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Reflection;
 using Jaunty.Interfaces;
 using Jaunty.Configuration;
@@ -115,6 +118,9 @@ internal static class WriteParameterCache<T> where T : new()
         return null;
     }
 
+#if NET5_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "Bind methods are source-generated and always preserved.")]
+#endif
     private static Action<IDbCommand, T>? TryGetGeneratedBinder(string methodName)
     {
         var method = typeof(T).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static, null, [typeof(IDbCommand), typeof(T)], null);

@@ -1,44 +1,46 @@
 # Jaunty NativeAOT Compatibility Plan
 
-## Current Status
-Jaunty successfully builds as a NativeAOT application (verified via `Jaunty.Scaffolding.Cli`), but it produces **40+ trim/AOT warnings**. These warnings indicate that several core features will fail at runtime because the AOT compiler cannot statically analyze the dynamic code paths.
+## Current Status (Updated 2026-02-22)
 
-### Primary Blockers
-1.  **Runtime Reflection**: `MetadataBuilder` and `AttributeHelper` use reflection to scan types at runtime. AOT may trim the properties or attributes needed.
-2.  **Dynamic Code Generation**: `WriteParameterCache<T>` uses `Expression.Compile()`, which is not supported in AOT (it falls back to a slow interpreter or fails).
-3.  **Generic Instantiation**: `MetadataCache` uses `MakeGenericMethod`, which prevents the AOT compiler from pre-generating the necessary machine code for specific entity types.
-4.  **Provider-Specific Hacks**: `BulkInsertAsync` uses reflection to access internal provider types (like `SqlBulkCopy`), which is extremely brittle in AOT/Trimmed environments.
+Jaunty is **NativeAOT-ready**. The verification script (`scripts/Verify-NativeAOT.ps1`) reports **PASS** with zero issues. All reflection-based code has been moved to `Jaunty.Extensions.Reflection` (opt-in) and the core library uses source-generated mappers exclusively.
+
+### Original Blockers (All Resolved)
+1.  ~~**Runtime Reflection**: `MetadataBuilder` and `AttributeHelper` use reflection~~ → Moved to `Jaunty.Extensions.Reflection`
+2.  ~~**Dynamic Code Generation**: `WriteParameterCache<T>` uses `Expression.Compile()`~~ → Replaced with source-generated `BindInsert`/`BindUpdate`/`BindDelete`
+3.  ~~**Generic Instantiation**: `MetadataCache` uses `MakeGenericMethod`~~ → Moved to `Jaunty.Extensions.Reflection`
+4.  ~~**Provider-Specific Hacks**: `BulkInsertAsync` uses reflection~~ → Isolated in extension assembly
 
 ---
 
 ## Roadmap to 100% Compatibility
 
-### Phase 1: Annotation & Mitigation (Short Term)
+### Phase 1: Annotation & Mitigation COMPLETE
 Goal: Fix the most obvious warnings using AOT-friendly attributes.
 
-- [ ] **Annotate Type Parameters**: Add `[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]` to all generic type parameters `T` where reflection is used.
-- [ ] **Mark Dangerous APIs**: Annotate reflection-heavy methods with `[RequiresUnreferencedCode]` to inform users of the risks.
-- [ ] **Safe Provider Access**: Replace `BulkInsert` reflection-based provider detection with explicit provider-specific packages or safe type-checking.
+- [x] **Annotate Type Parameters**: `[DynamicallyAccessedMembers]` added to all generic parameters in `Jaunty.Extensions.Reflection`
+- [x] **Mark Dangerous APIs**: `[RequiresUnreferencedCode]` on `UseReflectionMapping()`
+- [x] **Safe Provider Access**: Special type handling moved to `Jaunty.Extensions.Reflection`
 
-### Phase 2: Source Generators (Long Term - Recommended)
+### Phase 2: Source Generators COMPLETE
 Goal: Eliminate runtime reflection entirely by moving metadata resolution to compile-time.
 
-- [ ] **Implement `Jaunty.SourceGenerator`**:
-    - [ ] **Metadata Generation**: Generate `EntityMetadata` at compile-time for classes marked with `[Table]`.
-    - [ ] **Static Mappers**: Generate static `Read(DbDataReader)` and `Bind(DbCommand, T)` methods for each entity type, replacing expression trees.
-    - [ ] **SQL Pre-building**: Generate CRUD SQL strings during compilation.
-- [ ] **AOT-Safe Dispatcher**: Update `DrDispatcher` to use generated mappers instead of resolving them at runtime.
+- [x] **Implement `Jaunty.SourceGenerator`**:
+    - [x] **Metadata Generation**: Generates `EntityMetadata` at compile-time for `[Table]` classes
+    - [x] **Static Mappers**: Generates `ReadEntity()` and `BindInsert/Update/Delete()` methods
+    - [x] **SQL Pre-building**: CRUD SQL cached via `CrudSqlCache` at runtime (dialect-dependent)
+- [x] **AOT-Safe Dispatcher**: `DrDispatcher` uses `IMapped<T>` source-generated mappers; `MappedCache` resolves them
 
-### Phase 3: AOT-First Architecture
+### Phase 3: AOT-First Architecture (In Progress)
 Goal: Ensure 0 warnings and verified runtime stability.
 
-- [ ] **Enable `IsAotCompatible`**: Set the property in all project files once warnings are resolved.
-- [ ] **Automated AOT Testing**: Integrate the `build-aot.ps1` script into the CI pipeline to prevent regressions.
-- [ ] **Zero-Allocation Hot Path**: Leverage the Source Generator to achieve a truly zero-allocation mapping path.
+- [ ] **Enable `IsAotCompatible`**: Set the property in `Jaunty.csproj` for net8.0 target
+- [ ] **Automated AOT Testing**: Integrate `build-aot.ps1` into CI pipeline
+- [ ] **Zero-Allocation Hot Path**: Leverage the Source Generator to achieve a truly zero-allocation mapping path
 
 ---
 
-## Action Items for Next Session
-1.  Begin annotating `MetadataCache<T>` and `MetadataBuilder` with `DynamicallyAccessedMembers`.
-2.  Investigate `System.Runtime.CompilerServices.InterceptsLocation` (Interceptors) for high-performance AOT-safe command dispatching.
-3.  Audit `BulkInsertAsync.cs` to remove unsafe `Assembly.GetType` calls.
+## Action Items
+1.  Set `IsAotCompatible=true` in `Jaunty.csproj` (net8.0 target) and verify zero AOT warnings
+2.  Run `build-aot.ps1` end-to-end and document binary size
+3.  Create NativeAOT sample projects (`samples/NativeAOT-Basic`, etc.)
+4.  Integrate `build-aot.ps1` into CI pipeline

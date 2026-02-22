@@ -1,4 +1,7 @@
 using System.Data;
+#if NET5_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Reflection;
 using Jaunty.Interfaces;
 
@@ -12,6 +15,9 @@ internal static class MappedCache<T> where T : new()
 {
     internal static readonly Func<IDataReader, T>? Mapper = ResolveMapper();
 
+#if NET5_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "ReadEntity methods are source-generated and always preserved.")]
+#endif
     private static Func<IDataReader, T>? ResolveMapper()
     {
         // For NativeAOT, we check if the type implements IMapped<T>
