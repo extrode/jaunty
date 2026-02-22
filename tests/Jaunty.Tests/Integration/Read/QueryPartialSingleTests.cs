@@ -1,28 +1,25 @@
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryPartialSingleTests : IDisposable
+public class QueryPartialSingleTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryPartialSingleTests()
+    public QueryPartialSingleTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialSingle_WithExactlyOneResult_ReturnsEntity(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void QueryPartialSingle_WithExactlyOneResult_ReturnsEntity()
-    {
-        var product = _db.Connection.QueryPartialSingle<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var product = connection.QueryPartialSingle<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = 2");
 
         Assert.NotNull(product);
@@ -30,46 +27,61 @@ public class QueryPartialSingleTests : IDisposable
         Assert.False(string.IsNullOrEmpty(product.ProductName));
     }
 
-    [Fact]
-    public void QueryPartialSingle_MissingColumn_Allowed()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialSingle_MissingColumn_Allowed(DialectInfo dialect)
     {
-        var product = _db.Connection.QueryPartialSingle<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var product = connection.QueryPartialSingle<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = 2");
 
         Assert.NotNull(product);
         Assert.Equal(0, product.CategoryId);
     }
 
-    [Fact]
-    public void QueryPartialSingle_NoResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialSingle_NoResults_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.QueryPartialSingle<ProductSummary>(
+            connection.QueryPartialSingle<ProductSummary>(
                 "SELECT product_id AS ProductId FROM products WHERE product_id = -999"));
     }
 
-    [Fact]
-    public void QueryPartialSingle_MultipleResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialSingle_MultipleResults_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.QueryPartialSingle<ProductSummary>(
+            connection.QueryPartialSingle<ProductSummary>(
                 "SELECT product_id AS ProductId, product_name AS ProductName FROM products"));
     }
 
-    [Fact]
-    public void QueryPartialSingle_WithParameters_FiltersCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialSingle_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
-        var product = _db.Connection.QueryPartialSingle<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var product = connection.QueryPartialSingle<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products WHERE product_id = @Id",
             new { Id = 2 });
 
         Assert.Equal(2, product.ProductId);
     }
 
-    [Fact]
-    public void QueryPartialSingle_WithParametersAndOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialSingle_WithParametersAndOptions_Works(DialectInfo dialect)
     {
-        var product = _db.Connection.QueryPartialSingle<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var product = connection.QueryPartialSingle<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products WHERE product_id = @Id",
             new { Id = 2 },
             CommandOptions<ProductSummary>.WithTimeout(30));
@@ -77,10 +89,13 @@ public class QueryPartialSingleTests : IDisposable
         Assert.Equal(2, product.ProductId);
     }
 
-    [Fact]
-    public void QueryPartialSingle_WithOptionsOnly_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialSingle_WithOptionsOnly_Works(DialectInfo dialect)
     {
-        var product = _db.Connection.QueryPartialSingle<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var product = connection.QueryPartialSingle<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = 2",
             CommandOptions<ProductSummary>.WithTimeout(30));
 
@@ -88,4 +103,6 @@ public class QueryPartialSingleTests : IDisposable
         Assert.Equal(2, product.ProductId);
     }
 }
+
+
 

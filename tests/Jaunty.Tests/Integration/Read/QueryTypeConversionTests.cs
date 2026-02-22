@@ -1,28 +1,27 @@
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryTypeConversionTests : IDisposable
+public class QueryTypeConversionTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryTypeConversionTests()
+    public QueryTypeConversionTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryScalar_TypeMismatch_ThrowsException(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void QueryScalar_TypeMismatch_ThrowsException()
-    {
+        using var connection = _fixture.GetConnection(dialect);
         // Trying to read a string as a DateTime
         Assert.ThrowsAny<Exception>(() =>
-            _db.Connection.QueryScalar<DateTime>("SELECT product_name FROM products WHERE product_id = 1"));
+            connection.QueryScalar<DateTime>("SELECT product_name FROM products WHERE product_id = 1"));
     }
 }
+
+
 

@@ -1,28 +1,22 @@
 using Jaunty;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Multiple;
 
-public class GridReaderAsyncTests : IDisposable
+public class GridReaderAsyncTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public GridReaderAsyncTests()
+    public GridReaderAsyncTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadAsync_ReturnsResults(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadAsync_ReturnsResults()
-    {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 2");
 
         var categories = (await gridReader.ReadAsync<Category>()).ToList();
@@ -31,10 +25,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadPartialAsync_AllowsMissingColumns()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadPartialAsync_AllowsMissingColumns(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 2");
 
         var categories = (await gridReader.ReadPartialAsync<CategorySummary>()).ToList(); // CategorySummary has fewer properties
@@ -43,10 +38,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadFirstAsync_ReturnsFirst()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadFirstAsync_ReturnsFirst(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories ORDER BY category_id LIMIT 1");
 
         var category = await gridReader.ReadFirstAsync<Category>();
@@ -56,10 +52,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(category.CategoryName);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadFirstOrDefaultAsync_ReturnsFirstOrNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadFirstOrDefaultAsync_ReturnsFirstOrNull(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories ORDER BY category_id LIMIT 1");
 
         var category = await gridReader.ReadFirstOrDefaultAsync<Category>();
@@ -69,10 +66,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(category.CategoryName);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadFirstOrDefaultAsync_NoResults_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadFirstOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -81,10 +79,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Null(category);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadSingleAsync_ReturnsSingle()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadSingleAsync_ReturnsSingle(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { Id = 1 });
 
@@ -95,10 +94,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(category.CategoryName);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadSingleAsync_MultipleResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadSingleAsync_MultipleResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 2");
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -107,10 +107,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Contains("more than one element", ex.Message);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadSingleAsync_NoResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadSingleAsync_NoResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -120,10 +121,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Contains("no elements", ex.Message);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadSingleOrDefaultAsync_ReturnsSingleOrDefault()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadSingleOrDefaultAsync_ReturnsSingleOrDefault(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { Id = 1 });
 
@@ -133,10 +135,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Equal(1, category.CategoryId);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadSingleOrDefaultAsync_NoResults_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadSingleOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -145,10 +148,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Null(category);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadScalarAsync_ReturnsValue()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadScalarAsync_ReturnsValue(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT COUNT(*) FROM categories");
 
         var count = await gridReader.ReadScalarAsync<long>();
@@ -156,12 +160,13 @@ public class GridReaderAsyncTests : IDisposable
         Assert.True(count > 0);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadScalarAsync_WithCancellationToken_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadScalarAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var cts = new CancellationTokenSource();
         
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT COUNT(*) FROM categories");
 
         var count = await gridReader.ReadScalarAsync<long>(cancellationToken: cts.Token);
@@ -170,10 +175,11 @@ public class GridReaderAsyncTests : IDisposable
     }
 
 #if NET8_0_OR_GREATER
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadStreamAsync_YieldsResults()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadStreamAsync_YieldsResults(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 3");
 
         var categories = new List<Category>();
@@ -186,10 +192,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadPartialStreamAsync_YieldsResults()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadPartialStreamAsync_YieldsResults(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 3");
 
         var summaries = new List<CategorySummary>();
@@ -202,12 +209,13 @@ public class GridReaderAsyncTests : IDisposable
         Assert.All(summaries, s => Assert.NotNull(s.CategoryName));
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadStreamAsync_WithCancellationToken_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadStreamAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var cts = new CancellationTokenSource();
 
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 3");
 
         var categories = new List<Category>();
@@ -222,10 +230,11 @@ public class GridReaderAsyncTests : IDisposable
 
     #region ReadPartialFirstAsync / ReadPartialFirstOrDefaultAsync
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadPartialFirstAsync_ReturnsFirst()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadPartialFirstAsync_ReturnsFirst(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories ORDER BY category_id LIMIT 3");
 
         var summary = await gridReader.ReadPartialFirstAsync<CategorySummary>();
@@ -235,10 +244,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(summary.CategoryName);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadPartialFirstAsync_NoResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadPartialFirstAsync_NoResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -246,10 +256,11 @@ public class GridReaderAsyncTests : IDisposable
             await gridReader.ReadPartialFirstAsync<CategorySummary>());
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadPartialFirstOrDefaultAsync_ReturnsFirst()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadPartialFirstOrDefaultAsync_ReturnsFirst(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories ORDER BY category_id LIMIT 3");
 
         var summary = await gridReader.ReadPartialFirstOrDefaultAsync<CategorySummary>();
@@ -259,10 +270,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(summary.CategoryName);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadPartialFirstOrDefaultAsync_NoResults_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadPartialFirstOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -275,10 +287,11 @@ public class GridReaderAsyncTests : IDisposable
 
     #region ReadPartialSingleAsync / ReadPartialSingleOrDefaultAsync
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadPartialSingleAsync_ReturnsSingle()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadPartialSingleAsync_ReturnsSingle(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = 1 });
 
@@ -289,10 +302,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.NotNull(summary.CategoryName);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadPartialSingleAsync_MultipleResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadPartialSingleAsync_MultipleResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 2");
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -301,10 +315,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Contains("more than one element", ex.Message);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadPartialSingleAsync_NoResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadPartialSingleAsync_NoResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -314,10 +329,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Contains("no elements", ex.Message);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadPartialSingleOrDefaultAsync_ReturnsSingle()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadPartialSingleOrDefaultAsync_ReturnsSingle(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = 1 });
 
@@ -327,10 +343,11 @@ public class GridReaderAsyncTests : IDisposable
         Assert.Equal(1, summary.CategoryId);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task GridReader_ReadPartialSingleOrDefaultAsync_NoResults_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task GridReader_ReadPartialSingleOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = await _db.Connection.QueryMultipleAsync(
+        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -341,4 +358,6 @@ public class GridReaderAsyncTests : IDisposable
 
     #endregion
 }
+
+
 

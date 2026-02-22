@@ -1,23 +1,24 @@
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryAttributeMappingTests : IDisposable
+public class QueryAttributeMappingTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryAttributeMappingTests()
+    public QueryAttributeMappingTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose() => _db.Dispose();
-
-    [Fact]
-    public void QueryPartial_WithColumnAttributes_MapsCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartial_WithColumnAttributes_MapsCorrectly(DialectInfo dialect)
     {
-        var products = _db.Connection.QueryPartial<ProductWithAttributes>(
+        using var connection = _fixture.GetConnection(dialect);
+        var products = connection.QueryPartial<ProductWithAttributes>(
             "SELECT product_id, product_name, unit_price FROM products WHERE product_id = @Id",
             new { Id = 1 });
 
@@ -26,14 +27,18 @@ public class QueryAttributeMappingTests : IDisposable
         Assert.False(string.IsNullOrEmpty(products[0].ProductName));
     }
 
-    [Fact]
-    public void QueryPartial_WithIgnoredProperty_DoesNotRequireColumn()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartial_WithIgnoredProperty_DoesNotRequireColumn(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // ComputedField is marked [Ignore], so it shouldn't require a matching column
-        var products = _db.Connection.QueryPartial<ProductWithAttributes>(
+        var products = connection.QueryPartial<ProductWithAttributes>(
             "SELECT product_id, product_name, unit_price FROM products");
 
         Assert.NotEmpty(products);
         Assert.All(products, p => Assert.Null(p.ComputedField));
     }
 }
+

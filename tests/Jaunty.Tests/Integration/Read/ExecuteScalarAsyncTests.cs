@@ -1,55 +1,52 @@
 using Jaunty.Core;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class ExecuteScalarAsyncTests : IDisposable
+public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public ExecuteScalarAsyncTests()
+    public ExecuteScalarAsyncTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    public async Task ExecuteScalarAsync_Count_ReturnsValue(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [SkipSQLiteAsyncFact]
-    public async Task ExecuteScalarAsync_Count_ReturnsValue()
-    {
-        var count = await _db.Connection.ExecuteScalarAsync<long>("SELECT COUNT(*) FROM products");
+        var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>("SELECT COUNT(*) FROM products");
 
         Assert.True(count > 0);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ExecuteScalarAsync_WithParameters_ReturnsValue()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ExecuteScalarAsync_WithParameters_ReturnsValue(DialectInfo dialect)
     {
-        var count = await _db.Connection.ExecuteScalarAsync<long>(
+        var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>(
             "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
         Assert.True(count > 0);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ExecuteScalarAsync_WithOptionsOnly_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ExecuteScalarAsync_WithOptionsOnly_Works(DialectInfo dialect)
     {
-        var count = await _db.Connection.ExecuteScalarAsync<long>(
+        var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>(
             "SELECT COUNT(*) FROM products",
             CommandOptions<long>.WithTimeout(30));
 
         Assert.True(count > 0);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ExecuteScalarAsync_WithParametersAndOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ExecuteScalarAsync_WithParametersAndOptions_Works(DialectInfo dialect)
     {
-        var count = await _db.Connection.ExecuteScalarAsync<long>(
+        var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>(
             "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 },
             CommandOptions<long>.WithTimeout(30));
@@ -57,4 +54,6 @@ public class ExecuteScalarAsyncTests : IDisposable
         Assert.True(count > 0);
     }
 }
+
+
 

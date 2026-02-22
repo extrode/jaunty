@@ -1,29 +1,25 @@
 using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Streaming;
 
-public class QueryPartialStreamTests : IDisposable
+public class QueryPartialStreamTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryPartialStreamTests()
+    public QueryPartialStreamTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialStream_WithResults_YieldsResults(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void QueryPartialStream_WithResults_YieldsResults()
-    {
-        var summaries = _db.Connection.QueryPartialStream<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialStream<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
@@ -39,10 +35,13 @@ public class QueryPartialStreamTests : IDisposable
         Assert.Equal(5, count);
     }
 
-    [Fact]
-    public void QueryPartialStream_WithoutParameters_YieldsAll()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialStream_WithoutParameters_YieldsAll(DialectInfo dialect)
     {
-        var summaries = _db.Connection.QueryPartialStream<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialStream<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 3");
 
         var list = summaries.ToList();
@@ -50,10 +49,13 @@ public class QueryPartialStreamTests : IDisposable
         Assert.All(list, s => Assert.True(s.ProductId > 0));
     }
 
-    [Fact]
-    public void QueryPartialStream_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialStream_WithCommandOptions_Works(DialectInfo dialect)
     {
-        var summaries = _db.Connection.QueryPartialStream<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialStream<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 },
             CommandOptions<ProductSummary>.WithTimeout(30));
@@ -69,10 +71,13 @@ public class QueryPartialStreamTests : IDisposable
         Assert.Equal(3, count);
     }
 
-    [Fact]
-    public void QueryPartialStream_ExtraColumns_IgnoresExtra()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialStream_ExtraColumns_IgnoresExtra(DialectInfo dialect)
     {
-        var summaries = _db.Connection.QueryPartialStream<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialStream<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName, unit_price, supplier_id FROM products LIMIT 5");
 
         var list = summaries.ToList();
@@ -80,10 +85,13 @@ public class QueryPartialStreamTests : IDisposable
         Assert.All(list, s => Assert.True(s.ProductId > 0));
     }
 
-    [Fact]
-    public void QueryPartialStream_MissingColumns_SetsDefaults()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialStream_MissingColumns_SetsDefaults(DialectInfo dialect)
     {
-        var summaries = _db.Connection.QueryPartialStream<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialStream<ProductSummary>(
             "SELECT product_id AS ProductId FROM products LIMIT 5");
 
         var list = summaries.ToList();
@@ -95,10 +103,13 @@ public class QueryPartialStreamTests : IDisposable
         });
     }
 
-    [Fact]
-    public void QueryPartialStream_EmptyResult_YieldsNothing()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialStream_EmptyResult_YieldsNothing(DialectInfo dialect)
     {
-        var summaries = _db.Connection.QueryPartialStream<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialStream<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
             new { Id = -999 });
 
@@ -106,4 +117,5 @@ public class QueryPartialStreamTests : IDisposable
         Assert.Empty(list);
     }
 }
+
 

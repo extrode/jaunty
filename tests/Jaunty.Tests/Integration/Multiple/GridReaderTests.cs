@@ -1,28 +1,24 @@
 using Jaunty;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Multiple;
 
-public class GridReaderTests : IDisposable
+public class GridReaderTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public GridReaderTests()
+    public GridReaderTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_Read_ReturnsResults(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void GridReader_Read_ReturnsResults()
-    {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 2");
 
         var categories = gridReader.Read<Category>().ToList();
@@ -31,10 +27,13 @@ public class GridReaderTests : IDisposable
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
-    [Fact]
-    public void GridReader_ReadPartial_AllowsMissingColumns()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartial_AllowsMissingColumns(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 2");
 
         var categories = gridReader.ReadPartial<CategorySummary>().ToList(); // CategorySummary has fewer properties
@@ -43,10 +42,13 @@ public class GridReaderTests : IDisposable
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
-    [Fact]
-    public void GridReader_ReadFirst_ReturnsFirst()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadFirst_ReturnsFirst(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories ORDER BY category_id LIMIT 1");
 
         var category = gridReader.ReadFirst<Category>();
@@ -56,10 +58,13 @@ public class GridReaderTests : IDisposable
         Assert.NotNull(category.CategoryName);
     }
 
-    [Fact]
-    public void GridReader_ReadFirstOrDefault_ReturnsFirstOrNull()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadFirstOrDefault_ReturnsFirstOrNull(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories ORDER BY category_id LIMIT 1");
 
         var category = gridReader.ReadFirstOrDefault<Category>();
@@ -69,10 +74,13 @@ public class GridReaderTests : IDisposable
         Assert.NotNull(category.CategoryName);
     }
 
-    [Fact]
-    public void GridReader_ReadFirstOrDefault_NoResults_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadFirstOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -81,10 +89,13 @@ public class GridReaderTests : IDisposable
         Assert.Null(category);
     }
 
-    [Fact]
-    public void GridReader_ReadSingle_ReturnsSingle()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadSingle_ReturnsSingle(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { Id = 1 });
 
@@ -95,10 +106,13 @@ public class GridReaderTests : IDisposable
         Assert.NotNull(category.CategoryName);
     }
 
-    [Fact]
-    public void GridReader_ReadSingle_MultipleResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadSingle_MultipleResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 2");
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
@@ -107,10 +121,13 @@ public class GridReaderTests : IDisposable
         Assert.Contains("more than one element", ex.Message);
     }
 
-    [Fact]
-    public void GridReader_ReadSingle_NoResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadSingle_NoResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -120,10 +137,13 @@ public class GridReaderTests : IDisposable
         Assert.Contains("no elements", ex.Message);
     }
 
-    [Fact]
-    public void GridReader_ReadSingleOrDefault_ReturnsSingleOrDefault()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadSingleOrDefault_ReturnsSingleOrDefault(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { Id = 1 });
 
@@ -133,10 +153,13 @@ public class GridReaderTests : IDisposable
         Assert.Equal(1, category.CategoryId);
     }
 
-    [Fact]
-    public void GridReader_ReadSingleOrDefault_NoResults_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadSingleOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -145,10 +168,13 @@ public class GridReaderTests : IDisposable
         Assert.Null(category);
     }
 
-    [Fact]
-    public void GridReader_ReadScalar_ReturnsValue()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadScalar_ReturnsValue(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT COUNT(*) FROM categories");
 
         var count = gridReader.ReadScalar<long>();
@@ -156,10 +182,13 @@ public class GridReaderTests : IDisposable
         Assert.True(count > 0);
     }
 
-    [Fact]
-    public void GridReader_ReadStream_YieldsResults()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadStream_YieldsResults(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 3");
 
         var categories = gridReader.ReadStream<Category>().ToList();
@@ -168,10 +197,13 @@ public class GridReaderTests : IDisposable
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
-    [Fact]
-    public void GridReader_ReadPartialStream_YieldsResults()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartialStream_YieldsResults(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 3");
 
         var summaries = gridReader.ReadPartialStream<CategorySummary>().ToList();
@@ -182,10 +214,13 @@ public class GridReaderTests : IDisposable
 
     #region ReadPartialFirst / ReadPartialFirstOrDefault
 
-    [Fact]
-    public void GridReader_ReadPartialFirst_ReturnsFirst()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartialFirst_ReturnsFirst(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories ORDER BY category_id LIMIT 3");
 
         var summary = gridReader.ReadPartialFirst<CategorySummary>();
@@ -195,10 +230,13 @@ public class GridReaderTests : IDisposable
         Assert.NotNull(summary.CategoryName);
     }
 
-    [Fact]
-    public void GridReader_ReadPartialFirst_NoResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartialFirst_NoResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -206,10 +244,13 @@ public class GridReaderTests : IDisposable
             gridReader.ReadPartialFirst<CategorySummary>());
     }
 
-    [Fact]
-    public void GridReader_ReadPartialFirstOrDefault_ReturnsFirst()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartialFirstOrDefault_ReturnsFirst(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories ORDER BY category_id LIMIT 3");
 
         var summary = gridReader.ReadPartialFirstOrDefault<CategorySummary>();
@@ -219,10 +260,13 @@ public class GridReaderTests : IDisposable
         Assert.NotNull(summary.CategoryName);
     }
 
-    [Fact]
-    public void GridReader_ReadPartialFirstOrDefault_NoResults_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartialFirstOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -235,10 +279,13 @@ public class GridReaderTests : IDisposable
 
     #region ReadPartialSingle / ReadPartialSingleOrDefault
 
-    [Fact]
-    public void GridReader_ReadPartialSingle_ReturnsSingle()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartialSingle_ReturnsSingle(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = 1 });
 
@@ -249,10 +296,13 @@ public class GridReaderTests : IDisposable
         Assert.NotNull(summary.CategoryName);
     }
 
-    [Fact]
-    public void GridReader_ReadPartialSingle_MultipleResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartialSingle_MultipleResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 2");
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
@@ -261,10 +311,13 @@ public class GridReaderTests : IDisposable
         Assert.Contains("more than one element", ex.Message);
     }
 
-    [Fact]
-    public void GridReader_ReadPartialSingle_NoResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartialSingle_NoResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -274,10 +327,13 @@ public class GridReaderTests : IDisposable
         Assert.Contains("no elements", ex.Message);
     }
 
-    [Fact]
-    public void GridReader_ReadPartialSingleOrDefault_ReturnsSingle()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartialSingleOrDefault_ReturnsSingle(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = 1 });
 
@@ -287,10 +343,13 @@ public class GridReaderTests : IDisposable
         Assert.Equal(1, summary.CategoryId);
     }
 
-    [Fact]
-    public void GridReader_ReadPartialSingleOrDefault_NoResults_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartialSingleOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = _db.Connection.QueryMultiple(
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
             new { Id = -999 });
 
@@ -301,3 +360,4 @@ public class GridReaderTests : IDisposable
 
     #endregion
 }
+

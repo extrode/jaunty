@@ -1,29 +1,26 @@
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryPositionalParameterTests : IDisposable
+public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryPositionalParameterTests()
+    public QueryPositionalParameterTests(DialectFixture fixture)
     {
-        _db = new Database();
-    }
-
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
+        _fixture = fixture;
     }
 
     #region Single Positional Parameter
 
-    [Fact]
-    public void Query_SingleIntParameter_BindsCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_SingleIntParameter_BindsCorrectly(DialectInfo dialect)
     {
-        var categories = _db.Connection.Query<Category>(
+        using var connection = _fixture.GetConnection(dialect);
+        var categories = connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
             new { Id = 1});
 
@@ -31,10 +28,13 @@ public class QueryPositionalParameterTests : IDisposable
         Assert.Equal(1, categories[0].CategoryId);
     }
 
-    [Fact]
-    public void Query_SingleStringParameter_BindsCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_SingleStringParameter_BindsCorrectly(DialectInfo dialect)
     {
-        var customers = _db.Connection.Query<Customer>(
+        using var connection = _fixture.GetConnection(dialect);
+        var customers = connection.Query<Customer>(
             @"SELECT customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName,
               contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
               postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
@@ -45,10 +45,13 @@ public class QueryPositionalParameterTests : IDisposable
         Assert.Equal("ALFKI", customers[0].CustomerId);
     }
 
-    [Fact]
-    public void Query_SingleDateTimeParameter_BindsCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_SingleDateTimeParameter_BindsCorrectly(DialectInfo dialect)
     {
-        var count = _db.Connection.QueryScalar<long>(
+        using var connection = _fixture.GetConnection(dialect);
+        var count = connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM orders WHERE order_date > @Date",
             new { Date = new DateTime(1997, 6, 1) });
 
@@ -59,20 +62,26 @@ public class QueryPositionalParameterTests : IDisposable
 
     #region Array Parameters
 
-    [Fact]
-    public void Query_ObjectArray_BindsCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_ObjectArray_BindsCorrectly(DialectInfo dialect)
     {
-        var categories = _db.Connection.Query<Category>(
+        using var connection = _fixture.GetConnection(dialect);
+        var categories = connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id >= @Min AND category_id <= @Max",
             new { Min = 1, Max = 3 });
 
         Assert.Equal(3, categories.Count);
     }
 
-    [Fact]
-    public void QueryScalar_ObjectArray_BindsCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryScalar_ObjectArray_BindsCorrectly(DialectInfo dialect)
     {
-        var count = _db.Connection.QueryScalar<long>(
+        using var connection = _fixture.GetConnection(dialect);
+        var count = connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM products WHERE category_id = @Cat AND supplier_id = @Sup",
             new { Cat = 1, Sup = 1 });
 
@@ -83,11 +92,14 @@ public class QueryPositionalParameterTests : IDisposable
 
     #region Parameter Count Validation
 
-    [Fact]
-    public void Query_TooFewParameters_ThrowsWithMessage()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_TooFewParameters_ThrowsWithMessage(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var ex = Assert.Throws<ArgumentException>(() =>
-            _db.Connection.QueryScalar<long>(
+            connection.QueryScalar<long>(
                 "SELECT COUNT(*) FROM products WHERE category_id = @A AND supplier_id = @B AND discontinued = @C",
                 new { A = 1, B = 2 }));
 
@@ -99,10 +111,13 @@ public class QueryPositionalParameterTests : IDisposable
 
     #region NULL Positional Parameters
 
-    [Fact]
-    public void Query_NullPositionalParameter_BindsAsDbNull()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_NullPositionalParameter_BindsAsDbNull(DialectInfo dialect)
     {
-        var count = _db.Connection.QueryScalar<long>(
+        using var connection = _fixture.GetConnection(dialect);
+        var count = connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM customers WHERE region = @Region OR @Region IS NULL",
             new { region = (long?)null });
 
@@ -111,3 +126,5 @@ public class QueryPositionalParameterTests : IDisposable
 
     #endregion
 }
+
+

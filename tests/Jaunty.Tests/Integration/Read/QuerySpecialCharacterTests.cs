@@ -1,28 +1,25 @@
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QuerySpecialCharacterTests : IDisposable
+public class QuerySpecialCharacterTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QuerySpecialCharacterTests()
+    public QuerySpecialCharacterTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_DataWithSpecialCharacters_HandlesCorrectly(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_DataWithSpecialCharacters_HandlesCorrectly()
-    {
+        using var connection = _fixture.GetConnection(dialect);
         // Some company names have special characters like apostrophes
-        var customers = _db.Connection.Query<Customer>(
+        var customers = connection.Query<Customer>(
             @"SELECT customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName,
               contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
               postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
@@ -33,3 +30,5 @@ public class QuerySpecialCharacterTests : IDisposable
         Assert.NotNull(customers);
     }
 }
+
+

@@ -1,28 +1,25 @@
 using System.Data;
 
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryArgumentValidationTests : IDisposable
+public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryArgumentValidationTests()
+    public QueryArgumentValidationTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_NullConnection_ThrowsArgumentNullException(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_NullConnection_ThrowsArgumentNullException()
-    {
+        using var connection = _fixture.GetConnection(dialect);
         IDbConnection? connection = null;
 
         var ex = Assert.Throws<ArgumentNullException>(() =>
@@ -31,36 +28,48 @@ public class QueryArgumentValidationTests : IDisposable
         Assert.Equal("connection", ex.ParamName);
     }
 
-    [Fact]
-    public void Query_NullSql_ThrowsArgumentException()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_NullSql_ThrowsArgumentException(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var ex = Assert.Throws<ArgumentNullException>(() =>
-            _db.Connection.Query<Category>(null!));
+            connection.Query<Category>(null!));
 
         Assert.Contains("SQL", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public void Query_EmptySql_ThrowsArgumentException()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_EmptySql_ThrowsArgumentException(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var ex = Assert.Throws<ArgumentException>(() =>
-            _db.Connection.Query<Category>(""));
+            connection.Query<Category>(""));
 
         Assert.Contains("SQL", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public void Query_WhitespaceSql_ThrowsArgumentException()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WhitespaceSql_ThrowsArgumentException(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var ex = Assert.Throws<ArgumentException>(() =>
-            _db.Connection.Query<Category>("   \t\n  "));
+            connection.Query<Category>("   \t\n  "));
 
         Assert.Contains("SQL", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public void QueryScalar_NullConnection_ThrowsArgumentNullException()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryScalar_NullConnection_ThrowsArgumentNullException(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         IDbConnection? connection = null;
 
         var ex = Assert.Throws<ArgumentNullException>(() =>
@@ -69,10 +78,15 @@ public class QueryArgumentValidationTests : IDisposable
         Assert.Equal("connection", ex.ParamName);
     }
 
-    [Fact]
-    public void QueryScalar_NullSql_ThrowsArgumentException()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryScalar_NullSql_ThrowsArgumentException(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var ex = Assert.Throws<ArgumentNullException>(() =>
-            _db.Connection.QueryScalar<int>(null!));
+            connection.QueryScalar<int>(null!));
     }
 }
+
+

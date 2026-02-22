@@ -1,41 +1,43 @@
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryCommandOptionsTests : IDisposable
+public class QueryCommandOptionsTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryCommandOptionsTests()
+    public QueryCommandOptionsTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WithTimeoutOption_ExecutesCorrectly(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_WithTimeoutOption_ExecutesCorrectly()
-    {
-        var categories = _db.Connection.Query<Category>(
+        using var connection = _fixture.GetConnection(dialect);
+        var categories = connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories",
             CommandOptions.WithTimeout(60));
 
         Assert.NotEmpty(categories);
     }
 
-    [Fact]
-    public void Query_WithCommandOptions_ExecutesCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_WithCommandOptions_ExecutesCorrectly(DialectInfo dialect)
     {
-        var categories = _db.Connection.Query<Category>(
+        using var connection = _fixture.GetConnection(dialect);
+        var categories = connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories",
             CommandOptions.WithTimeout(30));
 
         Assert.NotEmpty(categories);
     }
 }
+
+

@@ -1,13 +1,13 @@
 using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryFirstAsyncTests : IDisposable
+public class QueryFirstAsyncTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
     
     private const string FullProductColumns = @"
         product_id AS ProductId,
@@ -21,21 +21,15 @@ public class QueryFirstAsyncTests : IDisposable
         reorder_level AS ReorderLevel,
         discontinued AS Discontinued";
 
-    public QueryFirstAsyncTests()
+    public QueryFirstAsyncTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    public async Task QueryFirstAsync_WithResults_ReturnsFirst(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public async Task QueryFirstAsync_WithResults_ReturnsFirst()
-    {
-        var product = await _db.Connection.QueryFirstAsync<Product>(
+        var product = await _fixture.GetDbConnection(dialect).QueryFirstAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 });
 
@@ -43,10 +37,11 @@ public class QueryFirstAsyncTests : IDisposable
         Assert.NotNull(product.ProductName);
     }
 
-    [Fact]
-    public async Task QueryFirstAsync_WithParameters_FiltersCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryFirstAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
-        var product = await _db.Connection.QueryFirstAsync<Product>(
+        var product = await _fixture.GetDbConnection(dialect).QueryFirstAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
@@ -54,21 +49,23 @@ public class QueryFirstAsyncTests : IDisposable
         Assert.Equal((short?)1, product.CategoryId);
     }
 
-    [Fact]
-    public async Task QueryFirstAsync_NoResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryFirstAsync_NoResults_Throws(DialectInfo dialect)
     {
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            await _db.Connection.QueryFirstAsync<Product>(
+            await _fixture.GetDbConnection(dialect).QueryFirstAsync<Product>(
                 $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
                 new { Id = -999 }));
 
         Assert.Contains("Sequence contains no elements of type 'Product'", ex.Message);
     }
 
-    [Fact]
-    public async Task QueryFirstAsync_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryFirstAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
-        var product = await _db.Connection.QueryFirstAsync<Product>(
+        var product = await _fixture.GetDbConnection(dialect).QueryFirstAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             CommandOptions<Product>.WithTimeout(30));
@@ -76,12 +73,13 @@ public class QueryFirstAsyncTests : IDisposable
         Assert.Equal(1, product.ProductId);
     }
 
-    [Fact]
-    public async Task QueryFirstAsync_WithCancellationToken_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryFirstAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var cts = new CancellationTokenSource();
         
-        var product = await _db.Connection.QueryFirstAsync<Product>(
+        var product = await _fixture.GetDbConnection(dialect).QueryFirstAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             cts.Token);
@@ -89,15 +87,18 @@ public class QueryFirstAsyncTests : IDisposable
         Assert.Equal(1, product.ProductId);
     }
 
-    [Fact]
-    public async Task QueryFirstAsync_StrictMapping_MissingColumn_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryFirstAsync_StrictMapping_MissingColumn_Throws(DialectInfo dialect)
     {
         // Product implements IMapped<Product>, so its ReadEntity mapper runs directly.
         // Missing columns cause GetOrdinal to throw IndexOutOfRangeException.
         await Assert.ThrowsAnyAsync<Exception>(async () =>
-            await _db.Connection.QueryFirstAsync<Product>(
+            await _fixture.GetDbConnection(dialect).QueryFirstAsync<Product>(
                 "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
                 new { Id = 1 }));
     }
 }
+
+
 

@@ -2,29 +2,23 @@
 using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Streaming;
 
-public class QueryStreamAsyncTests : IDisposable
+public class QueryStreamAsyncTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryStreamAsyncTests()
+    public QueryStreamAsyncTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    public async Task QueryStreamAsync_WithResults_YieldsResults(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public async Task QueryStreamAsync_WithResults_YieldsResults()
-    {
-        var products = _db.Connection.QueryStreamAsync<Product>(
+        var products = _fixture.GetDbConnection(dialect).QueryStreamAsync<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
@@ -44,10 +38,11 @@ public class QueryStreamAsyncTests : IDisposable
         Assert.Equal(5, count);
     }
 
-    [Fact]
-    public async Task QueryStreamAsync_WithoutParameters_YieldsAll()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryStreamAsync_WithoutParameters_YieldsAll(DialectInfo dialect)
     {
-        var products = _db.Connection.QueryStreamAsync<Product>(
+        var products = _fixture.GetDbConnection(dialect).QueryStreamAsync<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM products LIMIT 3");
 
         var list = new List<Product>();
@@ -64,10 +59,11 @@ public class QueryStreamAsyncTests : IDisposable
         Assert.All(list, p => Assert.True(p.ProductId > 0));
     }
 
-    [Fact]
-    public async Task QueryStreamAsync_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryStreamAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
-        var products = _db.Connection.QueryStreamAsync<Product>(
+        var products = _fixture.GetDbConnection(dialect).QueryStreamAsync<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 },
             CommandOptions<Product>.WithTimeout(30));
@@ -87,12 +83,13 @@ public class QueryStreamAsyncTests : IDisposable
         Assert.Equal(3, count);
     }
 
-    [Fact]
-    public async Task QueryStreamAsync_WithCancellationToken_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryStreamAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // Reasonable timeout
         
-        var products = _db.Connection.QueryStreamAsync<Product>(
+        var products = _fixture.GetDbConnection(dialect).QueryStreamAsync<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM products LIMIT 5",
             cts.Token);
 
@@ -110,10 +107,11 @@ public class QueryStreamAsyncTests : IDisposable
         Assert.Equal(5, count);
     }
 
-    [Fact]
-    public async Task QueryStreamAsync_PartialMapping_YieldsResults()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryStreamAsync_PartialMapping_YieldsResults(DialectInfo dialect)
     {
-        var summaries = _db.Connection.QueryPartialStreamAsync<ProductSummary>(
+        var summaries = _fixture.GetDbConnection(dialect).QueryPartialStreamAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 5");
 
         var list = new List<ProductSummary>();
@@ -130,10 +128,11 @@ public class QueryStreamAsyncTests : IDisposable
         Assert.All(list, s => Assert.True(s.ProductId > 0));
     }
 
-    [Fact]
-    public async Task QueryStreamAsync_EmptyResult_YieldsNothing()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryStreamAsync_EmptyResult_YieldsNothing(DialectInfo dialect)
     {
-        var products = _db.Connection.QueryStreamAsync<Product>(
+        var products = _fixture.GetDbConnection(dialect).QueryStreamAsync<Product>(
             "SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM products WHERE product_id = @Id",
             new { Id = -999 });
 
@@ -151,4 +150,6 @@ public class QueryStreamAsyncTests : IDisposable
     }
 }
 #endif
+
+
 

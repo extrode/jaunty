@@ -1,13 +1,13 @@
 using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryFirstTests : IDisposable
+public class QueryFirstTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
     
     private const string FullProductColumns = @"
         product_id AS ProductId,
@@ -21,21 +21,17 @@ public class QueryFirstTests : IDisposable
         reorder_level AS ReorderLevel,
         discontinued AS Discontinued";
 
-    public QueryFirstTests()
+    public QueryFirstTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirst_WithResults_ReturnsFirst(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void QueryFirst_WithResults_ReturnsFirst()
-    {
-        var product = _db.Connection.QueryFirst<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+        var product = connection.QueryFirst<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 });
 
@@ -43,10 +39,13 @@ public class QueryFirstTests : IDisposable
         Assert.NotNull(product.ProductName);
     }
 
-    [Fact]
-    public void QueryFirst_WithParameters_FiltersCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirst_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
-        var product = _db.Connection.QueryFirst<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+        var product = connection.QueryFirst<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
@@ -54,21 +53,27 @@ public class QueryFirstTests : IDisposable
         Assert.Equal((short?)1, product.CategoryId);
     }
 
-    [Fact]
-    public void QueryFirst_NoResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirst_NoResults_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            _db.Connection.QueryFirst<Product>(
+            connection.QueryFirst<Product>(
                 $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
                 new { Id = -999 }));
 
         Assert.Contains("Sequence contains no elements of type 'Product'", ex.Message);
     }
 
-    [Fact]
-    public void QueryFirst_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirst_WithCommandOptions_Works(DialectInfo dialect)
     {
-var product = _db.Connection.QueryFirst<Product>(
+        using var connection = _fixture.GetConnection(dialect);
+var product = connection.QueryFirst<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             CommandOptions<Product>.WithTimeout(30));
@@ -76,15 +81,19 @@ var product = _db.Connection.QueryFirst<Product>(
         Assert.Equal(1, product.ProductId);
     }
 
-    [Fact]
-    public void QueryFirst_StrictMapping_MissingColumn_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirst_StrictMapping_MissingColumn_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // Product implements IMapped<Product>, so its ReadEntity mapper runs directly.
         // Missing columns cause GetOrdinal to throw IndexOutOfRangeException.
         Assert.ThrowsAny<Exception>(() =>
-            _db.Connection.QueryFirst<Product>(
+            connection.QueryFirst<Product>(
                 "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
                 new { Id = 1 }));
     }
 }
+
 

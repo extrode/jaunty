@@ -1,61 +1,69 @@
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class PositionalParameterBindingTests : IDisposable
+public class PositionalParameterBindingTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public PositionalParameterBindingTests()
+    public PositionalParameterBindingTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void PositionalParameters_SingleValue_BindsCorrectly(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void PositionalParameters_SingleValue_BindsCorrectly()
-    {
-        var count = _db.Connection.QueryScalar<long>(
+        using var connection = _fixture.GetConnection(dialect);
+        var count = connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
         Assert.True(count >= 0);
     }
 
-    [Fact]
-    public void PositionalParameters_Array_BindsCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void PositionalParameters_Array_BindsCorrectly(DialectInfo dialect)
     {
-        var count = _db.Connection.QueryScalar<long>(
+        using var connection = _fixture.GetConnection(dialect);
+        var count = connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId AND supplier_id = @SupplierId",
             new { CategoryId = 1, SupplierId = 1 });
 
         Assert.True(count >= 0);
     }
 
-    [Fact]
-    public void PositionalParameters_CountMismatch_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void PositionalParameters_CountMismatch_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         var ex = Assert.Throws<ArgumentException>(() =>
-            _db.Connection.QueryScalar<long>(
+            connection.QueryScalar<long>(
                 "SELECT COUNT(*) FROM products WHERE category_id = @A AND supplier_id = @B AND discontinued = @C",
                 new { A = 1, B = 2 })); // Missing C parameter
 
         Assert.Contains("@C", ex.Message);
     }
 
-    [Fact]
-    public void PositionalParameters_StringValue_BindsCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void PositionalParameters_StringValue_BindsCorrectly(DialectInfo dialect)
     {
-        var count = _db.Connection.QueryScalar<long>(
+        using var connection = _fixture.GetConnection(dialect);
+        var count = connection.QueryScalar<long>(
             "SELECT COUNT(*) FROM products WHERE product_name LIKE @Name",
             new { Name = "%Chai%" });
 
         Assert.True(count >= 0);
     }
 }
+
+
 

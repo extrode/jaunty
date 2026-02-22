@@ -1,74 +1,73 @@
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryPartialSingleAsyncTests : IDisposable
+public class QueryPartialSingleAsyncTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryPartialSingleAsyncTests()
+    public QueryPartialSingleAsyncTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialSingleAsync_WithExactlyOneResult_ReturnsEntity(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialSingleAsync_WithExactlyOneResult_ReturnsEntity()
-    {
-        var product = await _db.Connection.QueryPartialSingleAsync<ProductSummary>(
+        var product = await _fixture.GetDbConnection(dialect).QueryPartialSingleAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = 2");
 
         Assert.NotNull(product);
         Assert.Equal(2, product.ProductId);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialSingleAsync_MissingColumn_Allowed()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialSingleAsync_MissingColumn_Allowed(DialectInfo dialect)
     {
-        var product = await _db.Connection.QueryPartialSingleAsync<ProductSummary>(
+        var product = await _fixture.GetDbConnection(dialect).QueryPartialSingleAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = 2");
 
         Assert.NotNull(product);
         Assert.Equal(0, product.CategoryId);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialSingleAsync_NoResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialSingleAsync_NoResults_Throws(DialectInfo dialect)
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _db.Connection.QueryPartialSingleAsync<ProductSummary>(
+            _fixture.GetDbConnection(dialect).QueryPartialSingleAsync<ProductSummary>(
                 "SELECT product_id AS ProductId FROM products WHERE product_id = -999").AsTask());
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialSingleAsync_MultipleResults_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialSingleAsync_MultipleResults_Throws(DialectInfo dialect)
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _db.Connection.QueryPartialSingleAsync<ProductSummary>(
+            _fixture.GetDbConnection(dialect).QueryPartialSingleAsync<ProductSummary>(
                 "SELECT product_id AS ProductId, product_name AS ProductName FROM products").AsTask());
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialSingleAsync_WithParameters_FiltersCorrectly()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialSingleAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
-        var product = await _db.Connection.QueryPartialSingleAsync<ProductSummary>(
+        var product = await _fixture.GetDbConnection(dialect).QueryPartialSingleAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products WHERE product_id = @Id",
             new { Id = 2 });
 
         Assert.Equal(2, product.ProductId);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialSingleAsync_WithParametersAndOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialSingleAsync_WithParametersAndOptions_Works(DialectInfo dialect)
     {
-        var product = await _db.Connection.QueryPartialSingleAsync<ProductSummary>(
+        var product = await _fixture.GetDbConnection(dialect).QueryPartialSingleAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products WHERE product_id = @Id",
             new { Id = 2 },
             CommandOptions<ProductSummary>.WithTimeout(30));
@@ -76,10 +75,11 @@ public class QueryPartialSingleAsyncTests : IDisposable
         Assert.Equal(2, product.ProductId);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryPartialSingleAsync_WithOptionsOnly_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryPartialSingleAsync_WithOptionsOnly_Works(DialectInfo dialect)
     {
-        var product = await _db.Connection.QueryPartialSingleAsync<ProductSummary>(
+        var product = await _fixture.GetDbConnection(dialect).QueryPartialSingleAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = 2",
             CommandOptions<ProductSummary>.WithTimeout(30));
 
@@ -87,5 +87,7 @@ public class QueryPartialSingleAsyncTests : IDisposable
         Assert.Equal(2, product.ProductId);
     }
 }
+
+
 
 

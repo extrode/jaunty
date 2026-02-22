@@ -1,43 +1,45 @@
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryParameterBindingErrorTests : IDisposable
+public class QueryParameterBindingErrorTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryParameterBindingErrorTests()
+    public QueryParameterBindingErrorTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_MissingParameter_ThrowsArgumentException(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_MissingParameter_ThrowsArgumentException()
-    {
+        using var connection = _fixture.GetConnection(dialect);
         var ex = Assert.Throws<ArgumentException>(() =>
-            _db.Connection.Query<Category>(
+            connection.Query<Category>(
                 "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id AND category_name = @Name",
                 new { Id = 1 })); // Missing Name parameter
 
         Assert.Contains("@Name", ex.Message);
     }
 
-    [Fact]
-    public void Query_ExtraParameter_ThrowsArgumentException()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_ExtraParameter_ThrowsArgumentException(DialectInfo dialect)
     {
+        using var connection = _fixture.GetConnection(dialect);
         // Extra parameters in the anonymous object cause an error
         var ex = Assert.Throws<ArgumentException>(() =>
-            _db.Connection.Query<Category>(
+            connection.Query<Category>(
                 "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
                 new { Id = 1, Extra1 = 2, Extra2 = 3 }));
 
         Assert.Contains("Unused parameter", ex.Message);
     }
 }
+
+

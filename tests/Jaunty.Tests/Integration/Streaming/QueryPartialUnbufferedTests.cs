@@ -1,28 +1,24 @@
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Streaming;
 
-public class QueryPartialUnbufferedTests : IDisposable
+public class QueryPartialUnbufferedTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryPartialUnbufferedTests()
+    public QueryPartialUnbufferedTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
-
-    public void Dispose()
+[Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialUnbuffered_WithResults_YieldsResults(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void QueryPartialUnbuffered_WithResults_YieldsResults()
-    {
-        var summaries = _db.Connection.QueryPartialUnbuffered<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialUnbuffered<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
@@ -38,10 +34,13 @@ public class QueryPartialUnbufferedTests : IDisposable
         Assert.Equal(5, count);
     }
 
-    [Fact]
-    public void QueryPartialUnbuffered_WithoutParameters_YieldsAll()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialUnbuffered_WithoutParameters_YieldsAll(DialectInfo dialect)
     {
-        var summaries = _db.Connection.QueryPartialUnbuffered<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialUnbuffered<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 3");
 
         var list = summaries.ToList();
@@ -49,10 +48,13 @@ public class QueryPartialUnbufferedTests : IDisposable
         Assert.All(list, s => Assert.True(s.ProductId > 0));
     }
 
-    [Fact]
-    public void QueryPartialUnbuffered_WithCommandOptions_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialUnbuffered_WithCommandOptions_Works(DialectInfo dialect)
     {
-        var summaries = _db.Connection.QueryPartialUnbuffered<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialUnbuffered<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 },
             CommandOptions<ProductSummary>.WithTimeout(30));
@@ -68,10 +70,13 @@ public class QueryPartialUnbufferedTests : IDisposable
         Assert.Equal(3, count);
     }
 
-    [Fact]
-    public void QueryPartialUnbuffered_WithOptionsOnly_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialUnbuffered_WithOptionsOnly_Works(DialectInfo dialect)
     {
-        var summaries = _db.Connection.QueryPartialUnbuffered<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialUnbuffered<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 3",
             CommandOptions<ProductSummary>.WithTimeout(30));
 
@@ -79,10 +84,13 @@ public class QueryPartialUnbufferedTests : IDisposable
         Assert.Equal(3, list.Count);
     }
 
-    [Fact]
-    public void QueryPartialUnbuffered_MissingColumns_SetsDefaults()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialUnbuffered_MissingColumns_SetsDefaults(DialectInfo dialect)
     {
-        var summaries = _db.Connection.QueryPartialUnbuffered<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialUnbuffered<ProductSummary>(
             "SELECT product_id AS ProductId FROM products LIMIT 5");
 
         var list = summaries.ToList();
@@ -94,10 +102,13 @@ public class QueryPartialUnbufferedTests : IDisposable
         });
     }
 
-    [Fact]
-    public void QueryPartialUnbuffered_EmptyResult_YieldsNothing()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialUnbuffered_EmptyResult_YieldsNothing(DialectInfo dialect)
     {
-        var summaries = _db.Connection.QueryPartialUnbuffered<ProductSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var summaries = connection.QueryPartialUnbuffered<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
             new { Id = -999 });
 
@@ -105,4 +116,5 @@ public class QueryPartialUnbufferedTests : IDisposable
         Assert.Empty(list);
     }
 }
+
 

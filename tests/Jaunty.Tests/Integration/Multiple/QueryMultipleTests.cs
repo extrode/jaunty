@@ -2,29 +2,23 @@ using System.Data.Common;
 
 using Jaunty;
 using Jaunty.Tests.Entities;
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Multiple;
 
-public class QueryMultipleTests : IDisposable
+public class QueryMultipleTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryMultipleTests()
+    public QueryMultipleTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
+#region Sync Read Tests
 
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    #region Sync Read Tests
-
-    [Fact]
-    public void QueryMultiple_ReadsMultipleResultSets_Buffered()
+    [Theory]
+    [MicrosoftSqlite]
+    public void QueryMultiple_ReadsMultipleResultSets_Buffered(DialectInfo dialect)
     {
         var sql = @"
         SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;
@@ -33,13 +27,13 @@ public class QueryMultipleTests : IDisposable
         List<Order>? orders = null;
         List<Customer>? customers = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             orders = reader.ReadPartial<Order>().ToList();
             customers = reader.ReadPartial<Customer>().ToList();
         });
 
-        _db.Connection.QueryMultiple(sql);
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql);
 
         Assert.NotNull(orders);
         Assert.NotNull(customers);
@@ -47,14 +41,15 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(2, customers.Count);
     }
 
-    [Fact]
-    public void ReadPartial_MapsSubsetOfColumns()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadPartial_MapsSubsetOfColumns(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         List<OrderSummary>? orders = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             orders = reader.ReadPartial<OrderSummary>();
         });
@@ -68,14 +63,15 @@ public class QueryMultipleTests : IDisposable
 
     #region ReadFirst Tests
 
-    [Fact]
-    public void ReadFirst_ReturnsFirstRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadFirst_ReturnsFirstRow(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         Order? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirst<Order>();
         });
@@ -84,28 +80,30 @@ public class QueryMultipleTests : IDisposable
         Assert.True(order.OrderId > 0);
     }
 
-    [Fact]
-    public void ReadFirst_NoRows_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadFirst_NoRows_Throws(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _db.Connection.QueryMultiple(sql, reader =>
+            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
             {
                 reader.ReadPartialFirst<Order>();
             });
         });
     }
 
-    [Fact]
-    public void ReadFirstOrDefault_ReturnsFirstRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadFirstOrDefault_ReturnsFirstRow(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         Order? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirstOrDefault<Order>();
         });
@@ -113,14 +111,15 @@ public class QueryMultipleTests : IDisposable
         Assert.NotNull(order);
     }
 
-    [Fact]
-    public void ReadFirstOrDefault_NoRows_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadFirstOrDefault_NoRows_ReturnsNull(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Order? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirstOrDefault<Order>();
         });
@@ -128,14 +127,15 @@ public class QueryMultipleTests : IDisposable
         Assert.Null(order);
     }
 
-    [Fact]
-    public void ReadPartialFirst_ReturnsFirstRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadPartialFirst_ReturnsFirstRow(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         OrderSummary? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirst<OrderSummary>();
         });
@@ -144,28 +144,30 @@ public class QueryMultipleTests : IDisposable
         Assert.True(order.OrderId > 0);
     }
 
-    [Fact]
-    public void ReadPartialFirst_NoRows_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadPartialFirst_NoRows_Throws(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _db.Connection.QueryMultiple(sql, reader =>
+            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
             {
                 reader.ReadPartialFirst<OrderSummary>();
             });
         });
     }
 
-    [Fact]
-    public void ReadPartialFirstOrDefault_ReturnsFirstRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadPartialFirstOrDefault_ReturnsFirstRow(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         OrderSummary? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirstOrDefault<OrderSummary>();
         });
@@ -173,14 +175,15 @@ public class QueryMultipleTests : IDisposable
         Assert.NotNull(order);
     }
 
-    [Fact]
-    public void ReadPartialFirstOrDefault_NoRows_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadPartialFirstOrDefault_NoRows_ReturnsNull(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         OrderSummary? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirstOrDefault<OrderSummary>();
         });
@@ -192,14 +195,15 @@ public class QueryMultipleTests : IDisposable
 
     #region ReadSingle Tests
 
-    [Fact]
-    public void ReadSingle_ReturnsSingleRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadSingle_ReturnsSingleRow(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         Order? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingle<Order>();
         });
@@ -208,42 +212,45 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(10248, order.OrderId);
     }
 
-    [Fact]
-    public void ReadSingle_NoRows_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadSingle_NoRows_Throws(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _db.Connection.QueryMultiple(sql, reader =>
+            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
             {
                 reader.ReadPartialSingle<Order>();
             });
         });
     }
 
-    [Fact]
-    public void ReadSingle_MultipleRows_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadSingle_MultipleRows_Throws(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _db.Connection.QueryMultiple(sql, reader =>
+            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
             {
                 reader.ReadPartialSingle<Order>();
             });
         });
     }
 
-    [Fact]
-    public void ReadSingleOrDefault_ReturnsSingleRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadSingleOrDefault_ReturnsSingleRow(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         Order? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingleOrDefault<Order>();
         });
@@ -252,14 +259,15 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(10248, order.OrderId);
     }
 
-    [Fact]
-    public void ReadSingleOrDefault_NoRows_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadSingleOrDefault_NoRows_ReturnsNull(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Order? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingleOrDefault<Order>();
         });
@@ -267,14 +275,15 @@ public class QueryMultipleTests : IDisposable
         Assert.Null(order);
     }
 
-    [Fact]
-    public void ReadPartialSingle_ReturnsSingleRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadPartialSingle_ReturnsSingleRow(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         OrderSummary? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingle<OrderSummary>();
         });
@@ -283,28 +292,30 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(10248, order.OrderId);
     }
 
-    [Fact]
-    public void ReadPartialSingle_NoRows_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadPartialSingle_NoRows_Throws(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _db.Connection.QueryMultiple(sql, reader =>
+            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
             {
                 reader.ReadPartialSingle<OrderSummary>();
             });
         });
     }
 
-    [Fact]
-    public void ReadPartialSingleOrDefault_ReturnsSingleRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadPartialSingleOrDefault_ReturnsSingleRow(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         OrderSummary? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingleOrDefault<OrderSummary>();
         });
@@ -313,14 +324,15 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(10248, order.OrderId);
     }
 
-    [Fact]
-    public void ReadPartialSingleOrDefault_NoRows_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadPartialSingleOrDefault_NoRows_ReturnsNull(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         OrderSummary? order = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingleOrDefault<OrderSummary>();
         });
@@ -332,14 +344,15 @@ public class QueryMultipleTests : IDisposable
 
     #region ReadScalar Tests
 
-    [Fact]
-    public void ReadScalar_ReturnsValue()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadScalar_ReturnsValue(DialectInfo dialect)
     {
         var sql = "SELECT COUNT(*) FROM orders;";
 
         long? count = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             count = reader.ReadScalar<long>();
         });
@@ -348,14 +361,15 @@ public class QueryMultipleTests : IDisposable
         Assert.True(count > 0);
     }
 
-    [Fact]
-    public void ReadScalar_NoRows_ReturnsDefault()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadScalar_NoRows_ReturnsDefault(DialectInfo dialect)
     {
         var sql = "SELECT order_id FROM orders WHERE order_id = -999;";
 
         long? orderId = null;
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             orderId = reader.ReadScalar<long>();
         });
@@ -367,14 +381,15 @@ public class QueryMultipleTests : IDisposable
 
     #region ReadStream Tests
 
-    [Fact]
-    public void ReadStream_StreamsResults()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadStream_StreamsResults(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         var orders = new List<Order>();
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             foreach (var order in reader.ReadPartialStream<Order>())
             {
@@ -385,14 +400,15 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(5, orders.Count);
     }
 
-    [Fact]
-    public void ReadPartialStream_StreamsResults()
+    [Theory]
+    [MicrosoftSqlite]
+    public void ReadPartialStream_StreamsResults(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         var orders = new List<OrderSummary>();
 
-        _db.Connection.QueryMultiple(sql, reader =>
+        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
         {
             foreach (var order in reader.ReadPartialStream<OrderSummary>())
             {
@@ -407,10 +423,11 @@ public class QueryMultipleTests : IDisposable
 
     #region Async Tests
 
-    [SkipSQLiteAsyncFact]
-    public async Task QueryMultipleAsync_ReadsMultipleResultSets()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task QueryMultipleAsync_ReadsMultipleResultSets(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = @"
         SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;
         SELECT customer_id AS CustomerId, company_name AS CompanyName FROM customers ORDER BY customer_id LIMIT 2;";
@@ -430,10 +447,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(2, customers.Count);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadPartialAsync_MapsSubsetOfColumns()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadPartialAsync_MapsSubsetOfColumns(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         List<OrderSummary>? orders = null;
@@ -447,10 +465,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(5, orders.Count);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadFirstAsync_ReturnsFirstRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadFirstAsync_ReturnsFirstRow(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         Order? order = null;
@@ -463,10 +482,11 @@ public class QueryMultipleTests : IDisposable
         Assert.NotNull(order);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadFirstOrDefaultAsync_NoRows_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadFirstOrDefaultAsync_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Order? order = null;
@@ -479,10 +499,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Null(order);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadPartialFirstAsync_ReturnsFirstRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadPartialFirstAsync_ReturnsFirstRow(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
         OrderSummary? order = null;
@@ -496,10 +517,11 @@ public class QueryMultipleTests : IDisposable
         Assert.True(order.OrderId > 0);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadPartialFirstOrDefaultAsync_NoRows_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadPartialFirstOrDefaultAsync_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         OrderSummary? order = null;
@@ -512,10 +534,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Null(order);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadSingleAsync_ReturnsSingleRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadSingleAsync_ReturnsSingleRow(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         Order? order = null;
@@ -529,10 +552,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(10248, order.OrderId);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadSingleOrDefaultAsync_NoRows_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadSingleOrDefaultAsync_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         Order? order = null;
@@ -545,10 +569,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Null(order);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadPartialSingleAsync_ReturnsSingleRow()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadPartialSingleAsync_ReturnsSingleRow(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
         OrderSummary? order = null;
@@ -562,10 +587,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(10248, order.OrderId);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadPartialSingleOrDefaultAsync_NoRows_ReturnsNull()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadPartialSingleOrDefaultAsync_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
 
         OrderSummary? order = null;
@@ -578,10 +604,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Null(order);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadScalarAsync_ReturnsValue()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadScalarAsync_ReturnsValue(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT COUNT(*) FROM orders;";
 
         long? count = null;
@@ -596,10 +623,11 @@ public class QueryMultipleTests : IDisposable
     }
 
 #if NET8_0_OR_GREATER
-    [SkipSQLiteAsyncFact]
-    public async Task ReadStreamAsync_StreamsResults()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadStreamAsync_StreamsResults(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         var orders = new List<Order>();
@@ -615,10 +643,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(5, orders.Count);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadPartialStreamAsync_StreamsResults()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadPartialStreamAsync_StreamsResults(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
 
         var orders = new List<OrderSummary>();
@@ -639,10 +668,11 @@ public class QueryMultipleTests : IDisposable
 
     #region CancellationToken Tests
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadAsync_WithCancellationToken_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
@@ -657,10 +687,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(3, orders.Count);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadFirstAsync_WithCancellationToken_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadFirstAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
 
@@ -674,10 +705,11 @@ public class QueryMultipleTests : IDisposable
         Assert.NotNull(order);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadSingleAsync_WithCancellationToken_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadSingleAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
 
@@ -692,10 +724,11 @@ public class QueryMultipleTests : IDisposable
         Assert.Equal(10248, order.OrderId);
     }
 
-    [SkipSQLiteAsyncFact]
-    public async Task ReadScalarAsync_WithCancellationToken_Works()
+    [Theory]
+    [MicrosoftSqlite]
+    public async Task ReadScalarAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
-        var conn = _db.Connection! as DbConnection;
+        var conn = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
         var sql = "SELECT COUNT(*) FROM orders;";
 
@@ -714,14 +747,15 @@ public class QueryMultipleTests : IDisposable
 
     #region Consumed State Tests
 
-    [Fact]
-    public void Read_AfterAllConsumed_Throws()
+    [Theory]
+    [MicrosoftSqlite]
+    public void Read_AfterAllConsumed_Throws(DialectInfo dialect)
     {
         var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders LIMIT 1;";
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _db.Connection.QueryMultiple(sql, reader =>
+            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
             {
                 _ = reader.ReadPartial<Order>();
                 _ = reader.ReadPartial<Order>(); // Should throw - already consumed
@@ -731,4 +765,6 @@ public class QueryMultipleTests : IDisposable
 
     #endregion
 }
+
+
 

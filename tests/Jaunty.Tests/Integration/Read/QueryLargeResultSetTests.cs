@@ -1,26 +1,23 @@
-using Jaunty.Tests.Helpers;
+using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
-public class QueryLargeResultSetTests : IDisposable
+public class QueryLargeResultSetTests : IClassFixture<DialectFixture>
 {
-    private readonly Database _db;
+    private readonly DialectFixture _fixture;
 
-    public QueryLargeResultSetTests()
+    public QueryLargeResultSetTests(DialectFixture fixture)
     {
-        _db = new Database();
+        _fixture = fixture;
     }
 
-    public void Dispose()
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_LargeResultSet_HandlesCorrectly(DialectInfo dialect)
     {
-        GC.SuppressFinalize(this);
-        _db.Dispose();
-    }
-
-    [Fact]
-    public void Query_LargeResultSet_HandlesCorrectly()
-    {
-        var orders = _db.Connection.Query<OrderSummary>(
+        using var connection = _fixture.GetConnection(dialect);
+        var orders = connection.Query<OrderSummary>(
             "SELECT order_id AS OrderId, customer_id AS CustomerId, employee_id AS EmployeeId FROM orders");
 
         Assert.True(orders.Count > 100); // Northwind has ~800 orders
@@ -33,4 +30,6 @@ public class QueryLargeResultSetTests : IDisposable
         public long EmployeeId { get; set; }
     }
 }
+
+
 
