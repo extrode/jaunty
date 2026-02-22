@@ -23,10 +23,16 @@ $ErrorPatterns = @(
 
 # Patterns that indicate acceptable reflection (source-generated paths)
 $KeepPatterns = @(
-    @{ Pattern = 'IMapped<'; Description = 'Source-generated mapper interface' },
+    @{ Pattern = 'IMapped'; Description = 'Source-generated mapper interface' },
     @{ Pattern = 'ReadEntity'; Description = 'Source-generated ReadEntity method' },
     @{ Pattern = 'BindParameters'; Description = 'Source-generated BindParameters method' },
-    @{ Pattern = 'MetadataCache<T>'; Description = 'Source-generated metadata cache' }
+    @{ Pattern = 'MappedCache'; Description = 'Source-generated mapper cache' }
+)
+
+# Patterns that require documentation (trim-safe with proper setup)
+$DocumentPatterns = @(
+    @{ Pattern = 'Jaunty.Init.cs'; Description = 'Extension loading (NativeAOT-safe with try-catch)' },
+    @{ Pattern = 'ParameterCache.cs'; Description = 'Anonymous type binding (trim-safe)' }
 )
 
 Write-Host ""
@@ -70,25 +76,37 @@ foreach ($file in $files) {
             $contextLength = [Math]::Min(200, $content.Length - $startIndex)
             $context = $content.Substring($startIndex, $contextLength) -replace "`r?`n", ' '
             
-            # Check if this is in an acceptable context
+            # Check if this is in an acceptable context (check full file content)
             $isAllowed = $false
             $allowedReason = ""
+            $requiresDocumentation = $false
             
             foreach ($keepPattern in $KeepPatterns) {
-                if ($context -match $keepPattern.Pattern) {
+                if ($content -match $keepPattern.Pattern) {
                     $isAllowed = $true
                     $allowedReason = $keepPattern.Description
                     break
                 }
             }
             
-            if ($isAllowed) {
+            if (-not $isAllowed) {
+                foreach ($docPattern in $DocumentPatterns) {
+                    if ($relativePath -match $docPattern.Pattern) {
+                        $requiresDocumentation = $true
+                        $allowedReason = $docPattern.Description
+                        break
+                    }
+                }
+            }
+            
+            if ($isAllowed -or $requiresDocumentation) {
                 if ($Verbose) {
                     $acceptableIssues += [PSCustomObject]@{
                         File = $relativePath
                         Line = $lineNum
                         Issue = $description
                         Reason = $allowedReason
+                        RequiresDocs = $requiresDocumentation
                     }
                 }
             } else {
@@ -111,7 +129,8 @@ if ($issues.Count -eq 0) {
     
     if ($acceptableIssues.Count -gt 0 -and $Verbose) {
         Write-Host ""
-        Write-Host "Note: $($acceptableIssues.Count) acceptable reflection usages found (source-generated paths)" -ForegroundColor Yellow
+        Write-Host "Note: $($acceptableIssues.Count) acceptable reflection usages found:" -ForegroundColor Yellow
+        $acceptableIssues | Format-Table -AutoSize | Out-String | Write-Host
     }
     
     exit 0

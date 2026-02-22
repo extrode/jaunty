@@ -9,6 +9,24 @@ public static partial class Jaunty
         TryEnableReflectionMapping();
     }
 
+    /// <summary>
+    /// Attempts to load and initialize reflection-based mapping from Jaunty.Extensions.Reflection.
+    /// This method is NativeAOT-safe: it gracefully handles the case where the extension assembly
+    /// is not present or was trimmed away.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For NativeAOT applications, there are two options:
+    /// </para>
+    /// <list type="number">
+    /// <item><description>Exclude Jaunty.Extensions.Reflection from trimming (recommended if using special types)</description></item>
+    /// <item><description>Manually call <c>JauntyReflectionExtensions.UseReflectionMapping()</c> and <c>SpecialTypeMappers.Register()</c> at startup</description></item>
+    /// </list>
+    /// <para>
+    /// Applications that only use source-generated mappers (entities with <c>[Table]</c> attribute)
+    /// do not need the extension assembly and can safely trim it.
+    /// </para>
+    /// </remarks>
     private static void TryEnableReflectionMapping()
     {
         try
@@ -19,9 +37,14 @@ public static partial class Jaunty
             var method = type?.GetMethod("UseReflectionMapping", BindingFlags.Public | BindingFlags.Static);
             method?.Invoke(null, null);
         }
+        catch (Exception ex) when (ex is FileNotFoundException || ex is TypeLoadException || ex is MissingMethodException)
+        {
+            // Extension not present or trimmed away, which is fine for source-gen-only users
+            // NativeAOT applications should manually initialize if they need reflection mapping
+        }
         catch
         {
-            // Extension not present, which is fine for 100% Source Gen users
+            // Other exceptions (e.g., security) are silently ignored to maintain backward compatibility
         }
     }
 }
