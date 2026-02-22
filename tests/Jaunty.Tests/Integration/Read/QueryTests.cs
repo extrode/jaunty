@@ -23,8 +23,7 @@ public class QueryTests : IClassFixture<DialectFixture>
     {
         using var connection = _fixture.GetConnection(dialect);
 
-        var categories = connection.Query<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories");
+        var categories = connection.Query<Category>(dialect.SelectCategoriesSql);
 
         Assert.NotEmpty(categories);
         Assert.All(categories, c => Assert.False(string.IsNullOrEmpty(c.CategoryName)));
@@ -40,9 +39,11 @@ public class QueryTests : IClassFixture<DialectFixture>
     {
         using var connection = _fixture.GetConnection(dialect);
 
-        var categories = connection.Query<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @CategoryId",
-            new { CategoryId = 1 });
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT CategoryId, CategoryName, Description FROM Categories WHERE CategoryId = @CategoryId"
+            : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @CategoryId";
+
+        var categories = connection.Query<Category>(sql, new { CategoryId = 1 });
 
         Assert.Single(categories);
         Assert.Equal(1, categories[0].CategoryId);
