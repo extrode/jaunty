@@ -1,10 +1,10 @@
 using System.Data;
 using System.Data.Common;
+
 using Jaunty.Core;
-using Jaunty.Interfaces;
 using Jaunty.Internals;
-using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
+
 using JauntyConfig = Jaunty.Configuration.JauntyConfig;
 
 namespace Jaunty;
@@ -26,16 +26,14 @@ public static partial class Jaunty
 
             using var command = connection.CreateCommand();
             command.Transaction = options.Transaction;
-            command.CommandText = cached.HasIdentityKey
-                ? cached.InsertSql + "; " + cached.LastInsertIdSql
-                : cached.InsertSql;
+            command.CommandText = ComposeInsertCommandText(cached);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             // Bind parameters using our decision tree
             var binder = WriteParameterCache<T>.InsertBinder;
-            if (binder != null)
+            if (binder is not null)
             {
                 binder(command, entity);
             }
@@ -87,9 +85,7 @@ public static partial class Jaunty
             using var command = connection.CreateCommand();
 #endif
             command.Transaction = options.Transaction as DbTransaction;
-            command.CommandText = cached.HasIdentityKey
-                ? cached.InsertSql + "; " + cached.LastInsertIdSql
-                : cached.InsertSql;
+            command.CommandText = ComposeInsertCommandText(cached);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -133,5 +129,20 @@ public static partial class Jaunty
 #endif
             }
         }
+    }
+
+    private static string ComposeInsertCommandText(CachedCrudSql cached)
+    {
+        if (!cached.HasIdentityKey)
+            return cached.InsertSql;
+
+        var lastInsertIdSql = cached.LastInsertIdSql?.TrimStart();
+        if (!string.IsNullOrEmpty(lastInsertIdSql) &&
+            lastInsertIdSql.StartsWith("RETURNING", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{cached.InsertSql} {cached.LastInsertIdSql}";
+        }
+
+        return $"{cached.InsertSql}; {cached.LastInsertIdSql}";
     }
 }
