@@ -21,27 +21,39 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     #region Helper Methods
 
     /// <summary>
-    /// Creates parameters for CategoryId. PostgreSQL uses p_ prefix.
+    /// Gets stored procedure name. PostgreSQL folds unquoted names to lowercase.
+    /// </summary>
+    private static string SpName(string name, DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.Postgres ? name.ToLower() : name;
+
+    /// <summary>
+    /// Creates parameters for CategoryId. PostgreSQL uses p_category_id, MariaDB uses p_CategoryId.
     /// </summary>
     private static object CategoryParam(DialectInfo dialect, int id) =>
         dialect.Provider == DialectProvider.Postgres
             ? new { p_category_id = id }
+            : dialect.Provider == DialectProvider.MariaDb
+            ? new { p_CategoryId = id }
             : new { CategoryId = id };
 
     /// <summary>
-    /// Creates parameters for ProductId. PostgreSQL uses p_ prefix.
+    /// Creates parameters for ProductId. PostgreSQL uses p_product_id, MariaDB uses p_ProductId.
     /// </summary>
     private static object ProductParam(DialectInfo dialect, int id) =>
         dialect.Provider == DialectProvider.Postgres
             ? new { p_product_id = id }
+            : dialect.Provider == DialectProvider.MariaDb
+            ? new { p_ProductId = id }
             : new { ProductId = id };
 
     /// <summary>
-    /// Creates parameters for UpdateProductPrice. PostgreSQL uses p_ prefix.
+    /// Creates parameters for UpdateProductPrice. PostgreSQL/MariaDB use p_ prefix with different casing.
     /// </summary>
     private static object UpdatePriceParam(DialectInfo dialect, int productId, decimal newPrice) =>
         dialect.Provider == DialectProvider.Postgres
             ? new { p_product_id = productId, p_new_price = newPrice }
+            : dialect.Provider == DialectProvider.MariaDb
+            ? new { p_ProductId = productId, p_NewPrice = newPrice }
             : new { ProductId = productId, NewPrice = newPrice };
 
     /// <summary>
@@ -51,13 +63,15 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
         dialect.Provider == DialectProvider.Postgres;
 
     /// <summary>
-    /// Output parameter names. PostgreSQL uses p_ prefix.
+    /// Output parameter names. PostgreSQL uses p_category_id, MariaDB uses p_CategoryId.
     /// </summary>
     private static string OutputCategoryParamName(DialectInfo dialect) =>
-        dialect.Provider == DialectProvider.Postgres ? "p_category_id" : "CategoryId";
+        dialect.Provider == DialectProvider.Postgres ? "p_category_id" :
+        dialect.Provider == DialectProvider.MariaDb ? "p_CategoryId" : "CategoryId";
 
     private static string OutputCountParamName(DialectInfo dialect) =>
-        dialect.Provider == DialectProvider.Postgres ? "p_product_count" : "ProductCount";
+        dialect.Provider == DialectProvider.Postgres ? "p_product_count" :
+        dialect.Provider == DialectProvider.MariaDb ? "p_ProductCount" : "ProductCount";
 
     #endregion
 
@@ -70,7 +84,8 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedure_WithResults_ReturnsEntities(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var products = connection.ExecuteStoredProcedure<Product>("GetAllProducts");
+
+        var products = connection.ExecuteStoredProcedure<Product>(SpName("GetAllProducts", dialect));
 
         Assert.NotEmpty(products);
         Assert.All(products, p => Assert.True(p.ProductId > 0));
@@ -83,8 +98,9 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedure_WithParameters_ReturnsFilteredResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
+
         var products = connection.ExecuteStoredProcedure<Product>(
-            "GetProductsByCategory",
+            SpName("GetProductsByCategory", dialect),
             CategoryParam(dialect, 1));
 
         Assert.NotEmpty(products);
@@ -98,12 +114,11 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedure_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        connection.Open();
         using var transaction = connection.BeginTransaction();
         try
         {
             var products = connection.ExecuteStoredProcedure<Product>(
-                "GetProductsByCategory",
+                SpName("GetProductsByCategory", dialect),
                 CategoryParam(dialect, 1),
                 CommandOptions<Product>.WithTransaction(transaction));
 
@@ -126,8 +141,9 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedureFirst_WithResults_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
+
         var product = connection.ExecuteStoredProcedureFirst<Product>(
-            "GetProductById",
+            SpName("GetProductById", dialect),
             ProductParam(dialect, 1));
 
         Assert.NotNull(product);
@@ -141,12 +157,11 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedureFirst_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        connection.Open();
         using var transaction = connection.BeginTransaction();
         try
         {
             var product = connection.ExecuteStoredProcedureFirst<Product>(
-                "GetProductById",
+                SpName("GetProductById", dialect),
                 ProductParam(dialect, 1),
                 CommandOptions<Product>.WithTransaction(transaction));
 
@@ -166,8 +181,9 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedureFirst_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
+
         Assert.Throws<InvalidOperationException>(() =>
-            connection.ExecuteStoredProcedureFirst<Product>("GetNoResults"));
+            connection.ExecuteStoredProcedureFirst<Product>(SpName("GetNoResults", dialect)));
     }
 
     #endregion
@@ -181,8 +197,9 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedureFirstOrDefault_WithResults_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
+
         var product = connection.ExecuteStoredProcedureFirstOrDefault<Product>(
-            "GetProductById",
+            SpName("GetProductById", dialect),
             ProductParam(dialect, 1));
 
         Assert.NotNull(product);
@@ -196,7 +213,8 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedureFirstOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var product = connection.ExecuteStoredProcedureFirstOrDefault<Product>("GetNoResults");
+
+        var product = connection.ExecuteStoredProcedureFirstOrDefault<Product>(SpName("GetNoResults", dialect));
 
         Assert.Null(product);
     }
@@ -208,12 +226,11 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedureFirstOrDefault_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        connection.Open();
         using var transaction = connection.BeginTransaction();
         try
         {
             var product = connection.ExecuteStoredProcedureFirstOrDefault<Product>(
-                "GetProductById",
+                SpName("GetProductById", dialect),
                 ProductParam(dialect, 1),
                 CommandOptions<Product>.WithTransaction(transaction));
 
@@ -236,7 +253,8 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedureScalar_ReturnsScalarValue(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var count = connection.ExecuteStoredProcedureScalar<int>("GetProductCount");
+
+        var count = connection.ExecuteStoredProcedureScalar<int>(SpName("GetProductCount", dialect));
 
         Assert.True(count > 0);
     }
@@ -248,8 +266,9 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedureScalar_WithParameters_ReturnsValue(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
+
         var count = connection.ExecuteStoredProcedureScalar<int>(
-            "GetProductCountByCategory",
+            SpName("GetProductCountByCategory", dialect),
             CategoryParam(dialect, 1));
 
         Assert.True(count > 0);
@@ -262,12 +281,11 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedureScalar_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        connection.Open();
         using var transaction = connection.BeginTransaction();
         try
         {
             var count = connection.ExecuteStoredProcedureScalar<int>(
-                "GetProductCountByCategory",
+                SpName("GetProductCountByCategory", dialect),
                 CategoryParam(dialect, 1),
                 CommandOptions<int>.WithTransaction(transaction));
 
@@ -290,12 +308,11 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedureNonQuery_ExecutesSuccessfully(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        connection.Open();
         using var transaction = connection.BeginTransaction();
         try
         {
             connection.ExecuteStoredProcedureNonQuery(
-                "UpdateProductPrice",
+                SpName("UpdateProductPrice", dialect),
                 UpdatePriceParam(dialect, 1, 99.99m),
                 CommandOptions.WithTransaction(transaction));
         }
@@ -316,6 +333,7 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void ExecuteStoredProcedureNonQuery_WithOutputParameter_ReturnsOutputValue(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
+
         var parameters = new SpParameters()
             .AddInput(OutputCategoryParamName(dialect), 1);
 
@@ -324,7 +342,7 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
         else
             parameters.AddOutput(OutputCountParamName(dialect), DbType.Int32);
 
-        connection.ExecuteStoredProcedureNonQuery("GetProductCountWithOutput", parameters);
+        connection.ExecuteStoredProcedureNonQuery(SpName("GetProductCountWithOutput", dialect), parameters);
 
         var count = parameters.Get<int>(OutputCountParamName(dialect));
         Assert.True(count > 0);
@@ -337,6 +355,7 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
     public void SpParameters_HasValue_ReturnsTrueForOutputWithValue(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
+
         var parameters = new SpParameters()
             .AddInput(OutputCategoryParamName(dialect), 1);
 
@@ -345,7 +364,7 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
         else
             parameters.AddOutput(OutputCountParamName(dialect), DbType.Int32);
 
-        connection.ExecuteStoredProcedureNonQuery("GetProductCountWithOutput", parameters);
+        connection.ExecuteStoredProcedureNonQuery(SpName("GetProductCountWithOutput", dialect), parameters);
 
         Assert.True(parameters.HasValue(OutputCountParamName(dialect)));
     }
