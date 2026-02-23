@@ -17,6 +17,13 @@ namespace Jaunty.Tests.Helpers;
 /// </summary>
 public static class TestConfiguration
 {
+    static TestConfiguration()
+    {
+        // PostgreSQL test scripts create FUNCTIONs (not PROCEDUREs) for stored-proc scenarios.
+        // Npgsql compatibility mode maps CommandType.StoredProcedure to function invocation.
+        AppContext.SetSwitch("Npgsql.EnableStoredProcedureCompatMode", true);
+    }
+
     private static readonly Lazy<TestConnectionStrings> _connectionStrings = new Lazy<TestConnectionStrings>(Load);
 
     public static string SqlServerConnectionString => _connectionStrings.Value.SqlServer;
