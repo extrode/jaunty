@@ -145,7 +145,14 @@ public static partial class Jaunty
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false) || await dbReader.IsDBNullAsync(0, ct).ConfigureAwait(false))
                     return default!;
 
-                return await dbReader.GetFieldValueAsync<T>(0).ConfigureAwait(false);
+                try
+                {
+                    return await dbReader.GetFieldValueAsync<T>(0, ct).ConfigureAwait(false);
+                }
+                catch (InvalidCastException)
+                {
+                    return ConvertScalarValue<T>(dbReader.GetValue(0));
+                }
             }
 
             if (!reader.Read() || reader.IsDBNull(0)) return default!;
