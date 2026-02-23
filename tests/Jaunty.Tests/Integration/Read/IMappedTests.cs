@@ -12,25 +12,35 @@ public class IMappedTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
 
-    private static readonly string FullProductColumns =
-        "product_id AS ProductId, product_name AS ProductName, " +
-        "supplier_id AS SupplierId, category_id AS CategoryId, " +
-        "quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, " +
-        "units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, " +
-        "reorder_level AS ReorderLevel, discontinued AS Discontinued";
+    private static string FullProductColumns(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "ProductId AS ProductId, ProductName AS ProductName, SupplierId AS SupplierId, CategoryId AS CategoryId, QuantityPerUnit AS QuantityPerUnit, UnitPrice AS UnitPrice, UnitsInStock AS UnitsInStock, UnitsOnOrder AS UnitsOnOrder, ReorderLevel AS ReorderLevel, Discontinued AS Discontinued"
+            : "product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued";
+
+    private static string ProductsTable(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "Products" : "products";
+
+    private static string ProductIdColumn(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "ProductId" : "product_id";
+
+    private static string LimitSql(DialectInfo dialect, int count) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? $"SELECT TOP ({count}) {FullProductColumns(dialect)} FROM {ProductsTable(dialect)}"
+            : $"SELECT {FullProductColumns(dialect)} FROM {ProductsTable(dialect)} LIMIT {count}";
 
     public IMappedTests(DialectFixture fixture)
     {
         _fixture = fixture;
     }
-[Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_IMappedEntity_UsesCustomMapper(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var products = connection.Query<Product>(
-            $"SELECT {FullProductColumns} FROM products LIMIT 3");
+        var products = connection.Query<Product>(LimitSql(dialect, 3));
 
         Assert.Equal(3, products.Count);
         Assert.All(products, p =>
@@ -41,13 +51,14 @@ public class IMappedTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryFirst_IMappedEntity_UsesCustomMapper(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var product = connection.QueryFirst<Product>(
-            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
+            $"SELECT {FullProductColumns(dialect)} FROM {ProductsTable(dialect)} WHERE {ProductIdColumn(dialect)} = @Id",
             new { Id = 2 });
 
         Assert.NotNull(product);
@@ -56,26 +67,28 @@ public class IMappedTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryFirstOrDefault_IMappedEntity_UsesCustomMapper(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var product = connection.QueryFirstOrDefault<Product>(
-            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
+            $"SELECT {FullProductColumns(dialect)} FROM {ProductsTable(dialect)} WHERE {ProductIdColumn(dialect)} = @Id",
             new { Id = -999 });
 
         Assert.Null(product);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QuerySingle_IMappedEntity_UsesCustomMapper(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var product = connection.QuerySingle<Product>(
-            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
+            $"SELECT {FullProductColumns(dialect)} FROM {ProductsTable(dialect)} WHERE {ProductIdColumn(dialect)} = @Id",
             new { Id = 2 });
 
         Assert.NotNull(product);
@@ -84,13 +97,13 @@ public class IMappedTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryStream_IMappedEntity_UsesCustomMapper(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var products = connection.QueryStream<Product>(
-            $"SELECT {FullProductColumns} FROM products LIMIT 5").ToList();
+        var products = connection.QueryStream<Product>(LimitSql(dialect, 5)).ToList();
 
         Assert.Equal(5, products.Count);
         Assert.All(products, p =>
@@ -101,13 +114,14 @@ public class IMappedTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_IMappedEntity_IgnoreAttributeWorks(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var product = connection.QueryFirst<Product>(
-            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
+            $"SELECT {FullProductColumns(dialect)} FROM {ProductsTable(dialect)} WHERE {ProductIdColumn(dialect)} = @Id",
             new { Id = 2 });
 
         Assert.Equal(product.ProductId, product.Id);

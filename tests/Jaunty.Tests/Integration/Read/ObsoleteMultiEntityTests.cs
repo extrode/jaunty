@@ -1,8 +1,12 @@
-using System.Data;
+using Jaunty.Core;
+using Jaunty.Tests.Helpers;
 using Jaunty.Tests.Helpers.Dialects;
 
-using Jaunty;
-using Jaunty.Core;
+using Microsoft.Data.SqlClient;
+
+using MySql.Data.MySqlClient;
+
+using Npgsql;
 
 namespace Jaunty.Tests.Integration.Read;
 
@@ -17,29 +21,57 @@ public class ObsoleteMultiEntityTests
     {
         IDbConnection connection = dialect.Provider switch
         {
-            DialectProvider.SystemSqlite => new System.Data.SQLite.SQLiteConnection("Data Source=:memory:"),
-#if NET8_0_OR_GREATER
-            DialectProvider.MicrosoftSqlite => new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:"),
-#endif
-            _ => throw new InvalidOperationException("Only SQLite dialects are supported for obsolete multi-entity tests.")
+            DialectProvider.SqlServer => new SqlConnection(TestConfiguration.SqlServerConnectionString),
+            DialectProvider.Postgres => new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString),
+            DialectProvider.MariaDb => new MySqlConnection(TestConfiguration.MariaDbConnectionString),
+            _ => throw new InvalidOperationException($"Unsupported dialect for obsolete multi-entity tests: {dialect.Provider}.")
         };
         connection.Open();
-        SeedData(connection);
+        SeedData(connection, dialect);
         return connection;
     }
 
-    private static void SeedData(IDbConnection connection)
+    private static void SeedData(IDbConnection connection, DialectInfo dialect)
     {
+        var orders = OrdersTable(dialect);
+        var items = ItemsTable(dialect);
+        var createPrefix = dialect.Provider switch
+        {
+            DialectProvider.Postgres => "CREATE TEMP TABLE",
+            DialectProvider.MariaDb => "CREATE TEMPORARY TABLE",
+            _ => "CREATE TABLE"
+        };
+        var dropOrders = dialect.Provider switch
+        {
+            DialectProvider.SqlServer => "IF OBJECT_ID('tempdb..#obsolete_orders') IS NOT NULL DROP TABLE #obsolete_orders;",
+            DialectProvider.MariaDb => "DROP TEMPORARY TABLE IF EXISTS obsolete_orders;",
+            _ => "DROP TABLE IF EXISTS obsolete_orders;"
+        };
+        var dropItems = dialect.Provider switch
+        {
+            DialectProvider.SqlServer => "IF OBJECT_ID('tempdb..#obsolete_items') IS NOT NULL DROP TABLE #obsolete_items;",
+            DialectProvider.MariaDb => "DROP TEMPORARY TABLE IF EXISTS obsolete_items;",
+            _ => "DROP TABLE IF EXISTS obsolete_items;"
+        };
+        var totalType = dialect.Provider switch
+        {
+            DialectProvider.Postgres => "DOUBLE PRECISION",
+            DialectProvider.SqlServer => "FLOAT",
+            _ => "DOUBLE"
+        };
+
         using var cmd = connection.CreateCommand();
         cmd.CommandText = @"
-            CREATE TABLE orders (order_id INTEGER PRIMARY KEY, customer TEXT NOT NULL, total REAL NOT NULL);
-            CREATE TABLE items (item_id INTEGER PRIMARY KEY, order_id INTEGER, product TEXT NOT NULL, qty INTEGER NOT NULL);
+            " + dropItems + @"
+            " + dropOrders + @"
+            " + createPrefix + " " + orders + @" (order_id INT PRIMARY KEY, customer VARCHAR(100) NOT NULL, total " + totalType + @" NOT NULL);
+            " + createPrefix + " " + items + @" (item_id INT PRIMARY KEY, order_id INT, product VARCHAR(100) NOT NULL, qty INT NOT NULL);
 
-            INSERT INTO orders VALUES (1, 'Alice', 100.50);
-            INSERT INTO orders VALUES (2, 'Bob', 200.75);
-            INSERT INTO items VALUES (1, 1, 'Widget', 5);
-            INSERT INTO items VALUES (2, 1, 'Gadget', 3);
-            INSERT INTO items VALUES (3, 2, 'Doohickey', 1);";
+            INSERT INTO " + orders + @" VALUES (1, 'Alice', 100.50);
+            INSERT INTO " + orders + @" VALUES (2, 'Bob', 200.75);
+            INSERT INTO " + items + @" VALUES (1, 1, 'Widget', 5);
+            INSERT INTO " + items + @" VALUES (2, 1, 'Gadget', 3);
+            INSERT INTO " + items + @" VALUES (3, 2, 'Doohickey', 1);";
         cmd.ExecuteNonQuery();
     }
 
@@ -61,22 +93,29 @@ public class ObsoleteMultiEntityTests
 
     #endregion
 
-    private const string JoinSql = @"
+    private static string JoinSql(DialectInfo dialect) => @"
         SELECT o.order_id AS OrderId, o.customer AS Customer, o.total AS Total,
                i.item_id AS ItemId, i.product AS Product, i.qty AS Qty
-        FROM orders o
-        JOIN items i ON o.order_id = i.order_id";
+        FROM " + OrdersTable(dialect) + @" o
+        JOIN " + ItemsTable(dialect) + @" i ON o.order_id = i.order_id";
+
+    private static string OrdersTable(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "#obsolete_orders" : "obsolete_orders";
+
+    private static string ItemsTable(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "#obsolete_items" : "obsolete_items";
 
     #region Obsolete Query<T1, T2>
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQuery_ReturnsAllRows(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var results = Jaunty.Query<OrderDto, ItemDto>(
-            connection, JoinSql, parameters: null, options: default(CommandOptions));
+            connection, JoinSql(dialect), parameters: null, options: default(CommandOptions));
 
         Assert.Equal(3, results.Count);
         Assert.All(results, r =>
@@ -89,14 +128,15 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQuery_WithParameters_FiltersResults(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var results = Jaunty.Query<OrderDto, ItemDto>(
             connection,
-            JoinSql + " WHERE o.order_id = @orderId",
+            JoinSql(dialect) + " WHERE o.order_id = @orderId",
             parameters: new { orderId = 1 },
             options: default(CommandOptions));
 
@@ -105,14 +145,15 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQuery_EmptyResult_ReturnsEmptyList(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var results = Jaunty.Query<OrderDto, ItemDto>(
             connection,
-            JoinSql + " WHERE o.order_id = 999",
+            JoinSql(dialect) + " WHERE o.order_id = 999",
             parameters: null,
             options: default(CommandOptions));
 
@@ -124,14 +165,15 @@ public class ObsoleteMultiEntityTests
     #region Obsolete Query<T1, T2, TResult> (Combiner)
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQueryWithCombiner_CombinesEntities(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var results = Jaunty.Query<OrderDto, ItemDto, string>(
             connection,
-            JoinSql + " WHERE o.order_id = 1 ORDER BY i.item_id",
+            JoinSql(dialect) + " WHERE o.order_id = 1 ORDER BY i.item_id",
             map: (order, item) => $"{order.Customer}:{item.Product}",
             parameters: null,
             options: default(CommandOptions));
@@ -142,15 +184,16 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQueryWithCombiner_NullMap_Throws(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         Assert.Throws<ArgumentNullException>(() =>
             Jaunty.Query<OrderDto, ItemDto, string>(
                 connection,
-                JoinSql,
+                JoinSql(dialect),
                 map: null!,
                 parameters: null,
                 options: default(CommandOptions)));
@@ -161,14 +204,15 @@ public class ObsoleteMultiEntityTests
     #region Obsolete QueryFirst<T1, T2>
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQueryFirst_ReturnsFirstRow(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var result = Jaunty.QueryFirst<OrderDto, ItemDto>(
             connection,
-            JoinSql + " ORDER BY i.item_id",
+            JoinSql(dialect) + " ORDER BY i.item_id",
             parameters: null,
             options: default(CommandOptions));
 
@@ -179,15 +223,16 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQueryFirst_NoRows_Throws(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var ex = Assert.Throws<InvalidOperationException>(() =>
             Jaunty.QueryFirst<OrderDto, ItemDto>(
                 connection,
-                JoinSql + " WHERE o.order_id = 999",
+                JoinSql(dialect) + " WHERE o.order_id = 999",
                 parameters: null,
                 options: default(CommandOptions)));
 
@@ -199,14 +244,15 @@ public class ObsoleteMultiEntityTests
     #region Obsolete QueryFirstOrDefault<T1, T2>
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQueryFirstOrDefault_ReturnsFirstRow(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var result = Jaunty.QueryFirstOrDefault<OrderDto, ItemDto>(
             connection,
-            JoinSql + " ORDER BY i.item_id",
+            JoinSql(dialect) + " ORDER BY i.item_id",
             parameters: null,
             options: default(CommandOptions));
 
@@ -215,14 +261,15 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQueryFirstOrDefault_NoRows_ReturnsNull(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var result = Jaunty.QueryFirstOrDefault<OrderDto, ItemDto>(
             connection,
-            JoinSql + " WHERE o.order_id = 999",
+            JoinSql(dialect) + " WHERE o.order_id = 999",
             parameters: null,
             options: default(CommandOptions));
 
@@ -234,14 +281,15 @@ public class ObsoleteMultiEntityTests
     #region Obsolete QuerySingle<T1, T2>
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQuerySingle_ExactlyOneRow_ReturnsIt(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var result = Jaunty.QuerySingle<OrderDto, ItemDto>(
             connection,
-            JoinSql + " WHERE i.item_id = 3",
+            JoinSql(dialect) + " WHERE i.item_id = 3",
             parameters: null,
             options: default(CommandOptions));
 
@@ -250,15 +298,16 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQuerySingle_NoRows_Throws(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var ex = Assert.Throws<InvalidOperationException>(() =>
             Jaunty.QuerySingle<OrderDto, ItemDto>(
                 connection,
-                JoinSql + " WHERE o.order_id = 999",
+                JoinSql(dialect) + " WHERE o.order_id = 999",
                 parameters: null,
                 options: default(CommandOptions)));
 
@@ -266,15 +315,16 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQuerySingle_MultipleRows_Throws(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var ex = Assert.Throws<InvalidOperationException>(() =>
             Jaunty.QuerySingle<OrderDto, ItemDto>(
                 connection,
-                JoinSql + " WHERE o.order_id = 1",
+                JoinSql(dialect) + " WHERE o.order_id = 1",
                 parameters: null,
                 options: default(CommandOptions)));
 
@@ -286,14 +336,15 @@ public class ObsoleteMultiEntityTests
     #region Obsolete QuerySingleOrDefault<T1, T2>
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQuerySingleOrDefault_ExactlyOneRow_ReturnsIt(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var result = Jaunty.QuerySingleOrDefault<OrderDto, ItemDto>(
             connection,
-            JoinSql + " WHERE i.item_id = 3",
+            JoinSql(dialect) + " WHERE i.item_id = 3",
             parameters: null,
             options: default(CommandOptions));
 
@@ -302,14 +353,15 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQuerySingleOrDefault_NoRows_ReturnsNull(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var result = Jaunty.QuerySingleOrDefault<OrderDto, ItemDto>(
             connection,
-            JoinSql + " WHERE o.order_id = 999",
+            JoinSql(dialect) + " WHERE o.order_id = 999",
             parameters: null,
             options: default(CommandOptions));
 
@@ -317,15 +369,16 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQuerySingleOrDefault_MultipleRows_Throws(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var ex = Assert.Throws<InvalidOperationException>(() =>
             Jaunty.QuerySingleOrDefault<OrderDto, ItemDto>(
                 connection,
-                JoinSql + " WHERE o.order_id = 1",
+                JoinSql(dialect) + " WHERE o.order_id = 1",
                 parameters: null,
                 options: default(CommandOptions)));
 
@@ -337,14 +390,15 @@ public class ObsoleteMultiEntityTests
     #region Obsolete QueryStream<T1, T2>
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQueryStream_StreamsRows(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var results = Jaunty.QueryStream<OrderDto, ItemDto>(
             connection,
-            JoinSql + " ORDER BY i.item_id",
+            JoinSql(dialect) + " ORDER BY i.item_id",
             parameters: null,
             options: default(CommandOptions)).ToList();
 
@@ -355,14 +409,15 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ObsoleteQueryStream_EmptyResult_YieldsNothing(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var results = Jaunty.QueryStream<OrderDto, ItemDto>(
             connection,
-            JoinSql + " WHERE o.order_id = 999",
+            JoinSql(dialect) + " WHERE o.order_id = 999",
             parameters: null,
             options: default(CommandOptions)).ToList();
 
@@ -374,26 +429,28 @@ public class ObsoleteMultiEntityTests
     #region Obsolete Async Variants
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ObsoleteQueryAsync_ReturnsAllRows(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var results = await Jaunty.QueryAsync<OrderDto, ItemDto>(
-            connection, JoinSql, parameters: null, options: default(CommandOptions));
+            connection, JoinSql(dialect), parameters: null, options: default(CommandOptions));
 
         Assert.Equal(3, results.Count);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ObsoleteQueryAsyncWithCombiner_CombinesEntities(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var results = await Jaunty.QueryAsync<OrderDto, ItemDto, string>(
             connection,
-            JoinSql + " WHERE o.order_id = 1 ORDER BY i.item_id",
+            JoinSql(dialect) + " WHERE o.order_id = 1 ORDER BY i.item_id",
             map: (order, item) => $"{order.Customer}:{item.Product}",
             parameters: null,
             options: default(CommandOptions));
@@ -403,14 +460,15 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ObsoleteQueryFirstAsync_ReturnsFirstRow(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var result = await Jaunty.QueryFirstAsync<OrderDto, ItemDto>(
             connection,
-            JoinSql + " ORDER BY i.item_id",
+            JoinSql(dialect) + " ORDER BY i.item_id",
             parameters: null,
             options: default(CommandOptions));
 
@@ -419,14 +477,15 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ObsoleteQueryFirstOrDefaultAsync_NoRows_ReturnsNull(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var result = await Jaunty.QueryFirstOrDefaultAsync<OrderDto, ItemDto>(
             connection,
-            JoinSql + " WHERE o.order_id = 999",
+            JoinSql(dialect) + " WHERE o.order_id = 999",
             parameters: null,
             options: default(CommandOptions));
 
@@ -434,14 +493,15 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ObsoleteQuerySingleAsync_ExactlyOneRow_ReturnsIt(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var result = await Jaunty.QuerySingleAsync<OrderDto, ItemDto>(
             connection,
-            JoinSql + " WHERE i.item_id = 3",
+            JoinSql(dialect) + " WHERE i.item_id = 3",
             parameters: null,
             options: default(CommandOptions));
 
@@ -449,14 +509,15 @@ public class ObsoleteMultiEntityTests
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ObsoleteQuerySingleOrDefaultAsync_NoRows_ReturnsNull(DialectInfo dialect)
     {
         using var connection = CreateSeededConnection(dialect);
         var result = await Jaunty.QuerySingleOrDefaultAsync<OrderDto, ItemDto>(
             connection,
-            JoinSql + " WHERE o.order_id = 999",
+            JoinSql(dialect) + " WHERE o.order_id = 999",
             parameters: null,
             options: default(CommandOptions));
 

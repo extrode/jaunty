@@ -12,8 +12,9 @@ public class QueryTypeConversionTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryScalar_TypeMismatch_ThrowsException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

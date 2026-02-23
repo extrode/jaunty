@@ -32,8 +32,9 @@ public class DeleteAsyncTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task DeleteAsync_ExistingEntity_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -47,8 +48,9 @@ public class DeleteAsyncTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task DeleteAsync_NonExistingEntity_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -61,8 +63,9 @@ public class DeleteAsyncTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task DeleteAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -78,8 +81,9 @@ public class DeleteAsyncTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task DeleteAsyncById_ExistingId_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -93,8 +97,9 @@ public class DeleteAsyncTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task DeleteAsyncById_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);

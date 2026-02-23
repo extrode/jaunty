@@ -12,8 +12,9 @@ public class QueryLargeResultSetTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_LargeResultSet_HandlesCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

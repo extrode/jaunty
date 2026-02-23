@@ -13,8 +13,9 @@ public class QuerySpecialCharacterTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DataWithSpecialCharacters_HandlesCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

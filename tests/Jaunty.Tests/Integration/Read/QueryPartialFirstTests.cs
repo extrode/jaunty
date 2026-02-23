@@ -14,8 +14,9 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartialFirst_WithResults_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -28,8 +29,9 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartialFirst_MissingColumn_Allowed(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -41,8 +43,9 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartialFirst_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -52,8 +55,9 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartialFirst_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -66,8 +70,9 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartialFirst_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -81,8 +86,9 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartialFirst_WithOptionsOnly_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

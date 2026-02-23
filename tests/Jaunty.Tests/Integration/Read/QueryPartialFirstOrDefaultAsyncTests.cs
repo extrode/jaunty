@@ -13,10 +13,13 @@ public class QueryPartialFirstOrDefaultAsyncTests : IClassFixture<DialectFixture
         _fixture = fixture;
     }
 [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialFirstOrDefaultAsync_WithResults_ReturnsFirst(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QueryPartialFirstOrDefaultAsync<ProductSummary>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QueryPartialFirstOrDefaultAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products");
 
         Assert.NotNull(product);
@@ -24,10 +27,13 @@ public class QueryPartialFirstOrDefaultAsyncTests : IClassFixture<DialectFixture
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialFirstOrDefaultAsync_MissingColumn_Allowed(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QueryPartialFirstOrDefaultAsync<ProductSummary>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QueryPartialFirstOrDefaultAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products");
 
         Assert.NotNull(product);
@@ -35,20 +41,26 @@ public class QueryPartialFirstOrDefaultAsyncTests : IClassFixture<DialectFixture
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialFirstOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QueryPartialFirstOrDefaultAsync<ProductSummary>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QueryPartialFirstOrDefaultAsync<ProductSummary>(
             "SELECT product_id AS ProductId FROM products WHERE product_id = -999");
 
         Assert.Null(product);
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialFirstOrDefaultAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QueryPartialFirstOrDefaultAsync<ProductSummary>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QueryPartialFirstOrDefaultAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
@@ -58,10 +70,13 @@ public class QueryPartialFirstOrDefaultAsyncTests : IClassFixture<DialectFixture
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialFirstOrDefaultAsync_WithParametersAndOptions_Works(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QueryPartialFirstOrDefaultAsync<ProductSummary>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QueryPartialFirstOrDefaultAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 },
             CommandOptions<ProductSummary>.WithTimeout(30));
@@ -72,10 +87,13 @@ public class QueryPartialFirstOrDefaultAsyncTests : IClassFixture<DialectFixture
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialFirstOrDefaultAsync_WithOptionsOnly_Works(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QueryPartialFirstOrDefaultAsync<ProductSummary>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QueryPartialFirstOrDefaultAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products",
             CommandOptions<ProductSummary>.WithTimeout(30));
 
@@ -84,10 +102,13 @@ public class QueryPartialFirstOrDefaultAsyncTests : IClassFixture<DialectFixture
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialFirstOrDefaultAsync_NoResults_WithParameters_ReturnsNull(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QueryPartialFirstOrDefaultAsync<ProductSummary>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QueryPartialFirstOrDefaultAsync<ProductSummary>(
             "SELECT product_id AS ProductId FROM products WHERE product_id = @Id",
             new { Id = -999 });
 

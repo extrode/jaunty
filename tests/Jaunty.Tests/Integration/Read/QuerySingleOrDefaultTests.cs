@@ -26,8 +26,9 @@ public class QuerySingleOrDefaultTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QuerySingleOrDefault_WithSingleResult_ReturnsResult(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -41,8 +42,9 @@ public class QuerySingleOrDefaultTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QuerySingleOrDefault_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -56,8 +58,9 @@ public class QuerySingleOrDefaultTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QuerySingleOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -69,8 +72,9 @@ public class QuerySingleOrDefaultTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QuerySingleOrDefault_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -83,8 +87,9 @@ public class QuerySingleOrDefaultTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QuerySingleOrDefault_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -98,8 +103,9 @@ public class QuerySingleOrDefaultTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QuerySingleOrDefault_StrictMapping_MissingColumn_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

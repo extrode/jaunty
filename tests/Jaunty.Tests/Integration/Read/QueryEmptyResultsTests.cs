@@ -12,28 +12,51 @@ public class QueryEmptyResultsTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 
+    private static string CategoriesTable(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "Categories" : "categories";
+
+    private static string CategoryIdColumn(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "CategoryId" : "category_id";
+
+    private static string CategoryNameColumn(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "CategoryName" : "category_name";
+
+    private static string DescriptionColumn(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "Description" : "description";
+
+    private static string CustomerCustomerDemoTable(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "CustomerCustomerDemo" : "customer_customer_demo";
+
+    private static string CustomerIdColumn(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "CustomerId" : "customer_id";
+
+    private static string CustomerTypeIdColumn(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "CustomerTypeId" : "customer_type_id";
+
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_NoMatchingRows_ReturnsEmptyList(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.Query<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
-            new { @id = -99999 });
+            $"SELECT {CategoryIdColumn(dialect)} AS CategoryId, {CategoryNameColumn(dialect)} AS CategoryName, {DescriptionColumn(dialect)} AS Description FROM {CategoriesTable(dialect)} WHERE {CategoryIdColumn(dialect)} = @Id",
+            new { Id = -99999 });
 
         Assert.Empty(results);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_EmptyTable_ReturnsEmptyList(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         // customer_customer_demo is typically empty in Northwind
         var results = connection.Query<CustomerCustomerDemo>(
-            "SELECT customer_id AS CustomerId, customer_type_id AS CustomerTypeId FROM customer_customer_demo");
+            $"SELECT {CustomerIdColumn(dialect)} AS CustomerId, {CustomerTypeIdColumn(dialect)} AS CustomerTypeId FROM {CustomerCustomerDemoTable(dialect)}");
 
         Assert.Empty(results);
     }

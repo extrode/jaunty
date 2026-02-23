@@ -35,8 +35,9 @@ public class UpdateTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Update_ExistingEntity_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -51,8 +52,9 @@ public class UpdateTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Update_NonExistingEntity_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -64,8 +66,9 @@ public class UpdateTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Update_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -81,8 +84,9 @@ public class UpdateTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Update_WithTransaction_RollbackKeepsOriginal(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);

@@ -13,13 +13,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_Read_ReturnsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 2");
+            FullCategorySql(dialect, 2));
 
         var categories = gridReader.Read<Category>().ToList();
 
@@ -28,13 +29,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadPartial_AllowsMissingColumns(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 2");
+            SummaryCategorySql(dialect, 2));
 
         var categories = gridReader.ReadPartial<CategorySummary>().ToList(); // CategorySummary has fewer properties
 
@@ -43,13 +45,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadFirst_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories ORDER BY category_id LIMIT 1");
+            FullCategorySql(dialect, 1, orderById: true));
 
         var category = gridReader.ReadFirst<Category>();
 
@@ -59,13 +62,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadFirstOrDefault_ReturnsFirstOrNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories ORDER BY category_id LIMIT 1");
+            FullCategorySql(dialect, 1, orderById: true));
 
         var category = gridReader.ReadFirstOrDefault<Category>();
 
@@ -75,13 +79,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadFirstOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+            FullCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var category = gridReader.ReadFirstOrDefault<Category>();
@@ -90,13 +95,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadSingle_ReturnsSingle(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+            FullCategoryByIdSql(dialect),
             new { Id = 1 });
 
         var category = gridReader.ReadSingle<Category>();
@@ -107,13 +113,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadSingle_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 2");
+            FullCategorySql(dialect, 2));
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
             gridReader.ReadSingle<Category>());
@@ -122,13 +129,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadSingle_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+            FullCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
@@ -138,13 +146,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadSingleOrDefault_ReturnsSingleOrDefault(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+            FullCategoryByIdSql(dialect),
             new { Id = 1 });
 
         var category = gridReader.ReadSingleOrDefault<Category>();
@@ -154,13 +163,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadSingleOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+            FullCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var category = gridReader.ReadSingleOrDefault<Category>();
@@ -169,13 +179,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadScalar_ReturnsValue(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT COUNT(*) FROM categories");
+            CountCategoriesSql(dialect));
 
         var count = gridReader.ReadScalar<long>();
 
@@ -183,13 +194,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadStream_YieldsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 3");
+            FullCategorySql(dialect, 3));
 
         var categories = gridReader.ReadStream<Category>().ToList();
 
@@ -198,13 +210,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadPartialStream_YieldsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 3");
+            SummaryCategorySql(dialect, 3));
 
         var summaries = gridReader.ReadPartialStream<CategorySummary>().ToList();
 
@@ -215,13 +228,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     #region ReadPartialFirst / ReadPartialFirstOrDefault
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadPartialFirst_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories ORDER BY category_id LIMIT 3");
+            SummaryCategorySql(dialect, 3, orderById: true));
 
         var summary = gridReader.ReadPartialFirst<CategorySummary>();
 
@@ -231,13 +245,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadPartialFirst_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            SummaryCategoryByIdSql(dialect),
             new { Id = -999 });
 
         Assert.Throws<InvalidOperationException>(() =>
@@ -245,13 +260,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadPartialFirstOrDefault_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories ORDER BY category_id LIMIT 3");
+            SummaryCategorySql(dialect, 3, orderById: true));
 
         var summary = gridReader.ReadPartialFirstOrDefault<CategorySummary>();
 
@@ -261,13 +277,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadPartialFirstOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            SummaryCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var summary = gridReader.ReadPartialFirstOrDefault<CategorySummary>();
@@ -280,13 +297,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     #region ReadPartialSingle / ReadPartialSingleOrDefault
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadPartialSingle_ReturnsSingle(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            SummaryCategoryByIdSql(dialect),
             new { Id = 1 });
 
         var summary = gridReader.ReadPartialSingle<CategorySummary>();
@@ -297,13 +315,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadPartialSingle_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 2");
+            SummaryCategorySql(dialect, 2));
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
             gridReader.ReadPartialSingle<CategorySummary>());
@@ -312,13 +331,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadPartialSingle_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            SummaryCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
@@ -328,13 +348,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadPartialSingleOrDefault_ReturnsSingle(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            SummaryCategoryByIdSql(dialect),
             new { Id = 1 });
 
         var summary = gridReader.ReadPartialSingleOrDefault<CategorySummary>();
@@ -344,13 +365,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void GridReader_ReadPartialSingleOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         using var gridReader = connection.QueryMultiple(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+            SummaryCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var summary = gridReader.ReadPartialSingleOrDefault<CategorySummary>();
@@ -359,5 +381,30 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     #endregion
+
+    private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? $"SELECT TOP ({top}) CategoryId, CategoryName, Description FROM Categories{(orderById ? " ORDER BY CategoryId" : string.Empty)}"
+            : $"SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories{(orderById ? " ORDER BY category_id" : string.Empty)} LIMIT {top}";
+
+    private static string SummaryCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? $"SELECT TOP ({top}) CategoryId, CategoryName FROM Categories{(orderById ? " ORDER BY CategoryId" : string.Empty)}"
+            : $"SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories{(orderById ? " ORDER BY category_id" : string.Empty)} LIMIT {top}";
+
+    private static string FullCategoryByIdSql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT CategoryId, CategoryName, Description FROM Categories WHERE CategoryId = @Id"
+            : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id";
+
+    private static string SummaryCategoryByIdSql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT CategoryId, CategoryName FROM Categories WHERE CategoryId = @Id"
+            : "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id";
+
+    private static string CountCategoriesSql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT COUNT(*) FROM Categories"
+            : "SELECT COUNT(*) FROM categories";
 }
 

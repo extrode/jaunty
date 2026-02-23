@@ -17,23 +17,24 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
 #region Sync Read Tests
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryMultiple_ReadsMultipleResultSets_Buffered(DialectInfo dialect)
     {
-        var sql = @"
-        SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;
-        SELECT customer_id AS CustomerId, company_name AS CompanyName FROM customers ORDER BY customer_id LIMIT 2;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = MultipleOrdersCustomersSql(dialect);
 
         List<Order>? orders = null;
         List<Customer>? customers = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             orders = reader.ReadPartial<Order>().ToList();
             customers = reader.ReadPartial<Customer>().ToList();
         });
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql);
+        connection.QueryMultiple(sql);
 
         Assert.NotNull(orders);
         Assert.NotNull(customers);
@@ -42,14 +43,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadPartial_MapsSubsetOfColumns(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 5);
 
         List<OrderSummary>? orders = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             orders = reader.ReadPartial<OrderSummary>();
         });
@@ -64,14 +68,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     #region ReadFirst Tests
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadFirst_ReturnsFirstRow(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 3);
 
         Order? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirst<Order>();
         });
@@ -81,14 +88,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadFirst_NoRows_Throws(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+            connection.QueryMultiple(sql, reader =>
             {
                 reader.ReadPartialFirst<Order>();
             });
@@ -96,14 +106,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadFirstOrDefault_ReturnsFirstRow(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 3);
 
         Order? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirstOrDefault<Order>();
         });
@@ -112,14 +125,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadFirstOrDefault_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         Order? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirstOrDefault<Order>();
         });
@@ -128,14 +144,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadPartialFirst_ReturnsFirstRow(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 3);
 
         OrderSummary? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirst<OrderSummary>();
         });
@@ -145,14 +164,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadPartialFirst_NoRows_Throws(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+            connection.QueryMultiple(sql, reader =>
             {
                 reader.ReadPartialFirst<OrderSummary>();
             });
@@ -160,14 +182,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadPartialFirstOrDefault_ReturnsFirstRow(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 3);
 
         OrderSummary? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirstOrDefault<OrderSummary>();
         });
@@ -176,14 +201,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadPartialFirstOrDefault_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         OrderSummary? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialFirstOrDefault<OrderSummary>();
         });
@@ -196,14 +224,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     #region ReadSingle Tests
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadSingle_ReturnsSingleRow(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, 10248);
 
         Order? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingle<Order>();
         });
@@ -213,14 +244,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadSingle_NoRows_Throws(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+            connection.QueryMultiple(sql, reader =>
             {
                 reader.ReadPartialSingle<Order>();
             });
@@ -228,14 +262,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadSingle_MultipleRows_Throws(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 3);
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+            connection.QueryMultiple(sql, reader =>
             {
                 reader.ReadPartialSingle<Order>();
             });
@@ -243,14 +280,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadSingleOrDefault_ReturnsSingleRow(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, 10248);
 
         Order? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingleOrDefault<Order>();
         });
@@ -260,14 +300,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadSingleOrDefault_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         Order? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingleOrDefault<Order>();
         });
@@ -276,14 +319,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadPartialSingle_ReturnsSingleRow(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, 10248);
 
         OrderSummary? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingle<OrderSummary>();
         });
@@ -293,14 +339,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadPartialSingle_NoRows_Throws(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+            connection.QueryMultiple(sql, reader =>
             {
                 reader.ReadPartialSingle<OrderSummary>();
             });
@@ -308,14 +357,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadPartialSingleOrDefault_ReturnsSingleRow(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, 10248);
 
         OrderSummary? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingleOrDefault<OrderSummary>();
         });
@@ -325,14 +377,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadPartialSingleOrDefault_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         OrderSummary? order = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             order = reader.ReadPartialSingleOrDefault<OrderSummary>();
         });
@@ -345,14 +400,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     #region ReadScalar Tests
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadScalar_ReturnsValue(DialectInfo dialect)
     {
-        var sql = "SELECT COUNT(*) FROM orders;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = CountOrdersSql(dialect);
 
         long? count = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             count = reader.ReadScalar<long>();
         });
@@ -362,14 +420,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadScalar_NoRows_ReturnsDefault(DialectInfo dialect)
     {
-        var sql = "SELECT order_id FROM orders WHERE order_id = -999;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrderIdNoRowsSql(dialect);
 
         long? orderId = null;
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             orderId = reader.ReadScalar<long>();
         });
@@ -382,14 +443,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     #region ReadStream Tests
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadStream_StreamsResults(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 5);
 
         var orders = new List<Order>();
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             foreach (var order in reader.ReadPartialStream<Order>())
             {
@@ -401,14 +465,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void ReadPartialStream_StreamsResults(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 5);
 
         var orders = new List<OrderSummary>();
 
-        _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+        connection.QueryMultiple(sql, reader =>
         {
             foreach (var order in reader.ReadPartialStream<OrderSummary>())
             {
@@ -424,13 +491,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     #region Async Tests
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryMultipleAsync_ReadsMultipleResultSets(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = @"
-        SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;
-        SELECT customer_id AS CustomerId, company_name AS CompanyName FROM customers ORDER BY customer_id LIMIT 2;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = MultipleOrdersCustomersSql(dialect);
 
         List<Order>? orders = null;
         List<Customer>? customers = null;
@@ -448,11 +515,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadPartialAsync_MapsSubsetOfColumns(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 5);
 
         List<OrderSummary>? orders = null;
 
@@ -466,11 +535,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadFirstAsync_ReturnsFirstRow(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 3);
 
         Order? order = null;
 
@@ -483,11 +554,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadFirstOrDefaultAsync_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         Order? order = null;
 
@@ -500,11 +573,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadPartialFirstAsync_ReturnsFirstRow(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 3);
 
         OrderSummary? order = null;
 
@@ -518,11 +593,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadPartialFirstOrDefaultAsync_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         OrderSummary? order = null;
 
@@ -535,11 +612,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadSingleAsync_ReturnsSingleRow(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, 10248);
 
         Order? order = null;
 
@@ -553,11 +632,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadSingleOrDefaultAsync_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         Order? order = null;
 
@@ -570,11 +651,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadPartialSingleAsync_ReturnsSingleRow(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, 10248);
 
         OrderSummary? order = null;
 
@@ -588,11 +671,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadPartialSingleOrDefaultAsync_NoRows_ReturnsNull(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = -999;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = OrdersByOrderIdSql(dialect, -999);
 
         OrderSummary? order = null;
 
@@ -605,11 +690,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadScalarAsync_ReturnsValue(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT COUNT(*) FROM orders;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = CountOrdersSql(dialect);
 
         long? count = null;
 
@@ -624,11 +711,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
 
 #if NET8_0_OR_GREATER
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadStreamAsync_StreamsResults(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 5);
 
         var orders = new List<Order>();
 
@@ -644,11 +733,13 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadPartialStreamAsync_StreamsResults(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 5;";
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 5);
 
         var orders = new List<OrderSummary>();
 
@@ -669,12 +760,14 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     #region CancellationToken Tests
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
+        using var conn = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
+        var sql = OrdersSql(dialect, 3);
 
         List<Order>? orders = null;
 
@@ -688,12 +781,14 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadFirstAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
+        using var conn = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;";
+        var sql = OrdersSql(dialect, 3);
 
         Order? order = null;
 
@@ -706,12 +801,14 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadSingleAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
+        using var conn = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = 10248;";
+        var sql = OrdersByOrderIdSql(dialect, 10248);
 
         Order? order = null;
 
@@ -725,12 +822,14 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ReadScalarAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
-        var conn = _fixture.GetDbConnection(dialect);
+        using var conn = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
-        var sql = "SELECT COUNT(*) FROM orders;";
+        var sql = CountOrdersSql(dialect);
 
         long? count = null;
 
@@ -748,14 +847,17 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     #region Consumed State Tests
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Read_AfterAllConsumed_Throws(DialectInfo dialect)
     {
-        var sql = "SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders LIMIT 1;";
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = OrdersSql(dialect, 1, orderBy: false);
 
         Assert.Throws<InvalidOperationException>(() =>
         {
-            _fixture.GetDbConnection(dialect).QueryMultiple(sql, reader =>
+            connection.QueryMultiple(sql, reader =>
             {
                 _ = reader.ReadPartial<Order>();
                 _ = reader.ReadPartial<Order>(); // Should throw - already consumed
@@ -764,6 +866,35 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     }
 
     #endregion
+
+    private static string OrdersSql(DialectInfo dialect, int top, bool orderBy = true) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? $"SELECT TOP ({top}) OrderId, CustomerId FROM Orders{(orderBy ? " ORDER BY OrderId" : string.Empty)};"
+            : $"SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders{(orderBy ? " ORDER BY order_id" : string.Empty)} LIMIT {top};";
+
+    private static string OrdersByOrderIdSql(DialectInfo dialect, int orderId) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? $"SELECT OrderId, CustomerId FROM Orders WHERE OrderId = {orderId};"
+            : $"SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders WHERE order_id = {orderId};";
+
+    private static string CountOrdersSql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT COUNT(*) FROM Orders;"
+            : "SELECT COUNT(*) FROM orders;";
+
+    private static string OrderIdNoRowsSql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT OrderId FROM Orders WHERE OrderId = -999;"
+            : "SELECT order_id FROM orders WHERE order_id = -999;";
+
+    private static string MultipleOrdersCustomersSql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? @"
+        SELECT TOP (3) OrderId, CustomerId FROM Orders ORDER BY OrderId;
+        SELECT TOP (2) CustomerId, CompanyName FROM Customers ORDER BY CustomerId;"
+            : @"
+        SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;
+        SELECT customer_id AS CustomerId, company_name AS CompanyName FROM customers ORDER BY customer_id LIMIT 2;";
 }
 
 

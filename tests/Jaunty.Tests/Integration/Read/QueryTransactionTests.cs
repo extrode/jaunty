@@ -14,8 +14,6 @@ public class QueryTransactionTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
     [SqlServer]
     [Postgres]
     [MariaDB]
@@ -35,8 +33,6 @@ public class QueryTransactionTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
     [Postgres]
     [SqlServer]
     [MariaDB]

@@ -26,10 +26,13 @@ public class QueryFirstOrDefaultAsyncTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryFirstOrDefaultAsync_WithResults_ReturnsFirst(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QueryFirstOrDefaultAsync<Product>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QueryFirstOrDefaultAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 });
 
@@ -39,10 +42,13 @@ public class QueryFirstOrDefaultAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryFirstOrDefaultAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QueryFirstOrDefaultAsync<Product>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QueryFirstOrDefaultAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
@@ -52,10 +58,13 @@ public class QueryFirstOrDefaultAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryFirstOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QueryFirstOrDefaultAsync<Product>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QueryFirstOrDefaultAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = -999 });
 
@@ -63,10 +72,13 @@ public class QueryFirstOrDefaultAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryFirstOrDefaultAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QueryFirstOrDefaultAsync<Product>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QueryFirstOrDefaultAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             CommandOptions<Product>.WithTimeout(30));
@@ -76,12 +88,15 @@ public class QueryFirstOrDefaultAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryFirstOrDefaultAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
         
-        var product = await _fixture.GetDbConnection(dialect).QueryFirstOrDefaultAsync<Product>(
+        var product = await connection.QueryFirstOrDefaultAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             cts.Token);
@@ -91,13 +106,16 @@ public class QueryFirstOrDefaultAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryFirstOrDefaultAsync_StrictMapping_MissingColumn_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         // Product implements IMapped<Product>, so its ReadEntity mapper runs directly.
         // Missing columns cause GetOrdinal to throw IndexOutOfRangeException.
         await Assert.ThrowsAnyAsync<Exception>(async () =>
-            await _fixture.GetDbConnection(dialect).QueryFirstOrDefaultAsync<Product>(
+            await connection.QueryFirstOrDefaultAsync<Product>(
                 "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
                 new { Id = 1 }));
     }

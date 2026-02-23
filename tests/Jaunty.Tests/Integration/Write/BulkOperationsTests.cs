@@ -33,8 +33,9 @@ private static void ClearTestTable(IDbConnection connection)
     #region BulkInsert Tests
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkInsert_InsertsMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -53,8 +54,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkInsert_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -68,8 +70,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkInsert_SingleEntity_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -86,8 +89,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkInsert_LargeCollection_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -103,8 +107,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkInsert_NullConnection_Throws(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -116,8 +121,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkInsert_NullEntities_Throws(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -128,8 +134,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkInsertIgnoreConstraints_InsertsMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -140,6 +147,12 @@ private static void ClearTestTable(IDbConnection connection)
             new() { Name = "Test2", Value = 200 }
         };
 
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkInsertIgnoreConstraints(entities));
+            return;
+        }
+
         int inserted = connection.BulkInsertIgnoreConstraints(entities);
 
         Assert.Equal(2, inserted);
@@ -147,19 +160,26 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkInsertIgnoreConstraints_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
         var connection = ctx.Connection;
-        using var transaction = connection.BeginTransaction();
         var entities = new List<BulkTestEntity>
         {
             new() { Name = "Test1", Value = 100 },
             new() { Name = "Test2", Value = 200 }
         };
 
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkInsertIgnoreConstraints(entities));
+            return;
+        }
+
+        using var transaction = connection.BeginTransaction();
         int inserted = connection.BulkInsertIgnoreConstraints(entities, new CommandOptions(transaction: transaction));
         transaction.Commit();
 
@@ -168,8 +188,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkInsertIgnoreConstraints_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -187,8 +208,9 @@ private static void ClearTestTable(IDbConnection connection)
     #region BulkUpdate Tests
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkUpdate_UpdatesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -223,8 +245,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkUpdate_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -237,8 +260,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkUpdate_NonExistentEntity_ReturnsZeroForThatRow(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -262,8 +286,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkUpdate_NullConnection_Throws(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -275,8 +300,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkUpdateIgnoreConstraints_UpdatesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -296,14 +322,21 @@ private static void ClearTestTable(IDbConnection connection)
             entity.Name = "Updated" + entity.Id;
         }
 
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkUpdateIgnoreConstraints(inserted));
+            return;
+        }
+
         int updated = connection.BulkUpdateIgnoreConstraints(inserted);
 
         Assert.Equal(2, updated);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkUpdateIgnoreConstraints_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -321,6 +354,12 @@ private static void ClearTestTable(IDbConnection connection)
             entity.Value *= 10;
         }
 
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkUpdateIgnoreConstraints(inserted));
+            return;
+        }
+
         using var transaction = connection.BeginTransaction();
         int updated = connection.BulkUpdateIgnoreConstraints(inserted, new CommandOptions(transaction: transaction));
         transaction.Commit();
@@ -332,8 +371,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkUpdateIgnoreConstraints_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -350,8 +390,9 @@ private static void ClearTestTable(IDbConnection connection)
     #region BulkDelete Tests
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkDelete_DeletesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -376,8 +417,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkDelete_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -390,8 +432,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkDelete_PartialDelete_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -416,8 +459,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkDelete_NonExistentEntity_ReturnsZeroForThatRow(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -433,8 +477,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkDelete_NullConnection_Throws(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -446,8 +491,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkDeleteIgnoreConstraints_DeletesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -462,6 +508,12 @@ private static void ClearTestTable(IDbConnection connection)
 
         var toDelete = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
 
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkDeleteIgnoreConstraints(toDelete));
+            return;
+        }
+
         int deleted = connection.BulkDeleteIgnoreConstraints(toDelete);
 
         Assert.Equal(2, deleted);
@@ -469,8 +521,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkDeleteIgnoreConstraints_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -484,6 +537,12 @@ private static void ClearTestTable(IDbConnection connection)
 
         var toDelete = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
 
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkDeleteIgnoreConstraints(toDelete));
+            return;
+        }
+
         using var transaction = connection.BeginTransaction();
         int deleted = connection.BulkDeleteIgnoreConstraints(toDelete, new CommandOptions(transaction: transaction));
         transaction.Commit();
@@ -493,8 +552,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkDeleteIgnoreConstraints_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -511,8 +571,9 @@ private static void ClearTestTable(IDbConnection connection)
     #region Transaction Tests
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkInsert_WithTransaction_CommitsOnSuccess(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -534,8 +595,9 @@ private static void ClearTestTable(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void BulkInsert_WithTransaction_RollsBackOnError(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
