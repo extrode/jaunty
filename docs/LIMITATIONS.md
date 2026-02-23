@@ -35,10 +35,14 @@ CTE queries have `SelectFirstAsync()` and `SelectFirstOrDefaultAsync()` missing.
 
 **Note:** Both work identically. Use whichever you prefer.
 
-### 5. SQLite `Count()` Returns Int64
-The `Count()` method uses `QueryScalar<int>` but SQLite's `COUNT(*)` returns `Int64`, causing a cast exception.
+### 5. `COUNT(*)` Return Type Varies by Provider
+`COUNT(*)` does not return the same CLR type across providers:
+- SQL Server commonly returns `Int32`
+- PostgreSQL, MariaDB/MySQL, and SQLite commonly return `Int64`
 
-**Workaround:** Use `LongCount()` instead when working with SQLite.
+If you call scalar methods with a mismatched type (for example `QueryScalar<int>` against a provider returning `Int64`), a cast/conversion error can occur.
+
+**Workaround:** For cross-dialect code, prefer `QueryScalar<long>` / `ExecuteScalar<long>` (or fluent `LongCount()`).
 
 ---
 

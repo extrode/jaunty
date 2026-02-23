@@ -11,9 +11,23 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
+    // Plan (pseudocode):
+    // 1. Calls to `ExecuteReaderAsync(...)` are ambiguous to the compiler because generic TResult cannot be inferred.
+    // 2. For each call, supply the explicit generic type argument that matches the lambda return type:
+    //    - `QueryCoreAsync<T>` -> TResult = `List<T>`
+    //    - `QueryFirstCoreAsync<T>` -> TResult = `T`
+    //    - `QueryFirstOrDefaultCoreAsync<T>` -> TResult = `T?`
+    //    - `QuerySingleCoreAsync<T>` -> TResult = `T`
+    //    - `QuerySingleOrDefaultCoreAsync<T>` -> TResult = `T?`
+    //    - `QueryScalarCoreAsync<T>` -> TResult = `T`
+    //    - Multi-entity methods use `List<(T1, T2)>` or `(T1, T2)?` as appropriate
+    // 3. Also fix the scalar handler to consistently use async reads and await the `GetFieldValueAsync<T>` call so the lambda returns `T` (not `Task<T>`).
+    // 4. Leave other logic intact; only add explicit generic arguments and correct await in scalar case.
+    // 5. Return the modified file content.
+
     private static async ValueTask<List<T>> QueryCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync<List<T>>(connection, sql, parameters, options, async (reader, ct) =>
         {
             var list = new List<T>();
             if (reader is DbDataReader dbReader)
@@ -37,7 +51,7 @@ public static partial class Jaunty
 
     private static async ValueTask<T> QueryFirstCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync<T>(connection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -46,7 +60,7 @@ public static partial class Jaunty
                 var map = DrDispatcher.Resolve(dbReader, options, mode);
                 return map(dbReader);
             }
-            
+
             if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
             var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             return mapFallback(reader);
@@ -55,7 +69,7 @@ public static partial class Jaunty
 
     private static async ValueTask<T?> QueryFirstOrDefaultCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync<T?>(connection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -64,7 +78,7 @@ public static partial class Jaunty
                 var map = DrDispatcher.Resolve(dbReader, options, mode);
                 return map(dbReader);
             }
-            
+
             if (!reader.Read()) return default;
             var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             return mapFallback(reader);
@@ -73,7 +87,7 @@ public static partial class Jaunty
 
     private static async ValueTask<T> QuerySingleCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync<T>(connection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -86,7 +100,7 @@ public static partial class Jaunty
                     ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
                     : entity!;
             }
-            
+
             if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
             var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             T? entityFallback = mapFallback(reader);
@@ -98,7 +112,7 @@ public static partial class Jaunty
 
     private static async ValueTask<T?> QuerySingleOrDefaultCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync<T?>(connection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -111,7 +125,7 @@ public static partial class Jaunty
                     ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
                     : entity;
             }
-            
+
             if (!reader.Read()) return default;
             var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             T? entityFallback = mapFallback(reader);
@@ -123,17 +137,19 @@ public static partial class Jaunty
 
     private static async ValueTask<T> QueryScalarCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken)
     {
-        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync<T>(connection, sql, parameters, options, async (reader, ct) =>
         {
+            // Prefer async path for DbDataReader, otherwise use synchronous IDataReader methods.
             if (reader is DbDataReader dbReader)
             {
-                return !await dbReader.ReadAsync(ct).ConfigureAwait(false) || await dbReader.IsDBNullAsync(0, ct).ConfigureAwait(false) ? default!
-                    : await dbReader.GetFieldValueAsync<T>(0, ct).ConfigureAwait(false);
+                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false) || await dbReader.IsDBNullAsync(0, ct).ConfigureAwait(false))
+                    return default!;
+
+                return await dbReader.GetFieldValueAsync<T>(0).ConfigureAwait(false);
             }
 
             if (!reader.Read() || reader.IsDBNull(0)) return default!;
-            var obj = reader.GetValue(0);
-            return (T)Convert.ChangeType(obj, typeof(T));
+            return ConvertScalarValue<T>(reader.GetValue(0));
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -233,7 +249,7 @@ public static partial class Jaunty
 
     private static async ValueTask<List<(T1, T2)>> QueryMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
-        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync<List<(T1, T2)>>(connection, sql, parameters, options, async (reader, ct) =>
         {
             var results = new List<(T1, T2)>();
 
@@ -288,7 +304,7 @@ public static partial class Jaunty
 
     private static async ValueTask<(T1, T2)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
-        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -305,7 +321,7 @@ public static partial class Jaunty
 
                 return (t1, t2);
             }
-            
+
             if (!reader.Read())
                 return ((T1, T2)?)null;
 
@@ -329,7 +345,7 @@ public static partial class Jaunty
 
     private static async ValueTask<(T1, T2)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
-        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -349,7 +365,7 @@ public static partial class Jaunty
 
                 return (t1, t2);
             }
-            
+
             if (!reader.Read())
                 return ((T1, T2)?)null;
 

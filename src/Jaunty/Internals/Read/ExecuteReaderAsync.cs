@@ -41,8 +41,8 @@ public static partial class Jaunty
                 if (options.CommandType == CommandType.StoredProcedure || options.CommandType == CommandType.TableDirect)
                     command.CommandType = options.CommandType;
 
-                if (options.Transaction is DbTransaction dbTransaction)
-                    command.Transaction = dbTransaction;
+                if (options.Transaction is not null)
+                    ((IDbCommand)command).Transaction = options.Transaction;
 
                 if (options.CommandTimeout.HasValue)
                     command.CommandTimeout = options.CommandTimeout.Value;
@@ -72,8 +72,8 @@ public static partial class Jaunty
                 if (options.CommandType == CommandType.StoredProcedure || options.CommandType == CommandType.TableDirect)
                     command.CommandType = options.CommandType;
 
-                if (options.Transaction is DbTransaction dbTransaction)
-                    command.Transaction = dbTransaction;
+                if (options.Transaction is not null)
+                    command.Transaction = options.Transaction;
 
                 if (options.CommandTimeout.HasValue)
                     command.CommandTimeout = options.CommandTimeout.Value;
