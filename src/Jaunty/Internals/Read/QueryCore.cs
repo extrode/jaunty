@@ -40,7 +40,7 @@ public static partial class Jaunty
 
     private static T QueryFirstCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
-        T? entity = QueryFirstOrDefaultCore<T>(connection, sql, parameters, options, mode);
+        T? entity = QueryFirstOrDefaultCore(connection, sql, parameters, options, mode);
         return entity is null ? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.") : entity;
     }
 
