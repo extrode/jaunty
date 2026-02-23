@@ -118,21 +118,24 @@ public static partial class Jaunty
             if (reader is DbDataReader dbReader)
                 return dbReader.GetFieldValue<T>(0);
 
-            var value = reader.GetValue(0);
-            if (value is T direct)
-                return direct;
-
-            var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
-
-            if (targetType.IsEnum)
-            {
-                var enumUnderLyingType = Enum.GetUnderlyingType(targetType);
-                var numeric = Convert.ChangeType(value, enumUnderLyingType);
-                return (T)Enum.ToObject(targetType, numeric);
-            }
-
-            return (T)Convert.ChangeType(value, targetType);
+            return ConvertScalarValue<T>(reader.GetValue(0));
         });
+    }
+
+    private static T ConvertScalarValue<T>(object value)
+    {
+        if (value is T direct)
+            return direct;
+
+        var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+        if (targetType.IsEnum)
+        {
+            var enumUnderlyingType = Enum.GetUnderlyingType(targetType);
+            var numeric = Convert.ChangeType(value, enumUnderlyingType);
+            return (T)Enum.ToObject(targetType, numeric!);
+        }
+
+        return (T)Convert.ChangeType(value, targetType);
     }
 
     private static IEnumerable<T> QueryStreamCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
