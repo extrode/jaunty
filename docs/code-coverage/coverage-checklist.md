@@ -1,8 +1,17 @@
 # Jaunty Code Coverage Checklist
 
-**Target**: 100% Code Coverage
-**Created**: 2026-02-19
-**Last Updated**: 2026-02-20 (Steps 1-7 complete: multi-target, IDbConnection fallback, Microsoft.Data.Sqlite, 4 production bugs fixed, GridReader async, SQL Server/PostgreSQL SP tests with skip infrastructure)
+**Target**: 100% Code Coverage  
+**Created**: 2026-02-19  
+**Last Updated**: 2026-02-24 (Coverage plan created)
+
+**Current Coverage**: 75% overall
+- Jaunty (net8.0): 76%
+- Jaunty (netstandard2.0): 69%
+- Jaunty.Extensions.Reflection: 95%
+- Jaunty.Fluent: 33%
+- Jaunty.Scaffolding: 49%
+
+> **See**: [`COVERAGE-PLAN-2026-02-24.md`](COVERAGE-PLAN-2026-02-24.md) for the prioritized 100% coverage roadmap.
 
 This document tracks test coverage for the **Jaunty micro-ORM** codebase. Each item includes the class/method and its test status.
 
