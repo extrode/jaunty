@@ -15,65 +15,65 @@ DROP FUNCTION IF EXISTS GetNoResults();
 
 CREATE OR REPLACE FUNCTION GetAllProducts()
 RETURNS TABLE (
-    product_id INTEGER,
-    product_name VARCHAR,
-    supplier_id INTEGER,
-    category_id INTEGER,
-    quantity_per_unit VARCHAR,
-    unit_price DECIMAL,
-    units_in_stock SMALLINT,
-    units_on_order SMALLINT,
-    reorder_level SMALLINT,
-    discontinued BOOLEAN
+    "ProductId" INTEGER,
+    "ProductName" VARCHAR,
+    "SupplierId" INTEGER,
+    "CategoryId" INTEGER,
+    "QuantityPerUnit" VARCHAR,
+    "UnitPrice" DECIMAL,
+    "UnitsInStock" SMALLINT,
+    "UnitsOnOrder" SMALLINT,
+    "ReorderLevel" SMALLINT,
+    "Discontinued" BOOLEAN
 )
 LANGUAGE SQL
 AS $$
-    SELECT p.product_id, p.product_name, p.supplier_id, p.category_id,
-           p.quantity_per_unit, p.unit_price, p.units_in_stock, p.units_on_order,
-           p.reorder_level, p.discontinued
+    SELECT p.product_id AS "ProductId", p.product_name AS "ProductName", p.supplier_id AS "SupplierId", p.category_id AS "CategoryId",
+           p.quantity_per_unit AS "QuantityPerUnit", p.unit_price AS "UnitPrice", p.units_in_stock AS "UnitsInStock", p.units_on_order AS "UnitsOnOrder",
+           p.reorder_level AS "ReorderLevel", p.discontinued AS "Discontinued"
     FROM products p;
 $$;
 
 CREATE OR REPLACE FUNCTION GetProductsByCategory(p_category_id INTEGER)
 RETURNS TABLE (
-    product_id INTEGER,
-    product_name VARCHAR,
-    supplier_id INTEGER,
-    category_id INTEGER,
-    quantity_per_unit VARCHAR,
-    unit_price DECIMAL,
-    units_in_stock SMALLINT,
-    units_on_order SMALLINT,
-    reorder_level SMALLINT,
-    discontinued BOOLEAN
+    "ProductId" INTEGER,
+    "ProductName" VARCHAR,
+    "SupplierId" INTEGER,
+    "CategoryId" INTEGER,
+    "QuantityPerUnit" VARCHAR,
+    "UnitPrice" DECIMAL,
+    "UnitsInStock" SMALLINT,
+    "UnitsOnOrder" SMALLINT,
+    "ReorderLevel" SMALLINT,
+    "Discontinued" BOOLEAN
 )
 LANGUAGE SQL
 AS $$
-    SELECT p.product_id, p.product_name, p.supplier_id, p.category_id,
-           p.quantity_per_unit, p.unit_price, p.units_in_stock, p.units_on_order,
-           p.reorder_level, p.discontinued
+    SELECT p.product_id AS "ProductId", p.product_name AS "ProductName", p.supplier_id AS "SupplierId", p.category_id AS "CategoryId",
+           p.quantity_per_unit AS "QuantityPerUnit", p.unit_price AS "UnitPrice", p.units_in_stock AS "UnitsInStock", p.units_on_order AS "UnitsOnOrder",
+           p.reorder_level AS "ReorderLevel", p.discontinued AS "Discontinued"
     FROM products p
     WHERE p.category_id = p_category_id;
 $$;
 
 CREATE OR REPLACE FUNCTION GetProductById(p_product_id INTEGER)
 RETURNS TABLE (
-    product_id INTEGER,
-    product_name VARCHAR,
-    supplier_id INTEGER,
-    category_id INTEGER,
-    quantity_per_unit VARCHAR,
-    unit_price DECIMAL,
-    units_in_stock SMALLINT,
-    units_on_order SMALLINT,
-    reorder_level SMALLINT,
-    discontinued BOOLEAN
+    "ProductId" INTEGER,
+    "ProductName" VARCHAR,
+    "SupplierId" INTEGER,
+    "CategoryId" INTEGER,
+    "QuantityPerUnit" VARCHAR,
+    "UnitPrice" DECIMAL,
+    "UnitsInStock" SMALLINT,
+    "UnitsOnOrder" SMALLINT,
+    "ReorderLevel" SMALLINT,
+    "Discontinued" BOOLEAN
 )
 LANGUAGE SQL
 AS $$
-    SELECT p.product_id, p.product_name, p.supplier_id, p.category_id,
-           p.quantity_per_unit, p.unit_price, p.units_in_stock, p.units_on_order,
-           p.reorder_level, p.discontinued
+    SELECT p.product_id AS "ProductId", p.product_name AS "ProductName", p.supplier_id AS "SupplierId", p.category_id AS "CategoryId",
+           p.quantity_per_unit AS "QuantityPerUnit", p.unit_price AS "UnitPrice", p.units_in_stock AS "UnitsInStock", p.units_on_order AS "UnitsOnOrder",
+           p.reorder_level AS "ReorderLevel", p.discontinued AS "Discontinued"
     FROM products p
     WHERE p.product_id = p_product_id;
 $$;
@@ -117,22 +117,22 @@ $$;
 
 CREATE OR REPLACE FUNCTION GetNoResults()
 RETURNS TABLE (
-    product_id INTEGER,
-    product_name VARCHAR,
-    supplier_id INTEGER,
-    category_id INTEGER,
-    quantity_per_unit VARCHAR,
-    unit_price DECIMAL,
-    units_in_stock SMALLINT,
-    units_on_order SMALLINT,
-    reorder_level SMALLINT,
-    discontinued BOOLEAN
+    "ProductId" INTEGER,
+    "ProductName" VARCHAR,
+    "SupplierId" INTEGER,
+    "CategoryId" INTEGER,
+    "QuantityPerUnit" VARCHAR,
+    "UnitPrice" DECIMAL,
+    "UnitsInStock" SMALLINT,
+    "UnitsOnOrder" SMALLINT,
+    "ReorderLevel" SMALLINT,
+    "Discontinued" BOOLEAN
 )
 LANGUAGE SQL
 AS $$
-    SELECT p.product_id, p.product_name, p.supplier_id, p.category_id,
-           p.quantity_per_unit, p.unit_price, p.units_in_stock, p.units_on_order,
-           p.reorder_level, p.discontinued
+    SELECT p.product_id AS "ProductId", p.product_name AS "ProductName", p.supplier_id AS "SupplierId", p.category_id AS "CategoryId",
+           p.quantity_per_unit AS "QuantityPerUnit", p.unit_price AS "UnitPrice", p.units_in_stock AS "UnitsInStock", p.units_on_order AS "UnitsOnOrder",
+           p.reorder_level AS "ReorderLevel", p.discontinued AS "Discontinued"
     FROM products p
     WHERE 1 = 0;
 $$;

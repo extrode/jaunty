@@ -61,7 +61,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryCore<T>(connection, sql, null, default, MappingMode.Strict);
     }
@@ -116,7 +116,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryCore<T>(connection, sql, parameters, default, MappingMode.Strict);
     }
@@ -173,7 +173,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryCore(connection, sql, null, options, MappingMode.Strict);
     }
@@ -226,7 +226,7 @@ public static partial class Jaunty
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
-        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
         return QueryCore(connection, sql, parameters, options, MappingMode.Strict);
     }

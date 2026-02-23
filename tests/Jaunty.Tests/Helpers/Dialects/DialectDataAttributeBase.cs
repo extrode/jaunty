@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Reflection;
 
 using Xunit.Sdk;
@@ -17,12 +16,7 @@ public abstract class DialectDataAttributeBase : DataAttribute
 
     public override IEnumerable<object[]> GetData(MethodInfo testMethod)
     {
-        if (!IsAvailable)
-        {
-            yield break;
-        }
-
-        yield return new object[] { Dialect };
+        yield return !IsAvailable ? throw SkipException.ForSkip(_skipMessage) : (new object[] { Dialect });
     }
 
     protected void ApplySkipIfUnavailable()
