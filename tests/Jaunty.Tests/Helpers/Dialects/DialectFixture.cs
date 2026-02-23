@@ -19,6 +19,11 @@ namespace Jaunty.Tests.Helpers.Dialects;
 
 public sealed class DialectFixture : IDisposable
 {
+    public IDbConnection GetClosedConnection(DialectInfo dialect)
+    {
+        return CreateConnection(dialect);
+    }
+
     public IDbConnection GetConnection(DialectInfo dialect)
     {
         var connection = CreateConnection(dialect);
@@ -28,6 +33,11 @@ public sealed class DialectFixture : IDisposable
         }
 
         return connection;
+    }
+
+    public DbConnection GetClosedDbConnection(DialectInfo dialect)
+    {
+        return CreateConnection(dialect);
     }
 
     public DbConnection GetDbConnection(DialectInfo dialect)
