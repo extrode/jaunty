@@ -14,8 +14,9 @@ public class QueryCommandOptionsTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_WithTimeoutOption_ExecutesCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -27,8 +28,9 @@ public class QueryCommandOptionsTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_WithCommandOptions_ExecutesCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

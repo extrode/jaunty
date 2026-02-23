@@ -13,8 +13,9 @@ public class QueryParameterBindingErrorTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_MissingParameter_ThrowsArgumentException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -27,8 +28,9 @@ public class QueryParameterBindingErrorTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ExtraParameter_ThrowsArgumentException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

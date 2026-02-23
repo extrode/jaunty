@@ -17,15 +17,22 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 
+    private static string TopPrefix(DialectInfo dialect, int count) =>
+        dialect.Provider == DialectProvider.SqlServer ? $"TOP ({count}) " : string.Empty;
+
+    private static string LimitSuffix(DialectInfo dialect, int count) =>
+        dialect.Provider == DialectProvider.SqlServer ? string.Empty : $" LIMIT {count}";
+
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_TwoEntities_MapsByPropertyName(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         // Use explicit aliases to map to each entity's properties
         var results = connection.Query<ProductInfo, CategoryInfo>(
-            @"SELECT
+            $@"SELECT {TopPrefix(dialect, 5)}
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
                 p.unit_price AS UnitPrice,
@@ -33,7 +40,7 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
                 c.category_name AS CategoryName
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
-              LIMIT 5");
+              {LimitSuffix(dialect, 5)}");
 
         Assert.Equal(5, results.Count);
         Assert.All(results, r =>
@@ -47,13 +54,14 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_TwoEntities_WithCombiner_BuildsObjectGraph(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.Query<ProductInfo, CategoryInfo, ProductInfo>(
-            @"SELECT
+            $@"SELECT {TopPrefix(dialect, 5)}
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
                 p.unit_price AS UnitPrice,
@@ -61,7 +69,7 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
                 c.category_name AS CategoryName
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
-              LIMIT 5",
+              {LimitSuffix(dialect, 5)}",
             (product, category) =>
             {
                 product.Category = category;
@@ -77,8 +85,9 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryFirst_TwoEntities_ReturnsFirstRow(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -97,8 +106,9 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryFirstOrDefault_TwoEntities_ReturnsNullWhenEmpty(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -116,8 +126,9 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QuerySingle_TwoEntities_ReturnsSingleRow(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -136,45 +147,48 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QuerySingle_TwoEntities_ThrowsWhenMultiple(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         Assert.Throws<InvalidOperationException>(() =>
             connection.QuerySingle<ProductInfo, CategoryInfo>(
-                @"SELECT
+                $@"SELECT {TopPrefix(dialect, 5)}
                     p.product_id AS ProductId,
                     p.product_name AS ProductName,
                     c.category_id AS CategoryId,
                     c.category_name AS CategoryName
                   FROM products p
                   JOIN categories c ON p.category_id = c.category_id
-                  LIMIT 5"));
+                  {LimitSuffix(dialect, 5)}"));
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryStream_TwoEntities_StreamsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.QueryStream<ProductInfo, CategoryInfo>(
-            @"SELECT
+            $@"SELECT {TopPrefix(dialect, 5)}
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
                 c.category_id AS CategoryId,
                 c.category_name AS CategoryName
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
-              LIMIT 5").ToList();
+              {LimitSuffix(dialect, 5)}").ToList();
 
         Assert.Equal(5, results.Count);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_TwoEntities_WithParameters(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -194,28 +208,30 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryAsync_TwoEntities_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = await connection.QueryAsync<ProductInfo, CategoryInfo>(
-            @"SELECT
+            $@"SELECT {TopPrefix(dialect, 3)}
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
                 c.category_id AS CategoryId,
                 c.category_name AS CategoryName
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
-              LIMIT 3",
+              {LimitSuffix(dialect, 3)}",
             cancellationToken: CancellationToken.None);
 
         Assert.Equal(3, results.Count);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryFirstAsync_TwoEntities_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -234,35 +250,37 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_TwoEntities_T1HasPriority_WhenColumnMatchesBoth(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         // Both ProductInfo and CategoryInfo have no common properties in this test,
         // but if they did, T1 would win
         var results = connection.Query<ProductInfo, CategoryInfo>(
-            @"SELECT
+            $@"SELECT {TopPrefix(dialect, 1)}
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
                 c.category_id AS CategoryId,
                 c.category_name AS CategoryName
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
-              LIMIT 1");
+              {LimitSuffix(dialect, 1)}");
 
         Assert.Single(results);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_TwoEntities_IgnoresUnmatchedColumns(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         // Include extra columns that don't match any property - they should be ignored
         var results = connection.Query<ProductInfo, CategoryInfo>(
-            @"SELECT
+            $@"SELECT {TopPrefix(dialect, 1)}
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
                 p.units_in_stock AS SomeExtraColumn,
@@ -271,7 +289,7 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
                 c.description AS AnotherExtraColumn
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
-              LIMIT 1");
+              {LimitSuffix(dialect, 1)}");
 
         Assert.Single(results);
         var (product, category) = results[0];
@@ -280,20 +298,21 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_TwoEntities_ThreeTableJoin(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.Query<ProductInfo, SupplierInfo>(
-            @"SELECT
+            $@"SELECT {TopPrefix(dialect, 5)}
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
                 s.supplier_id AS SupplierId,
                 s.company_name AS CompanyName
               FROM products p
               JOIN suppliers s ON p.supplier_id = s.supplier_id
-              LIMIT 5");
+              {LimitSuffix(dialect, 5)}");
 
         Assert.Equal(5, results.Count);
         Assert.All(results, r =>

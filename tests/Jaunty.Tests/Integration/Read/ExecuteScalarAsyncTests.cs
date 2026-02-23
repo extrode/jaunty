@@ -18,14 +18,15 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
     [MariaDB]
     public async Task ExecuteScalarAsync_Count_ReturnsValue(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         if (dialect.Provider == DialectProvider.SqlServer)
         {
-            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<int>("SELECT COUNT(*) FROM products");
+            var count = await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM products");
             Assert.True(count > 0);
         }
         else
         {
-            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>("SELECT COUNT(*) FROM products");
+            var count = await connection.ExecuteScalarAsync<long>("SELECT COUNT(*) FROM products");
             Assert.True(count > 0);
         }
     }
@@ -36,16 +37,17 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
     [MariaDB]
     public async Task ExecuteScalarAsync_WithParameters_ReturnsValue(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         if (dialect.Provider == DialectProvider.SqlServer)
         {
-            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<int>(
+            var count = await connection.ExecuteScalarAsync<int>(
                 "SELECT COUNT(*) FROM Products WHERE CategoryId = @CategoryId",
             new { CategoryId = 1 });
             Assert.True(count > 0);
         }
         else
         {
-            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>(
+            var count = await connection.ExecuteScalarAsync<long>(
                 "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
             Assert.True(count > 0);
@@ -58,9 +60,10 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
     [MariaDB]
     public async Task ExecuteScalarAsync_WithOptionsOnly_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         if (dialect.Provider == DialectProvider.SqlServer)
         {
-            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<int>("SELECT COUNT(*) FROM products");
+            var count = await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM products");
             Assert.True(count > 0);
         }
         else
@@ -78,10 +81,11 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
     [MariaDB]
     public async Task ExecuteScalarAsync_WithParametersAndOptions_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
 
         if (dialect.Provider == DialectProvider.SqlServer)
         {
-            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync(
+            var count = await connection.ExecuteScalarAsync(
                 "SELECT COUNT(*) FROM Products WHERE CategoryId = @CategoryId",
                         new { CategoryId = 1 },
             CommandOptions<int>.WithTimeout(30));
@@ -89,7 +93,7 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
         }
         else
         {
-            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync(
+            var count = await connection.ExecuteScalarAsync(
                 "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 },
             CommandOptions<long>.WithTimeout(30));

@@ -1,18 +1,12 @@
-using System.Data;
-using System.Data.Common;
-
 using FluentAssertions;
 
-using Jaunty;
-using Jaunty.Core;
-using Jaunty.Tests.Entities;
+using Jaunty.Attributes;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
 /// <summary>
-/// Tests Upsert and UpsertAsync against Northwind categories.
-/// Writes are always rolled back.
+/// Tests Upsert and UpsertAsync against a dedicated non-identity test table.
 /// </summary>
 public class UpsertTests : IClassFixture<DialectFixture>
 {
@@ -23,11 +17,10 @@ public class UpsertTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 
-    private static void ExecuteSql(IDbConnection connection, IDbTransaction transaction, string sql, object? parameters = null)
+    private static void ExecuteSql(IDbConnection connection, string sql, object? parameters = null)
     {
         using var cmd = connection.CreateCommand();
         cmd.CommandText = sql;
-        cmd.Transaction = transaction;
 
         if (parameters != null)
         {
@@ -43,11 +36,10 @@ public class UpsertTests : IClassFixture<DialectFixture>
         cmd.ExecuteNonQuery();
     }
 
-    private static string? QueryScalarString(IDbConnection connection, IDbTransaction transaction, string sql, object? parameters = null)
+    private static string? QueryScalarString(IDbConnection connection, string sql, object? parameters = null)
     {
         using var cmd = connection.CreateCommand();
         cmd.CommandText = sql;
-        cmd.Transaction = transaction;
 
         if (parameters != null)
         {
@@ -63,157 +55,194 @@ public class UpsertTests : IClassFixture<DialectFixture>
         return cmd.ExecuteScalar()?.ToString();
     }
 
+    private static void RecreateUpsertTable(IDbConnection connection, DialectInfo dialect)
+    {
+        ExecuteSql(connection, DropUpsertTableSql(dialect));
+        ExecuteSql(connection, CreateUpsertTableSql(dialect));
+    }
+
+    private static string DropUpsertTableSql(DialectInfo dialect) => dialect.Provider switch
+    {
+        DialectProvider.SqlServer => "IF OBJECT_ID('dbo.upsert_test', 'U') IS NOT NULL DROP TABLE dbo.upsert_test;",
+        _ => "DROP TABLE IF EXISTS upsert_test;"
+    };
+
+    private static string CreateUpsertTableSql(DialectInfo dialect) => dialect.Provider switch
+    {
+        DialectProvider.SqlServer =>
+            "CREATE TABLE dbo.upsert_test (id INT NOT NULL PRIMARY KEY, name VARCHAR(100) NOT NULL, description VARCHAR(255) NULL);",
+        _ =>
+            "CREATE TABLE upsert_test (id INT NOT NULL PRIMARY KEY, name VARCHAR(100) NOT NULL, description VARCHAR(255) NULL);"
+    };
+
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Upsert_NewEntity_InsertsRecord(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        using var transaction = connection.BeginTransaction();
         try
         {
-            var maxId = connection.QueryScalar<long>(
-                "SELECT MAX(category_id) FROM categories",
-                CommandOptions<long>.WithTransaction(transaction));
-            var newId = (int)(maxId + 100);
+            RecreateUpsertTable(connection, dialect);
 
-            var category = new Category
+            var entity = new UpsertTestEntity
             {
-                CategoryId = newId,
-                CategoryName = "UpsertTest",
+                Id = 1001,
+                Name = "UpsertTest",
                 Description = "Test category for upsert"
             };
 
-            var result = connection.Upsert(category, CommandOptions.WithTransaction(transaction));
-            result.Should().Be(1);
+            var result = connection.Upsert(entity);
 
-            var insertedName = QueryScalarString(connection, transaction,
-                "SELECT category_name FROM categories WHERE category_id = @id",
-                new { id = newId });
+            if (dialect.Provider == DialectProvider.MariaDb)
+                result.Should().BeGreaterThan(0);
+            else
+                result.Should().Be(1);
+
+            var insertedName = QueryScalarString(connection,
+                "SELECT name FROM upsert_test WHERE id = @id",
+                new { id = entity.Id });
 
             insertedName.Should().Be("UpsertTest");
         }
         finally
         {
-            transaction.Rollback();
+            ExecuteSql(connection, DropUpsertTableSql(dialect));
         }
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Upsert_ExistingEntity_UpdatesRecord(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        using var transaction = connection.BeginTransaction();
+
         try
         {
-            var maxId = connection.QueryScalar<long>(
-                "SELECT MAX(category_id) FROM categories",
-                CommandOptions<long>.WithTransaction(transaction));
-            var testId = (int)(maxId + 101);
+            RecreateUpsertTable(connection, dialect);
 
-            ExecuteSql(connection, transaction,
-                "INSERT INTO categories (category_id, category_name, description) VALUES (@id, @name, @desc)",
-                new { id = testId, name = "OriginalName", desc = "Original description" });
+            ExecuteSql(connection,
+                "INSERT INTO upsert_test (id, name, description) VALUES (@id, @name, @desc)",
+                new { id = 1111, name = "OriginalName", desc = "Original description" });
 
-            var category = new Category
+            var entity = new UpsertTestEntity
             {
-                CategoryId = testId,
-                CategoryName = "UpdatedName",
+                Id = 1111,
+                Name = "UpdatedName",
                 Description = "Updated description"
             };
 
-            var result = connection.Upsert(category, CommandOptions.WithTransaction(transaction));
-            result.Should().Be(1);
+            var result = connection.Upsert(entity);
 
-            var updatedName = QueryScalarString(connection, transaction,
-                "SELECT category_name FROM categories WHERE category_id = @id",
-                new { id = testId });
+            if (dialect.Provider == DialectProvider.MariaDb)
+                result.Should().BeGreaterThan(0);
+            else
+                result.Should().Be(1);
+
+            var updatedName = QueryScalarString(connection,
+                "SELECT name FROM upsert_test WHERE id = @id",
+                new { id = entity.Id });
 
             updatedName.Should().Be("UpdatedName");
         }
         finally
         {
-            transaction.Rollback();
+            ExecuteSql(connection, DropUpsertTableSql(dialect));
         }
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task UpsertAsync_NewEntity_InsertsRecord(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
-        using var transaction = connection.BeginTransaction();
         try
         {
-            var maxId = connection.QueryScalar<long>(
-                "SELECT MAX(category_id) FROM categories",
-                CommandOptions<long>.WithTransaction(transaction));
-            var newId = (int)(maxId + 102);
+            RecreateUpsertTable(connection, dialect);
 
-            var category = new Category
+            var entity = new UpsertTestEntity
             {
-                CategoryId = newId,
-                CategoryName = "AsyncUpsertTest",
+                Id = 1003,
+                Name = "AsyncUpsertTest",
                 Description = "Async test category"
             };
 
-            var result = await connection.UpsertAsync(category,
-                CommandOptions.WithTransaction(transaction));
+            var result = await connection.UpsertAsync(entity, cancellationToken: CancellationToken.None);
 
-            result.Should().Be(1);
+            if (dialect.Provider == DialectProvider.MariaDb)
+                result.Should().BeGreaterThan(0);
+            else
+                result.Should().Be(1);
 
-            var insertedName = QueryScalarString(connection, transaction,
-                "SELECT category_name FROM categories WHERE category_id = @id",
-                new { id = newId });
+            var insertedName = QueryScalarString(connection,
+                "SELECT name FROM upsert_test WHERE id = @id",
+                new { id = entity.Id });
 
             insertedName.Should().Be("AsyncUpsertTest");
         }
         finally
         {
-            transaction.Rollback();
+            ExecuteSql(connection, DropUpsertTableSql(dialect));
         }
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task UpsertAsync_ExistingEntity_UpdatesRecord(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
-        using var transaction = connection.BeginTransaction();
         try
         {
-            var maxId = connection.QueryScalar<long>(
-                "SELECT MAX(category_id) FROM categories",
-                CommandOptions<long>.WithTransaction(transaction));
-            var testId = (int)(maxId + 103);
+            RecreateUpsertTable(connection, dialect);
 
-            ExecuteSql(connection, transaction,
-                "INSERT INTO categories (category_id, category_name, description) VALUES (@id, @name, @desc)",
-                new { id = testId, name = "AsyncOriginal", desc = "Async original" });
+            ExecuteSql(connection,
+                "INSERT INTO upsert_test (id, name, description) VALUES (@id, @name, @desc)",
+                new { id = 1004, name = "AsyncOriginal", desc = "Async original" });
 
-            var category = new Category
+            var entity = new UpsertTestEntity
             {
-                CategoryId = testId,
-                CategoryName = "AsyncUpdated",
+                Id = 1004,
+                Name = "AsyncUpdated",
                 Description = "Async updated"
             };
 
-            var result = await connection.UpsertAsync(category,
-                CommandOptions.WithTransaction(transaction));
+            var result = await connection.UpsertAsync(entity, cancellationToken: CancellationToken.None);
 
-            result.Should().Be(1);
+            if (dialect.Provider == DialectProvider.MariaDb)
+                result.Should().BeGreaterThan(0);
+            else
+                result.Should().Be(1);
 
-            var updatedName = QueryScalarString(connection, transaction,
-                "SELECT category_name FROM categories WHERE category_id = @id",
-                new { id = testId });
+            var updatedName = QueryScalarString(connection,
+                "SELECT name FROM upsert_test WHERE id = @id",
+                new { id = entity.Id });
 
             updatedName.Should().Be("AsyncUpdated");
         }
         finally
         {
-            transaction.Rollback();
+            ExecuteSql(connection, DropUpsertTableSql(dialect));
         }
     }
+}
+
+[Table("upsert_test")]
+public class UpsertTestEntity
+{
+    [Key]
+    [Column("id")]
+    public int Id { get; set; }
+
+    [Column("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [Column("description")]
+    public string? Description { get; set; }
 }

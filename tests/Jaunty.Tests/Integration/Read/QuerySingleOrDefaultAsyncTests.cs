@@ -26,10 +26,13 @@ public class QuerySingleOrDefaultAsyncTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QuerySingleOrDefaultAsync_WithSingleResult_ReturnsResult(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QuerySingleOrDefaultAsync<Product>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QuerySingleOrDefaultAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 });
 
@@ -39,10 +42,13 @@ public class QuerySingleOrDefaultAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QuerySingleOrDefaultAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QuerySingleOrDefaultAsync<Product>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QuerySingleOrDefaultAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id AND category_id = @CategoryId",
             new { Id = 1, CategoryId = 1 });
 
@@ -52,10 +58,13 @@ public class QuerySingleOrDefaultAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QuerySingleOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QuerySingleOrDefaultAsync<Product>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QuerySingleOrDefaultAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = -999 });
 
@@ -63,11 +72,14 @@ public class QuerySingleOrDefaultAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QuerySingleOrDefaultAsync_MultipleResults_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            await _fixture.GetDbConnection(dialect).QuerySingleOrDefaultAsync<Product>(
+            await connection.QuerySingleOrDefaultAsync<Product>(
                 $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
                 new { CategoryId = 1 }));
 
@@ -75,10 +87,13 @@ public class QuerySingleOrDefaultAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QuerySingleOrDefaultAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
-        var product = await _fixture.GetDbConnection(dialect).QuerySingleOrDefaultAsync<Product>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var product = await connection.QuerySingleOrDefaultAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             CommandOptions<Product>.WithTimeout(30));
@@ -88,12 +103,15 @@ public class QuerySingleOrDefaultAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QuerySingleOrDefaultAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
         
-        var product = await _fixture.GetDbConnection(dialect).QuerySingleOrDefaultAsync<Product>(
+        var product = await connection.QuerySingleOrDefaultAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
             cts.Token);
@@ -103,13 +121,16 @@ public class QuerySingleOrDefaultAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QuerySingleOrDefaultAsync_StrictMapping_MissingColumn_Throws(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         // Product implements IMapped<Product>, so its ReadEntity mapper runs directly.
         // Missing columns cause GetOrdinal to throw IndexOutOfRangeException.
         await Assert.ThrowsAnyAsync<Exception>(async () =>
-            await _fixture.GetDbConnection(dialect).QuerySingleOrDefaultAsync<Product>(
+            await connection.QuerySingleOrDefaultAsync<Product>(
                 "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
                 new { Id = 1 }));
     }

@@ -1,9 +1,5 @@
-using System;
-using System.Data;
-using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Xunit;
 
 namespace Jaunty.Tests.Integration.StoredProcedure;
 

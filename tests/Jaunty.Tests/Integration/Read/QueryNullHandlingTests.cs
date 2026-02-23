@@ -12,25 +12,34 @@ public class QueryNullHandlingTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 
+    private static string CustomersWithNullRegionSql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? @"SELECT TOP (1) customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName,
+              contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
+              postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
+              FROM customers WHERE region IS NULL"
+            : @"SELECT customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName,
+              contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
+              postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
+              FROM customers WHERE region IS NULL LIMIT 1";
+
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_NullablePropertyWithNullValue_SetsToNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var customers = connection.Query<Customer>(
-            @"SELECT customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName,
-              contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
-              postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
-              FROM customers WHERE region IS NULL LIMIT 1");
+        var customers = connection.Query<Customer>(CustomersWithNullRegionSql(dialect));
 
         Assert.NotEmpty(customers);
         Assert.Null(customers[0].Region);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_NullableIntWithNullValue_SetsToNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

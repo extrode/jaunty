@@ -12,54 +12,74 @@ public class NamedParameterBindingTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void NamedParameters_AnonymousObject_BindsCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var count = connection.QueryScalar<long>(
-            "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId AND discontinued = @Discontinued",
-            new { CategoryId = 1, Discontinued = false });
+        var count = dialect.Provider == DialectProvider.SqlServer
+            ? connection.QueryScalar<int>(
+                "SELECT COUNT(*) FROM Products WHERE CategoryId = @CategoryId AND Discontinued = @Discontinued",
+                new { CategoryId = 1, Discontinued = false })
+            : connection.QueryScalar<long>(
+                "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId AND discontinued = @Discontinued",
+                new { CategoryId = 1, Discontinued = false });
 
         Assert.True(count >= 0);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void NamedParameters_NullValue_BindsAsDbNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         // This tests that null values are properly converted to DBNull
-        var count = connection.QueryScalar<long>(
-            "SELECT COUNT(*) FROM customers WHERE region = @Region OR @Region IS NULL",
-            new { Region = (string?)null });
+        var count = dialect.Provider == DialectProvider.SqlServer
+            ? connection.QueryScalar<int>(
+                "SELECT COUNT(*) FROM Customers WHERE Region = @Region OR @Region IS NULL",
+                new { Region = (string?)null })
+            : connection.QueryScalar<long>(
+                "SELECT COUNT(*) FROM customers WHERE region = @Region OR @Region IS NULL",
+                new { Region = (string?)null });
 
         Assert.True(count >= 0);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void NamedParameters_DateTime_BindsCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var count = connection.QueryScalar<long>(
-            "SELECT COUNT(*) FROM orders WHERE order_date > @Date",
-            new { Date = new DateTime(1997, 1, 1) });
+        var count = dialect.Provider == DialectProvider.SqlServer
+            ? connection.QueryScalar<int>(
+                "SELECT COUNT(*) FROM Orders WHERE OrderDate > @Date",
+                new { Date = new DateTime(1997, 1, 1) })
+            : connection.QueryScalar<long>(
+                "SELECT COUNT(*) FROM orders WHERE order_date > @Date",
+                new { Date = new DateTime(1997, 1, 1) });
 
         Assert.True(count >= 0);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void NamedParameters_Decimal_BindsCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var count = connection.QueryScalar<long>(
-            "SELECT COUNT(*) FROM products WHERE unit_price > @Price",
-            new { Price = 10.0m });
+        var count = dialect.Provider == DialectProvider.SqlServer
+            ? connection.QueryScalar<int>(
+                "SELECT COUNT(*) FROM Products WHERE UnitPrice > @Price",
+                new { Price = 10.0m })
+            : connection.QueryScalar<long>(
+                "SELECT COUNT(*) FROM products WHERE unit_price > @Price",
+                new { Price = 10.0m });
 
         Assert.True(count >= 0);
     }

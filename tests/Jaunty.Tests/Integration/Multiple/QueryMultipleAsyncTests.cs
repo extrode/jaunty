@@ -1,4 +1,3 @@
-using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -15,11 +14,14 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryMultipleAsync_ReturnsMultipleResultSets(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 2; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 3");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            CategoryProductMultipleSql(dialect, 2, 3));
 
         var categories = (await gridReader.ReadAsync<Category>()).ToList();
         var products = (await gridReader.ReadPartialAsync<ProductSummary>()).ToList();
@@ -31,11 +33,14 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryMultipleAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @CategoryId; SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products WHERE category_id = @CategoryId",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            CategoryProductByCategorySql(dialect),
             new { CategoryId = 1 });
 
         var categories = (await gridReader.ReadAsync<Category>()).ToList();
@@ -47,11 +52,14 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryMultipleAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT COUNT(*) FROM categories; SELECT COUNT(*) FROM products",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            CategoryProductCountSql(dialect),
             CommandOptions.WithTimeout(30));
 
         var categoryCount = await gridReader.ReadScalarAsync<long>();
@@ -62,13 +70,16 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryMultipleAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
 
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 1",
+        using var gridReader = await connection.QueryMultipleAsync(
+            CategoryProductSummarySql(dialect, 1, 1),
             cancellationToken: cts.Token);
 
         var categories = (await gridReader.ReadPartialAsync<Category>()).ToList();
@@ -79,7 +90,9 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryMultipleAsync_WithTransaction_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -88,7 +101,7 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
         try
         {
             using var gridReader = await connection.QueryMultipleAsync(
-                "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 1",
+                CategoryProductSummarySql(dialect, 1, 1),
                 CommandOptions.WithTransaction(transaction));
 
             var categories = (await gridReader.ReadPartialAsync<Category>()).ToList();
@@ -104,11 +117,14 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryMultipleAsync_PartialRead_DoesNotThrow(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 1");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            CategoryProductSummarySql(dialect, 1, 1));
 
         // Only read first result set, not second
         var categories = (await gridReader.ReadPartialAsync<Category>()).ToList();
@@ -118,11 +134,14 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryMultipleAsync_ReadScalar_WithParameters_Works(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT COUNT(*) FROM categories; SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            CategoryCountAndProductsByCategorySql(dialect),
             new { CategoryId = 1 });
 
         var categoryCount = await gridReader.ReadScalarAsync<long>();
@@ -131,7 +150,31 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
         Assert.True(categoryCount > 0);
         Assert.True(productCount > 0);
     }
-}
 
+    private static string CategoryProductMultipleSql(DialectInfo dialect, int categoryTop, int productTop) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? $"SELECT TOP ({categoryTop}) CategoryId, CategoryName, Description FROM Categories; SELECT TOP ({productTop}) ProductId, ProductName FROM Products;"
+            : $"SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT {categoryTop}; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT {productTop};";
+
+    private static string CategoryProductSummarySql(DialectInfo dialect, int categoryTop, int productTop) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? $"SELECT TOP ({categoryTop}) CategoryId, CategoryName FROM Categories; SELECT TOP ({productTop}) ProductId, ProductName FROM Products;"
+            : $"SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT {categoryTop}; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT {productTop};";
+
+    private static string CategoryProductByCategorySql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT CategoryId, CategoryName, Description FROM Categories WHERE CategoryId = @CategoryId; SELECT ProductId, ProductName, CategoryId FROM Products WHERE CategoryId = @CategoryId"
+            : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @CategoryId; SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products WHERE category_id = @CategoryId";
+
+    private static string CategoryProductCountSql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT COUNT(*) FROM Categories; SELECT COUNT(*) FROM Products"
+            : "SELECT COUNT(*) FROM categories; SELECT COUNT(*) FROM products";
+
+    private static string CategoryCountAndProductsByCategorySql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT COUNT(*) FROM Categories; SELECT COUNT(*) FROM Products WHERE CategoryId = @CategoryId"
+            : "SELECT COUNT(*) FROM categories; SELECT COUNT(*) FROM products WHERE category_id = @CategoryId";
+}
 
 

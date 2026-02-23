@@ -13,8 +13,9 @@ public class QuerySqlErrorTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_InvalidSql_ThrowsException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -23,8 +24,9 @@ public class QuerySqlErrorTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_SyntaxError_ThrowsException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -33,8 +35,9 @@ public class QuerySqlErrorTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryScalar_InvalidSql_ThrowsException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

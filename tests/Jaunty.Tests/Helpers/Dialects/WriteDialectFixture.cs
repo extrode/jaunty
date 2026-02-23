@@ -24,9 +24,9 @@ public sealed class WriteDialectFixture : IDisposable
         {
             DialectProvider.SystemSqlite => CreateSystemSqliteContext(),
             DialectProvider.MicrosoftSqlite => CreateMicrosoftSqliteContext(),
-            DialectProvider.SqlServer => CreateServerContext(new SqlConnection(TestConfiguration.SqlServerConnectionString)),
-            DialectProvider.Postgres => CreateServerContext(new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString)),
-            DialectProvider.MariaDb => CreateServerContext(new MySqlConnection(TestConfiguration.MariaDbConnectionString)),
+            DialectProvider.SqlServer => CreateServerContext(new SqlConnection(TestConfiguration.SqlServerConnectionString), DialectProvider.SqlServer),
+            DialectProvider.Postgres => CreateServerContext(new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString), DialectProvider.Postgres),
+            DialectProvider.MariaDb => CreateServerContext(new MySqlConnection(TestConfiguration.MariaDbConnectionString), DialectProvider.MariaDb),
             _ => throw new InvalidOperationException($"Unsupported dialect provider: {dialect.Provider}")
         };
     }
@@ -40,7 +40,7 @@ public sealed class WriteDialectFixture : IDisposable
     {
         var connection = new SQLiteConnection("Data Source=:memory:");
         connection.Open();
-        InitializeBulkSchema(connection);
+        InitializeBulkSchema(connection, DialectProvider.SystemSqlite);
         return new WriteDialectContext(connection, transaction: null);
     }
 
@@ -48,26 +48,50 @@ public sealed class WriteDialectFixture : IDisposable
     {
         var connection = new SqliteConnection("Data Source=:memory:");
         connection.Open();
-        InitializeBulkSchema(connection);
+        InitializeBulkSchema(connection, DialectProvider.MicrosoftSqlite);
         return new WriteDialectContext(connection, transaction: null);
     }
 
-    private static WriteDialectContext CreateServerContext(DbConnection connection)
+    private static WriteDialectContext CreateServerContext(DbConnection connection, DialectProvider provider)
     {
         connection.Open();
-        var transaction = connection.BeginTransaction();
-        return new WriteDialectContext(connection, transaction);
+        InitializeBulkSchema(connection, provider);
+        return new WriteDialectContext(connection, transaction: null);
     }
 
-    private static void InitializeBulkSchema(IDbConnection connection)
+    private static void InitializeBulkSchema(IDbConnection connection, DialectProvider provider)
     {
         using var cmd = connection.CreateCommand();
-        cmd.CommandText = @"
+        cmd.CommandText = provider switch
+        {
+            DialectProvider.SqlServer => @"
+            IF OBJECT_ID('dbo.bulk_test', 'U') IS NOT NULL DROP TABLE dbo.bulk_test;
+            CREATE TABLE dbo.bulk_test (
+                id BIGINT IDENTITY(1,1) PRIMARY KEY,
+                name NVARCHAR(255) NOT NULL,
+                value INT NOT NULL
+            );",
+            DialectProvider.Postgres => @"
+            DROP TABLE IF EXISTS bulk_test;
+            CREATE TABLE bulk_test (
+                id BIGSERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                value INTEGER NOT NULL
+            );",
+            DialectProvider.MariaDb => @"
+            DROP TABLE IF EXISTS bulk_test;
+            CREATE TABLE bulk_test (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                value INT NOT NULL
+            );",
+            _ => @"
             CREATE TABLE bulk_test (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 value INTEGER NOT NULL
-            );";
+            );"
+        };
         cmd.ExecuteNonQuery();
     }
 }
