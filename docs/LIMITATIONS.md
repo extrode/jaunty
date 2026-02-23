@@ -44,6 +44,11 @@ If you call scalar methods with a mismatched type (for example `QueryScalar<int>
 
 **Workaround:** For cross-dialect code, prefer `QueryScalar<long>` / `ExecuteScalar<long>` (or fluent `LongCount()`).
 
+### 6. `IMapped<T>.ReadEntity` Is Treated As Strict Mapping
+`IMapped<T>` / `ReadEntity(IDataReader)` is intended for full-shape entity mapping. Partial/projection queries may omit columns, so relying on `ReadEntity` for those queries is unsafe unless your mapper explicitly handles missing columns.
+
+**Workaround:** For partial/projection queries, use `QueryPartial*` with a projection-safe mapper via `CommandOptions<T>.WithMapper(...)` (or reflection-based partial mapping).
+
 ---
 
 ## Reporting Issues
