@@ -17,7 +17,8 @@ internal static class DrDispatcher
             return options.Mapper;
 
         // 2. IMapped<T> implementation (Source Generated - Zero Reflection)
-        if (MappedCache<T>.Mapper is not null)
+        // Only safe for strict/full-shape mapping. Projection/partial queries may omit columns.
+        if (mode == MappingMode.Strict && MappedCache<T>.Mapper is not null)
             return MappedCache<T>.Mapper;
 
         // 3. Special Types (Dictionary, dynamic - uses extension hook)
@@ -53,7 +54,8 @@ internal static class DrDispatcher
             return dbReader => options.Mapper(dbReader);
 
         // 2. IMapped<T> implementation (Source Generated)
-        if (MappedCache<T>.Mapper is not null)
+        // Only safe for strict/full-shape mapping. Projection/partial queries may omit columns.
+        if (mode == MappingMode.Strict && MappedCache<T>.Mapper is not null)
             return dbReader => MappedCache<T>.Mapper(dbReader);
 
         // 3. Special Types
