@@ -16,7 +16,15 @@ public abstract class DialectDataAttributeBase : DataAttribute
 
     public override IEnumerable<object[]> GetData(MethodInfo testMethod)
     {
-        yield return !IsAvailable ? throw SkipException.ForSkip(_skipMessage) : (new object[] { Dialect });
+        if (!IsAvailable)
+        {
+            // Return one data row to avoid "No data found" failures in theory discovery.
+            // ApplySkipIfUnavailable() marks the case as skipped without dynamic skip exceptions.
+            yield return new object[] { Dialect };
+            yield break;
+        }
+
+        yield return new object[] { Dialect };
     }
 
     protected void ApplySkipIfUnavailable()

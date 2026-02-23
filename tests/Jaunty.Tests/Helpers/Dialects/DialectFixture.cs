@@ -11,9 +11,7 @@ using MySql.Data.MySqlClient;
 
 using Npgsql;
 
-#if NET8_0_OR_GREATER
 using Microsoft.Data.Sqlite;
-#endif
 
 namespace Jaunty.Tests.Helpers.Dialects;
 
@@ -61,9 +59,7 @@ public sealed class DialectFixture : IDisposable
         return dialect.Provider switch
         {
             DialectProvider.SystemSqlite => new SQLiteConnection($"Data Source={ResolveNorthwindPath()}"),
-#if NET8_0_OR_GREATER
             DialectProvider.MicrosoftSqlite => new SqliteConnection($"Data Source={ResolveNorthwindPath()}"),
-#endif
             DialectProvider.SqlServer => new SqlConnection(TestConfiguration.SqlServerConnectionString),
             DialectProvider.Postgres => new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString),
             DialectProvider.MariaDb => new MySqlConnection(TestConfiguration.MariaDbConnectionString),
