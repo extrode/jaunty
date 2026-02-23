@@ -46,12 +46,18 @@ Welcome to the Jaunty micro-ORM documentation. This directory contains all techn
 |----------|---------|
 | [`code-coverage/coverage-checklist.md`](code-coverage/coverage-checklist.md) | Method-by-method coverage status |
 | [`code-coverage/test-implementation-guide.md`](code-coverage/test-implementation-guide.md) | Testing patterns and examples |
+| [`../tests/Helpers/TEST-SETUP.md`](../tests/Helpers/TEST-SETUP.md) | Database test setup guide |
 
 ### Project Information
 | Document | Purpose |
 |----------|---------|
 | [`LIMITATIONS.md`](LIMITATIONS.md) | Known limitations and constraints |
+| [`API-DESIGN.md`](API-DESIGN.md) | API design guidelines |
+| [`ARCHITECTURE-DECISIONS.md`](ARCHITECTURE-DECISIONS.md) | Architecture decision records (ADRs) |
+| [`CODE-REVIEW.md`](CODE-REVIEW.md) | Code review checklist |
+| [`XML-DOCUMENTATION-STYLE-GUIDE.md`](XML-DOCUMENTATION-STYLE-GUIDE.md) | XML documentation standards |
 | [`../README.md`](../README.md) | Project overview (root) |
+| [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | Contributing guide (root) |
 
 ---
 
@@ -89,12 +95,14 @@ docs/
 ## Archive
 
 Historical documents from early project development are preserved in `archive/`:
-- Project assessments and analysis
-- Brainstorming sessions
-- Refactoring notes
-- Superseded API designs
 
-These are kept for reference but should not be used as primary guidance.
+| Folder | Contents |
+|--------|----------|
+| [`2026-01-early-development/`](archive/2026-01-early-development/) | Initial project assessments, brainstorming, and API analysis |
+| [`2026-02-code-quality/`](archive/2026-02-code-quality/) | Code improvement opportunities and inconsistency tracking |
+| [`2026-02-nativeaot-migration/`](archive/2026-02-nativeaot-migration/) | NativeAOT migration planning and status |
+
+These documents are kept for reference but should not be used as primary guidance.
 
 ---
 
