@@ -24,7 +24,7 @@ public static T QueryScalar<T>(this IDbConnection connection, string sql)
 
 **Example:**
 ```csharp
-var count = connection.QueryScalar<int>("SELECT COUNT(*) FROM products");
+var count = connection.QueryScalar<long>("SELECT COUNT(*) FROM products");
 ```
 
 ### QueryScalar&lt;T&gt;(string sql, object parameters)
@@ -89,10 +89,23 @@ public static T QueryScalar<T>(this IDbConnection connection, string sql, object
 **Example:**
 ```csharp
 using var transaction = connection.BeginTransaction();
-var count = connection.QueryScalar<int>(
+var count = connection.QueryScalar<long>(
     "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId", 
     new { CategoryId = 1 },
-    CommandOptions.WithTransaction(transaction));
+    CommandOptions<long>.WithTransaction(transaction));
+```
+
+## Provider-specific behavior: COUNT(*) return type
+
+`COUNT(*)` return type can differ by provider:
+
+- SQL Server commonly returns `Int32` (`int`)
+- PostgreSQL, MariaDB/MySQL, and SQLite commonly return `Int64` (`long`)
+
+For cross-dialect code, prefer `QueryScalar<long>` / `ExecuteScalar<long>` for aggregate counts.
+
+```csharp
+var count = connection.QueryScalar<long>("SELECT COUNT(*) FROM products");
 ```
 
 ## Async Variants
