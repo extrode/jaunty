@@ -370,3 +370,4 @@ public void Cleanup()
 - **Fallback Behavior**: When resolvers return null, Jaunty falls back to default behavior
 - **Attribute Override**: `[Table]`, `[Column]`, and `[Ignore]` attributes take precedence over configuration
 - **Reset Capability**: Use `JauntyConfig.Reset()` to clear all configuration and return to defaults
+- **IMapped Behavior**: `IMapped<T>.ReadEntity` is strict/full-shape mapping; for `QueryPartial*` projections, prefer `CommandOptions<T>.WithMapper(...)` if your query may omit columns
