@@ -11,6 +11,20 @@ internal static class ParameterBinder
 
     internal static void Bind(IDbCommand command, object parameters)
     {
+        // Stored procedures don't expose parameter placeholders in CommandText,
+        // so SQL-text parsing/validation is not applicable. Bind all provided values.
+        if (command.CommandType != CommandType.Text)
+        {
+            if (parameters is IDictionary<string, object?> dict)
+            {
+                BindAllFromDictionary(command, dict);
+                return;
+            }
+
+            BindAllFromObject(command, parameters);
+            return;
+        }
+
         // Handle IDictionary<string, object?> directly (e.g., ExpandoObject, Dictionary)
         if (parameters is IDictionary<string, object?> dictParams)
         {
@@ -353,6 +367,29 @@ internal static class ParameterBinder
             {
                 throw new ArgumentException($"No value found in dictionary for SQL parameter '@{sqlName}'.", nameof(dictParams));
             }
+        }
+    }
+
+    private static void BindAllFromObject(IDbCommand command, object parameters)
+    {
+        var meta = ParameterCache.Get(parameters.GetType());
+        for (int i = 0; i < meta.Length; i++)
+        {
+            var p = command.CreateParameter();
+            p.ParameterName = meta[i].Name;
+            p.Value = meta[i].Getter(parameters) ?? DBNull.Value;
+            command.Parameters.Add(p);
+        }
+    }
+
+    private static void BindAllFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)
+    {
+        foreach (var kvp in dictParams)
+        {
+            var p = command.CreateParameter();
+            p.ParameterName = kvp.Key;
+            p.Value = kvp.Value ?? DBNull.Value;
+            command.Parameters.Add(p);
         }
     }
 }
