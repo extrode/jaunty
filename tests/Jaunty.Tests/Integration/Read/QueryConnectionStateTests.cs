@@ -13,8 +13,6 @@ public class QueryConnectionStateTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
     [SqlServer]
     [Postgres]
     [MariaDB]
@@ -34,8 +32,6 @@ public class QueryConnectionStateTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
     [SqlServer]
     [Postgres]
     [MariaDB]

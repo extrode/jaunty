@@ -1,152 +1,43 @@
+using Jaunty.Tests.Helpers.Dialects;
+
 namespace Jaunty.Tests.Integration.Sqlite.StoredProcedure;
 
-/// <summary>
-/// StoredProcedure tests are skipped because SQLite does not support stored procedures.
-/// These tests document the API surface and serve as placeholders for SQL Server/PostgreSQL testing.
-/// </summary>
 public class StoredProcedureTests
 {
-    #region ExecuteStoredProcedure (returns List<T>)
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedure_WithResults_ReturnsEntities() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedure_WithParameters_ReturnsFilteredResults() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedure_WithCommandOptions_Works() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedure_WithParametersAndOptions_Works() { }
-
-    #endregion
-
-    #region ExecuteStoredProcedureFirst
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureFirst_WithResults_ReturnsFirst() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureFirst_WithParameters_ReturnsFirst() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureFirst_NoResults_Throws() { }
-
-    #endregion
-
-    #region ExecuteStoredProcedureFirstOrDefault
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureFirstOrDefault_WithResults_ReturnsFirst() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureFirstOrDefault_NoResults_ReturnsNull() { }
-
-    #endregion
-
-    #region ExecuteStoredProcedureSingle
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureSingle_WithExactlyOneResult_ReturnsEntity() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureSingle_NoResults_Throws() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureSingle_MultipleResults_Throws() { }
-
-    #endregion
-
-    #region ExecuteStoredProcedureSingleOrDefault
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureSingleOrDefault_WithExactlyOneResult_ReturnsEntity() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureSingleOrDefault_NoResults_ReturnsNull() { }
-
-    #endregion
-
-    #region ExecuteStoredProcedureScalar
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureScalar_ReturnsScalarValue() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureScalar_WithParameters_ReturnsValue() { }
-
-    #endregion
-
-    #region ExecuteStoredProcedureNonQuery (Sync)
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureNonQuery_ExecutesSuccessfully() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureNonQuery_WithParameters_ExecutesSuccessfully() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureNonQuery_WithParametersAndOptions_ExecutesSuccessfully() { }
-
-    #endregion
-
-    #region Async Variants
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureAsync_WithResults_ReturnsEntities() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureAsync_WithParametersAndOptions_Works() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureFirstAsync_WithParameters_ReturnsFirst() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureFirstOrDefaultAsync_WithParameters_ReturnsResult() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureSingleAsync_WithExactlyOneResult_ReturnsEntity() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureSingleOrDefaultAsync_NoResults_ReturnsNull() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureScalarAsync_ReturnsScalarValue() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works() { }
-
-    #endregion
-
-    #region ExecuteStoredProcedureNonQueryAsync
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureNonQueryAsync_WithParameters_ExecutesSuccessfully() { }
-
-    [Fact(Skip = "Requires SQL Server or PostgreSQL - SQLite does not support stored procedures")]
-    public void ExecuteStoredProcedureNonQueryAsync_WithParametersAndOptions_ExecutesSuccessfully() { }
-
-    #endregion
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedure_WithResults_ReturnsEntities(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedure_WithParameters_ReturnsFilteredResults(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedure_WithCommandOptions_Works(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedure_WithParametersAndOptions_Works(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureFirst_WithResults_ReturnsFirst(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureFirst_WithParameters_ReturnsFirst(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureFirst_NoResults_Throws(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureFirstOrDefault_WithResults_ReturnsFirst(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureFirstOrDefault_NoResults_ReturnsNull(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureSingle_WithExactlyOneResult_ReturnsEntity(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureSingle_NoResults_Throws(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureSingle_MultipleResults_Throws(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureSingleOrDefault_WithExactlyOneResult_ReturnsEntity(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureSingleOrDefault_NoResults_ReturnsNull(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureScalar_ReturnsScalarValue(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureScalar_WithParameters_ReturnsValue(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureNonQuery_ExecutesSuccessfully(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureNonQuery_WithParameters_ExecutesSuccessfully(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureNonQuery_WithParametersAndOptions_ExecutesSuccessfully(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureAsync_WithResults_ReturnsEntities(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureAsync_WithParametersAndOptions_Works(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureFirstAsync_WithResults_ReturnsFirst(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureFirstAsync_WithParameters_ReturnsFirst(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureFirstAsync_WithParametersAndOptions_Works(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureFirstOrDefaultAsync_NoResults_ReturnsNull(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureFirstOrDefaultAsync_WithParameters_ReturnsResult(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureFirstOrDefaultAsync_WithParametersAndOptions_Works(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureSingleAsync_WithExactlyOneResult_ReturnsEntity(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureSingleOrDefaultAsync_NoResults_ReturnsNull(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureScalarAsync_ReturnsScalarValue(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureScalarAsync_WithParameters_ReturnsValue(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureScalarAsync_WithParametersAndOptions_Works(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureNonQueryAsync_WithParameters_ExecutesSuccessfully(DialectInfo _) { }
+    [Theory] [SqlServer] [Postgres] [MariaDB] public void ExecuteStoredProcedureNonQueryAsync_WithParametersAndOptions_ExecutesSuccessfully(DialectInfo _) { }
 }

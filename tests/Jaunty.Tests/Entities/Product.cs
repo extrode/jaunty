@@ -54,7 +54,7 @@ public class Product : IEntity<int>, IMapped<Product>
             SupplierId = reader.IsDBNull(ordinal["SupplierId"]) ? null : reader.GetInt32(ordinal["SupplierId"]),
             CategoryId = reader.IsDBNull(ordinal["CategoryId"]) ? null : reader.GetInt16(ordinal["CategoryId"]),
             QuantityPerUnit = reader.IsDBNull(ordinal["QuantityPerUnit"]) ? null : reader.GetString(ordinal["QuantityPerUnit"]),
-            UnitPrice = reader.IsDBNull(ordinal["UnitPrice"]) ? null : reader.GetDecimal(ordinal["UnitPrice"]),
+            UnitPrice = reader.IsDBNull(ordinal["UnitPrice"]) ? null : Convert.ToDecimal(reader.GetValue(ordinal["UnitPrice"])),
             UnitsInStock = reader.IsDBNull(ordinal["UnitsInStock"]) ? null : reader.GetInt16(ordinal["UnitsInStock"]),
             UnitsOnOrder = reader.IsDBNull(ordinal["UnitsOnOrder"]) ? null : reader.GetInt16(ordinal["UnitsOnOrder"]),
             ReorderLevel = reader.IsDBNull(ordinal["ReorderLevel"]) ? null : reader.GetInt16(ordinal["ReorderLevel"]),

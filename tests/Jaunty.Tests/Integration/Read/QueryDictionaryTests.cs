@@ -13,13 +13,14 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringObject_ReturnsAllColumns(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.Query<Dictionary<string, object>>(
-            "SELECT product_id, product_name, unit_price FROM products LIMIT 5");
+            dialect.SelectTop("product_id, product_name, unit_price", "FROM products", 5));
 
         Assert.Equal(5, results.Count);
         Assert.All(results, row =>
@@ -31,8 +32,9 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringObject_ValuesAreCorrectTypes(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -45,23 +47,26 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringObject_HandlesNullValues(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var result = connection.QueryFirst<Dictionary<string, object>>(
-            "SELECT product_id, region FROM products p " +
-            "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id " +
-            "WHERE s.region IS NULL LIMIT 1");
+            dialect.SelectTop(
+                "product_id, region",
+                "FROM products p LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id WHERE s.region IS NULL",
+                1));
 
         Assert.True(result.ContainsKey("region"));
         Assert.Null(result["region"]);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringObject_CaseInsensitiveKeys(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -74,8 +79,9 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryFirst_DictionaryStringObject_ReturnsFirstRow(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -87,8 +93,9 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryFirstOrDefault_DictionaryStringObject_ReturnsNullWhenEmpty(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -99,8 +106,9 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QuerySingle_DictionaryStringObject_ReturnsSingleRow(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -112,8 +120,9 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringObject_WithParameters(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -126,32 +135,35 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryAsync_DictionaryStringObject_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = await connection.QueryAsync<Dictionary<string, object>>(
-            "SELECT product_id, product_name FROM products LIMIT 3");
+            dialect.SelectTop("product_id, product_name", "FROM products", 3));
 
         Assert.Equal(3, results.Count);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryStream_DictionaryStringObject_Streams(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.QueryStream<Dictionary<string, object>>(
-            "SELECT product_id, product_name FROM products LIMIT 5").ToList();
+            dialect.SelectTop("product_id, product_name", "FROM products", 5)).ToList();
 
         Assert.Equal(5, results.Count);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringObject_AllColumnTypes(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -172,8 +184,9 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringObject_CountQuery(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -185,8 +198,9 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringObject_AggregateQuery(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -207,13 +221,17 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     #region Typed Dictionary Tests - Dictionary<string, TValue>
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringDecimal_ConvertsAllValuesToDecimal(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var result = connection.QueryFirst<Dictionary<string, decimal>>(
-            "SELECT unit_price, units_in_stock FROM products WHERE unit_price IS NOT NULL AND units_in_stock IS NOT NULL LIMIT 1");
+            dialect.SelectTop(
+                "unit_price, units_in_stock",
+                "FROM products WHERE unit_price IS NOT NULL AND units_in_stock IS NOT NULL",
+                1));
 
         Assert.NotNull(result);
         Assert.True(result.ContainsKey("unit_price"));
@@ -223,13 +241,17 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringLong_ConvertsAllValuesToLong(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var result = connection.QueryFirst<Dictionary<string, long>>(
-            "SELECT product_id, category_id, units_in_stock FROM products WHERE units_in_stock IS NOT NULL LIMIT 1");
+            dialect.SelectTop(
+                "product_id, category_id, units_in_stock",
+                "FROM products WHERE units_in_stock IS NOT NULL",
+                1));
 
         Assert.NotNull(result);
         Assert.IsType<long>(result["product_id"]);
@@ -238,13 +260,14 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringString_ConvertsAllValuesToString(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var result = connection.QueryFirst<Dictionary<string, string>>(
-            "SELECT product_name, quantity_per_unit FROM products LIMIT 1");
+            dialect.SelectTop("product_name, quantity_per_unit", "FROM products", 1));
 
         Assert.NotNull(result);
         Assert.IsType<string>(result["product_name"]);
@@ -252,13 +275,14 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringInt_ReturnsList(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.Query<Dictionary<string, int>>(
-            "SELECT product_id, category_id FROM products LIMIT 3");
+            dialect.SelectTop("product_id, category_id", "FROM products", 3));
 
         Assert.Equal(3, results.Count);
         Assert.All(results, row =>

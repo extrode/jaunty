@@ -15,8 +15,9 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
     #region Single Positional Parameter
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_SingleIntParameter_BindsCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -29,8 +30,9 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_SingleStringParameter_BindsCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -46,8 +48,9 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_SingleDateTimeParameter_BindsCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -63,8 +66,9 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
     #region Array Parameters
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ObjectArray_BindsCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -76,8 +80,9 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryScalar_ObjectArray_BindsCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -93,8 +98,9 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
     #region Parameter Count Validation
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_TooFewParameters_ThrowsWithMessage(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -112,8 +118,9 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
     #region NULL Positional Parameters
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_NullPositionalParameter_BindsAsDbNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

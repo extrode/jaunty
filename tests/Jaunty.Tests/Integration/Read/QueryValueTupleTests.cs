@@ -13,13 +13,14 @@ public class QueryValueTupleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ValueTuple2_ReturnsTuples(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.Query<(int ProductId, string ProductName)>(
-            "SELECT product_id, product_name FROM products LIMIT 5");
+            dialect.SelectTop("product_id, product_name", "FROM products", 5));
 
         Assert.Equal(5, results.Count);
         Assert.All(results, t =>
@@ -30,13 +31,14 @@ public class QueryValueTupleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ValueTuple3_ReturnsTuples(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.Query<(int ProductId, string ProductName, int CategoryId)>(
-            "SELECT product_id, product_name, category_id FROM products LIMIT 5");
+            dialect.SelectTop("product_id, product_name, category_id", "FROM products", 5));
 
         Assert.Equal(5, results.Count);
         Assert.All(results, t =>
@@ -48,13 +50,17 @@ public class QueryValueTupleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ValueTuple4_ReturnsTuples(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.Query<(int ProductId, string ProductName, int CategoryId, decimal UnitPrice)>(
-            "SELECT product_id, product_name, category_id, unit_price FROM products WHERE unit_price IS NOT NULL LIMIT 5");
+            dialect.SelectTop(
+                "product_id, product_name, category_id, unit_price",
+                "FROM products WHERE unit_price IS NOT NULL",
+                5));
 
         Assert.Equal(5, results.Count);
         Assert.All(results, t =>
@@ -67,8 +73,9 @@ public class QueryValueTupleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryFirst_ValueTuple_ReturnsFirstTuple(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -80,8 +87,9 @@ public class QueryValueTupleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ValueTuple_WithParameters_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -98,32 +106,35 @@ public class QueryValueTupleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryAsync_ValueTuple_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = await connection.QueryAsync<(int Id, string Name)>(
-            "SELECT product_id, product_name FROM products LIMIT 3");
+            dialect.SelectTop("product_id, product_name", "FROM products", 3));
 
         Assert.Equal(3, results.Count);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryStream_ValueTuple_Streams(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.QueryStream<(int Id, string Name)>(
-            "SELECT product_id, product_name FROM products LIMIT 5").ToList();
+            dialect.SelectTop("product_id, product_name", "FROM products", 5)).ToList();
 
         Assert.Equal(5, results.Count);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ValueTuple_AggregateQuery(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -142,29 +153,31 @@ public class QueryValueTupleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ValueTuple_TooFewColumns_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var ex = Assert.Throws<InvalidOperationException>(() =>
             connection.Query<(int Id, string Name, int Category)>(
-                "SELECT product_id, product_name FROM products LIMIT 1"));
+                dialect.SelectTop("product_id, product_name", "FROM products", 1)));
 
         Assert.Contains("requires 3 columns", ex.Message);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ValueTuple_JoinQuery(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.Query<(int ProductId, string ProductName, string CategoryName)>(
-            @"SELECT p.product_id, p.product_name, c.category_name
-              FROM products p
-              JOIN categories c ON p.category_id = c.category_id
-              LIMIT 5");
+            dialect.SelectTop(
+                "p.product_id, p.product_name, c.category_name",
+                "FROM products p JOIN categories c ON p.category_id = c.category_id",
+                5));
 
         Assert.Equal(5, results.Count);
         Assert.All(results, t =>
@@ -176,13 +189,14 @@ public class QueryValueTupleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ValueTuple_MixedTypes(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.Query<(string CustomerId, string CompanyName, string? Region)>(
-            "SELECT customer_id, company_name, region FROM customers LIMIT 5");
+            dialect.SelectTop("customer_id, company_name, region", "FROM customers", 5));
 
         Assert.Equal(5, results.Count);
         Assert.All(results, t =>
@@ -194,16 +208,17 @@ public class QueryValueTupleTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ValueTuple5_ReturnsTuples(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var results = connection.Query<(int Id, string Name, int CategoryId, decimal Price, int Stock)>(
-            @"SELECT product_id, product_name, category_id, unit_price, units_in_stock
-              FROM products
-              WHERE unit_price IS NOT NULL AND units_in_stock IS NOT NULL
-              LIMIT 5");
+            dialect.SelectTop(
+                "product_id, product_name, category_id, unit_price, units_in_stock",
+                "FROM products WHERE unit_price IS NOT NULL AND units_in_stock IS NOT NULL",
+                5));
 
         Assert.Equal(5, results.Count);
     }

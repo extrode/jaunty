@@ -24,8 +24,9 @@ public class InsertAsyncTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task InsertAsync_SingleEntity_ReturnsIdentity(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -39,8 +40,9 @@ public class InsertAsyncTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task InsertAsync_MultipleEntities_ReturnsIncrementingIds(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -57,8 +59,9 @@ public class InsertAsyncTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task InsertAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);

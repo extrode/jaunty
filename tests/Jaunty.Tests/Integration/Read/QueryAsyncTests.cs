@@ -1,4 +1,3 @@
-using Jaunty;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 

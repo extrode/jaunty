@@ -14,12 +14,25 @@ public class QueryPartialStreamAsyncTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
-    [MicrosoftSqlite]
+
+    private static string ProductsTable(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "Products" : "products";
+
+    private static string TopPrefix(DialectInfo dialect, int count) =>
+        dialect.Provider == DialectProvider.SqlServer ? $"TOP ({count}) " : string.Empty;
+
+    private static string LimitSuffix(DialectInfo dialect, int count) =>
+        dialect.Provider == DialectProvider.SqlServer ? string.Empty : $" LIMIT {count}";
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialStreamAsync_WithResults_YieldsResults(DialectInfo dialect)
     {
-        var summaries = _fixture.GetDbConnection(dialect).QueryPartialStreamAsync<ProductSummary>(
-            "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @CategoryId",
+        using var connection = _fixture.GetDbConnection(dialect);
+        var summaries = connection.QueryPartialStreamAsync<ProductSummary>(
+            $"SELECT product_id AS ProductId, product_name AS ProductName FROM {ProductsTable(dialect)} WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
         var count = 0;
@@ -39,11 +52,14 @@ public class QueryPartialStreamAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialStreamAsync_WithoutParameters_YieldsAll(DialectInfo dialect)
     {
-        var summaries = _fixture.GetDbConnection(dialect).QueryPartialStreamAsync<ProductSummary>(
-            "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 3");
+        using var connection = _fixture.GetDbConnection(dialect);
+        var summaries = connection.QueryPartialStreamAsync<ProductSummary>(
+            $"SELECT {TopPrefix(dialect, 3)}product_id AS ProductId, product_name AS ProductName FROM {ProductsTable(dialect)}{LimitSuffix(dialect, 3)}");
 
         var list = new List<ProductSummary>();
 #if ASYNC_ENUMERABLE_SUPPORT
@@ -60,11 +76,14 @@ public class QueryPartialStreamAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialStreamAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
-        var summaries = _fixture.GetDbConnection(dialect).QueryPartialStreamAsync<ProductSummary>(
-            "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @CategoryId",
+        using var connection = _fixture.GetDbConnection(dialect);
+        var summaries = connection.QueryPartialStreamAsync<ProductSummary>(
+            $"SELECT product_id AS ProductId, product_name AS ProductName FROM {ProductsTable(dialect)} WHERE category_id = @CategoryId",
             new { CategoryId = 1 },
             CommandOptions<ProductSummary>.WithTimeout(30));
 
@@ -84,13 +103,16 @@ public class QueryPartialStreamAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialStreamAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // Reasonable timeout
         
-        var summaries = _fixture.GetDbConnection(dialect).QueryPartialStreamAsync<ProductSummary>(
-            "SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 5",
+        var summaries = connection.QueryPartialStreamAsync<ProductSummary>(
+            $"SELECT {TopPrefix(dialect, 5)}product_id AS ProductId, product_name AS ProductName FROM {ProductsTable(dialect)}{LimitSuffix(dialect, 5)}",
             cts.Token);
 
         var count = 0;
@@ -108,11 +130,14 @@ public class QueryPartialStreamAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialStreamAsync_ExtraColumns_IgnoresExtra(DialectInfo dialect)
     {
-        var summaries = _fixture.GetDbConnection(dialect).QueryPartialStreamAsync<ProductSummary>(
-            "SELECT product_id AS ProductId, product_name AS ProductName, unit_price, supplier_id FROM products LIMIT 5");
+        using var connection = _fixture.GetDbConnection(dialect);
+        var summaries = connection.QueryPartialStreamAsync<ProductSummary>(
+            $"SELECT {TopPrefix(dialect, 5)}product_id AS ProductId, product_name AS ProductName, unit_price, supplier_id FROM {ProductsTable(dialect)}{LimitSuffix(dialect, 5)}");
 
         var list = new List<ProductSummary>();
 #if ASYNC_ENUMERABLE_SUPPORT
@@ -129,11 +154,14 @@ public class QueryPartialStreamAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialStreamAsync_MissingColumns_SetsDefaults(DialectInfo dialect)
     {
-        var summaries = _fixture.GetDbConnection(dialect).QueryPartialStreamAsync<ProductSummary>(
-            "SELECT product_id AS ProductId FROM products LIMIT 5");
+        using var connection = _fixture.GetDbConnection(dialect);
+        var summaries = connection.QueryPartialStreamAsync<ProductSummary>(
+            $"SELECT {TopPrefix(dialect, 5)}product_id AS ProductId FROM {ProductsTable(dialect)}{LimitSuffix(dialect, 5)}");
 
         var list = new List<ProductSummary>();
 #if ASYNC_ENUMERABLE_SUPPORT
@@ -154,11 +182,14 @@ public class QueryPartialStreamAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialStreamAsync_EmptyResult_YieldsNothing(DialectInfo dialect)
     {
-        var summaries = _fixture.GetDbConnection(dialect).QueryPartialStreamAsync<ProductSummary>(
-            "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        var summaries = connection.QueryPartialStreamAsync<ProductSummary>(
+            $"SELECT product_id AS ProductId, product_name AS ProductName FROM {ProductsTable(dialect)} WHERE product_id = @Id",
             new { Id = -999 });
 
         var list = new List<ProductSummary>();

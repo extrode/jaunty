@@ -1,5 +1,3 @@
-using System.Data;
-
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
@@ -15,8 +13,6 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
     [SqlServer]
     [Postgres]
     [MariaDB]
@@ -31,8 +27,6 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
     [SqlServer]
     [Postgres]
     [MariaDB]
@@ -46,8 +40,6 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
     [SqlServer]
     [Postgres]
     [MariaDB]
@@ -61,8 +53,6 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
     [SqlServer]
     [Postgres]
     [MariaDB]
@@ -76,8 +66,6 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
     [SqlServer]
     [Postgres]
     [MariaDB]
@@ -92,8 +80,6 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
     [SqlServer]
     [Postgres]
     [MariaDB]

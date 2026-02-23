@@ -12,28 +12,37 @@ public class QueryScalarAsyncTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryScalarAsync_ReturnsLong_Success(DialectInfo dialect)
     {
-        var count = await _fixture.GetDbConnection(dialect).QueryScalarAsync<long>("SELECT COUNT(*) FROM products");
+        using var connection = _fixture.GetDbConnection(dialect);
+        var count = await connection.QueryScalarAsync<long>("SELECT COUNT(*) FROM products");
 
         Assert.True(count > 0);
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryScalarAsync_ReturnsString_Success(DialectInfo dialect)
     {
-        var name = await _fixture.GetDbConnection(dialect).QueryScalarAsync<string>("SELECT product_name FROM products WHERE product_id = 1");
+        using var connection = _fixture.GetDbConnection(dialect);
+        var name = await connection.QueryScalarAsync<string>("SELECT product_name FROM products WHERE product_id = 1");
 
         Assert.False(string.IsNullOrEmpty(name));
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryScalarAsync_WithNamedParameter_Success(DialectInfo dialect)
     {
-        var name = await _fixture.GetDbConnection(dialect).QueryScalarAsync<string>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var name = await connection.QueryScalarAsync<string>(
             "SELECT product_name FROM products WHERE product_id = @ProductId",
             new { ProductId = 1 });
 
@@ -41,10 +50,13 @@ public class QueryScalarAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryScalarAsync_NoRows_ReturnsDefault(DialectInfo dialect)
     {
-        var result = await _fixture.GetDbConnection(dialect).QueryScalarAsync<long>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var result = await connection.QueryScalarAsync<long>(
             "SELECT product_id FROM products WHERE product_id = @Id",
             new { Id = -999 });
 
@@ -52,10 +64,13 @@ public class QueryScalarAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryScalarAsync_WithCommandOptions_Success(DialectInfo dialect)
     {
-        var count = await _fixture.GetDbConnection(dialect).QueryScalarAsync<long>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var count = await connection.QueryScalarAsync<long>(
             "SELECT COUNT(*) FROM products",
             CommandOptions<long>.WithTimeout(30));
 
@@ -63,12 +78,15 @@ public class QueryScalarAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryScalarAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
 
-        var count = await _fixture.GetDbConnection(dialect).QueryScalarAsync<long>(
+        var count = await connection.QueryScalarAsync<long>(
             "SELECT COUNT(*) FROM products",
             cts.Token);
 

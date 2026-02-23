@@ -15,8 +15,9 @@ public class QueryMappingModeTests : IClassFixture<DialectFixture>
     #region Strict Mode (Query)
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_AllColumnsPresent_Succeeds(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -27,8 +28,9 @@ public class QueryMappingModeTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_MissingOneColumn_ThrowsWithPropertyName(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -41,8 +43,9 @@ public class QueryMappingModeTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_MissingMultipleColumns_ThrowsWithFirstMissing(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -55,8 +58,9 @@ public class QueryMappingModeTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ExactColumnMatch_Succeeds(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -73,8 +77,9 @@ public class QueryMappingModeTests : IClassFixture<DialectFixture>
     #region Projection Mode (QueryPartial)
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartial_MissingColumns_Allowed(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -86,8 +91,9 @@ public class QueryMappingModeTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartial_OnlyIdColumn_MapsId(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -103,8 +109,9 @@ public class QueryMappingModeTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartial_NoMatchingColumns_ReturnsDefaultEntities(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -120,8 +127,9 @@ public class QueryMappingModeTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartial_ExtraColumnsInResult_Ignored(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -132,8 +140,9 @@ public class QueryMappingModeTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartial_WithParameters_WorksCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -149,8 +158,9 @@ public class QueryMappingModeTests : IClassFixture<DialectFixture>
     #region Null into Non-Nullable
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_NullIntoNonNullableProperty_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -162,8 +172,9 @@ public class QueryMappingModeTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void QueryPartial_NullIntoNonNullableProperty_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

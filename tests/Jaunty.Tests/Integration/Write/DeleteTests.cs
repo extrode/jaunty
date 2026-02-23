@@ -31,8 +31,9 @@ public class DeleteTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Delete_ExistingEntity_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -45,8 +46,9 @@ public class DeleteTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Delete_NonExistingEntity_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -58,8 +60,9 @@ public class DeleteTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Delete_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -74,8 +77,9 @@ public class DeleteTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Delete_WithTransaction_RollbackKeepsEntity(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -89,8 +93,9 @@ public class DeleteTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void DeleteById_ExistingId_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -103,8 +108,9 @@ public class DeleteTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void DeleteById_NonExistingId_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -114,8 +120,9 @@ public class DeleteTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void DeleteById_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -130,8 +137,9 @@ public class DeleteTests : IClassFixture<WriteDialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Delete_MultipleEntities_DeletesEach(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);

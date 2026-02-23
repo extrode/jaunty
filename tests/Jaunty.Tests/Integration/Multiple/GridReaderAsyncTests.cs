@@ -13,11 +13,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadAsync_ReturnsResults(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 2");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategorySql(dialect, 2));
 
         var categories = (await gridReader.ReadAsync<Category>()).ToList();
 
@@ -26,11 +29,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadPartialAsync_AllowsMissingColumns(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 2");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            SummaryCategorySql(dialect, 2));
 
         var categories = (await gridReader.ReadPartialAsync<CategorySummary>()).ToList(); // CategorySummary has fewer properties
 
@@ -39,11 +45,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadFirstAsync_ReturnsFirst(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories ORDER BY category_id LIMIT 1");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategorySql(dialect, 1, orderById: true));
 
         var category = await gridReader.ReadFirstAsync<Category>();
 
@@ -53,11 +62,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadFirstOrDefaultAsync_ReturnsFirstOrNull(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories ORDER BY category_id LIMIT 1");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategorySql(dialect, 1, orderById: true));
 
         var category = await gridReader.ReadFirstOrDefaultAsync<Category>();
 
@@ -67,11 +79,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadFirstOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var category = await gridReader.ReadFirstOrDefaultAsync<Category>();
@@ -80,11 +95,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadSingleAsync_ReturnsSingle(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategoryByIdSql(dialect),
             new { Id = 1 });
 
         var category = await gridReader.ReadSingleAsync<Category>();
@@ -95,11 +113,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadSingleAsync_MultipleResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 2");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategorySql(dialect, 2));
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await gridReader.ReadSingleAsync<Category>());
@@ -108,11 +129,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadSingleAsync_NoResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -122,11 +146,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadSingleOrDefaultAsync_ReturnsSingleOrDefault(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategoryByIdSql(dialect),
             new { Id = 1 });
 
         var category = await gridReader.ReadSingleOrDefaultAsync<Category>();
@@ -136,11 +163,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadSingleOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var category = await gridReader.ReadSingleOrDefaultAsync<Category>();
@@ -149,11 +179,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadScalarAsync_ReturnsValue(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT COUNT(*) FROM categories");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            CountCategoriesSql(dialect));
 
         var count = await gridReader.ReadScalarAsync<long>();
 
@@ -161,13 +194,16 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadScalarAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
         
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT COUNT(*) FROM categories");
+        using var gridReader = await connection.QueryMultipleAsync(
+            CountCategoriesSql(dialect));
 
         var count = await gridReader.ReadScalarAsync<long>(cancellationToken: cts.Token);
 
@@ -176,11 +212,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
 
 #if NET8_0_OR_GREATER
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadStreamAsync_YieldsResults(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 3");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategorySql(dialect, 3));
 
         var categories = new List<Category>();
         await foreach (var category in gridReader.ReadStreamAsync<Category>())
@@ -193,11 +232,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadPartialStreamAsync_YieldsResults(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 3");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            SummaryCategorySql(dialect, 3));
 
         var summaries = new List<CategorySummary>();
         await foreach (var summary in gridReader.ReadPartialStreamAsync<CategorySummary>())
@@ -210,13 +252,16 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadStreamAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
+        using var connection = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
 
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 3");
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategorySql(dialect, 3));
 
         var categories = new List<Category>();
         await foreach (var category in gridReader.ReadStreamAsync<Category>(cancellationToken: cts.Token))
@@ -231,11 +276,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     #region ReadPartialFirstAsync / ReadPartialFirstOrDefaultAsync
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadPartialFirstAsync_ReturnsFirst(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories ORDER BY category_id LIMIT 3");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            SummaryCategorySql(dialect, 3, orderById: true));
 
         var summary = await gridReader.ReadPartialFirstAsync<CategorySummary>();
 
@@ -245,11 +293,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadPartialFirstAsync_NoResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            SummaryCategoryByIdSql(dialect),
             new { Id = -999 });
 
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -257,11 +308,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadPartialFirstOrDefaultAsync_ReturnsFirst(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories ORDER BY category_id LIMIT 3");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            SummaryCategorySql(dialect, 3, orderById: true));
 
         var summary = await gridReader.ReadPartialFirstOrDefaultAsync<CategorySummary>();
 
@@ -271,11 +325,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadPartialFirstOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            SummaryCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var summary = await gridReader.ReadPartialFirstOrDefaultAsync<CategorySummary>();
@@ -288,11 +345,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     #region ReadPartialSingleAsync / ReadPartialSingleOrDefaultAsync
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadPartialSingleAsync_ReturnsSingle(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            SummaryCategoryByIdSql(dialect),
             new { Id = 1 });
 
         var summary = await gridReader.ReadPartialSingleAsync<CategorySummary>();
@@ -303,11 +363,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadPartialSingleAsync_MultipleResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 2");
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            SummaryCategorySql(dialect, 2));
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await gridReader.ReadPartialSingleAsync<CategorySummary>());
@@ -316,11 +379,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadPartialSingleAsync_NoResults_Throws(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            SummaryCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -330,11 +396,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadPartialSingleOrDefaultAsync_ReturnsSingle(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            SummaryCategoryByIdSql(dialect),
             new { Id = 1 });
 
         var summary = await gridReader.ReadPartialSingleOrDefaultAsync<CategorySummary>();
@@ -344,11 +413,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task GridReader_ReadPartialSingleOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
-        using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id",
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            SummaryCategoryByIdSql(dialect),
             new { Id = -999 });
 
         var summary = await gridReader.ReadPartialSingleOrDefaultAsync<CategorySummary>();
@@ -357,6 +429,31 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     #endregion
+
+    private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? $"SELECT TOP ({top}) CategoryId, CategoryName, Description FROM Categories{(orderById ? " ORDER BY CategoryId" : string.Empty)}"
+            : $"SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories{(orderById ? " ORDER BY category_id" : string.Empty)} LIMIT {top}";
+
+    private static string SummaryCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? $"SELECT TOP ({top}) CategoryId, CategoryName FROM Categories{(orderById ? " ORDER BY CategoryId" : string.Empty)}"
+            : $"SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories{(orderById ? " ORDER BY category_id" : string.Empty)} LIMIT {top}";
+
+    private static string FullCategoryByIdSql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT CategoryId, CategoryName, Description FROM Categories WHERE CategoryId = @Id"
+            : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id";
+
+    private static string SummaryCategoryByIdSql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT CategoryId, CategoryName FROM Categories WHERE CategoryId = @Id"
+            : "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id";
+
+    private static string CountCategoriesSql(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT COUNT(*) FROM Categories"
+            : "SELECT COUNT(*) FROM categories";
 }
 
 

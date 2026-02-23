@@ -27,8 +27,9 @@ private static int GetRowCount(IDbConnection connection)
     #region BulkInsertAsync Tests
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkInsertAsync_InsertsMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -47,8 +48,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkInsertAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -62,8 +64,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkInsertAsync_SingleEntity_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -80,8 +83,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkInsertAsync_LargeCollection_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -97,8 +101,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkInsertAsync_CancellationToken_Respects(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -116,8 +121,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkInsertIgnoreConstraintsAsync_InsertsMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -128,6 +134,12 @@ private static int GetRowCount(IDbConnection connection)
             new() { Name = "Test2", Value = 200 }
         };
 
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => connection.BulkInsertIgnoreConstraintsAsync(entities).AsTask());
+            return;
+        }
+
         int inserted = await connection.BulkInsertIgnoreConstraintsAsync(entities);
 
         Assert.Equal(2, inserted);
@@ -135,8 +147,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkInsertIgnoreConstraintsAsync_WithOptions_InsertsEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -146,6 +159,12 @@ private static int GetRowCount(IDbConnection connection)
             new() { Name = "Test1", Value = 100 },
             new() { Name = "Test2", Value = 200 }
         };
+
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => connection.BulkInsertIgnoreConstraintsAsync(entities).AsTask());
+            return;
+        }
 
         using var transaction = connection.BeginTransaction();
         int inserted = await connection.BulkInsertIgnoreConstraintsAsync(entities, CommandOptions.WithTransaction(transaction));
@@ -160,8 +179,9 @@ private static int GetRowCount(IDbConnection connection)
     #region BulkUpdateAsync Tests
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkUpdateAsync_UpdatesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -196,8 +216,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkUpdateAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -210,8 +231,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkUpdateAsync_NonExistentEntity_ReturnsZeroForThatRow(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -235,8 +257,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkUpdateIgnoreConstraintsAsync_UpdatesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -256,14 +279,21 @@ private static int GetRowCount(IDbConnection connection)
             entity.Name = "Updated" + entity.Id;
         }
 
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => connection.BulkUpdateIgnoreConstraintsAsync(inserted).AsTask());
+            return;
+        }
+
         int updated = await connection.BulkUpdateIgnoreConstraintsAsync(inserted);
 
         Assert.Equal(2, updated);
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkUpdateIgnoreConstraintsAsync_WithOptions_UpdatesEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -279,6 +309,12 @@ private static int GetRowCount(IDbConnection connection)
         foreach (var entity in inserted)
         {
             entity.Value *= 10;
+        }
+
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => connection.BulkUpdateIgnoreConstraintsAsync(inserted).AsTask());
+            return;
         }
 
         using var transaction = connection.BeginTransaction();
@@ -297,8 +333,9 @@ private static int GetRowCount(IDbConnection connection)
     #region BulkDeleteAsync Tests
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkDeleteAsync_DeletesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -323,8 +360,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkDeleteAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -337,8 +375,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkDeleteAsync_PartialDelete_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -363,8 +402,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkDeleteAsync_NonExistentEntity_ReturnsZeroForThatRow(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -380,8 +420,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkDeleteIgnoreConstraintsAsync_DeletesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -396,6 +437,12 @@ private static int GetRowCount(IDbConnection connection)
 
         var toDelete = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
 
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => connection.BulkDeleteIgnoreConstraintsAsync(toDelete).AsTask());
+            return;
+        }
+
         int deleted = await connection.BulkDeleteIgnoreConstraintsAsync(toDelete);
 
         Assert.Equal(2, deleted);
@@ -403,8 +450,9 @@ private static int GetRowCount(IDbConnection connection)
     }
 
     [Theory]
-    [MicrosoftSqlite]
-    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task BulkDeleteIgnoreConstraintsAsync_WithOptions_DeletesEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -417,6 +465,12 @@ private static int GetRowCount(IDbConnection connection)
         await connection.BulkInsertAsync(entities);
 
         var toDelete = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => connection.BulkDeleteIgnoreConstraintsAsync(toDelete).AsTask());
+            return;
+        }
 
         using var transaction = connection.BeginTransaction();
         int deleted = await connection.BulkDeleteIgnoreConstraintsAsync(toDelete, CommandOptions.WithTransaction(transaction));

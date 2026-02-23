@@ -1,12 +1,14 @@
-using System.Data;
 using System.Data.Common;
-using Jaunty;
+
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 using Jaunty.Tests.Helpers.Dialects;
+
 using Microsoft.Data.SqlClient;
+
 using MySql.Data.MySqlClient;
+
 using Npgsql;
 
 namespace Jaunty.Tests.Integration.StoredProcedure;

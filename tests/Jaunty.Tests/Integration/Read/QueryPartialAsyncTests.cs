@@ -13,10 +13,13 @@ public class QueryPartialAsyncTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialAsync_MissingColumn_Allowed(DialectInfo dialect)
     {
-        var summaries = await _fixture.GetDbConnection(dialect).QueryPartialAsync<ProductSummary>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var summaries = await connection.QueryPartialAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products");
 
         Assert.NotEmpty(summaries);
@@ -24,10 +27,13 @@ public class QueryPartialAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialAsync_WithParameter_FiltersCorrectly(DialectInfo dialect)
     {
-        var summaries = await _fixture.GetDbConnection(dialect).QueryPartialAsync<ProductSummary>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var summaries = await connection.QueryPartialAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @Id",
             new { Id = 1 });
 
@@ -35,10 +41,13 @@ public class QueryPartialAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialAsync_WithOptions_ReturnsEntities(DialectInfo dialect)
     {
-        var summaries = await _fixture.GetDbConnection(dialect).QueryPartialAsync<ProductSummary>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var summaries = await connection.QueryPartialAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products",
             CommandOptions<ProductSummary>.WithTimeout(30));
 
@@ -47,10 +56,13 @@ public class QueryPartialAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryPartialAsync_WithParametersAndOptions_ReturnsFilteredEntities(DialectInfo dialect)
     {
-        var summaries = await _fixture.GetDbConnection(dialect).QueryPartialAsync<ProductSummary>(
+        using var connection = _fixture.GetDbConnection(dialect);
+        var summaries = await connection.QueryPartialAsync<ProductSummary>(
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @Id",
             new { Id = 1 },
             CommandOptions<ProductSummary>.WithTimeout(30));
