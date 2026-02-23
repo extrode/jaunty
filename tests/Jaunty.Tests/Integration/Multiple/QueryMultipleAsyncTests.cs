@@ -22,7 +22,7 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 2; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 3");
 
         var categories = (await gridReader.ReadAsync<Category>()).ToList();
-        var products = (await gridReader.ReadAsync<ProductSummary>()).ToList();
+        var products = (await gridReader.ReadPartialAsync<ProductSummary>()).ToList();
 
         Assert.Equal(2, categories.Count);
         Assert.Equal(3, products.Count);
@@ -35,7 +35,7 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     public async Task QueryMultipleAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var gridReader = await _fixture.GetDbConnection(dialect).QueryMultipleAsync(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @CategoryId; SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @CategoryId",
+            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @CategoryId; SELECT product_id AS ProductId, product_name AS ProductName, category_id AS CategoryId FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 });
 
         var categories = (await gridReader.ReadAsync<Category>()).ToList();
@@ -71,8 +71,8 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 1",
             cancellationToken: cts.Token);
 
-        var categories = (await gridReader.ReadAsync<Category>()).ToList();
-        var products = (await gridReader.ReadAsync<ProductSummary>()).ToList();
+        var categories = (await gridReader.ReadPartialAsync<Category>()).ToList();
+        var products = (await gridReader.ReadPartialAsync<ProductSummary>()).ToList();
 
         Assert.Single(categories);
         Assert.Single(products);
@@ -91,8 +91,8 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
                 "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 1",
                 CommandOptions.WithTransaction(transaction));
 
-            var categories = (await gridReader.ReadAsync<Category>()).ToList();
-            var products = (await gridReader.ReadAsync<ProductSummary>()).ToList();
+            var categories = (await gridReader.ReadPartialAsync<Category>()).ToList();
+            var products = (await gridReader.ReadPartialAsync<ProductSummary>()).ToList();
 
             Assert.Single(categories);
             Assert.Single(products);
@@ -111,7 +111,7 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
             "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1; SELECT product_id AS ProductId, product_name AS ProductName FROM products LIMIT 1");
 
         // Only read first result set, not second
-        var categories = (await gridReader.ReadAsync<Category>()).ToList();
+        var categories = (await gridReader.ReadPartialAsync<Category>()).ToList();
 
         Assert.Single(categories);
         // Second result set is automatically disposed when GridReader is disposed
