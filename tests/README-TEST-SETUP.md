@@ -30,14 +30,14 @@ For **all database tests**, you'll need to set up SQL Server, PostgreSQL, and My
 ### 3. PostgreSQL (Optional)
 - **Host:** localhost
 - **Port:** 5432
-- **Database:** northwind
+- **Database:** Northwind
 - **Username:** postgres
 - **Tests:** ~100 additional tests
 
-### 4. MySQL (Optional)
+### 4. MySQL / MariaDB (Optional)
 - **Host:** localhost
 - **Port:** 3306
-- **Database:** northwind
+- **Database:** Northwind
 - **Username:** root
 - **Tests:** ~100 additional tests
 
@@ -93,11 +93,15 @@ mysql -u root -p < tests/mysql-setup.sql
 # Or in MySQL Workbench: Run tests/mysql-setup.sql
 ```
 
-The scripts create these stored procedures:
-- `GetAllProducts()` / `get_all_products()` - Returns all products
-- `GetProductsByCategory(@CategoryId)` / `get_products_by_category(p_category_id)` - Returns products by category
-- `GetProductCount()` / `get_product_count()` - Returns product count
-- `GetCategoryWithProductCount(@CategoryId, @ProductCount OUTPUT)` - Returns category with output parameter
+The scripts create these stored procedures/functions:
+- `GetAllProducts`
+- `GetProductsByCategory`
+- `GetProductById`
+- `GetProductCount`
+- `GetProductCountByCategory`
+- `UpdateProductPrice`
+- `GetProductCountWithOutput`
+- `GetNoResults`
 
 ### Step 4: Configure Connection Strings
 
@@ -107,8 +111,8 @@ Edit `tests/Jaunty.Tests/appsettings.json`:
 {
   "ConnectionStrings": {
     "SqlServer": "Server=localhost;Database=Northwind;Trusted_Connection=true;TrustServerCertificate=true;",
-    "PostgreSql": "Host=localhost;Port=5432;Database=northwind;Username=postgres;Password=your_password",
-    "MySql": "Server=localhost;Port=3306;Database=northwind;Uid=root;Pwd=your_password"
+    "PostgreSql": "Host=localhost;Port=5432;Database=Northwind;Username=postgres;Password=your_password",
+    "MariaDb": "Server=localhost;Port=3306;Database=Northwind;Uid=root;Pwd=your_password"
   }
 }
 ```
@@ -118,13 +122,13 @@ Edit `tests/Jaunty.Tests/appsettings.json`:
 ```bash
 # Windows
 setx JAUNTY_TEST_SQLSERVER "Server=localhost;Database=Northwind;Trusted_Connection=true;"
-setx JAUNTY_TEST_POSTGRESQL "Host=localhost;Database=northwind;Username=postgres;Password=xxx"
-setx JAUNTY_TEST_MYSQL "Server=localhost;Database=northwind;Uid=root;Pwd=xxx"
+setx JAUNTY_TEST_POSTGRESQL "Host=localhost;Database=Northwind;Username=postgres;Password=xxx"
+setx JAUNTY_TEST_MARIADB "Server=localhost;Database=Northwind;Uid=root;Pwd=xxx"
 
 # Linux/Mac
 export JAUNTY_TEST_SQLSERVER="Server=localhost;Database=Northwind;..."
-export JAUNTY_TEST_POSTGRESQL="Host=localhost;Database=northwind;..."
-export JAUNTY_TEST_MYSQL="Server=localhost;Database=northwind;..."
+export JAUNTY_TEST_POSTGRESQL="Host=localhost;Database=Northwind;..."
+export JAUNTY_TEST_MARIADB="Server=localhost;Database=Northwind;..."
 ```
 
 ---
@@ -175,9 +179,9 @@ Run the `database-setup.sql` script on your database server to create the requir
 ### "Unused parameter properties" Error
 
 The parameter names in your anonymous object don't match the stored procedure parameter names. Check:
-- SQL Server: Parameters are `@CategoryId`, `@ProductName`, etc.
-- PostgreSQL: Parameters are `p_category_id`, `p_product_name`, etc.
-- MySQL: Parameters are `p_CategoryId`, `p_ProductName`, etc.
+- SQL Server: `CategoryId`, `ProductId`, `NewPrice`
+- PostgreSQL: `p_category_id`, `p_product_id`, `p_new_price`
+- MySQL/MariaDB: `p_CategoryId`, `p_ProductId`, `p_NewPrice`
 
 ### Connection Refused
 

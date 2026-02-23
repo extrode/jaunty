@@ -1,127 +1,101 @@
--- Jaunty Test Database Setup Script
--- Run this script on your test database servers to create required stored procedures
-
--- ============================================================================
--- SQL Server Setup
--- ============================================================================
+-- SQL Server test stored procedures for Jaunty integration tests.
+-- Run on SQL Server against Northwind.
 
 USE Northwind;
 GO
 
--- Drop existing procedures if they exist
-IF OBJECT_ID('GetAllProducts', 'P') IS NOT NULL DROP PROCEDURE GetAllProducts;
-IF OBJECT_ID('GetProductsByCategory', 'P') IS NOT NULL DROP PROCEDURE GetProductsByCategory;
-IF OBJECT_ID('GetProductCount', 'P') IS NOT NULL DROP PROCEDURE GetProductCount;
-IF OBJECT_ID('GetCategoryWithProductCount', 'P') IS NOT NULL DROP PROCEDURE GetCategoryWithProductCount;
+IF OBJECT_ID('dbo.GetAllProducts', 'P') IS NOT NULL DROP PROCEDURE dbo.GetAllProducts;
+IF OBJECT_ID('dbo.GetProductsByCategory', 'P') IS NOT NULL DROP PROCEDURE dbo.GetProductsByCategory;
+IF OBJECT_ID('dbo.GetProductById', 'P') IS NOT NULL DROP PROCEDURE dbo.GetProductById;
+IF OBJECT_ID('dbo.GetProductCount', 'P') IS NOT NULL DROP PROCEDURE dbo.GetProductCount;
+IF OBJECT_ID('dbo.GetProductCountByCategory', 'P') IS NOT NULL DROP PROCEDURE dbo.GetProductCountByCategory;
+IF OBJECT_ID('dbo.UpdateProductPrice', 'P') IS NOT NULL DROP PROCEDURE dbo.UpdateProductPrice;
+IF OBJECT_ID('dbo.GetProductCountWithOutput', 'P') IS NOT NULL DROP PROCEDURE dbo.GetProductCountWithOutput;
+IF OBJECT_ID('dbo.GetNoResults', 'P') IS NOT NULL DROP PROCEDURE dbo.GetNoResults;
 GO
 
--- Get all products
-CREATE PROCEDURE GetAllProducts
+CREATE PROCEDURE dbo.GetAllProducts
 AS
 BEGIN
-    SELECT ProductID, ProductName, UnitPrice, UnitsInStock, CategoryID
-    FROM Products
-    ORDER BY ProductID;
+    SET NOCOUNT ON;
+    SELECT ProductID AS product_id, ProductName AS product_name, SupplierID AS supplier_id, CategoryID AS category_id,
+           QuantityPerUnit AS quantity_per_unit, UnitPrice AS unit_price, UnitsInStock AS units_in_stock,
+           UnitsOnOrder AS units_on_order, ReorderLevel AS reorder_level, Discontinued AS discontinued
+    FROM Products;
 END
 GO
 
--- Get products by category
-CREATE PROCEDURE GetProductsByCategory
+CREATE PROCEDURE dbo.GetProductsByCategory
     @CategoryId INT
 AS
 BEGIN
-    SELECT ProductID, ProductName, UnitPrice, UnitsInStock, CategoryID
+    SET NOCOUNT ON;
+    SELECT ProductID AS product_id, ProductName AS product_name, SupplierID AS supplier_id, CategoryID AS category_id,
+           QuantityPerUnit AS quantity_per_unit, UnitPrice AS unit_price, UnitsInStock AS units_in_stock,
+           UnitsOnOrder AS units_on_order, ReorderLevel AS reorder_level, Discontinued AS discontinued
     FROM Products
-    WHERE CategoryID = @CategoryId
-    ORDER BY ProductID;
+    WHERE CategoryID = @CategoryId;
 END
 GO
 
--- Get product count
-CREATE PROCEDURE GetProductCount
+CREATE PROCEDURE dbo.GetProductById
+    @ProductId INT
 AS
 BEGIN
+    SET NOCOUNT ON;
+    SELECT ProductID AS product_id, ProductName AS product_name, SupplierID AS supplier_id, CategoryID AS category_id,
+           QuantityPerUnit AS quantity_per_unit, UnitPrice AS unit_price, UnitsInStock AS units_in_stock,
+           UnitsOnOrder AS units_on_order, ReorderLevel AS reorder_level, Discontinued AS discontinued
+    FROM Products
+    WHERE ProductID = @ProductId;
+END
+GO
+
+CREATE PROCEDURE dbo.GetProductCount
+AS
+BEGIN
+    SET NOCOUNT ON;
     SELECT COUNT(*) FROM Products;
 END
 GO
 
--- Get category with product count (for output parameter test)
-CREATE PROCEDURE GetCategoryWithProductCount
+CREATE PROCEDURE dbo.GetProductCountByCategory
+    @CategoryId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT COUNT(*) FROM Products WHERE CategoryID = @CategoryId;
+END
+GO
+
+CREATE PROCEDURE dbo.UpdateProductPrice
+    @ProductId INT,
+    @NewPrice DECIMAL(18,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE Products SET UnitPrice = @NewPrice WHERE ProductID = @ProductId;
+END
+GO
+
+CREATE PROCEDURE dbo.GetProductCountWithOutput
     @CategoryId INT,
     @ProductCount INT OUTPUT
 AS
 BEGIN
-    SELECT CategoryID, CategoryName, Description
-    FROM Categories
-    WHERE CategoryID = @CategoryId;
-    
+    SET NOCOUNT ON;
     SELECT @ProductCount = COUNT(*) FROM Products WHERE CategoryID = @CategoryId;
 END
 GO
 
--- ============================================================================
--- PostgreSQL Setup
--- ============================================================================
-
--- Run on PostgreSQL server:
--- psql -d northwind -f setup_postgres.sql
-
--- DROP PROCEDURE IF EXISTS get_all_products();
--- DROP PROCEDURE IF EXISTS get_products_by_category(INTEGER);
--- DROP PROCEDURE IF EXISTS get_product_count();
-
--- CREATE OR REPLACE PROCEDURE get_all_products()
--- LANGUAGE SQL
--- AS $$
---   SELECT product_id, product_name, unit_price, units_in_stock, category_id
---   FROM products
---   ORDER BY product_id;
--- $$;
-
--- CREATE OR REPLACE PROCEDURE get_products_by_category(IN p_category_id INTEGER)
--- LANGUAGE SQL
--- AS $$
---   SELECT product_id, product_name, unit_price, units_in_stock, category_id
---   FROM products
---   WHERE category_id = p_category_id
---   ORDER BY product_id;
--- $$;
-
--- CREATE OR REPLACE PROCEDURE get_product_count()
--- LANGUAGE SQL
--- AS $$
---   SELECT COUNT(*) FROM products;
--- $$;
-
--- ============================================================================
--- MySQL Setup  
--- ============================================================================
-
--- Run on MySQL server:
--- mysql northwind < setup_mysql.sql
-
--- DROP PROCEDURE IF EXISTS GetAllProducts;
--- DROP PROCEDURE IF EXISTS GetProductsByCategory;
--- DROP PROCEDURE IF EXISTS GetProductCount;
-
--- DELIMITER //
--- CREATE PROCEDURE GetAllProducts()
--- BEGIN
---   SELECT ProductID, ProductName, UnitPrice, UnitsInStock, CategoryID
---   FROM Products
---   ORDER BY ProductID;
--- END //
-
--- CREATE PROCEDURE GetProductsByCategory(IN p_CategoryId INT)
--- BEGIN
---   SELECT ProductID, ProductName, UnitPrice, UnitsInStock, CategoryID
---   FROM Products
---   WHERE CategoryID = p_CategoryId
---   ORDER BY ProductID;
--- END //
-
--- CREATE PROCEDURE GetProductCount()
--- BEGIN
---   SELECT COUNT(*) FROM Products;
--- END //
--- DELIMITER ;
+CREATE PROCEDURE dbo.GetNoResults
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT ProductID AS product_id, ProductName AS product_name, SupplierID AS supplier_id, CategoryID AS category_id,
+           QuantityPerUnit AS quantity_per_unit, UnitPrice AS unit_price, UnitsInStock AS units_in_stock,
+           UnitsOnOrder AS units_on_order, ReorderLevel AS reorder_level, Discontinued AS discontinued
+    FROM Products
+    WHERE 1 = 0;
+END
+GO

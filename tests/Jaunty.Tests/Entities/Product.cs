@@ -49,16 +49,16 @@ public class Product : IEntity<int>, IMapped<Product>
 
         return new Product
         {
-            ProductId = reader.GetInt32(ordinal["ProductId"]),
-            ProductName = reader.GetString(ordinal["ProductName"]),
-            SupplierId = reader.IsDBNull(ordinal["SupplierId"]) ? null : reader.GetInt32(ordinal["SupplierId"]),
-            CategoryId = reader.IsDBNull(ordinal["CategoryId"]) ? null : reader.GetInt16(ordinal["CategoryId"]),
-            QuantityPerUnit = reader.IsDBNull(ordinal["QuantityPerUnit"]) ? null : reader.GetString(ordinal["QuantityPerUnit"]),
-            UnitPrice = reader.IsDBNull(ordinal["UnitPrice"]) ? null : reader.GetDecimal(ordinal["UnitPrice"]),
-            UnitsInStock = reader.IsDBNull(ordinal["UnitsInStock"]) ? null : reader.GetInt16(ordinal["UnitsInStock"]),
-            UnitsOnOrder = reader.IsDBNull(ordinal["UnitsOnOrder"]) ? null : reader.GetInt16(ordinal["UnitsOnOrder"]),
-            ReorderLevel = reader.IsDBNull(ordinal["ReorderLevel"]) ? null : reader.GetInt16(ordinal["ReorderLevel"]),
-            Discontinued = reader.GetBoolean(ordinal["Discontinued"])
+            ProductId = reader.GetInt32(ordinal.Required("ProductId", "product_id", "ProductID")),
+            ProductName = reader.GetString(ordinal.Required("ProductName", "product_name")),
+            SupplierId = ordinal.GetNullableInt32(reader, "SupplierId", "supplier_id", "SupplierID"),
+            CategoryId = ordinal.GetNullableInt16(reader, "CategoryId", "category_id", "CategoryID"),
+            QuantityPerUnit = ordinal.GetNullableString(reader, "QuantityPerUnit", "quantity_per_unit"),
+            UnitPrice = ordinal.GetNullableDecimal(reader, "UnitPrice", "unit_price"),
+            UnitsInStock = ordinal.GetNullableInt16(reader, "UnitsInStock", "units_in_stock"),
+            UnitsOnOrder = ordinal.GetNullableInt16(reader, "UnitsOnOrder", "units_on_order"),
+            ReorderLevel = ordinal.GetNullableInt16(reader, "ReorderLevel", "reorder_level"),
+            Discontinued = ordinal.GetBooleanOrDefault(reader, false, "Discontinued", "discontinued")
         };
     }
 
@@ -73,6 +73,80 @@ public class Product : IEntity<int>, IMapped<Product>
             _cache = [];
         }
 
-        public int this[string columnName] => _cache.TryGetValue(columnName, out var ordinal) ? ordinal : _cache[columnName] = _reader.GetOrdinal(columnName);
+        public int Required(params string[] columnNames)
+        {
+            for (var i = 0; i < columnNames.Length; i++)
+            {
+                if (TryGetOrdinal(columnNames[i], out var ordinal))
+                    return ordinal;
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(columnNames), $"None of the required columns were found: {string.Join(", ", columnNames)}.");
+        }
+
+        public bool TryGetOrdinal(string columnName, out int ordinal)
+        {
+            if (_cache.TryGetValue(columnName, out ordinal))
+                return true;
+
+            try
+            {
+                ordinal = _reader.GetOrdinal(columnName);
+                _cache[columnName] = ordinal;
+                return true;
+            }
+            catch (IndexOutOfRangeException)
+            {
+                ordinal = -1;
+                return false;
+            }
+        }
+
+        public int? GetNullableInt32(IDataReader reader, params string[] columnNames)
+        {
+            if (!TryResolve(columnNames, out var ordinal) || reader.IsDBNull(ordinal))
+                return null;
+            return reader.GetInt32(ordinal);
+        }
+
+        public short? GetNullableInt16(IDataReader reader, params string[] columnNames)
+        {
+            if (!TryResolve(columnNames, out var ordinal) || reader.IsDBNull(ordinal))
+                return null;
+            return reader.GetInt16(ordinal);
+        }
+
+        public decimal? GetNullableDecimal(IDataReader reader, params string[] columnNames)
+        {
+            if (!TryResolve(columnNames, out var ordinal) || reader.IsDBNull(ordinal))
+                return null;
+            return reader.GetDecimal(ordinal);
+        }
+
+        public string? GetNullableString(IDataReader reader, params string[] columnNames)
+        {
+            if (!TryResolve(columnNames, out var ordinal) || reader.IsDBNull(ordinal))
+                return null;
+            return reader.GetString(ordinal);
+        }
+
+        public bool GetBooleanOrDefault(IDataReader reader, bool defaultValue, params string[] columnNames)
+        {
+            if (!TryResolve(columnNames, out var ordinal) || reader.IsDBNull(ordinal))
+                return defaultValue;
+            return reader.GetBoolean(ordinal);
+        }
+
+        private bool TryResolve(string[] columnNames, out int ordinal)
+        {
+            for (var i = 0; i < columnNames.Length; i++)
+            {
+                if (TryGetOrdinal(columnNames[i], out ordinal))
+                    return true;
+            }
+
+            ordinal = -1;
+            return false;
+        }
     }
 }
