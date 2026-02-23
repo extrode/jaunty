@@ -69,23 +69,31 @@ public static class MetadataCache<
 
     private readonly struct ReaderSignature : IEquatable<ReaderSignature>
     {
+        private readonly MappingMode _mode;
+        private readonly string _schemaKey;
         private readonly int _hashCode;
 
         public ReaderSignature(IDataReader reader, MappingMode mode)
         {
+            _mode = mode;
             int fieldCount = reader.FieldCount;
-            int h = 17;
-            h = h * 31 + (int)mode;
-            h = h * 31 + fieldCount;
+
+            // Build a stable schema key so equality is based on the actual shape,
+            // not just the hash code (avoids cache-collision misbinding).
+            var parts = new string[fieldCount + 2];
+            parts[0] = ((int)mode).ToString();
+            parts[1] = fieldCount.ToString();
             for (int i = 0; i < fieldCount; i++)
             {
-                var name = reader.GetName(i);
-                h = h * 31 + (name?.GetHashCode() ?? 0);
+                parts[i + 2] = reader.GetName(i) ?? string.Empty;
             }
-            _hashCode = h;
+            _schemaKey = string.Join("\u001F", parts);
+            _hashCode = StringComparer.OrdinalIgnoreCase.GetHashCode(_schemaKey);
         }
 
-        public bool Equals(ReaderSignature other) => _hashCode == other._hashCode;
+        public bool Equals(ReaderSignature other)
+            => _mode == other._mode
+               && StringComparer.OrdinalIgnoreCase.Equals(_schemaKey, other._schemaKey);
         public override bool Equals(object? obj) => obj is ReaderSignature other && Equals(other);
         public override int GetHashCode() => _hashCode;
     }

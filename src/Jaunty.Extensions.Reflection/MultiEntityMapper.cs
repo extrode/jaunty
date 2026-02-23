@@ -21,7 +21,7 @@ internal sealed class MultiEntityMapper<
 #endif
     T2> where T1 : new() where T2 : new()
 {
-    private static readonly ConcurrentDictionary<int, MultiEntityMapper<T1, T2>> Cache = new();
+    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2>> Cache = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly PropertySetter<T1>[] _t1Setters;
     private readonly PropertySetter<T2>[] _t2Setters;
@@ -34,19 +34,21 @@ internal sealed class MultiEntityMapper<
 
     public static MultiEntityMapper<T1, T2> Get(IDataReader reader)
     {
-        // Simple hash for reader schema
-        int hash = reader.FieldCount;
-        for (int i = 0; i < reader.FieldCount; i++)
-        {
-            var name = reader.GetName(i);
-            hash = (hash * 31) + (name?.GetHashCode() ?? 0);
-        }
-
-        return Cache.GetOrAdd(hash, _ => Create(reader));
+        var schemaKey = BuildSchemaKey(reader);
+        return Cache.GetOrAdd(schemaKey, _ => Create(reader));
     }
 
     /// <summary>Alias for Get — builds or retrieves a cached mapper for the reader schema.</summary>
     public static MultiEntityMapper<T1, T2> Build(IDataReader reader) => Get(reader);
+
+    private static string BuildSchemaKey(IDataReader reader)
+    {
+        var parts = new string[reader.FieldCount + 1];
+        parts[0] = reader.FieldCount.ToString();
+        for (int i = 0; i < reader.FieldCount; i++)
+            parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("\u001F", parts);
+    }
 
     private static MultiEntityMapper<T1, T2> Create(IDataReader reader)
     {
