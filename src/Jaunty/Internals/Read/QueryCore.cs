@@ -102,8 +102,10 @@ public static partial class Jaunty
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             if (!reader.Read()) return default;
+
             Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
             T entity = map(reader);
+
             return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.") : entity;
         });
     }
@@ -116,7 +118,17 @@ public static partial class Jaunty
                 return default!;
 
             if (reader is DbDataReader dbReader)
-                return dbReader.GetFieldValue<T>(0);
+            {
+                try
+                {
+                    return dbReader.GetFieldValue<T>(0);
+                }
+                catch (InvalidCastException)
+                {
+                    // Fallback to slower conversion if direct cast fails
+                    return ConvertScalarValue<T>(dbReader.GetValue(0));
+                }
+            }
 
             return ConvertScalarValue<T>(reader.GetValue(0));
         });
