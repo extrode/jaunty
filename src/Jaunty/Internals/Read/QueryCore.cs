@@ -112,13 +112,26 @@ public static partial class Jaunty
     {
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
+            if (!reader.Read() || reader.IsDBNull(0))
+                return default!;
+
             if (reader is DbDataReader dbReader)
-                return !dbReader.Read() || dbReader.IsDBNull(0) ? default! : dbReader.GetFieldValue<T>(0);
+                return dbReader.GetFieldValue<T>(0);
 
-            if (!reader.Read() || reader.IsDBNull(0)) return default!;
+            var value = reader.GetValue(0);
+            if (value is T direct)
+                return direct;
 
-            var obj = reader.GetValue(0);
-            return (T)Convert.ChangeType(obj, typeof(T));
+            var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+
+            if (targetType.IsEnum)
+            {
+                var enumUnderLyingType = Enum.GetUnderlyingType(targetType);
+                var numeric = Convert.ChangeType(value, enumUnderLyingType);
+                return (T)Enum.ToObject(targetType, numeric);
+            }
+
+            return (T)Convert.ChangeType(value, targetType);
         });
     }
 

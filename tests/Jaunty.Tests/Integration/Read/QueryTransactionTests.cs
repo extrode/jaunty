@@ -16,14 +16,18 @@ public class QueryTransactionTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_WithTransaction_ExecutesCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        connection.Open();
         using var transaction = connection.BeginTransaction();
 
         var categories = connection.Query(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories",
+            dialect.Provider == DialectProvider.SqlServer
+                ? "SELECT CategoryId, CategoryName, Description FROM Categories"
+                : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories",
             new CommandOptions<Category>(transaction: transaction));
 
         Assert.NotEmpty(categories);
@@ -33,17 +37,29 @@ public class QueryTransactionTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [Postgres]
+    [SqlServer]
+    [MariaDB]
     public void QueryScalar_WithTransaction_ExecutesCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        connection.Open();
         using var transaction = connection.BeginTransaction();
 
-        var count = connection.QueryScalar<long>(
-            "SELECT COUNT(*) FROM products",
-            new CommandOptions(transaction));
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            var count = connection.QueryScalar("SELECT COUNT(*) FROM products",
+                CommandOptions<int>.WithTransaction(transaction));
 
-        Assert.True(count > 0);
+            Assert.True(count > 0);
+        }
+        else
+        {
+            var count = connection.QueryScalar("SELECT COUNT(*) FROM products",
+                CommandOptions<long>.WithTransaction(transaction));
+
+            Assert.True(count > 0);
+        }
+
         transaction.Rollback();
     }
 }
