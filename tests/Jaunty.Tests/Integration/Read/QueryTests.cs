@@ -239,7 +239,7 @@ public class QueryTests : IClassFixture<DialectFixture>
         using var connection = _fixture.GetConnection(dialect);
 
         var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT ProductId, ProductName FROM Products WHERE category_id = @Id"
+            ? "SELECT ProductId, ProductName FROM Products WHERE CategoryId = @Id"
             : "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE category_id = @Id";
 
         var summaries = connection.QueryPartial<ProductSummary>(sql, new { Id = 1 }, CommandOptions<ProductSummary>.WithTimeout(30));
