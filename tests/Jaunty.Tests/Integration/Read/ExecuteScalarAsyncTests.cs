@@ -13,46 +13,88 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ExecuteScalarAsync_Count_ReturnsValue(DialectInfo dialect)
     {
-        var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>("SELECT COUNT(*) FROM products");
-
-        Assert.True(count > 0);
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<int>("SELECT COUNT(*) FROM products");
+            Assert.True(count > 0);
+        }
+        else
+        {
+            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>("SELECT COUNT(*) FROM products");
+            Assert.True(count > 0);
+        }
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ExecuteScalarAsync_WithParameters_ReturnsValue(DialectInfo dialect)
     {
-        var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>(
-            "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<int>(
+                "SELECT COUNT(*) FROM Products WHERE CategoryId = @CategoryId",
             new { CategoryId = 1 });
-
-        Assert.True(count > 0);
+            Assert.True(count > 0);
+        }
+        else
+        {
+            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>(
+                "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
+            new { CategoryId = 1 });
+            Assert.True(count > 0);
+        }
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ExecuteScalarAsync_WithOptionsOnly_Works(DialectInfo dialect)
     {
-        var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>(
-            "SELECT COUNT(*) FROM products",
-            CommandOptions<long>.WithTimeout(30));
-
-        Assert.True(count > 0);
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<int>("SELECT COUNT(*) FROM products");
+            Assert.True(count > 0);
+        }
+        else
+        {
+            var count = await _fixture.GetDbConnection(dialect)
+                .ExecuteScalarAsync<long>("SELECT COUNT(*) FROM products",
+                    CommandOptions.WithTimeout(30));
+            Assert.True(count > 0);
+        }
     }
 
     [Theory]
-    [MicrosoftSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ExecuteScalarAsync_WithParametersAndOptions_Works(DialectInfo dialect)
     {
-        var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync<long>(
-            "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
+
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync(
+                "SELECT COUNT(*) FROM Products WHERE CategoryId = @CategoryId",
+                        new { CategoryId = 1 },
+            CommandOptions<int>.WithTimeout(30));
+            Assert.True(count > 0);
+        }
+        else
+        {
+            var count = await _fixture.GetDbConnection(dialect).ExecuteScalarAsync(
+                "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
             new { CategoryId = 1 },
             CommandOptions<long>.WithTimeout(30));
-
-        Assert.True(count > 0);
+            Assert.True(count > 0);
+        }
     }
 }
 

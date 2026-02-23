@@ -11,9 +11,9 @@ internal static class ParameterBinder
 
     internal static void Bind(IDbCommand command, object parameters)
     {
-        // Stored procedures don't expose parameter placeholders in CommandText,
+        // Stored procedures/table-direct don't expose SQL parameter placeholders in CommandText,
         // so SQL-text parsing/validation is not applicable. Bind all provided values.
-        if (command.CommandType != CommandType.Text)
+        if (command.CommandType == CommandType.StoredProcedure || command.CommandType == CommandType.TableDirect)
         {
             if (parameters is IDictionary<string, object?> dict)
             {

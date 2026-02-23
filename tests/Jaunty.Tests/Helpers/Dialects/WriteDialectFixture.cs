@@ -12,9 +12,7 @@ using MySql.Data.MySqlClient;
 
 using Npgsql;
 
-#if NET8_0_OR_GREATER
 using Microsoft.Data.Sqlite;
-#endif
 
 namespace Jaunty.Tests.Helpers.Dialects;
 
@@ -25,9 +23,7 @@ public sealed class WriteDialectFixture : IDisposable
         return dialect.Provider switch
         {
             DialectProvider.SystemSqlite => CreateSystemSqliteContext(),
-#if NET8_0_OR_GREATER
             DialectProvider.MicrosoftSqlite => CreateMicrosoftSqliteContext(),
-#endif
             DialectProvider.SqlServer => CreateServerContext(new SqlConnection(TestConfiguration.SqlServerConnectionString)),
             DialectProvider.Postgres => CreateServerContext(new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString)),
             DialectProvider.MariaDb => CreateServerContext(new MySqlConnection(TestConfiguration.MariaDbConnectionString)),
@@ -48,7 +44,6 @@ public sealed class WriteDialectFixture : IDisposable
         return new WriteDialectContext(connection, transaction: null);
     }
 
-#if NET8_0_OR_GREATER
     private static WriteDialectContext CreateMicrosoftSqliteContext()
     {
         var connection = new SqliteConnection("Data Source=:memory:");
@@ -56,7 +51,6 @@ public sealed class WriteDialectFixture : IDisposable
         InitializeBulkSchema(connection);
         return new WriteDialectContext(connection, transaction: null);
     }
-#endif
 
     private static WriteDialectContext CreateServerContext(DbConnection connection)
     {
