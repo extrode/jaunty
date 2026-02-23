@@ -11,7 +11,8 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+
+    [Theory]
     [MicrosoftSqlite]
     public async Task ExecuteScalarAsync_Count_ReturnsValue(DialectInfo dialect)
     {

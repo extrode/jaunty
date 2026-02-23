@@ -18,9 +18,9 @@ CREATE PROCEDURE dbo.GetAllProducts
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT ProductID AS product_id, ProductName AS product_name, SupplierID AS supplier_id, CategoryID AS category_id,
-           QuantityPerUnit AS quantity_per_unit, UnitPrice AS unit_price, UnitsInStock AS units_in_stock,
-           UnitsOnOrder AS units_on_order, ReorderLevel AS reorder_level, Discontinued AS discontinued
+    SELECT ProductID AS ProductId, ProductName AS ProductName, SupplierID AS SupplierId, CategoryID AS CategoryId,
+           QuantityPerUnit AS QuantityPerUnit, UnitPrice AS UnitPrice, UnitsInStock AS UnitsInStock,
+           UnitsOnOrder AS UnitsOnOrder, ReorderLevel AS ReorderLevel, Discontinued AS Discontinued
     FROM Products;
 END
 GO
@@ -30,9 +30,9 @@ CREATE PROCEDURE dbo.GetProductsByCategory
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT ProductID AS product_id, ProductName AS product_name, SupplierID AS supplier_id, CategoryID AS category_id,
-           QuantityPerUnit AS quantity_per_unit, UnitPrice AS unit_price, UnitsInStock AS units_in_stock,
-           UnitsOnOrder AS units_on_order, ReorderLevel AS reorder_level, Discontinued AS discontinued
+    SELECT ProductID AS ProductId, ProductName AS ProductName, SupplierID AS SupplierId, CategoryID AS CategoryId,
+           QuantityPerUnit AS QuantityPerUnit, UnitPrice AS UnitPrice, UnitsInStock AS UnitsInStock,
+           UnitsOnOrder AS UnitsOnOrder, ReorderLevel AS ReorderLevel, Discontinued AS Discontinued
     FROM Products
     WHERE CategoryID = @CategoryId;
 END
@@ -43,9 +43,9 @@ CREATE PROCEDURE dbo.GetProductById
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT ProductID AS product_id, ProductName AS product_name, SupplierID AS supplier_id, CategoryID AS category_id,
-           QuantityPerUnit AS quantity_per_unit, UnitPrice AS unit_price, UnitsInStock AS units_in_stock,
-           UnitsOnOrder AS units_on_order, ReorderLevel AS reorder_level, Discontinued AS discontinued
+    SELECT ProductID AS ProductId, ProductName AS ProductName, SupplierID AS SupplierId, CategoryID AS CategoryId,
+           QuantityPerUnit AS QuantityPerUnit, UnitPrice AS UnitPrice, UnitsInStock AS UnitsInStock,
+           UnitsOnOrder AS UnitsOnOrder, ReorderLevel AS ReorderLevel, Discontinued AS Discontinued
     FROM Products
     WHERE ProductID = @ProductId;
 END
@@ -92,9 +92,9 @@ CREATE PROCEDURE dbo.GetNoResults
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT ProductID AS product_id, ProductName AS product_name, SupplierID AS supplier_id, CategoryID AS category_id,
-           QuantityPerUnit AS quantity_per_unit, UnitPrice AS unit_price, UnitsInStock AS units_in_stock,
-           UnitsOnOrder AS units_on_order, ReorderLevel AS reorder_level, Discontinued AS discontinued
+    SELECT ProductID AS ProductId, ProductName AS ProductName, SupplierID AS SupplierId, CategoryID AS CategoryId,
+           QuantityPerUnit AS QuantityPerUnit, UnitPrice AS UnitPrice, UnitsInStock AS UnitsInStock,
+           UnitsOnOrder AS UnitsOnOrder, ReorderLevel AS ReorderLevel, Discontinued AS Discontinued
     FROM Products
     WHERE 1 = 0;
 END
