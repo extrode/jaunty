@@ -4,6 +4,21 @@
 
 Query methods execute SQL commands and return lists of strongly-typed entities. These methods support both strict and partial mapping modes.
 
+## Connection Ownership
+
+- Jaunty opens a closed connection when needed and closes it after execution.
+- If you pass an already-open connection, Jaunty leaves it open.
+- The caller still owns the connection object lifetime and should dispose it.
+- In high-concurrency apps, not disposing connections can exhaust the provider pool (for example PostgreSQL `too many clients`).
+
+**Recommended pattern:**
+```csharp
+using var connection = new Npgsql.NpgsqlConnection(connectionString);
+var rows = await connection.QueryAsync<MyRow>(
+    "SELECT id, name FROM my_table WHERE id = @Id",
+    new { Id = 1 });
+```
+
 ## Methods
 
 ### Query&lt;T&gt;(string sql)

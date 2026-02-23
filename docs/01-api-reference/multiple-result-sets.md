@@ -378,3 +378,18 @@ public IAsyncEnumerable<T> ReadPartialStreamAsync<T>(CommandOptions<T> options =
 - **Mapping Mode**: Each read method has both strict and partial mapping variants
 - **Async Behavior**: Async methods return completed tasks if the GridReader has already been consumed
 - **Cancellation**: Async methods support cancellation tokens for cooperative cancellation
+
+## Pool Safety
+
+- Dispose both the `DbConnection` and the `GridReader`.
+- If either is leaked in high-concurrency code, connection pools can exhaust and fail with errors like PostgreSQL `too many clients`.
+
+**Recommended async pattern:**
+```csharp
+using var connection = fixture.GetDbConnection(dialect);
+using var grid = await connection.QueryMultipleAsync(
+    "SELECT ...; SELECT ...;");
+
+var first = await grid.ReadAsync<MyRow1>();
+var second = await grid.ReadAsync<MyRow2>();
+```

@@ -107,6 +107,18 @@ This document provides a comprehensive summary of all public APIs available in J
 - `Task<int> DeleteAsync<T>(object id, CancellationToken cancellationToken = default)` - Async delete entity by ID
 - `Task<int> DeleteAsync<T>(object id, CommandOptions options, CancellationToken cancellationToken = default)` - Async delete entity by ID with options
 
+### Upsert Operations
+- `int Upsert<T>(T entity)` - Insert or update entity by key
+- `int Upsert<T>(T entity, CommandOptions options)` - Insert or update entity with options
+- `Task<int> UpsertAsync<T>(T entity, CancellationToken cancellationToken = default)` - Async insert or update entity
+- `Task<int> UpsertAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default)` - Async insert or update entity with options
+
+Upsert return values are provider-specific "rows affected" semantics:
+- SQL Server and PostgreSQL typically return `1` for a successful insert or update.
+- MariaDB/MySQL may return `2` for an update path (matched + changed rows), and may return `1` depending on server/client flags.
+
+For cross-provider code, treat any value `> 0` as success instead of asserting an exact constant.
+
 ## Stored Procedure Methods
 
 ### Basic Stored Procedure Execution
