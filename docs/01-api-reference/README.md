@@ -106,6 +106,8 @@ int rows = connection.Delete(product);
 int rows = connection.Delete<Product>(id);
 ```
 
+Note: `Upsert`/`UpsertAsync` return provider-specific "rows affected" values; for MariaDB/MySQL, updates may report `2` instead of `1`. Prefer checking `result > 0` for cross-provider behavior.
+
 ### Multiple Result Sets
 
 ```csharp
