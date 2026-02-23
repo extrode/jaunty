@@ -1,5 +1,3 @@
-using System.Data;
-
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
@@ -17,14 +15,19 @@ public class QueryConnectionStateTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ConnectionAlreadyOpen_LeavesOpen(DialectInfo dialect)
     {
-        using var connection = _fixture.GetConnection(dialect);
+        using var connection = _fixture.GetClosedConnection(dialect);
         connection.Open();
         var initialState = connection.State;
 
         var categories = connection.Query<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories");
+            dialect.Provider == DialectProvider.SqlServer
+                ? "SELECT CategoryId, CategoryName, Description FROM Categories"
+                : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories");
 
         Assert.Equal(initialState, connection.State);
         Assert.NotEmpty(categories);
@@ -33,14 +36,19 @@ public class QueryConnectionStateTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ConnectionClosed_OpensAndCloses(DialectInfo dialect)
     {
-        using var connection = _fixture.GetConnection(dialect);
+        using var connection = _fixture.GetClosedConnection(dialect);
         // Connection starts closed
         Assert.Equal(ConnectionState.Closed, connection.State);
 
         var categories = connection.Query<Category>(
-            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories");
+            dialect.Provider == DialectProvider.SqlServer
+                ? "SELECT CategoryId, CategoryName, Description FROM Categories"
+                : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories");
 
         // Should be closed again after query
         Assert.Equal(ConnectionState.Closed, connection.State);

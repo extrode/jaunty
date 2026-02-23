@@ -51,9 +51,7 @@ public abstract class StoredProcedureAsyncTestBase : IDisposable
 
     protected async Task ExecuteStoredProcedureAsync_WithParameters_ReturnsFilteredResults_Core()
     {
-        var products = await _connection.ExecuteStoredProcedureAsync<Product>(
-            "GetProductsByCategory",
-            CategoryParam(1));
+        var products = await _connection.ExecuteStoredProcedureAsync<Product>("GetProductsByCategory", CategoryParam(1));
 
         Assert.NotEmpty(products);
         Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
@@ -65,9 +63,7 @@ public abstract class StoredProcedureAsyncTestBase : IDisposable
         using var transaction = _connection.BeginTransaction();
         try
         {
-            var products = await _connection.ExecuteStoredProcedureAsync<Product>(
-                "GetProductsByCategory",
-                CategoryParam(1),
+            var products = await _connection.ExecuteStoredProcedureAsync("GetProductsByCategory", CategoryParam(1),
                 CommandOptions<Product>.WithTransaction(transaction));
 
             Assert.NotEmpty(products);
