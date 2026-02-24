@@ -1,18 +1,16 @@
-using System.Data;
 using System.Data.Common;
 
-using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
-public class UpdateAsyncTests : IClassFixture<WriteDialectFixture>
+public class UpdateAsyncTests : IClassFixture<DialectFixture>
 {
-    private readonly WriteDialectFixture _fixture;
+    private readonly DialectFixture _fixture;
 
-    public UpdateAsyncTests(WriteDialectFixture fixture)
+    public UpdateAsyncTests(DialectFixture fixture)
     {
         _fixture = fixture;
     }

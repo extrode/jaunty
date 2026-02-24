@@ -3,11 +3,11 @@ using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
-public class DatabaseGeneratedTests : IClassFixture<WriteDialectFixture>
+public class DatabaseGeneratedTests : IClassFixture<DialectFixture>
 {
-    private readonly WriteDialectFixture _fixture;
+    private readonly DialectFixture _fixture;
 
-    public DatabaseGeneratedTests(WriteDialectFixture fixture)
+    public DatabaseGeneratedTests(DialectFixture fixture)
     {
         _fixture = fixture;
     }
