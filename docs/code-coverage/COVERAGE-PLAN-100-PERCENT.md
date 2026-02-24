@@ -128,69 +128,61 @@
 
 ## Current Status
 
-**Test Count**: 2955 tests (Jaunty.Tests) + 408 tests (Fluent API) = **3363 total**  
-**Pass Rate**: 100% (3363/3363 passing)
-**Overall Progress**: 5/10 phases complete (50%)
+**Test Count**: 2977 tests (Jaunty.Tests) + 408 tests (Fluent API) = **3385 total**  
+**Pass Rate**: 100% (3385/3385 passing)
+**Overall Progress**: 7/10 phases complete (70%)
 
 ---
 
 ## Phase 4: Public API Coverage - COMPLETE
+## Phase 5: Fluent API Coverage - IN PROGRESS
+## Phase 6: Dialect-Specific SQL Tests - COMPLETE
 
-### 2026-02-24: SQLite Coverage Expansion (All Async Tests)
-**Issue**: Async test files missing `[MicrosoftSqlite][SystemSqlite]` attributes  
-**Impact**: +334 tests added (2621 → 2955)  
-**Files Fixed**:
-- All `Integration/Multiple/*AsyncTests.cs` (GridReader async)
-- All `Integration/Streaming/*AsyncTests.cs` (streaming async)
-- All `Integration/Write/*AsyncTests.cs` (Write async)
+### 2026-02-24: Dialect Function Tests Added
+**Added**: 68 new dialect function tests covering all 4 dialects
+- **Case-sensitive/insensitive LIKE**: 4 tests (COLLATE, ILIKE, GLOB)
+- **Coalesce/IsNull/NullIf**: 12 tests (COALESCE, ISNULL, IFNULL, NULLIF)
+- **String functions**: 12 tests (LEN, LENGTH, SUBSTRING, SUBSTR)
+- **Date functions**: 12 tests (YEAR, MONTH, DAY, EXTRACT, STRFTIME)
+- **GLOB pattern escaping**: 9 tests (SQLite)
 
-**Result**: All async API methods now tested against all 5 dialects
-
-### 2026-02-24: Fluent API Join Tests Added
-**Added**: 11 new Fluent API tests
-- 6 Left join tests (sync + async, with WHERE/ORDER BY)
-- 5 Right join tests (sync + async, with WHERE/ORDER BY)
-- `InnerJoin_WithCount_ReturnsCorrectCount`
-
-**Fluent API Test Count**: 395 → 401 (+6 tests)  
-**Result**: Left and Right join coverage added
-
-### 2026-02-24: Fluent API CTE Tests Added
-**Added**: 7 new Fluent API CTE tests
-- `Cte_AsIWhereClause_ReturnsResults`
-- `Cte_AsIWhereClause_ToSql_GeneratesCorrectSql`
-
-**Fluent API Test Count**: 401 → 408 (+7 tests)  
-**Result**: CTE overload coverage added
+**Dialect Test Count**: 158 → 226 (+68 tests)  
+**Result**: All dialect SQL generation methods covered
 
 ---
 
 ## Remaining Work
 
-### Phase 5: Fluent API Coverage (BIGGEST GAP)
+### Phase 5: Fluent API Coverage (ONGOING)
 **Target**: 6199 uncovered statements (33% coverage)
 
 **Progress**: 408 tests written, more needed for:
 - Multi-table joins (3+ tables)
-- Full joins (not supported)
-- CTE (Common Table Expression) complex scenarios
-- Window functions (ROW_NUMBER, RANK, etc.)
-- Set operations edge cases
-- Complex WHERE with AND/OR chains
+- Complex nested WHERE predicates
+- Window function execution tests (currently ToSql only)
 
-**Estimated Effort**: 5-10 days  
-**Estimated Coverage Gain**: +15-20%
+**Estimated Effort**: 3-5 days  
+**Estimated Coverage Gain**: +10-15%
 
 ---
 
-### Phase 6: Dialect-Specific SQL Tests
-**Target**: 106 uncovered statements in Dialect implementations
+### Phase 7: Internal Parameter Binding Tests
+**Target**: ParameterBinder edge cases, SqlParameterParser edge cases
 
-**Focus Areas**:
-- SQL Server: `OUTPUT INSERTED` clause
-- PostgreSQL: `RETURNING` clause
-- MySQL/MariaDB: `LAST_INSERT_ID()`
-- SQLite: GLOB pattern edge cases
+**Already Covered**:
+- Basic parameter binding
+- Duplicate parameters
+- Null values
+- Collection parameters
+- SQL parsing edge cases
+
+**Remaining**:
+- [ ] Very large parameter lists (1000+ parameters)
+- [ ] Unicode parameter names
+- [ ] Special characters in parameter names
+
+**Estimated Effort**: 0.5 days  
+**Estimated Coverage Gain**: +1%
 
 ---
 
