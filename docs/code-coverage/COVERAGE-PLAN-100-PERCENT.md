@@ -36,40 +36,36 @@
 - Async stored procedure tests
 - `QueryMultipleAsync` with stored procedures
 
-### 2026-02-24: Phase 1 - Quick Wins COMPLETE
-**Added**: 4 new tests
+### 2026-02-24: Phase 3 - Dialect Tests COMPLETE
+**Added**: 182 new unit tests in `SqlDialectTests.cs`
 
-**SpParameter Tests** (3 tests):
-- `SpParameter_Constructor_WithAllParameters_SetsProperties` - Full constructor test
-- `SpParameter_Constructor_WithNullValue_SetsNullValue` - Null value handling
-- `SpParameter_Constructor_WithoutDbTypeAndSize_SetsNulls` - Optional parameters
+**Coverage Areas**:
+- **SqlServerDialect** (10 tests): Escape methods, keywords, paging, identity, FK toggle
+- **PostgreSqlDialect** (14 tests): Escape methods, keywords, paging, RETURNING, FK toggle
+- **MySqlDialect** (13 tests): Escape methods, keywords, paging, LAST_INSERT_ID, FK toggle
+- **SQLiteDialect** (22 tests): Escape methods, keywords, paging, last_insert_rowid, FK toggle, GLOB patterns
 
-**SpecialTypeMapper Tests** (1 test file):
-- `SpecialTypeMapperIntegrationTests` - Integration tests for Dictionary, KeyValuePair, ValueTuple, Dynamic mapping
-- 8 test methods covering all special type scenarios
+**Test Count**: 2324 → 2506 (+182 tests)  
+**Coverage Impact**: +2% estimated (106 dialect statements covered)
 
-**Test Count**: 2309 → 2324 (+15 tests)  
-**Coverage Impact**: +0.5% estimated
-
-**Result**: Phase 1 complete - all quick wins achieved
+**Result**: Phase 3 complete - all dialect methods tested
 
 ---
 
-## Next Phase: Phase 3 - Dialect Tests (1-2 days)
+## Next Phase: Phase 4 - Public API Coverage (3-5 days) - CRITICAL
 
-**Target**: 106 uncovered statements in Dialect implementations
+**Target**: ~2600 uncovered statements in public API (net8.0 + netstandard2.0)
 
-**Files to Test**:
-- `SqlServerDialect.cs` - EscapeIdentifier, GetDisableForeignKeyChecksSql
-- `PostgreSqlDialect.cs` - FoldToLowerCase behavior  
-- `MySqlDialect.cs` - Dialect-specific SQL
-- `SQLiteDialect.cs` - Limit without offset
+**Focus Areas**:
+1. Async methods with CancellationToken - many variants not fully tested
+2. CommandOptions overloads - some combinations not tested
+3. Error paths - null/empty validation, connection state checks
 
-**Test Pattern**: Unit tests in `tests/Jaunty.Tests/Unit/Dialects/`
+**Test Pattern**: Expand existing integration tests with additional overloads
 
 ---
 
-**Overall Progress**: 2/10 phases complete (20%)
+**Overall Progress**: 3/10 phases complete (30%)
 
 ## Coverage by Project (Priority Order)
 

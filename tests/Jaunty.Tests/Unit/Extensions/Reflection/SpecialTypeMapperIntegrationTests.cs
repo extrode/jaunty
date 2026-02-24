@@ -1,9 +1,5 @@
-using System.Collections.Generic;
-using System.Dynamic;
-
 using FluentAssertions;
 
-using Jaunty.Extensions.Reflection;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Unit.Extensions.Reflection;
@@ -29,6 +25,9 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringObject_MapsColumns(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -48,6 +47,9 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringInt_MapsColumns(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -71,6 +73,9 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_KeyValuePair_MapsTwoColumns(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -94,6 +99,9 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ValueTuple_TwoElements_MapsPositionally(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -113,12 +121,17 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ValueTuple_SevenElements_MapsAllItems(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
 
         var sql = dialect.Provider == DialectProvider.SqlServer
             ? "SELECT TOP (1) CategoryId, CategoryName, Description, 1, 2.0, 3, '4' FROM Categories"
+            : dialect.Provider == DialectProvider.Postgres
+            ? @"SELECT category_id AS ""CategoryId"", category_name AS ""CategoryName"", description AS ""Description"", 1, 2.0, 3, '4' FROM categories LIMIT 1"
             : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description, 1, 2.0, 3, '4' FROM categories LIMIT 1";
 
         var results = connection.Query<(int, string, string, int, double, int, string)>(sql);
@@ -136,12 +149,17 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_Dynamic_MapsAllColumns(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
 
         var sql = dialect.Provider == DialectProvider.SqlServer
             ? "SELECT TOP (1) CategoryId, CategoryName FROM Categories"
+            : dialect.Provider == DialectProvider.Postgres
+            ? @"SELECT category_id AS ""CategoryId"", category_name AS ""CategoryName"" FROM categories LIMIT 1"
             : "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1";
 
         var results = connection.Query<dynamic>(sql);
