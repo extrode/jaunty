@@ -1,12 +1,7 @@
-using System;
-using System.Data;
 using System.Data.Common;
-using System.Threading.Tasks;
-using Jaunty;
-using Jaunty.Attributes;
+
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
-using Xunit;
 
 namespace Jaunty.Tests.Integration.Core;
 
