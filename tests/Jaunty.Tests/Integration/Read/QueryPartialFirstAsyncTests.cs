@@ -110,6 +110,25 @@ public class QueryPartialFirstAsyncTests : IClassFixture<DialectFixture>
         Assert.NotNull(product);
         Assert.True(product.ProductId > 0);
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task QueryPartialFirstAsync_WithCancellationToken_Works(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var cts = new CancellationTokenSource();
+
+        var product = await connection.QueryPartialFirstAsync<ProductSummary>(
+            "SELECT product_id AS ProductId, product_name AS ProductName FROM products",
+            cts.Token);
+
+        Assert.NotNull(product);
+        Assert.True(product.ProductId > 0);
+    }
 }
 
 

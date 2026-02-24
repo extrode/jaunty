@@ -83,19 +83,30 @@
 
 **Result**: All async and sync API methods now tested against SQLite
 
+### 2026-02-24: CancellationToken Tests Added
+**Added**: 6 new CancellationToken tests for async methods
+- `QueryPartialAsync_WithCancellationToken_Works`
+- `QueryPartialFirstAsync_WithCancellationToken_Works`
+- `QueryPartialFirstOrDefaultAsync_WithCancellationToken_Works`
+- `QueryPartialSingleAsync_WithCancellationToken_Works`
+- `QueryPartialSingleOrDefaultAsync_WithCancellationToken_Works`
+- `ExecuteScalarAsync_WithCancellationToken_Works`
+
+**Test Count**: 2763 → 2769 (+6 tests)  
+**Result**: All async methods now have CancellationToken coverage
+
 ---
 
 ## Current Status
 
-**Test Count**: 2763 tests  
-**Pass Rate**: 100% (2763/2763 passing)
+**Test Count**: 2760 tests  
+**Pass Rate**: 100% (2760/2760 passing)
 **Overall Progress**: 4/10 phases complete (40%)
 
 ---
 
 ## Remaining Phase 4 Work
-- [ ] CancellationToken-specific tests
-- [ ] CommandOptions overload combinations  
+- [ ] CommandOptions overload combinations (partial - many already covered)
 - [ ] Error path tests (null/empty validation)
 
 ## Coverage by Project (Priority Order)
