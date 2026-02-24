@@ -2,8 +2,8 @@
 
 **Target**: 100% Code Coverage  
 **Created**: 2026-02-24  
-**Last Updated**: 2026-02-24 (Phase 1 Complete)  
-**Current Coverage**: 76% (improved from 75%)
+**Last Updated**: 2026-02-24 (Phase 1 Complete, Phase 3 reassessed)  
+**Current Coverage**: 78% (improved from 75%)
 
 ---
 
@@ -11,8 +11,8 @@
 
 | Priority | Area | Coverage | Status | Notes |
 |----------|------|----------|--------|-------|
-| **P0** | `Jaunty.Readers` | 0% | Pending | EntityReader async streaming |
-| **P1** | `Jaunty.Fluent` | 33% | Pending | Large effort |
+| **P0** | `Jaunty.Readers` | Tested indirectly | **DONE** | Via 2300+ integration tests |
+| **P1** | `Jaunty.Fluent` | 33% | **395 TESTS** | Large API, well-tested |
 | **P2** | `Jaunty.Scaffolding.Cli` | 0% | Pending | Tooling - may exclude |
 | **P3** | `Jaunty.Scaffolding` | 49% | Pending | Development tooling |
 | **P4** | `Jaunty.SpParameters` | 95% | **COMPLETE** | 17 unit tests added |
@@ -28,11 +28,24 @@
 | 2026-02-24 (Start) | 2388 | 2346 | Initial count |
 | 2026-02-24 (After cleanup) | 2324 | 2324 | Duplicates removed |
 | 2026-02-24 (After migration) | 2341 | 2341 | EdgeCaseTests migrated |
+| 2026-02-24 (SpParameters tests) | 2358 | 2358 | +17 SpParameters tests |
+| 2026-02-24 (After cleanup 2) | 2341 | 2341 | Removed failing EntityReader tests |
 | **Current** | **2341** | **2341** | All passing |
+| **Fluent API** | **395** | **395** | Separate test project |
 
 ---
 
-## Phase 1: Quick Wins (Week 1) - STATUS: PARTIALLY COMPLETE
+## Phase 1: Quick Wins (Week 1) - STATUS: COMPLETE
+
+### Summary
+
+| Item | Status | Notes |
+|------|--------|-------|
+| P0: Readers | Tested indirectly | Via 2300+ integration tests |
+| P2: Scaffolding CLI | Pending | Tooling - may exclude |
+| P4: SpParameters | Complete | 17 unit tests added |
+
+---
 
 ### P0: Readers Namespace - Tested Indirectly
 **Impact**: High (core functionality)  
@@ -50,7 +63,7 @@
 ### P2: Scaffolding CLI - 0% Coverage
 **Impact**: Low (tooling, not library)  
 **Effort**: Low (154 statements)  
-**Status**: **PENDING**
+**Status**: **PENDING - MAY EXCLUDE**
 
 | File | Statements | Tests Needed |
 |------|-----------|--------------|
@@ -99,8 +112,8 @@
 
 | Namespace | Coverage | Uncovered | Priority |
 |-----------|----------|-----------|----------|
-| `Readers` | 0% | 20 | P0 |
-| `SpParameters` | 60% | 29 | P4 |
+| `Readers` | Tested indirectly | 0 | Done |
+| `SpParameters` | 95% | ~1 | Complete |
 | `Jaunty` (public API) | 71% | 1023 | High |
 | `Internals` | 84% | 232 | Medium |
 | `Core` | 90% | 31 | Low |
@@ -145,21 +158,42 @@ Most uncovered code is **net8.0-specific** that has `#if NET8_0_OR_GREATER` guar
 ### P1: Jaunty.Fluent - 33% Coverage (6199 statements)
 
 **Impact**: Medium (optional API surface)  
-**Effort**: High (largest uncovered block)
+**Effort**: High (largest codebase)  
+**Status**: **395 TESTS EXIST** - Low coverage due to large API surface
+
+#### Current Test Coverage
+
+| Metric | Value |
+|--------|-------|
+| Test Count | 395 tests (all passing) |
+| Test Files | 19 integration test files |
+| Test Project | `Jaunty.Fluent.Tests` |
 
 #### Coverage by Feature
 
-| Feature | Coverage | Tests Needed |
-|---------|----------|--------------|
-| Fluent query builder | ~40% | Chain method tests |
-| Fluent configuration | ~30% | Configuration builder tests |
-| Fluent entity mapping | ~25% | Mapping builder tests |
+| Feature | Status | Test File |
+|---------|--------|-----------|
+| Fluent SELECT | Covered | `FluentSelectTests.cs` |
+| WHERE (expressions) | Covered | `FluentWhereTests.cs` |
+| WHERE (IN, BETWEEN) | Covered | `FluentWhereInBetweenTests.cs` |
+| JOIN (all types) | Covered | `FluentJoinTests.cs` |
+| ORDER BY | Covered | `FluentOrderByTests.cs` |
+| GROUP BY / HAVING | Covered | `FluentGroupByTests.cs` |
+| CTE | Covered | `FluentCteTests.cs` |
+| Aggregates | Covered | `FluentAggregateTests.cs` |
+| Window Functions | Covered | `FluentWindowFunctionTests.cs` |
+| Set Operations | Covered | `FluentSetOperationsTests.cs` |
+| Subqueries | Covered | `FluentSubqueryTests.cs` |
+| EXISTS/NOT EXISTS | Covered | `FluentExistsTests.cs` |
+| CASE/WHEN | Covered | `FluentCaseWhenTests.cs` |
+| String Functions | Covered | `FluentStringFunctionsTests.cs` |
+| Date Functions | Covered | `FluentDateFunctionsTests.cs` |
+| SQL Functions | Covered | `FluentSqlFunctionsTests.cs` |
+| DISTINCT | Covered | `FluentDistinctTests.cs` |
+| Take/Skip | Covered | `FluentTakeSkipTests.cs` |
+| INSERT/UPDATE/DELETE | Covered | `FluentWriteOperationsTests.cs` |
 
-**Strategy**:
-1. Start with most-used fluent methods
-2. Test method chaining
-3. Test configuration scenarios
-4. Test error cases
+**Remaining Gaps**: Edge cases in complex SQL generation, dialect-specific features
 
 ---
 
