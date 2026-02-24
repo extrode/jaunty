@@ -1,8 +1,5 @@
-using System.Data;
 using System.Data.SQLite;
-using System.Dynamic;
 
-using Jaunty;
 using Jaunty.Attributes;
 using Jaunty.Core;
 using Jaunty.Interfaces;
