@@ -114,18 +114,28 @@
 **Test Count**: 2607 → 2627 (+20 tests)  
 **Result**: All Write API null validation covered
 
+### 2026-02-24: CommandOptions Overload Tests Added
+**Added**: 18 new CommandOptions combination tests
+- `Query_WithParametersAndTimeout_ExecutesCorrectly`
+- `QueryAsync_WithTimeoutOption_ExecutesCorrectly`
+- `QueryAsync_WithParametersAndTimeout_ExecutesCorrectly`
+- All tests cover all 5 dialects
+
+**Test Count**: 2615 → 2633 (+18 tests)  
+**Result**: CommandOptions overload combinations covered
+
 ---
 
 ## Current Status
 
-**Test Count**: 2627 tests (VS Test Explorer)  
-**Pass Rate**: 100% (2627/2627 passing)
+**Test Count**: 2633 tests (VS Test Explorer)  
+**Pass Rate**: 100% (2633/2633 passing)
 **Overall Progress**: 4/10 phases complete (40%)
 
 ---
 
 ## Remaining Phase 4 Work
-- [ ] CommandOptions overload combinations (partial - many already covered)
+- [ ] Additional CommandOptions combinations (transaction + timeout)
 
 ## Coverage by Project (Priority Order)
 
