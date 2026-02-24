@@ -95,19 +95,37 @@
 **Test Count**: 2763 → 2769 (+6 tests)  
 **Result**: All async methods now have CancellationToken coverage
 
+### 2026-02-24: Transaction Rollback Tests Fixed
+**Fixed**: 2 failing tests (Postgres/SQL Server)
+- Used temporary tables instead of modifying Northwind
+- Created temp tables OUTSIDE transaction, inserts INSIDE transaction
+- Dialect-specific temp table syntax (TEMP TABLE, #temp, TEMPORARY TABLE)
+
+**Test Count**: 2769 → 2760 (consolidated)  
+**Result**: All transaction rollback tests passing
+
+### 2026-02-24: Error Path Tests Added
+**Added**: 20 new null validation tests for Write async methods
+- `InsertAsync_NullConnection_ThrowsArgumentNullException`
+- `UpdateAsync_NullConnection_ThrowsArgumentNullException`
+- `DeleteAsync_NullConnection_ThrowsArgumentNullException`
+- `UpsertAsync_NullConnection_ThrowsArgumentNullException`
+
+**Test Count**: 2607 → 2627 (+20 tests)  
+**Result**: All Write API null validation covered
+
 ---
 
 ## Current Status
 
-**Test Count**: 2607 tests (VS Test Explorer)  
-**Pass Rate**: 100% (2607/2607 passing)
+**Test Count**: 2627 tests (VS Test Explorer)  
+**Pass Rate**: 100% (2627/2627 passing)
 **Overall Progress**: 4/10 phases complete (40%)
 
 ---
 
 ## Remaining Phase 4 Work
 - [ ] CommandOptions overload combinations (partial - many already covered)
-- [ ] Error path tests (null/empty validation)
 
 ## Coverage by Project (Priority Order)
 

@@ -68,6 +68,23 @@ public class WriteNullParameterTests : IClassFixture<DialectFixture>
         Assert.Equal("entity", ex.ParamName);
     }
 
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task InsertAsync_NullConnection_ThrowsArgumentNullException(DialectInfo dialect)
+    {
+        System.Data.IDbConnection? connection = null;
+        var category = new Category { CategoryName = "Test" };
+
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+            await connection!.InsertAsync(category));
+
+        Assert.Equal("connection", ex.ParamName);
+    }
+
     #endregion
 
     #region Update Methods
@@ -121,6 +138,23 @@ public class WriteNullParameterTests : IClassFixture<DialectFixture>
             await connection.UpdateAsync(entity!));
 
         Assert.Equal("entity", ex.ParamName);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task UpdateAsync_NullConnection_ThrowsArgumentNullException(DialectInfo dialect)
+    {
+        System.Data.IDbConnection? connection = null;
+        var category = new Category { CategoryId = 1, CategoryName = "Test" };
+
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+            await connection!.UpdateAsync(category));
+
+        Assert.Equal("connection", ex.ParamName);
     }
 
     #endregion
@@ -211,6 +245,23 @@ public class WriteNullParameterTests : IClassFixture<DialectFixture>
         Assert.Equal("entity", ex.ParamName);
     }
 
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task DeleteAsync_NullConnection_ThrowsArgumentNullException(DialectInfo dialect)
+    {
+        System.Data.IDbConnection? connection = null;
+        var category = new Category { CategoryId = 1, CategoryName = "Test" };
+
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+            await connection!.DeleteAsync(category));
+
+        Assert.Equal("connection", ex.ParamName);
+    }
+
     #endregion
 
     #region Upsert Methods
@@ -264,6 +315,23 @@ public class WriteNullParameterTests : IClassFixture<DialectFixture>
             await connection.UpsertAsync(entity!));
 
         Assert.Equal("entity", ex.ParamName);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task UpsertAsync_NullConnection_ThrowsArgumentNullException(DialectInfo dialect)
+    {
+        System.Data.IDbConnection? connection = null;
+        var category = new Category { CategoryId = 1, CategoryName = "Test" };
+
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+            await connection!.UpsertAsync(category));
+
+        Assert.Equal("connection", ex.ParamName);
     }
 
     #endregion
