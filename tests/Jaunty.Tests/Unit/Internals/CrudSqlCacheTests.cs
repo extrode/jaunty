@@ -1,7 +1,7 @@
 using System.Data.SQLite;
 
 using Jaunty.Attributes;
-using Jaunty.Internals.Write;
+using Jaunty.Internals;
 
 namespace Jaunty.Tests.Unit.Internals;
 

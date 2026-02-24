@@ -1,7 +1,5 @@
 using System.Data;
 
-using Jaunty.Fluent.Interfaces;
-
 namespace Jaunty.Fluent;
 
 /// <summary>

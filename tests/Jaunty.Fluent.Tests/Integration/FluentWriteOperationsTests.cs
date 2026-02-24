@@ -1,11 +1,8 @@
 using System.Data;
-
 using FluentAssertions;
-
-using Jaunty.Fluent.Interfaces;
+using Jaunty.Fluent;
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
-
 using Xunit;
 
 namespace Jaunty.Fluent.Tests.Integration;

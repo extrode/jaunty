@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Jaunty.Fluent.Interfaces;
+namespace Jaunty.Fluent;
 
 /// <summary>
 /// Represents a grouped query that can be filtered with HAVING or projected with Select.
