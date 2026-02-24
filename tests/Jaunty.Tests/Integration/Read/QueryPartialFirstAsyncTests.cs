@@ -12,10 +12,13 @@ public class QueryPartialFirstAsyncTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialFirstAsync_WithResults_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -30,6 +33,8 @@ public class QueryPartialFirstAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialFirstAsync_MissingColumn_Allowed(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -44,6 +49,8 @@ public class QueryPartialFirstAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialFirstAsync_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -56,6 +63,8 @@ public class QueryPartialFirstAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialFirstAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -71,6 +80,8 @@ public class QueryPartialFirstAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialFirstAsync_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -87,6 +98,8 @@ public class QueryPartialFirstAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialFirstAsync_WithOptionsOnly_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
