@@ -478,4 +478,66 @@ public class FluentJoinTests : IDisposable
     }
 
     #endregion
+
+    #region Right Join Tests
+
+    [Fact]
+    public void RightJoin_SingleJoin_ReturnsAllRightTableRows()
+    {
+        var results = _db.Connection.From<Product>()
+            .RightJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Select();
+
+        results.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void RightJoin_WithWhere_FiltersResults()
+    {
+        var results = _db.Connection.From<Product>()
+            .RightJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => c.CategoryId == 1)
+            .Select();
+
+        results.Should().NotBeEmpty();
+        results.Should().OnlyContain(r => r.CategoryId == 1);
+    }
+
+    [Fact]
+    public void RightJoin_WithOrderBy_OrdersResults()
+    {
+        var results = _db.Connection.From<Product>()
+            .RightJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .OrderByDescending(c => c.CategoryId)
+            .Select();
+
+        results.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task RightJoin_Async_ReturnsJoinedResults()
+    {
+        var results = await _db.Connection.From<Product>()
+            .RightJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectAsync();
+
+        results.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task RightJoin_SelectFirstOrDefaultAsync_ReturnsFirst()
+    {
+        var result = await _db.Connection.From<Product>()
+            .RightJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectFirstOrDefaultAsync();
+
+        result.Should().NotBeNull();
+    }
+
+    #endregion
 }
