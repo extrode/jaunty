@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Jaunty.Fluent;
+namespace Jaunty.Fluent.Interfaces;
 
 /// <summary>
 /// Represents a JOIN clause that needs an ON condition.

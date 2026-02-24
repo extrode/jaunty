@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Jaunty.Fluent;
+namespace Jaunty.Fluent.Interfaces;
 
 /// <summary>
 /// Represents the WHERE clause - allows chaining additional conditions.

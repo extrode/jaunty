@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Jaunty.Fluent;
+namespace Jaunty.Fluent.Interfaces;
 
 /// <summary>
 /// Represents the SET clause for UPDATE operations - allows chaining multiple column assignments.

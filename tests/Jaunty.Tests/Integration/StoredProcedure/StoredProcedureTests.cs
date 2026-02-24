@@ -1,4 +1,5 @@
 using Jaunty.Core;
+using Jaunty.StoredProcedure;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 

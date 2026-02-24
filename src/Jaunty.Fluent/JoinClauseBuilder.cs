@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 
 using Jaunty.Fluent.Expressions;
+using Jaunty.Fluent.Interfaces;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
 
