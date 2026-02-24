@@ -2,7 +2,7 @@ using System.Data;
 
 using Jaunty.Internals.Parameters;
 
-namespace Jaunty.Tests.Unit.Read;
+namespace Jaunty.Tests;
 
 public class ParameterBinderTests
 {

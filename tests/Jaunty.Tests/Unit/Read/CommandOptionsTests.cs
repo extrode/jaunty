@@ -1,6 +1,6 @@
 using Jaunty.Core;
 
-namespace Jaunty.Tests.Unit.Read;
+namespace Jaunty.Tests.Unit;
 
 public class CommandOptionsTests
 {

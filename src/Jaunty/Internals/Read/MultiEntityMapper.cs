@@ -1,8 +1,7 @@
 using System.Data;
-
 using Jaunty.Configuration;
 
-namespace Jaunty.Internals.Read;
+namespace Jaunty;
 
 /// <summary>
 /// Hook for multi-entity mapping. Actual implementation resides in extensions or source-gen.

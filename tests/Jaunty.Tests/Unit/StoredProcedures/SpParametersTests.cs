@@ -1,6 +1,6 @@
-using Jaunty.StoredProcedure;
+using System.Data;
 
-namespace Jaunty.Tests.Unit.StoredProcedures;
+namespace Jaunty.Tests.StoredProcedures;
 
 /// <summary>
 /// Unit tests for SpParameters fluent API.
