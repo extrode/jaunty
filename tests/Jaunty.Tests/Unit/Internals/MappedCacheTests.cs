@@ -1,7 +1,7 @@
 using System.Data;
 
 using Jaunty.Interfaces;
-using Jaunty.Internals.Read;
+using Jaunty.Internals;
 
 namespace Jaunty.Tests.Unit.Internals;
 

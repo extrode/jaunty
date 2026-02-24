@@ -1,6 +1,6 @@
 using Jaunty.Internals.Entity;
 
-namespace Jaunty.Internals.Write;
+namespace Jaunty.Internals;
 
 /// <summary>
 /// Holds cached SQL statements and metadata for a specific entity type and dialect.

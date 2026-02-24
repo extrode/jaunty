@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Jaunty.Fluent.Interfaces;
+namespace Jaunty.Fluent;
 
 /// <summary>
 /// Represents the initial CTE definition clause.

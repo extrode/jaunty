@@ -1,6 +1,6 @@
 using Jaunty.Internals.Parameters;
 
-namespace Jaunty.Tests.Unit.Read;
+namespace Jaunty.Tests.Unit;
 
 public class SqlParameterParserTests
 {

@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Jaunty.Fluent.Interfaces;
+namespace Jaunty.Fluent;
 
 /// <summary>
 /// Represents DISTINCT selection - provides terminal operations and WHERE clause.

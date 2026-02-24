@@ -1,7 +1,7 @@
 using System.Data;
 using System.Linq.Expressions;
 
-namespace Jaunty.Fluent.Interfaces;
+namespace Jaunty.Fluent;
 
 /// <summary>
 /// Represents a query with a JOIN that can be further filtered or executed.

@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using Jaunty.Fluent.Expressions;
-using Jaunty.Fluent.Interfaces;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals;
 using Jaunty.Internals.Dialects;

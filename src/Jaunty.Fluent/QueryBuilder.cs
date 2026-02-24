@@ -5,7 +5,6 @@ using System.Text;
 
 using Jaunty.Core;
 using Jaunty.Fluent.Expressions;
-using Jaunty.Fluent.Interfaces;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
