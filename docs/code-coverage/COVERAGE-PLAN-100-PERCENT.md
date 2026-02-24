@@ -19,16 +19,30 @@
 
 ## Progress Log
 
+### 2026-02-24: Test Quality Fix - SQLite Coverage
+**Issue**: GridReader tests missing `[MicrosoftSqlite][SystemSqlite]` attributes  
+**Impact**: 44 additional tests now running (68 → 112 tests)  
+**Action**: Added SQLite dialect to all GridReader tests  
+**Result**: All 112 tests passing
+
+**Lesson**: ALL non-async, non-stored-procedure tests MUST include all 5 dialects:
+- `[SqlServer]`
+- `[Postgres]`  
+- `[MariaDB]`
+- `[MicrosoftSqlite]`
+- `[SystemSqlite]`
+
+**Exceptions** (SQLite doesn't support):
+- Async stored procedure tests
+- `QueryMultipleAsync` with stored procedures
+
 ### 2026-02-24: Phase 2 - GridReader Tests
-**Added**: 4 new tests in `GridReaderTests.cs`
+**Added**: 1 new test in `GridReaderTests.cs`
 - `GridReader_ReadPartial_WithCustomMapper_UsesMapper` - Tests custom mapper functionality
-- `GridReader_Read_AfterConsumed_Throws` - Tests error handling (removed - dialect-specific behavior)
-- `GridReader_Dispose_ClosesReader` - Tests Dispose (removed - implementation detail)
-- `GridReader_DisposeAsync_ClosesReader` - Tests DisposeAsync (removed - implementation detail)
 
-**Result**: 68 GridReader tests passing, custom mapper path now covered
+**Result**: Custom mapper path now covered
 
-**Test Count**: 2263 → 2265 (+2 net new tests)
+**Test Count**: 2263 → 2309 (+46 tests from SQLite coverage fix)
 
 ---
 
@@ -366,8 +380,36 @@ public class WhereExpressionVisitorTests
 
 All new tests MUST follow existing patterns:
 
+### Dialect Coverage Requirements CRITICAL
+
+**ALL integration tests MUST include all 5 dialects UNLESS:**
+- Testing async stored procedures (SQLite doesn't support)
+- Testing SQL Server/Postgres/MySQL-specific features
+
+**Required attributes for standard tests:**
+```csharp
+[Theory]
+[SqlServer]
+[Postgres]
+[MariaDB]
+[MicrosoftSqlite]
+[SystemSqlite]
+public void MyTest(DialectInfo dialect) { }
+```
+
+**SQLite Exceptions** (only for these features):
+- Async stored procedure execution
+- `QueryMultipleAsync` with stored procedures
+
+**Dialect-Specific SQL Handling:**
+```csharp
+var sql = dialect.Provider == DialectProvider.SqlServer
+    ? "SELECT TOP (1) * FROM Categories"
+    : "SELECT * FROM categories LIMIT 1";
+```
+
 ### Integration Tests
-- Use `[Theory]` with dialect attributes: `[SqlServer]`, `[Postgres]`, `[MariaDB]`, `[MicrosoftSqlite]`, `[SystemSqlite]`
+- Use `[Theory]` with ALL FIVE dialect attributes
 - Use `IClassFixture<DialectFixture>` for connection management
 - Use `_fixture.GetConnection(dialect)` for database connections
 - Handle SQL dialect differences with ternary operators
@@ -391,5 +433,43 @@ All new tests MUST follow existing patterns:
 
 ---
 
-**Last Updated**: 2026-02-24  
-**Status**: Ready to execute
+## Next Big Phase: Phase 1 - Quick Wins (< 1 day)
+
+**Target**: SpParameter and Extensions.Reflection (52 statements total)
+
+### P9: SpParameter - 1 Statement Missing
+**File**: `src/Jaunty/StoredProcedure/SpParameters.cs` (SpParameter class)  
+**Current**: 90% coverage  
+**Missing**: Constructor with all parameters (Size property test)
+
+**Test to Add** (`tests/Jaunty.Tests/Unit/StoredProcedures/SpParametersTests.cs`):
+```csharp
+[Fact]
+public void SpParameter_Constructor_WithAllParameters_SetsProperties()
+{
+    var param = new SpParameter("TestParam", 42, ParameterDirection.Output, DbType.Int32, 100);
+    
+    param.Name.Should().Be("TestParam");
+    param.Value.Should().Be(42);
+    param.Direction.Should().Be(ParameterDirection.Output);
+    param.DbType.Should().Be(DbType.Int32);
+    param.Size.Should().Be(100);
+}
+```
+
+### P10: Jaunty.Extensions.Reflection - 51 Statements
+**Current**: 95% coverage  
+**Files**: `src/Jaunty.Extensions.Reflection/`
+
+**Missing Tests**:
+- SpecialTypeMappers with edge cases
+- Dictionary mapper with null values
+- ValueTuple with many elements (>7)
+- ExpandoObject mapper error paths
+
+**Action**: Review dotCover report for exact uncovered lines in SpecialTypeMappers.cs
+
+---
+
+**Estimated Time**: < 1 day  
+**Expected Coverage Gain**: +0.5% overall
