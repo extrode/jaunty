@@ -17,6 +17,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_Read_ReturnsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -33,6 +35,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadPartial_AllowsMissingColumns(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -49,6 +53,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadFirst_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -66,6 +72,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadFirstOrDefault_ReturnsFirstOrNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -83,6 +91,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadFirstOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -99,6 +109,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadSingle_ReturnsSingle(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -117,6 +129,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadSingle_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -133,6 +147,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadSingle_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -150,6 +166,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadSingleOrDefault_ReturnsSingleOrDefault(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -167,6 +185,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadSingleOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -183,6 +203,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadScalar_ReturnsValue(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -198,6 +220,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadStream_YieldsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -214,6 +238,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadPartialStream_YieldsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -232,6 +258,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadPartialFirst_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -249,6 +277,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadPartialFirst_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -264,6 +294,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadPartialFirstOrDefault_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -281,6 +313,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadPartialFirstOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -301,6 +335,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadPartialSingle_ReturnsSingle(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -319,6 +355,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadPartialSingle_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -335,6 +373,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadPartialSingle_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -352,6 +392,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadPartialSingleOrDefault_ReturnsSingle(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -369,6 +411,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void GridReader_ReadPartialSingleOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
