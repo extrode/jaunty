@@ -108,6 +108,33 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
             Assert.True(count > 0);
         }
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task ExecuteScalarAsync_WithCancellationToken_Works(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var cts = new CancellationTokenSource();
+
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            var count = await connection.ExecuteScalarAsync<long>(
+                "SELECT COUNT(*) FROM Products",
+                cts.Token);
+            Assert.True(count > 0);
+        }
+        else
+        {
+            var count = await connection.ExecuteScalarAsync<long>(
+                "SELECT COUNT(*) FROM products",
+                cts.Token);
+            Assert.True(count > 0);
+        }
+    }
 }
 
 

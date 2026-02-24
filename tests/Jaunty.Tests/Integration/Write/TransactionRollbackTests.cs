@@ -113,20 +113,52 @@ public class TransactionRollbackTests : IClassFixture<DialectFixture>
         }
         else
         {
-            // For other databases, verify transaction rollback works
+            // For other databases, use a temporary table to avoid modifying Northwind
             using var connection = _fixture.GetConnection(dialect);
+            
+            // Create temporary table OUTSIDE transaction (temp tables persist across transactions)
+            using var createCmd = connection.CreateCommand();
+            
+            var tempTableSql = dialect.Provider == DialectProvider.Postgres
+                ? "CREATE TEMP TABLE temp_categories (category_id SERIAL PRIMARY KEY, category_name VARCHAR(255), description TEXT)"
+                : dialect.Provider == DialectProvider.SqlServer
+                ? "CREATE TABLE #temp_categories (category_id INT IDENTITY(1,1) PRIMARY KEY, category_name NVARCHAR(255), description NVARCHAR(MAX))"
+                : "CREATE TEMPORARY TABLE temp_categories (category_id INT AUTO_INCREMENT PRIMARY KEY, category_name VARCHAR(255), description TEXT)";
+
+            createCmd.CommandText = tempTableSql;
+            createCmd.ExecuteNonQuery();
+
+            // Now do the insert WITHIN a transaction
             using var transaction = connection.BeginTransaction();
 
-            var newCategory = new Category { CategoryName = "Rollback Test", Description = "Test" };
-            connection.Insert(newCategory, CommandOptions<Category>.WithTransaction(transaction));
+            // Insert into temp table
+            using var insertCmd = connection.CreateCommand();
+            insertCmd.Transaction = transaction;
+            insertCmd.CommandText = dialect.Provider == DialectProvider.Postgres
+                ? "INSERT INTO temp_categories (category_name, description) VALUES (@CategoryName, @Description)"
+                : dialect.Provider == DialectProvider.SqlServer
+                ? "INSERT INTO #temp_categories (category_name, description) VALUES (@CategoryName, @Description)"
+                : "INSERT INTO temp_categories (category_name, description) VALUES (@CategoryName, @Description)";
+
+            var paramName = insertCmd.CreateParameter();
+            paramName.ParameterName = "@CategoryName";
+            paramName.Value = "Rollback Test";
+            insertCmd.Parameters.Add(paramName);
+
+            var paramDesc = insertCmd.CreateParameter();
+            paramDesc.ParameterName = "@Description";
+            paramDesc.Value = "Test";
+            insertCmd.Parameters.Add(paramDesc);
+
+            insertCmd.ExecuteNonQuery();
             transaction.Rollback();
 
-            var count = connection.QueryScalar<long>(
-                dialect.Provider == DialectProvider.SqlServer
-                    ? "SELECT COUNT(*) FROM Categories WHERE CategoryName = @Name"
-                    : "SELECT COUNT(*) FROM categories WHERE category_name = @Name",
-                new { Name = "Rollback Test" });
+            // Verify rollback worked (temp table should have no rows)
+            var selectSql = dialect.Provider == DialectProvider.SqlServer
+                ? "SELECT COUNT(*) FROM #temp_categories"
+                : "SELECT COUNT(*) FROM temp_categories";
 
+            var count = connection.QueryScalar<long>(selectSql);
             Assert.Equal(0, count);
         }
     }
