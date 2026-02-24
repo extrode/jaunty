@@ -26,11 +26,6 @@
   <PropertyGroup Condition="'$(Configuration)'=='Debug' AND '$(TargetFramework)' == 'net8.0'">
     <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Remove="Integration\ARCHIVED-FOR-DELETION\**" />
-    <EmbeddedResource Remove="Integration\ARCHIVED-FOR-DELETION\**" />
-    <None Remove="Integration\ARCHIVED-FOR-DELETION\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
