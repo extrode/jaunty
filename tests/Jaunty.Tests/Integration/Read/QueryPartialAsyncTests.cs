@@ -79,6 +79,25 @@ public class QueryPartialAsyncTests : IClassFixture<DialectFixture>
         Assert.NotEmpty(summaries);
         Assert.All(summaries, s => Assert.True(s.ProductId > 0));
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task QueryPartialAsync_WithCancellationToken_Works(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var cts = new CancellationTokenSource();
+
+        var summaries = await connection.QueryPartialAsync<ProductSummary>(
+            "SELECT product_id AS ProductId, product_name AS ProductName FROM products",
+            cts.Token);
+
+        Assert.NotEmpty(summaries);
+        Assert.All(summaries, s => Assert.False(string.IsNullOrEmpty(s.ProductName)));
+    }
 }
 
 
