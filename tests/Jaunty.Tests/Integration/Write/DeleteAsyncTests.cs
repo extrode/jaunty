@@ -8,11 +8,11 @@ using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
-public class DeleteAsyncTests : IClassFixture<WriteDialectFixture>
+public class DeleteAsyncTests : IClassFixture<DialectFixture>
 {
-    private readonly WriteDialectFixture _fixture;
+    private readonly DialectFixture _fixture;
 
-    public DeleteAsyncTests(WriteDialectFixture fixture)
+    public DeleteAsyncTests(DialectFixture fixture)
     {
         _fixture = fixture;
     }

@@ -7,11 +7,11 @@ using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
-public class BulkOperationsTests : IClassFixture<WriteDialectFixture>
+public class BulkOperationsTests : IClassFixture<DialectFixture>
 {
-    private readonly WriteDialectFixture _fixture;
+    private readonly DialectFixture _fixture;
 
-    public BulkOperationsTests(WriteDialectFixture fixture)
+    public BulkOperationsTests(DialectFixture fixture)
     {
         _fixture = fixture;
     }
