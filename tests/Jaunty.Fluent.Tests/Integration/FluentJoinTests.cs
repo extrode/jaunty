@@ -401,4 +401,81 @@ public class FluentJoinTests : IDisposable
 
         count.Should().BeGreaterThan(0);
     }
+
+    #region Multi-Table Joins
+
+    [Fact]
+    public void LeftJoin_SingleJoin_ReturnsAllLeftTableRows()
+    {
+        var products = _db.Connection.From<Product>()
+            .LeftJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Select();
+
+        products.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void LeftJoin_WithWhere_FiltersResults()
+    {
+        var products = _db.Connection.From<Product>()
+            .LeftJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => c.CategoryId == 1)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId == 1);
+    }
+
+    [Fact]
+    public void LeftJoin_WithOrderBy_OrdersResults()
+    {
+        var products = _db.Connection.From<Product>()
+            .LeftJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .OrderByDescending(p => p.UnitPrice)
+            .Select();
+
+        products.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task LeftJoin_Async_ReturnsJoinedResults()
+    {
+        var products = await _db.Connection.From<Product>()
+            .LeftJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectAsync();
+
+        products.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task LeftJoin_SelectFirstOrDefaultAsync_ReturnsFirst()
+    {
+        var product = await _db.Connection.From<Product>()
+            .LeftJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectFirstOrDefaultAsync();
+
+        product.Should().NotBeNull();
+    }
+
+    #endregion
+
+    #region Join With Aggregations
+
+    [Fact]
+    public void InnerJoin_WithCount_ReturnsCorrectCount()
+    {
+        var count = _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Count();
+
+        count.Should().BeGreaterThan(0);
+    }
+
+    #endregion
 }

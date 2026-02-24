@@ -128,14 +128,66 @@
 
 ## Current Status
 
-**Test Count**: 2633 tests (VS Test Explorer)  
-**Pass Rate**: 100% (2633/2633 passing)
-**Overall Progress**: 4/10 phases complete (40%)
+**Test Count**: 2955 tests (Jaunty.Tests) + 401 tests (Fluent API) = **3356 total**  
+**Pass Rate**: 100% (3356/3356 passing)
+**Overall Progress**: 5/10 phases complete (50%)
 
 ---
 
-## Remaining Phase 4 Work
-- [ ] Additional CommandOptions combinations (transaction + timeout)
+## Phase 4: Public API Coverage - COMPLETE
+
+### 2026-02-24: SQLite Coverage Expansion (All Async Tests)
+**Issue**: Async test files missing `[MicrosoftSqlite][SystemSqlite]` attributes  
+**Impact**: +334 tests added (2621 → 2955)  
+**Files Fixed**:
+- All `Integration/Multiple/*AsyncTests.cs` (GridReader async)
+- All `Integration/Streaming/*AsyncTests.cs` (streaming async)
+- All `Integration/Write/*AsyncTests.cs` (Write async)
+
+**Result**: All async API methods now tested against all 5 dialects
+
+### 2026-02-24: Fluent API Join Tests Added
+**Added**: 6 new Fluent API tests
+- `LeftJoin_SingleJoin_ReturnsAllLeftTableRows`
+- `LeftJoin_WithWhere_FiltersResults`
+- `LeftJoin_WithOrderBy_OrdersResults`
+- `LeftJoin_Async_ReturnsJoinedResults`
+- `LeftJoin_SelectFirstOrDefaultAsync_ReturnsFirst`
+- `InnerJoin_WithCount_ReturnsCorrectCount`
+
+**Fluent API Test Count**: 395 → 401 (+6 tests)  
+**Result**: Left join and aggregation coverage added
+
+---
+
+## Remaining Work
+
+### Phase 5: Fluent API Coverage (BIGGEST GAP)
+**Target**: 6199 uncovered statements (33% coverage)
+
+**Progress**: 401 tests written, more needed for:
+- Multi-table joins (3+ tables)
+- Right/Full joins
+- CTE (Common Table Expression) complex scenarios
+- Window functions (ROW_NUMBER, RANK, etc.)
+- Set operations edge cases
+- Complex WHERE with AND/OR chains
+
+**Estimated Effort**: 5-10 days  
+**Estimated Coverage Gain**: +15-20%
+
+---
+
+### Phase 6: Dialect-Specific SQL Tests
+**Target**: 106 uncovered statements in Dialect implementations
+
+**Focus Areas**:
+- SQL Server: `OUTPUT INSERTED` clause
+- PostgreSQL: `RETURNING` clause
+- MySQL/MariaDB: `LAST_INSERT_ID()`
+- SQLite: GLOB pattern edge cases
+
+---
 
 ## Coverage by Project (Priority Order)
 

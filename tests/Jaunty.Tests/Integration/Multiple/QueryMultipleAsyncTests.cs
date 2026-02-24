@@ -17,6 +17,8 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryMultipleAsync_ReturnsMultipleResultSets(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -36,6 +38,8 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryMultipleAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -55,6 +59,8 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryMultipleAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -73,6 +79,8 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryMultipleAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -93,6 +101,8 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryMultipleAsync_WithTransaction_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -120,6 +130,8 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryMultipleAsync_PartialRead_DoesNotThrow(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -137,6 +149,8 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryMultipleAsync_ReadScalar_WithParameters_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);

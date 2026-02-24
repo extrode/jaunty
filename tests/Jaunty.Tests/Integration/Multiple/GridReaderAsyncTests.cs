@@ -11,10 +11,13 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadAsync_ReturnsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -31,6 +34,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialAsync_AllowsMissingColumns(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -47,6 +52,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadFirstAsync_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -64,6 +71,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadFirstOrDefaultAsync_ReturnsFirstOrNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -81,6 +90,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadFirstOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -97,6 +108,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadSingleAsync_ReturnsSingle(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -115,6 +128,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadSingleAsync_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -131,6 +146,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadSingleAsync_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -148,6 +165,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadSingleOrDefaultAsync_ReturnsSingleOrDefault(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -165,6 +184,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadSingleOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -181,6 +202,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadScalarAsync_ReturnsValue(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -196,11 +219,13 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadScalarAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
-        
+
         using var gridReader = await connection.QueryMultipleAsync(
             CountCategoriesSql(dialect));
 
@@ -214,6 +239,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadStreamAsync_YieldsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -234,6 +261,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialStreamAsync_YieldsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -254,6 +283,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadStreamAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -278,6 +309,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialFirstAsync_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -295,6 +328,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialFirstAsync_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -310,6 +345,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialFirstOrDefaultAsync_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -327,6 +364,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialFirstOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -347,6 +386,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialSingleAsync_ReturnsSingle(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -365,6 +406,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialSingleAsync_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -381,6 +424,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialSingleAsync_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -398,6 +443,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialSingleOrDefaultAsync_ReturnsSingle(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -415,6 +462,8 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialSingleOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
