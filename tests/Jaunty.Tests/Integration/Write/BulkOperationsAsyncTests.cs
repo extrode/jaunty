@@ -14,7 +14,7 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 
-private static int GetRowCount(IDbConnection connection)
+    private static int GetRowCount(IDbConnection connection)
     {
         using var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT COUNT(*) FROM bulk_test";
@@ -27,6 +27,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkInsertAsync_InsertsMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -48,6 +50,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkInsertAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -64,6 +68,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkInsertAsync_SingleEntity_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -83,6 +89,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkInsertAsync_LargeCollection_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -101,6 +109,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkInsertAsync_CancellationToken_Respects(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -121,6 +131,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkInsertIgnoreConstraintsAsync_InsertsMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -147,6 +159,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkInsertIgnoreConstraintsAsync_WithOptions_InsertsEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -179,6 +193,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkUpdateAsync_UpdatesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -216,6 +232,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkUpdateAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -231,6 +249,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkUpdateAsync_NonExistentEntity_ReturnsZeroForThatRow(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -257,6 +277,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkUpdateIgnoreConstraintsAsync_UpdatesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -291,6 +313,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkUpdateIgnoreConstraintsAsync_WithOptions_UpdatesEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -333,6 +357,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkDeleteAsync_DeletesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -360,6 +386,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkDeleteAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -375,6 +403,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkDeleteAsync_PartialDelete_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -402,6 +432,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkDeleteAsync_NonExistentEntity_ReturnsZeroForThatRow(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -420,6 +452,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkDeleteIgnoreConstraintsAsync_DeletesMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -450,6 +484,8 @@ private static int GetRowCount(IDbConnection connection)
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task BulkDeleteIgnoreConstraintsAsync_WithOptions_DeletesEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);

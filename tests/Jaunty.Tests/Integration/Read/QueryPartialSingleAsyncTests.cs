@@ -12,10 +12,13 @@ public class QueryPartialSingleAsyncTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleAsync_WithExactlyOneResult_ReturnsEntity(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -30,6 +33,8 @@ public class QueryPartialSingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleAsync_MissingColumn_Allowed(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -44,6 +49,8 @@ public class QueryPartialSingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleAsync_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -56,6 +63,8 @@ public class QueryPartialSingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleAsync_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -68,6 +77,8 @@ public class QueryPartialSingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -82,6 +93,8 @@ public class QueryPartialSingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleAsync_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -97,6 +110,8 @@ public class QueryPartialSingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleAsync_WithOptionsOnly_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);

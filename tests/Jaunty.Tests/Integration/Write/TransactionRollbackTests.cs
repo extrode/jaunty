@@ -1,5 +1,3 @@
-using System.Data;
-
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -32,7 +30,7 @@ public class TransactionRollbackTests : IClassFixture<DialectFixture>
             using var connection = dialect.Provider == DialectProvider.SystemSqlite
                 ? (IDbConnection)new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
                 : (IDbConnection)new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-            
+
             connection.Open();
 
             using (var createCmd = connection.CreateCommand())
@@ -60,7 +58,7 @@ public class TransactionRollbackTests : IClassFixture<DialectFixture>
         {
             // For other databases, use existing bulk_test table
             using var connection = _fixture.GetWriteContext(dialect);
-            
+
             var newEntities = new List<BulkTestEntity>
             {
                 new() { Name = "Rollback Test 1", Value = 1 }
@@ -79,6 +77,9 @@ public class TransactionRollbackTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
     public void Insert_WithTransactionRollback_NoDataInserted(DialectInfo dialect)
@@ -89,7 +90,7 @@ public class TransactionRollbackTests : IClassFixture<DialectFixture>
             using var connection = dialect.Provider == DialectProvider.SystemSqlite
                 ? (IDbConnection)new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
                 : (IDbConnection)new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-            
+
             connection.Open();
 
             using (var createCmd = connection.CreateCommand())
@@ -115,7 +116,7 @@ public class TransactionRollbackTests : IClassFixture<DialectFixture>
             // For other databases, verify transaction rollback works
             using var connection = _fixture.GetConnection(dialect);
             using var transaction = connection.BeginTransaction();
-            
+
             var newCategory = new Category { CategoryName = "Rollback Test", Description = "Test" };
             connection.Insert(newCategory, CommandOptions<Category>.WithTransaction(transaction));
             transaction.Rollback();

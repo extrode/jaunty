@@ -37,6 +37,8 @@ public class UpdateAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task UpdateAsync_ExistingEntity_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -55,6 +57,8 @@ public class UpdateAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task UpdateAsync_NonExistingEntity_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -70,6 +74,8 @@ public class UpdateAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task UpdateAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);

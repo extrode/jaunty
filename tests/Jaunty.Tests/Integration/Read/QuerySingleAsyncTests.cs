@@ -1,4 +1,3 @@
-using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -8,7 +7,7 @@ namespace Jaunty.Tests.Integration.Read;
 public class QuerySingleAsyncTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
-    
+
     private const string FullProductColumns = @"
         product_id AS ProductId,
         product_name AS ProductName,
@@ -25,10 +24,13 @@ public class QuerySingleAsyncTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QuerySingleAsync_WithSingleResult_ReturnsResult(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -45,6 +47,8 @@ public class QuerySingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QuerySingleAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -61,6 +65,8 @@ public class QuerySingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QuerySingleAsync_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -76,6 +82,8 @@ public class QuerySingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QuerySingleAsync_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -91,6 +99,8 @@ public class QuerySingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QuerySingleAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -107,11 +117,13 @@ public class QuerySingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QuerySingleAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
-        
+
         var product = await connection.QuerySingleAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
@@ -125,6 +137,8 @@ public class QuerySingleAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QuerySingleAsync_StrictMapping_MissingColumn_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);

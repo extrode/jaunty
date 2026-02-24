@@ -79,6 +79,8 @@ public class UpsertTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Upsert_NewEntity_InsertsRecord(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -116,6 +118,8 @@ public class UpsertTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Upsert_ExistingEntity_UpdatesRecord(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -158,6 +162,8 @@ public class UpsertTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task UpsertAsync_NewEntity_InsertsRecord(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -195,6 +201,8 @@ public class UpsertTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task UpsertAsync_ExistingEntity_UpdatesRecord(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);

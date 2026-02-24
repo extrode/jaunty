@@ -16,6 +16,8 @@ public class QueryAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryAsync_ReturnsEntities(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -34,6 +36,8 @@ public class QueryAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryAsync_WithNamedParameter_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -52,6 +56,8 @@ public class QueryAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryAsync_NoRows_ReturnsEmptyList(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -69,6 +75,8 @@ public class QueryAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryAsync_StrictMode_MissingColumn_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -88,6 +96,8 @@ public class QueryAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);

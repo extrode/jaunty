@@ -1,4 +1,3 @@
-using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -25,6 +24,8 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Insert_SingleEntity_ReturnsIdentity(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -40,6 +41,8 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Insert_MultipleEntities_ReturnsIncrementingIds(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -58,6 +61,8 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Insert_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -75,6 +80,8 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Insert_WithTransaction_RollbackDiscardsData(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -91,6 +98,8 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Insert_IEntityNonGeneric_SetsIdAfterInsert(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);

@@ -1,4 +1,3 @@
-using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -8,7 +7,7 @@ namespace Jaunty.Tests.Integration.Read;
 public class QueryFirstAsyncTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
-    
+
     private const string FullProductColumns = @"
         product_id AS ProductId,
         product_name AS ProductName,
@@ -25,10 +24,13 @@ public class QueryFirstAsyncTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryFirstAsync_WithResults_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -44,6 +46,8 @@ public class QueryFirstAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryFirstAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -59,6 +63,8 @@ public class QueryFirstAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryFirstAsync_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -74,6 +80,8 @@ public class QueryFirstAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryFirstAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -89,11 +97,13 @@ public class QueryFirstAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryFirstAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource();
-        
+
         var product = await connection.QueryFirstAsync<Product>(
             $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
             new { Id = 1 },
@@ -106,6 +116,8 @@ public class QueryFirstAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryFirstAsync_StrictMapping_MissingColumn_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
