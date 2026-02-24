@@ -3,9 +3,10 @@ using System.Data;
 using System.Diagnostics.CodeAnalysis;
 #endif
 using System.Reflection;
+
 using Jaunty.Interfaces;
 
-namespace Jaunty.Internals;
+namespace Jaunty.Internals.Read;
 
 /// <summary>
 /// Caches the mapper delegate for entity types that implement <see cref="IMapped{T}"/>.

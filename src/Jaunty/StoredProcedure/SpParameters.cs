@@ -1,6 +1,6 @@
 using System.Data;
 
-namespace Jaunty;
+namespace Jaunty.StoredProcedure;
 
 /// <summary>
 /// Represents a stored procedure parameter with direction support.
