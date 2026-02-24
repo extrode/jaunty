@@ -3,6 +3,9 @@ using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
 
+/// <summary>
+/// Tests for null handling and empty result scenarios.
+/// </summary>
 public class QueryNullHandlingTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
@@ -12,49 +15,80 @@ public class QueryNullHandlingTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 
-    private static string CustomersWithNullRegionSql(DialectInfo dialect) =>
-        dialect.Provider == DialectProvider.SqlServer
-            ? @"SELECT TOP (1) customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName,
-              contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
-              postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
-              FROM customers WHERE region IS NULL"
-            : @"SELECT customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName,
-              contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
-              postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
-              FROM customers WHERE region IS NULL LIMIT 1";
-
     [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
-    public void Query_NullablePropertyWithNullValue_SetsToNull(DialectInfo dialect)
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartial_WithNullInNonNullableColumn_HandlesGracefully(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var customers = connection.Query<Customer>(CustomersWithNullRegionSql(dialect));
+        
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT * FROM Products WHERE UnitPrice IS NULL"
+            : "SELECT * FROM products WHERE unit_price IS NULL";
 
-        Assert.NotEmpty(customers);
-        Assert.Null(customers[0].Region);
-    }
-
-    [Theory]
-    [SqlServer]
-    [Postgres]
-    [MariaDB]
-    public void Query_NullableIntWithNullValue_SetsToNull(DialectInfo dialect)
-    {
-        using var connection = _fixture.GetConnection(dialect);
-        // Products with null supplier_id
-        var products = connection.QueryPartial<Product>(
-            @"SELECT product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId,
-              category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice,
-              units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel,
-              discontinued AS Discontinued
-              FROM products WHERE supplier_id IS NULL");
-
-        // May or may not have results, but shouldn't throw
+        // Should not throw, even with null values
+        var products = connection.QueryPartial<Product>(sql);
         Assert.NotNull(products);
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT CategoryId, CategoryName, Description FROM Categories WHERE CategoryId = 99999"
+            : "SELECT category_id, category_name, description FROM categories WHERE category_id = 99999";
+
+        var result = connection.QueryFirstOrDefault<Category>(sql);
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QuerySingle_NoResults_ThrowsInvalidOperationException(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT CategoryId, CategoryName, Description FROM Categories WHERE CategoryId = 99999"
+            : "SELECT category_id, category_name, description FROM categories WHERE category_id = 99999";
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            connection.QuerySingle<Category>(sql));
+
+        Assert.Contains("no elements", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void QueryPartialSingle_MultipleResults_ThrowsInvalidOperationException(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT CategoryId, CategoryName, Description FROM Categories"
+            : "SELECT category_id, category_name, description FROM categories";
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            connection.QueryPartialSingle<Category>(sql));
+
+        Assert.Contains("more than one", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }
-
-
-

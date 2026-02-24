@@ -16,6 +16,8 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_NullConnection_ThrowsArgumentNullException(DialectInfo dialect)
     {
         IDbConnection? nullConnection = null;
@@ -30,6 +32,8 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_NullSql_ThrowsArgumentException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -43,6 +47,8 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_EmptySql_ThrowsArgumentException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -56,6 +62,8 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_WhitespaceSql_ThrowsArgumentException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -69,6 +77,8 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_NullConnection_ThrowsArgumentNullException(DialectInfo dialect)
     {
         IDbConnection? nullConnection = null;
@@ -83,6 +93,8 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_NullSql_ThrowsArgumentException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
