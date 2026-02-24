@@ -3,6 +3,7 @@ using System.Data;
 using Jaunty.Core;
 using Jaunty.Internals.Enums;
 using Jaunty.Internals.Parameters;
+using Jaunty.Internals.Read;
 
 namespace Jaunty;
 

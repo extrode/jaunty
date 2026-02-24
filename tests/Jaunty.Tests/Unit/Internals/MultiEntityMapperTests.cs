@@ -1,8 +1,8 @@
 using System.Data;
 using System.Data.SQLite;
 
-using Jaunty;
 using Jaunty.Attributes;
+using Jaunty.Internals.Read;
 
 namespace Jaunty.Tests.Unit.Internals;
 
