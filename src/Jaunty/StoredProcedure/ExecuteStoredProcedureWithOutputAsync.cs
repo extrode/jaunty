@@ -4,6 +4,7 @@ using System.Data.Common;
 using Jaunty.Core;
 using Jaunty.Internals.Enums;
 using Jaunty.Internals.Read;
+using Jaunty.StoredProcedure;
 
 namespace Jaunty;
 

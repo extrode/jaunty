@@ -1,10 +1,11 @@
 using System.Data;
 using System.Data.Common;
+
 using Jaunty.Core;
 using Jaunty.Interfaces;
-using Jaunty.Internals;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
+
 using JauntyConfig = Jaunty.Configuration.JauntyConfig;
 
 namespace Jaunty;
