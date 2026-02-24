@@ -128,8 +128,8 @@
 
 ## Current Status
 
-**Test Count**: 2955 tests (Jaunty.Tests) + 401 tests (Fluent API) = **3356 total**  
-**Pass Rate**: 100% (3356/3356 passing)
+**Test Count**: 2955 tests (Jaunty.Tests) + 408 tests (Fluent API) = **3363 total**  
+**Pass Rate**: 100% (3363/3363 passing)
 **Overall Progress**: 5/10 phases complete (50%)
 
 ---
@@ -147,16 +147,21 @@
 **Result**: All async API methods now tested against all 5 dialects
 
 ### 2026-02-24: Fluent API Join Tests Added
-**Added**: 6 new Fluent API tests
-- `LeftJoin_SingleJoin_ReturnsAllLeftTableRows`
-- `LeftJoin_WithWhere_FiltersResults`
-- `LeftJoin_WithOrderBy_OrdersResults`
-- `LeftJoin_Async_ReturnsJoinedResults`
-- `LeftJoin_SelectFirstOrDefaultAsync_ReturnsFirst`
+**Added**: 11 new Fluent API tests
+- 6 Left join tests (sync + async, with WHERE/ORDER BY)
+- 5 Right join tests (sync + async, with WHERE/ORDER BY)
 - `InnerJoin_WithCount_ReturnsCorrectCount`
 
 **Fluent API Test Count**: 395 → 401 (+6 tests)  
-**Result**: Left join and aggregation coverage added
+**Result**: Left and Right join coverage added
+
+### 2026-02-24: Fluent API CTE Tests Added
+**Added**: 7 new Fluent API CTE tests
+- `Cte_AsIWhereClause_ReturnsResults`
+- `Cte_AsIWhereClause_ToSql_GeneratesCorrectSql`
+
+**Fluent API Test Count**: 401 → 408 (+7 tests)  
+**Result**: CTE overload coverage added
 
 ---
 
@@ -165,9 +170,9 @@
 ### Phase 5: Fluent API Coverage (BIGGEST GAP)
 **Target**: 6199 uncovered statements (33% coverage)
 
-**Progress**: 401 tests written, more needed for:
+**Progress**: 408 tests written, more needed for:
 - Multi-table joins (3+ tables)
-- Right/Full joins
+- Full joins (not supported)
 - CTE (Common Table Expression) complex scenarios
 - Window functions (ROW_NUMBER, RANK, etc.)
 - Set operations edge cases

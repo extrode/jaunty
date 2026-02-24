@@ -242,4 +242,33 @@ public class FluentCteTests : IDisposable
     }
 
     #endregion
+
+    #region CTE with As(IWhereClause) Overload
+
+    [Fact]
+    public void Cte_AsIWhereClause_ReturnsResults()
+    {
+        // Arrange & Act: Use As with IWhereClause overload
+        var products = _db.Connection.Cte<Product>("FilteredProducts")
+            .As(_db.Connection.From<Product>().Where(p => p.UnitPrice > 30))
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.UnitPrice > 30);
+    }
+
+    [Fact]
+    public void Cte_AsIWhereClause_ToSql_GeneratesCorrectSql()
+    {
+        // Act
+        var sql = _db.Connection.Cte<Product>("FilteredProducts")
+            .As(_db.Connection.From<Product>().Where(p => p.UnitPrice > 30))
+            .ToSql();
+
+        // Assert
+        sql.Should().Contain("WITH FilteredProducts AS (");
+        sql.Should().Contain(") SELECT * FROM FilteredProducts");
+    }
+
+    #endregion
 }
