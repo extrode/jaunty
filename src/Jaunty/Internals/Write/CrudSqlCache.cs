@@ -7,7 +7,7 @@ using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Interfaces;
 
-namespace Jaunty.Internals;
+namespace Jaunty.Internals.Write;
 
 /// <summary>
 /// Caches generated CRUD SQL statements per entity type and dialect.
