@@ -1,7 +1,5 @@
-using System.Data;
 using System.Data.SQLite;
 
-using Jaunty;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 
