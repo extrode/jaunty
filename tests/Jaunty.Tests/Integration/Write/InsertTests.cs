@@ -5,11 +5,11 @@ using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
-public class InsertTests : IClassFixture<WriteDialectFixture>
+public class InsertTests : IClassFixture<DialectFixture>
 {
-    private readonly WriteDialectFixture _fixture;
+    private readonly DialectFixture _fixture;
 
-    public InsertTests(WriteDialectFixture fixture)
+    public InsertTests(DialectFixture fixture)
     {
         _fixture = fixture;
     }
