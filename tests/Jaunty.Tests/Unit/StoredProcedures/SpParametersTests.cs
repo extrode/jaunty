@@ -1,5 +1,7 @@
 using System.Data;
 
+using FluentAssertions;
+
 using Jaunty.StoredProcedure;
 
 namespace Jaunty.Tests.StoredProcedures;
@@ -89,15 +91,55 @@ public class SpParametersTests
     public void AddInputOutput_AddsInOutParameter()
     {
         var parameters = new SpParameters();
-        
+
         var result = parameters.AddInputOutput("Counter", 0, DbType.Int32);
-        
+
         Assert.Same(parameters, result);
         Assert.Single(parameters.Parameters);
         Assert.Equal("Counter", parameters.Parameters[0].Name);
         Assert.Equal(0, parameters.Parameters[0].Value);
         Assert.Equal(DbType.Int32, parameters.Parameters[0].DbType);
         Assert.Equal(ParameterDirection.InputOutput, parameters.Parameters[0].Direction);
+    }
+
+    #endregion
+
+    #region SpParameter Constructor Tests
+
+    [Fact]
+    public void SpParameter_Constructor_WithAllParameters_SetsProperties()
+    {
+        var param = new SpParameter("TestParam", 42, ParameterDirection.Output, DbType.Int32, 100);
+
+        param.Name.Should().Be("TestParam");
+        param.Value.Should().Be(42);
+        param.Direction.Should().Be(ParameterDirection.Output);
+        param.DbType.Should().Be(DbType.Int32);
+        param.Size.Should().Be(100);
+    }
+
+    [Fact]
+    public void SpParameter_Constructor_WithNullValue_SetsNullValue()
+    {
+        var param = new SpParameter("NullParam", null, ParameterDirection.InputOutput, DbType.String, 50);
+
+        param.Name.Should().Be("NullParam");
+        param.Value.Should().BeNull();
+        param.Direction.Should().Be(ParameterDirection.InputOutput);
+        param.DbType.Should().Be(DbType.String);
+        param.Size.Should().Be(50);
+    }
+
+    [Fact]
+    public void SpParameter_Constructor_WithoutDbTypeAndSize_SetsNulls()
+    {
+        var param = new SpParameter("SimpleParam", "value", ParameterDirection.Input, null, null);
+
+        param.Name.Should().Be("SimpleParam");
+        param.Value.Should().Be("value");
+        param.Direction.Should().Be(ParameterDirection.Input);
+        param.DbType.Should().BeNull();
+        param.Size.Should().BeNull();
     }
 
     #endregion

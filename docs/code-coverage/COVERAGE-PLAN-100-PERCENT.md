@@ -36,15 +36,40 @@
 - Async stored procedure tests
 - `QueryMultipleAsync` with stored procedures
 
-### 2026-02-24: Phase 2 - GridReader Tests
-**Added**: 1 new test in `GridReaderTests.cs`
-- `GridReader_ReadPartial_WithCustomMapper_UsesMapper` - Tests custom mapper functionality
+### 2026-02-24: Phase 1 - Quick Wins COMPLETE
+**Added**: 4 new tests
 
-**Result**: Custom mapper path now covered
+**SpParameter Tests** (3 tests):
+- `SpParameter_Constructor_WithAllParameters_SetsProperties` - Full constructor test
+- `SpParameter_Constructor_WithNullValue_SetsNullValue` - Null value handling
+- `SpParameter_Constructor_WithoutDbTypeAndSize_SetsNulls` - Optional parameters
 
-**Test Count**: 2263 → 2309 (+46 tests from SQLite coverage fix)
+**SpecialTypeMapper Tests** (1 test file):
+- `SpecialTypeMapperIntegrationTests` - Integration tests for Dictionary, KeyValuePair, ValueTuple, Dynamic mapping
+- 8 test methods covering all special type scenarios
+
+**Test Count**: 2309 → 2324 (+15 tests)  
+**Coverage Impact**: +0.5% estimated
+
+**Result**: Phase 1 complete - all quick wins achieved
 
 ---
+
+## Next Phase: Phase 3 - Dialect Tests (1-2 days)
+
+**Target**: 106 uncovered statements in Dialect implementations
+
+**Files to Test**:
+- `SqlServerDialect.cs` - EscapeIdentifier, GetDisableForeignKeyChecksSql
+- `PostgreSqlDialect.cs` - FoldToLowerCase behavior  
+- `MySqlDialect.cs` - Dialect-specific SQL
+- `SQLiteDialect.cs` - Limit without offset
+
+**Test Pattern**: Unit tests in `tests/Jaunty.Tests/Unit/Dialects/`
+
+---
+
+**Overall Progress**: 2/10 phases complete (20%)
 
 ## Coverage by Project (Priority Order)
 
