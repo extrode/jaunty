@@ -2,7 +2,6 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
-using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;

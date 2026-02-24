@@ -1,5 +1,7 @@
 using System.Data;
 
+using Jaunty.StoredProcedure;
+
 namespace Jaunty.Tests.StoredProcedures;
 
 /// <summary>
