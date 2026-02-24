@@ -2,10 +2,11 @@
 
 **Target**: 100% Code Coverage  
 **Created**: 2026-02-19  
-**Last Updated**: 2026-02-24
+**Last Updated**: 2026-02-24 (Fluent API namespace fix)
 
-**Current Coverage**: 76% overall  
-**Test Count**: 2341 tests (all passing)
+**Current Coverage**: ~75% overall  
+**Test Count**: 2263 tests (2252 passing, 11 failing)  
+**Fluent API Tests**: 395 tests (371 passing, 24 failing - namespace fix in progress)
 
 > **See**: [`COVERAGE-PLAN-2026-02-24.md`](COVERAGE-PLAN-2026-02-24.md) for the prioritized 100% coverage roadmap.
 
@@ -13,49 +14,52 @@
 
 ## Coverage Progress
 
-| Date | Tests | Passing | Coverage | Notes |
-|------|-------|---------|----------|-------|
-| 2026-02-24 (Start) | 2388 | 2346 | 75% | Initial |
-| 2026-02-24 (Cleanup) | 2324 | 2324 | 75% | Duplicates removed |
-| 2026-02-24 (Migration) | 2341 | 2341 | 76% | EdgeCaseTests migrated |
-| **Current** | **2341** | **2341** | **76%** | All passing |
+| Date | Tests | Passing | Failing | Coverage | Notes |
+|------|-------|---------|---------|----------|-------|
+| 2026-02-24 (Start) | 2388 | 2346 | 42 | 75% | Initial |
+| 2026-02-24 (Cleanup) | 2324 | 2324 | 0 | 75% | Duplicates removed |
+| 2026-02-24 (Migration) | 2341 | 2341 | 0 | 76% | EdgeCaseTests migrated |
+| 2026-02-24 (SpParameters) | 2358 | 2358 | 0 | 77% | +17 SpParameters tests |
+| 2026-02-24 (Final) | 2341 | 2341 | 0 | 76% | Clean state |
+| **Current** | **2263** | **2252** | **11** | **~75%** | DB setup failures |
+| **Fluent API** | **395** | **371** | **24** | **33%** | IGrouping namespace fix |
 
 ---
 
 ## Completed Coverage Items
 
-### SpParameters Unit Tests
+### SpParameters Unit Tests (17 tests)
 - `SpParameters.AddInput()` - All overloads
 - `SpParameters.AddOutput()` - All overloads
 - `SpParameters.AddInputOutput()` - All overloads
 - `SpParameters.AddReturnValue()` - All overloads
 - `SpParameters.Get<T>()` - Type conversion, null handling
 - `SpParameters.GetReturnValue()` - Success and failure cases
-- `SpParameters.HasValue()` - True/false cases
+- `SpParameters.HasValue()` - True/false scenarios
 - `SpParameters.Parameters` - ReadOnlyList access
 
-**File**: `tests/Jaunty.Tests/Unit/StoredProcedures/SpParametersTests.cs` (17 tests)
+**File**: `tests/Jaunty.Tests/Unit/StoredProcedures/SpParametersTests.cs`
 
 ### Test Infrastructure Improvements
 - Migrated `Sqlite/` tests to proper dialect-based tests
 - Added `[MicrosoftSqlite][SystemSqlite]` to missing tests
 - Consolidated duplicate stored procedure tests
 - Created reusable test patterns for edge cases
+- EntityReader - Tested indirectly via 2300+ integration tests
 
 ---
 
 ## Remaining Coverage Gaps
 
 ### High Priority
-- [x] `EntityReader.ReadEntitiesAsync<T>()` - **Tested indirectly** via 2300+ integration tests
+- [ ] `Jaunty.Fluent` namespace - 6199 statements (33% covered, 395 tests exist)
 
 ### Medium Priority
-- [ ] `Jaunty.Fluent` namespace - 6199 statements (33% covered)
-- [ ] GridReader async methods (`ReadAsync`, `ReadFirstAsync`, etc.) - Tested indirectly
-- [ ] Collection parameter edge cases
+- [ ] GridReader async methods (`ReadAsync`, `ReadFirstAsync`, etc.) - Tested indirectly via QueryMultipleAsync
+- [ ] Collection parameter edge cases - Large collections, empty collections
 
 ### Low Priority (May Exclude)
-- [ ] `Jaunty.Scaffolding.Cli` - 154 statements (tooling)
+- [ ] `Jaunty.Scaffolding.Cli` - 154 statements (CLI tooling)
 - [ ] `Jaunty.Scaffolding` - 482 statements (development tooling)
 
 ---

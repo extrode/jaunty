@@ -1,3 +1,4 @@
+using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
@@ -11,7 +12,8 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
@@ -380,6 +382,26 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     #endregion
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartial_WithCustomMapper_UsesMapper(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id";
+
+        using var gridReader = connection.QueryMultiple(sql, new { Id = 1 });
+
+        var customMapper = new Func<IDataReader, Category>(reader =>
+            new Category { CategoryId = reader.GetInt32(0), CategoryName = "Custom: " + reader.GetString(1) });
+
+        var categories = gridReader.Read<Category>(new CommandOptions<Category>(mapper: customMapper)).ToList();
+
+        Assert.Single(categories);
+        Assert.StartsWith("Custom:", categories[0].CategoryName);
+    }
 
     private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
         dialect.Provider == DialectProvider.SqlServer
