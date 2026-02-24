@@ -1,7 +1,5 @@
-using System.Data;
 using System.Data.Common;
 
-using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -35,6 +33,8 @@ public class DeleteAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task DeleteAsync_ExistingEntity_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -51,6 +51,8 @@ public class DeleteAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task DeleteAsync_NonExistingEntity_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -66,6 +68,8 @@ public class DeleteAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task DeleteAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -84,6 +88,8 @@ public class DeleteAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task DeleteAsyncById_ExistingId_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -100,6 +106,8 @@ public class DeleteAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task DeleteAsyncById_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);

@@ -12,10 +12,13 @@ public class QueryPartialAsyncTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialAsync_MissingColumn_Allowed(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -30,6 +33,8 @@ public class QueryPartialAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialAsync_WithParameter_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -44,6 +49,8 @@ public class QueryPartialAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialAsync_WithOptions_ReturnsEntities(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -59,6 +66,8 @@ public class QueryPartialAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialAsync_WithParametersAndOptions_ReturnsFilteredEntities(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);

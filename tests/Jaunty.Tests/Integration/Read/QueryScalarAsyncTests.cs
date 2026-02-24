@@ -11,10 +11,13 @@ public class QueryScalarAsyncTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryScalarAsync_ReturnsLong_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -27,6 +30,8 @@ public class QueryScalarAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryScalarAsync_ReturnsString_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -39,6 +44,8 @@ public class QueryScalarAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryScalarAsync_WithNamedParameter_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -53,6 +60,8 @@ public class QueryScalarAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryScalarAsync_NoRows_ReturnsDefault(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -67,6 +76,8 @@ public class QueryScalarAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryScalarAsync_WithCommandOptions_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -81,6 +92,8 @@ public class QueryScalarAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryScalarAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);

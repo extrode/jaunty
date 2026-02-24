@@ -1,5 +1,3 @@
-using System.Data;
-
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
@@ -28,9 +26,9 @@ public class BulkEmptyCollectionTests : IClassFixture<DialectFixture>
         if (dialect.Provider == DialectProvider.SystemSqlite || dialect.Provider == DialectProvider.MicrosoftSqlite)
         {
             using var connection = dialect.Provider == DialectProvider.SystemSqlite
-                ? (IDbConnection)new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
+                ? new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
                 : (IDbConnection)new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-            
+
             connection.Open();
 
             using (var createCmd = connection.CreateCommand())
@@ -66,7 +64,7 @@ public class BulkEmptyCollectionTests : IClassFixture<DialectFixture>
             using var connection = dialect.Provider == DialectProvider.SystemSqlite
                 ? (IDbConnection)new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
                 : (IDbConnection)new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-            
+
             connection.Open();
 
             using (var createCmd = connection.CreateCommand())
@@ -102,7 +100,7 @@ public class BulkEmptyCollectionTests : IClassFixture<DialectFixture>
             using var connection = dialect.Provider == DialectProvider.SystemSqlite
                 ? (IDbConnection)new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
                 : (IDbConnection)new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-            
+
             connection.Open();
 
             using (var createCmd = connection.CreateCommand())

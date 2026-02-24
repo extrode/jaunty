@@ -12,10 +12,13 @@ public class QueryPartialSingleOrDefaultAsyncTests : IClassFixture<DialectFixtur
     {
         _fixture = fixture;
     }
-[Theory]
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleOrDefaultAsync_WithExactlyOneResult_ReturnsEntity(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -30,6 +33,8 @@ public class QueryPartialSingleOrDefaultAsyncTests : IClassFixture<DialectFixtur
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleOrDefaultAsync_MissingColumn_Allowed(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -44,6 +49,8 @@ public class QueryPartialSingleOrDefaultAsyncTests : IClassFixture<DialectFixtur
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleOrDefaultAsync_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -57,6 +64,8 @@ public class QueryPartialSingleOrDefaultAsyncTests : IClassFixture<DialectFixtur
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleOrDefaultAsync_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -69,6 +78,8 @@ public class QueryPartialSingleOrDefaultAsyncTests : IClassFixture<DialectFixtur
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleOrDefaultAsync_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -84,6 +95,8 @@ public class QueryPartialSingleOrDefaultAsyncTests : IClassFixture<DialectFixtur
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleOrDefaultAsync_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -100,6 +113,8 @@ public class QueryPartialSingleOrDefaultAsyncTests : IClassFixture<DialectFixtur
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleOrDefaultAsync_WithOptionsOnly_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -115,6 +130,8 @@ public class QueryPartialSingleOrDefaultAsyncTests : IClassFixture<DialectFixtur
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialSingleOrDefaultAsync_NoResults_WithParameters_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);

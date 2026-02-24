@@ -16,6 +16,8 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task ExecuteScalarAsync_Count_ReturnsValue(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -35,6 +37,8 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task ExecuteScalarAsync_WithParameters_ReturnsValue(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -58,6 +62,8 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task ExecuteScalarAsync_WithOptionsOnly_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -79,6 +85,8 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task ExecuteScalarAsync_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);

@@ -1,7 +1,5 @@
-using System.Data;
 using System.Data.Common;
 
-using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -35,6 +33,8 @@ public class DeleteByEntityIdTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void DeleteByEntityId_ExistingId_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -50,6 +50,8 @@ public class DeleteByEntityIdTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void DeleteByEntityId_NonExistingId_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -62,6 +64,8 @@ public class DeleteByEntityIdTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void DeleteByEntityId_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -79,6 +83,8 @@ public class DeleteByEntityIdTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void DeleteByEntityId_WithTransaction_RollbackKeepsOriginal(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -95,6 +101,8 @@ public class DeleteByEntityIdTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task DeleteAsyncByEntityId_ExistingId_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -111,6 +119,8 @@ public class DeleteByEntityIdTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task DeleteAsyncByEntityId_NonExistingId_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -124,6 +134,8 @@ public class DeleteByEntityIdTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task DeleteAsyncByEntityId_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);

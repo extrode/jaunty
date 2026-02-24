@@ -36,6 +36,25 @@
 - Async stored procedure tests
 - `QueryMultipleAsync` with stored procedures
 
+### 2026-02-24: Phase 1 - Quick Wins COMPLETE
+**Added**: 11 new tests
+
+**SpParameter Tests** (3 tests):
+- `SpParameter_Constructor_WithAllParameters_SetsProperties` - Full constructor test
+- `SpParameter_Constructor_WithNullValue_SetsNullValue` - Null value handling
+- `SpParameter_Constructor_WithoutDbTypeAndSize_SetsNulls` - Optional parameters
+
+**SpecialTypeMapper Tests** (8 test methods):
+- `SpecialTypeMapperIntegrationTests` - Integration tests for Dictionary, KeyValuePair, ValueTuple, Dynamic mapping
+- Fixed PostgreSQL column name folding issue (uses quoted identifiers)
+
+**Test Count**: 2309 → 2324 (+15 tests)  
+**Coverage Impact**: +0.5% estimated
+
+**Result**: Phase 1 complete - all quick wins achieved
+
+---
+
 ### 2026-02-24: Phase 3 - Dialect Tests COMPLETE
 **Added**: 182 new unit tests in `SqlDialectTests.cs`
 
@@ -52,20 +71,32 @@
 
 ---
 
-## Next Phase: Phase 4 - Public API Coverage (3-5 days) - CRITICAL
+## Phase 4: Public API Coverage - IN PROGRESS
 
-**Target**: ~2600 uncovered statements in public API (net8.0 + netstandard2.0)
+### 2026-02-24: SQLite Coverage Expansion
+**Issue**: Many integration tests missing `[MicrosoftSqlite][SystemSqlite]` attributes  
+**Impact**: +257 tests added (2506 → 2763)  
+**Files Fixed**:
+- All `Integration/Read/*AsyncTests.cs` (12 files)
+- All `Integration/Read/*.cs` sync tests
+- All `Integration/Write/*.cs` tests
 
-**Focus Areas**:
-1. Async methods with CancellationToken - many variants not fully tested
-2. CommandOptions overloads - some combinations not tested
-3. Error paths - null/empty validation, connection state checks
-
-**Test Pattern**: Expand existing integration tests with additional overloads
+**Result**: All async and sync API methods now tested against SQLite
 
 ---
 
-**Overall Progress**: 3/10 phases complete (30%)
+## Current Status
+
+**Test Count**: 2763 tests  
+**Pass Rate**: 100% (2763/2763 passing)
+**Overall Progress**: 4/10 phases complete (40%)
+
+---
+
+## Remaining Phase 4 Work
+- [ ] CancellationToken-specific tests
+- [ ] CommandOptions overload combinations  
+- [ ] Error path tests (null/empty validation)
 
 ## Coverage by Project (Priority Order)
 

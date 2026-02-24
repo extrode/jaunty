@@ -1,6 +1,5 @@
 using System.Data.Common;
 
-using Jaunty;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -27,6 +26,8 @@ public class InsertAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task InsertAsync_SingleEntity_ReturnsIdentity(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -43,6 +44,8 @@ public class InsertAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task InsertAsync_MultipleEntities_ReturnsIncrementingIds(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -62,6 +65,8 @@ public class InsertAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task InsertAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
