@@ -28,6 +28,8 @@ public class QueryStreamAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryStreamAsync_WithResults_YieldsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -55,6 +57,8 @@ public class QueryStreamAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryStreamAsync_WithoutParameters_YieldsAll(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -79,6 +83,8 @@ public class QueryStreamAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryStreamAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -106,11 +112,13 @@ public class QueryStreamAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryStreamAsync_WithCancellationToken_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // Reasonable timeout
-        
+
         var products = connection.QueryStreamAsync<Product>(
             $"SELECT {TopPrefix(dialect, 5)}product_id AS ProductId, product_name AS ProductName, supplier_id AS SupplierId, category_id AS CategoryId, quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice, units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder, reorder_level AS ReorderLevel, discontinued AS Discontinued FROM {ProductsTable(dialect)}{LimitSuffix(dialect, 5)}",
             cts.Token);
@@ -133,6 +141,8 @@ public class QueryStreamAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryStreamAsync_PartialMapping_YieldsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -157,6 +167,8 @@ public class QueryStreamAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryStreamAsync_EmptyResult_YieldsNothing(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);

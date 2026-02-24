@@ -27,6 +27,8 @@ public class QueryPartialUnbufferedAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialUnbufferedAsync_WithResults_YieldsResults(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -47,6 +49,8 @@ public class QueryPartialUnbufferedAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialUnbufferedAsync_WithoutParameters_YieldsAll(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -65,6 +69,8 @@ public class QueryPartialUnbufferedAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialUnbufferedAsync_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -86,6 +92,8 @@ public class QueryPartialUnbufferedAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialUnbufferedAsync_WithOptionsOnly_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -104,6 +112,8 @@ public class QueryPartialUnbufferedAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryPartialUnbufferedAsync_EmptyResult_YieldsNothing(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
