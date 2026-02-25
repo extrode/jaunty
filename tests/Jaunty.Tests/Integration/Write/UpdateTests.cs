@@ -112,7 +112,7 @@ public class UpdateTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public void Update_NoChanges_ReturnsZero(DialectInfo dialect)
+    public void Update_SameValues_StillReturnsRowsMatched(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
         var entity = InsertTestEntity(ctx.Connection, "Original", 100);
@@ -120,7 +120,7 @@ public class UpdateTests : IClassFixture<DialectFixture>
         // Update with the same values
         int rows = ctx.Connection.Update(entity);
 
-        Assert.Equal(0, rows);
+        Assert.Equal(1, rows);
         Assert.Equal("Original", GetNameById(ctx.Connection, entity.Id));
     }
 

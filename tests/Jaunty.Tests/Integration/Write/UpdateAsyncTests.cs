@@ -97,7 +97,7 @@ public class UpdateAsyncTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public async Task UpdateAsync_NoChanges_ReturnsZero(DialectInfo dialect)
+    public async Task UpdateAsync_SameValues_StillReturnsRowsMatched(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
         var connection = (DbConnection)ctx.Connection;
@@ -106,7 +106,7 @@ public class UpdateAsyncTests : IClassFixture<DialectFixture>
         // Update with the same values
         int rows = await connection.UpdateAsync(entity);
 
-        Assert.Equal(0, rows);
+        Assert.Equal(1, rows);
         Assert.Equal("Original", GetNameById(connection, entity.Id));
     }
 
