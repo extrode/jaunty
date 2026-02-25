@@ -60,7 +60,7 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
 
     public IJoinedQuery<TFrom, TJoin> On<TValue>(string condition, TValue value)
     {
-        var joinedQuery = CreateJoinedQuery(condition);
+        JoinedQueryBuilder<TFrom, TJoin> joinedQuery = CreateJoinedQuery(condition);
         joinedQuery.AddParameter("@value", value);
         return joinedQuery;
     }

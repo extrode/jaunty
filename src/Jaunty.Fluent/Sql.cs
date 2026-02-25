@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 namespace Jaunty.Fluent;
 
 /// <summary>
@@ -292,15 +294,16 @@ public static partial class Sql
     /// Starts a CASE expression for conditional logic in SQL.
     /// Use .When() to add conditions and .Else() to complete the expression.
     /// </summary>
+    /// <typeparam name="TFrom">The type of the entity being queried from.</typeparam>
     /// <typeparam name="TResult">The type of the CASE expression result.</typeparam>
     /// <returns>A CaseBuilder to chain When/Else clauses.</returns>
     /// <example>
     /// <code>
     /// // Categorize products by price in WHERE clause
     /// db.From&lt;Product&gt;()
-    ///   .Where(p => Sql.Case&lt;string&gt;()
-    ///       .When(p.UnitPrice &lt; 10, "Budget")
-    ///       .When(p.UnitPrice &lt; 50, "Standard")
+    ///   .Where(p => Sql.Case&lt;Product, string&gt;()
+    ///       .When(x => x.UnitPrice &lt; 10, "Budget")
+    ///       .When(x => x.UnitPrice &lt; 50, "Standard")
     ///       .Else("Premium") == "Budget")
     ///   .Select();
     ///
@@ -309,7 +312,7 @@ public static partial class Sql
     /// //           ELSE 'Premium' END = 'Budget'
     /// </code>
     /// </example>
-    public static CaseBuilder<TResult> Case<TResult>()
+    public static CaseBuilder<TFrom, TResult> Case<TFrom, TResult>()
     {
         throw new InvalidOperationException(
             "Sql.Case is a marker method for SQL generation and cannot be called directly. " +
@@ -320,8 +323,9 @@ public static partial class Sql
 /// <summary>
 /// Builder for SQL CASE expressions. Used as a marker pattern for expression translation.
 /// </summary>
+/// <typeparam name="TFrom">The type of the entity being queried from.</typeparam>
 /// <typeparam name="TResult">The type of the CASE expression result.</typeparam>
-public sealed class CaseBuilder<TResult>
+public sealed class CaseBuilder<TFrom, TResult>
 {
     /// <summary>
     /// Adds a WHEN clause to the CASE expression.
@@ -329,7 +333,7 @@ public sealed class CaseBuilder<TResult>
     /// <param name="condition">The condition to evaluate.</param>
     /// <param name="result">The result if the condition is true.</param>
     /// <returns>The CaseBuilder for chaining.</returns>
-    public CaseBuilder<TResult> When(bool condition, TResult result)
+    public CaseBuilder<TFrom, TResult> When(Expression<Func<TFrom, bool>> condition, TResult result)
     {
         throw new InvalidOperationException(
             "CaseBuilder.When is a marker method for SQL generation and cannot be called directly. " +
@@ -383,9 +387,9 @@ public static partial class Sql
     ///     .Select(p => new {
     ///         p.ProductName,
     ///         p.CategoryId,
-    ///         RowNum = Sql.RowNumber()
-    ///             .PartitionBy(p.CategoryId)
-    ///             .OrderBy(p.UnitPrice)
+    ///         RowNum = Sql.RowNumber&lt;Product&gt;()
+    ///             .PartitionBy(p => p.CategoryId)
+    ///             .OrderBy(p => p.UnitPrice)
     ///     });
     ///
     /// // SQL: SELECT product_name, category_id,
@@ -393,7 +397,7 @@ public static partial class Sql
     /// //      FROM products
     /// </code>
     /// </example>
-    public static WindowBuilder<long> RowNumber()
+    public static WindowBuilder<TFrom, long> RowNumber<TFrom>()
     {
         throw new InvalidOperationException(
             "Sql.RowNumber is a marker method for SQL generation and cannot be called directly. " +
@@ -412,7 +416,7 @@ public static partial class Sql
     /// var ranked = db.From&lt;Product&gt;()
     ///     .Select(p => new {
     ///         p.ProductName,
-    ///         Rank = Sql.Rank().OrderBy(p.UnitPrice)
+    ///         Rank = Sql.Rank&lt;Product&gt;().OrderBy(p => p.UnitPrice)
     ///     });
     ///
     /// // SQL: SELECT product_name,
@@ -420,7 +424,7 @@ public static partial class Sql
     /// //      FROM products
     /// </code>
     /// </example>
-    public static WindowBuilder<long> Rank()
+    public static WindowBuilder<TFrom, long> Rank<TFrom>()
     {
         throw new InvalidOperationException(
             "Sql.Rank is a marker method for SQL generation and cannot be called directly. " +
@@ -439,7 +443,7 @@ public static partial class Sql
     /// var ranked = db.From&lt;Product&gt;()
     ///     .Select(p => new {
     ///         p.ProductName,
-    ///         DenseRank = Sql.DenseRank().OrderByDescending(p.UnitPrice)
+    ///         DenseRank = Sql.DenseRank&lt;Product&gt;().OrderByDescending(p => p.UnitPrice)
     ///     });
     ///
     /// // SQL: SELECT product_name,
@@ -447,7 +451,7 @@ public static partial class Sql
     /// //      FROM products
     /// </code>
     /// </example>
-    public static WindowBuilder<long> DenseRank()
+    public static WindowBuilder<TFrom, long> DenseRank<TFrom>()
     {
         throw new InvalidOperationException(
             "Sql.DenseRank is a marker method for SQL generation and cannot be called directly. " +
@@ -467,7 +471,7 @@ public static partial class Sql
     /// var quartiles = db.From&lt;Product&gt;()
     ///     .Select(p => new {
     ///         p.ProductName,
-    ///         Quartile = Sql.NTile(4).OrderBy(p.UnitPrice)
+    ///         Quartile = Sql.NTile&lt;Product&gt;(4).OrderBy(p => p.UnitPrice)
     ///     });
     ///
     /// // SQL: SELECT product_name,
@@ -475,7 +479,7 @@ public static partial class Sql
     /// //      FROM products
     /// </code>
     /// </example>
-    public static WindowBuilder<long> NTile(int buckets)
+    public static WindowBuilder<TFrom, long> NTile<TFrom>(int buckets)
     {
         throw new InvalidOperationException(
             "Sql.NTile is a marker method for SQL generation and cannot be called directly. " +
@@ -500,7 +504,7 @@ public static partial class Sql
     ///     .Select(o => new {
     ///         o.OrderDate,
     ///         o.Freight,
-    ///         RunningTotal = Sql.Sum(o.Freight).Over().OrderBy(o.OrderDate)
+    ///         RunningTotal = Sql.Sum&lt;Order, decimal?&gt;(o.Freight).Over().OrderBy(o => o.OrderDate)
     ///     });
     ///
     /// // SQL: SELECT order_date, freight,
@@ -508,7 +512,7 @@ public static partial class Sql
     /// //      FROM orders
     /// </code>
     /// </example>
-    public static WindowAggregateBuilder<T> Sum<T>(T column)
+    public static WindowAggregateBuilder<TFrom, T> Sum<TFrom, T>(T column)
     {
         throw new InvalidOperationException(
             "Sql.Sum is a marker method for SQL generation and cannot be called directly. " +
@@ -528,9 +532,9 @@ public static partial class Sql
     /// var moving = db.From&lt;Order&gt;()
     ///     .Select(o => new {
     ///         o.OrderDate,
-    ///         MovingAvg = Sql.Avg(o.Freight).Over()
-    ///             .PartitionBy(o.ShipCountry)
-    ///             .OrderBy(o.OrderDate)
+    ///         MovingAvg = Sql.Avg&lt;Order, decimal?&gt;(o.Freight).Over()
+    ///             .PartitionBy(o => o.ShipCountry)
+    ///             .OrderBy(o => o.OrderDate)
     ///     });
     ///
     /// // SQL: SELECT order_date,
@@ -538,7 +542,7 @@ public static partial class Sql
     /// //      FROM orders
     /// </code>
     /// </example>
-    public static WindowAggregateBuilder<T> Avg<T>(T column)
+    public static WindowAggregateBuilder<TFrom, T> Avg<TFrom, T>(T column)
     {
         throw new InvalidOperationException(
             "Sql.Avg is a marker method for SQL generation and cannot be called directly. " +
@@ -557,7 +561,7 @@ public static partial class Sql
     ///     .Select(o => new {
     ///         o.OrderId,
     ///         o.CustomerId,
-    ///         CustomerOrderCount = Sql.Count().Over().PartitionBy(o.CustomerId)
+    ///         CustomerOrderCount = Sql.Count&lt;Order&gt;().Over().PartitionBy(o => o.CustomerId)
     ///     });
     ///
     /// // SQL: SELECT order_id, customer_id,
@@ -565,7 +569,7 @@ public static partial class Sql
     /// //      FROM orders
     /// </code>
     /// </example>
-    public static WindowAggregateBuilder<long> Count()
+    public static WindowAggregateBuilder<TFrom, long> Count<TFrom>()
     {
         throw new InvalidOperationException(
             "Sql.Count is a marker method for SQL generation and cannot be called directly. " +
@@ -586,7 +590,7 @@ public static partial class Sql
     ///     .Select(p => new {
     ///         p.ProductName,
     ///         p.UnitPrice,
-    ///         CategoryMinPrice = Sql.Min(p.UnitPrice).Over().PartitionBy(p.CategoryId)
+    ///         CategoryMinPrice = Sql.Min&lt;Product, decimal?&gt;(p.UnitPrice).Over().PartitionBy(p => p.CategoryId)
     ///     });
     ///
     /// // SQL: SELECT product_name, unit_price,
@@ -594,7 +598,7 @@ public static partial class Sql
     /// //      FROM products
     /// </code>
     /// </example>
-    public static WindowAggregateBuilder<T> Min<T>(T column)
+    public static WindowAggregateBuilder<TFrom, T> Min<TFrom, T>(T column)
     {
         throw new InvalidOperationException(
             "Sql.Min is a marker method for SQL generation and cannot be called directly. " +
@@ -615,7 +619,7 @@ public static partial class Sql
     ///     .Select(p => new {
     ///         p.ProductName,
     ///         p.UnitPrice,
-    ///         CategoryMaxPrice = Sql.Max(p.UnitPrice).Over().PartitionBy(p.CategoryId)
+    ///         CategoryMaxPrice = Sql.Max&lt;Product, decimal?&gt;(p.UnitPrice).Over().PartitionBy(p => p.CategoryId)
     ///     });
     ///
     /// // SQL: SELECT product_name, unit_price,
@@ -623,7 +627,7 @@ public static partial class Sql
     /// //      FROM products
     /// </code>
     /// </example>
-    public static WindowAggregateBuilder<T> Max<T>(T column)
+    public static WindowAggregateBuilder<TFrom, T> Max<TFrom, T>(T column)
     {
         throw new InvalidOperationException(
             "Sql.Max is a marker method for SQL generation and cannot be called directly. " +

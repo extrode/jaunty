@@ -1,4 +1,6 @@
 using System.Data.Common;
+using System.Threading;
+using System;
 
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
@@ -80,4 +82,66 @@ public class InsertAsyncTests : IClassFixture<DialectFixture>
         Assert.True(id > 0);
         Assert.Equal(1, GetRowCount(ctx.Connection));
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task InsertAsync_ExplicitlyProvidedId_IsIgnored(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = (DbConnection)ctx.Connection;
+        var entity = new BulkTestEntity { Id = 999, Name = "ProvidedIdTest", Value = 123 };
+
+        long id = await connection.InsertAsync(entity);
+
+        // Assert that the returned ID is NOT the provided ID (database should generate its own)
+        Assert.NotEqual(999, id);
+        Assert.True(id > 0); // And it should be a valid, generated ID
+        Assert.Equal(1, GetRowCount(ctx.Connection));
+
+        // Verify the inserted entity has the generated ID
+        var insertedEntity = connection.QueryFirst<BulkTestEntity>(
+            "SELECT id AS Id, name AS Name, value AS Value FROM bulk_test WHERE id = @Id",
+            new { Id = id });
+
+        Assert.Equal(id, insertedEntity.Id);
+        Assert.Equal("ProvidedIdTest", insertedEntity.Name);
+    }
+
+#if NET8_0_OR_GREATER
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task InsertAsync_NullEntity_ThrowsArgumentNullException(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = (DbConnection)ctx.Connection;
+        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await connection.InsertAsync<BulkTestEntity>(null!));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task InsertAsync_WithTimeout_Works(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = (DbConnection)ctx.Connection;
+        var entity = new BulkTestEntity { Name = "TestTimeout", Value = 500 };
+
+        // Using a short timeout that should normally pass quickly
+        long id = await connection.InsertAsync(entity, CommandOptions<BulkTestEntity>.WithTimeout(10));
+
+        Assert.True(id > 0);
+        Assert.Equal(1, GetRowCount(ctx.Connection));
+    }
+#endif
 }

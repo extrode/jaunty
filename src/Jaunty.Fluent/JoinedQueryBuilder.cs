@@ -44,6 +44,13 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         _joinMetadata = FluentMetadataCache.GetMetadata<TJoin>();
     }
 
+    internal string? FromAlias => _fromAlias;
+    internal string FromTable => _fromTable;
+    internal string? FromSchema => _fromSchema;
+    internal ISqlDialect Dialect => _dialect;
+    internal IDbConnection Connection => _connection;
+    internal List<JoinInfo> Joins => _joins;
+
     private string JoinAlias => _joins[0].Alias ?? _joinMetadata.TableName;
 
     #region Additional Joins
@@ -226,6 +233,14 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     /// <summary>
     /// Selects both entities as tuples.
     /// </summary>
+    public List<(TFrom From, TJoin Joined)> SelectBoth()
+    {
+        return SelectBothInternal();
+    }
+
+    /// <summary>
+    /// Selects both entities as tuples.
+    /// </summary>
     public List<(T1, T2)> Select<T1, T2>() where T1 : new() where T2 : new()
     {
         // Validate types match at runtime
@@ -320,7 +335,135 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     #endregion
 
-    #region Internal Select Helpers
+    #region Internal Helpers
+
+    internal void BindParameters(IDbCommand command)
+    {
+        var paramObj = _parameters.ToParameterObject();
+        if (paramObj is IDictionary<string, object?> dict)
+        {
+            foreach (var kvp in dict)
+            {
+                var p = command.CreateParameter();
+                p.ParameterName = kvp.Key;
+                p.Value = kvp.Value ?? DBNull.Value;
+                command.Parameters.Add(p);
+            }
+        }
+    }
+
+    internal static TEntity MapEntity<TEntity>(EntityMetadata metadata, IDataReader reader, string prefix) where TEntity : new()
+    {
+        var entity = new TEntity();
+        var columns = metadata.Columns;
+
+        for (int i = 0; i < columns.Count; i++)
+        {
+            var col = columns[i];
+            var aliasName = $"{prefix}{col.ColumnName}";
+
+            try
+            {
+                var ordinal = reader.GetOrdinal(aliasName);
+                if (!reader.IsDBNull(ordinal))
+                {
+                    var value = reader.GetValue(ordinal);
+                    var propertyType = col.Property.PropertyType;
+
+                    // Handle nullable types
+                    var targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+                    var convertedValue = Convert.ChangeType(value, targetType);
+                    col.Property.SetValue(entity, convertedValue);
+                }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                // Column not found, skip
+            }
+        }
+
+        return entity;
+    }
+
+    internal string BuildSelectSql(string[] columns)
+    {
+        var sb = new StringBuilder(256);
+        sb.Append("SELECT ");
+
+        for (int i = 0; i < columns.Length; i++)
+        {
+            if (i > 0) sb.Append(", ");
+            sb.Append(columns[i]);
+        }
+
+        sb.Append(" FROM ");
+        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
+        if (_fromAlias is not null)
+        {
+            sb.Append(' ');
+            sb.Append(_fromAlias);
+        }
+
+        foreach (var join in _joins)
+        {
+            sb.Append(' ');
+            sb.Append(join.JoinKeyword);
+            sb.Append(' ');
+            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
+            if (join.Alias is not null)
+            {
+                sb.Append(' ');
+                sb.Append(join.Alias);
+            }
+            sb.Append(" ON ");
+            sb.Append(join.OnCondition);
+        }
+
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+            for (int i = 0; i < _conditions.Count; i++)
+            {
+                var condition = _conditions[i];
+                if (i > 0)
+                {
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                }
+                sb.Append(condition.Sql);
+            }
+        }
+
+        if (_orderByColumns.Count > 0)
+        {
+            sb.Append(" ORDER BY ");
+            for (int i = 0; i < _orderByColumns.Count; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                var orderBy = _orderByColumns[i];
+                sb.Append(orderBy.ColumnName);
+                if (orderBy.Descending)
+                    sb.Append(" DESC");
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    internal string[] GetPrefixedColumnsWithAlias(EntityMetadata metadata, string? tableAlias, string columnPrefix)
+    {
+        var columns = metadata.Columns;
+        var result = new string[columns.Count];
+        var prefix = tableAlias ?? metadata.TableName;
+
+        for (int i = 0; i < columns.Count; i++)
+        {
+            var colName = columns[i].ColumnName;
+            var escaped = _dialect.EscapeColumnName(colName);
+            result[i] = $"{prefix}.{escaped} AS {columnPrefix}{colName}";
+        }
+
+        return result;
+    }
 
     private List<TJoin> SelectJoinedInternal()
     {
@@ -376,9 +519,6 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return results;
     }
 
-    /// <summary>
-    /// Selects using standard Jaunty mapping (IMapped&lt;T&gt; or reflection).
-    /// </summary>
     private List<T> SelectWithMapping<T>(MappingMode mode, int? limit = null) where T : new()
     {
         var sql = BuildSelectAllColumnsSql();
@@ -396,10 +536,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         try
         {
             using var reader = command.ExecuteReader();
-
-            // Resolve mapper using our new decision tree
             var mapper = DrDispatcher.Resolve<T>(reader, default, mode);
-
             while (reader.Read())
             {
                 results.Add(mapper(reader));
@@ -413,9 +550,6 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return results;
     }
 
-    /// <summary>
-    /// Selects using a user-provided mapper.
-    /// </summary>
     private List<T> SelectWithMapper<T>(Func<IDataReader, T> mapper, int? limit = null)
     {
         var sql = BuildSelectAllColumnsSql();
@@ -444,6 +578,79 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         }
 
         return results;
+    }
+
+    private string BuildSelectAllColumnsSql()
+    {
+        var sb = new StringBuilder(256);
+        sb.Append("SELECT *");
+
+        sb.Append(" FROM ");
+        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
+        if (_fromAlias is not null)
+        {
+            sb.Append(' ');
+            sb.Append(_fromAlias);
+        }
+
+        foreach (var join in _joins)
+        {
+            sb.Append(' ');
+            sb.Append(join.JoinKeyword);
+            sb.Append(' ');
+            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
+            if (join.Alias is not null)
+            {
+                sb.Append(' ');
+                sb.Append(join.Alias);
+            }
+            sb.Append(" ON ");
+            sb.Append(join.OnCondition);
+        }
+
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+            for (int i = 0; i < _conditions.Count; i++)
+            {
+                var condition = _conditions[i];
+                if (i > 0)
+                {
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                }
+                sb.Append(condition.Sql);
+            }
+        }
+
+        if (_orderByColumns.Count > 0)
+        {
+            sb.Append(" ORDER BY ");
+            for (int i = 0; i < _orderByColumns.Count; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                var orderBy = _orderByColumns[i];
+                sb.Append(orderBy.ColumnName);
+                if (orderBy.Descending)
+                    sb.Append(" DESC");
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private string[] GetPrefixedColumns(EntityMetadata metadata, string? alias)
+    {
+        var columns = metadata.Columns;
+        var result = new string[columns.Count];
+        var prefix = alias ?? metadata.TableName;
+
+        for (int i = 0; i < columns.Count; i++)
+        {
+            var escaped = _dialect.EscapeColumnName(columns[i].ColumnName);
+            result[i] = $"{prefix}.{escaped}";
+        }
+
+        return result;
     }
 
     #endregion
@@ -487,7 +694,6 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public async Task<List<T>> SelectAsync<T>(CancellationToken cancellationToken = default) where T : new()
     {
-        // Optimized paths for TFrom and TJoin
         if (typeof(T) == typeof(TFrom))
         {
             var result = await SelectAsync(cancellationToken).ConfigureAwait(false);
@@ -499,7 +705,6 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             return Unsafe.As<List<TJoin>, List<T>>(ref result);
         }
 
-        // For other types, use standard Jaunty mapping
         return await Task.Run(() => SelectWithMapping<T>(MappingMode.Strict), cancellationToken).ConfigureAwait(false);
     }
 
@@ -510,7 +715,6 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public async Task<List<(T1, T2)>> SelectAsync<T1, T2>(CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
-        // Validate types match at runtime
         if (typeof(T1) != typeof(TFrom))
             throw new ArgumentException($"T1 must be {typeof(TFrom).Name}, got {typeof(T1).Name}", nameof(T1));
         if (typeof(T2) != typeof(TJoin))
@@ -831,14 +1035,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     #endregion
 
-    #region Internal
-
-    internal IDbConnection Connection => _connection;
-    internal ISqlDialect Dialect => _dialect;
-    internal string FromTable => _fromTable;
-    internal string? FromSchema => _fromSchema;
-    internal string? FromAlias => _fromAlias;
-    internal List<JoinInfo> Joins => _joins;
+    internal void AddWhereCondition(WhereCondition condition) => _conditions.Add(condition);
 
     internal void AddJoin(JoinInfo join) => _joins.Add(join);
 
@@ -847,67 +1044,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         _parameters.Add(name, value);
     }
 
-    #endregion
-
     #region Private Helpers
-
-    private string BuildSelectAllColumnsSql()
-    {
-        var sb = new StringBuilder(256);
-        sb.Append("SELECT *");
-
-        sb.Append(" FROM ");
-        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
-        if (_fromAlias is not null)
-        {
-            sb.Append(' ');
-            sb.Append(_fromAlias);
-        }
-
-        foreach (var join in _joins)
-        {
-            sb.Append(' ');
-            sb.Append(join.JoinKeyword);
-            sb.Append(' ');
-            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
-            if (join.Alias is not null)
-            {
-                sb.Append(' ');
-                sb.Append(join.Alias);
-            }
-            sb.Append(" ON ");
-            sb.Append(join.OnCondition);
-        }
-
-        if (_conditions.Count > 0)
-        {
-            sb.Append(" WHERE ");
-            for (int i = 0; i < _conditions.Count; i++)
-            {
-                var condition = _conditions[i];
-                if (i > 0)
-                {
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(condition.Sql);
-            }
-        }
-
-        if (_orderByColumns.Count > 0)
-        {
-            sb.Append(" ORDER BY ");
-            for (int i = 0; i < _orderByColumns.Count; i++)
-            {
-                if (i > 0) sb.Append(", ");
-                var orderBy = _orderByColumns[i];
-                sb.Append(orderBy.ColumnName);
-                if (orderBy.Descending)
-                    sb.Append(" DESC");
-            }
-        }
-
-        return sb.ToString();
-    }
 
     private string BuildPartialSelectSql(string columns)
     {
@@ -980,70 +1117,6 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return (ExpandoObject)expando;
     }
 
-    private string BuildSelectSql(string[] columns)
-    {
-        var sb = new StringBuilder(256);
-        sb.Append("SELECT ");
-
-        for (int i = 0; i < columns.Length; i++)
-        {
-            if (i > 0) sb.Append(", ");
-            sb.Append(columns[i]);
-        }
-
-        sb.Append(" FROM ");
-        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
-        if (_fromAlias is not null)
-        {
-            sb.Append(' ');
-            sb.Append(_fromAlias);
-        }
-
-        foreach (var join in _joins)
-        {
-            sb.Append(' ');
-            sb.Append(join.JoinKeyword);
-            sb.Append(' ');
-            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
-            if (join.Alias is not null)
-            {
-                sb.Append(' ');
-                sb.Append(join.Alias);
-            }
-            sb.Append(" ON ");
-            sb.Append(join.OnCondition);
-        }
-
-        if (_conditions.Count > 0)
-        {
-            sb.Append(" WHERE ");
-            for (int i = 0; i < _conditions.Count; i++)
-            {
-                var condition = _conditions[i];
-                if (i > 0)
-                {
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(condition.Sql);
-            }
-        }
-
-        if (_orderByColumns.Count > 0)
-        {
-            sb.Append(" ORDER BY ");
-            for (int i = 0; i < _orderByColumns.Count; i++)
-            {
-                if (i > 0) sb.Append(", ");
-                var orderBy = _orderByColumns[i];
-                sb.Append(orderBy.ColumnName);
-                if (orderBy.Descending)
-                    sb.Append(" DESC");
-            }
-        }
-
-        return sb.ToString();
-    }
-
     private string BuildCountSql()
     {
         var sb = new StringBuilder(128);
@@ -1105,85 +1178,6 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         var escaped = _dialect.EscapeColumnName(columnName);
         var prefix = alias ?? metadata.TableName;
         return $"{prefix}.{escaped}";
-    }
-
-    private string[] GetPrefixedColumns(EntityMetadata metadata, string? alias)
-    {
-        var columns = metadata.Columns;
-        var result = new string[columns.Count];
-        var prefix = alias ?? metadata.TableName;
-
-        for (int i = 0; i < columns.Count; i++)
-        {
-            var escaped = _dialect.EscapeColumnName(columns[i].ColumnName);
-            result[i] = $"{prefix}.{escaped}";
-        }
-
-        return result;
-    }
-
-    private string[] GetPrefixedColumnsWithAlias(EntityMetadata metadata, string? tableAlias, string columnPrefix)
-    {
-        var columns = metadata.Columns;
-        var result = new string[columns.Count];
-        var prefix = tableAlias ?? metadata.TableName;
-
-        for (int i = 0; i < columns.Count; i++)
-        {
-            var colName = columns[i].ColumnName;
-            var escaped = _dialect.EscapeColumnName(colName);
-            result[i] = $"{prefix}.{escaped} AS {columnPrefix}{colName}";
-        }
-
-        return result;
-    }
-
-    private void BindParameters(IDbCommand command)
-    {
-        var paramObj = _parameters.ToParameterObject();
-        if (paramObj is IDictionary<string, object?> dict)
-        {
-            foreach (var kvp in dict)
-            {
-                var p = command.CreateParameter();
-                p.ParameterName = kvp.Key;
-                p.Value = kvp.Value ?? DBNull.Value;
-                command.Parameters.Add(p);
-            }
-        }
-    }
-
-    private static TEntity MapEntity<TEntity>(EntityMetadata metadata, IDataReader reader, string prefix) where TEntity : new()
-    {
-        var entity = new TEntity();
-        var columns = metadata.Columns;
-
-        for (int i = 0; i < columns.Count; i++)
-        {
-            var col = columns[i];
-            var aliasName = $"{prefix}{col.ColumnName}";
-
-            try
-            {
-                var ordinal = reader.GetOrdinal(aliasName);
-                if (!reader.IsDBNull(ordinal))
-                {
-                    var value = reader.GetValue(ordinal);
-                    var propertyType = col.Property.PropertyType;
-
-                    // Handle nullable types - get underlying type for conversion
-                    var targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-                    var convertedValue = Convert.ChangeType(value, targetType);
-                    col.Property.SetValue(entity, convertedValue);
-                }
-            }
-            catch (IndexOutOfRangeException)
-            {
-                // Column not found, skip
-            }
-        }
-
-        return entity;
     }
 
     #endregion
@@ -1294,7 +1288,15 @@ internal sealed class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1, T2, T3
 
     public IJoinedQuery3<T1, T2, T3> Where(Expression<Func<T1, T2, T3, bool>> predicate)
     {
-        throw new NotImplementedException("3-way join WHERE with expressions not yet implemented");
+        var visitor = new JoinExpressionVisitor3<T1, T2, T3>(
+            _parent.Dialect,
+            _parent.FromAlias,
+            _parent.Joins[0].Alias,
+            _parent.Joins[1].Alias);
+
+        var sql = visitor.Translate(predicate);
+        _parent.AddWhereCondition(WhereCondition.Expression(sql, LogicalOperator.None));
+        return this;
     }
 
     public IJoinedQuery3<T1, T2, T3> Where(string condition)
@@ -1310,7 +1312,44 @@ internal sealed class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1, T2, T3
 
     public List<(T1, T2, T3)> SelectAll()
     {
-        throw new NotImplementedException("3-way SelectAll not yet implemented");
+        var t1Metadata = FluentMetadataCache.GetMetadata<T1>();
+        var t2Metadata = FluentMetadataCache.GetMetadata<T2>();
+        var t3Metadata = FluentMetadataCache.GetMetadata<T3>();
+
+        var t1Columns = _parent.GetPrefixedColumnsWithAlias(t1Metadata, _parent.FromAlias, "t1_");
+        var t2Columns = _parent.GetPrefixedColumnsWithAlias(t2Metadata, _parent.Joins[0].Alias, "t2_");
+        
+        // Find the second join (for T3)
+        // JoinClause3Builder.CreateJoinedQuery3 adds the join to _parent.Joins
+        var t3Columns = _parent.GetPrefixedColumnsWithAlias(t3Metadata, _parent.Joins[1].Alias, "t3_");
+        var allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).ToArray();
+
+        var sql = _parent.BuildSelectSql(allColumns);
+        var results = new List<(T1, T2, T3)>();
+
+        using var command = _parent.Connection.CreateCommand();
+        command.CommandText = sql;
+        _parent.BindParameters(command);
+
+        var wasClosed = _parent.Connection.State == ConnectionState.Closed;
+        if (wasClosed) _parent.Connection.Open();
+        try
+        {
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var t1Obj = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_");
+                var t2Obj = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_");
+                var t3Obj = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_");
+                results.Add((t1Obj, t2Obj, t3Obj));
+            }
+        }
+        finally
+        {
+            if (wasClosed) _parent.Connection.Close();
+        }
+
+        return results;
     }
 
     public string ToSql()

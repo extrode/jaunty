@@ -23,9 +23,9 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_When_Else_ToSql_GeneratesCorrectCaseSyntax()
     {
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<string>()
-                .When(p.UnitsInStock > 100, "High")
-                .When(p.UnitsInStock > 50, "Medium")
+            .Where(p => Sql.Case<Product, string>()
+                .When(x => x.UnitsInStock > 100, "High")
+                .When(x => x.UnitsInStock > 50, "Medium")
                 .Else("Low") == "High")
             .ToSql();
 
@@ -40,8 +40,8 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_SingleWhen_Else_ToSql_GeneratesCorrectSyntax()
     {
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<string>()
-                .When(p.Discontinued == true, "Discontinued")
+            .Where(p => Sql.Case<Product, string>()
+                .When(x => x.Discontinued == true, "Discontinued")
                 .Else("Active") == "Discontinued")
             .ToSql();
 
@@ -55,10 +55,10 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_MultipleWhen_ToSql_ContainsMultipleWhenClauses()
     {
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<int>()
-                .When(p.CategoryId == 1, 100)
-                .When(p.CategoryId == 2, 200)
-                .When(p.CategoryId == 3, 300)
+            .Where(p => Sql.Case<Product, int>()
+                .When(x => x.CategoryId == 1, 100)
+                .When(x => x.CategoryId == 2, 200)
+                .When(x => x.CategoryId == 3, 300)
                 .Else(0) > 0)
             .ToSql();
 
@@ -71,8 +71,8 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_End_WithoutElse_ToSql_GeneratesCorrectSyntax()
     {
         var sql = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<string>()
-                .When(p.Discontinued == true, "Discontinued")
+            .Where(p => Sql.Case<Product, string>()
+                .When(x => x.Discontinued == true, "Discontinued")
                 .End() == "Discontinued")
             .ToSql();
 
@@ -92,8 +92,8 @@ public class FluentCaseWhenTests : IDisposable
         // Filter products where CASE expression equals "Beverages"
         // Category 1 is typically Beverages in Northwind
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<string>()
-                .When(p.CategoryId == 1, "Beverages")
+            .Where(p => Sql.Case<Product, string>()
+                .When(x => x.CategoryId == 1, "Beverages")
                 .Else("Other") == "Beverages")
             .Select();
 
@@ -106,8 +106,8 @@ public class FluentCaseWhenTests : IDisposable
     {
         // Products with high stock (> 100) categorized as "High"
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<string>()
-                .When(p.UnitsInStock > 100, "High")
+            .Where(p => Sql.Case<Product, string>()
+                .When(x => x.UnitsInStock > 100, "High")
                 .Else("Normal") == "High")
             .Select();
 
@@ -119,8 +119,8 @@ public class FluentCaseWhenTests : IDisposable
     {
         // Find discontinued products using CASE
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<bool>()
-                .When(p.Discontinued == true, true)
+            .Where(p => Sql.Case<Product, bool>()
+                .When(x => x.Discontinued == true, true)
                 .Else(false) == true)
             .Select();
 
@@ -132,9 +132,9 @@ public class FluentCaseWhenTests : IDisposable
     {
         // Products in category 1 or 2 based on CASE expression returning 1
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<int>()
-                .When(p.CategoryId == 1, 1)
-                .When(p.CategoryId == 2, 1)
+            .Where(p => Sql.Case<Product, int>()
+                .When(x => x.CategoryId == 1, 1)
+                .When(x => x.CategoryId == 2, 1)
                 .Else(0) == 1)
             .Select();
 
@@ -150,8 +150,8 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_When_CombinedWithAnd_ExecutesCorrectly()
     {
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<string>()
-                .When(p.CategoryId == 1, "Beverages")
+            .Where(p => Sql.Case<Product, string>()
+                .When(x => x.CategoryId == 1, "Beverages")
                 .Else("Other") == "Beverages")
             .And(p => p.Discontinued == false)
             .Select();
@@ -164,8 +164,8 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_When_CombinedWithOrderBy_ExecutesCorrectly()
     {
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<string>()
-                .When(p.CategoryId == 1, "Match")
+            .Where(p => Sql.Case<Product, string>()
+                .When(x => x.CategoryId == 1, "Match")
                 .Else("NoMatch") == "Match")
             .OrderBy(p => p.ProductName)
             .Select();
@@ -178,8 +178,8 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_When_CombinedWithTake_ExecutesCorrectly()
     {
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<string>()
-                .When(p.CategoryId == 1, "Match")
+            .Where(p => Sql.Case<Product, string>()
+                .When(x => x.CategoryId == 1, "Match")
                 .Else("NoMatch") == "Match")
             .Take(5)
             .Select();
@@ -195,8 +195,8 @@ public class FluentCaseWhenTests : IDisposable
     public async Task Case_When_SelectAsync_ExecutesCorrectly()
     {
         var products = await _db.Connection.From<Product>()
-            .Where(p => Sql.Case<string>()
-                .When(p.CategoryId == 1, "Beverages")
+            .Where(p => Sql.Case<Product, string>()
+                .When(x => x.CategoryId == 1, "Beverages")
                 .Else("Other") == "Beverages")
             .SelectAsync();
 
@@ -208,8 +208,8 @@ public class FluentCaseWhenTests : IDisposable
     public async Task Case_When_CountAsync_ExecutesCorrectly()
     {
         var count = await _db.Connection.From<Product>()
-            .Where(p => Sql.Case<int>()
-                .When(p.CategoryId == 1, 1)
+            .Where(p => Sql.Case<Product, int>()
+                .When(x => x.CategoryId == 1, 1)
                 .Else(0) == 1)
             .CountAsync();
 
@@ -225,9 +225,9 @@ public class FluentCaseWhenTests : IDisposable
     {
         // Test with nullable column (UnitsInStock is nullable short)
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<string>()
-                .When(p.UnitsInStock == null, "NoStock")
-                .When(p.UnitsInStock == 0, "Empty")
+            .Where(p => Sql.Case<Product, string>()
+                .When(x => x.UnitsInStock == null, "NoStock")
+                .When(x => x.UnitsInStock == 0, "Empty")
                 .Else("HasStock") == "HasStock")
             .Select();
 
@@ -240,8 +240,8 @@ public class FluentCaseWhenTests : IDisposable
     {
         // Products NOT in category 1
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<string>()
-                .When(p.CategoryId == 1, "Beverages")
+            .Where(p => Sql.Case<Product, string>()
+                .When(x => x.CategoryId == 1, "Beverages")
                 .Else("Other") != "Beverages")
             .Select();
 
@@ -254,9 +254,9 @@ public class FluentCaseWhenTests : IDisposable
     {
         // Products with CASE score > 50
         var products = _db.Connection.From<Product>()
-            .Where(p => Sql.Case<int>()
-                .When(p.CategoryId == 1, 100)
-                .When(p.CategoryId == 2, 75)
+            .Where(p => Sql.Case<Product, int>()
+                .When(x => x.CategoryId == 1, 100)
+                .When(x => x.CategoryId == 2, 75)
                 .Else(25) > 50)
             .Select();
 

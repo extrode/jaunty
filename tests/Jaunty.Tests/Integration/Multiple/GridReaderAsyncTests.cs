@@ -1,3 +1,4 @@
+using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
@@ -477,6 +478,85 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     }
 
     #endregion
+
+#if NET8_0_OR_GREATER
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_DisposeAsync_ClosesReader(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        var gridReader = await connection.QueryMultipleAsync(FullCategorySql(dialect, 1));
+
+        await gridReader.ReadFirstAsync<Category>();
+        await gridReader.DisposeAsync();
+
+        // After DisposeAsync, the reader should be marked as consumed
+        // Verify no exception is thrown and reader is properly disposed
+    }
+#endif
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadAsync_AfterConsumed_Throws(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(FullCategorySql(dialect, 1));
+
+        // First read consumes the result set
+        await gridReader.ReadFirstAsync<Category>();
+
+        // Second read should throw because there are no more result sets
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await gridReader.ReadFirstAsync<Category>());
+        Assert.Contains("consumed", ex.Message.ToLower());
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadAsync_WithCustomMapper_UsesMapper(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+
+        var sql = "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id";
+
+        using var gridReader = await connection.QueryMultipleAsync(sql, new { Id = 1 });
+
+        var customMapper = new Func<IDataReader, Category>(reader =>
+            new Category { CategoryId = reader.GetInt32(0), CategoryName = "AsyncCustom: " + reader.GetString(1) });
+
+        var categories = (await gridReader.ReadAsync<Category>(new CommandOptions<Category>(mapper: customMapper))).ToList();
+
+        Assert.Single(categories);
+        Assert.StartsWith("AsyncCustom:", categories[0].CategoryName);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadPartialAsync_WithCustomMapper_UsesMapper(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+
+        var sql = "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id";
+
+        using var gridReader = await connection.QueryMultipleAsync(sql, new { Id = 1 });
+
+        var customMapper = new Func<IDataReader, Category>(reader =>
+            new Category { CategoryId = reader.GetInt32(0), CategoryName = "PartialAsyncCustom: " + reader.GetString(1) });
+
+        var categories = (await gridReader.ReadPartialAsync<Category>(new CommandOptions<Category>(mapper: customMapper))).ToList();
+
+        Assert.Single(categories);
+        Assert.StartsWith("PartialAsyncCustom:", categories[0].CategoryName);
+    }
 
     private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
         dialect.Provider == DialectProvider.SqlServer

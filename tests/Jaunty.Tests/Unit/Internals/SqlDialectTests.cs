@@ -443,6 +443,20 @@ public class SqlDialectTests
         }
 
         [Fact]
+        public void GenerateUpsertSql_MultipleUpdateColumns_FormatsCorrectly()
+        {
+            var result = _dialect.GenerateUpsertSql(
+                "items",
+                new[] { "id", "name", "description" },
+                new[] { "@Id", "@Name", "@Description" },
+                new[] { "name", "description" },
+                new[] { "@Name", "@Description" },
+                new[] { "id" });
+
+            Assert.Equal("INSERT INTO items (id, name, description) VALUES (@Id, @Name, @Description) ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description)", result);
+        }
+
+        [Fact]
         public void GenerateIsNull_UsesIFNULL()
         {
             Assert.Equal("IFNULL(col, 0)", _dialect.GenerateIsNull("col", "0"));
@@ -712,6 +726,20 @@ public class SqlDialectTests
             Assert.Contains("ON CONFLICT (id)", result);
             Assert.Contains("DO UPDATE SET", result);
             Assert.Contains("EXCLUDED.name", result);
+        }
+
+        [Fact]
+        public void GenerateUpsertSql_MultipleUpdateColumns_FormatsCorrectly()
+        {
+            var result = _dialect.GenerateUpsertSql(
+                "items",
+                new[] { "id", "name", "description" },
+                new[] { "@Id", "@Name", "@Description" },
+                new[] { "name", "description" },
+                new[] { "@Name", "@Description" },
+                new[] { "id" });
+
+            Assert.Equal("INSERT INTO items (id, name, description) VALUES (@Id, @Name, @Description) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description", result);
         }
 
         [Fact]

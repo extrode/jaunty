@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 namespace Jaunty.Fluent;
 
 /// <summary>
@@ -5,7 +7,7 @@ namespace Jaunty.Fluent;
 /// These methods are never executed directly - they exist only for expression tree analysis.
 /// </summary>
 /// <typeparam name="TResult">The result type of the window function.</typeparam>
-public sealed class WindowBuilder<TResult>
+public sealed class WindowBuilder<TFrom, TResult>
 {
     internal WindowFunctionType FunctionType { get; }
     internal int? NTileBuckets { get; }
@@ -22,7 +24,7 @@ public sealed class WindowBuilder<TResult>
     /// <typeparam name="TKey">The type of the partition key.</typeparam>
     /// <param name="column">The column to partition by.</param>
     /// <returns>The WindowBuilder for chaining.</returns>
-    public WindowBuilder<TResult> PartitionBy<TKey>(TKey column)
+    public WindowBuilder<TFrom, TResult> PartitionBy<TKey>(Expression<Func<TFrom, TKey>> column)
     {
         throw new InvalidOperationException(
             "WindowBuilder.PartitionBy is a marker method for SQL generation and cannot be called directly. " +
@@ -35,7 +37,7 @@ public sealed class WindowBuilder<TResult>
     /// <typeparam name="TKey">The type of the order key.</typeparam>
     /// <param name="column">The column to order by.</param>
     /// <returns>The WindowBuilder for chaining.</returns>
-    public WindowBuilder<TResult> OrderBy<TKey>(TKey column)
+    public WindowBuilder<TFrom, TResult> OrderBy<TKey>(Expression<Func<TFrom, TKey>> column)
     {
         throw new InvalidOperationException(
             "WindowBuilder.OrderBy is a marker method for SQL generation and cannot be called directly. " +
@@ -48,7 +50,7 @@ public sealed class WindowBuilder<TResult>
     /// <typeparam name="TKey">The type of the order key.</typeparam>
     /// <param name="column">The column to order by descending.</param>
     /// <returns>The WindowBuilder for chaining.</returns>
-    public WindowBuilder<TResult> OrderByDescending<TKey>(TKey column)
+    public WindowBuilder<TFrom, TResult> OrderByDescending<TKey>(Expression<Func<TFrom, TKey>> column)
     {
         throw new InvalidOperationException(
             "WindowBuilder.OrderByDescending is a marker method for SQL generation and cannot be called directly. " +
@@ -59,7 +61,7 @@ public sealed class WindowBuilder<TResult>
     /// Implicit conversion to allow window functions in expressions.
     /// This is never actually called - it exists for the compiler.
     /// </summary>
-    public static implicit operator TResult(WindowBuilder<TResult> builder)
+    public static implicit operator TResult(WindowBuilder<TFrom, TResult> builder)
     {
         throw new InvalidOperationException(
             "WindowBuilder implicit conversion is a marker for SQL generation and cannot be called directly. " +
@@ -86,8 +88,9 @@ public enum WindowFunctionType
 /// <summary>
 /// Builder for window aggregates (SUM, AVG, etc. with OVER clause).
 /// </summary>
+/// <typeparam name="TFrom">The type of the entity being queried from.</typeparam>
 /// <typeparam name="TResult">The result type of the aggregate.</typeparam>
-public sealed class WindowAggregateBuilder<TResult>
+public sealed class WindowAggregateBuilder<TFrom, TResult>
 {
     internal WindowFunctionType FunctionType { get; }
 
@@ -100,7 +103,7 @@ public sealed class WindowAggregateBuilder<TResult>
     /// Converts this aggregate to a window function with OVER clause.
     /// </summary>
     /// <returns>A WindowBuilder for specifying PARTITION BY and ORDER BY.</returns>
-    public WindowBuilder<TResult> Over()
+    public WindowBuilder<TFrom, TResult> Over()
     {
         throw new InvalidOperationException(
             "WindowAggregateBuilder.Over is a marker method for SQL generation and cannot be called directly. " +
