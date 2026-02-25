@@ -17,6 +17,8 @@ public class QueryPartialSingleOrDefaultTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialSingleOrDefault_WithExactlyOneResult_ReturnsEntity(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -32,6 +34,8 @@ public class QueryPartialSingleOrDefaultTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialSingleOrDefault_MissingColumn_Allowed(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -46,6 +50,8 @@ public class QueryPartialSingleOrDefaultTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialSingleOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -59,6 +65,8 @@ public class QueryPartialSingleOrDefaultTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialSingleOrDefault_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -71,6 +79,8 @@ public class QueryPartialSingleOrDefaultTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialSingleOrDefault_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -86,6 +96,8 @@ public class QueryPartialSingleOrDefaultTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialSingleOrDefault_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -102,6 +114,8 @@ public class QueryPartialSingleOrDefaultTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialSingleOrDefault_WithOptionsOnly_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -117,6 +131,8 @@ public class QueryPartialSingleOrDefaultTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialSingleOrDefault_NoResults_WithParameters_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -127,6 +143,3 @@ public class QueryPartialSingleOrDefaultTests : IClassFixture<DialectFixture>
         Assert.Null(product);
     }
 }
-
-
-

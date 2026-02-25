@@ -26,7 +26,7 @@ public class FluentWindowFunctionTests : IDisposable
             .ToSql(p => new
             {
                 p.ProductName,
-                RowNum = Sql.RowNumber()
+                RowNum = Sql.RowNumber<Product>()
             });
 
         sql.Should().Contain("ROW_NUMBER()");
@@ -42,7 +42,7 @@ public class FluentWindowFunctionTests : IDisposable
             {
                 p.ProductName,
                 p.UnitPrice,
-                RowNum = Sql.RowNumber().OrderBy(p.UnitPrice)
+                RowNum = Sql.RowNumber<Product>().OrderBy(x => x.UnitPrice)
             });
 
         sql.Should().Contain("ROW_NUMBER()");
@@ -59,7 +59,7 @@ public class FluentWindowFunctionTests : IDisposable
             {
                 p.ProductName,
                 p.CategoryId,
-                RowNum = Sql.RowNumber().PartitionBy(p.CategoryId)
+                RowNum = Sql.RowNumber<Product>().PartitionBy(x => x.CategoryId)
             });
 
         sql.Should().Contain("ROW_NUMBER()");
@@ -77,9 +77,9 @@ public class FluentWindowFunctionTests : IDisposable
                 p.ProductName,
                 p.CategoryId,
                 p.UnitPrice,
-                RowNum = Sql.RowNumber()
-                    .PartitionBy(p.CategoryId)
-                    .OrderBy(p.UnitPrice)
+                RowNum = Sql.RowNumber<Product>()
+                    .PartitionBy(x => x.CategoryId)
+                    .OrderBy(x => x.UnitPrice)
             });
 
         sql.Should().Contain("ROW_NUMBER()");
@@ -97,7 +97,7 @@ public class FluentWindowFunctionTests : IDisposable
             {
                 p.ProductName,
                 p.UnitPrice,
-                RowNum = Sql.RowNumber().OrderByDescending(p.UnitPrice)
+                RowNum = Sql.RowNumber<Product>().OrderByDescending(x => x.UnitPrice)
             });
 
         sql.Should().Contain("ROW_NUMBER()");
@@ -118,7 +118,7 @@ public class FluentWindowFunctionTests : IDisposable
             .ToSql(p => new
             {
                 p.ProductName,
-                ProductRank = Sql.Rank()
+                ProductRank = Sql.Rank<Product>()
             });
 
         sql.Should().Contain("RANK()");
@@ -134,7 +134,7 @@ public class FluentWindowFunctionTests : IDisposable
             {
                 p.ProductName,
                 p.UnitPrice,
-                PriceRank = Sql.Rank().OrderBy(p.UnitPrice)
+                PriceRank = Sql.Rank<Product>().OrderBy(x => x.UnitPrice)
             });
 
         sql.Should().Contain("RANK()");
@@ -152,9 +152,9 @@ public class FluentWindowFunctionTests : IDisposable
                 p.ProductName,
                 p.CategoryId,
                 p.UnitPrice,
-                PriceRank = Sql.Rank()
-                    .PartitionBy(p.CategoryId)
-                    .OrderByDescending(p.UnitPrice)
+                PriceRank = Sql.Rank<Product>()
+                    .PartitionBy(x => x.CategoryId)
+                    .OrderByDescending(x => x.UnitPrice)
             });
 
         sql.Should().Contain("RANK()");
@@ -176,7 +176,7 @@ public class FluentWindowFunctionTests : IDisposable
             .ToSql(p => new
             {
                 p.ProductName,
-                DenseRank = Sql.DenseRank()
+                DenseRank = Sql.DenseRank<Product>()
             });
 
         sql.Should().Contain("DENSE_RANK()");
@@ -192,7 +192,7 @@ public class FluentWindowFunctionTests : IDisposable
             {
                 p.ProductName,
                 p.UnitPrice,
-                DenseRank = Sql.DenseRank().OrderBy(p.UnitPrice)
+                DenseRank = Sql.DenseRank<Product>().OrderBy(x => x.UnitPrice)
             });
 
         sql.Should().Contain("DENSE_RANK()");
@@ -212,7 +212,7 @@ public class FluentWindowFunctionTests : IDisposable
             .ToSql(p => new
             {
                 p.ProductName,
-                Quartile = Sql.NTile(4)
+                Quartile = Sql.NTile<Product>(4)
             });
 
         sql.Should().Contain("NTILE(4)");
@@ -228,7 +228,7 @@ public class FluentWindowFunctionTests : IDisposable
             {
                 p.ProductName,
                 p.UnitPrice,
-                PriceQuartile = Sql.NTile(4).OrderBy(p.UnitPrice)
+                PriceQuartile = Sql.NTile<Product>(4).OrderBy(x => x.UnitPrice)
             });
 
         sql.Should().Contain("NTILE(4)");
@@ -249,7 +249,7 @@ public class FluentWindowFunctionTests : IDisposable
             {
                 p.ProductName,
                 p.UnitPrice,
-                RunningTotal = Sql.Sum(p.UnitPrice).Over()
+                RunningTotal = Sql.Sum<Product, decimal?>(p.UnitPrice).Over()
             });
 
         sql.Should().Contain("SUM(");
@@ -265,7 +265,7 @@ public class FluentWindowFunctionTests : IDisposable
             {
                 p.ProductName,
                 p.UnitPrice,
-                RunningTotal = Sql.Sum(p.UnitPrice).Over().OrderBy(p.ProductName)
+                RunningTotal = Sql.Sum<Product, decimal?>(p.UnitPrice).Over().OrderBy(x => x.ProductName)
             });
 
         sql.Should().Contain("SUM(");
@@ -283,7 +283,7 @@ public class FluentWindowFunctionTests : IDisposable
                 p.ProductName,
                 p.CategoryId,
                 p.UnitPrice,
-                CategoryAvgPrice = Sql.Avg(p.UnitPrice).Over().PartitionBy(p.CategoryId)
+                CategoryAvgPrice = Sql.Avg<Product, decimal?>(p.UnitPrice).Over().PartitionBy(x => x.CategoryId)
             });
 
         sql.Should().Contain("AVG(");
@@ -300,7 +300,7 @@ public class FluentWindowFunctionTests : IDisposable
             {
                 p.ProductName,
                 p.CategoryId,
-                TotalCount = Sql.Count().Over()
+                TotalCount = Sql.Count<Product>().Over()
             });
 
         sql.Should().Contain("COUNT(*)");
@@ -316,7 +316,7 @@ public class FluentWindowFunctionTests : IDisposable
             {
                 p.ProductName,
                 p.CategoryId,
-                CategoryProductCount = Sql.Count().Over().PartitionBy(p.CategoryId)
+                CategoryProductCount = Sql.Count<Product>().Over().PartitionBy(x => x.CategoryId)
             });
 
         sql.Should().Contain("COUNT(*)");
@@ -334,7 +334,7 @@ public class FluentWindowFunctionTests : IDisposable
                 p.ProductName,
                 p.CategoryId,
                 p.UnitPrice,
-                CategoryMinPrice = Sql.Min(p.UnitPrice).Over().PartitionBy(p.CategoryId)
+                CategoryMinPrice = Sql.Min<Product, decimal?>(p.UnitPrice).Over().PartitionBy(x => x.CategoryId)
             });
 
         sql.Should().Contain("MIN(");
@@ -352,7 +352,7 @@ public class FluentWindowFunctionTests : IDisposable
                 p.ProductName,
                 p.CategoryId,
                 p.UnitPrice,
-                CategoryMaxPrice = Sql.Max(p.UnitPrice).Over().PartitionBy(p.CategoryId)
+                CategoryMaxPrice = Sql.Max<Product, decimal?>(p.UnitPrice).Over().PartitionBy(x => x.CategoryId)
             });
 
         sql.Should().Contain("MAX(");
@@ -374,8 +374,8 @@ public class FluentWindowFunctionTests : IDisposable
                 p.ProductName,
                 p.CategoryId,
                 p.UnitPrice,
-                RowNum = Sql.RowNumber().PartitionBy(p.CategoryId).OrderBy(p.UnitPrice),
-                PriceRank = Sql.Rank().PartitionBy(p.CategoryId).OrderByDescending(p.UnitPrice)
+                RowNum = Sql.RowNumber<Product>().PartitionBy(x => x.CategoryId).OrderBy(x => x.UnitPrice),
+                PriceRank = Sql.Rank<Product>().PartitionBy(x => x.CategoryId).OrderByDescending(x => x.UnitPrice)
             });
 
         sql.Should().Contain("ROW_NUMBER()");
@@ -396,7 +396,7 @@ public class FluentWindowFunctionTests : IDisposable
             {
                 p.ProductName,
                 p.UnitPrice,
-                RowNum = Sql.RowNumber().OrderBy(p.UnitPrice)
+                RowNum = Sql.RowNumber<Product>().OrderBy(x => x.UnitPrice)
             });
 
         sql.Should().Contain("SELECT");

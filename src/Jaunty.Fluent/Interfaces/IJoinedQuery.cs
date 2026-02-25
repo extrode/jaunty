@@ -141,6 +141,11 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     /// <summary>
     /// Executes the query and returns both entities as tuples.
     /// </summary>
+    List<(TFrom From, TJoin Joined)> SelectBoth();
+
+    /// <summary>
+    /// Executes the query and returns both entities as tuples.
+    /// </summary>
     /// <typeparam name="T1">Must be <typeparamref name="TFrom"/>.</typeparam>
     /// <typeparam name="T2">Must be <typeparamref name="TJoin"/>.</typeparam>
     /// <example>
@@ -152,6 +157,8 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     /// </code>
     /// </example>
     List<(T1, T2)> Select<T1, T2>() where T1 : new() where T2 : new();
+
+
 
     /// <summary>
     /// Returns the first result of the specified type or throws if empty.

@@ -29,7 +29,22 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
     public List<SelectColumn> Translate<TResult>(Expression<Func<T, TResult>> selector)
     {
         _columns.Clear();
-        Visit(selector.Body);
+        
+        var body = selector.Body;
+        
+        // Handle standalone expressions (not New or MemberInit)
+        if (body is MethodCallExpression or MemberExpression or ConstantExpression or UnaryExpression or BinaryExpression)
+        {
+            var sql = TranslateProjectionExpression(body);
+            // Try to find a meaningful alias
+            string alias = "Value";
+            if (body is MemberExpression member) alias = member.Member.Name;
+            
+            _columns.Add(new SelectColumn(sql, alias));
+            return _columns;
+        }
+
+        Visit(body);
         return _columns;
     }
 
@@ -84,9 +99,11 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
 
     private string TranslateProjectionExpression(Expression expr)
     {
-        // Unwrap Convert
-        if (expr is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+        // Recursively unwrap Convert and Quote
+        while (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+        {
             expr = unary.Operand;
+        }
 
         // Entity property (p.ProductName)
         if (expr is MemberExpression member && IsParameterMember(member))
@@ -101,10 +118,22 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
             return TranslateMethodCall(methodCall);
         }
 
+        // Coalesce operator (??)
+        if (expr is BinaryExpression binary && binary.NodeType == ExpressionType.Coalesce)
+        {
+            return _dialect.GenerateIsNull(TranslateProjectionExpression(binary.Left), TranslateProjectionExpression(binary.Right));
+        }
+
         // Constant value
         if (expr is ConstantExpression constant)
         {
             return FormatConstant(constant.Value);
+        }
+
+        // Lambda
+        if (expr is LambdaExpression lambda)
+        {
+            return TranslateProjectionExpression(lambda.Body);
         }
 
         throw new NotSupportedException($"Expression type '{expr.NodeType}' is not supported in SELECT projections.");
@@ -120,19 +149,14 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
             return TranslateSqlFunction(node);
         }
 
-        // Handle WindowBuilder method chains (PartitionBy, OrderBy, etc.)
+        // Handle WindowBuilder / WindowAggregateBuilder method chains
         if (declaringType != null && declaringType.IsGenericType)
         {
             var genericDef = declaringType.GetGenericTypeDefinition();
 
-            if (genericDef == typeof(WindowBuilder<>))
+            if (genericDef == typeof(WindowBuilder<,>) || genericDef == typeof(WindowAggregateBuilder<,>))
             {
-                return TranslateWindowBuilderChain(node);
-            }
-
-            if (genericDef == typeof(WindowAggregateBuilder<>))
-            {
-                return TranslateWindowAggregateChain(node);
+                return TranslateWindowFunctionChain(node);
             }
         }
 
@@ -143,82 +167,44 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
     {
         var methodName = node.Method.Name;
 
-        return methodName switch
+        switch (methodName)
         {
-            // Window ranking functions
-            "RowNumber" => TranslateWindowFunction(node, _dialect.GenerateRowNumber()),
-            "Rank" => TranslateWindowFunction(node, _dialect.GenerateRank()),
-            "DenseRank" => TranslateWindowFunction(node, _dialect.GenerateDenseRank()),
-            "NTile" => TranslateNTile(node),
-
-            // Window aggregates
-            "Sum" => TranslateWindowAggregate(node, "SUM"),
-            "Avg" => TranslateWindowAggregate(node, "AVG"),
-            "Count" => TranslateWindowAggregate(node, "COUNT"),
-            "Min" => TranslateWindowAggregate(node, "MIN"),
-            "Max" => TranslateWindowAggregate(node, "MAX"),
+            // Window ranking and aggregate functions (return builder markers)
+            case "RowNumber":
+            case "Rank":
+            case "DenseRank":
+            case "NTile":
+            case "Sum":
+            case "Avg":
+            case "Count":
+            case "Min":
+            case "Max":
+                // Basic window function with empty OVER()
+                return TranslateBaseWindowFunction(node) + _dialect.GenerateOverClause(null, null);
 
             // Regular SQL functions
-            "Coalesce" => TranslateCoalesce(node),
-            "IsNull" => TranslateIsNull(node),
-            "NullIf" => TranslateNullIf(node),
-            "Length" => TranslateLength(node),
-            "Upper" => TranslateUpper(node),
-            "Lower" => TranslateLower(node),
-            "Trim" => TranslateTrim(node),
-            "Substring" => TranslateSubstring(node),
-            "Year" => TranslateYear(node),
-            "Month" => TranslateMonth(node),
-            "Day" => TranslateDay(node),
+            case "Coalesce": return TranslateCoalesce(node);
+            case "IsNull": return TranslateIsNull(node);
+            case "NullIf": return TranslateNullIf(node);
+            case "Length": return TranslateLength(node);
+            case "Upper": return TranslateUpper(node);
+            case "Lower": return TranslateLower(node);
+            case "Trim": return TranslateTrim(node);
+            case "Substring": return TranslateSubstring(node);
+            case "Year": return TranslateYear(node);
+            case "Month": return TranslateMonth(node);
+            case "Day": return TranslateDay(node);
 
-            _ => throw new NotSupportedException($"SQL function '{methodName}' is not supported in SELECT projections.")
-        };
-    }
-
-    private string TranslateWindowFunction(MethodCallExpression node, string functionSql)
-    {
-        // Sql.RowNumber() returns WindowBuilder<long>, which should be followed by OVER clause methods
-        // If called directly without chaining, generate just the function with empty OVER
-        return functionSql + _dialect.GenerateOverClause(null, null);
-    }
-
-    private string TranslateNTile(MethodCallExpression node)
-    {
-        var buckets = (int)EvaluateExpression(node.Arguments[0])!;
-        return _dialect.GenerateNTile(buckets) + _dialect.GenerateOverClause(null, null);
-    }
-
-    private string TranslateWindowAggregate(MethodCallExpression node, string function)
-    {
-        // Sql.Sum(p.Column) returns WindowAggregateBuilder - needs .Over() call to be window function
-        // Without .Over(), this is just a marker and can't be used in projection
-        string? columnExpr = null;
-
-        if (node.Arguments.Count > 0)
-        {
-            var arg = node.Arguments[0];
-            if (arg is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
-                arg = unary.Operand;
-
-            if (arg is MemberExpression member && IsParameterMember(member))
-            {
-                var columnName = GetColumnName(member);
-                columnExpr = _dialect.EscapeColumnName(columnName);
-            }
+            default:
+                throw new NotSupportedException($"SQL function '{methodName}' is not supported in SELECT projections.");
         }
-
-        var aggregateSql = _dialect.GenerateWindowAggregate(function, columnExpr);
-        return aggregateSql + _dialect.GenerateOverClause(null, null);
     }
 
-    private string TranslateWindowBuilderChain(MethodCallExpression node)
+    private string TranslateWindowFunctionChain(MethodCallExpression node)
     {
-        // Walk back through the method chain to collect PARTITION BY and ORDER BY
         var partitionBy = new List<string>();
         var orderBy = new List<(string column, bool descending)>();
         string? functionSql = null;
-        bool isAggregate = false;
-        string? aggregateColumn = null;
 
         Expression? current = node;
         while (current is MethodCallExpression methodCall)
@@ -247,55 +233,16 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
                     break;
 
                 case "Over":
-                    // This is WindowAggregateBuilder.Over() - continue to the Sql.* aggregate
+                    // Skip .Over() marker
                     current = methodCall.Object;
                     break;
 
                 default:
-                    // Check if this is a Sql.* function
                     if (declaringType == typeof(Sql))
                     {
-                        switch (methodCall.Method.Name)
-                        {
-                            case "RowNumber":
-                                functionSql = _dialect.GenerateRowNumber();
-                                break;
-                            case "Rank":
-                                functionSql = _dialect.GenerateRank();
-                                break;
-                            case "DenseRank":
-                                functionSql = _dialect.GenerateDenseRank();
-                                break;
-                            case "NTile":
-                                functionSql = _dialect.GenerateNTile((int)EvaluateExpression(methodCall.Arguments[0])!);
-                                break;
-                            case "Sum":
-                            case "Avg":
-                            case "Min":
-                            case "Max":
-                                isAggregate = true;
-                                if (methodCall.Arguments.Count > 0)
-                                {
-                                    var arg = methodCall.Arguments[0];
-                                    if (arg is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
-                                        arg = unary.Operand;
-
-                                    if (arg is MemberExpression member && IsParameterMember(member))
-                                    {
-                                        var colName = GetColumnName(member);
-                                        aggregateColumn = _dialect.EscapeColumnName(colName);
-                                    }
-                                }
-                                functionSql = _dialect.GenerateWindowAggregate(methodCall.Method.Name.ToUpperInvariant(), aggregateColumn);
-                                break;
-                            case "Count":
-                                isAggregate = true;
-                                functionSql = _dialect.GenerateWindowAggregate("COUNT", null);
-                                break;
-                            default:
-                                throw new NotSupportedException($"Window function '{methodCall.Method.Name}' is not supported.");
-                        }
-                        current = null; // End of chain
+                        // Found the base Sql.* method
+                        functionSql = TranslateBaseWindowFunction(methodCall);
+                        current = null;
                     }
                     else
                     {
@@ -307,7 +254,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
 
         if (functionSql == null)
         {
-            throw new InvalidOperationException("Window function chain must start with Sql.RowNumber(), Sql.Rank(), etc.");
+            throw new InvalidOperationException("Window function chain must start with an appropriate Sql.* method.");
         }
 
         var overClause = _dialect.GenerateOverClause(
@@ -317,90 +264,40 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         return functionSql + overClause;
     }
 
-    private string TranslateWindowAggregateChain(MethodCallExpression node)
+    private string TranslateBaseWindowFunction(MethodCallExpression methodCall)
     {
-        // Handle WindowAggregateBuilder.Over() and subsequent PartitionBy/OrderBy
-        var partitionBy = new List<string>();
-        var orderBy = new List<(string column, bool descending)>();
-        string? aggregateSql = null;
-
-        Expression? current = node;
-        while (current is MethodCallExpression methodCall)
+        switch (methodCall.Method.Name)
         {
-            var methodName = methodCall.Method.Name;
-            var declaringType = methodCall.Method.DeclaringType;
-
-            switch (methodName)
-            {
-                case "PartitionBy":
-                    var partitionCol = TranslateColumnArgument(methodCall.Arguments[0]);
-                    partitionBy.Insert(0, partitionCol);
-                    current = methodCall.Object;
-                    break;
-
-                case "OrderBy":
-                    var orderCol = TranslateColumnArgument(methodCall.Arguments[0]);
-                    orderBy.Insert(0, (orderCol, false));
-                    current = methodCall.Object;
-                    break;
-
-                case "OrderByDescending":
-                    var orderDescCol = TranslateColumnArgument(methodCall.Arguments[0]);
-                    orderBy.Insert(0, (orderDescCol, true));
-                    current = methodCall.Object;
-                    break;
-
-                case "Over":
-                    // This is on WindowAggregateBuilder, walk to the Sql.* method
-                    current = methodCall.Object;
-                    break;
-
-                default:
-                    // Check if this is a Sql.* aggregate function
-                    if (declaringType == typeof(Sql))
-                    {
-                        string? columnExpr = null;
-                        if (methodCall.Arguments.Count > 0)
-                        {
-                            var arg = methodCall.Arguments[0];
-                            if (arg is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
-                                arg = unary.Operand;
-
-                            if (arg is MemberExpression member && IsParameterMember(member))
-                            {
-                                var colName = GetColumnName(member);
-                                columnExpr = _dialect.EscapeColumnName(colName);
-                            }
-                        }
-
-                        var function = methodCall.Method.Name.ToUpperInvariant();
-                        aggregateSql = _dialect.GenerateWindowAggregate(function, columnExpr);
-                        current = null;
-                    }
-                    else
-                    {
-                        throw new NotSupportedException($"Method '{methodName}' is not supported in window aggregate chain.");
-                    }
-                    break;
-            }
+            case "RowNumber": return _dialect.GenerateRowNumber();
+            case "Rank": return _dialect.GenerateRank();
+            case "DenseRank": return _dialect.GenerateDenseRank();
+            case "NTile":
+                return _dialect.GenerateNTile((int)EvaluateExpression(methodCall.Arguments[0])!);
+            case "Sum":
+            case "Avg":
+            case "Min":
+            case "Max":
+                string? aggregateColumn = null;
+                if (methodCall.Arguments.Count > 0)
+                {
+                    aggregateColumn = TranslateColumnArgument(methodCall.Arguments[0]);
+                }
+                return _dialect.GenerateWindowAggregate(methodCall.Method.Name.ToUpperInvariant(), aggregateColumn);
+            case "Count":
+                return _dialect.GenerateWindowAggregate("COUNT", null);
+            default:
+                throw new NotSupportedException($"Window function base '{methodCall.Method.Name}' is not supported.");
         }
-
-        if (aggregateSql == null)
-        {
-            throw new InvalidOperationException("Window aggregate chain must start with Sql.Sum(), Sql.Avg(), etc.");
-        }
-
-        var overClause = _dialect.GenerateOverClause(
-            partitionBy.Count > 0 ? partitionBy.ToArray() : null,
-            orderBy.Count > 0 ? orderBy.ToArray() : null);
-
-        return aggregateSql + overClause;
     }
 
     private string TranslateColumnArgument(Expression arg)
     {
-        if (arg is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
-            arg = unary.Operand;
+        while (true)
+        {
+            if (arg is LambdaExpression lambda) { arg = lambda.Body; continue; }
+            if (arg is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote)) { arg = unary.Operand; continue; }
+            break;
+        }
 
         if (arg is MemberExpression member && IsParameterMember(member))
         {
@@ -408,10 +305,17 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
             return _dialect.EscapeColumnName(columnName);
         }
 
-        throw new NotSupportedException("Window function PARTITION BY and ORDER BY must reference entity properties.");
+        if (arg is MethodCallExpression or ConstantExpression || arg.NodeType == ExpressionType.Coalesce)
+        {
+            // For complex expressions in PartitionBy/OrderBy, we translate them to SQL
+            // But we must remove any OVER() clause if they are window functions used inside another window function (rare but possible)
+            // or just ensure they translate cleanly.
+            return TranslateProjectionExpression(arg);
+        }
+
+        throw new NotSupportedException($"Window function PARTITION BY and ORDER BY must reference entity properties or supported SQL functions. Got: {arg.NodeType}");
     }
 
-    // Regular SQL function translations
     private string TranslateCoalesce(MethodCallExpression node)
     {
         var args = node.Arguments.Select(TranslateProjectionExpression).ToArray();
@@ -521,9 +425,6 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
     }
 }
 
-/// <summary>
-/// Represents a column in a SELECT projection with SQL and alias.
-/// </summary>
 internal readonly struct SelectColumn
 {
     public string Sql { get; }

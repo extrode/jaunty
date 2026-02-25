@@ -109,7 +109,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         // Handle CaseBuilder method calls (Else, End)
         if (node.Method.DeclaringType != null &&
             node.Method.DeclaringType.IsGenericType &&
-            node.Method.DeclaringType.GetGenericTypeDefinition() == typeof(CaseBuilder<>))
+            node.Method.DeclaringType.GetGenericTypeDefinition() == typeof(CaseBuilder<,>))
         {
             if (node.Method.Name == "Else" || node.Method.Name == "End")
             {
@@ -383,12 +383,17 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             if (methodCall.Method.Name == "When")
             {
                 // When(condition, result) - arguments[0] is condition, arguments[1] is result
-                whenClauses.Insert(0, (methodCall.Arguments[0], methodCall.Arguments[1]));
+                var condition = methodCall.Arguments[0];
+                if (condition is LambdaExpression lambda)
+                {
+                    condition = lambda.Body;
+                }
+                whenClauses.Insert(0, (condition, methodCall.Arguments[1]));
                 current = methodCall.Object;
             }
             else if (methodCall.Method.DeclaringType == typeof(Sql) && methodCall.Method.Name == "Case")
             {
-                // Reached Sql.Case<T>() - end of chain
+                // Reached Sql.Case<T1, T2>() - end of chain
                 break;
             }
             else

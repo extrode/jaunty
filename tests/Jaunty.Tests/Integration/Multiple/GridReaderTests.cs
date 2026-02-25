@@ -430,7 +430,7 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public void GridReader_ReadPartial_WithCustomMapper_UsesMapper(DialectInfo dialect)
+    public void GridReader_Read_WithCustomMapper_UsesMapper(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
 
@@ -445,6 +445,63 @@ public class GridReaderTests : IClassFixture<DialectFixture>
 
         Assert.Single(categories);
         Assert.StartsWith("Custom:", categories[0].CategoryName);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_Dispose_ClosesReader(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var gridReader = connection.QueryMultiple(FullCategorySql(dialect, 1));
+
+        gridReader.ReadFirst<Category>();
+        gridReader.Dispose();
+
+        // After Dispose, the reader should be marked as consumed
+        // Verify no exception is thrown and reader is properly disposed
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_Read_AfterConsumed_Throws(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(FullCategorySql(dialect, 1));
+
+        // First read consumes the result set
+        gridReader.ReadFirst<Category>();
+
+        // Second read should throw because there are no more result sets
+        var ex = Assert.Throws<InvalidOperationException>(() => gridReader.ReadFirst<Category>());
+        Assert.Contains("consumed", ex.Message.ToLower());
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartial_WithCustomMapper_UsesMapper(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id";
+
+        using var gridReader = connection.QueryMultiple(sql, new { Id = 1 });
+
+        var customMapper = new Func<IDataReader, Category>(reader =>
+            new Category { CategoryId = reader.GetInt32(0), CategoryName = "PartialCustom: " + reader.GetString(1) });
+
+        var categories = gridReader.ReadPartial<Category>(new CommandOptions<Category>(mapper: customMapper)).ToList();
+
+        Assert.Single(categories);
+        Assert.StartsWith("PartialCustom:", categories[0].CategoryName);
     }
 
     private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>

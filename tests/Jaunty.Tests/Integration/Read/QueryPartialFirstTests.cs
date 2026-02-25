@@ -17,6 +17,8 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialFirst_WithResults_ReturnsFirst(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -32,6 +34,8 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialFirst_MissingColumn_Allowed(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -46,6 +50,8 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialFirst_NoResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -58,6 +64,8 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialFirst_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -73,6 +81,8 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialFirst_WithParametersAndOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -89,6 +99,8 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartialFirst_WithOptionsOnly_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -100,6 +112,3 @@ public class QueryPartialFirstTests : IClassFixture<DialectFixture>
         Assert.True(product.ProductId > 0);
     }
 }
-
-
-
