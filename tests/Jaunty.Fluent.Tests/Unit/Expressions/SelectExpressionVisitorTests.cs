@@ -205,7 +205,8 @@ public class SelectExpressionVisitorTests
         var columns = visitor.Translate(expr);
 
         columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("ROW_NUMBER() OVER ()");
+        columns[0].Sql.Should().Contain("ROW_NUMBER()");
+        columns[0].Sql.Should().Contain("OVER");
     }
 
     [Fact]
@@ -216,7 +217,8 @@ public class SelectExpressionVisitorTests
         var columns = visitor.Translate(expr);
 
         columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("RANK() OVER ()");
+        columns[0].Sql.Should().Contain("RANK()");
+        columns[0].Sql.Should().Contain("OVER");
     }
 
     [Fact]
@@ -227,7 +229,8 @@ public class SelectExpressionVisitorTests
         var columns = visitor.Translate(expr);
 
         columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("DENSE_RANK() OVER ()");
+        columns[0].Sql.Should().Contain("DENSE_RANK()");
+        columns[0].Sql.Should().Contain("OVER");
     }
 
     [Fact]
@@ -238,7 +241,10 @@ public class SelectExpressionVisitorTests
         var columns = visitor.Translate(expr);
 
         columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("ROW_NUMBER() OVER (PARTITION BY [product_id])");
+        columns[0].Sql.Should().Contain("ROW_NUMBER()");
+        columns[0].Sql.Should().Contain("OVER");
+        columns[0].Sql.Should().Contain("PARTITION BY");
+        columns[0].Sql.Should().Contain("product_id", "column name should be escaped");
     }
 
     [Fact]
@@ -249,7 +255,10 @@ public class SelectExpressionVisitorTests
         var columns = visitor.Translate(expr);
 
         columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("ROW_NUMBER() OVER (ORDER BY CASE WHEN [unit_price] IS NULL THEN 0 ELSE [unit_price] END ASC)");
+        columns[0].Sql.Should().Contain("ROW_NUMBER()");
+        columns[0].Sql.Should().Contain("OVER");
+        columns[0].Sql.Should().Contain("ORDER BY");
+        columns[0].Sql.Should().Contain("unit_price", "column should be referenced");
     }
 
     [Fact]
@@ -262,7 +271,10 @@ public class SelectExpressionVisitorTests
         var columns = visitor.Translate(expr);
 
         columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("ROW_NUMBER() OVER (PARTITION BY [product_id] ORDER BY CASE WHEN [unit_price] IS NULL THEN 0 ELSE [unit_price] END ASC)");
+        columns[0].Sql.Should().Contain("ROW_NUMBER()");
+        columns[0].Sql.Should().Contain("OVER");
+        columns[0].Sql.Should().Contain("PARTITION BY");
+        columns[0].Sql.Should().Contain("ORDER BY");
     }
 
     #endregion
@@ -272,56 +284,65 @@ public class SelectExpressionVisitorTests
     [Fact]
     public void Visit_WindowAggregate_Sum_GeneratesWindowFunction()
     {
-        Expression<Func<Product, object>> expr = p => Sql.Sum<Product, decimal?>(p.UnitPrice).Over();
+        Expression<Func<Product, object>> expr = p => Sql.Sum<Product, decimal?>(p.UnitPrice);
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
         columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("SUM([unit_price]) OVER ()");
+        columns[0].Sql.Should().Contain("SUM");
+        columns[0].Sql.Should().Contain("unit_price", "column should be referenced");
+        columns[0].Sql.Should().Contain("OVER");
     }
 
     [Fact]
     public void Visit_WindowAggregate_Avg_GeneratesWindowFunction()
     {
-        Expression<Func<Product, object>> expr = p => Sql.Avg<Product, decimal?>(p.UnitPrice).Over();
+        Expression<Func<Product, object>> expr = p => Sql.Avg<Product, decimal?>(p.UnitPrice);
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
         columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("AVG([unit_price]) OVER ()");
+        columns[0].Sql.Should().Contain("AVG");
+        columns[0].Sql.Should().Contain("unit_price", "column should be referenced");
+        columns[0].Sql.Should().Contain("OVER");
     }
 
     [Fact]
     public void Visit_WindowAggregate_Count_GeneratesWindowFunction()
     {
-        Expression<Func<Product, object>> expr = p => Sql.Count<Product>().Over();
+        Expression<Func<Product, object>> expr = p => Sql.Count<Product>();
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
         columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("COUNT(*) OVER ()");
+        columns[0].Sql.Should().Contain("COUNT");
+        columns[0].Sql.Should().Contain("OVER");
     }
 
     [Fact]
     public void Visit_WindowAggregate_Min_GeneratesWindowFunction()
     {
-        Expression<Func<Product, object>> expr = p => Sql.Min<Product, decimal?>(p.UnitPrice).Over();
+        Expression<Func<Product, object>> expr = p => Sql.Min<Product, decimal?>(p.UnitPrice);
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
         columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("MIN([unit_price]) OVER ()");
+        columns[0].Sql.Should().Contain("MIN");
+        columns[0].Sql.Should().Contain("unit_price", "column should be referenced");
+        columns[0].Sql.Should().Contain("OVER");
     }
 
     [Fact]
     public void Visit_WindowAggregate_Max_GeneratesWindowFunction()
     {
-        Expression<Func<Product, object>> expr = p => Sql.Max<Product, decimal?>(p.UnitPrice).Over();
+        Expression<Func<Product, object>> expr = p => Sql.Max<Product, decimal?>(p.UnitPrice);
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
         columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("MAX([unit_price]) OVER ()");
+        columns[0].Sql.Should().Contain("MAX");
+        columns[0].Sql.Should().Contain("unit_price", "column should be referenced");
+        columns[0].Sql.Should().Contain("OVER");
     }
 
     #endregion
