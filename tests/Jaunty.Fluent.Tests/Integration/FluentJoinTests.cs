@@ -75,7 +75,7 @@ public class FluentJoinTests : IDisposable
         var results = _db.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
-            .Select<Product, Category>();
+            .SelectBoth();
 
         results.Should().NotBeEmpty();
         var first = results.First();
@@ -199,7 +199,7 @@ public class FluentJoinTests : IDisposable
         var results = _db.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
-            .Select<Product, Category>();
+            .SelectBoth();
 
         results.Should().NotBeEmpty();
         var first = results.First();
@@ -214,7 +214,7 @@ public class FluentJoinTests : IDisposable
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Where((p, c) => c.CategoryId == 1)
-            .Select<Product, Category>();
+            .SelectBoth();
 
         results.Should().NotBeEmpty();
         results.Should().OnlyContain(r => r.Item1.CategoryId == 1);
@@ -311,7 +311,7 @@ public class FluentJoinTests : IDisposable
         var results = _db.Connection.From<Product>()
             .LeftJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
-            .Select<Product, Category>();
+            .SelectBoth();
 
         results.Should().NotBeEmpty();
     }
@@ -402,8 +402,6 @@ public class FluentJoinTests : IDisposable
         count.Should().BeGreaterThan(0);
     }
 
-    #region Multi-Table Joins
-
     [Fact]
     public void LeftJoin_SingleJoin_ReturnsAllLeftTableRows()
     {
@@ -462,10 +460,6 @@ public class FluentJoinTests : IDisposable
         product.Should().NotBeNull();
     }
 
-    #endregion
-
-    #region Join With Aggregations
-
     [Fact]
     public void InnerJoin_WithCount_ReturnsCorrectCount()
     {
@@ -476,10 +470,6 @@ public class FluentJoinTests : IDisposable
 
         count.Should().BeGreaterThan(0);
     }
-
-    #endregion
-
-    #region Right Join Tests
 
     [Fact]
     public void RightJoin_SingleJoin_ReturnsAllRightTableRows()
@@ -539,5 +529,54 @@ public class FluentJoinTests : IDisposable
         result.Should().NotBeNull();
     }
 
-    #endregion
+
+
+    [Fact]
+    public void InnerJoin_MultipleJoins_ThreeTables_ReturnsJoinedResults()
+    {
+        var results = _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>()
+            .On(p => p.SupplierId, s => s.SupplierId)
+            .SelectAll();
+
+        results.Should().NotBeEmpty();
+        var first = results.First();
+        first.Item1.ProductName.Should().NotBeNullOrEmpty();
+        first.Item2.CategoryName.Should().NotBeNullOrEmpty();
+        first.Item3.CompanyName.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public void InnerJoin_MultipleJoins_ThreeTables_ReturnsTuples()
+    {
+        var results = _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>()
+            .On(p => p.SupplierId, s => s.SupplierId)
+            .SelectAll();
+
+        results.Should().NotBeEmpty();
+        var first = results.First();
+        first.Item1.ProductName.Should().NotBeNullOrEmpty();
+        first.Item2.CategoryName.Should().NotBeNullOrEmpty();
+        first.Item3.CompanyName.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public void InnerJoin_MultipleJoins_WithWhere_FiltersResults()
+    {
+        var results = _db.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>()
+            .On(p => p.SupplierId, s => s.SupplierId)
+            .Where((p, c, s) => c.CategoryId == 1 && s.Country == "UK")
+            .SelectAll();
+
+        results.Should().NotBeEmpty();
+        results.Should().OnlyContain(r => r.Item2.CategoryId == 1 && r.Item3.Country == "UK");
+    }
 }

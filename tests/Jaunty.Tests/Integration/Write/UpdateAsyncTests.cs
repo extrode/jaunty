@@ -90,4 +90,64 @@ public class UpdateAsyncTests : IClassFixture<DialectFixture>
         Assert.Equal(1, rows);
         Assert.Equal("Updated", GetNameById(connection, entity.Id));
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task UpdateAsync_NoChanges_ReturnsZero(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = (DbConnection)ctx.Connection;
+        var entity = InsertTestEntity(connection, "Original", 100);
+
+        // Update with the same values
+        int rows = await connection.UpdateAsync(entity);
+
+        Assert.Equal(0, rows);
+        Assert.Equal("Original", GetNameById(connection, entity.Id));
+    }
+
+#if NET8_0_OR_GREATER
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task UpdateAsync_NullEntity_ThrowsArgumentNullException(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        BulkTestEntity nullEntity = null!;
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await ctx.Connection.UpdateAsync(nullEntity));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task UpdateAsync_WithCancellationToken_Works(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = (DbConnection)ctx.Connection;
+        var entity = new BulkTestEntity { Name = "Original", Value = 100 };
+        long id = await connection.InsertAsync(entity);
+
+        entity.Id = id;
+        entity.Name = "UpdatedWithCancellationToken";
+        using var cts = new CancellationTokenSource();
+
+        int rows = await connection.UpdateAsync(entity, cts.Token);
+
+        Assert.Equal(1, rows);
+        var result = await connection.QueryFirstAsync<BulkTestEntity>(
+            "SELECT id AS Id, name AS Name, value AS Value FROM bulk_test WHERE id = @Id",
+            new { Id = id });
+        Assert.Equal("UpdatedWithCancellationToken", result.Name);
+    }
+#endif
 }

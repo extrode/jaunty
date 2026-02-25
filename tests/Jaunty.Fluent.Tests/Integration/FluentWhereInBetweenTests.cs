@@ -262,12 +262,12 @@ public class FluentWhereInBetweenTests : IDisposable
     public void WhereNotBetween_Int_FiltersResults()
     {
         var products = _db.Connection.From<Product>()
-            .WhereNotBetween(p => p.ProductId, 1, 10)
+            .WhereNotBetween(p => p.ProductId, 1, 5)
             .Select();
 
         products.Should().NotBeEmpty();
         products.Should().OnlyContain(p =>
-            p.ProductId < 1 || p.ProductId > 10);
+            p.ProductId < 1 || p.ProductId > 5);
     }
 
     [Fact]

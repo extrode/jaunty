@@ -19,7 +19,6 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
     private readonly string[] _groupByColumns;
     private readonly List<string> _selectColumns = new();
     private readonly List<string> _columnAliases = new();
-    private readonly StringBuilder _currentExpression = new();
 
     public GroupByExpressionVisitor(ISqlDialect dialect, string[] groupByColumns)
     {
@@ -89,20 +88,31 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
 
     private (string Sql, string Alias) TranslateExpression(Expression expr, string defaultAlias)
     {
+        // Recursively unwrap Convert, Quote, and Lambda
+        while (true)
+        {
+            if (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+            {
+                expr = unary.Operand;
+                continue;
+            }
+            if (expr is LambdaExpression lambda)
+            {
+                expr = lambda.Body;
+                continue;
+            }
+            break;
+        }
+
         // g.Key
         if (IsKeyAccess(expr))
         {
-            // For single column key, just use the column
-            if (_groupByColumns.Length == 1)
-            {
-                return (_groupByColumns[0], defaultAlias);
-            }
-            // For composite key, this is more complex - for now just use first column
+            // For single column key, just use the first grouping column
             return (_groupByColumns[0], defaultAlias);
         }
 
         // g.Key.Property (for composite keys like new { p.CategoryId, p.SupplierId })
-        if (expr is MemberExpression memberExpr && IsKeyAccess(memberExpr.Expression!))
+        if (expr is MemberExpression memberExpr && IsKeyAccess(memberExpr.Expression))
         {
             var propertyName = memberExpr.Member.Name;
             var columnName = GetColumnName(propertyName);
@@ -128,50 +138,81 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
     {
         var methodName = methodCall.Method.Name;
 
-        // Check if this is a method on IGrouping<TKey, T>
-        if (methodCall.Object != null && IsGroupingParameter(methodCall.Object))
+        // Aggregate methods on IGrouping (extensions) usually have 'g' as first argument if static,
+        // or node.Object if instance.
+        bool isGroupingMethod = (methodCall.Object != null && IsGroupingParameter(methodCall.Object)) ||
+                                (methodCall.Arguments.Count > 0 && IsGroupingParameter(methodCall.Arguments[0]));
+
+        if (isGroupingMethod)
         {
+            // Find the selector argument (if any)
+            // For Sum(g, p => p.Price), it's argument 1.
+            // For Count(g), it's none.
+            // For g.Sum(p => p.Price), it's argument 0.
+            Expression? selector = null;
+            if (methodCall.Object == null) // Extension method
+            {
+                if (methodCall.Arguments.Count > 1) selector = methodCall.Arguments[1];
+            }
+            else // Instance method
+            {
+                if (methodCall.Arguments.Count > 0) selector = methodCall.Arguments[0];
+            }
+
             return methodName switch
             {
-                "Count" when methodCall.Arguments.Count == 0 => ("COUNT(*)", defaultAlias),
-                "Count" when methodCall.Arguments.Count == 1 => (BuildAggregateWithColumn("COUNT", methodCall.Arguments[0]), defaultAlias),
-                "Sum" => (BuildAggregateWithColumn("SUM", methodCall.Arguments[0]), defaultAlias),
-                "Avg" => (BuildAggregateWithColumn("AVG", methodCall.Arguments[0]), defaultAlias),
-                "Min" => (BuildAggregateWithColumn("MIN", methodCall.Arguments[0]), defaultAlias),
-                "Max" => (BuildAggregateWithColumn("MAX", methodCall.Arguments[0]), defaultAlias),
+                "Count" => (BuildAggregateWithColumn("COUNT", selector), defaultAlias),
+                "Sum" => (BuildAggregateWithColumn("SUM", selector), defaultAlias),
+                "Avg" => (BuildAggregateWithColumn("AVG", selector), defaultAlias),
+                "Average" => (BuildAggregateWithColumn("AVG", selector), defaultAlias),
+                "Min" => (BuildAggregateWithColumn("MIN", selector), defaultAlias),
+                "Max" => (BuildAggregateWithColumn("MAX", selector), defaultAlias),
                 _ => throw new NotSupportedException($"Method '{methodName}' is not supported in GROUP BY Select.")
             };
         }
 
-        throw new NotSupportedException($"Method '{methodName}' is not supported in GROUP BY Select.");
+        throw new NotSupportedException($"Method '{methodName}' on type '{methodCall.Method.DeclaringType?.Name}' is not supported in GROUP BY Select.");
     }
 
-    private string BuildAggregateWithColumn(string aggregate, Expression selectorExpr)
+    private string BuildAggregateWithColumn(string aggregate, Expression? expr)
     {
-        // Extract column from expression like p => p.UnitPrice
-        if (selectorExpr is UnaryExpression unary)
-            selectorExpr = unary.Operand;
+        if (expr == null) return $"{aggregate}(*)";
 
-        if (selectorExpr is LambdaExpression lambda)
+        // Recursively unwrap the expression
+        while (true)
         {
-            var body = lambda.Body;
-            if (body is UnaryExpression unaryBody)
-                body = unaryBody.Operand;
-
-            if (body is MemberExpression memberExpr)
+            if (expr is LambdaExpression lambda)
             {
-                var propertyName = memberExpr.Member.Name;
-                var columnName = GetColumnName(propertyName);
-                return $"{aggregate}({_dialect.EscapeColumnName(columnName)})";
+                expr = lambda.Body;
+                continue;
             }
+
+            if (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+            {
+                expr = unary.Operand;
+                continue;
+            }
+
+            break;
         }
 
-        throw new NotSupportedException($"Cannot extract column from aggregate expression.");
+        if (expr is MemberExpression memberExpr)
+        {
+            var propertyName = memberExpr.Member.Name;
+            var columnName = GetColumnName(propertyName);
+            return $"{aggregate}({_dialect.EscapeColumnName(columnName)})";
+        }
+
+        if (expr is ConstantExpression constant)
+        {
+            return $"{aggregate}({FormatConstant(constant.Value)})";
+        }
+
+        throw new NotSupportedException($"Cannot extract column from aggregate expression of type '{expr.NodeType}'.");
     }
 
     private bool IsKeyAccess(Expression? expr)
     {
-        // g.Key
         if (expr is MemberExpression memberExpr && memberExpr.Member.Name == "Key")
         {
             return IsGroupingParameter(memberExpr.Expression);
@@ -181,10 +222,24 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
 
     private bool IsGroupingParameter(Expression? expr)
     {
-        // Check if this is the grouping parameter (g)
-        return expr is ParameterExpression param &&
-               param.Type.IsGenericType &&
-               param.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>);
+        while (expr is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+        {
+            expr = unary.Operand;
+        }
+
+        if (expr is ParameterExpression param)
+        {
+            return param.Type.IsGenericType &&
+                   param.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>);
+        }
+        
+        // Also handle cases where it might be a MemberExpression to the parameter
+        if (expr?.Type.IsGenericType == true && expr.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private string GetColumnName(string propertyName)

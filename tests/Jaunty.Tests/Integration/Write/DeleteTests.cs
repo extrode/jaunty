@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -165,4 +166,70 @@ public class DeleteTests : IClassFixture<DialectFixture>
 
         Assert.Equal(1, GetRowCount(ctx.Connection));
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Delete_NullEntity_ThrowsArgumentNullException(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        BulkTestEntity nullEntity = null!;
+        Assert.Throws<ArgumentNullException>(() => ctx.Connection.Delete(nullEntity));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void DeleteById_NullId_ThrowsArgumentNullException(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        object nullId = null!;
+        Assert.Throws<ArgumentNullException>(() => ctx.Connection.Delete<BulkTestEntity>(nullId));
+    }
+
+#if NET8_0_OR_GREATER
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task DeleteAsync_WithCancellationToken_Works(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = (DbConnection)ctx.Connection;
+        var entity = InsertTestEntity(connection, "Test1", 100);
+        using var cts = new CancellationTokenSource();
+
+        int rows = await connection.DeleteAsync(entity, cts.Token);
+
+        Assert.Equal(1, rows);
+        Assert.Equal(0, GetRowCount(connection));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task DeleteByIdAsync_WithCancellationToken_Works(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = (DbConnection)ctx.Connection;
+        var entity = InsertTestEntity(connection, "Test1", 100);
+        using var cts = new CancellationTokenSource();
+
+        int rows = await connection.DeleteAsync<BulkTestEntity>((object)entity.Id, cts.Token);
+
+        Assert.Equal(1, rows);
+        Assert.Equal(0, GetRowCount(connection));
+    }
+#endif
 }

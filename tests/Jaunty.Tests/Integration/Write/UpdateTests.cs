@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -104,4 +105,63 @@ public class UpdateTests : IClassFixture<DialectFixture>
 
         Assert.Equal("Original", GetNameById(ctx.Connection, entity.Id));
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Update_NoChanges_ReturnsZero(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var entity = InsertTestEntity(ctx.Connection, "Original", 100);
+
+        // Update with the same values
+        int rows = ctx.Connection.Update(entity);
+
+        Assert.Equal(0, rows);
+        Assert.Equal("Original", GetNameById(ctx.Connection, entity.Id));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Update_NullEntity_ThrowsArgumentNullException(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        BulkTestEntity nullEntity = null!;
+        Assert.Throws<ArgumentNullException>(() => ctx.Connection.Update(nullEntity));
+    }
+
+#if NET8_0_OR_GREATER
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task UpdateAsync_WithCancellationToken_Works(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = (DbConnection)ctx.Connection;
+        var entity = new BulkTestEntity { Name = "Original", Value = 100 };
+        long id = connection.Insert(entity);
+
+        entity.Id = id;
+        entity.Name = "UpdatedWithCancellationToken";
+        using var cts = new CancellationTokenSource();
+
+        int rows = await connection.UpdateAsync(entity, cts.Token);
+
+        Assert.Equal(1, rows);
+        var result = connection.QueryFirst<BulkTestEntity>(
+            "SELECT id AS Id, name AS Name, value AS Value FROM bulk_test WHERE id = @Id",
+            new { Id = id });
+        Assert.Equal("UpdatedWithCancellationToken", result.Name);
+    }
+#endif
 }

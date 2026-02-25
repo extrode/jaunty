@@ -42,6 +42,9 @@
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
 			<_Parameter1>Jaunty.Fluent</_Parameter1>
 		</AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Jaunty.Fluent.Tests</_Parameter1>
+    </AssemblyAttribute>
 	</ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
