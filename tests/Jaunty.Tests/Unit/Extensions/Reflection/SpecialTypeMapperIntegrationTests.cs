@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Unit.Extensions.Reflection;
@@ -38,10 +36,10 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
 
         var results = connection.Query<Dictionary<string, object>>(sql);
 
-        results.Should().HaveCount(1);
+        Assert.Equal(1, results.Count);
         var row = results[0];
-        row.Should().ContainKey("CategoryId");
-        row.Should().ContainKey("CategoryName");
+        Assert.Contains("CategoryId", row.Keys);
+        Assert.Contains("CategoryName", row.Keys);
     }
 
     [Theory]
@@ -60,10 +58,10 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
 
         var results = connection.Query<Dictionary<string, int>>(sql);
 
-        results.Should().HaveCount(1);
+        Assert.Equal(1, results.Count);
         var row = results[0];
-        row.Should().ContainKey("CategoryId");
-        row["CategoryId"].Should().BeGreaterThan(0);
+        Assert.Contains("CategoryId", row.Keys);
+        Assert.True(row["CategoryId"] > 0);
     }
 
     #endregion
@@ -86,10 +84,11 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
 
         var results = connection.Query<KeyValuePair<int, string>>(sql);
 
-        results.Should().HaveCount(1);
+        Assert.Equal(1, results.Count);
         var kvp = results[0];
-        kvp.Key.Should().BeGreaterThan(0);
-        kvp.Value.Should().NotBeNullOrEmpty();
+        Assert.True(kvp.Key > 0);
+        Assert.NotNull(kvp.Value);
+        Assert.NotEmpty(kvp.Value);
     }
 
     #endregion
@@ -112,10 +111,11 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
 
         var results = connection.Query<(int Id, string Name)>(sql);
 
-        results.Should().HaveCount(1);
+        Assert.Equal(1, results.Count);
         var tuple = results[0];
-        tuple.Id.Should().BeGreaterThan(0);
-        tuple.Name.Should().NotBeNullOrEmpty();
+        Assert.True(tuple.Id > 0);
+        Assert.NotNull(tuple.Name);
+        Assert.NotEmpty(tuple.Name);
     }
 
     [Theory]
@@ -136,10 +136,11 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
 
         var results = connection.Query<(int, string, string, int, double, int, string)>(sql);
 
-        results.Should().HaveCount(1);
+        Assert.Equal(1, results.Count);
         var tuple = results[0];
-        tuple.Item1.Should().BeGreaterThan(0);
-        tuple.Item2.Should().NotBeNullOrEmpty();
+        Assert.True(tuple.Item1 > 0);
+        Assert.NotNull(tuple.Item2);
+        Assert.NotEmpty(tuple.Item2);
     }
 
     #endregion
@@ -164,10 +165,11 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
 
         var results = connection.Query<dynamic>(sql);
 
-        results.Should().HaveCount(1);
+        Assert.Equal(1, results.Count);
         dynamic row = results[0];
-        ((int)row.CategoryId).Should().BeGreaterThan(0);
-        ((string)row.CategoryName).Should().NotBeNullOrEmpty();
+        Assert.True(((int)row.CategoryId) > 0);
+        Assert.NotNull((string)row.CategoryName);
+        Assert.NotEmpty((string)row.CategoryName);
     }
 
     #endregion

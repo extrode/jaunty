@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -28,9 +26,9 @@ public class FluentSetOperationsTests : IDisposable
             .Union(_db.Connection.From<Product>().Where(p => p.CategoryId == 2))
             .Select();
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
         // All results should be from category 1 or 2
-        results.Should().OnlyContain(p => p.CategoryId == 1 || p.CategoryId == 2);
+        Assert.All(results, p => Assert.True(p.CategoryId == 1 || p.CategoryId == 2));
     }
 
     [Fact]
@@ -41,8 +39,8 @@ public class FluentSetOperationsTests : IDisposable
             .Union(_db.Connection.From<Product>().Where(p => p.CategoryId == 2))
             .ToSql();
 
-        sql.Should().Contain("UNION");
-        sql.Should().NotContain("UNION ALL");
+        Assert.Contains("UNION", sql);
+        Assert.DoesNotContain("UNION ALL", sql);
     }
 
     [Fact]
@@ -54,8 +52,11 @@ public class FluentSetOperationsTests : IDisposable
             .OrderBy(p => p.ProductName)
             .Select();
 
-        results.Should().NotBeEmpty();
-        results.Should().BeInAscendingOrder(p => p.ProductName);
+        Assert.NotEmpty(results);
+        for (int i = 1; i < results.Count; i++)
+        {
+            Assert.True(string.Compare(results[i - 1].ProductName, results[i].ProductName) <= 0);
+        }
     }
 
     [Fact]
@@ -67,8 +68,11 @@ public class FluentSetOperationsTests : IDisposable
             .OrderByDescending(p => p.ProductName)
             .Select();
 
-        results.Should().NotBeEmpty();
-        results.Should().BeInDescendingOrder(p => p.ProductName);
+        Assert.NotEmpty(results);
+        for (int i = 1; i < results.Count; i++)
+        {
+            Assert.True(string.Compare(results[i - 1].ProductName, results[i].ProductName) >= 0);
+        }
     }
 
     [Fact]
@@ -80,7 +84,7 @@ public class FluentSetOperationsTests : IDisposable
             .Take(3)
             .Select();
 
-        results.Should().HaveCount(3);
+        Assert.Equal(3, results.Count);
     }
 
     [Fact]
@@ -92,8 +96,8 @@ public class FluentSetOperationsTests : IDisposable
             .Union(_db.Connection.From<Product>().Where(p => p.CategoryId == 3))
             .Select();
 
-        results.Should().NotBeEmpty();
-        results.Should().OnlyContain(p => p.CategoryId == 1 || p.CategoryId == 2 || p.CategoryId == 3);
+        Assert.NotEmpty(results);
+        Assert.All(results, p => Assert.True(p.CategoryId == 1 || p.CategoryId == 2 || p.CategoryId == 3));
     }
 
     // ==========================================
@@ -114,7 +118,7 @@ public class FluentSetOperationsTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .Count();
 
-        results.Should().HaveCount(singleQueryCount * 2);
+        Assert.Equal(singleQueryCount * 2, results.Count);
     }
 
     [Fact]
@@ -125,7 +129,7 @@ public class FluentSetOperationsTests : IDisposable
             .UnionAll(_db.Connection.From<Product>().Where(p => p.CategoryId == 2))
             .ToSql();
 
-        sql.Should().Contain("UNION ALL");
+        Assert.Contains("UNION ALL", sql);
     }
 
     [Fact]
@@ -137,8 +141,11 @@ public class FluentSetOperationsTests : IDisposable
             .OrderBy(p => p.UnitPrice)
             .Select();
 
-        results.Should().NotBeEmpty();
-        results.Should().BeInAscendingOrder(p => p.UnitPrice);
+        Assert.NotEmpty(results);
+        for (int i = 1; i < results.Count; i++)
+        {
+            Assert.True(results[i - 1].UnitPrice <= results[i].UnitPrice);
+        }
     }
 
     // ==========================================
@@ -154,9 +161,9 @@ public class FluentSetOperationsTests : IDisposable
             .Except(_db.Connection.From<Product>().Where(p => p.Discontinued == true))
             .Select();
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
         // All results should be from category 1 and not discontinued
-        results.Should().OnlyContain(p => p.CategoryId == 1 && !p.Discontinued);
+        Assert.All(results, p => Assert.True(p.CategoryId == 1 && !p.Discontinued));
     }
 
     [Fact]
@@ -167,7 +174,7 @@ public class FluentSetOperationsTests : IDisposable
             .Except(_db.Connection.From<Product>().Where(p => p.CategoryId == 2))
             .ToSql();
 
-        sql.Should().Contain("EXCEPT");
+        Assert.Contains("EXCEPT", sql);
     }
 
     [Fact]
@@ -179,8 +186,11 @@ public class FluentSetOperationsTests : IDisposable
             .OrderBy(p => p.ProductName)
             .Select();
 
-        results.Should().NotBeEmpty();
-        results.Should().BeInAscendingOrder(p => p.ProductName);
+        Assert.NotEmpty(results);
+        for (int i = 1; i < results.Count; i++)
+        {
+            Assert.True(string.Compare(results[i - 1].ProductName, results[i].ProductName) <= 0);
+        }
     }
 
     // ==========================================
@@ -197,7 +207,7 @@ public class FluentSetOperationsTests : IDisposable
             .Select();
 
         // All results should be in category 1 AND have ReorderLevel > 0
-        results.Should().OnlyContain(p => p.CategoryId == 1 && p.ReorderLevel > 0);
+        Assert.All(results, p => Assert.True(p.CategoryId == 1 && p.ReorderLevel > 0));
     }
 
     [Fact]
@@ -208,7 +218,7 @@ public class FluentSetOperationsTests : IDisposable
             .Intersect(_db.Connection.From<Product>().Where(p => p.CategoryId == 1))
             .ToSql();
 
-        sql.Should().Contain("INTERSECT");
+        Assert.Contains("INTERSECT", sql);
     }
 
     [Fact]
@@ -220,7 +230,10 @@ public class FluentSetOperationsTests : IDisposable
             .OrderByDescending(p => p.ProductName)
             .Select();
 
-        results.Should().BeInDescendingOrder(p => p.ProductName);
+        for (int i = 1; i < results.Count; i++)
+        {
+            Assert.True(string.Compare(results[i - 1].ProductName, results[i].ProductName) >= 0);
+        }
     }
 
     // ==========================================
@@ -235,7 +248,7 @@ public class FluentSetOperationsTests : IDisposable
             .Union(_db.Connection.From<Product>().Where(p => p.CategoryId == 2))
             .SelectAsync();
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     [Fact]
@@ -246,7 +259,7 @@ public class FluentSetOperationsTests : IDisposable
             .UnionAll(_db.Connection.From<Product>().Where(p => p.CategoryId == 2))
             .SelectAsync();
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     [Fact]
@@ -257,7 +270,7 @@ public class FluentSetOperationsTests : IDisposable
             .Except(_db.Connection.From<Product>().Where(p => p.Discontinued == true))
             .SelectAsync();
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     [Fact]
@@ -269,7 +282,7 @@ public class FluentSetOperationsTests : IDisposable
             .SelectAsync();
 
         // Results may be empty if no intersection, but should not throw
-        results.Should().NotBeNull();
+        Assert.NotNull(results);
     }
 
     // ==========================================
@@ -284,8 +297,8 @@ public class FluentSetOperationsTests : IDisposable
             .Union(_db.Connection.From<Product>().Where(p => p.CategoryId == 2))
             .SelectFirst();
 
-        result.Should().NotBeNull();
-        result.CategoryId.Should().BeOneOf(1, 2);
+        Assert.NotNull(result);
+        Assert.True(result.CategoryId == 1 || result.CategoryId == 2);
     }
 
     [Fact]
@@ -296,7 +309,7 @@ public class FluentSetOperationsTests : IDisposable
             .Union(_db.Connection.From<Product>().Where(p => p.CategoryId == -998))
             .SelectFirstOrDefault();
 
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     // ==========================================
@@ -313,9 +326,9 @@ public class FluentSetOperationsTests : IDisposable
             .ThenBy(p => p.ProductName)
             .ToSql();
 
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("category_id");
-        sql.Should().Contain("product_name");
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("category_id", sql);
+        Assert.Contains("product_name", sql);
     }
 
     [Fact]
@@ -328,7 +341,7 @@ public class FluentSetOperationsTests : IDisposable
             .ThenByDescending(p => p.ProductName)
             .Select();
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     // ==========================================
@@ -352,9 +365,9 @@ public class FluentSetOperationsTests : IDisposable
             .Take(3)
             .Select();
 
-        pagedResults.Should().HaveCount(3);
+        Assert.Equal(3, pagedResults.Count);
         // Verify skip worked
-        pagedResults[0].ProductId.Should().Be(allResults[2].ProductId);
+        Assert.Equal(allResults[2].ProductId, pagedResults[0].ProductId);
     }
 
     // ==========================================
@@ -370,8 +383,8 @@ public class FluentSetOperationsTests : IDisposable
             .Except(_db.Connection.From<Product>().Where(p => p.Discontinued == true))
             .ToSql();
 
-        sql.Should().Contain("UNION");
-        sql.Should().Contain("EXCEPT");
+        Assert.Contains("UNION", sql);
+        Assert.Contains("EXCEPT", sql);
     }
 
     [Fact]
@@ -383,7 +396,7 @@ public class FluentSetOperationsTests : IDisposable
             .Intersect(_db.Connection.From<Product>().Where(p => p.ReorderLevel > 0))
             .ToSql();
 
-        sql.Should().Contain("UNION ALL");
-        sql.Should().Contain("INTERSECT");
+        Assert.Contains("UNION ALL", sql);
+        Assert.Contains("INTERSECT", sql);
     }
 }

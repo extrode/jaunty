@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -31,9 +29,9 @@ public class FluentDateFunctionsTests : IDisposable
             .ToSql();
 
         // SQLite uses strftime with CAST for integer comparison
-        sql.Should().Contain("strftime('%Y'");
-        sql.Should().Contain("order_date");
-        sql.Should().Contain("CAST");
+        Assert.Contains("strftime('%Y'", sql);
+        Assert.Contains("order_date", sql);
+        Assert.Contains("CAST", sql);
     }
 
     [Fact]
@@ -43,8 +41,8 @@ public class FluentDateFunctionsTests : IDisposable
             .Where(o => Sql.Year(o.OrderDate) > 1996)
             .ToSql();
 
-        sql.Should().Contain("strftime('%Y'");
-        sql.Should().Contain(">");
+        Assert.Contains("strftime('%Y'", sql);
+        Assert.Contains(">", sql);
     }
 
     [Fact]
@@ -54,8 +52,8 @@ public class FluentDateFunctionsTests : IDisposable
             .Where(o => Sql.Year(o.OrderDate) != 2000)
             .ToSql();
 
-        sql.Should().Contain("strftime('%Y'");
-        sql.Should().Contain("<>");
+        Assert.Contains("strftime('%Y'", sql);
+        Assert.Contains("<>", sql);
     }
 
     // ==========================================
@@ -70,9 +68,9 @@ public class FluentDateFunctionsTests : IDisposable
             .ToSql();
 
         // SQLite uses strftime
-        sql.Should().Contain("strftime('%m'");
-        sql.Should().Contain("order_date");
-        sql.Should().Contain("CAST");
+        Assert.Contains("strftime('%m'", sql);
+        Assert.Contains("order_date", sql);
+        Assert.Contains("CAST", sql);
     }
 
     [Fact]
@@ -82,8 +80,8 @@ public class FluentDateFunctionsTests : IDisposable
             .Where(o => Sql.Month(o.OrderDate) < 6)
             .ToSql();
 
-        sql.Should().Contain("strftime('%m'");
-        sql.Should().Contain("<");
+        Assert.Contains("strftime('%m'", sql);
+        Assert.Contains("<", sql);
     }
 
     // ==========================================
@@ -98,9 +96,9 @@ public class FluentDateFunctionsTests : IDisposable
             .ToSql();
 
         // SQLite uses strftime
-        sql.Should().Contain("strftime('%d'");
-        sql.Should().Contain("order_date");
-        sql.Should().Contain("CAST");
+        Assert.Contains("strftime('%d'", sql);
+        Assert.Contains("order_date", sql);
+        Assert.Contains("CAST", sql);
     }
 
     [Fact]
@@ -110,8 +108,8 @@ public class FluentDateFunctionsTests : IDisposable
             .Where(o => Sql.Day(o.OrderDate) >= 20)
             .ToSql();
 
-        sql.Should().Contain("strftime('%d'");
-        sql.Should().Contain(">=");
+        Assert.Contains("strftime('%d'", sql);
+        Assert.Contains(">=", sql);
     }
 
     // ==========================================
@@ -126,9 +124,9 @@ public class FluentDateFunctionsTests : IDisposable
             .And(o => Sql.Month(o.OrderDate) == 12)
             .ToSql();
 
-        sql.Should().Contain("strftime('%Y'");
-        sql.Should().Contain("strftime('%m'");
-        sql.Should().Contain("AND");
+        Assert.Contains("strftime('%Y'", sql);
+        Assert.Contains("strftime('%m'", sql);
+        Assert.Contains("AND", sql);
     }
 
     [Fact]
@@ -140,10 +138,10 @@ public class FluentDateFunctionsTests : IDisposable
             .And(o => Sql.Day(o.OrderDate) == 4)
             .ToSql();
 
-        sql.Should().Contain("strftime('%Y'");
-        sql.Should().Contain("strftime('%m'");
-        sql.Should().Contain("strftime('%d'");
-        sql.Should().Contain("AND");
+        Assert.Contains("strftime('%Y'", sql);
+        Assert.Contains("strftime('%m'", sql);
+        Assert.Contains("strftime('%d'", sql);
+        Assert.Contains("AND", sql);
     }
 
     [Fact]
@@ -154,8 +152,8 @@ public class FluentDateFunctionsTests : IDisposable
             .Or(o => Sql.Year(o.OrderDate) == 1998)
             .ToSql();
 
-        sql.Should().Contain("strftime('%Y'");
-        sql.Should().Contain("OR");
+        Assert.Contains("strftime('%Y'", sql);
+        Assert.Contains("OR", sql);
     }
 
     // ==========================================
@@ -169,8 +167,8 @@ public class FluentDateFunctionsTests : IDisposable
             .Where(o => Sql.Year(o.RequiredDate) == 1997)
             .ToSql();
 
-        sql.Should().Contain("required_date");
-        sql.Should().Contain("strftime('%Y'");
+        Assert.Contains("required_date", sql);
+        Assert.Contains("strftime('%Y'", sql);
     }
 
     [Fact]
@@ -180,8 +178,8 @@ public class FluentDateFunctionsTests : IDisposable
             .Where(o => Sql.Month(o.ShippedDate) == 1)
             .ToSql();
 
-        sql.Should().Contain("shipped_date");
-        sql.Should().Contain("strftime('%m'");
+        Assert.Contains("shipped_date", sql);
+        Assert.Contains("strftime('%m'", sql);
     }
 
     [Fact]
@@ -191,8 +189,8 @@ public class FluentDateFunctionsTests : IDisposable
             .Where(o => Sql.Day(o.OrderDate) == 1)
             .ToSql();
 
-        sql.Should().Contain("order_date");
-        sql.Should().Contain("strftime('%d'");
+        Assert.Contains("order_date", sql);
+        Assert.Contains("strftime('%d'", sql);
     }
 
     // ==========================================
@@ -207,8 +205,8 @@ public class FluentDateFunctionsTests : IDisposable
             .OrderBy(o => o.OrderDate)
             .ToSql();
 
-        sql.Should().Contain("strftime('%Y'");
-        sql.Should().Contain("ORDER BY");
+        Assert.Contains("strftime('%Y'", sql);
+        Assert.Contains("ORDER BY", sql);
     }
 
     [Fact]
@@ -219,8 +217,8 @@ public class FluentDateFunctionsTests : IDisposable
             .Take(5)
             .ToSql();
 
-        sql.Should().Contain("strftime('%m'");
-        sql.Should().Contain("LIMIT 5");
+        Assert.Contains("strftime('%m'", sql);
+        Assert.Contains("LIMIT 5", sql);
     }
 
     [Fact]
@@ -231,8 +229,8 @@ public class FluentDateFunctionsTests : IDisposable
             .And(o => Sql.Upper(o.ShipCity) == "LONDON")
             .ToSql();
 
-        sql.Should().Contain("strftime('%Y'");
-        sql.Should().Contain("UPPER");
-        sql.Should().Contain("AND");
+        Assert.Contains("strftime('%Y'", sql);
+        Assert.Contains("UPPER", sql);
+        Assert.Contains("AND", sql);
     }
 }

@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -25,8 +23,8 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereIn(p => p.CategoryId, categoryIds)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => categoryIds.Contains(p.CategoryId));
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(categoryIds.Contains(p.CategoryId)));
     }
 
     [Fact]
@@ -38,8 +36,8 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereIn(p => p.ProductId, productIds)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => productIds.Contains(p.ProductId));
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(productIds.Contains(p.ProductId)));
     }
 
     [Fact]
@@ -51,7 +49,7 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereIn(p => p.ProductId, emptyIds)
             .Select();
 
-        products.Should().BeEmpty();
+        Assert.Empty(products);
     }
 
     [Fact]
@@ -63,8 +61,8 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereIn(p => p.ProductId, singleId)
             .Select();
 
-        products.Should().HaveCount(1);
-        products[0].ProductId.Should().Be(1);
+        Assert.Equal(1, products.Count);
+        Assert.Equal(1, products[0].ProductId);
     }
 
     [Fact]
@@ -76,8 +74,8 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereIn(p => p.CategoryId, categoryIds)
             .ToSql();
 
-        sql.Should().Contain("IN");
-        sql.Should().Contain("@p_in_");
+        Assert.Contains("IN", sql);
+        Assert.Contains("@p_in_", sql);
     }
 
     // ==========================================
@@ -93,8 +91,8 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereNotIn(p => p.CategoryId, excludedCategories)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => !excludedCategories.Contains(p.CategoryId));
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(!excludedCategories.Contains(p.CategoryId)));
     }
 
     [Fact]
@@ -109,7 +107,7 @@ public class FluentWhereInBetweenTests : IDisposable
             .Select();
 
         // NOT IN () should return all results (1=1)
-        products.Count.Should().Be(allProducts.Count);
+        Assert.Equal(allProducts.Count, products.Count);
     }
 
     [Fact]
@@ -121,8 +119,8 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereNotIn(p => p.CategoryId, categoryIds)
             .ToSql();
 
-        sql.Should().Contain("NOT IN");
-        sql.Should().Contain("@p_in_");
+        Assert.Contains("NOT IN", sql);
+        Assert.Contains("@p_in_", sql);
     }
 
     // ==========================================
@@ -139,10 +137,10 @@ public class FluentWhereInBetweenTests : IDisposable
             .AndIn(p => p.CategoryId, categoryIds)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.Discontinued == false &&
-            categoryIds.Contains(p.CategoryId));
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.Discontinued == false &&
+            categoryIds.Contains(p.CategoryId)));
     }
 
     [Fact]
@@ -155,10 +153,10 @@ public class FluentWhereInBetweenTests : IDisposable
             .AndNotIn(p => p.CategoryId, excludedCategories)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.Discontinued == false &&
-            !excludedCategories.Contains(p.CategoryId));
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.Discontinued == false &&
+            !excludedCategories.Contains(p.CategoryId)));
     }
 
     [Fact]
@@ -171,10 +169,10 @@ public class FluentWhereInBetweenTests : IDisposable
             .OrIn(p => p.CategoryId, categoryIds)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.CategoryId == 1 ||
-            categoryIds.Contains(p.CategoryId));
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.CategoryId == 1 ||
+            categoryIds.Contains(p.CategoryId)));
     }
 
     [Fact]
@@ -187,7 +185,7 @@ public class FluentWhereInBetweenTests : IDisposable
             .OrNotIn(p => p.CategoryId, excludedCategories)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     // ==========================================
@@ -201,9 +199,9 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereBetween(p => p.UnitPrice, 10m, 30m)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.UnitPrice >= 10m && p.UnitPrice <= 30m);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.UnitPrice >= 10m && p.UnitPrice <= 30m));
     }
 
     [Fact]
@@ -213,9 +211,9 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereBetween(p => p.ProductId, 1, 10)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.ProductId >= 1 && p.ProductId <= 10);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.ProductId >= 1 && p.ProductId <= 10));
     }
 
     [Fact]
@@ -225,9 +223,9 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereBetween(p => p.UnitsInStock, (short?)10, (short?)50)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.UnitsInStock >= 10 && p.UnitsInStock <= 50);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.UnitsInStock >= 10 && p.UnitsInStock <= 50));
     }
 
     [Fact]
@@ -237,9 +235,9 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereBetween(p => p.UnitPrice, 10m, 30m)
             .ToSql();
 
-        sql.Should().Contain("BETWEEN");
-        sql.Should().Contain("@p_between_from_");
-        sql.Should().Contain("@p_between_to_");
+        Assert.Contains("BETWEEN", sql);
+        Assert.Contains("@p_between_from_", sql);
+        Assert.Contains("@p_between_to_", sql);
     }
 
     // ==========================================
@@ -253,9 +251,9 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereNotBetween(p => p.UnitPrice, 10m, 30m)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.UnitPrice < 10m || p.UnitPrice > 30m);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.UnitPrice < 10m || p.UnitPrice > 30m));
     }
 
     [Fact]
@@ -265,9 +263,9 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereNotBetween(p => p.ProductId, 1, 5)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.ProductId < 1 || p.ProductId > 5);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.ProductId < 1 || p.ProductId > 5));
     }
 
     [Fact]
@@ -277,9 +275,9 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereNotBetween(p => p.UnitPrice, 10m, 30m)
             .ToSql();
 
-        sql.Should().Contain("NOT BETWEEN");
-        sql.Should().Contain("@p_between_from_");
-        sql.Should().Contain("@p_between_to_");
+        Assert.Contains("NOT BETWEEN", sql);
+        Assert.Contains("@p_between_from_", sql);
+        Assert.Contains("@p_between_to_", sql);
     }
 
     // ==========================================
@@ -294,10 +292,10 @@ public class FluentWhereInBetweenTests : IDisposable
             .AndBetween(p => p.UnitPrice, 10m, 50m)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.Discontinued == false &&
-            p.UnitPrice >= 10m && p.UnitPrice <= 50m);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.Discontinued == false &&
+            p.UnitPrice >= 10m && p.UnitPrice <= 50m));
     }
 
     [Fact]
@@ -308,10 +306,10 @@ public class FluentWhereInBetweenTests : IDisposable
             .AndNotBetween(p => p.UnitPrice, 100m, 500m)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.Discontinued == false &&
-            (p.UnitPrice < 100m || p.UnitPrice > 500m));
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.Discontinued == false &&
+            (p.UnitPrice < 100m || p.UnitPrice > 500m)));
     }
 
     [Fact]
@@ -322,10 +320,10 @@ public class FluentWhereInBetweenTests : IDisposable
             .OrBetween(p => p.UnitPrice, 100m, 500m)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.CategoryId == 1 ||
-            (p.UnitPrice >= 100m && p.UnitPrice <= 500m));
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.CategoryId == 1 ||
+            (p.UnitPrice >= 100m && p.UnitPrice <= 500m)));
     }
 
     [Fact]
@@ -336,7 +334,7 @@ public class FluentWhereInBetweenTests : IDisposable
             .OrNotBetween(p => p.UnitPrice, 0m, 1000m)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     // ==========================================
@@ -353,10 +351,10 @@ public class FluentWhereInBetweenTests : IDisposable
             .AndBetween(p => p.UnitPrice, 10m, 50m)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            categoryIds.Contains(p.CategoryId) &&
-            p.UnitPrice >= 10m && p.UnitPrice <= 50m);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(categoryIds.Contains(p.CategoryId) &&
+            p.UnitPrice >= 10m && p.UnitPrice <= 50m));
     }
 
     [Fact]
@@ -369,10 +367,10 @@ public class FluentWhereInBetweenTests : IDisposable
             .AndIn(p => p.CategoryId, categoryIds)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            categoryIds.Contains(p.CategoryId) &&
-            p.UnitPrice >= 10m && p.UnitPrice <= 50m);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(categoryIds.Contains(p.CategoryId) &&
+            p.UnitPrice >= 10m && p.UnitPrice <= 50m));
     }
 
     [Fact]
@@ -386,11 +384,11 @@ public class FluentWhereInBetweenTests : IDisposable
             .AndBetween(p => p.UnitPrice, 5m, 100m)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.Discontinued == false &&
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.Discontinued == false &&
             categoryIds.Contains(p.CategoryId) &&
-            p.UnitPrice >= 5m && p.UnitPrice <= 100m);
+            p.UnitPrice >= 5m && p.UnitPrice <= 100m));
     }
 
     // ==========================================
@@ -407,8 +405,11 @@ public class FluentWhereInBetweenTests : IDisposable
             .OrderBy(p => p.UnitPrice)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().BeInAscendingOrder(p => p.UnitPrice);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True((products[i - 1].UnitPrice ?? 0) <= (products[i].UnitPrice ?? 0));
+        }
     }
 
     [Fact]
@@ -419,8 +420,11 @@ public class FluentWhereInBetweenTests : IDisposable
             .OrderByDescending(p => p.UnitPrice)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().BeInDescendingOrder(p => p.UnitPrice);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True((products[i - 1].UnitPrice ?? 0) >= (products[i].UnitPrice ?? 0));
+        }
     }
 
     // ==========================================
@@ -437,7 +441,7 @@ public class FluentWhereInBetweenTests : IDisposable
             .Take(5)
             .Select();
 
-        products.Should().HaveCountLessThanOrEqualTo(5);
+        Assert.True(products.Count <= 5);
     }
 
     [Fact]
@@ -450,7 +454,7 @@ public class FluentWhereInBetweenTests : IDisposable
             .Take(5)
             .Select();
 
-        products.Should().HaveCountLessThanOrEqualTo(5);
+        Assert.True(products.Count <= 5);
     }
 
     // ==========================================
@@ -466,8 +470,8 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereIn(p => p.CategoryId, categoryIds)
             .SelectAsync();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => categoryIds.Contains(p.CategoryId));
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(categoryIds.Contains(p.CategoryId)));
     }
 
     [Fact]
@@ -477,9 +481,9 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereBetween(p => p.UnitPrice, 10m, 50m)
             .SelectAsync();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.UnitPrice >= 10m && p.UnitPrice <= 50m);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.UnitPrice >= 10m && p.UnitPrice <= 50m));
     }
 
     [Fact]
@@ -491,7 +495,7 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereIn(p => p.CategoryId, categoryIds)
             .CountAsync();
 
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     [Fact]
@@ -501,7 +505,7 @@ public class FluentWhereInBetweenTests : IDisposable
             .WhereBetween(p => p.UnitPrice, 10m, 50m)
             .CountAsync();
 
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     // ==========================================
@@ -518,8 +522,8 @@ public class FluentWhereInBetweenTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .Select(g => new { Category = g.Key, Count = g.Count() });
 
-        grouped.Should().NotBeEmpty();
-        grouped.Should().OnlyContain(g => categoryIds.Contains(g.Category));
+        Assert.NotEmpty(grouped);
+        Assert.All(grouped, g => Assert.True(categoryIds.Contains(g.Category)));
     }
 
     [Fact]
@@ -530,6 +534,6 @@ public class FluentWhereInBetweenTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .Select(g => new { Category = g.Key, AvgPrice = g.Avg(p => p.UnitPrice) });
 
-        grouped.Should().NotBeEmpty();
+        Assert.NotEmpty(grouped);
     }
 }

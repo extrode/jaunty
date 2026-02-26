@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -19,9 +17,9 @@ public class FluentSelectTests : IDisposable
     {
         var products = _db.Connection.From<Product>().Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().HaveCountGreaterThan(0);
-        products.First().ProductName.Should().NotBeNullOrEmpty();
+        Assert.NotEmpty(products);
+        Assert.True(products.Count > 0);
+        Assert.NotEmpty(products.First().ProductName);
     }
 
     [Fact]
@@ -31,8 +29,8 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
     }
 
     // --- SelectPartial String-based Tests ---
@@ -44,9 +42,9 @@ public class FluentSelectTests : IDisposable
         var products = _db.Connection.From<Product>()
             .SelectPartial("product_id", "product_name");
 
-        products.Should().NotBeEmpty();
-        products.First().ProductId.Should().BeGreaterThan(0);
-        products.First().ProductName.Should().NotBeNullOrEmpty();
+        Assert.NotEmpty(products);
+        Assert.True(products.First().ProductId > 0);
+        Assert.NotEmpty(products.First().ProductName);
     }
 
     [Fact]
@@ -55,10 +53,10 @@ public class FluentSelectTests : IDisposable
         var products = _db.Connection.From<Product>()
             .SelectPartial("product_id", "product_name");
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
         // Unselected nullable columns should be null
-        products.First().SupplierId.Should().BeNull();
-        products.First().UnitPrice.Should().BeNull();
+        Assert.Null(products.First().SupplierId);
+        Assert.Null(products.First().UnitPrice);
     }
 
     // --- SelectPartial Expression-based Tests ---
@@ -69,9 +67,9 @@ public class FluentSelectTests : IDisposable
         var products = _db.Connection.From<Product>()
             .SelectPartial(p => p.ProductId, p => p.ProductName);
 
-        products.Should().NotBeEmpty();
-        products.First().ProductId.Should().BeGreaterThan(0);
-        products.First().ProductName.Should().NotBeNullOrEmpty();
+        Assert.NotEmpty(products);
+        Assert.True(products.First().ProductId > 0);
+        Assert.NotEmpty(products.First().ProductName);
     }
 
     [Fact]
@@ -80,9 +78,9 @@ public class FluentSelectTests : IDisposable
         var products = _db.Connection.From<Product>()
             .SelectPartial(p => p.ProductId, p => p.ProductName, p => p.CategoryId, p => p.UnitPrice);
 
-        products.Should().NotBeEmpty();
-        products.First().ProductId.Should().BeGreaterThan(0);
-        products.First().ProductName.Should().NotBeNullOrEmpty();
+        Assert.NotEmpty(products);
+        Assert.True(products.First().ProductId > 0);
+        Assert.NotEmpty(products.First().ProductName);
     }
 
     // --- SelectFirst Tests ---
@@ -92,8 +90,8 @@ public class FluentSelectTests : IDisposable
     {
         var product = _db.Connection.From<Product>().SelectFirst();
 
-        product.Should().NotBeNull();
-        product.ProductId.Should().BeGreaterThan(0);
+        Assert.NotNull(product);
+        Assert.True(product.ProductId > 0);
     }
 
     [Fact]
@@ -103,8 +101,8 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .SelectFirst();
 
-        product.Should().NotBeNull();
-        product.CategoryId.Should().Be(1);
+        Assert.NotNull(product);
+        Assert.Equal((short)1, product.CategoryId);
     }
 
     [Fact]
@@ -118,7 +116,7 @@ public class FluentSelectTests : IDisposable
             .OrderBy(p => p.ProductName)
             .Select();
 
-        product.ProductId.Should().Be(allOrdered.First().ProductId);
+        Assert.Equal(allOrdered.First().ProductId, product.ProductId);
     }
 
     // --- SelectFirstOrDefault Tests ---
@@ -130,8 +128,8 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .SelectFirstOrDefault();
 
-        product.Should().NotBeNull();
-        product!.CategoryId.Should().Be(1);
+        Assert.NotNull(product);
+        Assert.Equal((short)1, product!.CategoryId);
     }
 
     [Fact]
@@ -141,7 +139,7 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.ProductId == -999)
             .SelectFirstOrDefault();
 
-        product.Should().BeNull();
+        Assert.Null(product);
     }
 
     // --- SelectSingle Tests ---
@@ -156,19 +154,19 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.ProductId == firstProduct.ProductId)
             .SelectSingle();
 
-        product.Should().NotBeNull();
-        product.ProductId.Should().Be(firstProduct.ProductId);
+        Assert.NotNull(product);
+        Assert.Equal(firstProduct.ProductId, product.ProductId);
     }
 
     [Fact]
     public void SelectSingle_MultipleMatches_Throws()
     {
         // Category 1 has multiple products
-        Action act = () => _db.Connection.From<Product>()
+        var act = () => _db.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .SelectSingle();
 
-        act.Should().Throw<InvalidOperationException>();
+        Assert.Throws<InvalidOperationException>(act);
     }
 
     // --- SelectSingleOrDefault Tests ---
@@ -182,8 +180,8 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.ProductId == firstProduct.ProductId)
             .SelectSingleOrDefault();
 
-        product.Should().NotBeNull();
-        product!.ProductId.Should().Be(firstProduct.ProductId);
+        Assert.NotNull(product);
+        Assert.Equal(firstProduct.ProductId, product!.ProductId);
     }
 
     [Fact]
@@ -193,17 +191,17 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.ProductId == -999)
             .SelectSingleOrDefault();
 
-        product.Should().BeNull();
+        Assert.Null(product);
     }
 
     [Fact]
     public void SelectSingleOrDefault_MultipleMatches_Throws()
     {
-        Action act = () => _db.Connection.From<Product>()
+        var act = () => _db.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .SelectSingleOrDefault();
 
-        act.Should().Throw<InvalidOperationException>();
+        Assert.Throws<InvalidOperationException>(act);
     }
 
     // --- SelectPartialFirst Tests ---
@@ -214,9 +212,9 @@ public class FluentSelectTests : IDisposable
         var product = _db.Connection.From<Product>()
             .SelectPartialFirst(p => p.ProductId, p => p.ProductName);
 
-        product.Should().NotBeNull();
-        product.ProductId.Should().BeGreaterThan(0);
-        product.ProductName.Should().NotBeNullOrEmpty();
+        Assert.NotNull(product);
+        Assert.True(product.ProductId > 0);
+        Assert.NotEmpty(product.ProductName);
     }
 
     [Fact]
@@ -225,9 +223,9 @@ public class FluentSelectTests : IDisposable
         var product = _db.Connection.From<Product>()
             .SelectPartialFirst("product_id", "product_name");
 
-        product.Should().NotBeNull();
-        product.ProductId.Should().BeGreaterThan(0);
-        product.ProductName.Should().NotBeNullOrEmpty();
+        Assert.NotNull(product);
+        Assert.True(product.ProductId > 0);
+        Assert.NotEmpty(product.ProductName);
     }
 
     // --- SelectPartialFirstOrDefault Tests ---
@@ -239,7 +237,7 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .SelectPartialFirstOrDefault(p => p.ProductId, p => p.ProductName);
 
-        product.Should().NotBeNull();
+        Assert.NotNull(product);
     }
 
     [Fact]
@@ -249,7 +247,7 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.ProductId == -999)
             .SelectPartialFirstOrDefault(p => p.ProductId);
 
-        product.Should().BeNull();
+        Assert.Null(product);
     }
 
     // --- Count Tests ---
@@ -259,7 +257,7 @@ public class FluentSelectTests : IDisposable
     {
         var count = _db.Connection.From<Product>().Count();
 
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     [Fact]
@@ -270,8 +268,8 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .Count();
 
-        filteredCount.Should().BeGreaterThan(0);
-        filteredCount.Should().BeLessThan(totalCount);
+        Assert.True(filteredCount > 0);
+        Assert.True(filteredCount < totalCount);
     }
 
     // --- ToSql Tests ---
@@ -282,10 +280,10 @@ public class FluentSelectTests : IDisposable
         var sql = _db.Connection.From<Product>().ToSql();
 
         // The implementation lists all columns explicitly instead of SELECT *
-        sql.Should().Contain("SELECT");
-        sql.Should().Contain("product_id");
-        sql.Should().Contain("product_name");
-        sql.Should().Contain("products");
+        Assert.Contains("SELECT", sql);
+        Assert.Contains("product_id", sql);
+        Assert.Contains("product_name", sql);
+        Assert.Contains("products", sql);
     }
 
     [Fact]
@@ -294,9 +292,9 @@ public class FluentSelectTests : IDisposable
         var sql = _db.Connection.From<Product>()
             .ToSql(p => p.ProductId, p => p.ProductName);
 
-        sql.Should().Contain("product_id");
-        sql.Should().Contain("product_name");
-        sql.Should().NotContain("*");
+        Assert.Contains("product_id", sql);
+        Assert.Contains("product_name", sql);
+        Assert.DoesNotContain("*", sql);
     }
 
     [Fact]
@@ -305,8 +303,8 @@ public class FluentSelectTests : IDisposable
         var sql = _db.Connection.From<Product>()
             .ToSql("product_id", "product_name");
 
-        sql.Should().Contain("product_id");
-        sql.Should().Contain("product_name");
+        Assert.Contains("product_id", sql);
+        Assert.Contains("product_name", sql);
     }
 
     // --- Async Tests ---
@@ -316,7 +314,7 @@ public class FluentSelectTests : IDisposable
     {
         var products = await _db.Connection.From<Product>().SelectAsync();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     [Fact]
@@ -324,8 +322,8 @@ public class FluentSelectTests : IDisposable
     {
         var product = await _db.Connection.From<Product>().SelectFirstAsync();
 
-        product.Should().NotBeNull();
-        product.ProductId.Should().BeGreaterThan(0);
+        Assert.NotNull(product);
+        Assert.True(product.ProductId > 0);
     }
 
     [Fact]
@@ -335,7 +333,7 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.ProductId == -999)
             .SelectFirstOrDefaultAsync();
 
-        product.Should().BeNull();
+        Assert.Null(product);
     }
 
     [Fact]
@@ -347,7 +345,7 @@ public class FluentSelectTests : IDisposable
             .Where(p => p.ProductId == firstProduct.ProductId)
             .SelectSingleAsync();
 
-        product.ProductId.Should().Be(firstProduct.ProductId);
+        Assert.Equal(firstProduct.ProductId, product.ProductId);
     }
 
     [Fact]
@@ -360,7 +358,7 @@ public class FluentSelectTests : IDisposable
                 p => p.ProductName
             });
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     [Fact]
@@ -369,6 +367,6 @@ public class FluentSelectTests : IDisposable
         var products = await _db.Connection.From<Product>()
             .SelectPartialAsync(new[] { "product_id", "product_name" });
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 }

@@ -1,7 +1,5 @@
 using System.Linq.Expressions;
 
-using FluentAssertions;
-
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
@@ -25,9 +23,9 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Be("[product_name]");
-        columns[0].Alias.Should().Be("ProductName");
+        var column = Assert.Single(columns);
+        Assert.Equal("[product_name]", column.Sql);
+        Assert.Equal("ProductName", column.Alias);
     }
 
     [Fact]
@@ -37,9 +35,9 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().HaveCount(2);
-        columns[0].Sql.Should().Be("[product_name]");
-        columns[1].Sql.Should().Be("[unit_price]");
+        Assert.Equal(2, columns.Count);
+        Assert.Equal("[product_name]", columns[0].Sql);
+        Assert.Equal("[unit_price]", columns[1].Sql);
     }
 
     [Fact]
@@ -49,8 +47,8 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Be("[product_id]");
+        var column = Assert.Single(columns);
+        Assert.Equal("[product_id]", column.Sql);
     }
 
     #endregion
@@ -64,9 +62,9 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().HaveCount(2);
-        columns[0].Alias.Should().Be("Name");
-        columns[1].Alias.Should().Be("Price");
+        Assert.Equal(2, columns.Count);
+        Assert.Equal("Name", columns[0].Alias);
+        Assert.Equal("Price", columns[1].Alias);
     }
 
     [Fact]
@@ -76,9 +74,9 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().HaveCount(2);
-        columns[1].Sql.Should().Contain("LEN");
-        columns[1].Alias.Should().Be("Length");
+        Assert.Equal(2, columns.Count);
+        Assert.Contains("LEN", columns[1].Sql);
+        Assert.Equal("Length", columns[1].Alias);
     }
 
     #endregion
@@ -96,9 +94,9 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().HaveCount(2);
-        columns[0].Alias.Should().Be("Name");
-        columns[1].Alias.Should().Be("Price");
+        Assert.Equal(2, columns.Count);
+        Assert.Equal("Name", columns[0].Alias);
+        Assert.Equal("Price", columns[1].Alias);
     }
 
     #endregion
@@ -112,8 +110,8 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("LEN([product_name])");
+        var column = Assert.Single(columns);
+        Assert.Contains("LEN([product_name])", column.Sql);
     }
 
     [Fact]
@@ -123,8 +121,8 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("UPPER([product_name])");
+        var column = Assert.Single(columns);
+        Assert.Contains("UPPER([product_name])", column.Sql);
     }
 
     [Fact]
@@ -134,8 +132,8 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("LOWER([product_name])");
+        var column = Assert.Single(columns);
+        Assert.Contains("LOWER([product_name])", column.Sql);
     }
 
     [Fact]
@@ -145,8 +143,8 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("TRIM([product_name])");
+        var column = Assert.Single(columns);
+        Assert.Contains("TRIM([product_name])", column.Sql);
     }
 
     [Fact]
@@ -156,8 +154,8 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("SUBSTRING([product_name], 1, 5)");
+        var column = Assert.Single(columns);
+        Assert.Contains("SUBSTRING([product_name], 1, 5)", column.Sql);
     }
 
     [Fact]
@@ -167,8 +165,8 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("COALESCE");
+        var column = Assert.Single(columns);
+        Assert.Contains("COALESCE", column.Sql);
     }
 
     [Fact]
@@ -178,8 +176,8 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("CASE WHEN [supplier_id] IS NULL");
+        var column = Assert.Single(columns);
+        Assert.Contains("CASE WHEN [supplier_id] IS NULL", column.Sql);
     }
 
     [Fact]
@@ -189,8 +187,8 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("NULLIF");
+        var column = Assert.Single(columns);
+        Assert.Contains("NULLIF", column.Sql);
     }
 
     #endregion
@@ -204,9 +202,9 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("ROW_NUMBER()");
-        columns[0].Sql.Should().Contain("OVER");
+        var column = Assert.Single(columns);
+        Assert.Contains("ROW_NUMBER()", column.Sql);
+        Assert.Contains("OVER", column.Sql);
     }
 
     [Fact]
@@ -216,9 +214,9 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("RANK()");
-        columns[0].Sql.Should().Contain("OVER");
+        var column = Assert.Single(columns);
+        Assert.Contains("RANK()", column.Sql);
+        Assert.Contains("OVER", column.Sql);
     }
 
     [Fact]
@@ -228,9 +226,9 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("DENSE_RANK()");
-        columns[0].Sql.Should().Contain("OVER");
+        var column = Assert.Single(columns);
+        Assert.Contains("DENSE_RANK()", column.Sql);
+        Assert.Contains("OVER", column.Sql);
     }
 
     [Fact]
@@ -240,11 +238,11 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("ROW_NUMBER()");
-        columns[0].Sql.Should().Contain("OVER");
-        columns[0].Sql.Should().Contain("PARTITION BY");
-        columns[0].Sql.Should().Contain("product_id", "column name should be escaped");
+        var column = Assert.Single(columns);
+        Assert.Contains("ROW_NUMBER()", column.Sql);
+        Assert.Contains("OVER", column.Sql);
+        Assert.Contains("PARTITION BY", column.Sql);
+        Assert.Contains("product_id", column.Sql);
     }
 
     [Fact]
@@ -254,11 +252,11 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("ROW_NUMBER()");
-        columns[0].Sql.Should().Contain("OVER");
-        columns[0].Sql.Should().Contain("ORDER BY");
-        columns[0].Sql.Should().Contain("unit_price", "column should be referenced");
+        var column = Assert.Single(columns);
+        Assert.Contains("ROW_NUMBER()", column.Sql);
+        Assert.Contains("OVER", column.Sql);
+        Assert.Contains("ORDER BY", column.Sql);
+        Assert.Contains("unit_price", column.Sql);
     }
 
     [Fact]
@@ -270,11 +268,11 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("ROW_NUMBER()");
-        columns[0].Sql.Should().Contain("OVER");
-        columns[0].Sql.Should().Contain("PARTITION BY");
-        columns[0].Sql.Should().Contain("ORDER BY");
+        var column = Assert.Single(columns);
+        Assert.Contains("ROW_NUMBER()", column.Sql);
+        Assert.Contains("OVER", column.Sql);
+        Assert.Contains("PARTITION BY", column.Sql);
+        Assert.Contains("ORDER BY", column.Sql);
     }
 
     #endregion
@@ -288,10 +286,10 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("SUM");
-        columns[0].Sql.Should().Contain("unit_price", "column should be referenced");
-        columns[0].Sql.Should().Contain("OVER");
+        var column = Assert.Single(columns);
+        Assert.Contains("SUM", column.Sql);
+        Assert.Contains("unit_price", column.Sql);
+        Assert.Contains("OVER", column.Sql);
     }
 
     [Fact]
@@ -301,10 +299,10 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("AVG");
-        columns[0].Sql.Should().Contain("unit_price", "column should be referenced");
-        columns[0].Sql.Should().Contain("OVER");
+        var column = Assert.Single(columns);
+        Assert.Contains("AVG", column.Sql);
+        Assert.Contains("unit_price", column.Sql);
+        Assert.Contains("OVER", column.Sql);
     }
 
     [Fact]
@@ -314,9 +312,9 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("COUNT");
-        columns[0].Sql.Should().Contain("OVER");
+        var column = Assert.Single(columns);
+        Assert.Contains("COUNT", column.Sql);
+        Assert.Contains("OVER", column.Sql);
     }
 
     [Fact]
@@ -326,10 +324,10 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("MIN");
-        columns[0].Sql.Should().Contain("unit_price", "column should be referenced");
-        columns[0].Sql.Should().Contain("OVER");
+        var column = Assert.Single(columns);
+        Assert.Contains("MIN", column.Sql);
+        Assert.Contains("unit_price", column.Sql);
+        Assert.Contains("OVER", column.Sql);
     }
 
     [Fact]
@@ -339,10 +337,10 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("MAX");
-        columns[0].Sql.Should().Contain("unit_price", "column should be referenced");
-        columns[0].Sql.Should().Contain("OVER");
+        var column = Assert.Single(columns);
+        Assert.Contains("MAX", column.Sql);
+        Assert.Contains("unit_price", column.Sql);
+        Assert.Contains("OVER", column.Sql);
     }
 
     #endregion
@@ -356,8 +354,8 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Contain("Constant");
+        var column = Assert.Single(columns);
+        Assert.Contains("Constant", column.Sql);
     }
 
     [Fact]
@@ -367,8 +365,8 @@ public class SelectExpressionVisitorTests
         var visitor = new SelectExpressionVisitor<Product>(_dialect);
         var columns = visitor.Translate(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Sql.Should().Be("42");
+        var column = Assert.Single(columns);
+        Assert.Equal("42", column.Sql);
     }
 
     #endregion

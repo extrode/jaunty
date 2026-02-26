@@ -1,7 +1,5 @@
 using System.Data;
 
-using FluentAssertions;
-
 using Jaunty.StoredProcedure;
 
 namespace Jaunty.Tests.StoredProcedures;
@@ -111,11 +109,11 @@ public class SpParametersTests
     {
         var param = new SpParameter("TestParam", 42, ParameterDirection.Output, DbType.Int32, 100);
 
-        param.Name.Should().Be("TestParam");
-        param.Value.Should().Be(42);
-        param.Direction.Should().Be(ParameterDirection.Output);
-        param.DbType.Should().Be(DbType.Int32);
-        param.Size.Should().Be(100);
+        Assert.Equal("TestParam", param.Name);
+        Assert.Equal(42, param.Value);
+        Assert.Equal(ParameterDirection.Output, param.Direction);
+        Assert.Equal(DbType.Int32, param.DbType);
+        Assert.Equal(100, param.Size);
     }
 
     [Fact]
@@ -123,11 +121,11 @@ public class SpParametersTests
     {
         var param = new SpParameter("NullParam", null, ParameterDirection.InputOutput, DbType.String, 50);
 
-        param.Name.Should().Be("NullParam");
-        param.Value.Should().BeNull();
-        param.Direction.Should().Be(ParameterDirection.InputOutput);
-        param.DbType.Should().Be(DbType.String);
-        param.Size.Should().Be(50);
+        Assert.Equal("NullParam", param.Name);
+        Assert.Null(param.Value);
+        Assert.Equal(ParameterDirection.InputOutput, param.Direction);
+        Assert.Equal(DbType.String, param.DbType);
+        Assert.Equal(50, param.Size);
     }
 
     [Fact]
@@ -135,11 +133,11 @@ public class SpParametersTests
     {
         var param = new SpParameter("SimpleParam", "value", ParameterDirection.Input, null, null);
 
-        param.Name.Should().Be("SimpleParam");
-        param.Value.Should().Be("value");
-        param.Direction.Should().Be(ParameterDirection.Input);
-        param.DbType.Should().BeNull();
-        param.Size.Should().BeNull();
+        Assert.Equal("SimpleParam", param.Name);
+        Assert.Equal("value", param.Value);
+        Assert.Equal(ParameterDirection.Input, param.Direction);
+        Assert.Null(param.DbType);
+        Assert.Null(param.Size);
     }
 
     #endregion

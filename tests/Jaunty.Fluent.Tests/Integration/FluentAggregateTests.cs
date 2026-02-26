@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -18,7 +16,7 @@ public class FluentAggregateTests : IDisposable
     public void Count_ReturnsCorrectCount()
     {
         var count = _db.Connection.From<Product>().Count();
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     [Fact]
@@ -26,7 +24,7 @@ public class FluentAggregateTests : IDisposable
     {
         // COUNT(supplier_id) should count only non-null values
         var count = _db.Connection.From<Product>().Count(p => p.SupplierId);
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     [Fact]
@@ -36,10 +34,10 @@ public class FluentAggregateTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .Count();
 
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
 
         var allCount = _db.Connection.From<Product>().Count();
-        count.Should().BeLessThan(allCount);
+        Assert.True(count < allCount);
     }
 
     [Fact]
@@ -48,21 +46,21 @@ public class FluentAggregateTests : IDisposable
         var count1 = _db.Connection.From<Product>().Count();
         var count2 = _db.Connection.From<Product>().SelectCount();
 
-        count2.Should().Be(count1);
+        Assert.Equal(count1, count2);
     }
 
     [Fact]
     public void LongCount_ReturnsCorrectCount()
     {
         var count = _db.Connection.From<Product>().LongCount();
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     [Fact]
     public void LongCount_WithSelector_CountsNonNullValues()
     {
         var count = _db.Connection.From<Product>().LongCount(p => p.SupplierId);
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     // --- SUM Tests (using int/long to avoid SQLite decimal issues) ---
@@ -72,7 +70,7 @@ public class FluentAggregateTests : IDisposable
     {
         // SupplierId is int? - SQLite will return int64 for SUM
         var sum = _db.Connection.From<Product>().Sum(p => p.SupplierId);
-        sum.Should().BeGreaterThan(0);
+        Assert.True(sum > 0);
     }
 
     [Fact]
@@ -84,8 +82,8 @@ public class FluentAggregateTests : IDisposable
 
         var sumAll = _db.Connection.From<Product>().Sum(p => p.SupplierId);
 
-        sumCategory1.Should().BeGreaterThan(0);
-        sumAll.Should().BeGreaterThan(sumCategory1!.Value);
+        Assert.True(sumCategory1 > 0);
+        Assert.True(sumAll > sumCategory1!.Value);
     }
 
     // --- AVG Tests ---
@@ -94,7 +92,7 @@ public class FluentAggregateTests : IDisposable
     public void Avg_ReturnsCorrectAverage()
     {
         var avg = _db.Connection.From<Product>().Avg(p => p.SupplierId);
-        avg.Should().BeGreaterThan(0);
+        Assert.True(avg > 0);
     }
 
     [Fact]
@@ -104,7 +102,7 @@ public class FluentAggregateTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .Avg(p => p.SupplierId);
 
-        avgCategory1.Should().BeGreaterThan(0);
+        Assert.True(avgCategory1 > 0);
     }
 
     // --- MIN Tests ---
@@ -113,7 +111,7 @@ public class FluentAggregateTests : IDisposable
     public void Min_WithIntColumn_ReturnsMinValue()
     {
         var min = _db.Connection.From<Product>().Min(p => p.SupplierId);
-        min.Should().BeGreaterThan(0);
+        Assert.True(min > 0);
     }
 
     [Fact]
@@ -123,7 +121,7 @@ public class FluentAggregateTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .Min(p => p.SupplierId);
 
-        minCategory1.Should().BeGreaterThan(0);
+        Assert.True(minCategory1 > 0);
     }
 
     // --- MAX Tests ---
@@ -132,10 +130,10 @@ public class FluentAggregateTests : IDisposable
     public void Max_WithIntColumn_ReturnsMaxValue()
     {
         var max = _db.Connection.From<Product>().Max(p => p.SupplierId);
-        max.Should().BeGreaterThan(0);
+        Assert.True(max > 0);
 
         var min = _db.Connection.From<Product>().Min(p => p.SupplierId);
-        max.Should().BeGreaterThanOrEqualTo(min!.Value);
+        Assert.True(max >= min!.Value);
     }
 
     [Fact]
@@ -145,7 +143,7 @@ public class FluentAggregateTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .Max(p => p.SupplierId);
 
-        maxCategory1.Should().BeGreaterThan(0);
+        Assert.True(maxCategory1 > 0);
     }
 
     // --- Async Tests ---
@@ -154,42 +152,42 @@ public class FluentAggregateTests : IDisposable
     public async Task CountAsync_ReturnsCorrectCount()
     {
         var count = await _db.Connection.From<Product>().CountAsync();
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     [Fact]
     public async Task CountAsync_WithSelector_CountsNonNullValues()
     {
         var count = await _db.Connection.From<Product>().CountAsync(p => p.SupplierId);
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     [Fact]
     public async Task SumAsync_ReturnsCorrectSum()
     {
         var sum = await _db.Connection.From<Product>().SumAsync(p => p.SupplierId);
-        sum.Should().BeGreaterThan(0);
+        Assert.True(sum > 0);
     }
 
     [Fact]
     public async Task AvgAsync_ReturnsCorrectAverage()
     {
         var avg = await _db.Connection.From<Product>().AvgAsync(p => p.SupplierId);
-        avg.Should().BeGreaterThan(0);
+        Assert.True(avg > 0);
     }
 
     [Fact]
     public async Task MinAsync_ReturnsMinValue()
     {
         var min = await _db.Connection.From<Product>().MinAsync(p => p.SupplierId);
-        min.Should().BeGreaterThan(0);
+        Assert.True(min > 0);
     }
 
     [Fact]
     public async Task MaxAsync_ReturnsMaxValue()
     {
         var max = await _db.Connection.From<Product>().MaxAsync(p => p.SupplierId);
-        max.Should().BeGreaterThan(0);
+        Assert.True(max > 0);
     }
 
     // --- SelectX Async aliases ---
@@ -200,6 +198,6 @@ public class FluentAggregateTests : IDisposable
         var count1 = await _db.Connection.From<Product>().CountAsync();
         var count2 = await _db.Connection.From<Product>().SelectCountAsync();
 
-        count2.Should().Be(count1);
+        Assert.Equal(count1, count2);
     }
 }

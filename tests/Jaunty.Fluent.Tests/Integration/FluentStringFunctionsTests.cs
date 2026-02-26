@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -24,8 +22,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.Length > 10)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName!.Length > 10);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductName!.Length > 10));
     }
 
     [Fact]
@@ -36,8 +34,8 @@ public class FluentStringFunctionsTests : IDisposable
             .ToSql();
 
         // SQLite uses LENGTH
-        sql.Should().Contain("LENGTH");
-        sql.Should().Contain("product_name");
+        Assert.Contains("LENGTH", sql);
+        Assert.Contains("product_name", sql);
     }
 
     [Fact]
@@ -48,7 +46,7 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.Length == 4)
             .Select();
 
-        products.Should().OnlyContain(p => p.ProductName!.Length == 4);
+        Assert.All(products, p => Assert.True(p.ProductName!.Length == 4));
     }
 
     // ==========================================
@@ -63,8 +61,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.ToUpper() == "CHANG")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName!.Equals("Chang", StringComparison.OrdinalIgnoreCase));
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductName!.Equals("Chang", StringComparison.OrdinalIgnoreCase)));
     }
 
     [Fact]
@@ -74,8 +72,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.ToUpper() == "CHANG")
             .ToSql();
 
-        sql.Should().Contain("UPPER");
-        sql.Should().Contain("product_name");
+        Assert.Contains("UPPER", sql);
+        Assert.Contains("product_name", sql);
     }
 
     // ==========================================
@@ -90,8 +88,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.ToLower() == "chang")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName!.Equals("Chang", StringComparison.OrdinalIgnoreCase));
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductName!.Equals("Chang", StringComparison.OrdinalIgnoreCase)));
     }
 
     [Fact]
@@ -101,8 +99,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.ToLower() == "chang")
             .ToSql();
 
-        sql.Should().Contain("LOWER");
-        sql.Should().Contain("product_name");
+        Assert.Contains("LOWER", sql);
+        Assert.Contains("product_name", sql);
     }
 
     // ==========================================
@@ -116,8 +114,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.Trim() == "Chang")
             .ToSql();
 
-        sql.Should().Contain("TRIM");
-        sql.Should().Contain("product_name");
+        Assert.Contains("TRIM", sql);
+        Assert.Contains("product_name", sql);
     }
 
     [Fact]
@@ -128,8 +126,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.Trim() == "Chang")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName!.Trim() == "Chang");
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductName!.Trim() == "Chang"));
     }
 
     // ==========================================
@@ -144,8 +142,8 @@ public class FluentStringFunctionsTests : IDisposable
             .ToSql();
 
         // SQLite uses SUBSTR
-        sql.Should().Contain("SUBSTR");
-        sql.Should().Contain("product_name");
+        Assert.Contains("SUBSTR", sql);
+        Assert.Contains("product_name", sql);
     }
 
     [Fact]
@@ -156,8 +154,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.Substring(0, 3) == "Cha")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName!.Substring(0, 3) == "Cha");
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductName!.Substring(0, 3) == "Cha"));
     }
 
     // ==========================================
@@ -172,10 +170,10 @@ public class FluentStringFunctionsTests : IDisposable
             .And(p => p.Discontinued == false)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.ProductName!.Length > 5 &&
-            p.Discontinued == false);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.ProductName!.Length > 5 &&
+            p.Discontinued == false));
     }
 
     [Fact]
@@ -186,8 +184,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Or(p => p.ProductName.ToUpper() == "CHANG")
             .ToSql();
 
-        sql.Should().Contain("UPPER");
-        sql.Should().Contain("OR");
+        Assert.Contains("UPPER", sql);
+        Assert.Contains("OR", sql);
     }
 
     [Fact]
@@ -198,9 +196,9 @@ public class FluentStringFunctionsTests : IDisposable
             .And(p => p.ProductName.ToUpper() != "TEST")
             .ToSql();
 
-        sql.Should().Contain("LENGTH");
-        sql.Should().Contain("UPPER");
-        sql.Should().Contain("AND");
+        Assert.Contains("LENGTH", sql);
+        Assert.Contains("UPPER", sql);
+        Assert.Contains("AND", sql);
     }
 
     // ==========================================
@@ -214,8 +212,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.Length > 10)
             .SelectAsync();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName!.Length > 10);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductName!.Length > 10));
     }
 
     [Fact]
@@ -225,7 +223,7 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.ToUpper() == "CHANG")
             .CountAsync();
 
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     // ==========================================
@@ -241,8 +239,11 @@ public class FluentStringFunctionsTests : IDisposable
             .Take(5)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().BeInAscendingOrder(p => p.ProductName);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(string.Compare(products[i - 1].ProductName, products[i].ProductName) <= 0);
+        }
     }
 
     [Fact]
@@ -253,8 +254,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.ProductName.Substring(1, 2) == "ha")
             .ToSql();
 
-        sql.Should().Contain("SUBSTR");
-        sql.Should().Contain("product_name");
+        Assert.Contains("SUBSTR", sql);
+        Assert.Contains("product_name", sql);
     }
 
     [Fact]
@@ -265,8 +266,8 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => p.QuantityPerUnit!.Length > 5)
             .ToSql();
 
-        sql.Should().Contain("LENGTH");
-        sql.Should().Contain("quantity_per_unit");
+        Assert.Contains("LENGTH", sql);
+        Assert.Contains("quantity_per_unit", sql);
     }
 
     // ==========================================
@@ -280,7 +281,7 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(p => Sql.Coalesce(p.QuantityPerUnit, "N/A") != "N/A")
             .ToSql();
 
-        sql.Should().Contain("COALESCE");
+        Assert.Contains("COALESCE", sql);
     }
 
     [Fact]
@@ -290,6 +291,6 @@ public class FluentStringFunctionsTests : IDisposable
             .Where(o => Sql.Year(o.OrderDate) == 1997)
             .ToSql();
 
-        sql.Should().Contain("order_date");
+        Assert.Contains("order_date", sql);
     }
 }

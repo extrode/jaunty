@@ -1,5 +1,6 @@
 using Jaunty.Scaffolding.Providers.SQLite;
 using Jaunty.Scaffolding.Schema;
+using Xunit;
 
 namespace Jaunty.Scaffolding.Tests.Unit;
 
@@ -29,8 +30,8 @@ public class SQLiteTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Theory]
@@ -42,8 +43,8 @@ public class SQLiteTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Theory]
@@ -53,8 +54,8 @@ public class SQLiteTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Theory]
@@ -68,8 +69,8 @@ public class SQLiteTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeFalse();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.False(result.IsValueType);
     }
 
     [Theory]
@@ -79,8 +80,8 @@ public class SQLiteTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeFalse();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.False(result.IsValueType);
     }
 
     [Theory]
@@ -90,8 +91,8 @@ public class SQLiteTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Theory]
@@ -103,8 +104,8 @@ public class SQLiteTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Theory]
@@ -115,8 +116,8 @@ public class SQLiteTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Fact]
@@ -124,8 +125,8 @@ public class SQLiteTypeMapperTests
     {
         var column = CreateColumn("UNKNOWN_TYPE");
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be("object");
-        result.IsValueType.Should().BeFalse();
+        Assert.Equal("object", result.TypeName);
+        Assert.False(result.IsValueType);
     }
 
     [Fact]
@@ -133,7 +134,7 @@ public class SQLiteTypeMapperTests
     {
         var column = CreateColumn("VARCHAR(255)");
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be("string");
+        Assert.Equal("string", result.TypeName);
     }
 
     [Fact]
@@ -141,6 +142,6 @@ public class SQLiteTypeMapperTests
     {
         var column = CreateColumn("integer");
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be("long");
+        Assert.Equal("long", result.TypeName);
     }
 }
