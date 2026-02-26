@@ -267,7 +267,8 @@ These are capabilities **no competitor offers**:
 
 | Gap | Impact | Effort | Priority |
 |-----|--------|--------|----------|
-| **No interceptors / diagnostics hooks** | Cannot integrate with logging, APM, or auditing frameworks | Medium | P0 |
+| **No interceptors / diagnostics hooks** | Cannot integrate with logging, APM, auditing, or multi-tenancy | Medium | P0 |
+| **No DI / service registration helpers** | Modern .NET apps expect first-class Dependency Injection support | Low | P0 |
 | **No caching abstraction** | RepoDB has this; enterprise teams expect it | Medium | P0 |
 | **3-way join limitations in Fluent** | Users hit wall on complex queries | Medium | P1 |
 | **No published benchmarks** | Cannot prove performance claims | Low | P0 |
@@ -284,7 +285,6 @@ These are capabilities **no competitor offers**:
 | Fluent API CTE async gaps | Limits advanced queries | Low | P2 |
 | No composite primary key support | Blocks some legacy schemas | Medium | P2 |
 | No batch/TVP insert optimization | SQL Server SqlBulkCopy path missing | High | P2 |
-| No DI / service registration helpers | Modern .NET apps expect this | Low | P2 |
 
 ### 5.3 Nice-to-Have Gaps (Consider)
 
@@ -396,23 +396,20 @@ These are acknowledged trade-offs, not bugs:
 ### 7.1 Architecture Improvements (Pre-Launch)
 
 1. **Add interceptor pipeline:**
-   ```csharp
-   JauntyConfig.OnCommandExecuting += (sender, args) => { /* logging */ };
-   JauntyConfig.OnCommandExecuted += (sender, args) => { /* metrics */ };
-   ```
+   Implement `IJauntyInterceptor` to support cross-cutting concerns:
+   - **Auditing**: Automatically set `CreatedAt`/`UpdatedAt` and `CreatedBy`/`UpdatedBy`.
+   - **Multi-Tenancy**: Automatically inject `tenant_id` filters into SQL queries.
+   - **Diagnostics**: Detailed execution timing and exception logging.
 
-2. **Add caching abstraction:**
+2. **Add DI integration package (`Jaunty.Extensions.DependencyInjection`):**
+   - Provide `IJauntyDb` interface for better mockability and testability.
+   - Manage connection lifetimes (Scoped/Transient) automatically.
+   - Support named/multiple database configurations.
+
+3. **Add caching abstraction:**
    ```csharp
    JauntyConfig.CacheProvider = new MemoryCacheProvider(TimeSpan.FromMinutes(5));
    connection.Query<Product>(sql, cacheKey: "products_active");
-   ```
-
-3. **Add DI integration package:**
-   ```csharp
-   services.AddJaunty(options => {
-       options.DefaultConnectionString = "...";
-       options.ColumnNameResolver = NamingConvention.ToSnakeCase;
-   });
    ```
 
 4. **Add connection resilience:**
