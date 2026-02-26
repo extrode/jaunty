@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -19,8 +17,8 @@ public class FluentWhereTests : IDisposable
             .Where("category_id", (short)1)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
     }
 
     [Fact]
@@ -30,8 +28,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
     }
 
     [Fact]
@@ -42,8 +40,8 @@ public class FluentWhereTests : IDisposable
             .And(p => p.Discontinued == false)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1 && p.Discontinued == false);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 && p.Discontinued == false));
     }
 
     [Fact]
@@ -54,8 +52,8 @@ public class FluentWhereTests : IDisposable
             .Or(p => p.CategoryId == 2)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1 || p.CategoryId == 2);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 || p.CategoryId == 2));
     }
 
     [Fact]
@@ -65,9 +63,9 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.CategoryId == 1 && p.UnitPrice > 10)
             .ToSql();
 
-        sql.Should().Contain("WHERE");
-        sql.Should().Contain("category_id");
-        sql.Should().Contain("unit_price");
+        Assert.Contains("WHERE", sql);
+        Assert.Contains("category_id", sql);
+        Assert.Contains("unit_price", sql);
     }
 
     [Fact]
@@ -77,7 +75,7 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.SupplierId == null)
             .ToSql();
 
-        sql.Should().Contain("IS NULL");
+        Assert.Contains("IS NULL", sql);
     }
 
     // --- String Method Tests ---
@@ -89,8 +87,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.ProductName.Contains("Chef"))
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName.Contains("Chef"));
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductName.Contains("Chef")));
     }
 
     [Fact]
@@ -100,8 +98,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.ProductName.StartsWith("Chef"))
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName.StartsWith("Chef"));
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductName.StartsWith("Chef")));
     }
 
     [Fact]
@@ -111,8 +109,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.ProductName.EndsWith("Syrup"))
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName.EndsWith("Syrup"));
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductName.EndsWith("Syrup")));
     }
 
     [Fact]
@@ -122,8 +120,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.ProductName.Equals("Chai"))
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName == "Chai");
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal("Chai", p.ProductName));
     }
 
     [Fact]
@@ -133,8 +131,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.ProductName.Equals("chai", StringComparison.OrdinalIgnoreCase))
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.ProductName.Equals("Chai", StringComparison.OrdinalIgnoreCase));
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductName.Equals("Chai", StringComparison.OrdinalIgnoreCase)));
     }
 
     [Fact]
@@ -145,7 +143,7 @@ public class FluentWhereTests : IDisposable
             .ToSql();
 
         // SQLite uses GLOB, others use LIKE
-        (sql.Contains("LIKE") || sql.Contains("GLOB")).Should().BeTrue();
+        Assert.True(sql.Contains("LIKE") || sql.Contains("GLOB"));
     }
 
     [Fact]
@@ -156,7 +154,7 @@ public class FluentWhereTests : IDisposable
             .ToSql();
 
         // SQLite uses GLOB, others use LIKE
-        (sql.Contains("LIKE") || sql.Contains("GLOB")).Should().BeTrue();
+        Assert.True(sql.Contains("LIKE") || sql.Contains("GLOB"));
     }
 
     [Fact]
@@ -167,7 +165,7 @@ public class FluentWhereTests : IDisposable
             .ToSql();
 
         // SQLite uses GLOB, others use LIKE
-        (sql.Contains("LIKE") || sql.Contains("GLOB")).Should().BeTrue();
+        Assert.True(sql.Contains("LIKE") || sql.Contains("GLOB"));
     }
 
     // --- WhereRaw Tests ---
@@ -179,8 +177,8 @@ public class FluentWhereTests : IDisposable
             .WhereRaw("category_id = 1")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
     }
 
     [Fact]
@@ -190,8 +188,8 @@ public class FluentWhereTests : IDisposable
             .WhereRaw("category_id = @catId", new { catId = (short)1 })
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
     }
 
     [Fact]
@@ -201,8 +199,8 @@ public class FluentWhereTests : IDisposable
             .WhereRaw("category_id IN (1, 2, 3)")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1 || p.CategoryId == 2 || p.CategoryId == 3);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 || p.CategoryId == 2 || p.CategoryId == 3));
     }
 
     [Fact]
@@ -212,8 +210,8 @@ public class FluentWhereTests : IDisposable
             .WhereRaw("category_id = 1")
             .ToSql();
 
-        sql.Should().Contain("WHERE");
-        sql.Should().Contain("category_id = 1");
+        Assert.Contains("WHERE", sql);
+        Assert.Contains("category_id = 1", sql);
     }
 
     // --- AndRaw / OrRaw Tests ---
@@ -226,8 +224,8 @@ public class FluentWhereTests : IDisposable
             .AndRaw("discontinued = 0")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1 && p.Discontinued == false);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 && p.Discontinued == false));
     }
 
     [Fact]
@@ -238,8 +236,8 @@ public class FluentWhereTests : IDisposable
             .AndRaw("unit_price > @minPrice", new { minPrice = 10.0m })
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1 && p.UnitPrice > 10.0m);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 && p.UnitPrice > 10.0m));
     }
 
     [Fact]
@@ -250,8 +248,8 @@ public class FluentWhereTests : IDisposable
             .OrRaw("category_id = 2")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1 || p.CategoryId == 2);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 || p.CategoryId == 2));
     }
 
     [Fact]
@@ -262,8 +260,8 @@ public class FluentWhereTests : IDisposable
             .OrRaw("category_id = @catId", new { catId = (short)2 })
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1 || p.CategoryId == 2);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 || p.CategoryId == 2));
     }
 
     // --- Multiple Chain Tests ---
@@ -277,11 +275,11 @@ public class FluentWhereTests : IDisposable
             .And(p => p.UnitPrice > 5)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.CategoryId == 1 &&
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.CategoryId == 1 &&
             p.Discontinued == false &&
-            p.UnitPrice > 5);
+            p.UnitPrice > 5));
     }
 
     [Fact]
@@ -293,11 +291,11 @@ public class FluentWhereTests : IDisposable
             .Or(p => p.CategoryId == 3)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            p.CategoryId == 1 ||
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.CategoryId == 1 ||
             p.CategoryId == 2 ||
-            p.CategoryId == 3);
+            p.CategoryId == 3));
     }
 
     [Fact]
@@ -309,7 +307,7 @@ public class FluentWhereTests : IDisposable
             .OrRaw("category_id = 2")
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     // --- Comparison Operators Tests ---
@@ -321,8 +319,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.UnitPrice > 20)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.UnitPrice > 20);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.UnitPrice > 20));
     }
 
     [Fact]
@@ -332,8 +330,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.UnitsInStock >= 50)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.UnitsInStock >= 50);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.UnitsInStock >= 50));
     }
 
     [Fact]
@@ -343,8 +341,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.UnitPrice < 10)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.UnitPrice < 10);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.UnitPrice < 10));
     }
 
     [Fact]
@@ -354,8 +352,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.UnitsInStock <= 20)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.UnitsInStock <= 20);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.UnitsInStock <= 20));
     }
 
     [Fact]
@@ -365,8 +363,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.CategoryId != 1)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId != 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId != 1));
     }
 
     // --- Boolean Tests ---
@@ -379,7 +377,7 @@ public class FluentWhereTests : IDisposable
             .Select();
 
         // May or may not have discontinued products
-        products.Should().OnlyContain(p => p.Discontinued == true);
+        Assert.All(products, p => Assert.True(p.Discontinued == true));
     }
 
     [Fact]
@@ -389,8 +387,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.Discontinued == false)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.Discontinued == false);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.Discontinued == false));
     }
 
     // --- Async Tests ---
@@ -402,8 +400,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .SelectAsync();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
     }
 
     [Fact]
@@ -413,7 +411,7 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.CategoryId == 1)
             .CountAsync();
 
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     [Fact]
@@ -423,8 +421,8 @@ public class FluentWhereTests : IDisposable
             .WhereRaw("category_id = 1")
             .SelectAsync();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
     }
 
     // --- Complex Nested Predicate Tests ---
@@ -437,8 +435,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => (p.CategoryId == 1 || p.CategoryId == 2) && p.Discontinued == false)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => (p.CategoryId == 1 || p.CategoryId == 2) && p.Discontinued == false);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True((p.CategoryId == 1 || p.CategoryId == 2) && p.Discontinued == false));
     }
 
     [Fact]
@@ -449,9 +447,9 @@ public class FluentWhereTests : IDisposable
             .Where(p => ((p.CategoryId == 1 && p.UnitPrice > 10) || (p.CategoryId == 2 && p.UnitPrice < 50)) && p.Discontinued == false)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
         // Verify the filter was applied
-        products.Should().OnlyContain(p => p.Discontinued == false);
+        Assert.All(products, p => Assert.True(p.Discontinued == false));
     }
 
     [Fact]
@@ -462,8 +460,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.CategoryId == 1 || p.CategoryId == 2 || p.CategoryId == 3)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId >= 1 && p.CategoryId <= 3);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId >= 1 && p.CategoryId <= 3));
     }
 
     [Fact]
@@ -474,8 +472,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => p.CategoryId == 1 && p.UnitPrice > 10 && p.SupplierId != null)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1 && p.UnitPrice > 10 && p.SupplierId != null);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 && p.UnitPrice > 10 && p.SupplierId != null));
     }
 
     [Fact]
@@ -486,8 +484,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => !(p.Discontinued == true))
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => !p.Discontinued);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(!p.Discontinued));
     }
 
     [Fact]
@@ -498,8 +496,8 @@ public class FluentWhereTests : IDisposable
             .Where(p => (p.SupplierId == null || p.SupplierId == 1) && p.CategoryId == 1)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => (p.SupplierId == null || p.SupplierId == 1) && p.CategoryId == 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True((p.SupplierId == null || p.SupplierId == 1) && p.CategoryId == 1));
     }
 
     [Fact]
@@ -512,10 +510,10 @@ public class FluentWhereTests : IDisposable
             .Or(p => p.CategoryId == 2)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
         // Verify results match the complex condition: (CategoryId == 1 AND UnitPrice > 10) OR CategoryId == 2
-        products.Should().OnlyContain(p => 
-            (p.CategoryId == 1 && p.UnitPrice > 10) || p.CategoryId == 2);
+        Assert.All(products, p =>
+            Assert.True((p.CategoryId == 1 && p.UnitPrice > 10) || p.CategoryId == 2));
     }
 
     [Fact]
@@ -527,8 +525,8 @@ public class FluentWhereTests : IDisposable
             .Or(p => p.ProductName.Contains("Grand"))
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => 
-            p.ProductName.Contains("Chef") || p.ProductName.Contains("Grand"));
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True(p.ProductName.Contains("Chef") || p.ProductName.Contains("Grand")));
     }
 }

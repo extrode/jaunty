@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -24,9 +22,9 @@ public class FluentSqlFunctionsTests : IDisposable
             .Where(p => Sql.Coalesce(p.UnitsInStock, (short)0) > 10)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            (p.UnitsInStock ?? 0) > 10);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True((p.UnitsInStock ?? 0) > 10));
     }
 
     [Fact]
@@ -37,8 +35,8 @@ public class FluentSqlFunctionsTests : IDisposable
             .ToSql();
 
         // SQLite uses COALESCE
-        sql.Should().Contain("COALESCE");
-        sql.Should().Contain("units_in_stock");
+        Assert.Contains("COALESCE", sql);
+        Assert.Contains("units_in_stock", sql);
     }
 
     [Fact]
@@ -50,10 +48,10 @@ public class FluentSqlFunctionsTests : IDisposable
             .Where(p => Sql.Coalesce(p.UnitPrice, 0m) > 10m)
             .ToSql();
 
-        sql.Should().Contain("COALESCE");
-        sql.Should().Contain("unit_price");
-        sql.Should().Contain(">");
-        sql.Should().Contain("WHERE");
+        Assert.Contains("COALESCE", sql);
+        Assert.Contains("unit_price", sql);
+        Assert.Contains(">", sql);
+        Assert.Contains("WHERE", sql);
     }
 
     [Fact]
@@ -63,9 +61,9 @@ public class FluentSqlFunctionsTests : IDisposable
             .Where(p => Sql.Coalesce(p.UnitsInStock, p.UnitsOnOrder, (short)0) > 0)
             .ToSql();
 
-        sql.Should().Contain("COALESCE");
-        sql.Should().Contain("units_in_stock");
-        sql.Should().Contain("units_on_order");
+        Assert.Contains("COALESCE", sql);
+        Assert.Contains("units_in_stock", sql);
+        Assert.Contains("units_on_order", sql);
     }
 
     // ==========================================
@@ -80,9 +78,9 @@ public class FluentSqlFunctionsTests : IDisposable
             .Where(p => Sql.IsNull(p.UnitsInStock, (short)0) > 10)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            (p.UnitsInStock ?? 0) > 10);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True((p.UnitsInStock ?? 0) > 10));
     }
 
     [Fact]
@@ -93,8 +91,8 @@ public class FluentSqlFunctionsTests : IDisposable
             .ToSql();
 
         // SQLite uses IFNULL
-        sql.Should().Contain("IFNULL");
-        sql.Should().Contain("units_in_stock");
+        Assert.Contains("IFNULL", sql);
+        Assert.Contains("units_in_stock", sql);
     }
 
     [Fact]
@@ -107,8 +105,8 @@ public class FluentSqlFunctionsTests : IDisposable
                                                .Where(p => Sql.IsNull(p.ReorderLevel, (short)0) < (short)15)
                                                .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => (p.ReorderLevel ?? 0) < 15);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True((p.ReorderLevel ?? 0) < 15));
     }
 
     // ==========================================
@@ -122,8 +120,8 @@ public class FluentSqlFunctionsTests : IDisposable
             .Where(p => Sql.NullIf(p.UnitsInStock, (short?)0) != null)
             .ToSql();
 
-        sql.Should().Contain("NULLIF");
-        sql.Should().Contain("units_in_stock");
+        Assert.Contains("NULLIF", sql);
+        Assert.Contains("units_in_stock", sql);
     }
 
     [Fact]
@@ -136,8 +134,8 @@ public class FluentSqlFunctionsTests : IDisposable
             .Select();
 
         // Products where UnitsInStock is not 0 and not null
-        products.Should().OnlyContain(p =>
-            p.UnitsInStock != null && p.UnitsInStock != 0);
+        Assert.All(products, p =>
+            Assert.True(p.UnitsInStock != null && p.UnitsInStock != 0));
     }
 
     // ==========================================
@@ -152,10 +150,10 @@ public class FluentSqlFunctionsTests : IDisposable
             .And(p => p.Discontinued == false)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p =>
-            (p.UnitsInStock ?? 0) > 5 &&
-            p.Discontinued == false);
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True((p.UnitsInStock ?? 0) > 5 &&
+            p.Discontinued == false));
     }
 
     [Fact]
@@ -169,8 +167,11 @@ public class FluentSqlFunctionsTests : IDisposable
             .Take(10)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().BeInAscendingOrder(p => p.UnitsInStock);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True((products[i - 1].UnitsInStock ?? 0) <= (products[i].UnitsInStock ?? 0));
+        }
     }
 
     // ==========================================
@@ -184,8 +185,8 @@ public class FluentSqlFunctionsTests : IDisposable
             .Where(p => Sql.Coalesce(p.UnitsInStock, (short)0) > 10)
             .SelectAsync();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => (p.UnitsInStock ?? 0) > 10);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True((p.UnitsInStock ?? 0) > 10));
     }
 
     [Fact]
@@ -197,7 +198,7 @@ public class FluentSqlFunctionsTests : IDisposable
             .Where(p => Sql.IsNull(p.UnitsInStock, (short)0) > (short)10)
             .CountAsync();
 
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     // ==========================================
@@ -213,7 +214,7 @@ public class FluentSqlFunctionsTests : IDisposable
 
         // This includes products where stock is null (coalesced to 100)
         // or where stock >= 100
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     [Fact]
@@ -224,6 +225,6 @@ public class FluentSqlFunctionsTests : IDisposable
             .Select();
 
         // Products where ReorderLevel is null OR ReorderLevel is 0
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 }

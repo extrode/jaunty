@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Attributes;
 using Jaunty.Tests.Helpers.Dialects;
 
@@ -98,15 +96,15 @@ public class UpsertTests : IClassFixture<DialectFixture>
             var result = connection.Upsert(entity);
 
             if (dialect.Provider == DialectProvider.MariaDb)
-                result.Should().BeGreaterThan(0);
+                Assert.True(result > 0);
             else
-                result.Should().Be(1);
+                Assert.Equal(1, result);
 
             var insertedName = QueryScalarString(connection,
                 "SELECT name FROM upsert_test WHERE id = @id",
                 new { id = entity.Id });
 
-            insertedName.Should().Be("UpsertTest");
+            Assert.Equal("UpsertTest", insertedName);
         }
         finally
         {
@@ -142,15 +140,15 @@ public class UpsertTests : IClassFixture<DialectFixture>
             var result = connection.Upsert(entity);
 
             if (dialect.Provider == DialectProvider.MariaDb)
-                result.Should().BeGreaterThan(0);
+                Assert.True(result > 0);
             else
-                result.Should().Be(1);
+                Assert.Equal(1, result);
 
             var updatedName = QueryScalarString(connection,
                 "SELECT name FROM upsert_test WHERE id = @id",
                 new { id = entity.Id });
 
-            updatedName.Should().Be("UpdatedName");
+            Assert.Equal("UpdatedName", updatedName);
         }
         finally
         {
@@ -181,15 +179,15 @@ public class UpsertTests : IClassFixture<DialectFixture>
             var result = await connection.UpsertAsync(entity, cancellationToken: CancellationToken.None);
 
             if (dialect.Provider == DialectProvider.MariaDb)
-                result.Should().BeGreaterThan(0);
+                Assert.True(result > 0);
             else
-                result.Should().Be(1);
+                Assert.Equal(1, result);
 
             var insertedName = QueryScalarString(connection,
                 "SELECT name FROM upsert_test WHERE id = @id",
                 new { id = entity.Id });
 
-            insertedName.Should().Be("AsyncUpsertTest");
+            Assert.Equal("AsyncUpsertTest", insertedName);
         }
         finally
         {
@@ -224,15 +222,15 @@ public class UpsertTests : IClassFixture<DialectFixture>
             var result = await connection.UpsertAsync(entity, cancellationToken: CancellationToken.None);
 
             if (dialect.Provider == DialectProvider.MariaDb)
-                result.Should().BeGreaterThan(0);
+                Assert.True(result > 0);
             else
-                result.Should().Be(1);
+                Assert.Equal(1, result);
 
             var updatedName = QueryScalarString(connection,
                 "SELECT name FROM upsert_test WHERE id = @id",
                 new { id = entity.Id });
 
-            updatedName.Should().Be("AsyncUpdated");
+            Assert.Equal("AsyncUpdated", updatedName);
         }
         finally
         {

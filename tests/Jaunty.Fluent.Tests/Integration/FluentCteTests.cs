@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Jaunty.Fluent;
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
@@ -34,8 +33,8 @@ public class FluentCteTests : IDisposable
             .Select();
 
         // Assert
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.UnitPrice > 50);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.UnitPrice > 50));
     }
 
     [Fact]
@@ -47,11 +46,11 @@ public class FluentCteTests : IDisposable
             .ToSql();
 
         // Assert
-        sql.Should().StartWith("WITH ExpensiveProducts AS (");
-        sql.Should().Contain("SELECT * FROM");
-        sql.Should().Contain("products");
-        sql.Should().Contain("unit_price");
-        sql.Should().Contain(") SELECT * FROM ExpensiveProducts");
+        Assert.StartsWith("WITH ExpensiveProducts AS (", sql);
+        Assert.Contains("SELECT * FROM", sql);
+        Assert.Contains("products", sql);
+        Assert.Contains("unit_price", sql);
+        Assert.Contains(") SELECT * FROM ExpensiveProducts", sql);
     }
 
     [Fact]
@@ -64,8 +63,8 @@ public class FluentCteTests : IDisposable
             .Select();
 
         // Assert
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.UnitPrice > 20 && p.CategoryId == 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.UnitPrice > 20 && p.CategoryId == 1));
     }
 
     [Fact]
@@ -78,9 +77,9 @@ public class FluentCteTests : IDisposable
             .ToSql();
 
         // Assert
-        sql.Should().Contain("WITH FilteredProducts AS (");
-        sql.Should().Contain(") SELECT * FROM FilteredProducts WHERE");
-        sql.Should().Contain("category_id");
+        Assert.Contains("WITH FilteredProducts AS (", sql);
+        Assert.Contains(") SELECT * FROM FilteredProducts WHERE", sql);
+        Assert.Contains("category_id", sql);
     }
 
     #endregion
@@ -97,8 +96,11 @@ public class FluentCteTests : IDisposable
             .Select();
 
         // Assert
-        products.Should().NotBeEmpty();
-        products.Should().BeInAscendingOrder(p => p.ProductName);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(string.Compare(products[i - 1].ProductName, products[i].ProductName) <= 0);
+        }
     }
 
     [Fact]
@@ -111,8 +113,11 @@ public class FluentCteTests : IDisposable
             .Select();
 
         // Assert
-        products.Should().NotBeEmpty();
-        products.Should().BeInDescendingOrder(p => p.UnitPrice);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(products[i - 1].UnitPrice >= products[i].UnitPrice);
+        }
     }
 
     [Fact]
@@ -125,7 +130,7 @@ public class FluentCteTests : IDisposable
             .Select();
 
         // Assert
-        products.Should().HaveCountLessThanOrEqualTo(5);
+        Assert.True(products.Count <= 5);
     }
 
     [Fact]
@@ -140,7 +145,7 @@ public class FluentCteTests : IDisposable
             .Select();
 
         // Assert
-        products.Should().HaveCountLessThanOrEqualTo(3);
+        Assert.True(products.Count <= 3);
     }
 
     #endregion
@@ -158,8 +163,8 @@ public class FluentCteTests : IDisposable
             .Select();
 
         // Assert
-        products.Should().OnlyContain(p =>
-            p.UnitPrice > 10 && p.CategoryId == 1 && p.UnitsInStock > 0);
+        Assert.All(products, p =>
+            Assert.True(p.UnitPrice > 10 && p.CategoryId == 1 && p.UnitsInStock > 0));
     }
 
     [Fact]
@@ -173,8 +178,8 @@ public class FluentCteTests : IDisposable
             .Select();
 
         // Assert
-        products.Should().OnlyContain(p =>
-            p.UnitPrice > 100 && (p.CategoryId == 1 || p.CategoryId == 2));
+        Assert.All(products, p =>
+            Assert.True(p.UnitPrice > 100 && (p.CategoryId == 1 || p.CategoryId == 2)));
     }
 
     #endregion
@@ -191,8 +196,8 @@ public class FluentCteTests : IDisposable
             .SelectFirst();
 
         // Assert
-        product.Should().NotBeNull();
-        product.UnitPrice.Should().BeGreaterThan(50);
+        Assert.NotNull(product);
+        Assert.True(product.UnitPrice > 50);
     }
 
     [Fact]
@@ -204,7 +209,7 @@ public class FluentCteTests : IDisposable
             .SelectFirstOrDefault();
 
         // Assert
-        product.Should().BeNull();
+        Assert.Null(product);
     }
 
     #endregion
@@ -220,8 +225,8 @@ public class FluentCteTests : IDisposable
             .SelectAsync();
 
         // Assert
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.UnitPrice > 30);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.UnitPrice > 30));
     }
 
     #endregion
@@ -238,7 +243,7 @@ public class FluentCteTests : IDisposable
             .Select();
 
         // Assert
-        products.Should().OnlyContain(p => p.UnitPrice > 10 && p.CategoryId == 1);
+        Assert.All(products, p => Assert.True(p.UnitPrice > 10 && p.CategoryId == 1));
     }
 
     #endregion
@@ -253,8 +258,8 @@ public class FluentCteTests : IDisposable
             .As(_db.Connection.From<Product>().Where(p => p.UnitPrice > 30))
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.UnitPrice > 30);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.UnitPrice > 30));
     }
 
     [Fact]
@@ -266,8 +271,8 @@ public class FluentCteTests : IDisposable
             .ToSql();
 
         // Assert
-        sql.Should().Contain("WITH FilteredProducts AS (");
-        sql.Should().Contain(") SELECT * FROM FilteredProducts");
+        Assert.Contains("WITH FilteredProducts AS (", sql);
+        Assert.Contains(") SELECT * FROM FilteredProducts", sql);
     }
 
     #endregion

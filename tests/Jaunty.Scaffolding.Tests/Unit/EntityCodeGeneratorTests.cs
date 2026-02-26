@@ -2,6 +2,7 @@ using Jaunty.Scaffolding.Abstractions;
 using Jaunty.Scaffolding.CodeGeneration;
 using Jaunty.Scaffolding.Providers.SqlServer;
 using Jaunty.Scaffolding.Schema;
+using Xunit;
 
 namespace Jaunty.Scaffolding.Tests.Unit;
 
@@ -101,9 +102,9 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        code.Should().Contain("namespace Test.Entities;");
-        code.Should().Contain("public class Product");
-        code.Should().Contain("[Table(\"Products\", \"dbo\")]");
+        Assert.Contains("namespace Test.Entities;", code);
+        Assert.Contains("public class Product", code);
+        Assert.Contains("[Table(\"Products\", \"dbo\")]", code);
     }
 
     [Fact]
@@ -112,7 +113,7 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        code.Should().Contain("[Key]");
+        Assert.Contains("[Key]", code);
     }
 
     [Fact]
@@ -121,7 +122,7 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        code.Should().Contain("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+        Assert.Contains("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]", code);
     }
 
     [Fact]
@@ -130,7 +131,7 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        code.Should().Contain("public decimal? UnitPrice { get; set; }");
+        Assert.Contains("public decimal? UnitPrice { get; set; }", code);
     }
 
     [Fact]
@@ -139,7 +140,7 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        code.Should().Contain("public string ProductName { get; set; } = string.Empty;");
+        Assert.Contains("public string ProductName { get; set; } = string.Empty;", code);
     }
 
     [Fact]
@@ -148,14 +149,14 @@ public class EntityCodeGeneratorTests
         var table = CreateSnakeCaseTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        code.Should().Contain("[Column(\"order_detail_id\")]");
-        code.Should().Contain("public int OrderDetailId { get; set; }");
+        Assert.Contains("[Column(\"order_detail_id\")]", code);
+        Assert.Contains("public int OrderDetailId { get; set; }", code);
 
-        code.Should().Contain("[Column(\"order_id\")]");
-        code.Should().Contain("public int OrderId { get; set; }");
+        Assert.Contains("[Column(\"order_id\")]", code);
+        Assert.Contains("public int OrderId { get; set; }", code);
 
-        code.Should().Contain("[Column(\"unit_price\")]");
-        code.Should().Contain("public decimal? UnitPrice { get; set; }");
+        Assert.Contains("[Column(\"unit_price\")]", code);
+        Assert.Contains("public decimal? UnitPrice { get; set; }", code);
     }
 
     [Fact]
@@ -164,8 +165,8 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable(); // TableName = "Products"
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        code.Should().Contain("public class Product");
-        code.Should().NotContain("public class Products");
+        Assert.Contains("public class Product", code);
+        Assert.DoesNotContain("public class Products", code);
     }
 
     [Fact]
@@ -180,7 +181,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        code.Should().Contain("public class Products");
+        Assert.Contains("public class Products", code);
     }
 
     [Fact]
@@ -196,7 +197,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        code.Should().Contain("public class ProductEntity");
+        Assert.Contains("public class ProductEntity", code);
     }
 
     [Fact]
@@ -212,7 +213,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        code.Should().Contain("public class DbProduct");
+        Assert.Contains("public class DbProduct", code);
     }
 
     [Fact]
@@ -227,7 +228,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        code.Should().Contain("public partial class");
+        Assert.Contains("public partial class", code);
     }
 
     [Fact]
@@ -242,9 +243,9 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        code.Should().Contain("namespace Test.Entities");
-        code.Should().Contain("{");
-        code.Should().NotContain("namespace Test.Entities;");
+        Assert.Contains("namespace Test.Entities", code);
+        Assert.Contains("{", code);
+        Assert.DoesNotContain("namespace Test.Entities;", code);
     }
 
     [Fact]
@@ -259,7 +260,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        code.Should().NotContain("[Table(");
+        Assert.DoesNotContain("[Table(", code);
     }
 
     [Fact]
@@ -274,7 +275,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        code.Should().NotContain("[Column(");
+        Assert.DoesNotContain("[Column(", code);
     }
 
     [Fact]
@@ -289,7 +290,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        code.Should().NotContain("[Key]");
+        Assert.DoesNotContain("[Key]", code);
     }
 
     [Fact]
@@ -304,7 +305,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        code.Should().NotContain("[DatabaseGenerated(");
+        Assert.DoesNotContain("[DatabaseGenerated(", code);
     }
 
     [Fact]
@@ -329,8 +330,8 @@ public class EntityCodeGeneratorTests
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
         // Should have [Table("simple_table")] without schema
-        code.Should().Contain("[Table(\"simple_table\")]");
-        code.Should().NotContain("[Table(\"simple_table\", \"\")]");
+        Assert.Contains("[Table(\"simple_table\")]", code);
+        Assert.DoesNotContain("[Table(\"simple_table\", \"\")]", code);
     }
 
     [Fact]
@@ -339,6 +340,6 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        code.Should().Contain("using Jaunty.Attributes;");
+        Assert.Contains("using Jaunty.Attributes;", code);
     }
 }

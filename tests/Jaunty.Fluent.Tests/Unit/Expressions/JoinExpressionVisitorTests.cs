@@ -1,7 +1,5 @@
 using System.Linq.Expressions;
 
-using FluentAssertions;
-
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
@@ -25,8 +23,8 @@ public class JoinExpressionVisitorTests
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
         var sql = visitor.Translate(expr);
 
-        sql.Should().Contain("[category_id]");
-        sql.Should().Contain("=");
+        Assert.Contains("[category_id]", sql);
+        Assert.Contains("=", sql);
     }
 
     [Fact]
@@ -36,9 +34,9 @@ public class JoinExpressionVisitorTests
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
         var sql = visitor.Translate(expr);
 
-        sql.Should().Contain("AND");
-        sql.Should().Contain("p.[category_id] = c.[category_id]");
-        sql.Should().Contain("c.[category_name] = 'Beverages'");
+        Assert.Contains("AND", sql);
+        Assert.Contains("p.[category_id] = c.[category_id]", sql);
+        Assert.Contains("c.[category_name] = 'Beverages'", sql);
     }
 
     [Fact]
@@ -48,7 +46,7 @@ public class JoinExpressionVisitorTests
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
         var sql = visitor.Translate(expr);
 
-        sql.Should().Contain("OR");
+        Assert.Contains("OR", sql);
     }
 
     #endregion
@@ -62,8 +60,8 @@ public class JoinExpressionVisitorTests
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "prod", "cat");
         var sql = visitor.Translate(expr);
 
-        sql.Should().Contain("[product_id]");
-        sql.Should().Contain("[category_id]");
+        Assert.Contains("[product_id]", sql);
+        Assert.Contains("[category_id]", sql);
     }
 
     #endregion
@@ -73,14 +71,14 @@ public class JoinExpressionVisitorTests
     [Fact]
     public void Visit_ComplexJoinCondition_GeneratesCorrectSql()
     {
-        Expression<Func<Product, Category, bool>> expr = (p, c) => 
-            p.CategoryId == c.CategoryId && 
+        Expression<Func<Product, Category, bool>> expr = (p, c) =>
+            p.CategoryId == c.CategoryId &&
             p.Discontinued == false;
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
         var sql = visitor.Translate(expr);
 
-        sql.Should().Contain("AND");
-        sql.Should().Contain("[category_id]");
+        Assert.Contains("AND", sql);
+        Assert.Contains("[category_id]", sql);
     }
 
     #endregion
@@ -94,7 +92,7 @@ public class JoinExpressionVisitorTests
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
         var sql = visitor.Translate(expr);
 
-        sql.Should().Contain("<>");
+        Assert.Contains("<>", sql);
     }
 
     #endregion

@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -32,9 +30,9 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .ToSql();
 
-        sql.Should().Contain("IN (SELECT");
-        sql.Should().Contain("category_id");
-        sql.Should().Contain("categories");
+        Assert.Contains("IN (SELECT", sql);
+        Assert.Contains("category_id", sql);
+        Assert.Contains("categories", sql);
     }
 
     [Fact]
@@ -50,8 +48,8 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .ToSql();
 
-        sql.Should().Contain("NOT IN (SELECT");
-        sql.Should().Contain("category_id");
+        Assert.Contains("NOT IN (SELECT", sql);
+        Assert.Contains("category_id", sql);
     }
 
     [Fact]
@@ -68,9 +66,9 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .ToSql();
 
-        sql.Should().Contain("discontinued");
-        sql.Should().Contain("AND");
-        sql.Should().Contain("IN (SELECT");
+        Assert.Contains("discontinued", sql);
+        Assert.Contains("AND", sql);
+        Assert.Contains("IN (SELECT", sql);
     }
 
     [Fact]
@@ -87,9 +85,9 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .ToSql();
 
-        sql.Should().Contain("category_id = @");
-        sql.Should().Contain("OR");
-        sql.Should().Contain("IN (SELECT");
+        Assert.Contains("category_id = @", sql);
+        Assert.Contains("OR", sql);
+        Assert.Contains("IN (SELECT", sql);
     }
 
     // ==========================================
@@ -110,7 +108,7 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
 
         // Verify all products are in categories starting with 'B'
         var validCategoryIds = _db.Connection.From<Category>()
@@ -119,7 +117,7 @@ public class FluentSubqueryTests : IDisposable
             .Select(c => c.CategoryId)
             .ToHashSet();
 
-        products.Should().OnlyContain(p => validCategoryIds.Contains(p.CategoryId!.Value));
+        Assert.All(products, p => Assert.True(validCategoryIds.Contains(p.CategoryId!.Value)));
     }
 
     [Fact]
@@ -136,7 +134,7 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     // ==========================================
@@ -162,8 +160,8 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId != firstCategory.CategoryId);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId != firstCategory.CategoryId));
     }
 
     [Fact]
@@ -182,7 +180,7 @@ public class FluentSubqueryTests : IDisposable
 
         var allProducts = _db.Connection.From<Product>().Select();
 
-        productsWithNotIn.Should().HaveCount(allProducts.Count);
+        Assert.Equal(allProducts.Count, productsWithNotIn.Count);
     }
 
     // ==========================================
@@ -211,8 +209,8 @@ public class FluentSubqueryTests : IDisposable
             .Select(c => c.CategoryId)
             .ToHashSet();
 
-        products.Should().OnlyContain(p =>
-            p.Discontinued == false && validCategoryIds.Contains(p.CategoryId!.Value));
+        Assert.All(products, p =>
+            Assert.True(p.Discontinued == false && validCategoryIds.Contains(p.CategoryId!.Value)));
     }
 
     [Fact]
@@ -235,8 +233,8 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .Select();
 
-        products.Should().OnlyContain(p =>
-            p.Discontinued == false && p.CategoryId != firstCategory.CategoryId);
+        Assert.All(products, p =>
+            Assert.True(p.Discontinued == false && p.CategoryId != firstCategory.CategoryId));
     }
 
     [Fact]
@@ -262,8 +260,8 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .Select();
 
-        products.Should().OnlyContain(p =>
-            p.CategoryId == cat1Id || p.CategoryId == cat2Id);
+        Assert.All(products, p =>
+            Assert.True(p.CategoryId == cat1Id || p.CategoryId == cat2Id));
     }
 
     [Fact]
@@ -287,8 +285,8 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .Select();
 
-        products.Should().OnlyContain(p =>
-            p.Discontinued == true || p.CategoryId != firstCategory.CategoryId);
+        Assert.All(products, p =>
+            Assert.True(p.Discontinued == true || p.CategoryId != firstCategory.CategoryId));
     }
 
     // ==========================================
@@ -308,7 +306,7 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .SelectAsync();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     [Fact]
@@ -324,7 +322,7 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .CountAsync();
 
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     // ==========================================
@@ -345,7 +343,10 @@ public class FluentSubqueryTests : IDisposable
             .OrderBy(p => p.ProductName)
             .Select();
 
-        products.Should().BeInAscendingOrder(p => p.ProductName);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(string.Compare(products[i - 1].ProductName, products[i].ProductName) <= 0);
+        }
     }
 
     [Fact]
@@ -362,7 +363,7 @@ public class FluentSubqueryTests : IDisposable
             .Take(3)
             .Select();
 
-        products.Should().HaveCountLessThanOrEqualTo(3);
+        Assert.True(products.Count <= 3);
     }
 
     [Fact]
@@ -380,7 +381,7 @@ public class FluentSubqueryTests : IDisposable
 
         // All product IDs should be unique
         var productIds = products.Select(p => p.ProductId).ToList();
-        productIds.Should().OnlyHaveUniqueItems();
+        Assert.Equal(productIds.Distinct().Count(), productIds.Count);
     }
 
     // ==========================================
@@ -401,7 +402,7 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .Select();
 
-        products.Should().BeEmpty();
+        Assert.Empty(products);
     }
 
     [Fact]
@@ -419,7 +420,7 @@ public class FluentSubqueryTests : IDisposable
             .Select();
 
         var allProducts = _db.Connection.From<Product>().Select();
-        products.Should().HaveCount(allProducts.Count);
+        Assert.Equal(allProducts.Count, products.Count);
     }
 
     [Fact]
@@ -444,8 +445,8 @@ public class FluentSubqueryTests : IDisposable
             .Select(c => c.CategoryId)
             .ToHashSet();
 
-        products.Should().OnlyContain(p =>
-            validCategoryIds.Contains(p.CategoryId!.Value) && p.Discontinued == false);
+        Assert.All(products, p =>
+            Assert.True(validCategoryIds.Contains(p.CategoryId!.Value) && p.Discontinued == false));
     }
 
     [Fact]
@@ -465,6 +466,6 @@ public class FluentSubqueryTests : IDisposable
                 subquery)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 }

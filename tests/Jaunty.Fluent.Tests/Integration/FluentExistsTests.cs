@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -24,7 +22,7 @@ public class FluentExistsTests : IDisposable
             .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
             .Select();
 
-        categories.Should().NotBeEmpty();
+        Assert.NotEmpty(categories);
 
         // All returned categories should have products
         foreach (var category in categories)
@@ -32,7 +30,7 @@ public class FluentExistsTests : IDisposable
             var productCount = _db.Connection.From<Product>()
                 .Where(p => p.CategoryId == category.CategoryId)
                 .Count();
-            productCount.Should().BeGreaterThan(0);
+            Assert.True(productCount > 0);
         }
     }
 
@@ -43,11 +41,11 @@ public class FluentExistsTests : IDisposable
             .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
             .ToSql();
 
-        sql.Should().Contain("EXISTS");
-        sql.Should().Contain("SELECT 1 FROM");
-        sql.Should().Contain("products");
-        sql.Should().Contain("WHERE");
-        sql.Should().Contain("category_id");
+        Assert.Contains("EXISTS", sql);
+        Assert.Contains("SELECT 1 FROM", sql);
+        Assert.Contains("products", sql);
+        Assert.Contains("WHERE", sql);
+        Assert.Contains("category_id", sql);
     }
 
     // ==========================================
@@ -69,7 +67,7 @@ public class FluentExistsTests : IDisposable
             var productCount = _db.Connection.From<Product>()
                 .Where(p => p.CategoryId == category.CategoryId)
                 .Count();
-            productCount.Should().Be(0);
+            Assert.Equal(0, productCount);
         }
     }
 
@@ -80,9 +78,9 @@ public class FluentExistsTests : IDisposable
             .WhereNotExists<Product>((c, p) => c.CategoryId == p.CategoryId)
             .ToSql();
 
-        sql.Should().Contain("NOT EXISTS");
-        sql.Should().Contain("SELECT 1 FROM");
-        sql.Should().Contain("products");
+        Assert.Contains("NOT EXISTS", sql);
+        Assert.Contains("SELECT 1 FROM", sql);
+        Assert.Contains("products", sql);
     }
 
     // ==========================================
@@ -98,8 +96,8 @@ public class FluentExistsTests : IDisposable
             .AndExists<Product>((c, p) => c.CategoryId == p.CategoryId)
             .Select();
 
-        categories.Should().NotBeEmpty();
-        categories.Should().OnlyContain(c => c.CategoryName!.StartsWith("C"));
+        Assert.NotEmpty(categories);
+        Assert.All(categories, c => Assert.True(c.CategoryName!.StartsWith("C")));
     }
 
     [Fact]
@@ -110,8 +108,8 @@ public class FluentExistsTests : IDisposable
             .AndNotExists<Product>((c, p) => c.CategoryId == p.CategoryId)
             .ToSql();
 
-        sql.Should().Contain("WHERE");
-        sql.Should().Contain("AND NOT EXISTS");
+        Assert.Contains("WHERE", sql);
+        Assert.Contains("AND NOT EXISTS", sql);
     }
 
     // ==========================================
@@ -127,8 +125,8 @@ public class FluentExistsTests : IDisposable
             .OrExists<Product>((c, p) => c.CategoryId == p.CategoryId && p.UnitsInStock > 100)
             .ToSql();
 
-        sql.Should().Contain("OR EXISTS");
-        sql.Should().Contain("units_in_stock");
+        Assert.Contains("OR EXISTS", sql);
+        Assert.Contains("units_in_stock", sql);
     }
 
     [Fact]
@@ -139,7 +137,7 @@ public class FluentExistsTests : IDisposable
             .OrNotExists<Product>((c, p) => c.CategoryId == p.CategoryId)
             .ToSql();
 
-        sql.Should().Contain("OR NOT EXISTS");
+        Assert.Contains("OR NOT EXISTS", sql);
     }
 
     // ==========================================
@@ -161,7 +159,7 @@ public class FluentExistsTests : IDisposable
                 .Where(p => p.CategoryId == category.CategoryId)
                 .And(p => p.Discontinued == true)
                 .Count();
-            discontinuedCount.Should().BeGreaterThan(0);
+            Assert.True(discontinuedCount > 0);
         }
     }
 
@@ -172,10 +170,10 @@ public class FluentExistsTests : IDisposable
             .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId && p.UnitPrice > 50 && p.Discontinued == false)
             .ToSql();
 
-        sql.Should().Contain("EXISTS");
-        sql.Should().Contain("category_id");
-        sql.Should().Contain("unit_price");
-        sql.Should().Contain("discontinued");
+        Assert.Contains("EXISTS", sql);
+        Assert.Contains("category_id", sql);
+        Assert.Contains("unit_price", sql);
+        Assert.Contains("discontinued", sql);
     }
 
     // ==========================================
@@ -189,7 +187,7 @@ public class FluentExistsTests : IDisposable
             .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
             .SelectAsync();
 
-        categories.Should().NotBeEmpty();
+        Assert.NotEmpty(categories);
     }
 
     [Fact]
@@ -200,7 +198,7 @@ public class FluentExistsTests : IDisposable
             .CountAsync();
 
         // Count should be valid (>= 0)
-        count.Should().BeGreaterThanOrEqualTo(0);
+        Assert.True(count >= 0);
     }
 
     // ==========================================
@@ -215,8 +213,11 @@ public class FluentExistsTests : IDisposable
             .OrderBy(c => c.CategoryName)
             .Select();
 
-        categories.Should().NotBeEmpty();
-        categories.Should().BeInAscendingOrder(c => c.CategoryName);
+        Assert.NotEmpty(categories);
+        for (int i = 1; i < categories.Count; i++)
+        {
+            Assert.True(string.Compare(categories[i - 1].CategoryName, categories[i].CategoryName) <= 0);
+        }
     }
 
     [Fact]
@@ -227,6 +228,6 @@ public class FluentExistsTests : IDisposable
             .Take(3)
             .Select();
 
-        categories.Should().HaveCountLessThanOrEqualTo(3);
+        Assert.True(categories.Count <= 3);
     }
 }

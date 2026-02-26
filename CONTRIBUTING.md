@@ -134,6 +134,46 @@ public static List<T> DoQuery<T>(IDbConnection conn, string s) where T : new()
 - Mirror source directory structure
 - Use descriptive test method names: `MethodName_Scenario_ExpectedResult`
 
+### Assertion Library
+
+**Jaunty uses xUnit's built-in Assert class** for all assertions.
+
+> **Note (2026-02-25)**: FluentAssertions was removed due to licensing restrictions.
+> All tests now use standard xUnit Assert methods.
+
+**Examples:**
+
+```csharp
+// Equality checks
+Assert.Equal(expected, actual);
+Assert.NotEqual(unexpected, actual);
+
+// Null checks
+Assert.Null(value);
+Assert.NotNull(value);
+
+// Collection checks
+Assert.Empty(collection);
+Assert.NotEmpty(collection);
+Assert.Single(collection);
+Assert.Contains(item, collection);
+Assert.DoesNotContain(item, collection);
+Assert.All(collection, item => Assert.True(condition));
+
+// Boolean checks
+Assert.True(condition);
+Assert.False(condition);
+
+// Exception checks
+var ex = Assert.Throws<ExceptionType>(() => action);
+Assert.Contains("expected message", ex.Message);
+
+// String checks
+Assert.StartsWith(prefix, value);
+Assert.EndsWith(suffix, value);
+Assert.Contains(substring, value);
+```
+
 ### Test Types
 
 1. **Unit Tests**: Test individual methods/classes in isolation

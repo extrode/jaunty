@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -21,8 +19,8 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        results.Should().NotBeEmpty();
-        results.All(r => r.Count > 0).Should().BeTrue();
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.True(r.Count > 0));
     }
 
     [Fact]
@@ -32,7 +30,7 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, TotalStock = g.Sum(p => p.UnitsInStock) });
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     [Fact]
@@ -42,7 +40,7 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, AvgStock = g.Avg(p => p.UnitsInStock) });
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     [Fact]
@@ -52,7 +50,7 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, MinStock = g.Min(p => p.UnitsInStock) });
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     [Fact]
@@ -62,7 +60,7 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, MaxStock = g.Max(p => p.UnitsInStock) });
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     [Fact]
@@ -78,8 +76,8 @@ public class FluentGroupByTests : IDisposable
                 AvgStock = g.Avg(p => p.UnitsInStock)
             });
 
-        results.Should().NotBeEmpty();
-        results.All(r => r.ProductCount > 0).Should().BeTrue();
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.True(r.ProductCount > 0));
     }
 
     // --- GROUP BY with WHERE Tests ---
@@ -93,14 +91,14 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
 
         // Verify count is less than total without filter
         var totalCount = _db.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .Count();
 
-        results.Sum(r => r.Count).Should().Be(totalCount);
+        Assert.Equal(totalCount, results.Sum(r => r.Count));
     }
 
     [Fact]
@@ -111,7 +109,7 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.SupplierId)
             .Select(g => new { SupplierId = g.Key, Count = g.Count() });
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     // --- GROUP BY with HAVING Tests ---
@@ -125,7 +123,7 @@ public class FluentGroupByTests : IDisposable
             .Having(g => g.Count() > 5)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        results.All(r => r.Count > 5).Should().BeTrue();
+        Assert.All(results, r => Assert.True(r.Count > 5));
     }
 
     [Fact]
@@ -136,8 +134,8 @@ public class FluentGroupByTests : IDisposable
             .Having(g => g.Count() > 0)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        results.Should().NotBeEmpty();
-        results.All(r => r.Count > 0).Should().BeTrue();
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.True(r.Count > 0));
     }
 
     // --- GROUP BY with Composite Key Tests ---
@@ -154,7 +152,7 @@ public class FluentGroupByTests : IDisposable
                 Count = g.Count()
             });
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     [Fact]
@@ -170,7 +168,7 @@ public class FluentGroupByTests : IDisposable
                 TotalStock = g.Sum(p => p.UnitsInStock)
             });
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     // --- ToSql Tests ---
@@ -182,10 +180,10 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        sql.Should().Contain("SELECT");
-        sql.Should().Contain("COUNT(*)");
-        sql.Should().Contain("GROUP BY");
-        sql.Should().Contain("category_id");
+        Assert.Contains("SELECT", sql);
+        Assert.Contains("COUNT(*)", sql);
+        Assert.Contains("GROUP BY", sql);
+        Assert.Contains("category_id", sql);
     }
 
     [Fact]
@@ -196,8 +194,8 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        sql.Should().Contain("WHERE");
-        sql.Should().Contain("GROUP BY");
+        Assert.Contains("WHERE", sql);
+        Assert.Contains("GROUP BY", sql);
     }
 
     [Fact]
@@ -208,9 +206,9 @@ public class FluentGroupByTests : IDisposable
             .Having(g => g.Count() > 5)
             .ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        sql.Should().Contain("GROUP BY");
-        sql.Should().Contain("HAVING");
-        sql.Should().Contain("COUNT(*)");
+        Assert.Contains("GROUP BY", sql);
+        Assert.Contains("HAVING", sql);
+        Assert.Contains("COUNT(*)", sql);
     }
 
     [Fact]
@@ -220,9 +218,9 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => new { p.CategoryId, p.SupplierId })
             .ToSql(g => new { g.Key.CategoryId, g.Key.SupplierId, Count = g.Count() });
 
-        sql.Should().Contain("category_id");
-        sql.Should().Contain("supplier_id");
-        sql.Should().Contain("GROUP BY");
+        Assert.Contains("category_id", sql);
+        Assert.Contains("supplier_id", sql);
+        Assert.Contains("GROUP BY", sql);
     }
 
     // --- Async Tests ---
@@ -234,8 +232,8 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        results.Should().NotBeEmpty();
-        results.All(r => r.Count > 0).Should().BeTrue();
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.True(r.Count > 0));
     }
 
     [Fact]
@@ -246,7 +244,7 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     [Fact]
@@ -257,7 +255,7 @@ public class FluentGroupByTests : IDisposable
             .Having(g => g.Count() > 5)
             .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        results.All(r => r.Count > 5).Should().BeTrue();
+        Assert.All(results, r => Assert.True(r.Count > 5));
     }
 
     [Fact]
@@ -275,7 +273,7 @@ public class FluentGroupByTests : IDisposable
                 MaxPrice = g.Max(p => p.UnitPrice)
             });
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     // --- Edge Cases ---
@@ -289,7 +287,7 @@ public class FluentGroupByTests : IDisposable
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        results.Should().BeEmpty();
+        Assert.Empty(results);
     }
 
     [Fact]
@@ -304,8 +302,8 @@ public class FluentGroupByTests : IDisposable
                 SupplierCount = g.Count(p => p.SupplierId)
             });
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
         // SupplierCount should be <= TotalCount (counts non-null SupplierId only)
-        results.All(r => r.SupplierCount <= r.TotalCount).Should().BeTrue();
+        Assert.All(results, r => Assert.True(r.SupplierCount <= r.TotalCount));
     }
 }
