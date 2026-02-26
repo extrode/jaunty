@@ -3,17 +3,16 @@ using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
 
-public class FluentJoinTests : IDisposable
+public class FluentJoinTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentJoinTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentJoinTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     [Fact]
     public void InnerJoin_ExpressionKeys_ReturnsJoinedResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Select();
@@ -25,7 +24,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_PredicateExpression_ReturnsJoinedResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On((p, c) => p.CategoryId == c.CategoryId)
             .Select();
@@ -36,7 +35,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_StringColumns_WithAliases_ReturnsJoinedResults()
     {
-        var products = _db.Connection.From<Product>("p")
+        var products = _fixture.Connection.From<Product>("p")
             .InnerJoin<Category>("c")
             .On("p.category_id", "c.category_id")
             .Select();
@@ -47,7 +46,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_RawCondition_ReturnsJoinedResults()
     {
-        var products = _db.Connection.From<Product>("p")
+        var products = _fixture.Connection.From<Product>("p")
             .InnerJoin<Category>("c")
             .On("p.category_id = c.category_id")
             .Select();
@@ -58,7 +57,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_SelectTyped_ReturnsCategories()
     {
-        var categories = _db.Connection.From<Product>()
+        var categories = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Select<Category>();
@@ -70,7 +69,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_SelectBothTyped_ReturnsTuples()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectBoth();
@@ -84,7 +83,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_WithWhere_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Where((p, c) => c.CategoryId == 1)
@@ -97,7 +96,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_WithOrderBy_OrdersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .OrderBy(p => p.ProductName)
@@ -113,7 +112,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_Count_ReturnsCorrectCount()
     {
-        var count = _db.Connection.From<Product>()
+        var count = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .LongCount();
@@ -124,7 +123,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_ToSql_GeneratesValidSql()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .ToSql();
@@ -137,7 +136,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_WithAliases_ToSql_GeneratesValidSql()
     {
-        var sql = _db.Connection.From<Product>("p")
+        var sql = _fixture.Connection.From<Product>("p")
             .InnerJoin<Category>("c")
             .On("p.category_id", "c.category_id")
             .ToSql();
@@ -150,7 +149,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void LeftJoin_ReturnsAllFromLeft()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .LeftJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Select();
@@ -161,7 +160,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_SelectPartial_ReturnsDynamicResults()
     {
-        var results = _db.Connection.From<Product>("p")
+        var results = _fixture.Connection.From<Product>("p")
             .InnerJoin<Category>("c")
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectPartial("p.product_name, c.category_name");
@@ -176,7 +175,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_SelectPartial_WithMapper_ReturnsTypedResults()
     {
-        var results = _db.Connection.From<Product>("p")
+        var results = _fixture.Connection.From<Product>("p")
             .InnerJoin<Category>("c")
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectPartial("p.product_name, c.category_name", reader => new
@@ -197,7 +196,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_SelectGeneric_ReturnsTuples()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectBoth();
@@ -211,7 +210,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_SelectGeneric_WithWhere_FiltersResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Where((p, c) => c.CategoryId == 1)
@@ -224,7 +223,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_SelectGeneric_WrongT1Type_ThrowsException()
     {
-        var query = _db.Connection.From<Product>()
+        var query = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId);
 
@@ -237,7 +236,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_SelectGeneric_WrongT2Type_ThrowsException()
     {
-        var query = _db.Connection.From<Product>()
+        var query = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId);
 
@@ -250,7 +249,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_SelectCustomEntity_WithMapper_ReturnsCustomEntity()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Select(reader => new ProductCategoryDto
@@ -267,7 +266,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task InnerJoin_SelectAsyncGeneric_ReturnsTuples()
     {
-        var results = await _db.Connection.From<Product>()
+        var results = await _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectAsync<Product, Category>();
@@ -281,7 +280,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task InnerJoin_SelectAsyncTyped_ReturnsCategories()
     {
-        var results = await _db.Connection.From<Product>()
+        var results = await _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectAsync<Category>();
@@ -294,7 +293,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void LeftJoin_SelectGeneric_ReturnsTuples()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .LeftJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectBoth();
@@ -309,7 +308,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task InnerJoin_SelectAsyncCategory_ReturnsCategories()
     {
-        var categories = await _db.Connection.From<Product>()
+        var categories = await _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectAsync<Category>();
@@ -321,7 +320,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task InnerJoin_SelectFirstAsync_ReturnsFirstProduct()
     {
-        var product = await _db.Connection.From<Product>()
+        var product = await _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectFirstAsync();
@@ -333,7 +332,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task InnerJoin_SelectFirstOrDefaultAsync_ReturnsFirstOrNull()
     {
-        var product = await _db.Connection.From<Product>()
+        var product = await _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectFirstOrDefaultAsync();
@@ -344,7 +343,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task InnerJoin_SelectFirstOrDefaultAsync_NoResults_ReturnsNull()
     {
-        var product = await _db.Connection.From<Product>()
+        var product = await _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Where((p, c) => p.ProductId == -999) // Non-existent
@@ -356,7 +355,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task InnerJoin_SelectFirstBothAsync_ReturnsTuple()
     {
-        var result = await _db.Connection.From<Product>()
+        var result = await _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectFirstBothAsync();
@@ -368,7 +367,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task InnerJoin_LongCountAsync_ReturnsCorrectCount()
     {
-        var count = await _db.Connection.From<Product>()
+        var count = await _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .LongCountAsync();
@@ -379,7 +378,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task InnerJoin_LongCountAsync_WithWhere_FiltersResults()
     {
-        var count = await _db.Connection.From<Product>()
+        var count = await _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Where((p, c) => c.CategoryId == 1)
@@ -391,7 +390,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void LeftJoin_SingleJoin_ReturnsAllLeftTableRows()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .LeftJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Select();
@@ -402,7 +401,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void LeftJoin_WithWhere_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .LeftJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Where((p, c) => c.CategoryId == 1)
@@ -415,7 +414,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void LeftJoin_WithOrderBy_OrdersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .LeftJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .OrderByDescending(p => p.UnitPrice)
@@ -427,7 +426,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task LeftJoin_Async_ReturnsJoinedResults()
     {
-        var products = await _db.Connection.From<Product>()
+        var products = await _fixture.Connection.From<Product>()
             .LeftJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectAsync();
@@ -438,7 +437,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task LeftJoin_SelectFirstOrDefaultAsync_ReturnsFirst()
     {
-        var product = await _db.Connection.From<Product>()
+        var product = await _fixture.Connection.From<Product>()
             .LeftJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectFirstOrDefaultAsync();
@@ -449,7 +448,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_WithCount_ReturnsCorrectCount()
     {
-        var count = _db.Connection.From<Product>()
+        var count = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Count();
@@ -460,7 +459,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void RightJoin_SingleJoin_ReturnsAllRightTableRows()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .RightJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Select();
@@ -471,7 +470,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void RightJoin_WithWhere_FiltersResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .RightJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .Where((p, c) => c.CategoryId == 1)
@@ -484,7 +483,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void RightJoin_WithOrderBy_OrdersResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .RightJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .OrderByDescending(c => c.CategoryId)
@@ -496,7 +495,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task RightJoin_Async_ReturnsJoinedResults()
     {
-        var results = await _db.Connection.From<Product>()
+        var results = await _fixture.Connection.From<Product>()
             .RightJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectAsync();
@@ -507,7 +506,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public async Task RightJoin_SelectFirstOrDefaultAsync_ReturnsFirst()
     {
-        var result = await _db.Connection.From<Product>()
+        var result = await _fixture.Connection.From<Product>()
             .RightJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .SelectFirstOrDefaultAsync();
@@ -520,7 +519,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_MultipleJoins_ThreeTables_ReturnsJoinedResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>()
@@ -537,7 +536,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_MultipleJoins_ThreeTables_ReturnsTuples()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>()
@@ -554,7 +553,7 @@ public class FluentJoinTests : IDisposable
     [Fact]
     public void InnerJoin_MultipleJoins_WithWhere_FiltersResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>()

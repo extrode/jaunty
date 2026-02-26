@@ -3,19 +3,18 @@ using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
 
-public class FluentDistinctTests : IDisposable
+public class FluentDistinctTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentDistinctTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentDistinctTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     // --- Basic Distinct Tests ---
 
     [Fact]
     public void Distinct_Select_ReturnsDistinctResults()
     {
-        var categories = _db.Connection.From<Product>()
+        var categories = _fixture.Connection.From<Product>()
             .Distinct()
             .SelectPartial(p => p.CategoryId);
 
@@ -29,7 +28,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_WithMultipleColumns_ReturnsDistinctCombinations()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .Distinct()
             .SelectPartial(p => p.CategoryId, p => p.SupplierId);
 
@@ -43,12 +42,12 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_Count_ReturnsDistinctCount()
     {
-        var distinctCount = _db.Connection.From<Product>()
+        var distinctCount = _fixture.Connection.From<Product>()
             .Distinct()
             .SelectPartial(p => p.CategoryId)
             .Count;
 
-        var totalCount = _db.Connection.From<Product>().Count();
+        var totalCount = _fixture.Connection.From<Product>().Count();
 
         // Distinct category count should be less than total products
         Assert.True(distinctCount <= totalCount);
@@ -59,7 +58,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_Where_FiltersBeforeDistinct()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .Distinct()
             .Where(p => p.Discontinued == false)
             .SelectPartial(p => p.CategoryId);
@@ -73,7 +72,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_Where_StringColumn_FiltersCorrectly()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .Distinct()
             .Where("discontinued", false)
             .SelectPartial(p => p.CategoryId);
@@ -86,7 +85,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_OrderBy_Expression_SortsResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .Distinct()
             .OrderBy(p => p.CategoryId)
             .SelectPartial(p => p.CategoryId);
@@ -101,7 +100,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_OrderByDescending_Expression_SortsResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .Distinct()
             .OrderByDescending(p => p.CategoryId)
             .SelectPartial(p => p.CategoryId);
@@ -116,7 +115,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_OrderBy_String_SortsResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .Distinct()
             .OrderBy("category_id")
             .SelectPartial(p => p.CategoryId);
@@ -131,7 +130,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_OrderByDescending_String_SortsResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .Distinct()
             .OrderByDescending("category_id")
             .SelectPartial(p => p.CategoryId);
@@ -148,7 +147,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_Take_LimitsResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .Distinct()
             .Take(3)
             .SelectPartial(p => p.CategoryId);
@@ -159,12 +158,12 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_Skip_Take_PaginatesResults()
     {
-        var allDistinct = _db.Connection.From<Product>()
+        var allDistinct = _fixture.Connection.From<Product>()
             .Distinct()
             .OrderBy(p => p.CategoryId)
             .SelectPartial(p => p.CategoryId);
 
-        var paged = _db.Connection.From<Product>()
+        var paged = _fixture.Connection.From<Product>()
             .Distinct()
             .OrderBy(p => p.CategoryId)
             .Skip(1)
@@ -184,7 +183,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_ToSql_GeneratesDistinctKeyword()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Distinct()
             .ToSql(p => p.CategoryId);
 
@@ -195,7 +194,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_WithWhere_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Distinct()
             .Where(p => p.Discontinued == false)
             .ToSql(p => p.CategoryId);
@@ -207,7 +206,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public void Distinct_WithOrderBy_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Distinct()
             .OrderBy(p => p.CategoryId)
             .ToSql(p => p.CategoryId);
@@ -221,7 +220,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public async Task Distinct_SelectAsync_ReturnsDistinctResults()
     {
-        var results = await _db.Connection.From<Product>()
+        var results = await _fixture.Connection.From<Product>()
             .Distinct()
             .SelectPartialAsync(["category_id"]);
 
@@ -234,7 +233,7 @@ public class FluentDistinctTests : IDisposable
     [Fact]
     public async Task Distinct_WithWhere_SelectAsync_FiltersCorrectly()
     {
-        var results = await _db.Connection.From<Product>()
+        var results = await _fixture.Connection.From<Product>()
             .Distinct()
             .Where(p => p.Discontinued == false)
             .SelectPartialAsync(["category_id"]);
@@ -248,14 +247,14 @@ public class FluentDistinctTests : IDisposable
     public void Distinct_Count_OnDistinctSet_ReturnsCorrectCount()
     {
         // Count of distinct categories
-        var distinctCategories = _db.Connection.From<Product>()
+        var distinctCategories = _fixture.Connection.From<Product>()
             .Distinct()
             .SelectPartial(p => p.CategoryId);
 
         Assert.True(distinctCategories.Count > 0);
 
         // Should be fewer distinct categories than total products
-        var totalProducts = _db.Connection.From<Product>().Count();
+        var totalProducts = _fixture.Connection.From<Product>().Count();
         Assert.True(distinctCategories.Count <= totalProducts);
     }
 }

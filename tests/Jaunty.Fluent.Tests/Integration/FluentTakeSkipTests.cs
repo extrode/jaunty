@@ -3,17 +3,16 @@ using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
 
-public class FluentTakeSkipTests : IDisposable
+public class FluentTakeSkipTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentTakeSkipTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentTakeSkipTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     [Fact]
     public void Take_LimitsResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Take(5)
             .Select();
 
@@ -23,11 +22,11 @@ public class FluentTakeSkipTests : IDisposable
     [Fact]
     public void Skip_SkipsResults()
     {
-        var allProducts = _db.Connection.From<Product>()
+        var allProducts = _fixture.Connection.From<Product>()
             .OrderBy(p => p.ProductId)
             .Select();
 
-        var skippedProducts = _db.Connection.From<Product>()
+        var skippedProducts = _fixture.Connection.From<Product>()
             .OrderBy(p => p.ProductId)
             .Skip(5)
             .Take(5)
@@ -43,7 +42,7 @@ public class FluentTakeSkipTests : IDisposable
     [Fact]
     public void Take_WithWhere_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Take(10)
             .ToSql();

@@ -3,12 +3,11 @@ using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
 
-public class FluentStringFunctionsTests : IDisposable
+public class FluentStringFunctionsTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentStringFunctionsTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentStringFunctionsTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     // ==========================================
     // string.Length Tests
@@ -18,7 +17,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void Length_InWhere_FiltersResults()
     {
         // Products with names longer than 10 characters
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Length > 10)
             .Select();
 
@@ -29,7 +28,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void Length_ToSql_GeneratesLengthFunction()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Length > 10)
             .ToSql();
 
@@ -42,7 +41,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void Length_WithEquality_FiltersCorrectly()
     {
         // Products with names exactly 4 characters
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Length == 4)
             .Select();
 
@@ -57,7 +56,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void ToUpper_InWhere_FiltersResults()
     {
         // Find product "Chang" using uppercase comparison
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.ToUpper() == "CHANG")
             .Select();
 
@@ -68,7 +67,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void ToUpper_ToSql_GeneratesUpperFunction()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.ToUpper() == "CHANG")
             .ToSql();
 
@@ -84,7 +83,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void ToLower_InWhere_FiltersResults()
     {
         // Find product "Chang" using lowercase comparison
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.ToLower() == "chang")
             .Select();
 
@@ -95,7 +94,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void ToLower_ToSql_GeneratesLowerFunction()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.ToLower() == "chang")
             .ToSql();
 
@@ -110,7 +109,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void Trim_ToSql_GeneratesTrimFunction()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Trim() == "Chang")
             .ToSql();
 
@@ -122,7 +121,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void Trim_InWhere_WorksCorrectly()
     {
         // Trim shouldn't affect normal product names (no leading/trailing spaces)
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Trim() == "Chang")
             .Select();
 
@@ -137,7 +136,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void Substring_ToSql_GeneratesSubstringFunction()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Substring(0, 3) == "Cha")
             .ToSql();
 
@@ -150,7 +149,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void Substring_InWhere_FiltersResults()
     {
         // Find products starting with "Cha"
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Substring(0, 3) == "Cha")
             .Select();
 
@@ -165,7 +164,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void Length_CombinedWithAnd_FiltersCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Length > 5)
             .And(p => p.Discontinued == false)
             .Select();
@@ -179,7 +178,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void ToUpper_CombinedWithOr_FiltersCorrectly()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.ToUpper() == "CHANG")
             .Or(p => p.ProductName.ToUpper() == "CHANG")
             .ToSql();
@@ -191,7 +190,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void Multiple_StringFunctions_InSameQuery()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Length > 5)
             .And(p => p.ProductName.ToUpper() != "TEST")
             .ToSql();
@@ -208,7 +207,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public async Task Length_SelectAsync_FiltersCorrectly()
     {
-        var products = await _db.Connection.From<Product>()
+        var products = await _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Length > 10)
             .SelectAsync();
 
@@ -219,7 +218,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public async Task ToUpper_CountAsync_ReturnsFilteredCount()
     {
-        var count = await _db.Connection.From<Product>()
+        var count = await _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.ToUpper() == "CHANG")
             .CountAsync();
 
@@ -233,7 +232,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void Length_WithOrderBy_WorksCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Length > 5)
             .OrderBy(p => p.ProductName)
             .Take(5)
@@ -250,7 +249,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void Substring_WithDifferentPositions()
     {
         // Test substring starting at position 1 (C# 0-based)
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Substring(1, 2) == "ha")
             .ToSql();
 
@@ -262,7 +261,7 @@ public class FluentStringFunctionsTests : IDisposable
     public void StringFunctions_WithNullableColumn()
     {
         // QuantityPerUnit is a nullable string column
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.QuantityPerUnit!.Length > 5)
             .ToSql();
 
@@ -277,7 +276,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void SqlCoalesce_StillWorks()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => Sql.Coalesce(p.QuantityPerUnit, "N/A") != "N/A")
             .ToSql();
 
@@ -287,7 +286,7 @@ public class FluentStringFunctionsTests : IDisposable
     [Fact]
     public void SqlYear_StillWorks()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Year(o.OrderDate) == 1997)
             .ToSql();
 

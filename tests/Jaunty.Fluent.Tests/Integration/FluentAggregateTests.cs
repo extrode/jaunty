@@ -3,19 +3,18 @@ using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
 
-public class FluentAggregateTests : IDisposable
+public class FluentAggregateTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentAggregateTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentAggregateTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     // --- COUNT Tests ---
 
     [Fact]
     public void Count_ReturnsCorrectCount()
     {
-        var count = _db.Connection.From<Product>().Count();
+        var count = _fixture.Connection.From<Product>().Count();
         Assert.True(count > 0);
     }
 
@@ -23,28 +22,28 @@ public class FluentAggregateTests : IDisposable
     public void Count_WithSelector_CountsNonNullValues()
     {
         // COUNT(supplier_id) should count only non-null values
-        var count = _db.Connection.From<Product>().Count(p => p.SupplierId);
+        var count = _fixture.Connection.From<Product>().Count(p => p.SupplierId);
         Assert.True(count > 0);
     }
 
     [Fact]
     public void Count_WithWhere_FiltersBeforeCounting()
     {
-        var count = _db.Connection.From<Product>()
+        var count = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Count();
 
         Assert.True(count > 0);
 
-        var allCount = _db.Connection.From<Product>().Count();
+        var allCount = _fixture.Connection.From<Product>().Count();
         Assert.True(count < allCount);
     }
 
     [Fact]
     public void SelectCount_IsSameAsCount()
     {
-        var count1 = _db.Connection.From<Product>().Count();
-        var count2 = _db.Connection.From<Product>().SelectCount();
+        var count1 = _fixture.Connection.From<Product>().Count();
+        var count2 = _fixture.Connection.From<Product>().SelectCount();
 
         Assert.Equal(count1, count2);
     }
@@ -52,14 +51,14 @@ public class FluentAggregateTests : IDisposable
     [Fact]
     public void LongCount_ReturnsCorrectCount()
     {
-        var count = _db.Connection.From<Product>().LongCount();
+        var count = _fixture.Connection.From<Product>().LongCount();
         Assert.True(count > 0);
     }
 
     [Fact]
     public void LongCount_WithSelector_CountsNonNullValues()
     {
-        var count = _db.Connection.From<Product>().LongCount(p => p.SupplierId);
+        var count = _fixture.Connection.From<Product>().LongCount(p => p.SupplierId);
         Assert.True(count > 0);
     }
 
@@ -69,18 +68,18 @@ public class FluentAggregateTests : IDisposable
     public void Sum_WithIntColumn_ReturnsCorrectSum()
     {
         // SupplierId is int? - SQLite will return int64 for SUM
-        var sum = _db.Connection.From<Product>().Sum(p => p.SupplierId);
+        var sum = _fixture.Connection.From<Product>().Sum(p => p.SupplierId);
         Assert.True(sum > 0);
     }
 
     [Fact]
     public void Sum_WithWhere_FiltersBeforeSumming()
     {
-        var sumCategory1 = _db.Connection.From<Product>()
+        var sumCategory1 = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Sum(p => p.SupplierId);
 
-        var sumAll = _db.Connection.From<Product>().Sum(p => p.SupplierId);
+        var sumAll = _fixture.Connection.From<Product>().Sum(p => p.SupplierId);
 
         Assert.True(sumCategory1 > 0);
         Assert.True(sumAll > sumCategory1!.Value);
@@ -91,14 +90,14 @@ public class FluentAggregateTests : IDisposable
     [Fact]
     public void Avg_ReturnsCorrectAverage()
     {
-        var avg = _db.Connection.From<Product>().Avg(p => p.SupplierId);
+        var avg = _fixture.Connection.From<Product>().Avg(p => p.SupplierId);
         Assert.True(avg > 0);
     }
 
     [Fact]
     public void Avg_WithWhere_FiltersBeforeAveraging()
     {
-        var avgCategory1 = _db.Connection.From<Product>()
+        var avgCategory1 = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Avg(p => p.SupplierId);
 
@@ -110,14 +109,14 @@ public class FluentAggregateTests : IDisposable
     [Fact]
     public void Min_WithIntColumn_ReturnsMinValue()
     {
-        var min = _db.Connection.From<Product>().Min(p => p.SupplierId);
+        var min = _fixture.Connection.From<Product>().Min(p => p.SupplierId);
         Assert.True(min > 0);
     }
 
     [Fact]
     public void Min_WithWhere_FiltersBeforeFindingMin()
     {
-        var minCategory1 = _db.Connection.From<Product>()
+        var minCategory1 = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Min(p => p.SupplierId);
 
@@ -129,17 +128,17 @@ public class FluentAggregateTests : IDisposable
     [Fact]
     public void Max_WithIntColumn_ReturnsMaxValue()
     {
-        var max = _db.Connection.From<Product>().Max(p => p.SupplierId);
+        var max = _fixture.Connection.From<Product>().Max(p => p.SupplierId);
         Assert.True(max > 0);
 
-        var min = _db.Connection.From<Product>().Min(p => p.SupplierId);
+        var min = _fixture.Connection.From<Product>().Min(p => p.SupplierId);
         Assert.True(max >= min!.Value);
     }
 
     [Fact]
     public void Max_WithWhere_FiltersBeforeFindingMax()
     {
-        var maxCategory1 = _db.Connection.From<Product>()
+        var maxCategory1 = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Max(p => p.SupplierId);
 
@@ -151,42 +150,42 @@ public class FluentAggregateTests : IDisposable
     [Fact]
     public async Task CountAsync_ReturnsCorrectCount()
     {
-        var count = await _db.Connection.From<Product>().CountAsync();
+        var count = await _fixture.Connection.From<Product>().CountAsync();
         Assert.True(count > 0);
     }
 
     [Fact]
     public async Task CountAsync_WithSelector_CountsNonNullValues()
     {
-        var count = await _db.Connection.From<Product>().CountAsync(p => p.SupplierId);
+        var count = await _fixture.Connection.From<Product>().CountAsync(p => p.SupplierId);
         Assert.True(count > 0);
     }
 
     [Fact]
     public async Task SumAsync_ReturnsCorrectSum()
     {
-        var sum = await _db.Connection.From<Product>().SumAsync(p => p.SupplierId);
+        var sum = await _fixture.Connection.From<Product>().SumAsync(p => p.SupplierId);
         Assert.True(sum > 0);
     }
 
     [Fact]
     public async Task AvgAsync_ReturnsCorrectAverage()
     {
-        var avg = await _db.Connection.From<Product>().AvgAsync(p => p.SupplierId);
+        var avg = await _fixture.Connection.From<Product>().AvgAsync(p => p.SupplierId);
         Assert.True(avg > 0);
     }
 
     [Fact]
     public async Task MinAsync_ReturnsMinValue()
     {
-        var min = await _db.Connection.From<Product>().MinAsync(p => p.SupplierId);
+        var min = await _fixture.Connection.From<Product>().MinAsync(p => p.SupplierId);
         Assert.True(min > 0);
     }
 
     [Fact]
     public async Task MaxAsync_ReturnsMaxValue()
     {
-        var max = await _db.Connection.From<Product>().MaxAsync(p => p.SupplierId);
+        var max = await _fixture.Connection.From<Product>().MaxAsync(p => p.SupplierId);
         Assert.True(max > 0);
     }
 
@@ -195,8 +194,8 @@ public class FluentAggregateTests : IDisposable
     [Fact]
     public async Task SelectCountAsync_IsSameAsCountAsync()
     {
-        var count1 = await _db.Connection.From<Product>().CountAsync();
-        var count2 = await _db.Connection.From<Product>().SelectCountAsync();
+        var count1 = await _fixture.Connection.From<Product>().CountAsync();
+        var count2 = await _fixture.Connection.From<Product>().SelectCountAsync();
 
         Assert.Equal(count1, count2);
     }

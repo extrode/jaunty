@@ -3,17 +3,19 @@ using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
 
-public class FluentWhereTests : IDisposable
+/// <summary>
+/// Tests for Fluent API WHERE clause functionality.
+/// </summary>
+public class FluentWhereTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentWhereTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentWhereTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     [Fact]
     public void Where_StringColumn_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where("category_id", (short)1)
             .Select();
 
@@ -24,7 +26,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_Expression_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Select();
 
@@ -35,7 +37,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_And_ChainsConditions()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .And(p => p.Discontinued == false)
             .Select();
@@ -47,7 +49,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_Or_ChainsConditions()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Or(p => p.CategoryId == 2)
             .Select();
@@ -59,7 +61,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_ComplexExpression_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1 && p.UnitPrice > 10)
             .ToSql();
 
@@ -71,7 +73,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_NullComparison_GeneratesIsNull()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.SupplierId == null)
             .ToSql();
 
@@ -83,7 +85,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_Contains_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Contains("Chef"))
             .Select();
 
@@ -94,7 +96,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_StartsWith_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.StartsWith("Chef"))
             .Select();
 
@@ -105,7 +107,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_EndsWith_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.EndsWith("Syrup"))
             .Select();
 
@@ -116,7 +118,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_StringEquals_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Equals("Chai"))
             .Select();
 
@@ -127,7 +129,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_StringEquals_OrdinalIgnoreCase_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Equals("chai", StringComparison.OrdinalIgnoreCase))
             .Select();
 
@@ -138,7 +140,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_Contains_ToSql_GeneratesLikePattern()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Contains("test"))
             .ToSql();
 
@@ -149,7 +151,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_StartsWith_ToSql_GeneratesLikePattern()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.StartsWith("test"))
             .ToSql();
 
@@ -160,7 +162,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_EndsWith_ToSql_GeneratesLikePattern()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.EndsWith("test"))
             .ToSql();
 
@@ -173,7 +175,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void WhereRaw_SimpleSql_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereRaw("category_id = 1")
             .Select();
 
@@ -184,7 +186,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void WhereRaw_WithParameters_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereRaw("category_id = @catId", new { catId = (short)1 })
             .Select();
 
@@ -195,7 +197,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void WhereRaw_ComplexCondition_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereRaw("category_id IN (1, 2, 3)")
             .Select();
 
@@ -206,7 +208,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void WhereRaw_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .WhereRaw("category_id = 1")
             .ToSql();
 
@@ -219,7 +221,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_AndRaw_ChainsConditions()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .AndRaw("discontinued = 0")
             .Select();
@@ -231,7 +233,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_AndRaw_WithParameters_ChainsConditions()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .AndRaw("unit_price > @minPrice", new { minPrice = 10.0m })
             .Select();
@@ -243,7 +245,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_OrRaw_ChainsConditions()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .OrRaw("category_id = 2")
             .Select();
@@ -255,7 +257,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_OrRaw_WithParameters_ChainsConditions()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .OrRaw("category_id = @catId", new { catId = (short)2 })
             .Select();
@@ -269,7 +271,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_MultipleAndOr_ChainsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .And(p => p.Discontinued == false)
             .And(p => p.UnitPrice > 5)
@@ -285,7 +287,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_MultipleOr_ChainsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Or(p => p.CategoryId == 2)
             .Or(p => p.CategoryId == 3)
@@ -301,7 +303,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_MixedAndOrRaw_ChainsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .AndRaw("discontinued = 0")
             .OrRaw("category_id = 2")
@@ -315,7 +317,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_GreaterThan_FiltersCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.UnitPrice > 20)
             .Select();
 
@@ -326,7 +328,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_GreaterThanOrEqual_FiltersCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.UnitsInStock >= 50)
             .Select();
 
@@ -337,7 +339,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_LessThan_FiltersCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.UnitPrice < 10)
             .Select();
 
@@ -348,7 +350,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_LessThanOrEqual_FiltersCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.UnitsInStock <= 20)
             .Select();
 
@@ -359,7 +361,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_NotEqual_FiltersCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId != 1)
             .Select();
 
@@ -372,7 +374,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_BooleanTrue_FiltersCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == true)
             .Select();
 
@@ -383,7 +385,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public void Where_BooleanFalse_FiltersCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .Select();
 
@@ -396,7 +398,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public async Task Where_SelectAsync_FiltersCorrectly()
     {
-        var products = await _db.Connection.From<Product>()
+        var products = await _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .SelectAsync();
 
@@ -407,7 +409,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public async Task Where_CountAsync_ReturnsFilteredCount()
     {
-        var count = await _db.Connection.From<Product>()
+        var count = await _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .CountAsync();
 
@@ -417,7 +419,7 @@ public class FluentWhereTests : IDisposable
     [Fact]
     public async Task WhereRaw_SelectAsync_FiltersCorrectly()
     {
-        var products = await _db.Connection.From<Product>()
+        var products = await _fixture.Connection.From<Product>()
             .WhereRaw("category_id = 1")
             .SelectAsync();
 
@@ -431,7 +433,7 @@ public class FluentWhereTests : IDisposable
     public void Where_NestedAndOr_CombinesCorrectly()
     {
         // (CategoryId == 1 OR CategoryId == 2) AND Discontinued == false
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => (p.CategoryId == 1 || p.CategoryId == 2) && p.Discontinued == false)
             .Select();
 
@@ -443,7 +445,7 @@ public class FluentWhereTests : IDisposable
     public void Where_DeeplyNested_CombinesCorrectly()
     {
         // ((CategoryId == 1 AND UnitPrice > 10) OR (CategoryId == 2 AND UnitPrice < 50)) AND Discontinued == false
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => ((p.CategoryId == 1 && p.UnitPrice > 10) || (p.CategoryId == 2 && p.UnitPrice < 50)) && p.Discontinued == false)
             .Select();
 
@@ -456,7 +458,7 @@ public class FluentWhereTests : IDisposable
     public void Where_MultipleOrConditions_FiltersCorrectly()
     {
         // CategoryId == 1 OR CategoryId == 2 OR CategoryId == 3
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1 || p.CategoryId == 2 || p.CategoryId == 3)
             .Select();
 
@@ -468,7 +470,7 @@ public class FluentWhereTests : IDisposable
     public void Where_MixedComparisons_FiltersCorrectly()
     {
         // CategoryId == 1 AND UnitPrice > 10 AND SupplierId != null
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1 && p.UnitPrice > 10 && p.SupplierId != null)
             .Select();
 
@@ -480,7 +482,7 @@ public class FluentWhereTests : IDisposable
     public void Where_NotCondition_FiltersCorrectly()
     {
         // NOT (Discontinued == true)
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => !(p.Discontinued == true))
             .Select();
 
@@ -492,7 +494,7 @@ public class FluentWhereTests : IDisposable
     public void Where_ComplexWithNullCheck_FiltersCorrectly()
     {
         // (SupplierId == null OR SupplierId == 1) AND CategoryId == 1
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => (p.SupplierId == null || p.SupplierId == 1) && p.CategoryId == 1)
             .Select();
 
@@ -504,7 +506,7 @@ public class FluentWhereTests : IDisposable
     public void Where_ChainedWithAndOr_CombinesCorrectly()
     {
         // Chained: Where(...).And(...).Or(...)
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .And(p => p.UnitPrice > 10)
             .Or(p => p.CategoryId == 2)
@@ -520,7 +522,7 @@ public class FluentWhereTests : IDisposable
     public void Where_MultipleStringConditions_CombinesCorrectly()
     {
         // ProductName.Contains("Chef") OR ProductName.Contains("Grand")
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.ProductName.Contains("Chef"))
             .Or(p => p.ProductName.Contains("Grand"))
             .Select();
