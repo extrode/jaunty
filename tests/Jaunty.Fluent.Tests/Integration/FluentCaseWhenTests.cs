@@ -6,12 +6,11 @@ namespace Jaunty.Fluent.Tests.Integration;
 /// <summary>
 /// Tests for Sql.Case() CASE/WHEN expressions.
 /// </summary>
-public class FluentCaseWhenTests : IDisposable
+public class FluentCaseWhenTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentCaseWhenTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentCaseWhenTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     // ==========================================
     // Basic CASE/WHEN SQL Generation Tests
@@ -20,7 +19,7 @@ public class FluentCaseWhenTests : IDisposable
     [Fact]
     public void Case_When_Else_ToSql_GeneratesCorrectCaseSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, string>()
                 .When(x => x.UnitsInStock > 100, "High")
                 .When(x => x.UnitsInStock > 50, "Medium")
@@ -37,7 +36,7 @@ public class FluentCaseWhenTests : IDisposable
     [Fact]
     public void Case_SingleWhen_Else_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, string>()
                 .When(x => x.Discontinued == true, "Discontinued")
                 .Else("Active") == "Discontinued")
@@ -52,7 +51,7 @@ public class FluentCaseWhenTests : IDisposable
     [Fact]
     public void Case_MultipleWhen_ToSql_ContainsMultipleWhenClauses()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, int>()
                 .When(x => x.CategoryId == 1, 100)
                 .When(x => x.CategoryId == 2, 200)
@@ -68,7 +67,7 @@ public class FluentCaseWhenTests : IDisposable
     [Fact]
     public void Case_End_WithoutElse_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, string>()
                 .When(x => x.Discontinued == true, "Discontinued")
                 .End() == "Discontinued")
@@ -89,7 +88,7 @@ public class FluentCaseWhenTests : IDisposable
     {
         // Filter products where CASE expression equals "Beverages"
         // Category 1 is typically Beverages in Northwind
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, string>()
                 .When(x => x.CategoryId == 1, "Beverages")
                 .Else("Other") == "Beverages")
@@ -103,7 +102,7 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_When_WithNumericComparison_ExecutesCorrectly()
     {
         // Products with high stock (> 100) categorized as "High"
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, string>()
                 .When(x => x.UnitsInStock > 100, "High")
                 .Else("Normal") == "High")
@@ -116,7 +115,7 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_When_WithBooleanCondition_ExecutesCorrectly()
     {
         // Find discontinued products using CASE
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, bool>()
                 .When(x => x.Discontinued == true, true)
                 .Else(false) == true)
@@ -129,7 +128,7 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_When_MultipleCriteria_ExecutesCorrectly()
     {
         // Products in category 1 or 2 based on CASE expression returning 1
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, int>()
                 .When(x => x.CategoryId == 1, 1)
                 .When(x => x.CategoryId == 2, 1)
@@ -147,7 +146,7 @@ public class FluentCaseWhenTests : IDisposable
     [Fact]
     public void Case_When_CombinedWithAnd_ExecutesCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, string>()
                 .When(x => x.CategoryId == 1, "Beverages")
                 .Else("Other") == "Beverages")
@@ -161,7 +160,7 @@ public class FluentCaseWhenTests : IDisposable
     [Fact]
     public void Case_When_CombinedWithOrderBy_ExecutesCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, string>()
                 .When(x => x.CategoryId == 1, "Match")
                 .Else("NoMatch") == "Match")
@@ -178,7 +177,7 @@ public class FluentCaseWhenTests : IDisposable
     [Fact]
     public void Case_When_CombinedWithTake_ExecutesCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, string>()
                 .When(x => x.CategoryId == 1, "Match")
                 .Else("NoMatch") == "Match")
@@ -195,7 +194,7 @@ public class FluentCaseWhenTests : IDisposable
     [Fact]
     public async Task Case_When_SelectAsync_ExecutesCorrectly()
     {
-        var products = await _db.Connection.From<Product>()
+        var products = await _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, string>()
                 .When(x => x.CategoryId == 1, "Beverages")
                 .Else("Other") == "Beverages")
@@ -208,7 +207,7 @@ public class FluentCaseWhenTests : IDisposable
     [Fact]
     public async Task Case_When_CountAsync_ExecutesCorrectly()
     {
-        var count = await _db.Connection.From<Product>()
+        var count = await _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, int>()
                 .When(x => x.CategoryId == 1, 1)
                 .Else(0) == 1)
@@ -225,7 +224,7 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_When_WithNullableColumn_ExecutesCorrectly()
     {
         // Test with nullable column (UnitsInStock is nullable short)
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, string>()
                 .When(x => x.UnitsInStock == null, "NoStock")
                 .When(x => x.UnitsInStock == 0, "Empty")
@@ -240,7 +239,7 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_When_NotEquals_ExecutesCorrectly()
     {
         // Products NOT in category 1
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, string>()
                 .When(x => x.CategoryId == 1, "Beverages")
                 .Else("Other") != "Beverages")
@@ -254,7 +253,7 @@ public class FluentCaseWhenTests : IDisposable
     public void Case_When_GreaterThan_ExecutesCorrectly()
     {
         // Products with CASE score > 50
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Case<Product, int>()
                 .When(x => x.CategoryId == 1, 100)
                 .When(x => x.CategoryId == 2, 75)

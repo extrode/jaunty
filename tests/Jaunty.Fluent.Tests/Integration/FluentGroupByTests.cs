@@ -3,19 +3,18 @@ using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
 
-public class FluentGroupByTests : IDisposable
+public class FluentGroupByTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentGroupByTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentGroupByTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     // --- Basic GROUP BY Tests ---
 
     [Fact]
     public void GroupBy_SingleKey_WithCount_ReturnsGroupedResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
 
@@ -26,7 +25,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void GroupBy_SingleKey_WithSum_ReturnsGroupedResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, TotalStock = g.Sum(p => p.UnitsInStock) });
 
@@ -36,7 +35,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void GroupBy_SingleKey_WithAvg_ReturnsGroupedResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, AvgStock = g.Avg(p => p.UnitsInStock) });
 
@@ -46,7 +45,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void GroupBy_SingleKey_WithMin_ReturnsGroupedResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, MinStock = g.Min(p => p.UnitsInStock) });
 
@@ -56,7 +55,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void GroupBy_SingleKey_WithMax_ReturnsGroupedResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, MaxStock = g.Max(p => p.UnitsInStock) });
 
@@ -66,7 +65,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void GroupBy_SingleKey_MultipleAggregates_ReturnsGroupedResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Select(g => new
             {
@@ -86,7 +85,7 @@ public class FluentGroupByTests : IDisposable
     public void GroupBy_WithWhere_FiltersBeforeGrouping()
     {
         // Group only non-discontinued products
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
@@ -94,7 +93,7 @@ public class FluentGroupByTests : IDisposable
         Assert.NotEmpty(results);
 
         // Verify count is less than total without filter
-        var totalCount = _db.Connection.From<Product>()
+        var totalCount = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .Count();
 
@@ -104,7 +103,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void GroupBy_WithWhereOnCategoryId_FiltersCorrectly()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .GroupBy(p => p.SupplierId)
             .Select(g => new { SupplierId = g.Key, Count = g.Count() });
@@ -118,7 +117,7 @@ public class FluentGroupByTests : IDisposable
     public void GroupBy_WithHaving_FiltersGroupsAfterGrouping()
     {
         // Only return groups with more than 5 products
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Having(g => g.Count() > 5)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
@@ -129,7 +128,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void GroupBy_WithHaving_CountGreaterThanZero_ReturnsNonEmptyGroups()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Having(g => g.Count() > 0)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
@@ -143,7 +142,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void GroupBy_CompositeKey_ReturnsGroupedResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .GroupBy(p => new { p.CategoryId, p.SupplierId })
             .Select(g => new
             {
@@ -158,7 +157,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void GroupBy_CompositeKey_WithAggregates_ReturnsGroupedResults()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .GroupBy(p => new { p.CategoryId, p.SupplierId })
             .Select(g => new
             {
@@ -176,7 +175,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void ToSql_SimpleGroupBy_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
 
@@ -189,7 +188,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void ToSql_GroupByWithWhere_IncludesWhereClause()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .GroupBy(p => p.CategoryId)
             .ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
@@ -201,7 +200,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void ToSql_GroupByWithHaving_IncludesHavingClause()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Having(g => g.Count() > 5)
             .ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
@@ -214,7 +213,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void ToSql_GroupByCompositeKey_IncludesMultipleColumns()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .GroupBy(p => new { p.CategoryId, p.SupplierId })
             .ToSql(g => new { g.Key.CategoryId, g.Key.SupplierId, Count = g.Count() });
 
@@ -228,7 +227,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public async Task SelectAsync_GroupBySingleKey_ReturnsGroupedResults()
     {
-        var results = await _db.Connection.From<Product>()
+        var results = await _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() });
 
@@ -239,7 +238,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public async Task SelectAsync_GroupByWithWhere_FiltersCorrectly()
     {
-        var results = await _db.Connection.From<Product>()
+        var results = await _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .GroupBy(p => p.CategoryId)
             .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() });
@@ -250,7 +249,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public async Task SelectAsync_GroupByWithHaving_FiltersGroupsCorrectly()
     {
-        var results = await _db.Connection.From<Product>()
+        var results = await _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Having(g => g.Count() > 5)
             .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() });
@@ -261,7 +260,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public async Task SelectAsync_GroupByWithMultipleAggregates_ReturnsCorrectResults()
     {
-        var results = await _db.Connection.From<Product>()
+        var results = await _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .SelectAsync(g => new
             {
@@ -282,7 +281,7 @@ public class FluentGroupByTests : IDisposable
     public void GroupBy_NoResults_ReturnsEmptyList()
     {
         // Filter to non-existent category
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == -999)
             .GroupBy(p => p.CategoryId)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
@@ -293,7 +292,7 @@ public class FluentGroupByTests : IDisposable
     [Fact]
     public void GroupBy_CountWithSelector_CountsColumn()
     {
-        var results = _db.Connection.From<Product>()
+        var results = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Select(g => new
             {

@@ -8,19 +8,11 @@ namespace Jaunty.Fluent.Tests.Integration;
 /// <summary>
 /// Tests for Fluent CTE (Common Table Expression) support.
 /// </summary>
-public class FluentCteTests : IDisposable
+public class FluentCteTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentCteTests()
-    {
-        _db = new Database();
-    }
-
-    public void Dispose()
-    {
-        _db.Dispose();
-    }
+    public FluentCteTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     #region Basic CTE Tests
 
@@ -28,7 +20,7 @@ public class FluentCteTests : IDisposable
     public void Cte_SimpleQuery_ReturnsResults()
     {
         // Arrange & Act
-        var products = _db.Connection.Cte<Product>("ExpensiveProducts")
+        var products = _fixture.Connection.Cte<Product>("ExpensiveProducts")
             .As(q => q.Where(p => p.UnitPrice > 50))
             .Select();
 
@@ -41,7 +33,7 @@ public class FluentCteTests : IDisposable
     public void Cte_ToSql_GeneratesCorrectSql()
     {
         // Arrange & Act
-        var sql = _db.Connection.Cte<Product>("ExpensiveProducts")
+        var sql = _fixture.Connection.Cte<Product>("ExpensiveProducts")
             .As(q => q.Where(p => p.UnitPrice > 50))
             .ToSql();
 
@@ -57,7 +49,7 @@ public class FluentCteTests : IDisposable
     public void Cte_WithAdditionalWhere_FiltersResults()
     {
         // Arrange & Act
-        var products = _db.Connection.Cte<Product>("FilteredProducts")
+        var products = _fixture.Connection.Cte<Product>("FilteredProducts")
             .As(q => q.Where(p => p.UnitPrice > 20))
             .Where(p => p.CategoryId == 1)
             .Select();
@@ -71,7 +63,7 @@ public class FluentCteTests : IDisposable
     public void Cte_WithAdditionalWhere_ToSql_GeneratesCorrectSql()
     {
         // Act
-        var sql = _db.Connection.Cte<Product>("FilteredProducts")
+        var sql = _fixture.Connection.Cte<Product>("FilteredProducts")
             .As(q => q.Where(p => p.UnitPrice > 20))
             .Where(p => p.CategoryId == 1)
             .ToSql();
@@ -90,7 +82,7 @@ public class FluentCteTests : IDisposable
     public void Cte_WithOrderBy_ReturnsOrderedResults()
     {
         // Arrange & Act
-        var products = _db.Connection.Cte<Product>("SortedProducts")
+        var products = _fixture.Connection.Cte<Product>("SortedProducts")
             .As(q => q.Where(p => p.UnitPrice > 10))
             .OrderBy(p => p.ProductName)
             .Select();
@@ -107,7 +99,7 @@ public class FluentCteTests : IDisposable
     public void Cte_WithOrderByDescending_ReturnsDescendingResults()
     {
         // Arrange & Act
-        var products = _db.Connection.Cte<Product>("SortedProducts")
+        var products = _fixture.Connection.Cte<Product>("SortedProducts")
             .As(q => q.Where(p => p.UnitPrice > 10))
             .OrderByDescending(p => p.UnitPrice)
             .Select();
@@ -124,7 +116,7 @@ public class FluentCteTests : IDisposable
     public void Cte_WithTake_LimitsResults()
     {
         // Arrange & Act
-        var products = _db.Connection.Cte<Product>("LimitedProducts")
+        var products = _fixture.Connection.Cte<Product>("LimitedProducts")
             .As(q => q.Where(p => p.UnitPrice > 5))
             .Take(5)
             .Select();
@@ -137,7 +129,7 @@ public class FluentCteTests : IDisposable
     public void Cte_WithSkipAndTake_PaginatesResults()
     {
         // Arrange & Act
-        var products = _db.Connection.Cte<Product>("PaginatedProducts")
+        var products = _fixture.Connection.Cte<Product>("PaginatedProducts")
             .As(q => q.Where(p => p.UnitPrice > 5))
             .OrderBy(p => p.ProductId)
             .Skip(2)
@@ -156,7 +148,7 @@ public class FluentCteTests : IDisposable
     public void Cte_WithAndCondition_FiltersCorrectly()
     {
         // Arrange & Act
-        var products = _db.Connection.Cte<Product>("MultiFilter")
+        var products = _fixture.Connection.Cte<Product>("MultiFilter")
             .As(q => q.Where(p => p.UnitPrice > 10))
             .Where(p => p.CategoryId == 1)
             .And(p => p.UnitsInStock > 0)
@@ -171,7 +163,7 @@ public class FluentCteTests : IDisposable
     public void Cte_WithOrCondition_FiltersCorrectly()
     {
         // Arrange & Act
-        var products = _db.Connection.Cte<Product>("OrFilter")
+        var products = _fixture.Connection.Cte<Product>("OrFilter")
             .As(q => q.Where(p => p.UnitPrice > 100))
             .Where(p => p.CategoryId == 1)
             .Or(p => p.CategoryId == 2)
@@ -190,7 +182,7 @@ public class FluentCteTests : IDisposable
     public void Cte_SelectFirst_ReturnsSingleResult()
     {
         // Arrange & Act
-        var product = _db.Connection.Cte<Product>("FirstProduct")
+        var product = _fixture.Connection.Cte<Product>("FirstProduct")
             .As(q => q.Where(p => p.UnitPrice > 50))
             .OrderByDescending(p => p.UnitPrice)
             .SelectFirst();
@@ -204,7 +196,7 @@ public class FluentCteTests : IDisposable
     public void Cte_SelectFirstOrDefault_WithNoResults_ReturnsNull()
     {
         // Arrange & Act
-        var product = _db.Connection.Cte<Product>("NoProducts")
+        var product = _fixture.Connection.Cte<Product>("NoProducts")
             .As(q => q.Where(p => p.UnitPrice > 999999))
             .SelectFirstOrDefault();
 
@@ -220,7 +212,7 @@ public class FluentCteTests : IDisposable
     public async Task Cte_SelectAsync_ReturnsResults()
     {
         // Arrange & Act
-        var products = await _db.Connection.Cte<Product>("AsyncProducts")
+        var products = await _fixture.Connection.Cte<Product>("AsyncProducts")
             .As(q => q.Where(p => p.UnitPrice > 30))
             .SelectAsync();
 
@@ -237,7 +229,7 @@ public class FluentCteTests : IDisposable
     public void Cte_WhereWithColumnName_FiltersCorrectly()
     {
         // Arrange & Act
-        var products = _db.Connection.Cte<Product>("ColumnFilter")
+        var products = _fixture.Connection.Cte<Product>("ColumnFilter")
             .As(q => q.Where(p => p.UnitPrice > 10))
             .Where("category_id", 1)
             .Select();
@@ -254,8 +246,8 @@ public class FluentCteTests : IDisposable
     public void Cte_AsIWhereClause_ReturnsResults()
     {
         // Arrange & Act: Use As with IWhereClause overload
-        var products = _db.Connection.Cte<Product>("FilteredProducts")
-            .As(_db.Connection.From<Product>().Where(p => p.UnitPrice > 30))
+        var products = _fixture.Connection.Cte<Product>("FilteredProducts")
+            .As(_fixture.Connection.From<Product>().Where(p => p.UnitPrice > 30))
             .Select();
 
         Assert.NotEmpty(products);
@@ -266,8 +258,8 @@ public class FluentCteTests : IDisposable
     public void Cte_AsIWhereClause_ToSql_GeneratesCorrectSql()
     {
         // Act
-        var sql = _db.Connection.Cte<Product>("FilteredProducts")
-            .As(_db.Connection.From<Product>().Where(p => p.UnitPrice > 30))
+        var sql = _fixture.Connection.Cte<Product>("FilteredProducts")
+            .As(_fixture.Connection.From<Product>().Where(p => p.UnitPrice > 30))
             .ToSql();
 
         // Assert

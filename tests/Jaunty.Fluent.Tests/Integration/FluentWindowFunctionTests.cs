@@ -6,12 +6,11 @@ namespace Jaunty.Fluent.Tests.Integration;
 /// <summary>
 /// Tests for Window Functions (ROW_NUMBER, RANK, DENSE_RANK, NTILE, etc.)
 /// </summary>
-public class FluentWindowFunctionTests : IDisposable
+public class FluentWindowFunctionTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentWindowFunctionTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentWindowFunctionTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     // ==========================================
     // ROW_NUMBER() Tests
@@ -20,7 +19,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void RowNumber_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -35,7 +34,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void RowNumber_WithOrderBy_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -52,7 +51,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void RowNumber_WithPartitionBy_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -69,7 +68,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void RowNumber_WithPartitionByAndOrderBy_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -90,7 +89,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void RowNumber_WithOrderByDescending_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -112,7 +111,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void Rank_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -127,7 +126,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void Rank_WithOrderBy_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -144,7 +143,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void Rank_WithPartitionByAndOrderByDesc_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -170,7 +169,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void DenseRank_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -185,7 +184,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void DenseRank_WithOrderBy_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -206,7 +205,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void NTile_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -221,7 +220,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void NTile_WithOrderBy_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -242,7 +241,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void Sum_Over_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -258,7 +257,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void Sum_Over_WithOrderBy_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -275,7 +274,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void Avg_Over_WithPartitionBy_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -293,7 +292,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void Count_Over_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -309,7 +308,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void Count_Over_WithPartitionBy_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -326,7 +325,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void Min_Over_WithPartitionBy_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -344,7 +343,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void Max_Over_WithPartitionBy_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -366,7 +365,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void MultipleWindowFunctions_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,
@@ -388,7 +387,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void WindowFunction_WithWhere_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .ToSql(p => new
             {
@@ -410,7 +409,7 @@ public class FluentWindowFunctionTests : IDisposable
     [Fact]
     public void ProjectionWithOnlyEntityProperties_ToSql_GeneratesCorrectSyntax()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .ToSql(p => new
             {
                 p.ProductName,

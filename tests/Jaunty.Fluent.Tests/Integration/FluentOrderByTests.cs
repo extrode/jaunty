@@ -3,19 +3,18 @@ using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
 
-public class FluentOrderByTests : IDisposable
+public class FluentOrderByTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentOrderByTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentOrderByTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     // --- OrderBy Expression Tests ---
 
     [Fact]
     public void OrderBy_Expression_SortsAscending()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderBy(p => p.ProductName)
             .Select();
 
@@ -29,7 +28,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderByDescending_Expression_SortsDescending()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderByDescending(p => p.ProductId)
             .Select();
 
@@ -43,7 +42,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderBy_NullableColumn_SortsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderBy(p => p.UnitPrice)
             .Select();
 
@@ -55,7 +54,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderBy_String_SortsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderBy("product_name")
             .Select();
 
@@ -69,7 +68,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderByDescending_String_SortsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderByDescending("product_id")
             .Select();
 
@@ -85,7 +84,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void ThenBy_Expression_SortsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderBy(p => p.CategoryId)
             .ThenBy(p => p.ProductName)
             .Select();
@@ -107,7 +106,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void ThenByDescending_Expression_SortsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderBy(p => p.CategoryId)
             .ThenByDescending(p => p.ProductId)
             .Select();
@@ -131,7 +130,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void ThenBy_String_SortsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderBy("category_id")
             .ThenBy("product_name")
             .Select();
@@ -142,7 +141,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void ThenByDescending_String_SortsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderBy("category_id")
             .ThenByDescending("product_id")
             .Select();
@@ -155,7 +154,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderBy_MultipleThenBy_SortsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderBy(p => p.CategoryId)
             .ThenBy(p => p.SupplierId)
             .ThenBy(p => p.ProductName)
@@ -167,7 +166,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderBy_MixedThenByDirections_SortsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderBy(p => p.CategoryId)
             .ThenByDescending(p => p.UnitPrice)
             .ThenBy(p => p.ProductName)
@@ -181,7 +180,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderBy_WithTake_ReturnsLimitedSortedResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .OrderBy(p => p.ProductName)
             .Take(5)
             .Select();
@@ -196,11 +195,11 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderBy_WithSkipTake_ReturnsPagedSortedResults()
     {
-        var allProducts = _db.Connection.From<Product>()
+        var allProducts = _fixture.Connection.From<Product>()
             .OrderBy(p => p.ProductId)
             .Select();
 
-        var page2 = _db.Connection.From<Product>()
+        var page2 = _fixture.Connection.From<Product>()
             .OrderBy(p => p.ProductId)
             .Skip(5)
             .Take(5)
@@ -215,7 +214,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderBy_WithWhere_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .OrderBy(p => p.ProductName)
             .ToSql();
@@ -227,7 +226,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderBy_WithWhere_FiltersAndSorts()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .OrderBy(p => p.ProductName)
             .Select();
@@ -245,7 +244,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderBy_ToSql_GeneratesOrderByClause()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .OrderBy(p => p.ProductName)
             .ToSql();
 
@@ -257,7 +256,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void OrderByDescending_ToSql_GeneratesDescKeyword()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .OrderByDescending(p => p.ProductId)
             .ToSql();
 
@@ -269,7 +268,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void ThenBy_ToSql_GeneratesMultipleOrderColumns()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .OrderBy(p => p.CategoryId)
             .ThenBy(p => p.ProductName)
             .ToSql();
@@ -282,7 +281,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public void ThenByDescending_ToSql_GeneratesCorrectDirection()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .OrderBy(p => p.CategoryId)
             .ThenByDescending(p => p.ProductId)
             .ToSql();
@@ -298,7 +297,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public async Task OrderBy_SelectAsync_ReturnsSortedResults()
     {
-        var products = await _db.Connection.From<Product>()
+        var products = await _fixture.Connection.From<Product>()
             .OrderBy(p => p.ProductName)
             .SelectAsync();
 
@@ -312,7 +311,7 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public async Task OrderByDescending_SelectAsync_ReturnsSortedResults()
     {
-        var products = await _db.Connection.From<Product>()
+        var products = await _fixture.Connection.From<Product>()
             .OrderByDescending(p => p.ProductId)
             .SelectAsync();
 
@@ -326,11 +325,11 @@ public class FluentOrderByTests : IDisposable
     [Fact]
     public async Task OrderBy_SelectFirstAsync_ReturnsFirstSorted()
     {
-        var product = await _db.Connection.From<Product>()
+        var product = await _fixture.Connection.From<Product>()
             .OrderBy(p => p.ProductName)
             .SelectFirstAsync();
 
-        var allSorted = _db.Connection.From<Product>()
+        var allSorted = _fixture.Connection.From<Product>()
             .OrderBy(p => p.ProductName)
             .Select();
 

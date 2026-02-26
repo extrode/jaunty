@@ -3,12 +3,11 @@ using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
 
-public class FluentWhereInBetweenTests : IDisposable
+public class FluentWhereInBetweenTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentWhereInBetweenTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentWhereInBetweenTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     // ==========================================
     // WhereIn Tests
@@ -19,7 +18,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereIn(p => p.CategoryId, categoryIds)
             .Select();
 
@@ -32,7 +31,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var productIds = new[] { 1, 2, 3, 4, 5 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereIn(p => p.ProductId, productIds)
             .Select();
 
@@ -45,7 +44,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var emptyIds = Array.Empty<int>();
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereIn(p => p.ProductId, emptyIds)
             .Select();
 
@@ -57,7 +56,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var singleId = new[] { 1 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereIn(p => p.ProductId, singleId)
             .Select();
 
@@ -70,7 +69,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3 };
 
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .WhereIn(p => p.CategoryId, categoryIds)
             .ToSql();
 
@@ -87,7 +86,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var excludedCategories = new short?[] { 1, 2 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereNotIn(p => p.CategoryId, excludedCategories)
             .Select();
 
@@ -100,9 +99,9 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var emptyIds = Array.Empty<int>();
 
-        var allProducts = _db.Connection.From<Product>().Select();
+        var allProducts = _fixture.Connection.From<Product>().Select();
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereNotIn(p => p.ProductId, emptyIds)
             .Select();
 
@@ -115,7 +114,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3 };
 
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .WhereNotIn(p => p.CategoryId, categoryIds)
             .ToSql();
 
@@ -132,7 +131,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .AndIn(p => p.CategoryId, categoryIds)
             .Select();
@@ -148,7 +147,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var excludedCategories = new short?[] { 1, 2 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .AndNotIn(p => p.CategoryId, excludedCategories)
             .Select();
@@ -164,7 +163,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 5, 6, 7 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .OrIn(p => p.CategoryId, categoryIds)
             .Select();
@@ -180,7 +179,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var excludedCategories = new short?[] { 1, 2, 3, 4, 5, 6, 7 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .OrNotIn(p => p.CategoryId, excludedCategories)
             .Select();
@@ -195,7 +194,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void WhereBetween_Decimal_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereBetween(p => p.UnitPrice, 10m, 30m)
             .Select();
 
@@ -207,7 +206,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void WhereBetween_Int_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereBetween(p => p.ProductId, 1, 10)
             .Select();
 
@@ -219,7 +218,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void WhereBetween_Short_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereBetween(p => p.UnitsInStock, (short?)10, (short?)50)
             .Select();
 
@@ -231,7 +230,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void WhereBetween_ToSql_GeneratesBetweenClause()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .WhereBetween(p => p.UnitPrice, 10m, 30m)
             .ToSql();
 
@@ -247,7 +246,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void WhereNotBetween_Decimal_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereNotBetween(p => p.UnitPrice, 10m, 30m)
             .Select();
 
@@ -259,7 +258,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void WhereNotBetween_Int_FiltersResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereNotBetween(p => p.ProductId, 1, 5)
             .Select();
 
@@ -271,7 +270,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void WhereNotBetween_ToSql_GeneratesNotBetweenClause()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .WhereNotBetween(p => p.UnitPrice, 10m, 30m)
             .ToSql();
 
@@ -287,7 +286,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void Where_AndBetween_ChainsConditions()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .AndBetween(p => p.UnitPrice, 10m, 50m)
             .Select();
@@ -301,7 +300,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void Where_AndNotBetween_ChainsConditions()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .AndNotBetween(p => p.UnitPrice, 100m, 500m)
             .Select();
@@ -315,7 +314,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void Where_OrBetween_ChainsConditions()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .OrBetween(p => p.UnitPrice, 100m, 500m)
             .Select();
@@ -329,7 +328,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void Where_OrNotBetween_ChainsConditions()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .OrNotBetween(p => p.UnitPrice, 0m, 1000m)
             .Select();
@@ -346,7 +345,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereIn(p => p.CategoryId, categoryIds)
             .AndBetween(p => p.UnitPrice, 10m, 50m)
             .Select();
@@ -362,7 +361,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereBetween(p => p.UnitPrice, 10m, 50m)
             .AndIn(p => p.CategoryId, categoryIds)
             .Select();
@@ -378,7 +377,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .AndIn(p => p.CategoryId, categoryIds)
             .AndBetween(p => p.UnitPrice, 5m, 100m)
@@ -400,7 +399,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereIn(p => p.CategoryId, categoryIds)
             .OrderBy(p => p.UnitPrice)
             .Select();
@@ -415,7 +414,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void WhereBetween_OrderByDescending_SortsFilteredResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereBetween(p => p.UnitPrice, 10m, 50m)
             .OrderByDescending(p => p.UnitPrice)
             .Select();
@@ -436,7 +435,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3, 4, 5 };
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereIn(p => p.CategoryId, categoryIds)
             .Take(5)
             .Select();
@@ -447,7 +446,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void WhereBetween_Skip_Take_PaginatesResults()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereBetween(p => p.ProductId, 1, 50)
             .OrderBy(p => p.ProductId)
             .Skip(5)
@@ -466,7 +465,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3 };
 
-        var products = await _db.Connection.From<Product>()
+        var products = await _fixture.Connection.From<Product>()
             .WhereIn(p => p.CategoryId, categoryIds)
             .SelectAsync();
 
@@ -477,7 +476,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public async Task WhereBetween_SelectAsync_FiltersCorrectly()
     {
-        var products = await _db.Connection.From<Product>()
+        var products = await _fixture.Connection.From<Product>()
             .WhereBetween(p => p.UnitPrice, 10m, 50m)
             .SelectAsync();
 
@@ -491,7 +490,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3 };
 
-        var count = await _db.Connection.From<Product>()
+        var count = await _fixture.Connection.From<Product>()
             .WhereIn(p => p.CategoryId, categoryIds)
             .CountAsync();
 
@@ -501,7 +500,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public async Task WhereBetween_CountAsync_ReturnsFilteredCount()
     {
-        var count = await _db.Connection.From<Product>()
+        var count = await _fixture.Connection.From<Product>()
             .WhereBetween(p => p.UnitPrice, 10m, 50m)
             .CountAsync();
 
@@ -517,7 +516,7 @@ public class FluentWhereInBetweenTests : IDisposable
     {
         var categoryIds = new short?[] { 1, 2, 3 };
 
-        var grouped = _db.Connection.From<Product>()
+        var grouped = _fixture.Connection.From<Product>()
             .WhereIn(p => p.CategoryId, categoryIds)
             .GroupBy(p => p.CategoryId)
             .Select(g => new { Category = g.Key, Count = g.Count() });
@@ -529,7 +528,7 @@ public class FluentWhereInBetweenTests : IDisposable
     [Fact]
     public void WhereBetween_GroupBy_GroupsFilteredResults()
     {
-        var grouped = _db.Connection.From<Product>()
+        var grouped = _fixture.Connection.From<Product>()
             .WhereBetween(p => p.UnitPrice, 10m, 50m)
             .GroupBy(p => p.CategoryId)
             .Select(g => new { Category = g.Key, AvgPrice = g.Avg(p => p.UnitPrice) });
