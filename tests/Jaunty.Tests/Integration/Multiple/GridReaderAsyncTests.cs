@@ -558,6 +558,86 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
         Assert.StartsWith("PartialAsyncCustom:", categories[0].CategoryName);
     }
 
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadScalarAsync_WithValueType_ReturnsValue(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(CountCategoriesSql(dialect));
+
+        var count = await gridReader.ReadScalarAsync<int>();
+
+        Assert.True(count > 0);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadScalarAsync_WithReferenceType_ReturnsValue(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync("SELECT 'test_value' AS value");
+
+        var value = await gridReader.ReadScalarAsync<string>();
+
+        Assert.Equal("test_value", value);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadStreamAsync_WithCustomMapper_UsesMapper(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+
+        var sql = "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id";
+
+        using var gridReader = await connection.QueryMultipleAsync(sql, new { Id = 1 });
+
+        var customMapper = new Func<IDataReader, Category>(reader =>
+            new Category { CategoryId = reader.GetInt32(0), CategoryName = "ReadStreamCustom: " + reader.GetString(1) });
+
+        var categoryList = new List<Category>();
+        await foreach (var category in gridReader.ReadStreamAsync<Category>(new CommandOptions<Category>(mapper: customMapper)))
+        {
+            categoryList.Add(category);
+        }
+
+        Assert.Single(categoryList);
+        Assert.StartsWith("ReadStreamCustom:", categoryList[0].CategoryName);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadPartialStreamAsync_WithCustomMapper_UsesMapper(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+
+        var sql = "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id";
+
+        using var gridReader = await connection.QueryMultipleAsync(sql, new { Id = 1 });
+
+        var customMapper = new Func<IDataReader, Category>(reader =>
+            new Category { CategoryId = reader.GetInt32(0), CategoryName = "PartialStreamAsyncCustom: " + reader.GetString(1) });
+
+        var categoryList = new List<Category>();
+        await foreach (var category in gridReader.ReadPartialStreamAsync<Category>(new CommandOptions<Category>(mapper: customMapper)))
+        {
+            categoryList.Add(category);
+        }
+
+        Assert.Single(categoryList);
+        Assert.StartsWith("PartialStreamAsyncCustom:", categoryList[0].CategoryName);
+    }
+
     private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
         dialect.Provider == DialectProvider.SqlServer
             ? $"SELECT TOP ({top}) CategoryId, CategoryName, Description FROM Categories{(orderById ? " ORDER BY CategoryId" : string.Empty)}"
