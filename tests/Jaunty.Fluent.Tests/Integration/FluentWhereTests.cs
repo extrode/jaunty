@@ -426,4 +426,109 @@ public class FluentWhereTests : IDisposable
         products.Should().NotBeEmpty();
         products.Should().OnlyContain(p => p.CategoryId == 1);
     }
+
+    // --- Complex Nested Predicate Tests ---
+
+    [Fact]
+    public void Where_NestedAndOr_CombinesCorrectly()
+    {
+        // (CategoryId == 1 OR CategoryId == 2) AND Discontinued == false
+        var products = _db.Connection.From<Product>()
+            .Where(p => (p.CategoryId == 1 || p.CategoryId == 2) && p.Discontinued == false)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => (p.CategoryId == 1 || p.CategoryId == 2) && p.Discontinued == false);
+    }
+
+    [Fact]
+    public void Where_DeeplyNested_CombinesCorrectly()
+    {
+        // ((CategoryId == 1 AND UnitPrice > 10) OR (CategoryId == 2 AND UnitPrice < 50)) AND Discontinued == false
+        var products = _db.Connection.From<Product>()
+            .Where(p => ((p.CategoryId == 1 && p.UnitPrice > 10) || (p.CategoryId == 2 && p.UnitPrice < 50)) && p.Discontinued == false)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        // Verify the filter was applied
+        products.Should().OnlyContain(p => p.Discontinued == false);
+    }
+
+    [Fact]
+    public void Where_MultipleOrConditions_FiltersCorrectly()
+    {
+        // CategoryId == 1 OR CategoryId == 2 OR CategoryId == 3
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1 || p.CategoryId == 2 || p.CategoryId == 3)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId >= 1 && p.CategoryId <= 3);
+    }
+
+    [Fact]
+    public void Where_MixedComparisons_FiltersCorrectly()
+    {
+        // CategoryId == 1 AND UnitPrice > 10 AND SupplierId != null
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1 && p.UnitPrice > 10 && p.SupplierId != null)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => p.CategoryId == 1 && p.UnitPrice > 10 && p.SupplierId != null);
+    }
+
+    [Fact]
+    public void Where_NotCondition_FiltersCorrectly()
+    {
+        // NOT (Discontinued == true)
+        var products = _db.Connection.From<Product>()
+            .Where(p => !(p.Discontinued == true))
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => !p.Discontinued);
+    }
+
+    [Fact]
+    public void Where_ComplexWithNullCheck_FiltersCorrectly()
+    {
+        // (SupplierId == null OR SupplierId == 1) AND CategoryId == 1
+        var products = _db.Connection.From<Product>()
+            .Where(p => (p.SupplierId == null || p.SupplierId == 1) && p.CategoryId == 1)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => (p.SupplierId == null || p.SupplierId == 1) && p.CategoryId == 1);
+    }
+
+    [Fact]
+    public void Where_ChainedWithAndOr_CombinesCorrectly()
+    {
+        // Chained: Where(...).And(...).Or(...)
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .And(p => p.UnitPrice > 10)
+            .Or(p => p.CategoryId == 2)
+            .Select();
+
+        products.Should().NotBeEmpty();
+        // Verify results match the complex condition: (CategoryId == 1 AND UnitPrice > 10) OR CategoryId == 2
+        products.Should().OnlyContain(p => 
+            (p.CategoryId == 1 && p.UnitPrice > 10) || p.CategoryId == 2);
+    }
+
+    [Fact]
+    public void Where_MultipleStringConditions_CombinesCorrectly()
+    {
+        // ProductName.Contains("Chef") OR ProductName.Contains("Grand")
+        var products = _db.Connection.From<Product>()
+            .Where(p => p.ProductName.Contains("Chef"))
+            .Or(p => p.ProductName.Contains("Grand"))
+            .Select();
+
+        products.Should().NotBeEmpty();
+        products.Should().OnlyContain(p => 
+            p.ProductName.Contains("Chef") || p.ProductName.Contains("Grand"));
+    }
 }
