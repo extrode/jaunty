@@ -87,7 +87,7 @@ public class FluentSetOperationsAdvancedTests : IClassFixture<FluentDatabaseFixt
         var result = await _fixture.Connection.From<Product>()
             .Where(p => p.ProductId == 1)
             .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -999))
-            .SelectSingleAsync();
+            .SelectSingleAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal(1, result.ProductId);
@@ -99,7 +99,7 @@ public class FluentSetOperationsAdvancedTests : IClassFixture<FluentDatabaseFixt
         var result = await _fixture.Connection.From<Product>()
             .Where(p => p.ProductId == 1)
             .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -999))
-            .SelectSingleOrDefaultAsync();
+            .SelectSingleOrDefaultAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal(1, result!.ProductId);
@@ -111,7 +111,7 @@ public class FluentSetOperationsAdvancedTests : IClassFixture<FluentDatabaseFixt
         var result = await _fixture.Connection.From<Product>()
             .Where(p => p.ProductId == -999)
             .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -998))
-            .SelectSingleOrDefaultAsync();
+            .SelectSingleOrDefaultAsync(TestContext.Current.CancellationToken);
 
         Assert.Null(result);
     }
@@ -122,7 +122,7 @@ public class FluentSetOperationsAdvancedTests : IClassFixture<FluentDatabaseFixt
         var result = await _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
-            .SelectFirstAsync();
+            .SelectFirstAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.True(result.CategoryId == 1 || result.CategoryId == 2);
@@ -134,7 +134,7 @@ public class FluentSetOperationsAdvancedTests : IClassFixture<FluentDatabaseFixt
         var result = await _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
             .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
-            .SelectFirstOrDefaultAsync();
+            .SelectFirstOrDefaultAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
     }
@@ -145,7 +145,7 @@ public class FluentSetOperationsAdvancedTests : IClassFixture<FluentDatabaseFixt
         var result = await _fixture.Connection.From<Product>()
             .Where(p => p.ProductId == -999)
             .Union(_fixture.Connection.From<Product>().Where(p => p.ProductId == -998))
-            .SelectFirstOrDefaultAsync();
+            .SelectFirstOrDefaultAsync(TestContext.Current.CancellationToken);
 
         Assert.Null(result);
     }
