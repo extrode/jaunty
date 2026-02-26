@@ -203,9 +203,6 @@ dotnet test
 
 # Run specific test class
 dotnet test --filter "FullyQualifiedName~QueryTests"
-
-# Run tests with coverage
-dotnet test /p:CollectCoverage=true
 ```
 
 ---
