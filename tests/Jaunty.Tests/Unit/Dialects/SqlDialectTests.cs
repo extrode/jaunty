@@ -602,4 +602,728 @@ public class SqlDialectTests
     }
 
     #endregion
+
+    #region Non-Keyword Escaping (all dialects should NOT escape)
+
+    [Theory]
+    [InlineData("products")]
+    [InlineData("categories")]
+    [InlineData("my_table")]
+    public void SqlServer_EscapeTableName_NonKeyword_NotEscaped(string tableName)
+    {
+        Assert.Equal(tableName, _sqlServer.EscapeTableName(null, tableName));
+    }
+
+    [Theory]
+    [InlineData("products")]
+    [InlineData("my_column")]
+    public void SqlServer_EscapeColumnName_NonKeyword_NotEscaped(string columnName)
+    {
+        Assert.Equal(columnName, _sqlServer.EscapeColumnName(columnName));
+    }
+
+    [Theory]
+    [InlineData("products")]
+    [InlineData("categories")]
+    public void Postgres_EscapeTableName_NonKeyword_NotEscaped(string tableName)
+    {
+        Assert.Equal(tableName, _postgres.EscapeTableName(null, tableName));
+    }
+
+    [Theory]
+    [InlineData("products")]
+    [InlineData("my_column")]
+    public void Postgres_EscapeColumnName_NonKeyword_NotEscaped(string columnName)
+    {
+        Assert.Equal(columnName, _postgres.EscapeColumnName(columnName));
+    }
+
+    [Theory]
+    [InlineData("products")]
+    [InlineData("categories")]
+    public void MySql_EscapeTableName_NonKeyword_NotEscaped(string tableName)
+    {
+        Assert.Equal(tableName, _mySql.EscapeTableName(null, tableName));
+    }
+
+    [Theory]
+    [InlineData("products")]
+    [InlineData("my_column")]
+    public void MySql_EscapeColumnName_NonKeyword_NotEscaped(string columnName)
+    {
+        Assert.Equal(columnName, _mySql.EscapeColumnName(columnName));
+    }
+
+    [Theory]
+    [InlineData("products")]
+    [InlineData("categories")]
+    public void Sqlite_EscapeTableName_NonKeyword_NotEscaped(string tableName)
+    {
+        Assert.Equal(tableName, _sqlite.EscapeTableName(null, tableName));
+    }
+
+    [Theory]
+    [InlineData("products")]
+    [InlineData("my_column")]
+    public void Sqlite_EscapeColumnName_NonKeyword_NotEscaped(string columnName)
+    {
+        Assert.Equal(columnName, _sqlite.EscapeColumnName(columnName));
+    }
+
+    [Fact]
+    public void SqlServer_IsKeyword_ReturnsFalseForNonKeywords()
+    {
+        Assert.False(_sqlServer.IsKeyword("products"));
+        Assert.False(_sqlServer.IsKeyword("my_column"));
+    }
+
+    [Fact]
+    public void Postgres_IsKeyword_ReturnsFalseForNonKeywords()
+    {
+        Assert.False(_postgres.IsKeyword("products"));
+        Assert.False(_postgres.IsKeyword("my_column"));
+    }
+
+    [Fact]
+    public void MySql_IsKeyword_ReturnsFalseForNonKeywords()
+    {
+        Assert.False(_mySql.IsKeyword("products"));
+        Assert.False(_mySql.IsKeyword("my_column"));
+    }
+
+    [Fact]
+    public void Sqlite_IsKeyword_ReturnsFalseForNonKeywords()
+    {
+        Assert.False(_sqlite.IsKeyword("products"));
+        Assert.False(_sqlite.IsKeyword("my_column"));
+    }
+
+    #endregion
+
+    #region EscapeTableName with Schema Edge Cases
+
+    [Theory]
+    [InlineData(null, "products", "products")]
+    [InlineData("", "products", "products")]
+    [InlineData("  ", "products", "products")]
+    public void SqlServer_EscapeTableName_EmptyOrNullSchema_ReturnsTableOnly(string? schema, string table, string expected)
+    {
+        Assert.Equal(expected, _sqlServer.EscapeTableName(schema, table));
+    }
+
+    [Theory]
+    [InlineData("myschema", "products", "myschema.products")]
+    [InlineData("dbo", "products", "dbo.products")]
+    public void SqlServer_EscapeTableName_NonKeywordSchema_NotEscaped(string schema, string table, string expected)
+    {
+        Assert.Equal(expected, _sqlServer.EscapeTableName(schema, table));
+    }
+
+    [Theory]
+    [InlineData(null, "products", "products")]
+    [InlineData("", "products", "products")]
+    public void Postgres_EscapeTableName_EmptyOrNullSchema_ReturnsTableOnly(string? schema, string table, string expected)
+    {
+        Assert.Equal(expected, _postgres.EscapeTableName(schema, table));
+    }
+
+    [Theory]
+    [InlineData("myschema", "products", "myschema.products")]
+    public void Postgres_EscapeTableName_NonKeywordSchema_NotEscaped(string schema, string table, string expected)
+    {
+        Assert.Equal(expected, _postgres.EscapeTableName(schema, table));
+    }
+
+    [Theory]
+    [InlineData(null, "products", "products")]
+    [InlineData("", "products", "products")]
+    public void MySql_EscapeTableName_EmptyOrNullSchema_ReturnsTableOnly(string? schema, string table, string expected)
+    {
+        Assert.Equal(expected, _mySql.EscapeTableName(schema, table));
+    }
+
+    [Theory]
+    [InlineData("mydb", "products", "mydb.products")]
+    public void MySql_EscapeTableName_NonKeywordSchema_NotEscaped(string schema, string table, string expected)
+    {
+        Assert.Equal(expected, _mySql.EscapeTableName(schema, table));
+    }
+
+    #endregion
+
+    #region FormatPattern Tests (Non-SQLite)
+
+    [Theory]
+    [InlineData("test", "%test%")]
+    [InlineData("hello world", "%hello world%")]
+    public void SqlServer_FormatContainsPattern_WrapsWithPercent(string value, string expected)
+    {
+        Assert.Equal(expected, _sqlServer.FormatContainsPattern(value));
+    }
+
+    [Theory]
+    [InlineData("test", "test%")]
+    [InlineData("hello", "hello%")]
+    public void SqlServer_FormatStartsWithPattern_AppendsPercent(string value, string expected)
+    {
+        Assert.Equal(expected, _sqlServer.FormatStartsWithPattern(value));
+    }
+
+    [Theory]
+    [InlineData("test", "%test")]
+    [InlineData("hello", "%hello")]
+    public void SqlServer_FormatEndsWithPattern_PrependsPercent(string value, string expected)
+    {
+        Assert.Equal(expected, _sqlServer.FormatEndsWithPattern(value));
+    }
+
+    [Theory]
+    [InlineData("test", "%test%")]
+    public void Postgres_FormatContainsPattern_WrapsWithPercent(string value, string expected)
+    {
+        Assert.Equal(expected, _postgres.FormatContainsPattern(value));
+    }
+
+    [Theory]
+    [InlineData("test", "test%")]
+    public void Postgres_FormatStartsWithPattern_AppendsPercent(string value, string expected)
+    {
+        Assert.Equal(expected, _postgres.FormatStartsWithPattern(value));
+    }
+
+    [Theory]
+    [InlineData("test", "%test")]
+    public void Postgres_FormatEndsWithPattern_PrependsPercent(string value, string expected)
+    {
+        Assert.Equal(expected, _postgres.FormatEndsWithPattern(value));
+    }
+
+    [Theory]
+    [InlineData("test", "%test%")]
+    public void MySql_FormatContainsPattern_WrapsWithPercent(string value, string expected)
+    {
+        Assert.Equal(expected, _mySql.FormatContainsPattern(value));
+    }
+
+    [Theory]
+    [InlineData("test", "test%")]
+    public void MySql_FormatStartsWithPattern_AppendsPercent(string value, string expected)
+    {
+        Assert.Equal(expected, _mySql.FormatStartsWithPattern(value));
+    }
+
+    [Theory]
+    [InlineData("test", "%test")]
+    public void MySql_FormatEndsWithPattern_PrependsPercent(string value, string expected)
+    {
+        Assert.Equal(expected, _mySql.FormatEndsWithPattern(value));
+    }
+
+    #endregion
+
+    #region PostgreSQL GetLastInsertIdSql Edge Cases
+
+    [Fact]
+    public void Postgres_GetLastInsertIdSql_NoColumns_ReturnsDefaultReturning()
+    {
+        Assert.Equal("RETURNING id;", _postgres.GetLastInsertIdSql());
+    }
+
+    [Fact]
+    public void Postgres_GetLastInsertIdSql_MultipleColumns_ReturnsAllColumns()
+    {
+        Assert.Equal("RETURNING Id, Name;", _postgres.GetLastInsertIdSql("Id", "Name"));
+    }
+
+    #endregion
+
+    #region SQL Server FK Toggle Returns Null
+
+    [Fact]
+    public void SqlServer_GetDisableForeignKeyChecksSql_ReturnsNull()
+    {
+        Assert.Null(_sqlServer.GetDisableForeignKeyChecksSql());
+    }
+
+    [Fact]
+    public void SqlServer_GetEnableForeignKeyChecksSql_ReturnsNull()
+    {
+        Assert.Null(_sqlServer.GetEnableForeignKeyChecksSql());
+    }
+
+    #endregion
+
+    #region String Functions - Upper, Lower, Trim (All Dialects)
+
+    [Fact]
+    public void SqlServer_GenerateUpper_ReturnsUpper()
+    {
+        Assert.Equal("UPPER(col)", _sqlServer.GenerateUpper("col"));
+    }
+
+    [Fact]
+    public void SqlServer_GenerateLower_ReturnsLower()
+    {
+        Assert.Equal("LOWER(col)", _sqlServer.GenerateLower("col"));
+    }
+
+    [Fact]
+    public void SqlServer_GenerateTrim_ReturnsTrim()
+    {
+        Assert.Equal("TRIM(col)", _sqlServer.GenerateTrim("col"));
+    }
+
+    [Fact]
+    public void Postgres_GenerateUpper_ReturnsUpper()
+    {
+        Assert.Equal("UPPER(col)", _postgres.GenerateUpper("col"));
+    }
+
+    [Fact]
+    public void Postgres_GenerateLower_ReturnsLower()
+    {
+        Assert.Equal("LOWER(col)", _postgres.GenerateLower("col"));
+    }
+
+    [Fact]
+    public void Postgres_GenerateTrim_ReturnsTrim()
+    {
+        Assert.Equal("TRIM(col)", _postgres.GenerateTrim("col"));
+    }
+
+    [Fact]
+    public void MySql_GenerateUpper_ReturnsUpper()
+    {
+        Assert.Equal("UPPER(col)", _mySql.GenerateUpper("col"));
+    }
+
+    [Fact]
+    public void MySql_GenerateLower_ReturnsLower()
+    {
+        Assert.Equal("LOWER(col)", _mySql.GenerateLower("col"));
+    }
+
+    [Fact]
+    public void MySql_GenerateTrim_ReturnsTrim()
+    {
+        Assert.Equal("TRIM(col)", _mySql.GenerateTrim("col"));
+    }
+
+    [Fact]
+    public void Sqlite_GenerateUpper_ReturnsUpper()
+    {
+        Assert.Equal("UPPER(col)", _sqlite.GenerateUpper("col"));
+    }
+
+    [Fact]
+    public void Sqlite_GenerateLower_ReturnsLower()
+    {
+        Assert.Equal("LOWER(col)", _sqlite.GenerateLower("col"));
+    }
+
+    [Fact]
+    public void Sqlite_GenerateTrim_ReturnsTrim()
+    {
+        Assert.Equal("TRIM(col)", _sqlite.GenerateTrim("col"));
+    }
+
+    #endregion
+
+    #region Upsert SQL Generation (All Dialects)
+
+    [Fact]
+    public void SqlServer_SupportsUpsert_ReturnsTrue()
+    {
+        Assert.True(_sqlServer.SupportsUpsert);
+    }
+
+    [Fact]
+    public void SqlServer_GenerateUpsertSql_GeneratesMergeSql()
+    {
+        var sql = _sqlServer.GenerateUpsertSql(
+            "products",
+            insertColumns: new[] { "id", "name", "value" },
+            insertParams: new[] { "@id", "@name", "@value" },
+            updateColumns: new[] { "name", "value" },
+            updateParams: new[] { "@name", "@value" },
+            keyColumns: new[] { "id" });
+
+        Assert.Contains("MERGE INTO products AS target", sql);
+        Assert.Contains("USING (VALUES (@id, @name, @value))", sql);
+        Assert.Contains("AS source (id, name, value)", sql);
+        Assert.Contains("ON target.id = source.id", sql);
+        Assert.Contains("WHEN MATCHED THEN UPDATE SET target.name = source.name, target.value = source.value", sql);
+        Assert.Contains("WHEN NOT MATCHED THEN INSERT (id, name, value) VALUES (source.id, source.name, source.value)", sql);
+    }
+
+    [Fact]
+    public void SqlServer_GenerateUpsertSql_MultipleKeys_GeneratesCompoundOn()
+    {
+        var sql = _sqlServer.GenerateUpsertSql(
+            "table",
+            insertColumns: new[] { "k1", "k2", "col" },
+            insertParams: new[] { "@k1", "@k2", "@col" },
+            updateColumns: new[] { "col" },
+            updateParams: new[] { "@col" },
+            keyColumns: new[] { "k1", "k2" });
+
+        Assert.Contains("target.k1 = source.k1 AND target.k2 = source.k2", sql);
+    }
+
+    [Fact]
+    public void Postgres_SupportsUpsert_ReturnsTrue()
+    {
+        Assert.True(_postgres.SupportsUpsert);
+    }
+
+    [Fact]
+    public void Postgres_GenerateUpsertSql_GeneratesOnConflictSql()
+    {
+        var sql = _postgres.GenerateUpsertSql(
+            "products",
+            insertColumns: new[] { "id", "name", "value" },
+            insertParams: new[] { "@id", "@name", "@value" },
+            updateColumns: new[] { "name", "value" },
+            updateParams: new[] { "@name", "@value" },
+            keyColumns: new[] { "id" });
+
+        Assert.Contains("INSERT INTO products", sql);
+        Assert.Contains("(id, name, value) VALUES (@id, @name, @value)", sql);
+        Assert.Contains("ON CONFLICT (id)", sql);
+        Assert.Contains("DO UPDATE SET name = EXCLUDED.name, value = EXCLUDED.value", sql);
+    }
+
+    [Fact]
+    public void MySql_SupportsUpsert_ReturnsTrue()
+    {
+        Assert.True(_mySql.SupportsUpsert);
+    }
+
+    [Fact]
+    public void MySql_GenerateUpsertSql_GeneratesOnDuplicateKeySql()
+    {
+        var sql = _mySql.GenerateUpsertSql(
+            "products",
+            insertColumns: new[] { "id", "name", "value" },
+            insertParams: new[] { "@id", "@name", "@value" },
+            updateColumns: new[] { "name", "value" },
+            updateParams: new[] { "@name", "@value" },
+            keyColumns: new[] { "id" });
+
+        Assert.Contains("INSERT INTO products", sql);
+        Assert.Contains("(id, name, value) VALUES (@id, @name, @value)", sql);
+        Assert.Contains("ON DUPLICATE KEY UPDATE", sql);
+        Assert.Contains("name = VALUES(name)", sql);
+        Assert.Contains("value = VALUES(value)", sql);
+    }
+
+    [Fact]
+    public void Sqlite_SupportsUpsert_ReturnsTrue()
+    {
+        Assert.True(_sqlite.SupportsUpsert);
+    }
+
+    [Fact]
+    public void Sqlite_GenerateUpsertSql_GeneratesOnConflictSql()
+    {
+        var sql = _sqlite.GenerateUpsertSql(
+            "products",
+            insertColumns: new[] { "id", "name", "value" },
+            insertParams: new[] { "@id", "@name", "@value" },
+            updateColumns: new[] { "name", "value" },
+            updateParams: new[] { "@name", "@value" },
+            keyColumns: new[] { "id" });
+
+        Assert.Contains("INSERT INTO products", sql);
+        Assert.Contains("(id, name, value) VALUES (@id, @name, @value)", sql);
+        Assert.Contains("ON CONFLICT (id)", sql);
+        Assert.Contains("DO UPDATE SET name = excluded.name, value = excluded.value", sql);
+    }
+
+    [Fact]
+    public void Sqlite_GenerateUpsertSql_MultipleKeys_GeneratesCompoundConflict()
+    {
+        var sql = _sqlite.GenerateUpsertSql(
+            "table",
+            insertColumns: new[] { "k1", "k2", "col" },
+            insertParams: new[] { "@k1", "@k2", "@col" },
+            updateColumns: new[] { "col" },
+            updateParams: new[] { "@col" },
+            keyColumns: new[] { "k1", "k2" });
+
+        Assert.Contains("ON CONFLICT (k1, k2)", sql);
+    }
+
+    #endregion
+
+    #region Window Functions (All Dialects)
+
+    [Fact]
+    public void SqlServer_GenerateRowNumber_ReturnsRowNumber()
+    {
+        Assert.Equal("ROW_NUMBER()", _sqlServer.GenerateRowNumber());
+    }
+
+    [Fact]
+    public void SqlServer_GenerateRank_ReturnsRank()
+    {
+        Assert.Equal("RANK()", _sqlServer.GenerateRank());
+    }
+
+    [Fact]
+    public void SqlServer_GenerateDenseRank_ReturnsDenseRank()
+    {
+        Assert.Equal("DENSE_RANK()", _sqlServer.GenerateDenseRank());
+    }
+
+    [Fact]
+    public void SqlServer_GenerateNTile_ReturnsNTile()
+    {
+        Assert.Equal("NTILE(4)", _sqlServer.GenerateNTile(4));
+    }
+
+    [Fact]
+    public void Postgres_GenerateRowNumber_ReturnsRowNumber()
+    {
+        Assert.Equal("ROW_NUMBER()", _postgres.GenerateRowNumber());
+    }
+
+    [Fact]
+    public void Postgres_GenerateRank_ReturnsRank()
+    {
+        Assert.Equal("RANK()", _postgres.GenerateRank());
+    }
+
+    [Fact]
+    public void Postgres_GenerateDenseRank_ReturnsDenseRank()
+    {
+        Assert.Equal("DENSE_RANK()", _postgres.GenerateDenseRank());
+    }
+
+    [Fact]
+    public void Postgres_GenerateNTile_ReturnsNTile()
+    {
+        Assert.Equal("NTILE(3)", _postgres.GenerateNTile(3));
+    }
+
+    [Fact]
+    public void MySql_GenerateRowNumber_ReturnsRowNumber()
+    {
+        Assert.Equal("ROW_NUMBER()", _mySql.GenerateRowNumber());
+    }
+
+    [Fact]
+    public void MySql_GenerateRank_ReturnsRank()
+    {
+        Assert.Equal("RANK()", _mySql.GenerateRank());
+    }
+
+    [Fact]
+    public void MySql_GenerateDenseRank_ReturnsDenseRank()
+    {
+        Assert.Equal("DENSE_RANK()", _mySql.GenerateDenseRank());
+    }
+
+    [Fact]
+    public void MySql_GenerateNTile_ReturnsNTile()
+    {
+        Assert.Equal("NTILE(5)", _mySql.GenerateNTile(5));
+    }
+
+    [Fact]
+    public void Sqlite_GenerateRowNumber_ReturnsRowNumber()
+    {
+        Assert.Equal("ROW_NUMBER()", _sqlite.GenerateRowNumber());
+    }
+
+    [Fact]
+    public void Sqlite_GenerateRank_ReturnsRank()
+    {
+        Assert.Equal("RANK()", _sqlite.GenerateRank());
+    }
+
+    [Fact]
+    public void Sqlite_GenerateDenseRank_ReturnsDenseRank()
+    {
+        Assert.Equal("DENSE_RANK()", _sqlite.GenerateDenseRank());
+    }
+
+    [Fact]
+    public void Sqlite_GenerateNTile_ReturnsNTile()
+    {
+        Assert.Equal("NTILE(2)", _sqlite.GenerateNTile(2));
+    }
+
+    #endregion
+
+    #region GenerateOverClause (All Dialects)
+
+    [Fact]
+    public void SqlServer_GenerateOverClause_PartitionAndOrder_GeneratesCorrectSql()
+    {
+        var result = _sqlServer.GenerateOverClause(
+            new[] { "category_id" },
+            new[] { ("price", false) });
+
+        Assert.Equal(" OVER (PARTITION BY category_id ORDER BY price)", result);
+    }
+
+    [Fact]
+    public void SqlServer_GenerateOverClause_OrderOnly_GeneratesCorrectSql()
+    {
+        var result = _sqlServer.GenerateOverClause(
+            null,
+            new[] { ("price", true) });
+
+        Assert.Equal(" OVER (ORDER BY price DESC)", result);
+    }
+
+    [Fact]
+    public void SqlServer_GenerateOverClause_PartitionOnly_GeneratesCorrectSql()
+    {
+        var result = _sqlServer.GenerateOverClause(
+            new[] { "category_id" },
+            null);
+
+        Assert.Equal(" OVER (PARTITION BY category_id)", result);
+    }
+
+    [Fact]
+    public void SqlServer_GenerateOverClause_Empty_GeneratesEmptyOver()
+    {
+        var result = _sqlServer.GenerateOverClause(null, null);
+        Assert.Equal(" OVER ()", result);
+    }
+
+    [Fact]
+    public void SqlServer_GenerateOverClause_MultiplePartitionsAndOrders_GeneratesCorrectSql()
+    {
+        var result = _sqlServer.GenerateOverClause(
+            new[] { "col1", "col2" },
+            new[] { ("col3", false), ("col4", true) });
+
+        Assert.Equal(" OVER (PARTITION BY col1, col2 ORDER BY col3, col4 DESC)", result);
+    }
+
+    [Fact]
+    public void Postgres_GenerateOverClause_PartitionAndOrder_GeneratesCorrectSql()
+    {
+        var result = _postgres.GenerateOverClause(
+            new[] { "category_id" },
+            new[] { ("price", false) });
+
+        Assert.Equal(" OVER (PARTITION BY category_id ORDER BY price)", result);
+    }
+
+    [Fact]
+    public void MySql_GenerateOverClause_PartitionAndOrder_GeneratesCorrectSql()
+    {
+        var result = _mySql.GenerateOverClause(
+            new[] { "category_id" },
+            new[] { ("price", true) });
+
+        Assert.Equal(" OVER (PARTITION BY category_id ORDER BY price DESC)", result);
+    }
+
+    [Fact]
+    public void Sqlite_GenerateOverClause_PartitionAndOrder_GeneratesCorrectSql()
+    {
+        var result = _sqlite.GenerateOverClause(
+            new[] { "category_id" },
+            new[] { ("price", false) });
+
+        Assert.Equal(" OVER (PARTITION BY category_id ORDER BY price)", result);
+    }
+
+    [Fact]
+    public void Sqlite_GenerateOverClause_EmptyArrays_GeneratesEmptyOver()
+    {
+        var result = _sqlite.GenerateOverClause(
+            Array.Empty<string>(),
+            Array.Empty<(string, bool)>());
+
+        Assert.Equal(" OVER ()", result);
+    }
+
+    #endregion
+
+    #region GenerateWindowAggregate (All Dialects)
+
+    [Fact]
+    public void SqlServer_GenerateWindowAggregate_WithExpression_GeneratesCorrectSql()
+    {
+        Assert.Equal("SUM(price)", _sqlServer.GenerateWindowAggregate("SUM", "price"));
+    }
+
+    [Fact]
+    public void SqlServer_GenerateWindowAggregate_WithoutExpression_GeneratesCountStar()
+    {
+        Assert.Equal("COUNT(*)", _sqlServer.GenerateWindowAggregate("COUNT", null));
+    }
+
+    [Fact]
+    public void Postgres_GenerateWindowAggregate_WithExpression_GeneratesCorrectSql()
+    {
+        Assert.Equal("AVG(score)", _postgres.GenerateWindowAggregate("AVG", "score"));
+    }
+
+    [Fact]
+    public void Postgres_GenerateWindowAggregate_WithoutExpression_GeneratesCountStar()
+    {
+        Assert.Equal("COUNT(*)", _postgres.GenerateWindowAggregate("COUNT", null));
+    }
+
+    [Fact]
+    public void MySql_GenerateWindowAggregate_WithExpression_GeneratesCorrectSql()
+    {
+        Assert.Equal("MAX(quantity)", _mySql.GenerateWindowAggregate("MAX", "quantity"));
+    }
+
+    [Fact]
+    public void MySql_GenerateWindowAggregate_WithoutExpression_GeneratesCountStar()
+    {
+        Assert.Equal("COUNT(*)", _mySql.GenerateWindowAggregate("COUNT", null));
+    }
+
+    [Fact]
+    public void Sqlite_GenerateWindowAggregate_WithExpression_GeneratesCorrectSql()
+    {
+        Assert.Equal("MIN(price)", _sqlite.GenerateWindowAggregate("MIN", "price"));
+    }
+
+    [Fact]
+    public void Sqlite_GenerateWindowAggregate_WithoutExpression_GeneratesCountStar()
+    {
+        Assert.Equal("COUNT(*)", _sqlite.GenerateWindowAggregate("COUNT", null));
+    }
+
+    #endregion
+
+    #region Coalesce with Multiple Arguments
+
+    [Fact]
+    public void SqlServer_GenerateCoalesce_ThreeArgs_ReturnsCoalesce()
+    {
+        Assert.Equal("COALESCE(a, b, c)", _sqlServer.GenerateCoalesce("a", "b", "c"));
+    }
+
+    [Fact]
+    public void Postgres_GenerateCoalesce_ThreeArgs_ReturnsCoalesce()
+    {
+        Assert.Equal("COALESCE(a, b, c)", _postgres.GenerateCoalesce("a", "b", "c"));
+    }
+
+    [Fact]
+    public void MySql_GenerateCoalesce_ThreeArgs_ReturnsCoalesce()
+    {
+        Assert.Equal("COALESCE(a, b, c)", _mySql.GenerateCoalesce("a", "b", "c"));
+    }
+
+    [Fact]
+    public void Sqlite_GenerateCoalesce_ThreeArgs_ReturnsCoalesce()
+    {
+        Assert.Equal("COALESCE(a, b, c)", _sqlite.GenerateCoalesce("a", "b", "c"));
+    }
+
+    #endregion
 }
