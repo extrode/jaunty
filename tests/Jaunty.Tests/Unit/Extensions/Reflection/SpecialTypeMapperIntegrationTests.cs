@@ -38,8 +38,11 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
 
         Assert.Equal(1, results.Count);
         var row = results[0];
-        Assert.Contains("CategoryId", row.Keys);
-        Assert.Contains("CategoryName", row.Keys);
+        
+        // PostgreSQL folds column names to lowercase, so use case-insensitive comparison
+        var keys = row.Keys.ToList();
+        Assert.True(keys.Any(k => k.Equals("CategoryId", StringComparison.OrdinalIgnoreCase)));
+        Assert.True(keys.Any(k => k.Equals("CategoryName", StringComparison.OrdinalIgnoreCase)));
     }
 
     [Theory]
@@ -60,8 +63,11 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
 
         Assert.Equal(1, results.Count);
         var row = results[0];
-        Assert.Contains("CategoryId", row.Keys);
-        Assert.True(row["CategoryId"] > 0);
+        
+        // PostgreSQL folds column names to lowercase, so use case-insensitive comparison
+        var key = row.Keys.FirstOrDefault(k => k.Equals("CategoryId", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(key);
+        Assert.True(row[key] > 0);
     }
 
     #endregion
