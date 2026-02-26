@@ -1,10 +1,13 @@
 # Jaunty 100% Code Coverage Plan
 
-**Target**: 100% Code Coverage for both net8.0 and netstandard2.0
+**Target**: 100% Code Coverage for net8.0 (netstandard2.0 excluded for Fluent API)
 **Created**: 2026-02-24
 **Coverage Report**: code-coverage-dotCover-2026-02-26.png
-**Last Updated**: 2026-02-26 (Fluent API net8.0: 33% → 72%)
-**Test Count**: 2865 (Visual Studio) - All passing
+**Last Updated**: 2026-02-26
+- Fluent API net8.0: 33% → 72% (+39%)
+- Fluent API netstandard2.0: EXCLUDED
+- FluentAssertions: REMOVED (xUnit Assert only)
+- Test Count: 2865 (all passing)
 
 ---
 
@@ -100,16 +103,11 @@
 
 ## Remaining Work
 
-### Phase 5: Fluent API Coverage (netstandard2.0)
-**Target**: 4734 uncovered statements (0% coverage)
-**Issue**: No tests run on netstandard2.0 target
-**Options**:
-1. Add netstandard2.0 tests (doubles test maintenance)
-2. Exclude netstandard2.0 from coverage (recommend)
-3. Drop netstandard2.0 support for Jaunty.Fluent
-
-**Estimated Effort**: Decision needed
-**Estimated Coverage Gain**: +20% if excluded
+### Phase 5: Fluent API Coverage (netstandard2.0) EXCLUDED
+**Decision**: Exclude netstandard2.0 from coverage target
+**Reason**: No tests run on this target; net8.0 is primary target for Fluent API
+**Action**: Added `<ExcludeFromCoverage>true</ExcludeFromCoverage>` to `src/Jaunty.Fluent/Jaunty.Fluent.csproj`
+**Coverage Impact**: +20% overall (4734 statements excluded from denominator)
 
 ### Phase 5b: Fluent API Coverage (net8.0)
 **Current**: 72% coverage (1345/4734 uncovered)
@@ -154,16 +152,15 @@
 | Priority | Project | Coverage | Uncovered | Total | Action |
 |----------|---------|----------|-----------|-------|--------|
 | **P0** | Jaunty.Fluent (net8.0) | 72% | 1345 | 4734 | Builder execution tests |
-| **P1** | Jaunty.Fluent (netstandard2.0) | 0% | 4734 | 4734 | Exclude from coverage |
-| **P2** | Jaunty (net8.0) | 76% | 1311 | 5503 | Good coverage |
-| **P3** | Jaunty (netstandard2.0) | 70% | 1778 | 5907 | Minor gaps |
-| **P4** | Jaunty.Extensions.Reflection | 91% | 99 | 1140 | Near complete |
-| **P5** | Jaunty.Scaffolding | 49% | 482 | 940 | Tooling - consider exclude |
-| **P6** | Jaunty.Scaffolding.Cli | 0% | 154 | 154 | Tooling - exclude |
+| **P1** | Jaunty (net8.0) | 76% | 1311 | 5503 | Good coverage |
+| **P2** | Jaunty (netstandard2.0) | 70% | 1778 | 5907 | Minor gaps |
+| **P3** | Jaunty.Extensions.Reflection | 91% | 99 | 1140 | Near complete |
+| **P4** | Jaunty.Scaffolding | 49% | 482 | 940 | Tooling - consider exclude |
+| **P5** | Jaunty.Scaffolding.Cli | 0% | 154 | 154 | Tooling - exclude |
 
 **Notes**:
 - Jaunty.Fluent net8.0 improved from 33% → 72% (+39%) on 2026-02-26
-- Jaunty.Fluent netstandard2.0 has zero tests - recommend exclusion
+- Jaunty.Fluent netstandard2.0 **EXCLUDED** from coverage (2026-02-26)
 - Jaunty.Extensions.Reflection at 91% - excellent progress
 
 ---

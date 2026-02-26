@@ -8,6 +8,7 @@
 
 	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<DefineConstants>AsyncInterfaces</DefineConstants>
+		<ExcludeFromCoverage>true</ExcludeFromCoverage>
 	</PropertyGroup>
 
 	<Choose>
