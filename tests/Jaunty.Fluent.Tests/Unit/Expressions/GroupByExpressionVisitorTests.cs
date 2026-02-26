@@ -1,10 +1,9 @@
 using System.Linq.Expressions;
 
-using FluentAssertions;
-
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
+using Xunit;
 
 namespace Jaunty.Fluent.Tests.Unit.Expressions;
 
@@ -25,9 +24,9 @@ public class GroupByExpressionVisitorTests
         var visitor = new GroupByExpressionVisitor<Product, short>(_dialect, new[] { "[CategoryId]" });
         var (columns, aliases) = visitor.TranslateSelect(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Should().Contain("[CategoryId]");
-        aliases[0].Should().Be("Value");
+        var column = Assert.Single(columns);
+        Assert.Contains("[CategoryId]", column);
+        Assert.Equal("Value", aliases[0]);
     }
 
     #endregion
@@ -41,9 +40,9 @@ public class GroupByExpressionVisitorTests
         var visitor = new GroupByExpressionVisitor<Product, short>(_dialect, new[] { "[CategoryId]" });
         var (columns, aliases) = visitor.TranslateSelect(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Should().Contain("COUNT(*)");
-        aliases[0].Should().Be("Value");
+        var column = Assert.Single(columns);
+        Assert.Contains("COUNT(*)", column);
+        Assert.Equal("Value", aliases[0]);
     }
 
     [Fact]
@@ -53,9 +52,9 @@ public class GroupByExpressionVisitorTests
         var visitor = new GroupByExpressionVisitor<Product, short>(_dialect, new[] { "[category_id]" });
         var (columns, aliases) = visitor.TranslateSelect(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Should().Contain("SUM([unit_price])");
-        aliases[0].Should().Be("Value");
+        var column = Assert.Single(columns);
+        Assert.Contains("SUM([unit_price])", column);
+        Assert.Equal("Value", aliases[0]);
     }
 
     [Fact]
@@ -65,9 +64,9 @@ public class GroupByExpressionVisitorTests
         var visitor = new GroupByExpressionVisitor<Product, short>(_dialect, new[] { "[category_id]" });
         var (columns, aliases) = visitor.TranslateSelect(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Should().Contain("AVG([unit_price])");
-        aliases[0].Should().Be("Value");
+        var column = Assert.Single(columns);
+        Assert.Contains("AVG([unit_price])", column);
+        Assert.Equal("Value", aliases[0]);
     }
 
     [Fact]
@@ -77,9 +76,9 @@ public class GroupByExpressionVisitorTests
         var visitor = new GroupByExpressionVisitor<Product, short>(_dialect, new[] { "[category_id]" });
         var (columns, aliases) = visitor.TranslateSelect(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Should().Contain("MIN([unit_price])");
-        aliases[0].Should().Be("Value");
+        var column = Assert.Single(columns);
+        Assert.Contains("MIN([unit_price])", column);
+        Assert.Equal("Value", aliases[0]);
     }
 
     [Fact]
@@ -89,9 +88,9 @@ public class GroupByExpressionVisitorTests
         var visitor = new GroupByExpressionVisitor<Product, short>(_dialect, new[] { "[category_id]" });
         var (columns, aliases) = visitor.TranslateSelect(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Should().Contain("MAX([unit_price])");
-        aliases[0].Should().Be("Value");
+        var column = Assert.Single(columns);
+        Assert.Contains("MAX([unit_price])", column);
+        Assert.Equal("Value", aliases[0]);
     }
 
     #endregion
@@ -101,34 +100,34 @@ public class GroupByExpressionVisitorTests
     [Fact]
     public void TranslateSelect_WithAnonymousType_GeneratesMultipleColumns()
     {
-        Expression<Func<IGrouping<short, Product>, object>> expr = g => new 
-        { 
-            CategoryId = g.Key, 
+        Expression<Func<IGrouping<short, Product>, object>> expr = g => new
+        {
+            CategoryId = g.Key,
             Count = g.Count(),
             Total = g.Sum(p => p.UnitPrice)
         };
         var visitor = new GroupByExpressionVisitor<Product, short>(_dialect, new[] { "[CategoryId]" });
         var (columns, aliases) = visitor.TranslateSelect(expr);
 
-        columns.Should().HaveCount(3);
-        aliases.Should().ContainInOrder(new[] { "CategoryId", "Count", "Total" });
+        Assert.Equal(3, columns.Length);
+        Assert.Equal(new[] { "CategoryId", "Count", "Total" }, aliases);
     }
 
     [Fact]
     public void TranslateSelect_WithAnonymousType_KeyAndAggregates_GeneratesCorrectSql()
     {
-        Expression<Func<IGrouping<short, Product>, object>> expr = g => new 
-        { 
-            Key = g.Key, 
+        Expression<Func<IGrouping<short, Product>, object>> expr = g => new
+        {
+            Key = g.Key,
             ProductCount = g.Count()
         };
         var visitor = new GroupByExpressionVisitor<Product, short>(_dialect, new[] { "[CategoryId]" });
         var (columns, aliases) = visitor.TranslateSelect(expr);
 
-        columns.Should().HaveCount(2);
-        columns[0].Should().Contain("[CategoryId]");
-        columns[1].Should().Contain("COUNT(*)");
-        aliases.Should().ContainInOrder(new[] { "Key", "ProductCount" });
+        Assert.Equal(2, columns.Length);
+        Assert.Contains("[CategoryId]", columns[0]);
+        Assert.Contains("COUNT(*)", columns[1]);
+        Assert.Equal(new[] { "Key", "ProductCount" }, aliases);
     }
 
     #endregion
@@ -146,8 +145,8 @@ public class GroupByExpressionVisitorTests
         var visitor = new GroupByExpressionVisitor<Product, short>(_dialect, new[] { "[CategoryId]" });
         var (columns, aliases) = visitor.TranslateSelect(expr);
 
-        columns.Should().HaveCount(2);
-        aliases.Should().ContainInOrder(new[] { "CategoryId", "ProductCount" });
+        Assert.Equal(2, columns.Length);
+        Assert.Equal(new[] { "CategoryId", "ProductCount" }, aliases);
     }
 
     #endregion
@@ -161,8 +160,8 @@ public class GroupByExpressionVisitorTests
         var visitor = new GroupByExpressionVisitor<Product, short>(_dialect, new[] { "[CategoryId]" });
         var (columns, aliases) = visitor.TranslateSelect(expr);
 
-        columns.Should().ContainSingle();
-        columns[0].Should().Contain("COUNT");
+        var column = Assert.Single(columns);
+        Assert.Contains("COUNT", column);
     }
 
     #endregion

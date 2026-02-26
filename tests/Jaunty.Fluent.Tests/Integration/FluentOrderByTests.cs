@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -21,8 +19,11 @@ public class FluentOrderByTests : IDisposable
             .OrderBy(p => p.ProductName)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().BeInAscendingOrder(p => p.ProductName);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(string.Compare(products[i - 1].ProductName, products[i].ProductName) <= 0);
+        }
     }
 
     [Fact]
@@ -32,8 +33,11 @@ public class FluentOrderByTests : IDisposable
             .OrderByDescending(p => p.ProductId)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().BeInDescendingOrder(p => p.ProductId);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(products[i - 1].ProductId >= products[i].ProductId);
+        }
     }
 
     [Fact]
@@ -43,7 +47,7 @@ public class FluentOrderByTests : IDisposable
             .OrderBy(p => p.UnitPrice)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     // --- OrderBy String Tests ---
@@ -55,8 +59,11 @@ public class FluentOrderByTests : IDisposable
             .OrderBy("product_name")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().BeInAscendingOrder(p => p.ProductName);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(string.Compare(products[i - 1].ProductName, products[i].ProductName) <= 0);
+        }
     }
 
     [Fact]
@@ -66,8 +73,11 @@ public class FluentOrderByTests : IDisposable
             .OrderByDescending("product_id")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().BeInDescendingOrder(p => p.ProductId);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(products[i - 1].ProductId >= products[i].ProductId);
+        }
     }
 
     // --- ThenBy Expression Tests ---
@@ -80,13 +90,17 @@ public class FluentOrderByTests : IDisposable
             .ThenBy(p => p.ProductName)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
 
         // Verify products are sorted by CategoryId first, then by ProductName within each category
         var grouped = products.GroupBy(p => p.CategoryId);
         foreach (var group in grouped)
         {
-            group.Should().BeInAscendingOrder(p => p.ProductName);
+            var groupList = group.ToList();
+            for (int i = 1; i < groupList.Count; i++)
+            {
+                Assert.True(string.Compare(groupList[i - 1].ProductName, groupList[i].ProductName) <= 0);
+            }
         }
     }
 
@@ -98,13 +112,17 @@ public class FluentOrderByTests : IDisposable
             .ThenByDescending(p => p.ProductId)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
 
         // Verify products within each category are sorted descending by ProductId
         var grouped = products.GroupBy(p => p.CategoryId);
         foreach (var group in grouped)
         {
-            group.Should().BeInDescendingOrder(p => p.ProductId);
+            var groupList = group.ToList();
+            for (int i = 1; i < groupList.Count; i++)
+            {
+                Assert.True(groupList[i - 1].ProductId >= groupList[i].ProductId);
+            }
         }
     }
 
@@ -118,7 +136,7 @@ public class FluentOrderByTests : IDisposable
             .ThenBy("product_name")
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     [Fact]
@@ -129,7 +147,7 @@ public class FluentOrderByTests : IDisposable
             .ThenByDescending("product_id")
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     // --- Multiple ThenBy Chains ---
@@ -143,7 +161,7 @@ public class FluentOrderByTests : IDisposable
             .ThenBy(p => p.ProductName)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     [Fact]
@@ -155,7 +173,7 @@ public class FluentOrderByTests : IDisposable
             .ThenBy(p => p.ProductName)
             .Select();
 
-        products.Should().NotBeEmpty();
+        Assert.NotEmpty(products);
     }
 
     // --- OrderBy with Take/Skip Tests ---
@@ -168,8 +186,11 @@ public class FluentOrderByTests : IDisposable
             .Take(5)
             .Select();
 
-        products.Should().HaveCount(5);
-        products.Should().BeInAscendingOrder(p => p.ProductName);
+        Assert.Equal(5, products.Count);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(string.Compare(products[i - 1].ProductName, products[i].ProductName) <= 0);
+        }
     }
 
     [Fact]
@@ -185,8 +206,8 @@ public class FluentOrderByTests : IDisposable
             .Take(5)
             .Select();
 
-        page2.Should().HaveCount(5);
-        page2.First().ProductId.Should().Be(allProducts[5].ProductId);
+        Assert.Equal(5, page2.Count);
+        Assert.Equal(allProducts[5].ProductId, page2.First().ProductId);
     }
 
     // --- OrderBy with WHERE Tests ---
@@ -199,8 +220,8 @@ public class FluentOrderByTests : IDisposable
             .OrderBy(p => p.ProductName)
             .ToSql();
 
-        sql.Should().Contain("WHERE");
-        sql.Should().Contain("ORDER BY");
+        Assert.Contains("WHERE", sql);
+        Assert.Contains("ORDER BY", sql);
     }
 
     [Fact]
@@ -211,9 +232,12 @@ public class FluentOrderByTests : IDisposable
             .OrderBy(p => p.ProductName)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1);
-        products.Should().BeInAscendingOrder(p => p.ProductName);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(string.Compare(products[i - 1].ProductName, products[i].ProductName) <= 0);
+        }
     }
 
     // --- ToSql Tests ---
@@ -225,8 +249,8 @@ public class FluentOrderByTests : IDisposable
             .OrderBy(p => p.ProductName)
             .ToSql();
 
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("product_name");
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("product_name", sql);
         // ASC is the default and may not be explicit in the SQL
     }
 
@@ -237,9 +261,9 @@ public class FluentOrderByTests : IDisposable
             .OrderByDescending(p => p.ProductId)
             .ToSql();
 
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("product_id");
-        sql.Should().Contain("DESC");
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("product_id", sql);
+        Assert.Contains("DESC", sql);
     }
 
     [Fact]
@@ -250,9 +274,9 @@ public class FluentOrderByTests : IDisposable
             .ThenBy(p => p.ProductName)
             .ToSql();
 
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("category_id");
-        sql.Should().Contain("product_name");
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("category_id", sql);
+        Assert.Contains("product_name", sql);
     }
 
     [Fact]
@@ -263,9 +287,9 @@ public class FluentOrderByTests : IDisposable
             .ThenByDescending(p => p.ProductId)
             .ToSql();
 
-        sql.Should().Contain("category_id");
-        sql.Should().Contain("product_id");
-        sql.Should().Contain("DESC");
+        Assert.Contains("category_id", sql);
+        Assert.Contains("product_id", sql);
+        Assert.Contains("DESC", sql);
         // ASC is the default and may not be explicit in the SQL
     }
 
@@ -278,8 +302,11 @@ public class FluentOrderByTests : IDisposable
             .OrderBy(p => p.ProductName)
             .SelectAsync();
 
-        products.Should().NotBeEmpty();
-        products.Should().BeInAscendingOrder(p => p.ProductName);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(string.Compare(products[i - 1].ProductName, products[i].ProductName) <= 0);
+        }
     }
 
     [Fact]
@@ -289,8 +316,11 @@ public class FluentOrderByTests : IDisposable
             .OrderByDescending(p => p.ProductId)
             .SelectAsync();
 
-        products.Should().NotBeEmpty();
-        products.Should().BeInDescendingOrder(p => p.ProductId);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(products[i - 1].ProductId >= products[i].ProductId);
+        }
     }
 
     [Fact]
@@ -304,6 +334,6 @@ public class FluentOrderByTests : IDisposable
             .OrderBy(p => p.ProductName)
             .Select();
 
-        product.ProductId.Should().Be(allSorted.First().ProductId);
+        Assert.Equal(allSorted.First().ProductId, product.ProductId);
     }
 }

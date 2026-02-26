@@ -1,7 +1,5 @@
 using System.Data;
 
-using FluentAssertions;
-
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Infrastructure;
@@ -25,6 +23,6 @@ public class QueryDatabaseConnectionTests : IClassFixture<DialectFixture>
     {
         using var connection = _fixture.GetConnection(dialect);
         long result = connection.QueryScalar<long>("SELECT 1");
-        result.Should().Be(1);
+        Assert.Equal(1, result);
     }
 }

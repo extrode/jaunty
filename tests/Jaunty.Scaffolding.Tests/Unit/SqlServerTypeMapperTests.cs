@@ -1,5 +1,6 @@
 using Jaunty.Scaffolding.Providers.SqlServer;
 using Jaunty.Scaffolding.Schema;
+using Xunit;
 
 namespace Jaunty.Scaffolding.Tests.Unit;
 
@@ -23,8 +24,8 @@ public class SqlServerTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Theory]
@@ -36,8 +37,8 @@ public class SqlServerTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Theory]
@@ -47,8 +48,8 @@ public class SqlServerTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Theory]
@@ -60,8 +61,8 @@ public class SqlServerTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Theory]
@@ -76,8 +77,8 @@ public class SqlServerTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeFalse();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.False(result.IsValueType);
     }
 
     [Theory]
@@ -91,8 +92,8 @@ public class SqlServerTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Fact]
@@ -100,8 +101,8 @@ public class SqlServerTypeMapperTests
     {
         var column = CreateColumn("uniqueidentifier");
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be("Guid");
-        result.IsValueType.Should().BeTrue();
+        Assert.Equal("Guid", result.TypeName);
+        Assert.True(result.IsValueType);
     }
 
     [Theory]
@@ -114,8 +115,8 @@ public class SqlServerTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeFalse();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.False(result.IsValueType);
     }
 
     [Theory]
@@ -126,8 +127,8 @@ public class SqlServerTypeMapperTests
     {
         var column = CreateColumn(sqlType);
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be(expectedCSharpType);
-        result.IsValueType.Should().BeFalse();
+        Assert.Equal(expectedCSharpType, result.TypeName);
+        Assert.False(result.IsValueType);
     }
 
     [Fact]
@@ -135,8 +136,8 @@ public class SqlServerTypeMapperTests
     {
         var column = CreateColumn("sql_variant");
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be("object");
-        result.IsValueType.Should().BeFalse();
+        Assert.Equal("object", result.TypeName);
+        Assert.False(result.IsValueType);
     }
 
     [Fact]
@@ -144,7 +145,7 @@ public class SqlServerTypeMapperTests
     {
         var column = CreateColumn("unknown_type");
         var result = _mapper.MapToCSharpType(column);
-        result.TypeName.Should().Be("object");
-        result.IsValueType.Should().BeFalse();
+        Assert.Equal("object", result.TypeName);
+        Assert.False(result.IsValueType);
     }
 }

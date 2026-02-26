@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -19,7 +17,7 @@ public class FluentTakeSkipTests : IDisposable
             .Take(5)
             .Select();
 
-        products.Should().HaveCount(5);
+        Assert.Equal(5, products.Count);
     }
 
     [Fact]
@@ -35,10 +33,10 @@ public class FluentTakeSkipTests : IDisposable
             .Take(5)
             .Select();
 
-        skippedProducts.Should().HaveCount(5);
+        Assert.Equal(5, skippedProducts.Count);
         if (allProducts.Count > 5)
         {
-            skippedProducts.First().ProductId.Should().Be(allProducts[5].ProductId);
+            Assert.Equal(allProducts[5].ProductId, skippedProducts.First().ProductId);
         }
     }
 
@@ -50,7 +48,7 @@ public class FluentTakeSkipTests : IDisposable
             .Take(10)
             .ToSql();
 
-        sql.Should().Contain("WHERE");
-        sql.Should().Contain("LIMIT");
+        Assert.Contains("WHERE", sql);
+        Assert.Contains("LIMIT", sql);
     }
 }

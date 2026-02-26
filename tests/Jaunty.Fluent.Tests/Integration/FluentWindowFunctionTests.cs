@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -29,9 +27,9 @@ public class FluentWindowFunctionTests : IDisposable
                 RowNum = Sql.RowNumber<Product>()
             });
 
-        sql.Should().Contain("ROW_NUMBER()");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("AS RowNum");
+        Assert.Contains("ROW_NUMBER()", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("AS RowNum", sql);
     }
 
     [Fact]
@@ -45,10 +43,10 @@ public class FluentWindowFunctionTests : IDisposable
                 RowNum = Sql.RowNumber<Product>().OrderBy(x => x.UnitPrice)
             });
 
-        sql.Should().Contain("ROW_NUMBER()");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("AS RowNum");
+        Assert.Contains("ROW_NUMBER()", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("AS RowNum", sql);
     }
 
     [Fact]
@@ -62,10 +60,10 @@ public class FluentWindowFunctionTests : IDisposable
                 RowNum = Sql.RowNumber<Product>().PartitionBy(x => x.CategoryId)
             });
 
-        sql.Should().Contain("ROW_NUMBER()");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("PARTITION BY");
-        sql.Should().Contain("AS RowNum");
+        Assert.Contains("ROW_NUMBER()", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("PARTITION BY", sql);
+        Assert.Contains("AS RowNum", sql);
     }
 
     [Fact]
@@ -82,11 +80,11 @@ public class FluentWindowFunctionTests : IDisposable
                     .OrderBy(x => x.UnitPrice)
             });
 
-        sql.Should().Contain("ROW_NUMBER()");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("PARTITION BY");
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("AS RowNum");
+        Assert.Contains("ROW_NUMBER()", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("PARTITION BY", sql);
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("AS RowNum", sql);
     }
 
     [Fact]
@@ -100,11 +98,11 @@ public class FluentWindowFunctionTests : IDisposable
                 RowNum = Sql.RowNumber<Product>().OrderByDescending(x => x.UnitPrice)
             });
 
-        sql.Should().Contain("ROW_NUMBER()");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("DESC");
-        sql.Should().Contain("AS RowNum");
+        Assert.Contains("ROW_NUMBER()", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("DESC", sql);
+        Assert.Contains("AS RowNum", sql);
     }
 
     // ==========================================
@@ -121,9 +119,9 @@ public class FluentWindowFunctionTests : IDisposable
                 ProductRank = Sql.Rank<Product>()
             });
 
-        sql.Should().Contain("RANK()");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("AS ProductRank");
+        Assert.Contains("RANK()", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("AS ProductRank", sql);
     }
 
     [Fact]
@@ -137,10 +135,10 @@ public class FluentWindowFunctionTests : IDisposable
                 PriceRank = Sql.Rank<Product>().OrderBy(x => x.UnitPrice)
             });
 
-        sql.Should().Contain("RANK()");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("AS PriceRank");
+        Assert.Contains("RANK()", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("AS PriceRank", sql);
     }
 
     [Fact]
@@ -157,12 +155,12 @@ public class FluentWindowFunctionTests : IDisposable
                     .OrderByDescending(x => x.UnitPrice)
             });
 
-        sql.Should().Contain("RANK()");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("PARTITION BY");
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("DESC");
-        sql.Should().Contain("AS PriceRank");
+        Assert.Contains("RANK()", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("PARTITION BY", sql);
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("DESC", sql);
+        Assert.Contains("AS PriceRank", sql);
     }
 
     // ==========================================
@@ -179,9 +177,9 @@ public class FluentWindowFunctionTests : IDisposable
                 DenseRank = Sql.DenseRank<Product>()
             });
 
-        sql.Should().Contain("DENSE_RANK()");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("AS DenseRank");
+        Assert.Contains("DENSE_RANK()", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("AS DenseRank", sql);
     }
 
     [Fact]
@@ -195,10 +193,10 @@ public class FluentWindowFunctionTests : IDisposable
                 DenseRank = Sql.DenseRank<Product>().OrderBy(x => x.UnitPrice)
             });
 
-        sql.Should().Contain("DENSE_RANK()");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("AS DenseRank");
+        Assert.Contains("DENSE_RANK()", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("AS DenseRank", sql);
     }
 
     // ==========================================
@@ -215,9 +213,9 @@ public class FluentWindowFunctionTests : IDisposable
                 Quartile = Sql.NTile<Product>(4)
             });
 
-        sql.Should().Contain("NTILE(4)");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("AS Quartile");
+        Assert.Contains("NTILE(4)", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("AS Quartile", sql);
     }
 
     [Fact]
@@ -231,10 +229,10 @@ public class FluentWindowFunctionTests : IDisposable
                 PriceQuartile = Sql.NTile<Product>(4).OrderBy(x => x.UnitPrice)
             });
 
-        sql.Should().Contain("NTILE(4)");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("AS PriceQuartile");
+        Assert.Contains("NTILE(4)", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("AS PriceQuartile", sql);
     }
 
     // ==========================================
@@ -252,9 +250,9 @@ public class FluentWindowFunctionTests : IDisposable
                 RunningTotal = Sql.Sum<Product, decimal?>(p.UnitPrice).Over()
             });
 
-        sql.Should().Contain("SUM(");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("AS RunningTotal");
+        Assert.Contains("SUM(", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("AS RunningTotal", sql);
     }
 
     [Fact]
@@ -268,10 +266,10 @@ public class FluentWindowFunctionTests : IDisposable
                 RunningTotal = Sql.Sum<Product, decimal?>(p.UnitPrice).Over().OrderBy(x => x.ProductName)
             });
 
-        sql.Should().Contain("SUM(");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("ORDER BY");
-        sql.Should().Contain("AS RunningTotal");
+        Assert.Contains("SUM(", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("ORDER BY", sql);
+        Assert.Contains("AS RunningTotal", sql);
     }
 
     [Fact]
@@ -286,10 +284,10 @@ public class FluentWindowFunctionTests : IDisposable
                 CategoryAvgPrice = Sql.Avg<Product, decimal?>(p.UnitPrice).Over().PartitionBy(x => x.CategoryId)
             });
 
-        sql.Should().Contain("AVG(");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("PARTITION BY");
-        sql.Should().Contain("AS CategoryAvgPrice");
+        Assert.Contains("AVG(", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("PARTITION BY", sql);
+        Assert.Contains("AS CategoryAvgPrice", sql);
     }
 
     [Fact]
@@ -303,9 +301,9 @@ public class FluentWindowFunctionTests : IDisposable
                 TotalCount = Sql.Count<Product>().Over()
             });
 
-        sql.Should().Contain("COUNT(*)");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("AS TotalCount");
+        Assert.Contains("COUNT(*)", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("AS TotalCount", sql);
     }
 
     [Fact]
@@ -319,10 +317,10 @@ public class FluentWindowFunctionTests : IDisposable
                 CategoryProductCount = Sql.Count<Product>().Over().PartitionBy(x => x.CategoryId)
             });
 
-        sql.Should().Contain("COUNT(*)");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("PARTITION BY");
-        sql.Should().Contain("AS CategoryProductCount");
+        Assert.Contains("COUNT(*)", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("PARTITION BY", sql);
+        Assert.Contains("AS CategoryProductCount", sql);
     }
 
     [Fact]
@@ -337,10 +335,10 @@ public class FluentWindowFunctionTests : IDisposable
                 CategoryMinPrice = Sql.Min<Product, decimal?>(p.UnitPrice).Over().PartitionBy(x => x.CategoryId)
             });
 
-        sql.Should().Contain("MIN(");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("PARTITION BY");
-        sql.Should().Contain("AS CategoryMinPrice");
+        Assert.Contains("MIN(", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("PARTITION BY", sql);
+        Assert.Contains("AS CategoryMinPrice", sql);
     }
 
     [Fact]
@@ -355,10 +353,10 @@ public class FluentWindowFunctionTests : IDisposable
                 CategoryMaxPrice = Sql.Max<Product, decimal?>(p.UnitPrice).Over().PartitionBy(x => x.CategoryId)
             });
 
-        sql.Should().Contain("MAX(");
-        sql.Should().Contain("OVER");
-        sql.Should().Contain("PARTITION BY");
-        sql.Should().Contain("AS CategoryMaxPrice");
+        Assert.Contains("MAX(", sql);
+        Assert.Contains("OVER", sql);
+        Assert.Contains("PARTITION BY", sql);
+        Assert.Contains("AS CategoryMaxPrice", sql);
     }
 
     // ==========================================
@@ -378,13 +376,13 @@ public class FluentWindowFunctionTests : IDisposable
                 PriceRank = Sql.Rank<Product>().PartitionBy(x => x.CategoryId).OrderByDescending(x => x.UnitPrice)
             });
 
-        sql.Should().Contain("ROW_NUMBER()");
-        sql.Should().Contain("RANK()");
-        sql.Should().Contain("AS RowNum");
-        sql.Should().Contain("AS PriceRank");
+        Assert.Contains("ROW_NUMBER()", sql);
+        Assert.Contains("RANK()", sql);
+        Assert.Contains("AS RowNum", sql);
+        Assert.Contains("AS PriceRank", sql);
         // Count OVER occurrences
         var overCount = sql.Split(new[] { "OVER" }, StringSplitOptions.None).Length - 1;
-        overCount.Should().Be(2);
+        Assert.Equal(2, overCount);
     }
 
     [Fact]
@@ -399,10 +397,10 @@ public class FluentWindowFunctionTests : IDisposable
                 RowNum = Sql.RowNumber<Product>().OrderBy(x => x.UnitPrice)
             });
 
-        sql.Should().Contain("SELECT");
-        sql.Should().Contain("ROW_NUMBER()");
-        sql.Should().Contain("FROM");
-        sql.Should().Contain("WHERE");
+        Assert.Contains("SELECT", sql);
+        Assert.Contains("ROW_NUMBER()", sql);
+        Assert.Contains("FROM", sql);
+        Assert.Contains("WHERE", sql);
     }
 
     // ==========================================
@@ -419,10 +417,10 @@ public class FluentWindowFunctionTests : IDisposable
                 p.UnitPrice
             });
 
-        sql.Should().Contain("SELECT");
-        sql.Should().Contain("FROM");
-        // Column name (product_name) differs from property name (ProductName), so alias is added
-        sql.Should().Contain("AS ProductName");
-        sql.Should().Contain("AS UnitPrice");
+        Assert.Contains("SELECT", sql);
+        Assert.Contains("FROM", sql);
+        // Column name (product_name) differed from property name (ProductName), so alias is added
+        Assert.Contains("AS ProductName", sql);
+        Assert.Contains("AS UnitPrice", sql);
     }
 }

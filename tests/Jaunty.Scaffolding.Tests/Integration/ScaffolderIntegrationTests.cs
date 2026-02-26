@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Jaunty.Scaffolding.Configuration;
+using Xunit;
 
 namespace Jaunty.Scaffolding.Tests.Integration;
 
@@ -57,14 +58,14 @@ public class ScaffolderIntegrationTests : IDisposable
 
         var result = await scaffolder.ScaffoldAsync(options);
 
-        result.Success.Should().BeTrue();
-        result.GeneratedFiles.Should().HaveCount(2);
+        Assert.True(result.Success);
+        Assert.Equal(2, result.GeneratedFiles.Count);
 
         var productFile = Path.Combine(_tempOutputDir, "Product.cs");
         var categoryFile = Path.Combine(_tempOutputDir, "Category.cs");
 
-        File.Exists(productFile).Should().BeTrue();
-        File.Exists(categoryFile).Should().BeTrue();
+        Assert.True(File.Exists(productFile));
+        Assert.True(File.Exists(categoryFile));
     }
 
     [Fact]
@@ -87,36 +88,36 @@ public class ScaffolderIntegrationTests : IDisposable
 
         var result = await scaffolder.ScaffoldAsync(options);
 
-        result.Success.Should().BeTrue();
+        Assert.True(result.Success);
 
         var productFile = Path.Combine(_tempOutputDir, "Product.cs");
         var content = await File.ReadAllTextAsync(productFile);
 
         // Check namespace
-        content.Should().Contain("namespace Test.Entities;");
+        Assert.Contains("namespace Test.Entities;", content);
 
         // Check class declaration
-        content.Should().Contain("public class Product");
+        Assert.Contains("public class Product", content);
 
         // Check table attribute
-        content.Should().Contain("[Table(\"products\")]");
+        Assert.Contains("[Table(\"products\")]", content);
 
         // Check key attribute on primary key
-        content.Should().Contain("[Key]");
+        Assert.Contains("[Key]", content);
 
         // Check database generated attribute on identity column
-        content.Should().Contain("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+        Assert.Contains("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]", content);
 
         // Check column attributes for snake_case columns
-        content.Should().Contain("[Column(\"product_id\")]");
-        content.Should().Contain("[Column(\"product_name\")]");
-        content.Should().Contain("[Column(\"unit_price\")]");
+        Assert.Contains("[Column(\"product_id\")]", content);
+        Assert.Contains("[Column(\"product_name\")]", content);
+        Assert.Contains("[Column(\"unit_price\")]", content);
 
         // Check nullable type for nullable column
-        content.Should().Contain("public double? UnitPrice");
+        Assert.Contains("public double? UnitPrice", content);
 
         // Check non-nullable string has default value
-        content.Should().Contain("public string ProductName { get; set; } = string.Empty;");
+        Assert.Contains("public string ProductName { get; set; } = string.Empty;", content);
     }
 
     [Fact]
@@ -134,14 +135,14 @@ public class ScaffolderIntegrationTests : IDisposable
 
         var result = await scaffolder.ScaffoldAsync(options);
 
-        result.Success.Should().BeTrue();
-        result.GeneratedFiles.Should().HaveCount(1);
+        Assert.True(result.Success);
+        Assert.Single(result.GeneratedFiles);
 
         var productFile = Path.Combine(_tempOutputDir, "Product.cs");
         var categoryFile = Path.Combine(_tempOutputDir, "Category.cs");
 
-        File.Exists(productFile).Should().BeTrue();
-        File.Exists(categoryFile).Should().BeFalse();
+        Assert.True(File.Exists(productFile));
+        Assert.False(File.Exists(categoryFile));
     }
 
     [Fact]
@@ -159,14 +160,14 @@ public class ScaffolderIntegrationTests : IDisposable
 
         var result = await scaffolder.ScaffoldAsync(options);
 
-        result.Success.Should().BeTrue();
-        result.GeneratedFiles.Should().HaveCount(1);
+        Assert.True(result.Success);
+        Assert.Single(result.GeneratedFiles);
 
         var productFile = Path.Combine(_tempOutputDir, "Product.cs");
         var categoryFile = Path.Combine(_tempOutputDir, "Category.cs");
 
-        File.Exists(productFile).Should().BeTrue();
-        File.Exists(categoryFile).Should().BeFalse();
+        Assert.True(File.Exists(productFile));
+        Assert.False(File.Exists(categoryFile));
     }
 
     [Fact]
@@ -184,15 +185,15 @@ public class ScaffolderIntegrationTests : IDisposable
 
         var result = await scaffolder.ScaffoldAsync(options);
 
-        result.Success.Should().BeTrue();
-        result.GeneratedFiles.Should().HaveCount(2);
+        Assert.True(result.Success);
+        Assert.Equal(2, result.GeneratedFiles.Count);
 
         // Files should NOT exist because DryRun = true
         var productFile = Path.Combine(_tempOutputDir, "Product.cs");
         var categoryFile = Path.Combine(_tempOutputDir, "Category.cs");
 
-        File.Exists(productFile).Should().BeFalse();
-        File.Exists(categoryFile).Should().BeFalse();
+        Assert.False(File.Exists(productFile));
+        Assert.False(File.Exists(categoryFile));
     }
 
     [Fact]
@@ -211,13 +212,13 @@ public class ScaffolderIntegrationTests : IDisposable
 
         var result = await scaffolder.ScaffoldAsync(options);
 
-        result.Success.Should().BeTrue();
+        Assert.True(result.Success);
 
         var entityFile = Path.Combine(_tempOutputDir, "ProductEntity.cs");
-        File.Exists(entityFile).Should().BeTrue();
+        Assert.True(File.Exists(entityFile));
 
         var content = await File.ReadAllTextAsync(entityFile);
-        content.Should().Contain("public class ProductEntity");
+        Assert.Contains("public class ProductEntity", content);
     }
 
     [Fact]
@@ -236,13 +237,13 @@ public class ScaffolderIntegrationTests : IDisposable
 
         var result = await scaffolder.ScaffoldAsync(options);
 
-        result.Success.Should().BeTrue();
+        Assert.True(result.Success);
 
         var pluralFile = Path.Combine(_tempOutputDir, "Products.cs");
-        File.Exists(pluralFile).Should().BeTrue();
+        Assert.True(File.Exists(pluralFile));
 
         var content = await File.ReadAllTextAsync(pluralFile);
-        content.Should().Contain("public class Products");
+        Assert.Contains("public class Products", content);
     }
 
     [Fact]
@@ -252,9 +253,9 @@ public class ScaffolderIntegrationTests : IDisposable
 
         var tables = await scaffolder.ListTablesAsync(_connectionString, DatabaseProvider.SQLite);
 
-        tables.Should().HaveCount(2);
-        tables.Select(t => t.Table).Should().Contain("products");
-        tables.Select(t => t.Table).Should().Contain("categories");
+        Assert.Equal(2, tables.Count);
+        Assert.Contains(tables, t => t.Table == "products");
+        Assert.Contains(tables, t => t.Table == "categories");
     }
 
     [Fact]
@@ -277,12 +278,12 @@ public class ScaffolderIntegrationTests : IDisposable
 
         var result = await scaffolder.ScaffoldAsync(options);
 
-        result.Success.Should().BeFalse();
-        result.Error.Should().Contain("already exists");
+        Assert.False(result.Success);
+        Assert.Contains("already exists", result.Error);
 
         // Original file should be unchanged
         var content = await File.ReadAllTextAsync(existingFile);
-        content.Should().Be("// existing content");
+        Assert.Equal("// existing content", content);
     }
 
     [Fact]
@@ -305,12 +306,12 @@ public class ScaffolderIntegrationTests : IDisposable
 
         var result = await scaffolder.ScaffoldAsync(options);
 
-        result.Success.Should().BeTrue();
+        Assert.True(result.Success);
 
         // File should be overwritten with new content
         var content = await File.ReadAllTextAsync(existingFile);
-        content.Should().Contain("public class Product");
-        content.Should().NotContain("// existing content");
+        Assert.Contains("public class Product", content);
+        Assert.DoesNotContain("// existing content", content);
     }
 
     public void Dispose()

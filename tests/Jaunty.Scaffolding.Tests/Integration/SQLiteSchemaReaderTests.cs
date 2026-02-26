@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Jaunty.Scaffolding.Abstractions;
 using Jaunty.Scaffolding.Providers.SQLite;
+using Xunit;
 
 namespace Jaunty.Scaffolding.Tests.Integration;
 
@@ -78,9 +79,9 @@ public class SQLiteSchemaReaderTests : IDisposable
 
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
-        schema.Tables.Should().HaveCount(4);
-        schema.Tables.Select(t => t.TableName).Should()
-            .Contain(["products", "customers", "orders", "order_details"]);
+        Assert.Equal(4, schema.Tables.Count);
+        Assert.Equal(["products", "customers", "orders", "order_details"],
+            schema.Tables.Select(t => t.TableName).Order());
     }
 
     [Fact]
@@ -92,20 +93,20 @@ public class SQLiteSchemaReaderTests : IDisposable
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
         var productsTable = schema.Tables.First(t => t.TableName == "products");
-        productsTable.Columns.Should().HaveCount(4);
+        Assert.Equal(4, productsTable.Columns.Count);
 
         var productIdColumn = productsTable.Columns.First(c => c.ColumnName == "product_id");
-        productIdColumn.IsPrimaryKey.Should().BeTrue();
-        productIdColumn.IsIdentity.Should().BeTrue();
-        productIdColumn.DataType.Should().Be("INTEGER");
+        Assert.True(productIdColumn.IsPrimaryKey);
+        Assert.True(productIdColumn.IsIdentity);
+        Assert.Equal("INTEGER", productIdColumn.DataType);
 
         var productNameColumn = productsTable.Columns.First(c => c.ColumnName == "product_name");
-        productNameColumn.IsNullable.Should().BeFalse();
-        productNameColumn.DataType.Should().Be("TEXT");
+        Assert.False(productNameColumn.IsNullable);
+        Assert.Equal("TEXT", productNameColumn.DataType);
 
         var unitPriceColumn = productsTable.Columns.First(c => c.ColumnName == "unit_price");
-        unitPriceColumn.IsNullable.Should().BeTrue();
-        unitPriceColumn.DataType.Should().Be("REAL");
+        Assert.True(unitPriceColumn.IsNullable);
+        Assert.Equal("REAL", unitPriceColumn.DataType);
     }
 
     [Fact]
@@ -117,8 +118,8 @@ public class SQLiteSchemaReaderTests : IDisposable
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
         var productsTable = schema.Tables.First(t => t.TableName == "products");
-        productsTable.PrimaryKey.Should().NotBeNull();
-        productsTable.PrimaryKey!.Columns.Should().Contain("product_id");
+        Assert.NotNull(productsTable.PrimaryKey);
+        Assert.Contains("product_id", productsTable.PrimaryKey!.Columns);
     }
 
     [Fact]
@@ -130,10 +131,10 @@ public class SQLiteSchemaReaderTests : IDisposable
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
         var orderDetailsTable = schema.Tables.First(t => t.TableName == "order_details");
-        orderDetailsTable.PrimaryKey.Should().NotBeNull();
-        orderDetailsTable.PrimaryKey!.Columns.Should().HaveCount(2);
-        orderDetailsTable.PrimaryKey!.Columns.Should().Contain("order_id");
-        orderDetailsTable.PrimaryKey!.Columns.Should().Contain("product_id");
+        Assert.NotNull(orderDetailsTable.PrimaryKey);
+        Assert.Equal(2, orderDetailsTable.PrimaryKey!.Columns.Count);
+        Assert.Contains("order_id", orderDetailsTable.PrimaryKey!.Columns);
+        Assert.Contains("product_id", orderDetailsTable.PrimaryKey!.Columns);
     }
 
     [Fact]
@@ -147,9 +148,9 @@ public class SQLiteSchemaReaderTests : IDisposable
 
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
-        schema.Tables.Should().HaveCount(2);
-        schema.Tables.Select(t => t.TableName).Should()
-            .BeEquivalentTo(["products", "customers"]);
+        Assert.Equal(2, schema.Tables.Count);
+        Assert.Equal(["customers", "products"],
+            schema.Tables.Select(t => t.TableName).Order());
     }
 
     [Fact]
@@ -163,9 +164,8 @@ public class SQLiteSchemaReaderTests : IDisposable
 
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
-        schema.Tables.Should().HaveCount(3);
-        schema.Tables.Select(t => t.TableName).Should()
-            .NotContain("order_details");
+        Assert.Equal(3, schema.Tables.Count);
+        Assert.DoesNotContain("order_details", schema.Tables.Select(t => t.TableName));
     }
 
     [Fact]
@@ -180,12 +180,12 @@ public class SQLiteSchemaReaderTests : IDisposable
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
         var ordersTable = schema.Tables.First(t => t.TableName == "orders");
-        ordersTable.ForeignKeys.Should().HaveCount(1);
+        Assert.Single(ordersTable.ForeignKeys);
 
         var fk = ordersTable.ForeignKeys.First();
-        fk.ForeignKeyColumn.Should().Be("customer_id");
-        fk.ReferencedTable.Should().Be("customers");
-        fk.ReferencedColumn.Should().Be("customer_id");
+        Assert.Equal("customer_id", fk.ForeignKeyColumn);
+        Assert.Equal("customers", fk.ReferencedTable);
+        Assert.Equal("customer_id", fk.ReferencedColumn);
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public class SQLiteSchemaReaderTests : IDisposable
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
         var ordersTable = schema.Tables.First(t => t.TableName == "orders");
-        ordersTable.ForeignKeys.Should().BeEmpty();
+        Assert.Empty(ordersTable.ForeignKeys);
     }
 
     [Fact]
@@ -214,9 +214,9 @@ public class SQLiteSchemaReaderTests : IDisposable
         var customersTable = schema.Tables.First(t => t.TableName == "customers");
         var columnNames = customersTable.Columns.OrderBy(c => c.OrdinalPosition).Select(c => c.ColumnName).ToList();
 
-        columnNames.Should().BeEquivalentTo(
+        Assert.Equal(
             ["customer_id", "first_name", "last_name", "email", "birth_date", "balance", "is_active"],
-            options => options.WithStrictOrdering());
+            columnNames);
     }
 
     public void Dispose()

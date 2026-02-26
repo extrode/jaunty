@@ -1,4 +1,5 @@
 using Jaunty.Scaffolding.CodeGeneration;
+using Xunit;
 
 namespace Jaunty.Scaffolding.Tests.Unit;
 
@@ -15,7 +16,7 @@ public class NamingHelperTests
     public void ToPascalCase_SnakeCase_ConvertsCorrectly(string input, string expected)
     {
         var result = NamingHelper.ToPascalCase(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -25,7 +26,7 @@ public class NamingHelperTests
     public void ToPascalCase_KebabCase_ConvertsCorrectly(string input, string expected)
     {
         var result = NamingHelper.ToPascalCase(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -36,7 +37,7 @@ public class NamingHelperTests
     public void ToPascalCase_NoDelimiters_CapitalizesFirstAndPreservesRest(string input, string expected)
     {
         var result = NamingHelper.ToPascalCase(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -45,14 +46,14 @@ public class NamingHelperTests
     public void ToPascalCase_EmptyOrNull_ReturnsInput(string? input, string? expected)
     {
         var result = NamingHelper.ToPascalCase(input!);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Fact]
     public void ToPascalCase_SingleWord_CapitalizesFirst()
     {
         var result = NamingHelper.ToPascalCase("name");
-        result.Should().Be("Name");
+        Assert.Equal("Name", result);
     }
 
     [Theory]
@@ -62,7 +63,7 @@ public class NamingHelperTests
     public void ToPascalCase_MultipleDelimiters_HandlesCorrectly(string input, string expected)
     {
         var result = NamingHelper.ToPascalCase(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     #endregion
@@ -76,14 +77,14 @@ public class NamingHelperTests
     public void ToCamelCase_SnakeCase_ConvertsCorrectly(string input, string expected)
     {
         var result = NamingHelper.ToCamelCase(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Fact]
     public void ToCamelCase_SingleWord_LowercasesFirst()
     {
         var result = NamingHelper.ToCamelCase("Name");
-        result.Should().Be("name");
+        Assert.Equal("name", result);
     }
 
     #endregion
@@ -99,7 +100,7 @@ public class NamingHelperTests
     public void Singularize_RegularPlurals_ConvertsCorrectly(string input, string expected)
     {
         var result = NamingHelper.Singularize(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -110,7 +111,7 @@ public class NamingHelperTests
     public void Singularize_IesPlurals_ConvertsCorrectly(string input, string expected)
     {
         var result = NamingHelper.Singularize(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -122,7 +123,7 @@ public class NamingHelperTests
     public void Singularize_EsPlurals_ConvertsCorrectly(string input, string expected)
     {
         var result = NamingHelper.Singularize(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -133,7 +134,7 @@ public class NamingHelperTests
     public void Singularize_IrregularPlurals_ConvertsCorrectly(string input, string expected)
     {
         var result = NamingHelper.Singularize(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -143,7 +144,7 @@ public class NamingHelperTests
     public void Singularize_WordsEndingInS_DoesNotChange(string input, string expected)
     {
         var result = NamingHelper.Singularize(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -152,7 +153,7 @@ public class NamingHelperTests
     public void Singularize_EmptyOrNull_ReturnsInput(string? input, string? expected)
     {
         var result = NamingHelper.Singularize(input!);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     #endregion
@@ -167,7 +168,7 @@ public class NamingHelperTests
     public void IsValidCSharpIdentifier_ValidIdentifiers_ReturnsTrue(string input, bool expected)
     {
         var result = NamingHelper.IsValidCSharpIdentifier(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -178,7 +179,7 @@ public class NamingHelperTests
     public void IsValidCSharpIdentifier_InvalidIdentifiers_ReturnsFalse(string input, bool expected)
     {
         var result = NamingHelper.IsValidCSharpIdentifier(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -190,7 +191,7 @@ public class NamingHelperTests
     public void IsValidCSharpIdentifier_Keywords_ReturnsFalse(string input, bool expected)
     {
         var result = NamingHelper.IsValidCSharpIdentifier(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     #endregion
@@ -204,7 +205,7 @@ public class NamingHelperTests
     public void EscapeIdentifier_ValidIdentifiers_ReturnsUnchanged(string input, string expected)
     {
         var result = NamingHelper.EscapeIdentifier(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -213,7 +214,7 @@ public class NamingHelperTests
     public void EscapeIdentifier_StartsWithDigit_PrefixesUnderscore(string input, string expected)
     {
         var result = NamingHelper.EscapeIdentifier(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -222,7 +223,7 @@ public class NamingHelperTests
     public void EscapeIdentifier_InvalidChars_ReplacesWithUnderscore(string input, string expected)
     {
         var result = NamingHelper.EscapeIdentifier(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -233,14 +234,14 @@ public class NamingHelperTests
     public void EscapeIdentifier_Keywords_PrefixesAtSign(string input, string expected)
     {
         var result = NamingHelper.EscapeIdentifier(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Fact]
     public void EscapeIdentifier_EmptyString_ReturnsUnderscore()
     {
         var result = NamingHelper.EscapeIdentifier("");
-        result.Should().Be("_");
+        Assert.Equal("_", result);
     }
 
     #endregion

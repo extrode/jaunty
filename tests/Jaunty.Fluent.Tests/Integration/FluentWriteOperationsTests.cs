@@ -1,5 +1,4 @@
 using System.Data;
-using FluentAssertions;
 using Jaunty.Fluent;
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
@@ -47,12 +46,12 @@ public class FluentWriteOperationsTests : IDisposable
             .Where(p => p.ProductName == "TestDeleteProduct")
             .Delete();
 
-        rowsDeleted.Should().Be(1);
+        Assert.Equal(1, rowsDeleted);
 
         var remaining = _db.Connection.From<Product>()
             .Where(p => p.ProductName == "TestDeleteProduct")
             .Select();
-        remaining.Should().BeEmpty();
+        Assert.Empty(remaining);
     }
 
     [Fact]
@@ -89,13 +88,13 @@ public class FluentWriteOperationsTests : IDisposable
             .And(p => p.UnitPrice < 15)
             .Delete();
 
-        rowsDeleted.Should().Be(1);
+        Assert.Equal(1, rowsDeleted);
 
         var remaining = _db.Connection.From<Product>()
             .Where(p => p.ProductName!.StartsWith("TestMultiDelete"))
             .Select();
-        remaining.Should().HaveCount(1);
-        remaining[0].UnitPrice.Should().Be(19.99m);
+        Assert.Equal(1, remaining.Count);
+        Assert.Equal(19.99m, remaining[0].UnitPrice);
     }
 
     [Fact]
@@ -118,7 +117,7 @@ public class FluentWriteOperationsTests : IDisposable
             .Where(p => p.ProductName == "TestDeleteAsync")
             .DeleteAsync();
 
-        rowsDeleted.Should().Be(1);
+        Assert.Equal(1, rowsDeleted);
     }
 
     #endregion
@@ -147,12 +146,12 @@ public class FluentWriteOperationsTests : IDisposable
             .Where(p => p.ProductId == (int)insertedId)
             .Update();
 
-        rowsUpdated.Should().Be(1);
+        Assert.Equal(1, rowsUpdated);
 
         var updated = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)insertedId)
             .SelectFirst();
-        updated.UnitPrice.Should().Be(999.99m);
+        Assert.Equal(999.99m, updated.UnitPrice);
     }
 
     [Fact]
@@ -178,13 +177,13 @@ public class FluentWriteOperationsTests : IDisposable
             .Where(p => p.ProductId == (int)insertedId)
             .Update();
 
-        rowsUpdated.Should().Be(1);
+        Assert.Equal(1, rowsUpdated);
 
         var updated = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)insertedId)
             .SelectFirst();
-        updated.UnitPrice.Should().Be(888.88m);
-        updated.UnitsInStock.Should().Be(999);
+        Assert.Equal(888.88m, updated.UnitPrice);
+        Assert.Equal((short)999, updated.UnitsInStock);
     }
 
     [Fact]
@@ -209,13 +208,13 @@ public class FluentWriteOperationsTests : IDisposable
             .Where(p => p.ProductId == (int)insertedId)
             .Update();
 
-        rowsUpdated.Should().Be(1);
+        Assert.Equal(1, rowsUpdated);
 
         var updated = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)insertedId)
             .SelectFirst();
-        updated.UnitPrice.Should().Be(777.77m);
-        updated.UnitsInStock.Should().Be(777);
+        Assert.Equal(777.77m, updated.UnitPrice);
+        Assert.Equal((short)777, updated.UnitsInStock);
     }
 
     [Fact]
@@ -240,7 +239,7 @@ public class FluentWriteOperationsTests : IDisposable
             .Where(p => p.ProductId == (int)insertedId)
             .UpdateAsync();
 
-        rowsUpdated.Should().Be(1);
+        Assert.Equal(1, rowsUpdated);
     }
 
     [Fact]
@@ -250,10 +249,10 @@ public class FluentWriteOperationsTests : IDisposable
             .Set(p => p.UnitPrice, 100m))
             .ToSql();
 
-        sql.Should().Contain("UPDATE");
-        sql.Should().Contain("products");
-        sql.Should().Contain("SET");
-        sql.Should().Contain("unit_price");
+        Assert.Contains("UPDATE", sql);
+        Assert.Contains("products", sql);
+        Assert.Contains("SET", sql);
+        Assert.Contains("unit_price", sql);
     }
 
     #endregion
@@ -280,12 +279,12 @@ public class FluentWriteOperationsTests : IDisposable
             .Values(product)
             .Insert();
 
-        id.Should().BeGreaterThan(0);
+        Assert.True(id > 0);
 
         var inserted = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)id)
             .SelectFirst();
-        inserted.ProductName.Should().Be("TestInsertProduct");
+        Assert.Equal("TestInsertProduct", inserted.ProductName);
     }
 
     [Fact]
@@ -306,13 +305,13 @@ public class FluentWriteOperationsTests : IDisposable
             })
             .Insert();
 
-        id.Should().BeGreaterThan(0);
+        Assert.True(id > 0);
 
         var inserted = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)id)
             .SelectFirst();
-        inserted.ProductName.Should().Be("TestInsertAnon");
-        inserted.UnitPrice.Should().Be(29.99m);
+        Assert.Equal("TestInsertAnon", inserted.ProductName);
+        Assert.Equal(29.99m, inserted.UnitPrice);
     }
 
     [Fact]
@@ -330,12 +329,12 @@ public class FluentWriteOperationsTests : IDisposable
             .Value(p => p.Discontinued, false)
             .Insert();
 
-        id.Should().BeGreaterThan(0);
+        Assert.True(id > 0);
 
         var inserted = _db.Connection.From<Product>()
             .Where(p => p.ProductId == (int)id)
             .SelectFirst();
-        inserted.ProductName.Should().Be("TestInsertIndividual");
+        Assert.Equal("TestInsertIndividual", inserted.ProductName);
     }
 
     [Fact]
@@ -358,7 +357,7 @@ public class FluentWriteOperationsTests : IDisposable
             .Values(product)
             .InsertAsync();
 
-        id.Should().BeGreaterThan(0);
+        Assert.True(id > 0);
     }
 
     [Fact]
@@ -369,11 +368,11 @@ public class FluentWriteOperationsTests : IDisposable
             .Value(p => p.UnitPrice, 10m)
             .ToSql();
 
-        sql.Should().Contain("INSERT INTO");
-        sql.Should().Contain("products");
-        sql.Should().Contain("product_name");
-        sql.Should().Contain("unit_price");
-        sql.Should().Contain("VALUES");
+        Assert.Contains("INSERT INTO", sql);
+        Assert.Contains("products", sql);
+        Assert.Contains("product_name", sql);
+        Assert.Contains("unit_price", sql);
+        Assert.Contains("VALUES", sql);
     }
 
     #endregion

@@ -1,10 +1,9 @@
 using System.Linq.Expressions;
 
-using FluentAssertions;
-
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
+using Xunit;
 
 namespace Jaunty.Fluent.Tests.Unit.Expressions;
 
@@ -25,8 +24,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("([product_id] = @product_id)");
-        parameters.Should().ContainSingle(p => p.Name == "@product_id" && p.Value.Equals(1));
+        Assert.Equal("([product_id] = @product_id)", sql);
+        var param = Assert.Single(parameters, p => p.Name == "@product_id" && p.Value.Equals(1));
     }
 
     [Fact]
@@ -36,8 +35,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("([product_id] <> @product_id)");
-        parameters.Should().ContainSingle(p => p.Name == "@product_id" && p.Value.Equals(1));
+        Assert.Equal("([product_id] <> @product_id)", sql);
+        var param = Assert.Single(parameters, p => p.Name == "@product_id" && p.Value.Equals(1));
     }
 
     [Fact]
@@ -47,8 +46,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("([unit_price] < @unit_price)");
-        parameters.Should().ContainSingle(p => p.Name == "@unit_price" && p.Value.Equals(10m));
+        Assert.Equal("([unit_price] < @unit_price)", sql);
+        var param = Assert.Single(parameters, p => p.Name == "@unit_price" && p.Value.Equals(10m));
     }
 
     [Fact]
@@ -58,8 +57,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("([unit_price] <= @unit_price)");
-        parameters.Should().ContainSingle(p => p.Name == "@unit_price" && p.Value.Equals(10m));
+        Assert.Equal("([unit_price] <= @unit_price)", sql);
+        var param = Assert.Single(parameters, p => p.Name == "@unit_price" && p.Value.Equals(10m));
     }
 
     [Fact]
@@ -69,8 +68,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("([unit_price] > @unit_price)");
-        parameters.Should().ContainSingle(p => p.Name == "@unit_price" && p.Value.Equals(10m));
+        Assert.Equal("([unit_price] > @unit_price)", sql);
+        var param = Assert.Single(parameters, p => p.Name == "@unit_price" && p.Value.Equals(10m));
     }
 
     [Fact]
@@ -80,8 +79,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("([unit_price] >= @unit_price)");
-        parameters.Should().ContainSingle(p => p.Name == "@unit_price" && p.Value.Equals(10m));
+        Assert.Equal("([unit_price] >= @unit_price)", sql);
+        var param = Assert.Single(parameters, p => p.Name == "@unit_price" && p.Value.Equals(10m));
     }
 
     #endregion
@@ -95,8 +94,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("([supplier_id] IS NULL)");
-        parameters.Should().BeEmpty();
+        Assert.Equal("([supplier_id] IS NULL)", sql);
+        Assert.Empty(parameters);
     }
 
     [Fact]
@@ -106,8 +105,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("([supplier_id] IS NOT NULL)");
-        parameters.Should().BeEmpty();
+        Assert.Equal("([supplier_id] IS NOT NULL)", sql);
+        Assert.Empty(parameters);
     }
 
     [Fact]
@@ -117,8 +116,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("([supplier_id] IS NULL)");
-        parameters.Should().BeEmpty();
+        Assert.Equal("([supplier_id] IS NULL)", sql);
+        Assert.Empty(parameters);
     }
 
     #endregion
@@ -132,8 +131,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("(([category_id] = @category_id) AND ([discontinued] = @discontinued))");
-        parameters.Should().HaveCount(2);
+        Assert.Equal("(([category_id] = @category_id) AND ([discontinued] = @discontinued))", sql);
+        Assert.Equal(2, parameters.Count);
     }
 
     [Fact]
@@ -143,8 +142,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("(([category_id] = @category_id) OR ([category_id] = @category_id2))");
-        parameters.Should().HaveCount(2);
+        Assert.Equal("(([category_id] = @category_id) OR ([category_id] = @category_id2))", sql);
+        Assert.Equal(2, parameters.Count);
     }
 
     [Fact]
@@ -154,9 +153,9 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("AND");
-        sql.Should().Contain("OR");
-        parameters.Should().HaveCount(3);
+        Assert.Contains("AND", sql);
+        Assert.Contains("OR", sql);
+        Assert.Equal(3, parameters.Count);
     }
 
     [Fact]
@@ -166,8 +165,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("NOT ([discontinued] = 1)");
-        parameters.Should().BeEmpty();
+        Assert.Equal("NOT ([discontinued] = 1)", sql);
+        Assert.Empty(parameters);
     }
 
     #endregion
@@ -181,8 +180,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("[discontinued] = 1");
-        parameters.Should().BeEmpty();
+        Assert.Equal("[discontinued] = 1", sql);
+        Assert.Empty(parameters);
     }
 
     [Fact]
@@ -192,8 +191,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("([discontinued] = @discontinued)");
-        parameters.Should().ContainSingle(p => p.Name == "@discontinued" && p.Value.Equals(true));
+        Assert.Equal("([discontinued] = @discontinued)", sql);
+        Assert.Single(parameters, p => p.Name == "@discontinued" && p.Value.Equals(true));
     }
 
     [Fact]
@@ -203,8 +202,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("([discontinued] = @discontinued)");
-        parameters.Should().ContainSingle(p => p.Name == "@discontinued" && p.Value.Equals(false));
+        Assert.Equal("([discontinued] = @discontinued)", sql);
+        Assert.Single(parameters, p => p.Name == "@discontinued" && p.Value.Equals(false));
     }
 
     #endregion
@@ -218,8 +217,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("LIKE");
-        parameters.Should().ContainSingle(p => p.Name == "@product_name" && p.Value.ToString()!.Contains("Chef"));
+        Assert.Contains("LIKE", sql);
+        Assert.Single(parameters, p => p.Name == "@product_name" && p.Value.ToString()!.Contains("Chef"));
     }
 
     [Fact]
@@ -229,8 +228,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("LIKE");
-        parameters.Should().ContainSingle(p => p.Name == "@product_name" && p.Value.ToString()!.StartsWith("Chef"));
+        Assert.Contains("LIKE", sql);
+        Assert.Single(parameters, p => p.Name == "@product_name" && p.Value.ToString()!.StartsWith("Chef"));
     }
 
     [Fact]
@@ -240,8 +239,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("LIKE");
-        parameters.Should().ContainSingle(p => p.Name == "@product_name" && p.Value.ToString()!.EndsWith("Chef"));
+        Assert.Contains("LIKE", sql);
+        Assert.Single(parameters, p => p.Name == "@product_name" && p.Value.ToString()!.EndsWith("Chef"));
     }
 
     [Fact]
@@ -251,8 +250,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("[product_name] = @product_name");
-        parameters.Should().ContainSingle(p => p.Name == "@product_name" && p.Value.Equals("Test"));
+        Assert.Equal("[product_name] = @product_name", sql);
+        Assert.Single(parameters, p => p.Name == "@product_name" && p.Value.Equals("Test"));
     }
 
     [Fact]
@@ -262,8 +261,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("LOWER");
-        parameters.Should().ContainSingle(p => p.Name == "@product_name" && p.Value.Equals("Test"));
+        Assert.Contains("LOWER", sql);
+        Assert.Single(parameters, p => p.Name == "@product_name" && p.Value.Equals("Test"));
     }
 
     [Fact]
@@ -273,8 +272,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("UPPER([product_name])");
-        parameters.Should().ContainSingle(p => p.Value.Equals("TEST"));
+        Assert.Contains("UPPER([product_name])", sql);
+        Assert.Single(parameters, p => p.Value.Equals("TEST"));
     }
 
     [Fact]
@@ -284,8 +283,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("LOWER([product_name])");
-        parameters.Should().ContainSingle(p => p.Value.Equals("test"));
+        Assert.Contains("LOWER([product_name])", sql);
+        Assert.Single(parameters, p => p.Value.Equals("test"));
     }
 
     [Fact]
@@ -295,8 +294,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("TRIM([product_name])");
-        parameters.Should().ContainSingle(p => p.Value.Equals("Test"));
+        Assert.Contains("TRIM([product_name])", sql);
+        Assert.Single(parameters, p => p.Value.Equals("Test"));
     }
 
     [Fact]
@@ -306,8 +305,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("SUBSTRING([product_name], 1, 3)");
-        parameters.Should().ContainSingle(p => p.Value.Equals("Tes"));
+        Assert.Contains("SUBSTRING([product_name], 1, 3)", sql);
+        Assert.Single(parameters, p => p.Value.Equals("Tes"));
     }
 
     [Fact]
@@ -317,8 +316,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("SUBSTRING([product_name], 4, 8000)");
-        parameters.Should().ContainSingle(p => p.Value.Equals("t"));
+        Assert.Contains("SUBSTRING([product_name], 4, 8000)", sql);
+        Assert.Single(parameters, p => p.Value.Equals("t"));
     }
 
     [Fact]
@@ -328,8 +327,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("LEN([product_name])");
-        parameters.Should().ContainSingle(p => p.Value.Equals(10));
+        Assert.Contains("LEN([product_name])", sql);
+        Assert.Single(parameters, p => p.Value.Equals(10));
     }
 
     #endregion
@@ -343,8 +342,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("COALESCE");
-        sql.Should().Contain("[supplier_id]");
+        Assert.Contains("COALESCE", sql);
+        Assert.Contains("[supplier_id]", sql);
     }
 
     [Fact]
@@ -354,7 +353,7 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("CASE WHEN [supplier_id] IS NULL");
+        Assert.Contains("CASE WHEN [supplier_id] IS NULL", sql);
     }
 
     [Fact]
@@ -364,7 +363,7 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("NULLIF");
+        Assert.Contains("NULLIF", sql);
     }
 
     #endregion
@@ -378,8 +377,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("LEN([product_name])");
-        parameters.Should().ContainSingle(p => p.Value.Equals(10));
+        Assert.Contains("LEN([product_name])", sql);
+        Assert.Single(parameters, p => p.Value.Equals(10));
     }
 
     [Fact]
@@ -389,8 +388,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("UPPER([product_name])");
-        parameters.Should().ContainSingle(p => p.Value.Equals("TEST"));
+        Assert.Contains("UPPER([product_name])", sql);
+        Assert.Single(parameters, p => p.Value.Equals("TEST"));
     }
 
     [Fact]
@@ -400,8 +399,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("LOWER([product_name])");
-        parameters.Should().ContainSingle(p => p.Value.Equals("test"));
+        Assert.Contains("LOWER([product_name])", sql);
+        Assert.Single(parameters, p => p.Value.Equals("test"));
     }
 
     [Fact]
@@ -411,8 +410,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("TRIM([product_name])");
-        parameters.Should().ContainSingle(p => p.Value.Equals("Test"));
+        Assert.Contains("TRIM([product_name])", sql);
+        Assert.Single(parameters, p => p.Value.Equals("Test"));
     }
 
     [Fact]
@@ -422,8 +421,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("SUBSTRING([product_name], @SqlFn, @SqlFn2)");
-        parameters.Should().Contain(p => p.Value.Equals("Tes"));
+        Assert.Contains("SUBSTRING([product_name], @SqlFn, @SqlFn2)", sql);
+        Assert.Contains(parameters, p => p.Value.Equals("Tes"));
     }
 
     #endregion
@@ -438,8 +437,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("YEAR(");
-        parameters.Should().Contain(p => p.Value.Equals(2020));
+        Assert.Contains("YEAR(", sql);
+        Assert.Contains(parameters, p => p.Value.Equals(2020));
     }
 
     [Fact]
@@ -450,8 +449,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("MONTH(");
-        parameters.Should().Contain(p => p.Value.Equals(6));
+        Assert.Contains("MONTH(", sql);
+        Assert.Contains(parameters, p => p.Value.Equals(6));
     }
 
     [Fact]
@@ -462,8 +461,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("DAY(");
-        parameters.Should().Contain(p => p.Value.Equals(15));
+        Assert.Contains("DAY(", sql);
+        Assert.Contains(parameters, p => p.Value.Equals(15));
     }
 
     #endregion
@@ -478,15 +477,15 @@ public class WhereExpressionVisitorTests
             .When(x => x.UnitPrice < 10, 1)
             .When(x => x.UnitPrice < 100, 2)
             .Else(3) > 1;
-        
+
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("CASE");
-        sql.Should().Contain("WHEN");
-        sql.Should().Contain("THEN");
-        sql.Should().Contain("ELSE");
-        sql.Should().Contain("END");
+        Assert.Contains("CASE", sql);
+        Assert.Contains("WHEN", sql);
+        Assert.Contains("THEN", sql);
+        Assert.Contains("ELSE", sql);
+        Assert.Contains("END", sql);
     }
 
     [Fact]
@@ -496,14 +495,14 @@ public class WhereExpressionVisitorTests
             .When(x => x.UnitPrice < 10, 1)
             .When(x => x.UnitPrice < 100, 2)
             .End() > 0;
-        
+
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("CASE");
-        sql.Should().Contain("WHEN");
-        sql.Should().Contain("THEN");
-        sql.Should().Contain("END");
+        Assert.Contains("CASE", sql);
+        Assert.Contains("WHEN", sql);
+        Assert.Contains("THEN", sql);
+        Assert.Contains("END", sql);
     }
 
     #endregion
@@ -518,8 +517,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("IN");
-        parameters.Should().HaveCount(3);
+        Assert.Contains("IN", sql);
+        Assert.Equal(3, parameters.Count);
     }
 
     [Fact]
@@ -530,8 +529,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Be("1 = 0");
-        parameters.Should().BeEmpty();
+        Assert.Equal("1 = 0", sql);
+        Assert.Empty(parameters);
     }
 
     [Fact]
@@ -542,8 +541,8 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("IN");
-        parameters.Should().ContainSingle();
+        Assert.Contains("IN", sql);
+        Assert.Single(parameters);
     }
 
     #endregion
@@ -557,11 +556,11 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        sql.Should().Contain("@category_id");
-        sql.Should().Contain("@category_id2");
-        sql.Should().Contain("@category_id3");
-        parameters.Should().HaveCount(3);
-        parameters.Select(p => p.Name).Should().OnlyHaveUniqueItems();
+        Assert.Contains("@category_id", sql);
+        Assert.Contains("@category_id2", sql);
+        Assert.Contains("@category_id3", sql);
+        Assert.Equal(3, parameters.Count);
+        Assert.Equal(parameters.Select(p => p.Name).Distinct().Count(), parameters.Select(p => p.Name).Count());
     }
 
     #endregion

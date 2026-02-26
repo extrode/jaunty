@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -29,11 +27,11 @@ public class FluentCaseWhenTests : IDisposable
                 .Else("Low") == "High")
             .ToSql();
 
-        sql.Should().Contain("CASE");
-        sql.Should().Contain("WHEN");
-        sql.Should().Contain("THEN");
-        sql.Should().Contain("ELSE");
-        sql.Should().Contain("END");
+        Assert.Contains("CASE", sql);
+        Assert.Contains("WHEN", sql);
+        Assert.Contains("THEN", sql);
+        Assert.Contains("ELSE", sql);
+        Assert.Contains("END", sql);
     }
 
     [Fact]
@@ -45,10 +43,10 @@ public class FluentCaseWhenTests : IDisposable
                 .Else("Active") == "Discontinued")
             .ToSql();
 
-        sql.Should().Contain("CASE WHEN");
-        sql.Should().Contain("THEN");
-        sql.Should().Contain("ELSE");
-        sql.Should().Contain("END");
+        Assert.Contains("CASE WHEN", sql);
+        Assert.Contains("THEN", sql);
+        Assert.Contains("ELSE", sql);
+        Assert.Contains("END", sql);
     }
 
     [Fact]
@@ -64,7 +62,7 @@ public class FluentCaseWhenTests : IDisposable
 
         // Count occurrences of WHEN
         var whenCount = sql.Split(new[] { "WHEN" }, StringSplitOptions.None).Length - 1;
-        whenCount.Should().Be(3);
+        Assert.Equal(3, whenCount);
     }
 
     [Fact]
@@ -76,10 +74,10 @@ public class FluentCaseWhenTests : IDisposable
                 .End() == "Discontinued")
             .ToSql();
 
-        sql.Should().Contain("CASE WHEN");
-        sql.Should().Contain("THEN");
-        sql.Should().Contain("END");
-        sql.Should().NotContain("ELSE");
+        Assert.Contains("CASE WHEN", sql);
+        Assert.Contains("THEN", sql);
+        Assert.Contains("END", sql);
+        Assert.DoesNotContain("ELSE", sql);
     }
 
     // ==========================================
@@ -97,8 +95,8 @@ public class FluentCaseWhenTests : IDisposable
                 .Else("Other") == "Beverages")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
     }
 
     [Fact]
@@ -111,7 +109,7 @@ public class FluentCaseWhenTests : IDisposable
                 .Else("Normal") == "High")
             .Select();
 
-        products.Should().OnlyContain(p => p.UnitsInStock > 100);
+        Assert.All(products, p => Assert.True(p.UnitsInStock > 100));
     }
 
     [Fact]
@@ -124,7 +122,7 @@ public class FluentCaseWhenTests : IDisposable
                 .Else(false) == true)
             .Select();
 
-        products.Should().OnlyContain(p => p.Discontinued == true);
+        Assert.All(products, p => Assert.True(p.Discontinued == true));
     }
 
     [Fact]
@@ -138,8 +136,8 @@ public class FluentCaseWhenTests : IDisposable
                 .Else(0) == 1)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1 || p.CategoryId == 2);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 || p.CategoryId == 2));
     }
 
     // ==========================================
@@ -156,8 +154,8 @@ public class FluentCaseWhenTests : IDisposable
             .And(p => p.Discontinued == false)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1 && p.Discontinued == false);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 && p.Discontinued == false));
     }
 
     [Fact]
@@ -170,8 +168,11 @@ public class FluentCaseWhenTests : IDisposable
             .OrderBy(p => p.ProductName)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().BeInAscendingOrder(p => p.ProductName);
+        Assert.NotEmpty(products);
+        for (int i = 1; i < products.Count; i++)
+        {
+            Assert.True(string.Compare(products[i - 1].ProductName, products[i].ProductName) <= 0);
+        }
     }
 
     [Fact]
@@ -184,7 +185,7 @@ public class FluentCaseWhenTests : IDisposable
             .Take(5)
             .Select();
 
-        products.Should().HaveCountLessThanOrEqualTo(5);
+        Assert.True(products.Count <= 5);
     }
 
     // ==========================================
@@ -200,8 +201,8 @@ public class FluentCaseWhenTests : IDisposable
                 .Else("Other") == "Beverages")
             .SelectAsync();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
     }
 
     [Fact]
@@ -213,7 +214,7 @@ public class FluentCaseWhenTests : IDisposable
                 .Else(0) == 1)
             .CountAsync();
 
-        count.Should().BeGreaterThan(0);
+        Assert.True(count > 0);
     }
 
     // ==========================================
@@ -232,7 +233,7 @@ public class FluentCaseWhenTests : IDisposable
             .Select();
 
         // Products with some stock
-        products.Should().OnlyContain(p => p.UnitsInStock != null && p.UnitsInStock != 0);
+        Assert.All(products, p => Assert.True(p.UnitsInStock != null && p.UnitsInStock != 0));
     }
 
     [Fact]
@@ -245,8 +246,8 @@ public class FluentCaseWhenTests : IDisposable
                 .Else("Other") != "Beverages")
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId != 1);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId != 1));
     }
 
     [Fact]
@@ -260,7 +261,7 @@ public class FluentCaseWhenTests : IDisposable
                 .Else(25) > 50)
             .Select();
 
-        products.Should().NotBeEmpty();
-        products.Should().OnlyContain(p => p.CategoryId == 1 || p.CategoryId == 2);
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 || p.CategoryId == 2));
     }
 }

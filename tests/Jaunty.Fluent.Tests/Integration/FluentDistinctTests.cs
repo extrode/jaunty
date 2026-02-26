@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
 
@@ -21,11 +19,11 @@ public class FluentDistinctTests : IDisposable
             .Distinct()
             .SelectPartial(p => p.CategoryId);
 
-        categories.Should().NotBeEmpty();
+        Assert.NotEmpty(categories);
 
         // Verify distinct - no duplicate CategoryIds
         var categoryIds = categories.Select(p => p.CategoryId).ToList();
-        categoryIds.Should().OnlyHaveUniqueItems();
+        Assert.Equal(categoryIds.Distinct().Count(), categoryIds.Count);
     }
 
     [Fact]
@@ -35,11 +33,11 @@ public class FluentDistinctTests : IDisposable
             .Distinct()
             .SelectPartial(p => p.CategoryId, p => p.SupplierId);
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
 
         // Verify distinct combinations
         var combinations = results.Select(p => (p.CategoryId, p.SupplierId)).ToList();
-        combinations.Should().OnlyHaveUniqueItems();
+        Assert.Equal(combinations.Distinct().Count(), combinations.Count);
     }
 
     [Fact]
@@ -53,7 +51,7 @@ public class FluentDistinctTests : IDisposable
         var totalCount = _db.Connection.From<Product>().Count();
 
         // Distinct category count should be less than total products
-        distinctCount.Should().BeLessThanOrEqualTo(totalCount);
+        Assert.True(distinctCount <= totalCount);
     }
 
     // --- Distinct with WHERE Tests ---
@@ -66,10 +64,10 @@ public class FluentDistinctTests : IDisposable
             .Where(p => p.Discontinued == false)
             .SelectPartial(p => p.CategoryId);
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
 
         var categoryIds = results.Select(p => p.CategoryId).ToList();
-        categoryIds.Should().OnlyHaveUniqueItems();
+        Assert.Equal(categoryIds.Distinct().Count(), categoryIds.Count);
     }
 
     [Fact]
@@ -80,7 +78,7 @@ public class FluentDistinctTests : IDisposable
             .Where("discontinued", false)
             .SelectPartial(p => p.CategoryId);
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     // --- Distinct with ORDER BY Tests ---
@@ -93,8 +91,11 @@ public class FluentDistinctTests : IDisposable
             .OrderBy(p => p.CategoryId)
             .SelectPartial(p => p.CategoryId);
 
-        results.Should().NotBeEmpty();
-        results.Should().BeInAscendingOrder(p => p.CategoryId);
+        Assert.NotEmpty(results);
+        for (int i = 1; i < results.Count; i++)
+        {
+            Assert.True(results[i - 1].CategoryId <= results[i].CategoryId);
+        }
     }
 
     [Fact]
@@ -105,8 +106,11 @@ public class FluentDistinctTests : IDisposable
             .OrderByDescending(p => p.CategoryId)
             .SelectPartial(p => p.CategoryId);
 
-        results.Should().NotBeEmpty();
-        results.Should().BeInDescendingOrder(p => p.CategoryId);
+        Assert.NotEmpty(results);
+        for (int i = 1; i < results.Count; i++)
+        {
+            Assert.True(results[i - 1].CategoryId >= results[i].CategoryId);
+        }
     }
 
     [Fact]
@@ -117,8 +121,11 @@ public class FluentDistinctTests : IDisposable
             .OrderBy("category_id")
             .SelectPartial(p => p.CategoryId);
 
-        results.Should().NotBeEmpty();
-        results.Should().BeInAscendingOrder(p => p.CategoryId);
+        Assert.NotEmpty(results);
+        for (int i = 1; i < results.Count; i++)
+        {
+            Assert.True(results[i - 1].CategoryId <= results[i].CategoryId);
+        }
     }
 
     [Fact]
@@ -129,8 +136,11 @@ public class FluentDistinctTests : IDisposable
             .OrderByDescending("category_id")
             .SelectPartial(p => p.CategoryId);
 
-        results.Should().NotBeEmpty();
-        results.Should().BeInDescendingOrder(p => p.CategoryId);
+        Assert.NotEmpty(results);
+        for (int i = 1; i < results.Count; i++)
+        {
+            Assert.True(results[i - 1].CategoryId >= results[i].CategoryId);
+        }
     }
 
     // --- Distinct with Take/Skip Tests ---
@@ -143,7 +153,7 @@ public class FluentDistinctTests : IDisposable
             .Take(3)
             .SelectPartial(p => p.CategoryId);
 
-        results.Should().HaveCountLessThanOrEqualTo(3);
+        Assert.True(results.Count <= 3);
     }
 
     [Fact]
@@ -161,11 +171,11 @@ public class FluentDistinctTests : IDisposable
             .Take(2)
             .SelectPartial(p => p.CategoryId);
 
-        paged.Should().HaveCountLessThanOrEqualTo(2);
+        Assert.True(paged.Count <= 2);
 
         if (allDistinct.Count > 1)
         {
-            paged.First().CategoryId.Should().Be(allDistinct[1].CategoryId);
+            Assert.Equal(allDistinct[1].CategoryId, paged.First().CategoryId);
         }
     }
 
@@ -178,8 +188,8 @@ public class FluentDistinctTests : IDisposable
             .Distinct()
             .ToSql(p => p.CategoryId);
 
-        sql.Should().Contain("SELECT DISTINCT");
-        sql.Should().Contain("category_id");
+        Assert.Contains("SELECT DISTINCT", sql);
+        Assert.Contains("category_id", sql);
     }
 
     [Fact]
@@ -190,8 +200,8 @@ public class FluentDistinctTests : IDisposable
             .Where(p => p.Discontinued == false)
             .ToSql(p => p.CategoryId);
 
-        sql.Should().Contain("SELECT DISTINCT");
-        sql.Should().Contain("WHERE");
+        Assert.Contains("SELECT DISTINCT", sql);
+        Assert.Contains("WHERE", sql);
     }
 
     [Fact]
@@ -202,8 +212,8 @@ public class FluentDistinctTests : IDisposable
             .OrderBy(p => p.CategoryId)
             .ToSql(p => p.CategoryId);
 
-        sql.Should().Contain("SELECT DISTINCT");
-        sql.Should().Contain("ORDER BY");
+        Assert.Contains("SELECT DISTINCT", sql);
+        Assert.Contains("ORDER BY", sql);
     }
 
     // --- Distinct Async Tests ---
@@ -215,10 +225,10 @@ public class FluentDistinctTests : IDisposable
             .Distinct()
             .SelectPartialAsync(["category_id"]);
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
 
         var categoryIds = results.Select(p => p.CategoryId).ToList();
-        categoryIds.Should().OnlyHaveUniqueItems();
+        Assert.Equal(categoryIds.Distinct().Count(), categoryIds.Count);
     }
 
     [Fact]
@@ -229,7 +239,7 @@ public class FluentDistinctTests : IDisposable
             .Where(p => p.Discontinued == false)
             .SelectPartialAsync(["category_id"]);
 
-        results.Should().NotBeEmpty();
+        Assert.NotEmpty(results);
     }
 
     // --- Distinct with Aggregates Tests ---
@@ -242,10 +252,10 @@ public class FluentDistinctTests : IDisposable
             .Distinct()
             .SelectPartial(p => p.CategoryId);
 
-        distinctCategories.Count.Should().BeGreaterThan(0);
+        Assert.True(distinctCategories.Count > 0);
 
         // Should be fewer distinct categories than total products
         var totalProducts = _db.Connection.From<Product>().Count();
-        distinctCategories.Count.Should().BeLessThanOrEqualTo(totalProducts);
+        Assert.True(distinctCategories.Count <= totalProducts);
     }
 }
