@@ -21,13 +21,15 @@ and societies. The Quran states:
 > *"And whoever kills a soul — it is as if he had slain all of mankind. And whoever saves
 > one — it is as if he had saved all of mankind."* — Quran 5:32
 
-This license grants rights to use, modify, and distribute the Software, subject to
-ethical restrictions that reflect these values. By using the Software, the Licensee
-agrees to abide by all terms and conditions set forth herein.
+This license grants the right to use the Software, subject to ethical restrictions that
+reflect these values. The Software may not be modified, distributed, sublicensed, or
+used to create derivative works. By using the Software, the Licensee agrees to abide by
+all terms and conditions set forth herein.
 
-**This is not an open-source license.** This is a source-available, ethically restricted
-license. It does not meet the Open Source Definition maintained by the Open Source
-Initiative, and no claim to that effect is made.
+**This is not an open-source license.** This is a proprietary, source-viewable, ethically
+restricted license. It does not meet the Open Source Definition maintained by the Open
+Source Initiative, and no claim to that effect is made. The source code is made available
+for transparency and inspection purposes only.
 
 ---
 
@@ -41,20 +43,19 @@ files distributed under this License.
 **1.3 "Licensee"** means any individual, organization, company, government entity, or
 other legal person exercising rights under this License.
 
-**1.4 "Derivative Work"** means any work that is based on or derived from the Software,
-including modifications, translations, adaptations, or extensions.
-
-**1.5 "Prohibited Activity"** means any activity described in Section 4 (Ethical Use
+**1.4 "Prohibited Activity"** means any activity described in Section 4 (Ethical Use
 Restrictions) or Section 5 (Genocide, Injustice, and State-Level Restrictions).
 
-**1.6 "Primary Business"** means the principal revenue-generating activity or core
+**1.5 "Primary Business"** means the principal revenue-generating activity or core
 operational purpose of an entity. An entity's Primary Business is determined by the
 activity from which it derives the largest share of its revenue or to which it dedicates
 the largest share of its operational resources.
 
-**1.7 "Material Association"** means a relationship in which an entity:
+**1.6 "Material Association"** means a relationship in which an entity:
   - (a) derives 10% or more of its annual revenue from a Prohibited Activity or from
-    entities engaged in a Prohibited Activity;
+    entities engaged in a Prohibited Activity, including but not limited to revenue earned
+    from advertising, sponsorship, affiliate arrangements, or promotional services for
+    products, services, or entities engaged in a Prohibited Activity;
   - (b) provides essential goods, services, technology, or infrastructure that directly
     enables a Prohibited Activity;
   - (c) is a subsidiary, parent company, or joint venture partner of an entity whose
@@ -63,7 +64,7 @@ the largest share of its operational resources.
     entity identified in Section 5 that directly supports or facilitates the Prohibited
     Activities described therein.
 
-**1.8 "Compliant Licensee"** means a Licensee that is not engaged in, and does not have a
+**1.7 "Compliant Licensee"** means a Licensee that is not engaged in, and does not have a
 Material Association with, any Prohibited Activity.
 
 ---
@@ -74,32 +75,34 @@ Subject to the terms and conditions of this License, and provided the Licensee i
 remains a Compliant Licensee, the Licensor hereby grants the Licensee a worldwide,
 non-exclusive, non-transferable, royalty-free right to:
 
-  - (a) **Use** the Software for any lawful purpose not prohibited by this License;
-  - (b) **Modify** the Software and create Derivative Works;
-  - (c) **Distribute** the Software and Derivative Works, provided that:
-    - (i) this License is included in full with all distributions;
-    - (ii) all recipients are bound by the terms of this License;
-    - (iii) prominent notice is given of any modifications made; and
-    - (iv) the Licensor is attributed in all distributions.
+  - (a) **Use** the Software for any lawful purpose not prohibited by this License; and
+  - (b) **View** the source code of the Software for transparency and inspection purposes.
+
+The following are expressly prohibited without prior written consent from the Licensor:
+
+  - (a) **No Modification.** The Licensee may not modify, alter, adapt, translate, or
+    create any work derived from the Software.
+  - (b) **No Distribution.** The Licensee may not distribute, publish, sublicense, sell,
+    lease, rent, or otherwise transfer the Software or any copy thereof to any third
+    party.
+  - (c) **No Derivative Works.** The Licensee may not create derivative works based on
+    the Software, in whole or in part.
+  - (d) **No Reverse Engineering for Replication.** The Licensee may not reverse engineer,
+    decompile, or disassemble the Software for the purpose of creating a competing or
+    substantially similar product.
 
 ---
 
 ## 3. Conditions
 
-**3.1 Attribution.** All copies or substantial portions of the Software must include the
-above copyright notice, this License in its entirety, and a clear statement that the
-Software is licensed under the Halal Software License v1.0.
+**3.1 Attribution.** Any use of the Software must preserve the copyright notice and a
+clear acknowledgment that the Software is licensed under the Halal Software License v1.0.
 
-**3.2 Share-Alike.** Derivative Works must be distributed under this same License or a
-license with equivalent ethical restrictions. Derivative Works may not be released under
-a permissive or unrestricted license that removes the ethical use restrictions contained
-herein.
+**3.2 No Transfer.** The Licensee may not sublicense, assign, or transfer this License or
+any rights granted herein to any third party without prior written consent from the
+Licensor.
 
-**3.3 No Sublicensing.** The Licensee may not sublicense the Software or any Derivative
-Work under different terms. All downstream recipients receive their rights directly from
-the Licensor under this License.
-
-**3.4 Compliance Certification.** The Licensor reserves the right to request, and the
+**3.3 Compliance Certification.** The Licensor reserves the right to request, and the
 Licensee agrees to provide upon reasonable request, a written certification that the
 Licensee is in compliance with this License. Failure to provide such certification within
 thirty (30) days constitutes grounds for termination under Section 7.
@@ -111,7 +114,29 @@ thirty (30) days constitutes grounds for termination under Section 7.
 The rights granted in Section 2 are expressly conditioned on the Licensee not being
 engaged in, and not having a Material Association with, any of the following:
 
-### 4.1 Riba (Usury and Interest-Based Finance)
+### 4.1 Shirk (Polytheism and Idol Worship)
+
+The Quran states:
+
+> *"Indeed, Allah does not forgive association with Him, but He forgives what is less than
+> that for whom He wills."* — Quran 4:48
+
+The Software may not be used by any entity whose Primary Business involves:
+  - (a) the promotion, propagation, or organized facilitation of polytheism (*shirk*),
+    idol worship, or the attribution of divine partners to Allah;
+  - (b) the operation of institutions, platforms, or organizations whose primary purpose
+    is the organized promotion of polytheistic worship or the production and distribution
+    of idols or objects of polytheistic veneration; or
+  - (c) the development or operation of technology platforms whose primary purpose is the
+    propagation of polytheistic theology or recruitment into polytheistic religious
+    movements.
+
+**Clarification:** This restriction targets organized institutional promotion and
+propagation. It does not restrict individuals of any faith from using the Software in
+their personal or professional capacity, nor does it restrict academic study, interfaith
+dialogue, or historical scholarship.
+
+### 4.2 Riba (Usury and Interest-Based Finance)
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) lending money at interest (*riba*);
@@ -121,8 +146,18 @@ The Software may not be used by any entity whose Primary Business involves:
     interest-bearing instruments; or
   - (d) the creation, trading, or facilitation of interest-based financial derivatives,
     bonds, or securities.
+  
+### 4.3 Pornography and Sexual Exploitation
 
-### 4.2 Maisir (Gambling and Games of Chance)
+The Software may not be used by any entity whose Primary Business involves:
+  - (a) the production, distribution, hosting, or monetization of pornographic or
+    sexually explicit content;
+  - (b) the operation of platforms whose primary purpose is the distribution of adult
+    sexual content;
+  - (c) escort services, sexual services, or the facilitation thereof; or
+  - (d) any form of human trafficking or sexual exploitation.
+
+### 4.4 Maisir (Gambling and Games of Chance)
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) operating casinos, sportsbooks, betting platforms, or lottery systems;
@@ -132,7 +167,7 @@ The Software may not be used by any entity whose Primary Business involves:
   - (d) providing payment processing, odds calculation, or infrastructure services
     primarily for gambling operations.
 
-### 4.3 Khamr (Intoxicants)
+### 4.5 Khamr (Intoxicants)
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the production, distillation, brewing, or fermentation of alcoholic beverages;
@@ -143,24 +178,14 @@ The Software may not be used by any entity whose Primary Business involves:
   - (d) the operation of bars, nightclubs, or establishments whose primary revenue
     derives from the sale of intoxicants.
 
-### 4.4 Pornography and Sexual Exploitation
-
-The Software may not be used by any entity whose Primary Business involves:
-  - (a) the production, distribution, hosting, or monetization of pornographic or
-    sexually explicit content;
-  - (b) the operation of platforms whose primary purpose is the distribution of adult
-    sexual content;
-  - (c) escort services, sexual services, or the facilitation thereof; or
-  - (d) any form of human trafficking or sexual exploitation.
-
-### 4.5 Pork Industry
+### 4.6 Pork Industry
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the farming, slaughtering, processing, or packaging of pork or pork-derived
     products; or
   - (b) the wholesale distribution of pork as a primary commercial activity.
 
-### 4.6 Weapons and Arms
+### 4.7 Weapons and Arms
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the manufacture of weapons, munitions, explosives, or military equipment designed
@@ -173,12 +198,120 @@ The Software may not be used by any entity whose Primary Business involves:
 under Section 5, cybersecurity defense, or law enforcement equipment for entities not
 engaged in Prohibited Activities are not subject to this restriction.
 
-### 4.7 Tobacco
+### 4.8 Tobacco
 
 The Software may not be used by any entity whose Primary Business involves:
   - (a) the manufacture or production of cigarettes, cigars, or other tobacco products; or
   - (b) the manufacture or production of electronic nicotine delivery systems (e-cigarettes,
     vaping devices) marketed for recreational use.
+
+### 4.9 Fasad (Corruption, Anti-God Ideology, and Moral Subversion)
+
+The Quran states:
+
+> *"And do not cause corruption on the earth after it has been set in order. That is
+> better for you, if you are believers."* — Quran 7:85
+
+> *"And of the people are some who say, 'We believe in Allah and the Last Day,' but they
+> are not believers. They seek to deceive Allah and those who believe, but they deceive
+> not except themselves and perceive it not."* — Quran 2:8-9
+
+The Software may not be used by any entity whose Primary Business involves:
+  - (a) the organized promotion, propagation, or institutional advocacy of atheism,
+    anti-theism, or the denial and mockery of God (*Allah*) and divine revelation as a
+    primary organizational mission;
+  - (b) the practice, promotion, or organized facilitation of Satanism, devil worship,
+    occultism, or any ideology that venerates or invokes evil as a primary purpose;
+  - (c) the production or distribution of media, literature, or technology whose primary
+    purpose is to mock, defame, or incite hatred against Islam, the Prophet Muhammad
+    (peace be upon him), the Quran, or the fundamental tenets of Islamic faith; or
+  - (d) the organized promotion of *fasad* (corruption and moral decay in society),
+    including entities whose primary mission is the systematic undermining of family
+    structure, modesty (*haya*), or moral order as understood in Islamic tradition.
+
+**Clarification:** This restriction does not apply to secular organizations, governments,
+educational institutions, or individuals who hold non-religious views, provided their
+Primary Business is not the active, organized promotion of the activities described
+above. Legitimate philosophical inquiry, academic research, and civil discourse are not
+restricted.
+
+### 4.10 Gender Ideology and Bodily Mutilation
+
+The Quran states:
+
+> *"He created you from one soul. Then He made from it its mate."* — Quran 39:6
+
+> *"[Satan said]: 'I will command them and they will change the creation of Allah.'"*
+> — Quran 4:119
+
+The Software may not be used by any entity whose Primary Business involves:
+  - (a) the promotion, facilitation, or provision of surgical or hormonal procedures for
+    the purpose of changing an individual's biological sex, except in cases of medically
+    diagnosed intersex conditions treated by licensed physicians;
+  - (b) the organized promotion or institutional advocacy of gender ideology that denies
+    the biological reality of male and female as created by Allah, as a primary
+    organizational mission;
+  - (c) the operation of platforms or organizations whose primary purpose is facilitating
+    or promoting such procedures for minors; or
+  - (d) the production or distribution of educational materials whose primary purpose is
+    the promotion of gender transition among children.
+
+**Clarification:** This restriction does not apply to general healthcare providers,
+hospitals, or medical institutions that may offer such services among a broader range of
+medical care. It targets entities whose Primary Business is the activities described
+above. It does not restrict individuals from using the Software regardless of their
+personal identity.
+
+### 4.11 Zina and Fahisha (Extra-Marital Relations, Lewdness, and Sexual Promiscuity)
+
+The Quran states:
+
+> *"And do not approach unlawful sexual intercourse. Indeed, it is ever an immorality
+> and is evil as a way."* — Quran 17:32
+
+> *"Those who love that immorality should be spread among the believers will have a
+> painful punishment in this world and the Hereafter."* — Quran 24:19
+
+The Software may not be used by any entity whose Primary Business involves:
+  - (a) the operation of platforms, applications, or services whose primary purpose is
+    facilitating extra-marital sexual encounters, casual sexual hookups, or adultery
+    (including but not limited to dating platforms explicitly marketed for affairs or
+    casual sexual encounters);
+  - (b) the production, distribution, or promotion of media, content, or entertainment
+    whose primary purpose is the glorification or normalization of *zina* (fornication
+    and adultery) or sexual promiscuity as a lifestyle;
+  - (c) the operation of businesses whose primary purpose is the facilitation of
+    *fahisha* (lewdness, indecency, or public obscenity), including but not limited to
+    strip clubs, adult entertainment venues, or sexualized performance establishments; or
+  - (d) the organized promotion or institutional advocacy of the dissolution of marriage
+    and family structure through the normalization of promiscuity as a primary
+    organizational mission.
+
+### 4.12 Abortion and the Taking of Innocent Life
+
+The Quran states:
+
+> *"And do not kill your children for fear of poverty. We provide for them and for you.
+> Indeed, their killing is ever a great sin."* — Quran 17:31
+
+> *"And when the girl buried alive is asked for what sin she was killed."* — Quran 81:8-9
+
+The Software may not be used by any entity whose Primary Business involves:
+  - (a) the performance or provision of abortion procedures as a primary medical service,
+    except in cases where the life of the mother is in genuine medical danger as
+    determined by qualified physicians;
+  - (b) the operation of organizations whose primary mission is the promotion, advocacy,
+    or facilitation of abortion as a routine form of contraception or family planning;
+  - (c) the manufacture or distribution of abortifacient drugs or devices as a primary
+    commercial activity; or
+  - (d) the operation of platforms or organizations whose primary purpose is connecting
+    individuals with abortion services or promoting abortion.
+
+**Clarification:** This restriction does not apply to general hospitals, medical
+institutions, or healthcare providers that may perform procedures to save the life of
+the mother among a broader range of medical services. It does not restrict entities
+providing maternal healthcare, prenatal care, or family planning services that do not
+center on abortion as their Primary Business.
 
 ---
 
@@ -305,13 +438,11 @@ if the Licensee:
 
 **7.2** Upon termination, the Licensee must:
   - (a) immediately cease all use of the Software;
-  - (b) destroy or delete all copies of the Software and Derivative Works in its
-    possession or control; and
+  - (b) destroy or delete all copies of the Software in its possession or control; and
   - (c) certify in writing to the Licensor that it has done so.
 
 **7.3** Termination does not relieve the Licensee of obligations arising from its use of
-the Software prior to termination, nor does it affect the rights of third parties who
-received the Software from the Licensee as Compliant Licensees.
+the Software prior to termination.
 
 **7.4** The Licensor may, at its sole discretion, reinstate the License if the Licensee
 demonstrates that the violation has been cured and that it is once again a Compliant
@@ -377,17 +508,19 @@ You may obtain a copy of the License at:
 
   [URL to license]
 
-Use of this Software is subject to ethical restrictions. See the
-License for details regarding prohibited industries, activities,
-and associations.
+This Software is proprietary. No modification or distribution is
+permitted. Use of this Software is subject to ethical restrictions.
+See the License for details regarding prohibited industries,
+activities, and associations.
 ```
 
 ---
 
-*The Halal Software License v1.0 was drafted to align software distribution with
-Islamic ethical principles and universal human rights. It is a source-available license
-with ethical use restrictions. It is not certified by the Open Source Initiative and does
-not claim to be an open-source license.*
+*The Halal Software License v1.0 was drafted to align software usage with Islamic
+ethical principles and universal human rights. It is a proprietary, source-viewable
+license with ethical use restrictions. It is not certified by the Open Source Initiative
+and does not claim to be an open-source license. The source code is provided for
+transparency and inspection purposes only.*
 
 *This license is provided as a legal template and should be reviewed by a qualified
 attorney before use in production. The Licensor assumes no liability for the legal
