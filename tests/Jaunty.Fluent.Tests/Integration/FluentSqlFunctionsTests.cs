@@ -3,12 +3,11 @@ using Jaunty.Fluent.Tests.Helpers;
 
 namespace Jaunty.Fluent.Tests.Integration;
 
-public class FluentSqlFunctionsTests : IDisposable
+public class FluentSqlFunctionsTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentSqlFunctionsTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentSqlFunctionsTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     // ==========================================
     // Sql.Coalesce Tests
@@ -18,7 +17,7 @@ public class FluentSqlFunctionsTests : IDisposable
     public void Coalesce_InWhere_FiltersResults()
     {
         // Coalesce treats null as 0, so we filter products where stock (or 0) > 10
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Coalesce(p.UnitsInStock, (short)0) > 10)
             .Select();
 
@@ -30,7 +29,7 @@ public class FluentSqlFunctionsTests : IDisposable
     [Fact]
     public void Coalesce_ToSql_GeneratesCoalesceFunction()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => Sql.Coalesce(p.UnitsInStock, (short)0) > 10)
             .ToSql();
 
@@ -44,7 +43,7 @@ public class FluentSqlFunctionsTests : IDisposable
     {
         // Note: SQLite has issues with C# decimal type in COALESCE, so we use double for actual filtering
         // This test just verifies the SQL generation
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => Sql.Coalesce(p.UnitPrice, 0m) > 10m)
             .ToSql();
 
@@ -57,7 +56,7 @@ public class FluentSqlFunctionsTests : IDisposable
     [Fact]
     public void Coalesce_ThreeArgs_ToSql_GeneratesCorrectFunction()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => Sql.Coalesce(p.UnitsInStock, p.UnitsOnOrder, (short)0) > 0)
             .ToSql();
 
@@ -74,7 +73,7 @@ public class FluentSqlFunctionsTests : IDisposable
     public void IsNull_InWhere_FiltersResults()
     {
         // IsNull treats null as 0, so we filter products where stock (or 0) > 10
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.IsNull(p.UnitsInStock, (short)0) > 10)
             .Select();
 
@@ -86,7 +85,7 @@ public class FluentSqlFunctionsTests : IDisposable
     [Fact]
     public void IsNull_ToSql_GeneratesIsNullFunction()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => Sql.IsNull(p.UnitsInStock, (short)0) > 10)
             .ToSql();
 
@@ -101,7 +100,7 @@ public class FluentSqlFunctionsTests : IDisposable
         // Products where reorder level (or 0) is less than 15
         // Note: SQLite doesn't handle C# decimal parameters correctly in IFNULL/COALESCE,
         // so we use short columns for actual query execution tests
-        List<Product> products = _db.Connection.From<Product>()
+        List<Product> products = _fixture.Connection.From<Product>()
                                                .Where(p => Sql.IsNull(p.ReorderLevel, (short)0) < (short)15)
                                                .Select();
 
@@ -116,7 +115,7 @@ public class FluentSqlFunctionsTests : IDisposable
     [Fact]
     public void NullIf_ToSql_GeneratesNullIfFunction()
     {
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => Sql.NullIf(p.UnitsInStock, (short?)0) != null)
             .ToSql();
 
@@ -129,7 +128,7 @@ public class FluentSqlFunctionsTests : IDisposable
     {
         // NullIf returns NULL if the value equals the second arg
         // So NullIf(stock, 0) != null means stock is not 0 (could still be null though)
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.NullIf(p.UnitsInStock, (short?)0) != null)
             .Select();
 
@@ -145,7 +144,7 @@ public class FluentSqlFunctionsTests : IDisposable
     [Fact]
     public void Coalesce_CombinedWithAnd_FiltersCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Coalesce(p.UnitsInStock, (short)0) > 5)
             .And(p => p.Discontinued == false)
             .Select();
@@ -161,7 +160,7 @@ public class FluentSqlFunctionsTests : IDisposable
     {
         // Note: Using UnitsInStock (short) instead of UnitPrice (decimal)
         // because SQLite doesn't handle C# decimal parameters correctly in IFNULL
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.IsNull(p.UnitsInStock, (short)0) > (short)0)
             .OrderBy(p => p.UnitsInStock)
             .Take(10)
@@ -181,7 +180,7 @@ public class FluentSqlFunctionsTests : IDisposable
     [Fact]
     public async Task Coalesce_SelectAsync_FiltersCorrectly()
     {
-        var products = await _db.Connection.From<Product>()
+        var products = await _fixture.Connection.From<Product>()
             .Where(p => Sql.Coalesce(p.UnitsInStock, (short)0) > 10)
             .SelectAsync();
 
@@ -194,7 +193,7 @@ public class FluentSqlFunctionsTests : IDisposable
     {
         // Note: Using UnitsInStock (short) instead of UnitPrice (decimal)
         // because SQLite doesn't handle C# decimal parameters correctly in IFNULL
-        var count = await _db.Connection.From<Product>()
+        var count = await _fixture.Connection.From<Product>()
             .Where(p => Sql.IsNull(p.UnitsInStock, (short)0) > (short)10)
             .CountAsync();
 
@@ -208,7 +207,7 @@ public class FluentSqlFunctionsTests : IDisposable
     [Fact]
     public void Coalesce_WithConstantValue_WorksCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.Coalesce(p.UnitsInStock, (short)100) >= 100)
             .Select();
 
@@ -220,7 +219,7 @@ public class FluentSqlFunctionsTests : IDisposable
     [Fact]
     public void IsNull_WithConstantZero_HandlesNullsCorrectly()
     {
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => Sql.IsNull(p.ReorderLevel, (short)0) == 0)
             .Select();
 

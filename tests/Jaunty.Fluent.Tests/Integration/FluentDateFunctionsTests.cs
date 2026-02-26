@@ -10,12 +10,11 @@ namespace Jaunty.Fluent.Tests.Integration;
 /// rather than actual query execution. The generated SQL would work correctly
 /// with properly formatted dates (ISO 8601 format).
 /// </summary>
-public class FluentDateFunctionsTests : IDisposable
+public class FluentDateFunctionsTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentDateFunctionsTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentDateFunctionsTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     // ==========================================
     // Sql.Year Tests - SQL Generation
@@ -24,7 +23,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Year_ToSql_GeneratesYearFunction()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Year(o.OrderDate) == 1997)
             .ToSql();
 
@@ -37,7 +36,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Year_GreaterThan_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Year(o.OrderDate) > 1996)
             .ToSql();
 
@@ -48,7 +47,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Year_NotEqual_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Year(o.OrderDate) != 2000)
             .ToSql();
 
@@ -63,7 +62,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Month_ToSql_GeneratesMonthFunction()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Month(o.OrderDate) == 12)
             .ToSql();
 
@@ -76,7 +75,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Month_LessThan_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Month(o.OrderDate) < 6)
             .ToSql();
 
@@ -91,7 +90,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Day_ToSql_GeneratesDayFunction()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Day(o.OrderDate) == 15)
             .ToSql();
 
@@ -104,7 +103,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Day_GreaterOrEqual_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Day(o.OrderDate) >= 20)
             .ToSql();
 
@@ -119,7 +118,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Year_And_Month_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Year(o.OrderDate) == 1997)
             .And(o => Sql.Month(o.OrderDate) == 12)
             .ToSql();
@@ -132,7 +131,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Year_Month_Day_CombinedFilter_ToSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Year(o.OrderDate) == 1997)
             .And(o => Sql.Month(o.OrderDate) == 7)
             .And(o => Sql.Day(o.OrderDate) == 4)
@@ -147,7 +146,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void DateFunctions_Or_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Year(o.OrderDate) == 1997)
             .Or(o => Sql.Year(o.OrderDate) == 1998)
             .ToSql();
@@ -163,7 +162,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Year_OnRequiredDate_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Year(o.RequiredDate) == 1997)
             .ToSql();
 
@@ -174,7 +173,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Month_OnShippedDate_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Month(o.ShippedDate) == 1)
             .ToSql();
 
@@ -185,7 +184,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void Day_OnOrderDate_ToSql_GeneratesCorrectSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Day(o.OrderDate) == 1)
             .ToSql();
 
@@ -200,7 +199,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void DateFunctions_WithOrderBy_ToSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Year(o.OrderDate) == 1997)
             .OrderBy(o => o.OrderDate)
             .ToSql();
@@ -212,7 +211,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void DateFunctions_WithTake_ToSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Month(o.OrderDate) >= 10)
             .Take(5)
             .ToSql();
@@ -224,7 +223,7 @@ public class FluentDateFunctionsTests : IDisposable
     [Fact]
     public void DateFunctions_WithStringFunctions_ToSql()
     {
-        var sql = _db.Connection.From<Order>()
+        var sql = _fixture.Connection.From<Order>()
             .Where(o => Sql.Year(o.OrderDate) == 1997)
             .And(o => Sql.Upper(o.ShipCity) == "LONDON")
             .ToSql();

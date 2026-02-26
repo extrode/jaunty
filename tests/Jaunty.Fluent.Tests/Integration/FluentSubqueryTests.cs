@@ -6,12 +6,11 @@ namespace Jaunty.Fluent.Tests.Integration;
 /// <summary>
 /// Tests for subquery support (IN subquery, NOT IN subquery).
 /// </summary>
-public class FluentSubqueryTests : IDisposable
+public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
 {
-    private readonly Database _db;
+    private readonly FluentDatabaseFixture _fixture;
 
-    public FluentSubqueryTests() => _db = new Database();
-    public void Dispose() => _db.Dispose();
+    public FluentSubqueryTests(FluentDatabaseFixture fixture) => _fixture = fixture;
 
     // ==========================================
     // SQL Generation Tests
@@ -20,10 +19,10 @@ public class FluentSubqueryTests : IDisposable
     [Fact]
     public void WhereInSubquery_ToSql_GeneratesCorrectSyntax()
     {
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName == "Beverages");
 
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .WhereInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -38,10 +37,10 @@ public class FluentSubqueryTests : IDisposable
     [Fact]
     public void WhereNotInSubquery_ToSql_GeneratesCorrectSyntax()
     {
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName == "Beverages");
 
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .WhereNotInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -55,10 +54,10 @@ public class FluentSubqueryTests : IDisposable
     [Fact]
     public void AndInSubquery_ToSql_GeneratesCorrectSyntax()
     {
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName == "Beverages");
 
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .AndInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
@@ -74,10 +73,10 @@ public class FluentSubqueryTests : IDisposable
     [Fact]
     public void OrInSubquery_ToSql_GeneratesCorrectSyntax()
     {
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName == "Beverages");
 
-        var sql = _db.Connection.From<Product>()
+        var sql = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 99)
             .OrInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
@@ -98,10 +97,10 @@ public class FluentSubqueryTests : IDisposable
     public void WhereInSubquery_FiltersByCategory_ReturnsCorrectProducts()
     {
         // Get categories that start with 'B' (Beverages, etc.)
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName.StartsWith("B"));
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -111,7 +110,7 @@ public class FluentSubqueryTests : IDisposable
         Assert.NotEmpty(products);
 
         // Verify all products are in categories starting with 'B'
-        var validCategoryIds = _db.Connection.From<Category>()
+        var validCategoryIds = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName.StartsWith("B"))
             .Select()
             .Select(c => c.CategoryId)
@@ -124,10 +123,10 @@ public class FluentSubqueryTests : IDisposable
     public void WhereInSubquery_WithMultipleConditions_ReturnsCorrectProducts()
     {
         // Subquery: categories that have description
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.Description != null);
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -145,15 +144,15 @@ public class FluentSubqueryTests : IDisposable
     public void WhereNotInSubquery_ExcludesMatchingProducts()
     {
         // Get the first category
-        var firstCategory = _db.Connection.From<Category>()
+        var firstCategory = _fixture.Connection.From<Category>()
             .Take(1)
             .SelectFirst();
 
         // Subquery: select that category's ID
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryId == firstCategory.CategoryId);
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereNotInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -168,17 +167,17 @@ public class FluentSubqueryTests : IDisposable
     public void WhereNotInSubquery_WithNoMatchingSubquery_ReturnsAllProducts()
     {
         // Subquery: categories with impossible name
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName == "NonExistent12345");
 
-        var productsWithNotIn = _db.Connection.From<Product>()
+        var productsWithNotIn = _fixture.Connection.From<Product>()
             .WhereNotInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
                 subquery)
             .Select();
 
-        var allProducts = _db.Connection.From<Product>().Select();
+        var allProducts = _fixture.Connection.From<Product>().Select();
 
         Assert.Equal(allProducts.Count, productsWithNotIn.Count);
     }
@@ -191,10 +190,10 @@ public class FluentSubqueryTests : IDisposable
     public void AndInSubquery_CombinesWithPreviousCondition()
     {
         // Subquery: categories starting with 'C'
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName.StartsWith("C"));
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .AndInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
@@ -203,7 +202,7 @@ public class FluentSubqueryTests : IDisposable
             .Select();
 
         // Get valid category IDs
-        var validCategoryIds = _db.Connection.From<Category>()
+        var validCategoryIds = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName.StartsWith("C"))
             .Select()
             .Select(c => c.CategoryId)
@@ -217,15 +216,15 @@ public class FluentSubqueryTests : IDisposable
     public void AndNotInSubquery_CombinesWithPreviousCondition()
     {
         // Get first category
-        var firstCategory = _db.Connection.From<Category>()
+        var firstCategory = _fixture.Connection.From<Category>()
             .Take(1)
             .SelectFirst();
 
         // Subquery: the first category
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryId == firstCategory.CategoryId);
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == false)
             .AndNotInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
@@ -241,7 +240,7 @@ public class FluentSubqueryTests : IDisposable
     public void OrInSubquery_ProvidersAlternativeMatch()
     {
         // Get first two categories
-        var categories = _db.Connection.From<Category>()
+        var categories = _fixture.Connection.From<Category>()
             .Take(2)
             .Select();
 
@@ -249,10 +248,10 @@ public class FluentSubqueryTests : IDisposable
         var cat2Id = categories.Count > 1 ? categories[1].CategoryId : cat1Id;
 
         // Subquery: second category
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryId == cat2Id);
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == cat1Id)
             .OrInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
@@ -268,16 +267,16 @@ public class FluentSubqueryTests : IDisposable
     public void OrNotInSubquery_ProvidersAlternativeMatch()
     {
         // Get first category
-        var firstCategory = _db.Connection.From<Category>()
+        var firstCategory = _fixture.Connection.From<Category>()
             .Take(1)
             .SelectFirst();
 
         // Subquery: the first category
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryId == firstCategory.CategoryId);
 
         // Products that are discontinued OR not in first category
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .Where(p => p.Discontinued == true)
             .OrNotInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
@@ -296,10 +295,10 @@ public class FluentSubqueryTests : IDisposable
     [Fact]
     public async Task WhereInSubquery_SelectAsync_ReturnsCorrectProducts()
     {
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName.StartsWith("C"));
 
-        var products = await _db.Connection.From<Product>()
+        var products = await _fixture.Connection.From<Product>()
             .WhereInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -312,10 +311,10 @@ public class FluentSubqueryTests : IDisposable
     [Fact]
     public async Task WhereInSubquery_CountAsync_ReturnsCorrectCount()
     {
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName.StartsWith("C"));
 
-        var count = await _db.Connection.From<Product>()
+        var count = await _fixture.Connection.From<Product>()
             .WhereInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -332,10 +331,10 @@ public class FluentSubqueryTests : IDisposable
     [Fact]
     public void WhereInSubquery_WithOrderBy_WorksCorrectly()
     {
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName.StartsWith("C"));
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -352,10 +351,10 @@ public class FluentSubqueryTests : IDisposable
     [Fact]
     public void WhereInSubquery_WithTake_LimitsResults()
     {
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName.StartsWith("C"));
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -369,10 +368,10 @@ public class FluentSubqueryTests : IDisposable
     [Fact]
     public void WhereInSubquery_WithDistinct_ReturnsUniqueResults()
     {
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName.StartsWith("C"));
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -392,10 +391,10 @@ public class FluentSubqueryTests : IDisposable
     public void WhereInSubquery_SubqueryReturnsNoRows_ReturnsNoResults()
     {
         // Subquery that returns no results
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName == "NonExistentCategory12345");
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -409,17 +408,17 @@ public class FluentSubqueryTests : IDisposable
     public void WhereNotInSubquery_SubqueryReturnsNoRows_ReturnsAllResults()
     {
         // Subquery that returns no results
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName == "NonExistentCategory12345");
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereNotInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
                 subquery)
             .Select();
 
-        var allProducts = _db.Connection.From<Product>().Select();
+        var allProducts = _fixture.Connection.From<Product>().Select();
         Assert.Equal(allProducts.Count, products.Count);
     }
 
@@ -427,11 +426,11 @@ public class FluentSubqueryTests : IDisposable
     public void WhereInSubquery_ChainedSubqueries_WorksCorrectly()
     {
         // First subquery
-        var subquery1 = _db.Connection.From<Category>()
+        var subquery1 = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName.StartsWith("B"));
 
         // Use first subquery in main query, then add another condition
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
@@ -439,7 +438,7 @@ public class FluentSubqueryTests : IDisposable
             .And(p => p.Discontinued == false)
             .Select();
 
-        var validCategoryIds = _db.Connection.From<Category>()
+        var validCategoryIds = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName.StartsWith("B"))
             .Select()
             .Select(c => c.CategoryId)
@@ -453,13 +452,13 @@ public class FluentSubqueryTests : IDisposable
     public void WhereInSubquery_ComplexSubquery_WorksCorrectly()
     {
         // Complex subquery with multiple conditions
-        var subquery = _db.Connection.From<Category>()
+        var subquery = _fixture.Connection.From<Category>()
             .Where(c => c.CategoryName != null)
             .And(c => c.Description != null)
             .OrderBy(c => c.CategoryName)
             .Take(3);
 
-        var products = _db.Connection.From<Product>()
+        var products = _fixture.Connection.From<Product>()
             .WhereInSubquery<int, Category>(
                 p => p.CategoryId!.Value,
                 c => c.CategoryId,
