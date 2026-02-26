@@ -3,23 +3,24 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-#if NET5_0_OR_GREATER
-using System.Diagnostics.CodeAnalysis;
-#endif
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+
 using Jaunty.Configuration;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 
 namespace Jaunty.Extensions.Reflection;
 
-public static class MetadataCache<
-#if NET5_0_OR_GREATER
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] 
-#endif
-    T>
+/// <summary>
+/// Caches entity metadata and property mappings for reflection-based entity mapping.
+/// </summary>
+/// <remarks>
+/// This cache uses runtime reflection and is not compatible with NativeAOT.
+/// For NativeAOT scenarios, use the source generator instead.
+/// </remarks>
+public static class MetadataCache<T>
 {
     public static readonly EntityMetadata Metadata;
     public static readonly PropertyContext<T>[] Properties;
@@ -30,17 +31,17 @@ public static class MetadataCache<
     static MetadataCache()
     {
         Metadata = MetadataBuilder.Build<T>();
-        var columns = Metadata.Columns.ToArray();
-        var contexts = new List<PropertyContext<T>>(columns.Length);
-        var nameToIndex = new Dictionary<string, int>(columns.Length, StringComparer.OrdinalIgnoreCase);
+        ColumnMetadata[] columns = Metadata.Columns.ToArray();
+        List<PropertyContext<T>> contexts = new List<PropertyContext<T>>(columns.Length);
+        Dictionary<string, int> nameToIndex = new Dictionary<string, int>(columns.Length, StringComparer.OrdinalIgnoreCase);
 
         for (int i = 0; i < columns.Length; i++)
         {
-            var column = columns[i];
-            var setter = CreateSetter(column.Property);
-            var fastSetter = CreateFastSetter(column.Property);
-            var getter = CreateGetter(column.Property);
-            var isNonNullable = IsNonNullableType(column.Property.PropertyType);
+            ColumnMetadata column = columns[i];
+            Action<T, IDataRecord, int> setter = CreateSetter(column.Property);
+            Action<T, DbDataReader, int> fastSetter = CreateFastSetter(column.Property);
+            Func<T, object?> getter = CreateGetter(column.Property);
+            bool isNonNullable = IsNonNullableType(column.Property.PropertyType);
 
             contexts.Add(new PropertyContext<T>(column.Property, setter, fastSetter, getter, column.Property.Name, column.ColumnName, isNonNullable));
 
@@ -83,18 +84,21 @@ public static class MetadataCache<
             var parts = new string[fieldCount + 2];
             parts[0] = ((int)mode).ToString();
             parts[1] = fieldCount.ToString();
+
             for (int i = 0; i < fieldCount; i++)
             {
                 parts[i + 2] = reader.GetName(i) ?? string.Empty;
             }
+
             _schemaKey = string.Join("\u001F", parts);
             _hashCode = StringComparer.OrdinalIgnoreCase.GetHashCode(_schemaKey);
         }
 
-        public bool Equals(ReaderSignature other)
-            => _mode == other._mode
+        public bool Equals(ReaderSignature other) => _mode == other._mode
                && StringComparer.OrdinalIgnoreCase.Equals(_schemaKey, other._schemaKey);
+
         public override bool Equals(object? obj) => obj is ReaderSignature other && Equals(other);
+
         public override int GetHashCode() => _hashCode;
     }
 
@@ -147,51 +151,53 @@ public static class MetadataCache<
 
     private static Action<T, IDataRecord, int> CreateSetter(PropertyInfo property)
     {
-        var target = Expression.Parameter(typeof(T), "target");
-        var record = Expression.Parameter(typeof(IDataRecord), "record");
-        var index = Expression.Parameter(typeof(int), "index");
+        ParameterExpression target = Expression.Parameter(typeof(T), "target");
+        ParameterExpression record = Expression.Parameter(typeof(IDataRecord), "record");
+        ParameterExpression index = Expression.Parameter(typeof(int), "index");
         var getValue = Expression.Call(record, typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!, index);
-        
-        var propertyType = property.PropertyType;
-        var conversionType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-        
+
+        Type propertyType = property.PropertyType;
+        Type conversionType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+
         Expression valueExpression = Expression.Convert(
-            Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ChangeType), new[] { typeof(object), typeof(Type) })!, 
+            Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ChangeType), [typeof(object), typeof(Type)])!,
             getValue, Expression.Constant(conversionType)), conversionType);
 
         if (propertyType != conversionType)
             valueExpression = Expression.Convert(valueExpression, propertyType);
 
-        var assign = Expression.Assign(Expression.Property(target, property), valueExpression);
+        BinaryExpression assign = Expression.Assign(Expression.Property(target, property), valueExpression);
         return Expression.Lambda<Action<T, IDataRecord, int>>(assign, target, record, index).Compile();
     }
 
     private static Action<T, DbDataReader, int> CreateFastSetter(PropertyInfo property)
     {
-        var standard = CreateSetter(property);
+        Action<T, IDataRecord, int> standard = CreateSetter(property);
         return (target, reader, index) => standard(target, reader, index);
     }
 
     private static Func<T, object?> CreateGetter(PropertyInfo property)
     {
-        var target = Expression.Parameter(typeof(T), "target");
-        var access = Expression.Property(target, property);
-        var box = Expression.Convert(access, typeof(object));
+        ParameterExpression target = Expression.Parameter(typeof(T), "target");
+        MemberExpression access = Expression.Property(target, property);
+        UnaryExpression box = Expression.Convert(access, typeof(object));
         return Expression.Lambda<Func<T, object?>>(box, target).Compile();
     }
 
     private static Dictionary<string, int>? BuildResolverIndex()
     {
-        var resolver = JauntyConfig.ColumnNameResolver;
+        Func<string, string>? resolver = JauntyConfig.ColumnNameResolver;
         if (resolver == null) return null;
 
         var index = new Dictionary<string, int>(Properties.Length, StringComparer.OrdinalIgnoreCase);
+
         for (int i = 0; i < Properties.Length; i++)
         {
             string resolved = resolver(Properties[i].Property.Name);
             if (!string.IsNullOrEmpty(resolved))
                 index[resolved] = i;
         }
+
         return index;
     }
 
@@ -201,10 +207,15 @@ public static class MetadataCache<
 public readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, Action<T, DbDataReader, int> fastSetter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
 {
     public PropertyInfo Property { get; } = property;
+
     public Action<T, IDataRecord, int> Setter { get; } = setter;
+
     public Func<T, object?> Getter { get; } = getter;
+
     public string PropertyName { get; } = propertyName;
+
     public string ColumnName { get; } = columnName;
+
     public bool IsNonNullable { get; } = isNonNullable;
 }
 
