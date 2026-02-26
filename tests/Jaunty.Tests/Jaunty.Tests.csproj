@@ -33,8 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.4" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>
@@ -44,17 +43,15 @@
 
   <ItemGroup>
     <!-- Database Providers -->
+    <!-- Npgsql 10.x requires .NET 8+, so we stay on 8.0.x for net472 compatibility -->
+    <PackageReference Include="Npgsql" Version="8.0.7" />
+    <!-- Microsoft.Data.SqlClient 6.x requires .NET 8+, so we stay on 5.2.x -->
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-    <PackageReference Include="Npgsql" Version="8.0.5" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <!-- MySql.Data 9.6 requires .NET 8+, so we stay on 9.1.x -->
     <PackageReference Include="MySql.Data" Version="9.1.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+    <!-- Microsoft.Data.Sqlite 10.x requires .NET 8+, using latest 8.x -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.13" />
   </ItemGroup>
 
   <ItemGroup>
