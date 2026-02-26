@@ -80,7 +80,7 @@ public class SQLiteSchemaReaderTests : IDisposable
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
         Assert.Equal(4, schema.Tables.Count);
-        Assert.Equal(["products", "customers", "orders", "order_details"],
+        Assert.Equal(["customers", "order_details", "orders", "products"],
             schema.Tables.Select(t => t.TableName).Order());
     }
 
