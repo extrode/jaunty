@@ -504,6 +504,78 @@ public class GridReaderTests : IClassFixture<DialectFixture>
         Assert.StartsWith("PartialCustom:", categories[0].CategoryName);
     }
 
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadScalar_WithValueType_ReturnsValue(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(CountCategoriesSql(dialect));
+
+        var count = gridReader.ReadScalar<int>();
+
+        Assert.True(count > 0);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadScalar_WithReferenceType_ReturnsValue(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple("SELECT 'test_value' AS value");
+
+        var value = gridReader.ReadScalar<string>();
+
+        Assert.Equal("test_value", value);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadStream_WithCustomMapper_UsesMapper(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id";
+
+        using var gridReader = connection.QueryMultiple(sql, new { Id = 1 });
+
+        var customMapper = new Func<IDataReader, Category>(reader =>
+            new Category { CategoryId = reader.GetInt32(0), CategoryName = "StreamCustom: " + reader.GetString(1) });
+
+        var categories = gridReader.ReadStream<Category>(new CommandOptions<Category>(mapper: customMapper)).ToList();
+
+        Assert.Single(categories);
+        Assert.StartsWith("StreamCustom:", categories[0].CategoryName);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartialStream_WithCustomMapper_UsesMapper(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories WHERE category_id = @Id";
+
+        using var gridReader = connection.QueryMultiple(sql, new { Id = 1 });
+
+        var customMapper = new Func<IDataReader, Category>(reader =>
+            new Category { CategoryId = reader.GetInt32(0), CategoryName = "PartialStreamCustom: " + reader.GetString(1) });
+
+        var categories = gridReader.ReadPartialStream<Category>(new CommandOptions<Category>(mapper: customMapper)).ToList();
+
+        Assert.Single(categories);
+        Assert.StartsWith("PartialStreamCustom:", categories[0].CategoryName);
+    }
+
     private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
         dialect.Provider == DialectProvider.SqlServer
             ? $"SELECT TOP ({top}) CategoryId, CategoryName, Description FROM Categories{(orderById ? " ORDER BY CategoryId" : string.Empty)}"
