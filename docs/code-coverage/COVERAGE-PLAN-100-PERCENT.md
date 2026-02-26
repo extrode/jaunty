@@ -1,9 +1,10 @@
 # Jaunty 100% Code Coverage Plan
 
-**Target**: 100% Code Coverage for both net8.0 and netstandard2.0  
-**Created**: 2026-02-24  
-**Coverage Report**: dotCover-2026-02-24.png  
-**Last Updated**: 2026-02-24 (Phase 2 started - GridReader tests added)
+**Target**: 100% Code Coverage for both net8.0 and netstandard2.0
+**Created**: 2026-02-24
+**Coverage Report**: code-coverage-dotCover-2026-02-26.png
+**Last Updated**: 2026-02-26 (Fluent API net8.0: 33% → 72%)
+**Test Count**: 2865 (Visual Studio) - All passing
 
 ---
 
@@ -11,93 +12,39 @@
 
 | Target | Coverage | Uncovered | Total | Status |
 |--------|----------|-----------|-------|--------|
-| **net8.0** | 76% → 77% | ~1300 | 5503 | Improving |
-| **netstandard2.0** | 70% | 1800 | 5907 | Critical |
-| **Overall** | 75% → 76% | ~10700 | 42835 | Improving |
+| **Total** | 76% | 11137 | 45590 | Improving |
+| **tests/** | 95% | 1234 | 22478 | Excellent |
+| **src/** | 57% | 9903 | 23112 | Needs work |
+| **Jaunty (net8.0)** | 76% | 1311 | 5503 | Good |
+| **Jaunty (netstandard2.0)** | 70% | 1778 | 5907 | Critical |
+| **Jaunty.Fluent (net8.0)** | 72% | 1345 | 4734 | Major improvement! |
+| **Jaunty.Fluent (netstandard2.0)** | 0% | 4734 | 4734 | No tests |
 
 ---
 
 ## Progress Log
 
-### 2026-02-24: Test Quality Fix - SQLite Coverage
-**Issue**: GridReader tests missing `[MicrosoftSqlite][SystemSqlite]` attributes  
-**Impact**: 44 additional tests now running (68 → 112 tests)  
-**Action**: Added SQLite dialect to all GridReader tests  
-**Result**: All 112 tests passing
+### 2026-02-26: FluentAssertions Removal
+**Action**: Removed FluentAssertions dependency from all test projects
+**Reason**: Licensing restrictions (community license doesn't allow commercial use)
+**Replacement**: xUnit Assert exclusively
+**Files Updated**: All test projects and the coding standards
+**Result**: All 2865 tests passing with xUnit Assert only
 
-**Lesson**: ALL non-async, non-stored-procedure tests MUST include all 5 dialects:
-- `[SqlServer]`
-- `[Postgres]`  
-- `[MariaDB]`
-- `[MicrosoftSqlite]`
-- `[SystemSqlite]`
+### 2026-02-26: Fluent API Performance Fix
+**Issue**: Fluent API tests took 69 seconds to run
+**Root Cause**: 19 test classes each creating separate SQLite databases
+**Fix**: Created `FluentDatabaseFixture` shared fixture (IClassFixture pattern)
+**Result**: Tests now run in 3 seconds (23x faster)
 
-**Exceptions** (SQLite doesn't support):
-- Async stored procedure tests
-- `QueryMultipleAsync` with stored procedures
-
-### 2026-02-24: Phase 1 - Quick Wins COMPLETE
-**Added**: 11 new tests
-
-**SpParameter Tests** (3 tests):
-- `SpParameter_Constructor_WithAllParameters_SetsProperties` - Full constructor test
-- `SpParameter_Constructor_WithNullValue_SetsNullValue` - Null value handling
-- `SpParameter_Constructor_WithoutDbTypeAndSize_SetsNulls` - Optional parameters
-
-**SpecialTypeMapper Tests** (8 test methods):
-- `SpecialTypeMapperIntegrationTests` - Integration tests for Dictionary, KeyValuePair, ValueTuple, Dynamic mapping
-- Fixed PostgreSQL column name folding issue (uses quoted identifiers)
-
-**Test Count**: 2309 → 2324 (+15 tests)  
-**Coverage Impact**: +0.5% estimated
-
-**Result**: Phase 1 complete - all quick wins achieved
-
----
-
-### 2026-02-24: Phase 3 - Dialect Tests COMPLETE
-**Added**: 182 new unit tests in `SqlDialectTests.cs`
-
-**Coverage Areas**:
-- **SqlServerDialect** (10 tests): Escape methods, keywords, paging, identity, FK toggle
-- **PostgreSqlDialect** (14 tests): Escape methods, keywords, paging, RETURNING, FK toggle
-- **MySqlDialect** (13 tests): Escape methods, keywords, paging, LAST_INSERT_ID, FK toggle
-- **SQLiteDialect** (22 tests): Escape methods, keywords, paging, last_insert_rowid, FK toggle, GLOB patterns
-
-**Test Count**: 2324 → 2506 (+182 tests)  
-**Coverage Impact**: +2% estimated (106 dialect statements covered)
-
-**Result**: Phase 3 complete - all dialect methods tested
-
----
-
-## Phase 4: Public API Coverage - IN PROGRESS
-
-### 2026-02-24: SQLite Coverage Expansion
-**Issue**: Many integration tests missing `[MicrosoftSqlite][SystemSqlite]` attributes  
-**Impact**: +257 tests added (2506 → 2763)  
-**Files Fixed**:
-- All `Integration/Read/*AsyncTests.cs` (12 files)
-- All `Integration/Read/*.cs` sync tests
-- All `Integration/Write/*.cs` tests
-
-**Result**: All async and sync API methods now tested against SQLite
-
-### 2026-02-24: CancellationToken Tests Added
-**Added**: 6 new CancellationToken tests for async methods
-- `QueryPartialAsync_WithCancellationToken_Works`
-- `QueryPartialFirstAsync_WithCancellationToken_Works`
-- `QueryPartialFirstOrDefaultAsync_WithCancellationToken_Works`
-- `QueryPartialSingleAsync_WithCancellationToken_Works`
-- `QueryPartialSingleOrDefaultAsync_WithCancellationToken_Works`
-- `ExecuteScalarAsync_WithCancellationToken_Works`
-
-**Test Count**: 2763 → 2769 (+6 tests)  
-**Result**: All async methods now have CancellationToken coverage
-
-### 2026-02-24: Transaction Rollback Tests Fixed
-**Fixed**: 2 failing tests (Postgres/SQL Server)
-- Used temporary tables instead of modifying Northwind
+### 2026-02-26: Fluent API Coverage Surge
+**Before**: Jaunty.Fluent net8.0: 33% coverage
+**After**: Jaunty.Fluent net8.0: 72% coverage (+39%!)
+**Tests Added**: 
+- 87 unit tests for Expression visitors (Where, Select, Join, GroupBy)
+- Complex nested WHERE predicate tests
+- Window function SQL generation tests
+**Remaining**: Jaunty.Fluent netstandard2.0: 0% (no tests run on this target)
 - Created temp tables OUTSIDE transaction, inserts INSIDE transaction
 - Dialect-specific temp table syntax (TEMP TABLE, #temp, TEMPORARY TABLE)
 
@@ -153,16 +100,32 @@
 
 ## Remaining Work
 
-### Phase 5: Fluent API Coverage (ONGOING)
-**Target**: 6199 uncovered statements (33% coverage)
+### Phase 5: Fluent API Coverage (netstandard2.0)
+**Target**: 4734 uncovered statements (0% coverage)
+**Issue**: No tests run on netstandard2.0 target
+**Options**:
+1. Add netstandard2.0 tests (doubles test maintenance)
+2. Exclude netstandard2.0 from coverage (recommend)
+3. Drop netstandard2.0 support for Jaunty.Fluent
 
-**Progress**: 408 tests written, more needed for:
-- Multi-table joins (3+ tables)
-- Complex nested WHERE predicates
-- Window function execution tests (currently ToSql only)
+**Estimated Effort**: Decision needed
+**Estimated Coverage Gain**: +20% if excluded
 
-**Estimated Effort**: 3-5 days  
-**Estimated Coverage Gain**: +10-15%
+### Phase 5b: Fluent API Coverage (net8.0)
+**Current**: 72% coverage (1345/4734 uncovered)
+**Progress**: Major improvement from 33% → 72% (+39%)
+**Remaining Gaps**:
+- `Sql.*` builder classes: 0% (44 statements)
+- `CaseBuilder<>`: 0% (6 statements)
+- `WindowBuilder<>`: 0% (13 statements)
+- `WindowAggregateBuilder<>`: 0% (6 statements)
+- `JoinedQueryBuilder<>`: 51% (431/884 statements)
+- `QueryBuilder<>`: 71% (387/1314 statements)
+- `SetOperationBuilder<>`: 71% (77/266 statements)
+
+**Action**: Execution tests for builder classes
+**Estimated Effort**: 2-3 days
+**Estimated Coverage Gain**: +15-20%
 
 ---
 
@@ -190,17 +153,18 @@
 
 | Priority | Project | Coverage | Uncovered | Total | Action |
 |----------|---------|----------|-----------|-------|--------|
-| **P0** | Jaunty.Fluent | 33% | 6199 | 9288 | Major test expansion needed |
-| **P1** | Jaunty (netstandard2.0) | 62% | 1557 | 4083 | Public API tests missing |
-| **P2** | Jaunty (net8.0) | 71% | 1047 | 3600 | Public API tests missing |
-| **P3** | Jaunty.Scaffolding | 49% | 482 | 940 | Tooling - consider exclude |
-| **P4** | Jaunty.Scaffolding.Cli | 0% | 154 | 154 | Tooling - exclude |
-| **P5** | Jaunty.Internals.Dialects | 82% | 106 | 580 | Dialect-specific tests |
-| **P6** | Jaunty.Internals.Read | 83% | 13 | 78 | Minor gaps |
-| **P7** | Jaunty.Core | 88% | 35 | 302 | Minor gaps |
-| **P8** | Jaunty.Internals.Parameters | 89% | 45 | 405 | Minor gaps |
-| **P9** | Jaunty.SpParameter | 90% | 1 | 10 | One line |
-| **P10** | Jaunty.Extensions.Reflection | 95% | 51 | 1070 | Near complete |
+| **P0** | Jaunty.Fluent (net8.0) | 72% | 1345 | 4734 | Builder execution tests |
+| **P1** | Jaunty.Fluent (netstandard2.0) | 0% | 4734 | 4734 | Exclude from coverage |
+| **P2** | Jaunty (net8.0) | 76% | 1311 | 5503 | Good coverage |
+| **P3** | Jaunty (netstandard2.0) | 70% | 1778 | 5907 | Minor gaps |
+| **P4** | Jaunty.Extensions.Reflection | 91% | 99 | 1140 | Near complete |
+| **P5** | Jaunty.Scaffolding | 49% | 482 | 940 | Tooling - consider exclude |
+| **P6** | Jaunty.Scaffolding.Cli | 0% | 154 | 154 | Tooling - exclude |
+
+**Notes**:
+- Jaunty.Fluent net8.0 improved from 33% → 72% (+39%) on 2026-02-26
+- Jaunty.Fluent netstandard2.0 has zero tests - recommend exclusion
+- Jaunty.Extensions.Reflection at 91% - excellent progress
 
 ---
 
