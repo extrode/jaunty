@@ -39,43 +39,35 @@ public static class SpecialTypeMappers
         // Dictionary<string, object> or Dictionary<string, TValue>
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
         {
-            var keyType = type.GetGenericArguments()[0];
-            var valueType = type.GetGenericArguments()[1];
+            Type keyType = type.GetGenericArguments()[0];
+            Type valueType = type.GetGenericArguments()[1];
 
-            if (keyType != typeof(string))
-                throw new NotSupportedException($"Dictionary key type must be string, got {keyType.Name}");
-
-            return CreateDictionaryMapper(type, reader, valueType);
+            return keyType == typeof(string)
+                ? CreateDictionaryMapper(type, reader, valueType)
+                : throw new NotSupportedException($"Dictionary key type must be string, got {keyType.Name}");
         }
 
         // KeyValuePair<TKey, TValue> - two columns: first is Key, second is Value
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
         {
-            if (reader.FieldCount < 2)
-                throw new InvalidOperationException(
+            return reader.FieldCount >= 2
+                ? CreateKeyValuePairMapper(type, reader, type.GetGenericArguments())
+                : throw new InvalidOperationException(
                     $"Type '{type.Name}' requires at least 2 columns, but query returned {reader.FieldCount}.");
-
-            return CreateKeyValuePairMapper(type, reader, type.GetGenericArguments());
         }
 
         // ValueTuple - positional mapping
         if (type.IsValueType && type.FullName?.StartsWith("System.ValueTuple`") == true)
         {
             var typeArgs = type.GetGenericArguments();
-            if (reader.FieldCount < typeArgs.Length)
-                throw new InvalidOperationException(
+            return reader.FieldCount >= typeArgs.Length
+                ? CreateValueTupleMapper(type, reader, typeArgs)
+                : throw new InvalidOperationException(
                     $"Type 'ValueTuple<{string.Join(", ", typeArgs.Select(t => t.Name))}>' requires {typeArgs.Length} columns, but query returned {reader.FieldCount}.");
-
-            return CreateValueTupleMapper(type, reader, typeArgs);
         }
 
         // dynamic (object at compile time) - return ExpandoObject
-        if (type == typeof(object))
-        {
-            return CreateExpandoMapper(reader);
-        }
-
-        return null;
+        return type == typeof(object) ? CreateExpandoMapper(reader) : null;
     }
 
     private static object CreateKeyValuePairMapper(Type type, IDataReader reader, Type[] typeArgs)
