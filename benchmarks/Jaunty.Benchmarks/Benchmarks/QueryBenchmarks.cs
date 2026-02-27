@@ -22,7 +22,7 @@ public class QueryBenchmarks
     [Params(1, 10, 100, 1_000, 10_000, 100_000)]
     public int RowCount { get; set; }
 
-    [Params(DatabaseProvider.Sqlite)]
+    [Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
     public DatabaseProvider Provider { get; set; }
 
     [GlobalSetup]
@@ -31,8 +31,7 @@ public class QueryBenchmarks
         if (!DatabaseSetup.IsAvailable(Provider))
             throw new InvalidOperationException($"{Provider} is not available");
 
-        RepoDb.GlobalConfiguration.Setup().UseSqlite();
-        RepoDb.TypeMapper.Add(typeof(bool), System.Data.DbType.Int64);
+        DatabaseSetup.InitializeRepoDb(Provider);
 
         _connection = DatabaseSetup.CreateConnection(Provider);
         _connection.Open();
@@ -70,7 +69,7 @@ public class QueryBenchmarks
     [Benchmark(Description = "EF Core ToList")]
     public List<EfProduct> EfCore_Query()
     {
-        using var context = new BenchmarkDbContext(_connection, "sqlite");
+        using var context = new BenchmarkDbContext(_connection, DatabaseSetup.GetEfProviderName(Provider));
         return context.BenchmarkProducts
             .FromSqlRaw("SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products")
             .ToList();
@@ -89,7 +88,7 @@ public class QueryBenchmarks
     [Benchmark(Description = "linq2db Query")]
     public List<Linq2DbProduct> Linq2Db_Query()
     {
-        using var db = new BenchmarkDb(_connection);
+        using var db = new BenchmarkDb(_connection, Provider);
         return db.BenchmarkProducts.ToList();
     }
 }

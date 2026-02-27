@@ -17,7 +17,7 @@ public class InsertBenchmarks
 {
     private DbConnection _connection = null!;
 
-    [Params(DatabaseProvider.Sqlite)]
+    [Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
     public DatabaseProvider Provider { get; set; }
 
     [GlobalSetup]
@@ -26,8 +26,7 @@ public class InsertBenchmarks
         if (!DatabaseSetup.IsAvailable(Provider))
             throw new InvalidOperationException($"{Provider} is not available");
 
-        RepoDb.GlobalConfiguration.Setup().UseSqlite();
-        RepoDb.TypeMapper.Add(typeof(bool), System.Data.DbType.Int64);
+        DatabaseSetup.InitializeRepoDb(Provider);
 
         _connection = DatabaseSetup.CreateConnection(Provider);
         _connection.Open();
@@ -78,7 +77,7 @@ public class InsertBenchmarks
     [Benchmark(Description = "EF Core Add+Save")]
     public void EfCore_Insert()
     {
-        using var context = new BenchmarkDbContext(_connection, "sqlite");
+        using var context = new BenchmarkDbContext(_connection, DatabaseSetup.GetEfProviderName(Provider));
         context.BenchmarkProducts.Add(new EfProduct
         {
             product_name = "Test Product",
@@ -99,7 +98,7 @@ public class InsertBenchmarks
             ProductName = "Test Product",
             UnitPrice = 19.99m,
             UnitsInStock = 100,
-            Discontinued = 0
+            Discontinued = false
         };
         RepoDb.DbConnectionExtension.Insert(_connection, product);
     }
@@ -109,13 +108,13 @@ public class InsertBenchmarks
     [Benchmark(Description = "linq2db Insert")]
     public void Linq2Db_Insert()
     {
-        using var db = new BenchmarkDb(_connection);
+        using var db = new BenchmarkDb(_connection, Provider);
         db.Insert(new Linq2DbProduct
         {
             ProductName = "Test Product",
             UnitPrice = 19.99m,
             UnitsInStock = 100,
-            Discontinued = 0
+            Discontinued = false
         });
     }
 }

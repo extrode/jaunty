@@ -20,5 +20,5 @@ public class RepoDbProduct
     public int UnitsInStock { get; set; }
 
     [Map("discontinued")]
-    public long Discontinued { get; set; }
+    public bool Discontinued { get; set; }
 }
