@@ -25,6 +25,7 @@
     <PackageReference Include="RepoDb.Sqlite.Microsoft" Version="1.1.*" />
     <PackageReference Include="RepoDb.SqlServer" Version="1.1.*" />
     <PackageReference Include="RepoDb.PostgreSql" Version="1.1.*" />
+    <PackageReference Include="linq2db" Version="6.*" />
   </ItemGroup>
 
   <!-- Database providers -->

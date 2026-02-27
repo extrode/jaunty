@@ -2,7 +2,16 @@ using System.Data.Common;
 
 using BenchmarkDotNet.Attributes;
 
+using Dapper;
+
 using Jaunty.Benchmarks.Config;
+using Jaunty.Benchmarks.Entities;
+
+using LinqToDB;
+
+using Microsoft.EntityFrameworkCore;
+
+using RepoDb;
 
 namespace Jaunty.Benchmarks.Benchmarks;
 
@@ -18,6 +27,8 @@ public class QueryScalarBenchmarks
     {
         if (!DatabaseSetup.IsAvailable(Provider))
             throw new InvalidOperationException($"{Provider} is not available");
+
+        RepoDb.GlobalConfiguration.Setup().UseSqlite();
 
         _connection = DatabaseSetup.CreateConnection(Provider);
         _connection.Open();
@@ -45,5 +56,31 @@ public class QueryScalarBenchmarks
     public int Dapper_QueryScalar()
     {
         return _connection.ExecuteScalar<int>("SELECT COUNT(*) FROM benchmark_products");
+    }
+
+    // --- EF Core ---
+
+    [Benchmark(Description = "EF Core Count")]
+    public int EfCore_QueryScalar()
+    {
+        using var context = new BenchmarkDbContext(_connection, "sqlite");
+        return context.BenchmarkProducts.Count();
+    }
+
+    // --- RepoDb ---
+
+    [Benchmark(Description = "RepoDb CountAll")]
+    public long RepoDb_QueryScalar()
+    {
+        return RepoDb.DbConnectionExtension.CountAll<RepoDbProduct>(_connection);
+    }
+
+    // --- linq2db ---
+
+    [Benchmark(Description = "linq2db Count")]
+    public int Linq2Db_QueryScalar()
+    {
+        using var db = new BenchmarkDb(_connection);
+        return db.BenchmarkProducts.Count();
     }
 }
