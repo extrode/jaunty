@@ -27,7 +27,7 @@ public class BulkInsertBenchmarks
     [Params(100, 1_000, 10_000)]
     public int BatchSize { get; set; }
 
-    [Params(DatabaseProvider.Sqlite)]
+    [Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
     public DatabaseProvider Provider { get; set; }
 
     [GlobalSetup]
@@ -36,8 +36,7 @@ public class BulkInsertBenchmarks
         if (!DatabaseSetup.IsAvailable(Provider))
             throw new InvalidOperationException($"{Provider} is not available");
 
-        RepoDb.GlobalConfiguration.Setup().UseSqlite();
-        RepoDb.TypeMapper.Add(typeof(bool), System.Data.DbType.Int64);
+        DatabaseSetup.InitializeRepoDb(Provider);
 
         _connection = DatabaseSetup.CreateConnection(Provider);
         _connection.Open();
@@ -56,7 +55,7 @@ public class BulkInsertBenchmarks
             ProductName = $"Bulk Product {i}",
             UnitPrice = 10.00m + (i % 100),
             UnitsInStock = 50 + (i % 200),
-            Discontinued = i % 10 == 0 ? 1 : 0
+            Discontinued = i % 10 == 0
         }).ToList();
 
         _efProducts = Enumerable.Range(0, BatchSize).Select(i => new EfProduct
@@ -72,7 +71,7 @@ public class BulkInsertBenchmarks
             ProductName = $"Bulk Product {i}",
             UnitPrice = 10.00m + (i % 100),
             UnitsInStock = 50 + (i % 200),
-            Discontinued = i % 10 == 0 ? 1 : 0
+            Discontinued = i % 10 == 0
         }).ToList();
     }
 
@@ -116,7 +115,7 @@ public class BulkInsertBenchmarks
     [Benchmark(Description = "EF Core AddRange+Save")]
     public void EfCore_BulkInsert()
     {
-        using var context = new BenchmarkDbContext(_connection, "sqlite");
+        using var context = new BenchmarkDbContext(_connection, DatabaseSetup.GetEfProviderName(Provider));
         context.BenchmarkProducts.AddRange(_efProducts);
         context.SaveChanges();
     }
@@ -134,7 +133,7 @@ public class BulkInsertBenchmarks
     [Benchmark(Description = "linq2db BulkCopy")]
     public void Linq2Db_BulkInsert()
     {
-        using var db = new BenchmarkDb(_connection);
+        using var db = new BenchmarkDb(_connection, Provider);
         db.BulkCopy(_linq2DbProducts);
     }
 }

@@ -4,7 +4,13 @@ using System.Data.Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.Data.SqlClient;
 
+using MySqlConnector;
+
 using Npgsql;
+
+using RepoDb.DbHelpers;
+using RepoDb.DbSettings;
+using RepoDb.StatementBuilders;
 
 namespace Jaunty.Benchmarks.Config;
 
@@ -12,22 +18,30 @@ public enum DatabaseProvider
 {
     Sqlite,
     SqlServer,
-    PostgreSql
+    PostgreSql,
+    MariaDb
 }
 
 public static class DatabaseSetup
 {
-    private static readonly string? SqlServerConnectionString =
-        Environment.GetEnvironmentVariable("JAUNTY_TEST_SQLSERVER");
+    private static readonly string SqlServerConnectionString =
+        Environment.GetEnvironmentVariable("JAUNTY_TEST_SQLSERVER")
+        ?? "Server=localhost;Database=JauntyBench;Trusted_Connection=True;TrustServerCertificate=True;";
 
-    private static readonly string? PostgreSqlConnectionString =
-        Environment.GetEnvironmentVariable("JAUNTY_TEST_POSTGRESQL");
+    private static readonly string PostgreSqlConnectionString =
+        Environment.GetEnvironmentVariable("JAUNTY_TEST_POSTGRESQL")
+        ?? "Host=localhost;Database=jauntybench;Username=postgres;";
+
+    private static readonly string MariaDbConnectionString =
+        Environment.GetEnvironmentVariable("JAUNTY_TEST_MARIADB")
+        ?? "Server=localhost;Database=jauntybench;User=root;";
 
     public static bool IsAvailable(DatabaseProvider provider) => provider switch
     {
         DatabaseProvider.Sqlite => true,
-        DatabaseProvider.SqlServer => !string.IsNullOrWhiteSpace(SqlServerConnectionString),
-        DatabaseProvider.PostgreSql => !string.IsNullOrWhiteSpace(PostgreSqlConnectionString),
+        DatabaseProvider.SqlServer => true,
+        DatabaseProvider.PostgreSql => true,
+        DatabaseProvider.MariaDb => true,
         _ => false
     };
 
@@ -36,6 +50,7 @@ public static class DatabaseSetup
         DatabaseProvider.Sqlite => new SqliteConnection("Data Source=:memory:"),
         DatabaseProvider.SqlServer => new SqlConnection(SqlServerConnectionString),
         DatabaseProvider.PostgreSql => new NpgsqlConnection(PostgreSqlConnectionString),
+        DatabaseProvider.MariaDb => new MySqlConnection(MariaDbConnectionString),
         _ => throw new ArgumentOutOfRangeException(nameof(provider))
     };
 
@@ -75,6 +90,16 @@ public static class DatabaseSetup
                 );
                 """,
 
+            DatabaseProvider.MariaDb => """
+                CREATE TABLE IF NOT EXISTS benchmark_products (
+                    product_id INT AUTO_INCREMENT PRIMARY KEY,
+                    product_name VARCHAR(200) NOT NULL,
+                    unit_price DECIMAL(18,2) NOT NULL,
+                    units_in_stock INT NOT NULL,
+                    discontinued BOOLEAN NOT NULL DEFAULT FALSE
+                );
+                """,
+
             _ => throw new ArgumentOutOfRangeException(nameof(provider))
         };
         cmd.ExecuteNonQuery();
@@ -89,13 +114,8 @@ public static class DatabaseSetup
             del.ExecuteNonQuery();
         }
 
-        // Reset identity for SQLite
-        if (provider == DatabaseProvider.Sqlite)
-        {
-            using var reset = connection.CreateCommand();
-            reset.CommandText = "DELETE FROM sqlite_sequence WHERE name='benchmark_products'";
-            try { reset.ExecuteNonQuery(); } catch { /* table may not exist */ }
-        }
+        // Reset identity
+        ResetIdentity(connection, provider);
 
         // Transaction-wrapped, prepared-statement seeding for efficient bulk insert.
         // Single command + parameter reuse = ~100x faster than per-row command creation.
@@ -128,18 +148,73 @@ public static class DatabaseSetup
             pName.Value = $"Product {i + 1}";
             pPrice.Value = 10.00m + (i % 100);
             pStock.Value = 50 + (i % 200);
-            pDisc.Value = i % 10 == 0;
+            // SQLite stores booleans as 0/1 integers; use int for SQLite, bool for others
+            pDisc.Value = provider == DatabaseProvider.Sqlite
+                ? (object)(i % 10 == 0 ? 1 : 0)
+                : (object)(i % 10 == 0);
             cmd.ExecuteNonQuery();
         }
 
         transaction.Commit();
     }
 
-    private static void AddParameter(IDbCommand cmd, string name, object value)
+    private static void ResetIdentity(DbConnection connection, DatabaseProvider provider)
     {
-        var p = cmd.CreateParameter();
-        p.ParameterName = name;
-        p.Value = value;
-        cmd.Parameters.Add(p);
+        using var cmd = connection.CreateCommand();
+
+        switch (provider)
+        {
+            case DatabaseProvider.Sqlite:
+                cmd.CommandText = "DELETE FROM sqlite_sequence WHERE name='benchmark_products'";
+                try { cmd.ExecuteNonQuery(); } catch { /* table may not exist */ }
+                break;
+
+            case DatabaseProvider.SqlServer:
+                cmd.CommandText = "DBCC CHECKIDENT ('benchmark_products', RESEED, 0)";
+                cmd.ExecuteNonQuery();
+                break;
+
+            case DatabaseProvider.PostgreSql:
+                cmd.CommandText = "ALTER SEQUENCE benchmark_products_product_id_seq RESTART WITH 1";
+                cmd.ExecuteNonQuery();
+                break;
+
+            case DatabaseProvider.MariaDb:
+                cmd.CommandText = "ALTER TABLE benchmark_products AUTO_INCREMENT = 1";
+                cmd.ExecuteNonQuery();
+                break;
+        }
     }
+
+    /// <summary>
+    /// Initializes RepoDb for the given provider. Call once during GlobalSetup.
+    /// </summary>
+    public static void InitializeRepoDb(DatabaseProvider provider)
+    {
+        // RepoDb 1.1.x uses automatic initialization based on the connection type
+        // No explicit bootstrap setup needed - it's done automatically when using the connection
+        switch (provider)
+        {
+            case DatabaseProvider.Sqlite:
+                RepoDb.TypeMapper.Add(typeof(bool), DbType.Int64);
+                break;
+            case DatabaseProvider.SqlServer:
+            case DatabaseProvider.PostgreSql:
+            case DatabaseProvider.MariaDb:
+                // Type mapper configuration for other providers if needed
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Returns the EF Core provider name string for use with BenchmarkDbContext.
+    /// </summary>
+    public static string GetEfProviderName(DatabaseProvider provider) => provider switch
+    {
+        DatabaseProvider.Sqlite => "sqlite",
+        DatabaseProvider.SqlServer => "sqlserver",
+        DatabaseProvider.PostgreSql => "postgresql",
+        DatabaseProvider.MariaDb => "mariadb",
+        _ => throw new ArgumentOutOfRangeException(nameof(provider))
+    };
 }
