@@ -132,6 +132,20 @@
 - `Intersect_SelectSingleOrDefault_ExactlyOneResult_ReturnsProduct` - Tests SelectSingleOrDefault
 **Coverage Impact**: SetOperationBuilder private helpers now exercised (GetAllParameters, GetSetOperationKeyword, GetColumnNameFromProperty)
 **Test Count**: +9 tests (56 total SetOperation tests)
+
+### 2026-02-27: JoinedQueryBuilder SelectPartial* Methods
+**Added**: 8 new tests for JoinedQueryBuilder SelectPartial* typed methods with custom mappers
+**Tests Added**:
+- `InnerJoin_SelectPartialFirstTyped_WithMapper_SingleResult_ReturnsResult`
+- `InnerJoin_SelectPartialFirstOrDefaultTyped_WithMapper_SingleResult_ReturnsResult`
+- `InnerJoin_SelectPartialFirstAsyncTyped_WithMapper_SingleResult_ReturnsResult`
+- `InnerJoin_SelectPartialFirstOrDefaultAsyncTyped_WithMapper_SingleResult_ReturnsResult`
+- `InnerJoin_SelectPartialSingleTyped_WithMapper_SingleResult_ReturnsResult`
+- `InnerJoin_SelectPartialSingleAsyncTyped_WithMapper_SingleResult_ReturnsResult`
+- `InnerJoin_SelectPartialSingleOrDefaultAsyncTyped_WithMapper_SingleResult_ReturnsResult`
+- `InnerJoin_SelectPartialAsyncTyped_WithMapper_ReturnsResults`
+**Coverage Impact**: JoinedQueryBuilder SelectPartial* typed methods with custom mappers now covered
+**Test Count**: +8 tests (116 total FluentJoin tests)
 - Created temp tables OUTSIDE transaction, inserts INSIDE transaction
 - Dialect-specific temp table syntax (TEMP TABLE, #temp, TEMPORARY TABLE)
 
