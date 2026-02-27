@@ -23,10 +23,10 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.*" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.*" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.*" />
-    <PackageReference Include="RepoDb.Sqlite.Microsoft" Version="1.1.*" />
-    <PackageReference Include="RepoDb.SqlServer" Version="1.1.*" />
-    <PackageReference Include="RepoDb.PostgreSql" Version="1.1.*" />
-    <PackageReference Include="RepoDb.MySql" Version="1.1.*" />
+    <PackageReference Include="RepoDb.Sqlite.Microsoft" Version="1.13.*" />
+    <PackageReference Include="RepoDb.SqlServer" Version="1.13.*" />
+    <PackageReference Include="RepoDb.PostgreSql" Version="1.13.*" />
+    <PackageReference Include="RepoDb.MySql" Version="1.13.*" />
     <PackageReference Include="linq2db" Version="6.*" />
   </ItemGroup>
 

@@ -46,7 +46,7 @@ public class BenchmarkDb : DataConnection
         DatabaseProvider.Sqlite => SQLiteTools.GetDataProvider(SQLiteProvider.Microsoft),
         DatabaseProvider.SqlServer => SqlServerTools.GetDataProvider(SqlServerVersion.v2017, SqlServerProvider.MicrosoftDataSqlClient),
         DatabaseProvider.PostgreSql => PostgreSQLTools.GetDataProvider(PostgreSQLVersion.v95),
-        DatabaseProvider.MariaDb => MySqlTools.GetDataProvider(),
+        DatabaseProvider.MariaDb => MySqlTools.GetDataProvider(MySqlVersion.AutoDetect, MySqlProvider.MySqlConnector),
         _ => throw new ArgumentOutOfRangeException(nameof(provider))
     };
 }
