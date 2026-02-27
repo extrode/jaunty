@@ -89,7 +89,7 @@ Review failing tests in Visual Studio Test Explorer for details.
 1. ~~Set `IsAotCompatible=true` in `Jaunty.csproj` for net8.0 target~~ - DONE (also in `Directory.Build.props`)
 2. Run `build-aot.ps1` to verify NativeAOT compilation and document binary size / warning count
 3. Create NativeAOT sample projects (`samples/NativeAOT-Basic`, etc.)
-4. Create CI/CD pipeline with AOT verification and publish steps
+4. ~~Create CI/CD pipeline with AOT verification and publish steps~~ - DONE (`.github/workflows/ci.yml`)
 5. Investigate remaining 224 failing tests for AOT-relevant regressions
 
 ### Current State
@@ -102,4 +102,7 @@ Review failing tests in Visual Studio Test Explorer for details.
 - `IsAotCompatible=true` in `Jaunty.csproj` (net8.0 conditional) and `src/Directory.Build.props`
 - `IsTrimmable=true` in `src/Directory.Build.props`
 - Verification script: **PASS** - zero issues
-- No CI/CD pipeline exists yet (manual verification only)
+- CI/CD: GitHub Actions pipeline at `.github/workflows/ci.yml` with 3 jobs:
+  - `build-and-test`: Restore, build, run SQLite tests
+  - `verify-aot`: Run `Verify-NativeAOT.ps1` (parallel gate)
+  - `aot-publish`: NativeAOT publish of Scaffolding CLI (linux-x64)
