@@ -728,6 +728,145 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
     }
 
     // ==========================================
+    // JoinedQueryBuilder Internal Methods Coverage
+    // ==========================================
+
+    [Fact]
+    public void InnerJoin_SelectPartialFirstTyped_WithMapper_SingleResult_ReturnsResult()
+    {
+        var result = _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .Where("p.product_id = 1")
+            .SelectPartialFirst("p.product_name, c.category_name", reader => new ProductCategoryDto
+            {
+                ProductName = reader.GetString(0),
+                CategoryName = reader.GetString(1)
+            });
+
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.ProductName);
+    }
+
+    [Fact]
+    public void InnerJoin_SelectPartialFirstOrDefaultTyped_WithMapper_SingleResult_ReturnsResult()
+    {
+        var result = _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .Where("p.product_id = 1")
+            .SelectPartialFirstOrDefault("p.product_name, c.category_name", reader => new ProductCategoryDto
+            {
+                ProductName = reader.GetString(0),
+                CategoryName = reader.GetString(1)
+            });
+
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.ProductName);
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectPartialFirstAsyncTyped_WithMapper_SingleResult_ReturnsResult()
+    {
+        var result = await _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .Where("p.product_id = 1")
+            .SelectPartialFirstAsync("p.product_name, c.category_name", reader => new ProductCategoryDto
+            {
+                ProductName = reader.GetString(0),
+                CategoryName = reader.GetString(1)
+            });
+
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.ProductName);
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectPartialFirstOrDefaultAsyncTyped_WithMapper_SingleResult_ReturnsResult()
+    {
+        var result = await _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .Where("p.product_id = 1")
+            .SelectPartialFirstOrDefaultAsync("p.product_name, c.category_name", reader => new ProductCategoryDto
+            {
+                ProductName = reader.GetString(0),
+                CategoryName = reader.GetString(1)
+            });
+
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.ProductName);
+    }
+
+    [Fact]
+    public void InnerJoin_SelectPartialSingleTyped_WithMapper_SingleResult_ReturnsResult()
+    {
+        var result = _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .Where("p.product_id = 1")
+            .SelectPartialSingle("p.product_name, c.category_name", reader => new ProductCategoryDto
+            {
+                ProductName = reader.GetString(0),
+                CategoryName = reader.GetString(1)
+            });
+
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.ProductName);
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectPartialSingleAsyncTyped_WithMapper_SingleResult_ReturnsResult()
+    {
+        var result = await _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .Where("p.product_id = 1")
+            .SelectPartialSingleAsync("p.product_name, c.category_name", reader => new ProductCategoryDto
+            {
+                ProductName = reader.GetString(0),
+                CategoryName = reader.GetString(1)
+            });
+
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.ProductName);
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectPartialSingleOrDefaultAsyncTyped_WithMapper_SingleResult_ReturnsResult()
+    {
+        var result = await _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .Where("p.product_id = 1")
+            .SelectPartialSingleOrDefaultAsync("p.product_name, c.category_name", reader => new ProductCategoryDto
+            {
+                ProductName = reader.GetString(0),
+                CategoryName = reader.GetString(1)
+            });
+
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.ProductName);
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectPartialAsyncTyped_WithMapper_ReturnsResults()
+    {
+        var results = await _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .SelectPartialAsync("p.product_name, c.category_name", reader => new ProductCategoryDto
+            {
+                ProductName = reader.GetString(0),
+                CategoryName = reader.GetString(1)
+            });
+
+        Assert.NotEmpty(results);
+        Assert.NotEmpty(results.First().ProductName);
+    }
+
+    // ==========================================
     // Async Typed Select Variants
     // ==========================================
 
