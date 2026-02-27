@@ -2,8 +2,6 @@ using System.Data.Common;
 
 using Microsoft.EntityFrameworkCore;
 
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
-
 namespace Jaunty.Benchmarks.Entities;
 
 public class EfProduct
@@ -17,14 +15,14 @@ public class EfProduct
 
 public class BenchmarkDbContext : DbContext
 {
-    private readonly string _connectionString;
+    private readonly DbConnection _connection;
     private readonly string _provider;
 
     public DbSet<EfProduct> BenchmarkProducts => Set<EfProduct>();
 
     public BenchmarkDbContext(DbConnection connection, string provider)
     {
-        _connectionString = connection.ConnectionString;
+        _connection = connection;
         _provider = provider;
     }
 
@@ -33,16 +31,16 @@ public class BenchmarkDbContext : DbContext
         switch (_provider)
         {
             case "sqlite":
-                optionsBuilder.UseSqlite(_connectionString);
+                optionsBuilder.UseSqlite(_connection);
                 break;
             case "sqlserver":
-                optionsBuilder.UseSqlServer(_connectionString);
+                optionsBuilder.UseSqlServer(_connection);
                 break;
             case "postgresql":
-                optionsBuilder.UseNpgsql(_connectionString);
+                optionsBuilder.UseNpgsql(_connection);
                 break;
             case "mariadb":
-                optionsBuilder.UseMySql(_connectionString, ServerVersion.AutoDetect(_connectionString));
+                optionsBuilder.UseMySql(_connection, ServerVersion.AutoDetect(_connection.ConnectionString));
                 break;
         }
 

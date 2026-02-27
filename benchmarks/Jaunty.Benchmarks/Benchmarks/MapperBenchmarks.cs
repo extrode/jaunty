@@ -28,6 +28,7 @@ public class MapperBenchmarks
         // Enable reflection mapping for the reflection benchmark
         JauntyReflectionExtensions.UseReflectionMapping();
         SpecialTypeMappers.Register();
+        DatabaseSetup.EnsureDatabaseExists(Provider);
 
         _connection = DatabaseSetup.CreateConnection(Provider);
         _connection.Open();

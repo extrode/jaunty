@@ -190,9 +190,7 @@ public static class SpecialTypeMappers
                     else
                     {
                         var raw = r.GetValue(i);
-                        value = valueType.IsAssignableFrom(raw.GetType())
-                            ? raw
-                            : Convert.ChangeType(raw, valueType);
+                        value = ConvertValue(raw, valueType);
                     }
                     dict[columnNames[i]] = value;
                 }

@@ -23,6 +23,8 @@ public class ParameterBenchmarks
         if (!DatabaseSetup.IsAvailable(Provider))
             throw new InvalidOperationException($"{Provider} is not available");
 
+        DatabaseSetup.EnsureDatabaseExists(Provider);
+
         _connection = DatabaseSetup.CreateConnection(Provider);
         _connection.Open();
         DatabaseSetup.CreateSchema(_connection, Provider);

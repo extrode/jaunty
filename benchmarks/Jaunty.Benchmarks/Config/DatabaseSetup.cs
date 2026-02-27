@@ -8,10 +8,6 @@ using MySqlConnector;
 
 using Npgsql;
 
-using RepoDb.DbHelpers;
-using RepoDb.DbSettings;
-using RepoDb.StatementBuilders;
-
 namespace Jaunty.Benchmarks.Config;
 
 public enum DatabaseProvider
@@ -36,6 +32,8 @@ public static class DatabaseSetup
         Environment.GetEnvironmentVariable("JAUNTY_TEST_MARIADB")
         ?? "Server=localhost;Database=jauntybench;User=root;";
 
+    private static bool _repoDbInitialized;
+
     public static bool IsAvailable(DatabaseProvider provider) => provider switch
     {
         DatabaseProvider.Sqlite => true,
@@ -53,6 +51,62 @@ public static class DatabaseSetup
         DatabaseProvider.MariaDb => new MySqlConnection(MariaDbConnectionString),
         _ => throw new ArgumentOutOfRangeException(nameof(provider))
     };
+
+    /// <summary>
+    /// Ensures the benchmark database exists for non-SQLite providers.
+    /// </summary>
+    public static void EnsureDatabaseExists(DatabaseProvider provider)
+    {
+        switch (provider)
+        {
+            case DatabaseProvider.Sqlite:
+                return; // In-memory, always exists
+
+            case DatabaseProvider.SqlServer:
+            {
+                var builder = new SqlConnectionStringBuilder(SqlServerConnectionString);
+                var dbName = builder.InitialCatalog;
+                builder.InitialCatalog = "master";
+                using var conn = new SqlConnection(builder.ConnectionString);
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '{dbName}') CREATE DATABASE [{dbName}]";
+                cmd.ExecuteNonQuery();
+                break;
+            }
+
+            case DatabaseProvider.PostgreSql:
+            {
+                var builder = new NpgsqlConnectionStringBuilder(PostgreSqlConnectionString);
+                var dbName = builder.Database;
+                builder.Database = "postgres";
+                using var conn = new NpgsqlConnection(builder.ConnectionString);
+                conn.Open();
+                using var checkCmd = conn.CreateCommand();
+                checkCmd.CommandText = $"SELECT 1 FROM pg_database WHERE datname = '{dbName}'";
+                if (checkCmd.ExecuteScalar() == null)
+                {
+                    using var createCmd = conn.CreateCommand();
+                    createCmd.CommandText = $"CREATE DATABASE \"{dbName}\"";
+                    createCmd.ExecuteNonQuery();
+                }
+                break;
+            }
+
+            case DatabaseProvider.MariaDb:
+            {
+                var builder = new MySqlConnectionStringBuilder(MariaDbConnectionString);
+                var dbName = builder.Database;
+                builder.Database = "";
+                using var conn = new MySqlConnection(builder.ConnectionString);
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"CREATE DATABASE IF NOT EXISTS `{dbName}`";
+                cmd.ExecuteNonQuery();
+                break;
+            }
+        }
+    }
 
     public static void CreateSchema(DbConnection connection, DatabaseProvider provider)
     {
@@ -187,21 +241,28 @@ public static class DatabaseSetup
     }
 
     /// <summary>
-    /// Initializes RepoDb for the given provider. Call once during GlobalSetup.
+    /// Initializes RepoDb for the given provider. Must be called once during GlobalSetup.
+    /// RepoDb requires explicit bootstrapping via GlobalConfiguration.Setup().UseXxx().
     /// </summary>
     public static void InitializeRepoDb(DatabaseProvider provider)
     {
-        // RepoDb 1.1.x uses automatic initialization based on the connection type
-        // No explicit bootstrap setup needed - it's done automatically when using the connection
+        if (_repoDbInitialized) return;
+        _repoDbInitialized = true;
+
         switch (provider)
         {
             case DatabaseProvider.Sqlite:
+                RepoDb.GlobalConfiguration.Setup().UseSqlite();
                 RepoDb.TypeMapper.Add(typeof(bool), DbType.Int64);
                 break;
             case DatabaseProvider.SqlServer:
+                RepoDb.GlobalConfiguration.Setup().UseSqlServer();
+                break;
             case DatabaseProvider.PostgreSql:
+                RepoDb.GlobalConfiguration.Setup().UsePostgreSql();
+                break;
             case DatabaseProvider.MariaDb:
-                // Type mapper configuration for other providers if needed
+                RepoDb.GlobalConfiguration.Setup().UseMySql();
                 break;
         }
     }
