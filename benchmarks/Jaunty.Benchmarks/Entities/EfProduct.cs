@@ -40,7 +40,10 @@ public class BenchmarkDbContext : DbContext
                 optionsBuilder.UseNpgsql(_connection);
                 break;
             case "mariadb":
-                optionsBuilder.UseMySql(_connection, ServerVersion.AutoDetect(_connection.ConnectionString));
+                // Pomelo cannot use an already-open DbConnection (it tries to set the connection string).
+                // Use the connection string directly; Pomelo manages its own connection lifecycle.
+                var connStr = _connection.ConnectionString;
+                optionsBuilder.UseMySql(connStr, ServerVersion.AutoDetect(connStr));
                 break;
         }
 
