@@ -638,6 +638,38 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
         Assert.StartsWith("PartialStreamAsyncCustom:", categoryList[0].CategoryName);
     }
 
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadScalarAsync_NoResults_ReturnsDefault(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync("SELECT 1 WHERE 1 = 0");
+
+        var result = await gridReader.ReadScalarAsync<int>();
+
+        Assert.Equal(0, result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadScalarAsync_NullValue_ReturnsNull(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync("SELECT CAST(NULL AS INT)");
+
+        var result = await gridReader.ReadScalarAsync<int?>();
+
+        Assert.Null(result);
+    }
+
     private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
         dialect.Provider == DialectProvider.SqlServer
             ? $"SELECT TOP ({top}) CategoryId, CategoryName, Description FROM Categories{(orderById ? " ORDER BY CategoryId" : string.Empty)}"
