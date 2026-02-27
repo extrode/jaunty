@@ -62,7 +62,7 @@
 **Format**: Terse markdown, lists over paragraphs, fragments over sentences
 
 ### 2026-02-26: GridReader Coverage Tests
-**Added**: 10 new GridReader tests for uncovered methods
+**Added**: 18 new GridReader tests for uncovered methods
 **Tests Added**:
 - `GridReader_ReadScalar_WithValueType_ReturnsValue` (5 dialects)
 - `GridReader_ReadScalar_WithReferenceType_ReturnsValue` (5 dialects)
@@ -72,8 +72,16 @@
 - `GridReader_ReadScalarAsync_WithReferenceType_ReturnsValue` (5 dialects)
 - `GridReader_ReadStreamAsync_WithCustomMapper_UsesMapper` (2 dialects)
 - `GridReader_ReadPartialStreamAsync_WithCustomMapper_UsesMapper` (2 dialects)
+- `GridReader_ReadPartialSingle_NoResults_Throws` (5 dialects)
+- `GridReader_ReadPartialSingleOrDefault_NoResults_ReturnsNull` (5 dialects)
+- `GridReader_ReadScalar_NoResults_ReturnsDefault` (5 dialects)
+- `GridReader_ReadScalar_NullValue_ReturnsNull` (5 dialects)
+- `GridReader_ReadPartialSingleAsync_NoResults_Throws` (5 dialects)
+- `GridReader_ReadPartialSingleOrDefaultAsync_NoResults_ReturnsNull` (5 dialects)
+- `GridReader_ReadScalarAsync_NoResults_ReturnsDefault` (5 dialects)
+- `GridReader_ReadScalarAsync_NullValue_ReturnsNull` (5 dialects)
 **Coverage Impact**: GridReader core methods now fully covered
-**Test Count**: +78 tests (289 total GridReader tests)
+**Test Count**: +90 tests (309 total GridReader tests)
 - Created temp tables OUTSIDE transaction, inserts INSIDE transaction
 - Dialect-specific temp table syntax (TEMP TABLE, #temp, TEMPORARY TABLE)
 
@@ -237,18 +245,22 @@ public void SpParameter_Constructor_WithAllParameters_SetsProperties()
 
 ## Phase 2: Core Library Gaps (2-3 days)
 
-### P7: Jaunty.Core - GridReader COMPLETE
+### P7: Jaunty.Core - GridReader COMPLETE (89% → ~100%)
 **Files**: `src/Jaunty/Core/GridReader.cs`
 **Status**: All core methods now covered with custom mapper tests
 
 **Tests Added**:
-- ReadScalar with value and reference types
-- ReadStream/ReadPartialStream with custom mappers
-- ReadAsync with custom mapper
-- ReadStreamAsync/ReadPartialStreamAsync with custom mappers
-- ReadScalarAsync with value and reference types
+- ReadScalar with value and reference types (5 dialects each)
+- ReadScalar with no results and null values (5 dialects each)
+- ReadStream/ReadPartialStream with custom mappers (2 dialects each)
+- ReadAsync with custom mapper (2 dialects)
+- ReadStreamAsync/ReadPartialStreamAsync with custom mappers (2 dialects each)
+- ReadScalarAsync with value and reference types (5 dialects each)
+- ReadScalarAsync with no results and null values (5 dialects each)
+- ReadPartialSingle/ReadPartialSingleOrDefault - no results handling (5 dialects each)
+- ReadPartialSingleAsync/ReadPartialSingleOrDefaultAsync - no results handling (5 dialects each)
 
-**Remaining**: None - GridReader fully covered
+**Remaining**: None - GridReader fully covered (DotCover should show ~100%)
 
 ---
 
