@@ -40,16 +40,16 @@ Goal: Eliminate runtime reflection entirely by moving metadata resolution to com
 Goal: Ensure 0 warnings and verified runtime stability.
 
 - [x] **Enable `IsAotCompatible`**: Set in `Jaunty.csproj` (net8.0) and `Directory.Build.props`
-- [ ] **Automated AOT Testing**: Integrate `build-aot.ps1` into CI pipeline
+- [x] **Automated AOT Testing**: GitHub Actions CI pipeline (`.github/workflows/ci.yml`) with `verify-aot` and `aot-publish` jobs
 - [ ] **Zero-Allocation Hot Path**: Leverage the Source Generator to achieve a truly zero-allocation mapping path
 
 ---
 
 ## Remaining Action Items (Priority Order)
 
-### P0 - Critical
-1.  Create CI/CD pipeline (`.github/workflows`) with AOT verification step (`Verify-NativeAOT.ps1`)
-2.  Add NativeAOT publish step to CI (`build-aot.ps1`)
+### P0 - Critical COMPLETE
+1.  ~~Create CI/CD pipeline (`.github/workflows`) with AOT verification step (`Verify-NativeAOT.ps1`)~~
+2.  ~~Add NativeAOT publish step to CI (`build-aot.ps1`)~~
 
 ### P1 - High
 3.  Run `build-aot.ps1` end-to-end and document binary size and warning count
