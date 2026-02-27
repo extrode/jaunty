@@ -496,7 +496,7 @@ public class GridReaderTests : IClassFixture<DialectFixture>
         using var gridReader = connection.QueryMultiple(sql, new { Id = 1 });
 
         var customMapper = new Func<IDataReader, Category>(reader =>
-            new Category { CategoryId = reader.GetInt32(0), CategoryName = "PartialCustom: " + reader.GetString(1) });
+            new Category { CategoryId = Convert.ToInt32(reader.GetValue(0)), CategoryName = "PartialCustom: " + reader.GetString(1) });
 
         var categories = gridReader.ReadPartial<Category>(new CommandOptions<Category>(mapper: customMapper)).ToList();
 
@@ -606,6 +606,66 @@ public class GridReaderTests : IClassFixture<DialectFixture>
         var result = gridReader.ReadScalar<int?>();
 
         Assert.Null(result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadScalar_WithFallbackConversion(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        // Test the fallback path in ReadScalar<T> when GetFieldValue fails
+        using var gridReader = connection.QueryMultiple("SELECT 1");
+
+        var result = gridReader.ReadScalar<long>();
+
+        Assert.Equal(1, result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadPartial_WithMultipleResultSets_ReadsAll(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT 1; SELECT 2; SELECT 3"
+            : "SELECT 1; SELECT 2; SELECT 3";
+
+        using var gridReader = connection.QueryMultiple(sql);
+
+        var result1 = gridReader.ReadScalar<int>();
+        var result2 = gridReader.ReadScalar<int>();
+        var result3 = gridReader.ReadScalar<int>();
+
+        Assert.Equal(1, result1);
+        Assert.Equal(2, result2);
+        Assert.Equal(3, result3);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_Read_AfterAllResultSetsConsumed_Throws(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple("SELECT 1");
+
+        // Consume the only result set
+        gridReader.ReadScalar<int>();
+
+        // Try to read again - should throw EnsureNotConsumed exception
+        var ex = Assert.Throws<InvalidOperationException>(() => gridReader.ReadScalar<int>());
+        Assert.Contains("consumed", ex.Message.ToLower());
     }
 
     private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
