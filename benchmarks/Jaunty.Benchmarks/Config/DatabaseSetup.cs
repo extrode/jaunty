@@ -8,6 +8,8 @@ using MySqlConnector;
 
 using Npgsql;
 
+using RepoDb;
+
 namespace Jaunty.Benchmarks.Config;
 
 public enum DatabaseProvider
@@ -181,20 +183,27 @@ public static class DatabaseSetup
 
         var pName = cmd.CreateParameter();
         pName.ParameterName = "@name";
+        pName.DbType = DbType.String;
+        pName.Size = 200;
         cmd.Parameters.Add(pName);
 
         var pPrice = cmd.CreateParameter();
         pPrice.ParameterName = "@price";
+        pPrice.DbType = DbType.Decimal;
         cmd.Parameters.Add(pPrice);
 
         var pStock = cmd.CreateParameter();
         pStock.ParameterName = "@stock";
+        pStock.DbType = DbType.Int32;
         cmd.Parameters.Add(pStock);
 
         var pDisc = cmd.CreateParameter();
         pDisc.ParameterName = "@disc";
+        pDisc.DbType = provider == DatabaseProvider.Sqlite ? DbType.Int64 : DbType.Boolean;
         cmd.Parameters.Add(pDisc);
 
+        // Prepare() optimizes repeated execution but requires all parameter types to be set.
+        // SqlCommand additionally requires Size for variable-length types (String).
         cmd.Prepare();
 
         for (int i = 0; i < rowCount; i++)
@@ -241,30 +250,21 @@ public static class DatabaseSetup
     }
 
     /// <summary>
-    /// Initializes RepoDb for the given provider. Must be called once during GlobalSetup.
-    /// RepoDb requires explicit bootstrapping via GlobalConfiguration.Setup().UseXxx().
+    /// Initializes RepoDb for all providers. Must be called once during GlobalSetup.
+    /// Registers all providers at once since BDN may run multiple providers in the same process.
     /// </summary>
     public static void InitializeRepoDb(DatabaseProvider provider)
     {
         if (_repoDbInitialized) return;
         _repoDbInitialized = true;
 
-        switch (provider)
-        {
-            case DatabaseProvider.Sqlite:
-                RepoDb.GlobalConfiguration.Setup().UseSqlite();
-                RepoDb.TypeMapper.Add(typeof(bool), DbType.Int64);
-                break;
-            case DatabaseProvider.SqlServer:
-                RepoDb.GlobalConfiguration.Setup().UseSqlServer();
-                break;
-            case DatabaseProvider.PostgreSql:
-                RepoDb.GlobalConfiguration.Setup().UsePostgreSql();
-                break;
-            case DatabaseProvider.MariaDb:
-                RepoDb.GlobalConfiguration.Setup().UseMySql();
-                break;
-        }
+        GlobalConfiguration.Setup()
+            .UseSqlite()
+            .UseSqlServer()
+            .UsePostgreSql()
+            .UseMySql();
+
+        TypeMapper.Add(typeof(bool), DbType.Int64);
     }
 
     /// <summary>
