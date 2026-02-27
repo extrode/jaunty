@@ -185,14 +185,21 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_Dictionary_WithNullValue_MapsNullAsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
 
         // Insert a row with a NULL value, then query it
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Description FROM Categories ORDER BY CategoryId"
-            : "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Description FROM categories ORDER BY category_id LIMIT 1";
+        var sql = dialect.Provider switch
+        {
+            DialectProvider.SqlServer => "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Description FROM Categories ORDER BY CategoryId",
+            DialectProvider.Postgres => @"SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Description FROM categories ORDER BY category_id LIMIT 1",
+            DialectProvider.MariaDb => "SELECT category_id AS CategoryId, CAST(NULL AS CHAR(100)) AS Description FROM categories ORDER BY category_id LIMIT 1",
+            _ => "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Description FROM categories ORDER BY category_id LIMIT 1"
+        };
 
         var results = connection.Query<Dictionary<string, object>>(sql);
 
@@ -208,13 +215,20 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_ExpandoObject_WithNullValue_MapsNullAsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
 
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Description FROM Categories ORDER BY CategoryId"
-            : "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Description FROM categories ORDER BY category_id LIMIT 1";
+        var sql = dialect.Provider switch
+        {
+            DialectProvider.SqlServer => "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Description FROM Categories ORDER BY CategoryId",
+            DialectProvider.Postgres => @"SELECT category_id AS ""CategoryId"", CAST(NULL AS TEXT) AS ""Description"" FROM categories ORDER BY category_id LIMIT 1",
+            DialectProvider.MariaDb => "SELECT category_id AS CategoryId, CAST(NULL AS CHAR(100)) AS Description FROM categories ORDER BY category_id LIMIT 1",
+            _ => "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Description FROM categories ORDER BY category_id LIMIT 1"
+        };
 
         var results = connection.Query<dynamic>(sql);
 
@@ -239,9 +253,14 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     {
         using var connection = _fixture.GetConnection(dialect);
 
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT TOP (1) CategoryId, CategoryName FROM Categories"
-            : "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1";
+        // Select numeric columns/literals that can be converted to decimal
+        var sql = dialect.Provider switch
+        {
+            DialectProvider.SqlServer => "SELECT TOP (1) CategoryId, 19.99 AS Price FROM Categories",
+            DialectProvider.Postgres => @"SELECT category_id AS CategoryId, 19.99 AS ""Price"" FROM categories LIMIT 1",
+            DialectProvider.MariaDb => "SELECT category_id AS CategoryId, 19.99 AS Price FROM categories LIMIT 1",
+            _ => "SELECT category_id AS CategoryId, 19.99 AS Price FROM categories LIMIT 1"
+        };
 
         var results = connection.Query<Dictionary<string, decimal>>(sql);
 
@@ -252,18 +271,29 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
         var categoryIdKey = row.Keys.FirstOrDefault(k => k.Equals("CategoryId", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(categoryIdKey);
         Assert.IsType<decimal>(row[categoryIdKey]);
+        
+        var priceKey = row.Keys.FirstOrDefault(k => k.Equals("Price", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(priceKey);
+        Assert.Equal(19.99m, row[priceKey]);
     }
 
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_DictionaryStringDecimal_WithNullValue_HandlesNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
 
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT TOP (1) CategoryId, CAST(NULL AS DECIMAL(10,2)) AS Price FROM Categories ORDER BY CategoryId"
-            : "SELECT category_id AS CategoryId, CAST(NULL AS DECIMAL(10,2)) AS Price FROM categories ORDER BY category_id LIMIT 1";
+        var sql = dialect.Provider switch
+        {
+            DialectProvider.SqlServer => "SELECT TOP (1) CategoryId, CAST(NULL AS DECIMAL(10,2)) AS Price FROM Categories ORDER BY CategoryId",
+            DialectProvider.Postgres => @"SELECT category_id AS CategoryId, CAST(NULL AS NUMERIC(10,2)) AS Price FROM categories ORDER BY category_id LIMIT 1",
+            DialectProvider.MariaDb => "SELECT category_id AS CategoryId, CAST(NULL AS DECIMAL(10,2)) AS Price FROM categories ORDER BY category_id LIMIT 1",
+            _ => "SELECT category_id AS CategoryId, CAST(NULL AS DECIMAL(10,2)) AS Price FROM categories ORDER BY category_id LIMIT 1"
+        };
 
         var results = connection.Query<Dictionary<string, decimal?>>(sql);
 
@@ -290,9 +320,13 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     {
         using var connection = _fixture.GetConnection(dialect);
 
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Name FROM Categories"
-            : "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Name FROM categories LIMIT 1";
+        var sql = dialect.Provider switch
+        {
+            DialectProvider.SqlServer => "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Name FROM Categories",
+            DialectProvider.Postgres => @"SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Name FROM categories LIMIT 1",
+            DialectProvider.MariaDb => "SELECT category_id AS CategoryId, CAST(NULL AS CHAR(100)) AS Name FROM categories LIMIT 1",
+            _ => "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Name FROM categories LIMIT 1"
+        };
 
         var results = connection.Query<(int, string)>(sql);
 
@@ -338,9 +372,13 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     {
         using var connection = _fixture.GetConnection(dialect);
 
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Name FROM Categories"
-            : "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Name FROM categories LIMIT 1";
+        var sql = dialect.Provider switch
+        {
+            DialectProvider.SqlServer => "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Name FROM Categories",
+            DialectProvider.Postgres => @"SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Name FROM categories LIMIT 1",
+            DialectProvider.MariaDb => "SELECT category_id AS CategoryId, CAST(NULL AS CHAR(100)) AS Name FROM categories LIMIT 1",
+            _ => "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Name FROM categories LIMIT 1"
+        };
 
         var results = connection.Query<KeyValuePair<int, string?>>(sql);
 
@@ -386,9 +424,13 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     {
         using var connection = _fixture.GetConnection(dialect);
 
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT TOP (1) CategoryId, CategoryName, Description FROM Categories"
-            : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 1";
+        var sql = dialect.Provider switch
+        {
+            DialectProvider.SqlServer => "SELECT TOP (1) CategoryId, CategoryName, Description FROM Categories",
+            DialectProvider.Postgres => @"SELECT category_id AS ""CategoryId"", category_name AS ""CategoryName"", description AS ""Description"" FROM categories LIMIT 1",
+            DialectProvider.MariaDb => "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 1",
+            _ => "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 1"
+        };
 
         var results = connection.Query<dynamic>(sql);
 
@@ -411,9 +453,13 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     {
         using var connection = _fixture.GetConnection(dialect);
 
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT TOP (1) CategoryId, 123 AS NumValue FROM Categories"
-            : "SELECT category_id AS CategoryId, 123 AS NumValue FROM categories LIMIT 1";
+        var sql = dialect.Provider switch
+        {
+            DialectProvider.SqlServer => "SELECT TOP (1) CategoryId, 123 AS NumValue FROM Categories",
+            DialectProvider.Postgres => @"SELECT category_id AS ""CategoryId"", 123 AS ""NumValue"" FROM categories LIMIT 1",
+            DialectProvider.MariaDb => "SELECT category_id AS CategoryId, 123 AS NumValue FROM categories LIMIT 1",
+            _ => "SELECT category_id AS CategoryId, 123 AS NumValue FROM categories LIMIT 1"
+        };
 
         var results = connection.Query<dynamic>(sql);
 

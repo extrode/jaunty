@@ -29,6 +29,7 @@ public class QueryScalarBenchmarks
             throw new InvalidOperationException($"{Provider} is not available");
 
         DatabaseSetup.InitializeRepoDb(Provider);
+        DatabaseSetup.EnsureDatabaseExists(Provider);
 
         _connection = DatabaseSetup.CreateConnection(Provider);
         _connection.Open();
