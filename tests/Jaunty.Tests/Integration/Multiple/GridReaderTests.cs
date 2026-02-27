@@ -576,6 +576,38 @@ public class GridReaderTests : IClassFixture<DialectFixture>
         Assert.StartsWith("PartialStreamCustom:", categories[0].CategoryName);
     }
 
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadScalar_NoResults_ReturnsDefault(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple("SELECT 1 WHERE 1 = 0");
+
+        var result = gridReader.ReadScalar<int>();
+
+        Assert.Equal(0, result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadScalar_NullValue_ReturnsNull(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple("SELECT CAST(NULL AS INT)");
+
+        var result = gridReader.ReadScalar<int?>();
+
+        Assert.Null(result);
+    }
+
     private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
         dialect.Provider == DialectProvider.SqlServer
             ? $"SELECT TOP ({top}) CategoryId, CategoryName, Description FROM Categories{(orderById ? " ORDER BY CategoryId" : string.Empty)}"
