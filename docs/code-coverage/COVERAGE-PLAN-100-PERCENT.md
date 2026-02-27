@@ -146,6 +146,34 @@
 - `InnerJoin_SelectPartialAsyncTyped_WithMapper_ReturnsResults`
 **Coverage Impact**: JoinedQueryBuilder SelectPartial* typed methods with custom mappers now covered
 **Test Count**: +8 tests (116 total FluentJoin tests)
+
+### 2026-02-27: QueryBuilder SelectPartial* Methods
+**Added**: 24 new tests for QueryBuilder SelectPartial* methods (string and expression columns)
+**Tests Added**:
+- `From_SelectPartial_WithStringColumns_ReturnsResults`
+- `From_SelectPartialFirst_WithStringColumns_ReturnsFirst`
+- `From_SelectPartialFirstOrDefault_WithStringColumns_ReturnsFirstOrDefault`
+- `From_SelectPartialSingle_WithStringColumns_ReturnsSingle`
+- `From_SelectPartialSingleOrDefault_WithStringColumns_NoMatch_ReturnsNull`
+- `From_SelectPartial_WithExpressionColumns_ReturnsResults`
+- `From_SelectPartialFirst_WithExpressionColumns_ReturnsFirst`
+- `From_SelectPartialFirstOrDefault_WithExpressionColumns_ReturnsFirstOrDefault`
+- `From_SelectPartialSingle_WithExpressionColumns_ReturnsSingle`
+- `From_SelectPartialSingleOrDefault_WithExpressionColumns_NoMatch_ReturnsNull`
+- `From_SelectPartialAsync_WithStringColumns_ReturnsResults`
+- `From_SelectPartialFirstAsync_WithStringColumns_ReturnsFirst`
+- `From_SelectPartialFirstOrDefaultAsync_WithStringColumns_ReturnsFirstOrDefault`
+- `From_SelectPartialSingleAsync_WithStringColumns_ReturnsSingle`
+- `From_SelectPartialSingleOrDefaultAsync_WithStringColumns_NoMatch_ReturnsNull`
+- `From_SelectPartialAsync_WithExpressionColumns_ReturnsResults`
+- `From_SelectPartialFirstAsync_WithExpressionColumns_ReturnsFirst`
+- `From_SelectPartialFirstOrDefaultAsync_WithExpressionColumns_ReturnsFirstOrDefault`
+- `From_SelectPartialSingleAsync_WithExpressionColumns_ReturnsSingle`
+- `From_SelectPartialSingleOrDefaultAsync_WithExpressionColumns_NoMatch_ReturnsNull`
+- `From_OrderBy_ThenByString_OrdersByMultipleColumns`
+- `From_OrderBy_ThenByDescendingString_OrdersByMultipleColumns`
+**Coverage Impact**: QueryBuilder SelectPartial* methods (string/expression columns, sync/async) now covered, plus ThenBy(string) methods
+**Test Count**: +24 tests (26 total new QueryBuilder tests)
 - Created temp tables OUTSIDE transaction, inserts INSIDE transaction
 - Dialect-specific temp table syntax (TEMP TABLE, #temp, TEMPORARY TABLE)
 

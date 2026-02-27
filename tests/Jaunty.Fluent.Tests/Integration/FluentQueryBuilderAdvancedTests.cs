@@ -1141,4 +1141,238 @@ public class FluentQueryBuilderReadOnlyTests : IClassFixture<FluentDatabaseFixtu
 
         Assert.Contains("ORDER BY", sql);
     }
+
+    // ==========================================
+    // QueryBuilder SelectPartial* Methods Coverage
+    // ==========================================
+
+    [Fact]
+    public void From_SelectPartial_WithStringColumns_ReturnsResults()
+    {
+        var results = _fixture.Connection.From<Product>()
+            .SelectPartial("product_id", "product_name");
+
+        Assert.NotEmpty(results);
+    }
+
+    [Fact]
+    public void From_SelectPartialFirst_WithStringColumns_ReturnsFirst()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .SelectPartialFirst("product_id", "product_name");
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void From_SelectPartialFirstOrDefault_WithStringColumns_ReturnsFirstOrDefault()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .SelectPartialFirstOrDefault("product_id", "product_name");
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void From_SelectPartialSingle_WithStringColumns_ReturnsSingle()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == 1)
+            .SelectPartialSingle("product_id", "product_name");
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void From_SelectPartialSingleOrDefault_WithStringColumns_NoMatch_ReturnsNull()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == -999)
+            .SelectPartialSingleOrDefault("product_id", "product_name");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void From_SelectPartial_WithExpressionColumns_ReturnsResults()
+    {
+        var results = _fixture.Connection.From<Product>()
+            .SelectPartial(p => p.ProductId, p => p.ProductName);
+
+        Assert.NotEmpty(results);
+    }
+
+    [Fact]
+    public void From_SelectPartialFirst_WithExpressionColumns_ReturnsFirst()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .SelectPartialFirst(p => p.ProductId, p => p.ProductName);
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void From_SelectPartialFirstOrDefault_WithExpressionColumns_ReturnsFirstOrDefault()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .SelectPartialFirstOrDefault(p => p.ProductId, p => p.ProductName);
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void From_SelectPartialSingle_WithExpressionColumns_ReturnsSingle()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == 1)
+            .SelectPartialSingle(p => p.ProductId, p => p.ProductName);
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void From_SelectPartialSingleOrDefault_WithExpressionColumns_NoMatch_ReturnsNull()
+    {
+        var result = _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == -999)
+            .SelectPartialSingleOrDefault(p => p.ProductId, p => p.ProductName);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task From_SelectPartialAsync_WithStringColumns_ReturnsResults()
+    {
+        var results = await _fixture.Connection.From<Product>()
+            .SelectPartialAsync(new[] { "product_id", "product_name" });
+
+        Assert.NotEmpty(results);
+    }
+
+    [Fact]
+    public async Task From_SelectPartialFirstAsync_WithStringColumns_ReturnsFirst()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .SelectPartialFirstAsync(new[] { "product_id", "product_name" });
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task From_SelectPartialFirstOrDefaultAsync_WithStringColumns_ReturnsFirstOrDefault()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .SelectPartialFirstOrDefaultAsync(new[] { "product_id", "product_name" });
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task From_SelectPartialSingleAsync_WithStringColumns_ReturnsSingle()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == 1)
+            .SelectPartialSingleAsync(new[] { "product_id", "product_name" });
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task From_SelectPartialSingleOrDefaultAsync_WithStringColumns_NoMatch_ReturnsNull()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == -999)
+            .SelectPartialSingleOrDefaultAsync(new[] { "product_id", "product_name" });
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task From_SelectPartialAsync_WithExpressionColumns_ReturnsResults()
+    {
+        var results = await _fixture.Connection.From<Product>()
+            .SelectPartialAsync(new Expression<Func<Product, object?>>[]
+            {
+                p => p.ProductId,
+                p => p.ProductName
+            });
+
+        Assert.NotEmpty(results);
+    }
+
+    [Fact]
+    public async Task From_SelectPartialFirstAsync_WithExpressionColumns_ReturnsFirst()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .SelectPartialFirstAsync(new Expression<Func<Product, object?>>[]
+            {
+                p => p.ProductId,
+                p => p.ProductName
+            });
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task From_SelectPartialFirstOrDefaultAsync_WithExpressionColumns_ReturnsFirstOrDefault()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .SelectPartialFirstOrDefaultAsync(new Expression<Func<Product, object?>>[]
+            {
+                p => p.ProductId,
+                p => p.ProductName
+            });
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task From_SelectPartialSingleAsync_WithExpressionColumns_ReturnsSingle()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == 1)
+            .SelectPartialSingleAsync(new Expression<Func<Product, object?>>[]
+            {
+                p => p.ProductId,
+                p => p.ProductName
+            });
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task From_SelectPartialSingleOrDefaultAsync_WithExpressionColumns_NoMatch_ReturnsNull()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .Where(p => p.ProductId == -999)
+            .SelectPartialSingleOrDefaultAsync(new Expression<Func<Product, object?>>[]
+            {
+                p => p.ProductId,
+                p => p.ProductName
+            });
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void From_OrderBy_ThenByString_OrdersByMultipleColumns()
+    {
+        var results = _fixture.Connection.From<Product>()
+            .OrderBy(p => p.CategoryId)
+            .ThenBy("product_name")
+            .Select();
+
+        Assert.NotEmpty(results);
+    }
+
+    [Fact]
+    public void From_OrderBy_ThenByDescendingString_OrdersByMultipleColumns()
+    {
+        var results = _fixture.Connection.From<Product>()
+            .OrderBy(p => p.CategoryId)
+            .ThenByDescending("unit_price")
+            .Select();
+
+        Assert.NotEmpty(results);
+    }
 }
