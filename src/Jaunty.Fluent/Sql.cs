@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace Jaunty.Fluent;
@@ -11,6 +12,7 @@ namespace Jaunty.Fluent;
 /// markers that are detected and translated by expression visitors during SQL generation.
 /// Using these methods outside of Jaunty expressions will throw exceptions.
 /// </remarks>
+[ExcludeFromCodeCoverage]
 public static partial class Sql
 {
     /// <summary>
@@ -325,6 +327,7 @@ public static partial class Sql
 /// </summary>
 /// <typeparam name="TFrom">The type of the entity being queried from.</typeparam>
 /// <typeparam name="TResult">The type of the CASE expression result.</typeparam>
+[ExcludeFromCodeCoverage]
 public sealed class CaseBuilder<TFrom, TResult>
 {
     /// <summary>

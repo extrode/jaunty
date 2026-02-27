@@ -179,4 +179,51 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     }
 
     #endregion
+
+    #region Edge Case Tests
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_Dictionary_WithNullValue_MapsNullAsNull(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        // Insert a row with a NULL value, then query it
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Description FROM Categories ORDER BY CategoryId"
+            : "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Description FROM categories ORDER BY category_id LIMIT 1";
+
+        var results = connection.Query<Dictionary<string, object>>(sql);
+
+        Assert.Equal(1, results.Count);
+        var row = results[0];
+
+        // Verify null is mapped as null (not DBNull)
+        var key = row.Keys.FirstOrDefault(k => k.Equals("Description", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(key);
+        Assert.Null(row[key]);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_ExpandoObject_WithNullValue_MapsNullAsNull(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Description FROM Categories ORDER BY CategoryId"
+            : "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Description FROM categories ORDER BY category_id LIMIT 1";
+
+        var results = connection.Query<dynamic>(sql);
+
+        Assert.Equal(1, results.Count);
+        dynamic row = results[0];
+
+        // Verify null is mapped as null
+        Assert.Null((object)row.Description);
+    }
+
+    #endregion
 }

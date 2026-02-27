@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace Jaunty.Fluent;
@@ -7,6 +8,7 @@ namespace Jaunty.Fluent;
 /// These methods are never executed directly - they exist only for expression tree analysis.
 /// </summary>
 /// <typeparam name="TResult">The result type of the window function.</typeparam>
+[ExcludeFromCodeCoverage]
 public sealed class WindowBuilder<TFrom, TResult>
 {
     internal WindowFunctionType FunctionType { get; }
@@ -90,6 +92,7 @@ public enum WindowFunctionType
 /// </summary>
 /// <typeparam name="TFrom">The type of the entity being queried from.</typeparam>
 /// <typeparam name="TResult">The result type of the aggregate.</typeparam>
+[ExcludeFromCodeCoverage]
 public sealed class WindowAggregateBuilder<TFrom, TResult>
 {
     internal WindowFunctionType FunctionType { get; }
