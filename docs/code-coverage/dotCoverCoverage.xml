@@ -12,59 +12,89 @@
   </CoverageParams>
   
   <Filters>
-    <!-- Include only Jaunty source projects -->
+    <!-- Include only Jaunty source projects (whitelist approach) -->
     <IncludeFilters>
       <IncludeFilter>
-        <ModulePath>\\Jaunty\.dll$</ModulePath>
+        <ModulePath>\Jaunty.dll</ModulePath>
       </IncludeFilter>
       <IncludeFilter>
-        <ModulePath>\\Jaunty\.Extensions\.Reflection\.dll$</ModulePath>
+        <ModulePath>\Jaunty.Extensions.Reflection.dll</ModulePath>
       </IncludeFilter>
       <IncludeFilter>
-        <ModulePath>\\Jaunty\.Fluent\.dll$</ModulePath>
+        <ModulePath>\Jaunty.Fluent.dll</ModulePath>
       </IncludeFilter>
       <IncludeFilter>
-        <ModulePath>\\Jaunty\.Scaffolding\.dll$</ModulePath>
+        <ModulePath>\Jaunty.Scaffolding.dll</ModulePath>
       </IncludeFilter>
     </IncludeFilters>
     
     <ExcludeFilters>
       <!-- Exclude all test projects -->
       <ExcludeFilter>
-        <ModulePath>\\.*\.Tests\.dll$</ModulePath>
+        <ModulePath>*.Tests.dll</ModulePath>
       </ExcludeFilter>
       <ExcludeFilter>
-        <ModulePath>\\.*\.Benchmarks\.dll$</ModulePath>
+        <ModulePath>*.Benchmarks.dll</ModulePath>
       </ExcludeFilter>
       
       <!-- Exclude source generator (runs at build time, not runtime) -->
       <ExcludeFilter>
-        <ModulePath>\\Jaunty\.SourceGenerator\.dll$</ModulePath>
+        <ModulePath>\Jaunty.SourceGenerator.dll</ModulePath>
       </ExcludeFilter>
       
       <!-- Exclude CLI/scaffolding executable -->
       <ExcludeFilter>
-        <ModulePath>\\Jaunty\.Scaffolding\.Cli\.dll$</ModulePath>
+        <ModulePath>\Jaunty.Scaffolding.Cli.dll</ModulePath>
       </ExcludeFilter>
       
       <!-- Exclude third-party and framework assemblies -->
       <ExcludeFilter>
-        <ModulePath>\\Microsoft\\</ModulePath>
+        <ModulePath>Microsoft*</ModulePath>
       </ExcludeFilter>
       <ExcludeFilter>
-        <ModulePath>\\System\\</ModulePath>
+        <ModulePath>System*</ModulePath>
       </ExcludeFilter>
       <ExcludeFilter>
-        <ModulePath>\\xunit\\</ModulePath>
+        <ModulePath>*xunit*</ModulePath>
       </ExcludeFilter>
       <ExcludeFilter>
-        <ModulePath>\\NuGet\\</ModulePath>
+        <ModulePath>*NuGet*</ModulePath>
       </ExcludeFilter>
       <ExcludeFilter>
-        <ModulePath>\\netstandard\\</ModulePath>
+        <ModulePath>*netstandard*</ModulePath>
       </ExcludeFilter>
       <ExcludeFilter>
-        <ModulePath>\\net8\\.0\\</ModulePath>
+        <ModulePath>*net8.0*</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>*RepoDb*</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>*linq2db*</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>*Dapper*</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>*BenchmarkDotNet*</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>*EntityFrameworkCore*</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>*Pomelo*</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>*Npgsql*</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>*MySql*</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>*Sqlite*</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>*Mono*</ModulePath>
       </ExcludeFilter>
     </ExcludeFilters>
   </Filters>
