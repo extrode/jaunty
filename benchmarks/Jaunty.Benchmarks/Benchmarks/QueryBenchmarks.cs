@@ -7,6 +7,8 @@ using Dapper;
 using Jaunty.Benchmarks.Config;
 using Jaunty.Benchmarks.Entities;
 
+using LinqToDB;
+
 using Microsoft.EntityFrameworkCore;
 
 using RepoDb;
@@ -29,7 +31,6 @@ public class QueryBenchmarks
         if (!DatabaseSetup.IsAvailable(Provider))
             throw new InvalidOperationException($"{Provider} is not available");
 
-        // Initialize RepoDb (with SQLite boolean type mapping)
         RepoDb.GlobalConfiguration.Setup().UseSqlite();
         RepoDb.TypeMapper.Add(typeof(bool), System.Data.DbType.Int64);
 
@@ -65,27 +66,14 @@ public class QueryBenchmarks
     }
 
     // --- EF Core ---
-    // Note: EF Core with in-memory SQLite requires sharing the open connection.
-    // We use FromSqlRaw on the shared connection to keep parity.
 
     [Benchmark(Description = "EF Core ToList")]
     public List<EfProduct> EfCore_Query()
     {
-        using var context = CreateEfContext();
+        using var context = new BenchmarkDbContext(_connection, "sqlite");
         return context.BenchmarkProducts
             .FromSqlRaw("SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products")
             .ToList();
-    }
-
-    private BenchmarkDbContext CreateEfContext()
-    {
-        var providerName = Provider switch
-        {
-            DatabaseProvider.SqlServer => "sqlserver",
-            DatabaseProvider.PostgreSql => "postgresql",
-            _ => "sqlite"
-        };
-        return new BenchmarkDbContext(_connection, providerName);
     }
 
     // --- RepoDb ---
@@ -94,5 +82,14 @@ public class QueryBenchmarks
     public List<RepoDbProduct> RepoDb_Query()
     {
         return RepoDb.DbConnectionExtension.QueryAll<RepoDbProduct>(_connection).AsList();
+    }
+
+    // --- linq2db ---
+
+    [Benchmark(Description = "linq2db Query")]
+    public List<Linq2DbProduct> Linq2Db_Query()
+    {
+        using var db = new BenchmarkDb(_connection);
+        return db.BenchmarkProducts.ToList();
     }
 }

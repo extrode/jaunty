@@ -2,8 +2,14 @@ using System.Data.Common;
 
 using BenchmarkDotNet.Attributes;
 
+using Dapper;
+
 using Jaunty.Benchmarks.Config;
 using Jaunty.Benchmarks.Entities;
+
+using LinqToDB;
+
+using Microsoft.EntityFrameworkCore;
 
 using RepoDb;
 
@@ -57,11 +63,31 @@ public class QueryFirstBenchmarks
             new { Id = 1 });
     }
 
+    // --- EF Core ---
+
+    [Benchmark(Description = "EF Core First")]
+    public EfProduct EfCore_QueryFirst()
+    {
+        using var context = new BenchmarkDbContext(_connection, "sqlite");
+        return context.BenchmarkProducts
+            .FromSqlRaw("SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products WHERE product_id = {0}", 1)
+            .First();
+    }
+
     // --- RepoDb ---
 
     [Benchmark(Description = "RepoDb Query (first)")]
     public RepoDbProduct RepoDb_QueryFirst()
     {
         return RepoDb.DbConnectionExtension.Query<RepoDbProduct>(_connection, 1).First();
+    }
+
+    // --- linq2db ---
+
+    [Benchmark(Description = "linq2db First")]
+    public Linq2DbProduct Linq2Db_QueryFirst()
+    {
+        using var db = new BenchmarkDb(_connection);
+        return db.BenchmarkProducts.First(p => p.ProductId == 1);
     }
 }

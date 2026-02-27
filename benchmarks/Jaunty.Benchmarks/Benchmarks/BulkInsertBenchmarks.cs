@@ -7,6 +7,11 @@ using Dapper;
 using Jaunty.Benchmarks.Config;
 using Jaunty.Benchmarks.Entities;
 
+using LinqToDB;
+using LinqToDB.Data;
+
+using Microsoft.EntityFrameworkCore;
+
 using RepoDb;
 
 namespace Jaunty.Benchmarks.Benchmarks;
@@ -16,6 +21,8 @@ public class BulkInsertBenchmarks
     private DbConnection _connection = null!;
     private List<JauntyProduct> _jauntyProducts = null!;
     private List<RepoDbProduct> _repoDbProducts = null!;
+    private List<EfProduct> _efProducts = null!;
+    private List<Linq2DbProduct> _linq2DbProducts = null!;
 
     [Params(100, 1_000, 10_000)]
     public int BatchSize { get; set; }
@@ -45,6 +52,22 @@ public class BulkInsertBenchmarks
         }).ToList();
 
         _repoDbProducts = Enumerable.Range(0, BatchSize).Select(i => new RepoDbProduct
+        {
+            ProductName = $"Bulk Product {i}",
+            UnitPrice = 10.00m + (i % 100),
+            UnitsInStock = 50 + (i % 200),
+            Discontinued = i % 10 == 0 ? 1 : 0
+        }).ToList();
+
+        _efProducts = Enumerable.Range(0, BatchSize).Select(i => new EfProduct
+        {
+            product_name = $"Bulk Product {i}",
+            unit_price = 10.00m + (i % 100),
+            units_in_stock = 50 + (i % 200),
+            discontinued = i % 10 == 0
+        }).ToList();
+
+        _linq2DbProducts = Enumerable.Range(0, BatchSize).Select(i => new Linq2DbProduct
         {
             ProductName = $"Bulk Product {i}",
             UnitPrice = 10.00m + (i % 100),
@@ -88,11 +111,30 @@ public class BulkInsertBenchmarks
         }
     }
 
+    // --- EF Core AddRange+SaveChanges ---
+
+    [Benchmark(Description = "EF Core AddRange+Save")]
+    public void EfCore_BulkInsert()
+    {
+        using var context = new BenchmarkDbContext(_connection, "sqlite");
+        context.BenchmarkProducts.AddRange(_efProducts);
+        context.SaveChanges();
+    }
+
     // --- RepoDb InsertAll ---
 
     [Benchmark(Description = "RepoDb InsertAll")]
     public void RepoDb_InsertAll()
     {
         RepoDb.DbConnectionExtension.InsertAll(_connection, _repoDbProducts);
+    }
+
+    // --- linq2db BulkCopy ---
+
+    [Benchmark(Description = "linq2db BulkCopy")]
+    public void Linq2Db_BulkInsert()
+    {
+        using var db = new BenchmarkDb(_connection);
+        db.BulkCopy(_linq2DbProducts);
     }
 }
