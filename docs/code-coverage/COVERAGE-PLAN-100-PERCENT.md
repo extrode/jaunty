@@ -188,6 +188,22 @@
 **Note**: Unicode parameter names not supported by SqlParameterParser (ASCII only: a-z, A-Z, 0-9, _)
 **Coverage Impact**: ParameterBinder edge cases for special characters, large lists, and array expansion now covered
 **Test Count**: +8 tests (59 total ParameterBinder tests)
+
+### 2026-02-27: Dialect Unit Tests - Edge Cases
+**Added**: 21 new tests for dialect edge cases and comprehensive coverage
+**Tests Added**:
+- `FormatPatterns_ReturnsCorrectWildcards` (4 dialects) - Tests LIKE/GLOB wildcards
+- `GenerateOverClause_AllCombinations` (2 dialects) - Tests null/both/partition/order combinations
+- `AllDialects_GenerateCaseInsensitiveEquals` - Tests case-insensitive equals for all dialects
+- `AllDialects_GenerateWindowAggregate_WithExpression` - Tests SUM/AVG/COUNT/MIN/MAX
+- `AllDialects_GenerateWindowAggregate_WithoutExpression` - Tests COUNT(*)
+- `GetPagingSql_EdgeCases` (4 dialects) - Tests zero offset and zero fetchNext
+- `GenerateSubstring_EdgeCases` (2 dialects) - Tests SUBSTRING syntax variations
+- `AllDialects_GenerateTrim` - Tests TRIM for all dialects
+- `AllDialects_GenerateMonth` - Tests MONTH extraction for all dialects
+- `AllDialects_GenerateDay` - Tests DAY extraction for all dialects
+**Coverage Impact**: Dialect edge cases, window functions, pattern formatting, and date functions now covered
+**Test Count**: +21 tests (353 total Dialect tests)
 - Created temp tables OUTSIDE transaction, inserts INSIDE transaction
 - Dialect-specific temp table syntax (TEMP TABLE, #temp, TEMPORARY TABLE)
 
