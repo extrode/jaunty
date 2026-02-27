@@ -174,6 +174,20 @@
 - `From_OrderBy_ThenByDescendingString_OrdersByMultipleColumns`
 **Coverage Impact**: QueryBuilder SelectPartial* methods (string/expression columns, sync/async) now covered, plus ThenBy(string) methods
 **Test Count**: +24 tests (26 total new QueryBuilder tests)
+
+### 2026-02-27: ParameterBinder Edge Cases
+**Added**: 8 new tests for ParameterBinder edge cases
+**Tests Added**:
+- `Bind_ParameterNameWithUnderscore_BindsCorrectly` - Tests underscore in parameter names
+- `Bind_ParameterNameWithNumbers_BindsCorrectly` - Tests numbers in parameter names
+- `Bind_ParameterNameStartingWithUnderscore_BindsCorrectly` - Tests leading underscore
+- `Bind_ParameterNameWithMixedCase_BindsCorrectly` - Tests mixed case sensitivity
+- `Bind_LargeParameterList_1000Parameters_BindsCorrectly` - Tests 1000 parameters
+- `Bind_LargeParameterList_5000Parameters_BindsCorrectly` - Tests 5000 parameters
+- `Bind_LargeArrayParameter_1000Items_ExpandsCorrectly` - Tests array expansion with 1000 items
+**Note**: Unicode parameter names not supported by SqlParameterParser (ASCII only: a-z, A-Z, 0-9, _)
+**Coverage Impact**: ParameterBinder edge cases for special characters, large lists, and array expansion now covered
+**Test Count**: +8 tests (59 total ParameterBinder tests)
 - Created temp tables OUTSIDE transaction, inserts INSIDE transaction
 - Dialect-specific temp table syntax (TEMP TABLE, #temp, TEMPORARY TABLE)
 

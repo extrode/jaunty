@@ -674,6 +674,117 @@ public class ParameterBinderTests
 
     #endregion
 
+    #region Edge Cases - Special Parameter Name Formats
+
+    [Fact]
+    public void Bind_ParameterNameWithUnderscore_BindsCorrectly()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE user_name = @user_name");
+
+        ParameterBinder.Bind(command, new { user_name = "john_doe" });
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("user_name", command.Parameters[0].ParameterName);
+        Assert.Equal("john_doe", command.Parameters[0].Value);
+    }
+
+    [Fact]
+    public void Bind_ParameterNameWithNumbers_BindsCorrectly()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE id1 = @id1 AND id2 = @id2");
+
+        ParameterBinder.Bind(command, new { id1 = 1, id2 = 2 });
+
+        Assert.Equal(2, command.Parameters.Count);
+        Assert.Equal("id1", command.Parameters[0].ParameterName);
+        Assert.Equal(1, command.Parameters[0].Value);
+        Assert.Equal("id2", command.Parameters[1].ParameterName);
+        Assert.Equal(2, command.Parameters[1].Value);
+    }
+
+    [Fact]
+    public void Bind_ParameterNameStartingWithUnderscore_BindsCorrectly()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE _id = @_id");
+
+        ParameterBinder.Bind(command, new { _id = 42 });
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("_id", command.Parameters[0].ParameterName);
+        Assert.Equal(42, command.Parameters[0].Value);
+    }
+
+    [Fact]
+    public void Bind_ParameterNameWithMixedCase_BindsCorrectly()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE UserName = @UserName AND userID = @userID");
+
+        ParameterBinder.Bind(command, new { UserName = "John", userID = 42 });
+
+        Assert.Equal(2, command.Parameters.Count);
+        Assert.Equal("UserName", command.Parameters[0].ParameterName);
+        Assert.Equal("John", command.Parameters[0].Value);
+        Assert.Equal("userID", command.Parameters[1].ParameterName);
+        Assert.Equal(42, command.Parameters[1].Value);
+    }
+
+    #endregion
+
+    #region Edge Cases - Large Parameter Lists
+
+    [Fact]
+    public void Bind_LargeParameterList_1000Parameters_BindsCorrectly()
+    {
+        var sqlParams = string.Join(", ", Enumerable.Range(1, 1000).Select(i => $"@p{i}"));
+        var command = new MockDbCommand($"SELECT * FROM table WHERE col IN ({sqlParams})");
+
+        var paramObj = new Dictionary<string, object>();
+        for (int i = 1; i <= 1000; i++)
+        {
+            paramObj[$"p{i}"] = i;
+        }
+
+        ParameterBinder.Bind(command, paramObj);
+
+        Assert.Equal(1000, command.Parameters.Count);
+        Assert.Equal(500, command.Parameters[499].Value);
+        Assert.Equal(1000, command.Parameters[999].Value);
+    }
+
+    [Fact]
+    public void Bind_LargeParameterList_5000Parameters_BindsCorrectly()
+    {
+        var sqlParams = string.Join(", ", Enumerable.Range(1, 5000).Select(i => $"@p{i}"));
+        var command = new MockDbCommand($"SELECT * FROM table WHERE col IN ({sqlParams})");
+
+        var paramObj = new Dictionary<string, object>();
+        for (int i = 1; i <= 5000; i++)
+        {
+            paramObj[$"p{i}"] = i;
+        }
+
+        ParameterBinder.Bind(command, paramObj);
+
+        Assert.Equal(5000, command.Parameters.Count);
+        Assert.Equal(2500, command.Parameters[2499].Value);
+        Assert.Equal(5000, command.Parameters[4999].Value);
+    }
+
+    [Fact]
+    public void Bind_LargeArrayParameter_1000Items_ExpandsCorrectly()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids");
+        var ids = Enumerable.Range(1, 1000).ToArray();
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Equal(1000, command.Parameters.Count);
+        Assert.Equal(1, command.Parameters[0].Value);
+        Assert.Equal(1000, command.Parameters[999].Value);
+    }
+
+    #endregion
+
     #region Test Helpers
 
     private enum TestEnum
