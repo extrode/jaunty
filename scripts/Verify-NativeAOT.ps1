@@ -60,7 +60,7 @@ $acceptableIssues = @()
 
 foreach ($file in $files) {
     $content = Get-Content $file.FullName -Raw
-    $relativePath = $file.FullName.Replace($projectRoot, '').TrimStart('\')
+    $relativePath = $file.FullName.Replace($projectRoot, '').TrimStart('\', '/')
     
     foreach ($patternInfo in $ErrorPatterns) {
         $pattern = $patternInfo.Pattern
