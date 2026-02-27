@@ -281,13 +281,13 @@ Jaunty is ready for NativeAOT compilation.
 
 ## Sample Projects
 
-> **Note:** Sample projects are planned but not yet created. See [NATIVE-AOT-PLAN.md](NATIVE-AOT-PLAN.md) for status.
+Working sample projects are available in the `samples/` directory:
 
-Planned samples:
+- `samples/NativeAOT-Basic` - Query operations with source-generated mappers (no reflection)
+- `samples/NativeAOT-WithReflection` - Full CRUD + Dictionary mapping with reflection extension
+- `samples/NativeAOT-CustomMapper` - Hand-written mapper via `CommandOptions<T>.WithMapper()`
 
-- `samples/NativeAOT-Basic` - Basic NativeAOT with source-generated mappers
-- `samples/NativeAOT-WithReflection` - NativeAOT with reflection extension
-- `samples/NativeAOT-CustomMapper` - NativeAOT with custom manual mappers
+Each sample uses in-memory SQLite and can be run with `dotnet run --project samples/<name>`.
 
 ---
 

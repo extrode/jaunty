@@ -11,4 +11,9 @@
     <Project Path="tests/Jaunty.Scaffolding.Tests/Jaunty.Scaffolding.Tests.csproj" />
     <Project Path="tests/Jaunty.Tests/Jaunty.Tests.csproj" />
   </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/NativeAOT-Basic/NativeAOT-Basic.csproj" />
+    <Project Path="samples/NativeAOT-WithReflection/NativeAOT-WithReflection.csproj" />
+    <Project Path="samples/NativeAOT-CustomMapper/NativeAOT-CustomMapper.csproj" />
+  </Folder>
 </Solution>

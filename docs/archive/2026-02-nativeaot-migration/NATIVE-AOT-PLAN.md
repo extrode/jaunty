@@ -51,10 +51,10 @@ Goal: Ensure 0 warnings and verified runtime stability.
 1.  ~~Create CI/CD pipeline (`.github/workflows`) with AOT verification step (`Verify-NativeAOT.ps1`)~~
 2.  ~~Add NativeAOT publish step to CI (`build-aot.ps1`)~~
 
-### P1 - High
-3.  Run `build-aot.ps1` end-to-end and document binary size and warning count
-4.  Create NativeAOT sample projects (`samples/NativeAOT-Basic`, `NativeAOT-WithReflection`, `NativeAOT-CustomMapper`)
-5.  Investigate 224 failing tests for any AOT-relevant regressions
+### P1 - High COMPLETE
+3.  ~~Run `build-aot.ps1` end-to-end and document binary size and warning count~~ (zero Jaunty warnings)
+4.  ~~Create NativeAOT sample projects~~ (`samples/NativeAOT-Basic`, `NativeAOT-WithReflection`, `NativeAOT-CustomMapper`)
+5.  ~~Investigate 224 failing tests~~ (not AOT-related - require unconfigured database servers)
 
 ### P2 - Medium
 6.  Zero-allocation hot path via source generator for value type mapping
