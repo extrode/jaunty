@@ -600,6 +600,60 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public async Task GridReader_ReadStreamAsync_MultipleRows_UsesMapperLazyInit(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+
+        // Get multiple rows to test the map ??= lazy initialization
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP 5 category_id, category_name FROM categories ORDER BY category_id"
+            : "SELECT category_id, category_name FROM categories ORDER BY category_id LIMIT 5";
+
+        using var gridReader = await connection.QueryMultipleAsync(sql);
+
+        var customMapper = new Func<IDataReader, Category>(reader =>
+            new Category { CategoryId = reader.GetInt32(0), CategoryName = "StreamMulti: " + reader.GetString(1) });
+
+        var categoryList = new List<Category>();
+        await foreach (var category in gridReader.ReadStreamAsync<Category>(new CommandOptions<Category>(mapper: customMapper)))
+        {
+            categoryList.Add(category);
+        }
+
+        Assert.Equal(5, categoryList.Count);
+        Assert.All(categoryList, c => Assert.StartsWith("StreamMulti:", c.CategoryName));
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadPartialStreamAsync_MultipleRows_UsesMapperLazyInit(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+
+        // Get multiple rows to test the map ??= lazy initialization
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP 5 category_id, category_name FROM categories ORDER BY category_id"
+            : "SELECT category_id, category_name FROM categories ORDER BY category_id LIMIT 5";
+
+        using var gridReader = await connection.QueryMultipleAsync(sql);
+
+        var customMapper = new Func<IDataReader, Category>(reader =>
+            new Category { CategoryId = reader.GetInt32(0), CategoryName = "PartialStreamMulti: " + reader.GetString(1) });
+
+        var categoryList = new List<Category>();
+        await foreach (var category in gridReader.ReadPartialStreamAsync<Category>(new CommandOptions<Category>(mapper: customMapper)))
+        {
+            categoryList.Add(category);
+        }
+
+        Assert.Equal(5, categoryList.Count);
+        Assert.All(categoryList, c => Assert.StartsWith("PartialStreamMulti:", c.CategoryName));
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task GridReader_ReadPartialStreamAsync_WithCustomMapper_UsesMapper(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
@@ -671,6 +725,29 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
 
         Assert.NotNull(category);
         Assert.StartsWith("FirstOrDefaultCustom:", category.CategoryName);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadAsync_MultipleRows_UsesMapperLazyInit(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+
+        // Get multiple rows to test the map ??= lazy initialization
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP 5 category_id, category_name FROM categories ORDER BY category_id"
+            : "SELECT category_id, category_name FROM categories ORDER BY category_id LIMIT 5";
+
+        using var gridReader = await connection.QueryMultipleAsync(sql);
+
+        var customMapper = new Func<IDataReader, Category>(reader =>
+            new Category { CategoryId = reader.GetInt32(0), CategoryName = "ReadMulti: " + reader.GetString(1) });
+
+        var categories = await gridReader.ReadAsync<Category>(new CommandOptions<Category>(mapper: customMapper));
+
+        Assert.Equal(5, categories.Count);
+        Assert.All(categories, c => Assert.StartsWith("ReadMulti:", c.CategoryName));
     }
 
     [Theory]
