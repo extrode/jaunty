@@ -7,6 +7,8 @@ using Dapper;
 using Jaunty.Benchmarks.Config;
 using Jaunty.Benchmarks.Entities;
 
+using LinqToDB;
+
 using RepoDb;
 
 namespace Jaunty.Benchmarks.Benchmarks;
@@ -41,7 +43,6 @@ public class InsertBenchmarks
     [IterationSetup]
     public void IterationSetup()
     {
-        // Clear table before each iteration
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "DELETE FROM benchmark_products";
         cmd.ExecuteNonQuery();
@@ -72,6 +73,22 @@ public class InsertBenchmarks
             new { product_name = "Test Product", unit_price = 19.99m, units_in_stock = 100, discontinued = false });
     }
 
+    // --- EF Core single insert ---
+
+    [Benchmark(Description = "EF Core Add+Save")]
+    public void EfCore_Insert()
+    {
+        using var context = new BenchmarkDbContext(_connection, "sqlite");
+        context.BenchmarkProducts.Add(new EfProduct
+        {
+            product_name = "Test Product",
+            unit_price = 19.99m,
+            units_in_stock = 100,
+            discontinued = false
+        });
+        context.SaveChanges();
+    }
+
     // --- RepoDb single insert ---
 
     [Benchmark(Description = "RepoDb Insert")]
@@ -85,5 +102,20 @@ public class InsertBenchmarks
             Discontinued = 0
         };
         RepoDb.DbConnectionExtension.Insert(_connection, product);
+    }
+
+    // --- linq2db single insert ---
+
+    [Benchmark(Description = "linq2db Insert")]
+    public void Linq2Db_Insert()
+    {
+        using var db = new BenchmarkDb(_connection);
+        db.Insert(new Linq2DbProduct
+        {
+            ProductName = "Test Product",
+            UnitPrice = 19.99m,
+            UnitsInStock = 100,
+            Discontinued = 0
+        });
     }
 }
