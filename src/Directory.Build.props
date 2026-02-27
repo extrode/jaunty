@@ -3,4 +3,19 @@
     <IsTrimmable Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsTrimmable>
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
   </PropertyGroup>
+
+  <!-- Common NuGet package metadata -->
+  <PropertyGroup>
+    <PackageTags>orm;micro-orm;sql;database;dapper-alternative;aot;nativeaot;source-generator</PackageTags>
+    <PackageProjectUrl>https://github.com/beparey/jaunty</PackageProjectUrl>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) 2026 Syed Beparey</Copyright>
+  </PropertyGroup>
+
+  <!-- Pack README.md and LICENSE.md into NuGet packages -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>

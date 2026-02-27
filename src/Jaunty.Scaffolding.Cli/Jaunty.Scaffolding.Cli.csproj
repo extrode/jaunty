@@ -17,7 +17,7 @@
     <PackageId>Beparey.Jaunty.Scaffolding.Cli</PackageId>
     <Version>2026.01.01</Version>
     <Authors>Syed Beparey</Authors>
-    <Description>CLI tool for scaffolding C# entity classes from database schema for Jaunty ORM</Description>
+    <Description>CLI tool to scaffold entity classes from database schema for Jaunty.</Description>
     <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
   </PropertyGroup>
 

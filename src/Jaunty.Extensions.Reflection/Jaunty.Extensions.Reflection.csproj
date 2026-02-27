@@ -6,7 +6,10 @@
     <LangVersion>latest</LangVersion>
     <PackageId>Beparey.Jaunty.Extensions.Reflection</PackageId>
     <Version>2026.01.01</Version>
-    <Description>Reflection-based runtime mapping fallback for Jaunty ORM. Use only if source generation or manual mappers are not viable.</Description>
+    <Authors>Syed Beparey</Authors>
+    <Description>Reflection-based mapping extension for Jaunty. Enables Dictionary, dynamic, and ValueTuple mapping.</Description>
+    <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
