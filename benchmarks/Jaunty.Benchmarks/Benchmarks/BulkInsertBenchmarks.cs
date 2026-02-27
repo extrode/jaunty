@@ -17,7 +17,7 @@ public class BulkInsertBenchmarks
     private List<JauntyProduct> _jauntyProducts = null!;
     private List<RepoDbProduct> _repoDbProducts = null!;
 
-    [Params(100, 1000)]
+    [Params(100, 1_000, 10_000)]
     public int BatchSize { get; set; }
 
     [Params(DatabaseProvider.Sqlite)]

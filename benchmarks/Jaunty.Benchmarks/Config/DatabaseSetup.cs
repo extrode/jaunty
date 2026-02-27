@@ -97,24 +97,42 @@ public static class DatabaseSetup
             try { reset.ExecuteNonQuery(); } catch { /* table may not exist */ }
         }
 
-        // Bulk seed
+        // Transaction-wrapped, prepared-statement seeding for efficient bulk insert.
+        // Single command + parameter reuse = ~100x faster than per-row command creation.
+        using var transaction = connection.BeginTransaction();
+
+        using var cmd = connection.CreateCommand();
+        cmd.Transaction = transaction;
+        cmd.CommandText = "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@name, @price, @stock, @disc)";
+
+        var pName = cmd.CreateParameter();
+        pName.ParameterName = "@name";
+        cmd.Parameters.Add(pName);
+
+        var pPrice = cmd.CreateParameter();
+        pPrice.ParameterName = "@price";
+        cmd.Parameters.Add(pPrice);
+
+        var pStock = cmd.CreateParameter();
+        pStock.ParameterName = "@stock";
+        cmd.Parameters.Add(pStock);
+
+        var pDisc = cmd.CreateParameter();
+        pDisc.ParameterName = "@disc";
+        cmd.Parameters.Add(pDisc);
+
+        cmd.Prepare();
+
         for (int i = 0; i < rowCount; i++)
         {
-            using var cmd = connection.CreateCommand();
-            cmd.CommandText = provider switch
-            {
-                DatabaseProvider.Sqlite => "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@name, @price, @stock, @disc)",
-                DatabaseProvider.SqlServer => "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@name, @price, @stock, @disc)",
-                DatabaseProvider.PostgreSql => "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@name, @price, @stock, @disc)",
-                _ => throw new ArgumentOutOfRangeException(nameof(provider))
-            };
-
-            AddParameter(cmd, "@name", $"Product {i + 1}");
-            AddParameter(cmd, "@price", 10.00m + (i % 100));
-            AddParameter(cmd, "@stock", 50 + (i % 200));
-            AddParameter(cmd, "@disc", i % 10 == 0);
+            pName.Value = $"Product {i + 1}";
+            pPrice.Value = 10.00m + (i % 100);
+            pStock.Value = 50 + (i % 200);
+            pDisc.Value = i % 10 == 0;
             cmd.ExecuteNonQuery();
         }
+
+        transaction.Commit();
     }
 
     private static void AddParameter(IDbCommand cmd, string name, object value)

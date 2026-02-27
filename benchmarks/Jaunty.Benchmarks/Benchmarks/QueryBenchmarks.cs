@@ -17,7 +17,7 @@ public class QueryBenchmarks
 {
     private DbConnection _connection = null!;
 
-    [Params(1, 10, 100, 1000)]
+    [Params(1, 10, 100, 1_000, 10_000, 100_000)]
     public int RowCount { get; set; }
 
     [Params(DatabaseProvider.Sqlite)]
