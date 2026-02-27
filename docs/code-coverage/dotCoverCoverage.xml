@@ -1,0 +1,71 @@
+<Root>
+  <CoverageParams>
+    <!-- Solution to analyze -->
+    <Solution>$(SolutionDir)Jaunty.slnx</Solution>
+    
+    <!-- Test assemblies to execute -->
+    <TestAssemblies>$(SolutionDir)tests\**\bin\**\*.Tests.dll</TestAssemblies>
+    
+    <!-- Output file -->
+    <Output>$(SolutionDir)docs\code-coverage\coverage-report.xml</Output>
+    <ReportType>XML</ReportType>
+  </CoverageParams>
+  
+  <Filters>
+    <!-- Include only Jaunty source projects -->
+    <IncludeFilters>
+      <IncludeFilter>
+        <ModulePath>\\Jaunty\.dll$</ModulePath>
+      </IncludeFilter>
+      <IncludeFilter>
+        <ModulePath>\\Jaunty\.Extensions\.Reflection\.dll$</ModulePath>
+      </IncludeFilter>
+      <IncludeFilter>
+        <ModulePath>\\Jaunty\.Fluent\.dll$</ModulePath>
+      </IncludeFilter>
+      <IncludeFilter>
+        <ModulePath>\\Jaunty\.Scaffolding\.dll$</ModulePath>
+      </IncludeFilter>
+    </IncludeFilters>
+    
+    <ExcludeFilters>
+      <!-- Exclude all test projects -->
+      <ExcludeFilter>
+        <ModulePath>\\.*\.Tests\.dll$</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>\\.*\.Benchmarks\.dll$</ModulePath>
+      </ExcludeFilter>
+      
+      <!-- Exclude source generator (runs at build time, not runtime) -->
+      <ExcludeFilter>
+        <ModulePath>\\Jaunty\.SourceGenerator\.dll$</ModulePath>
+      </ExcludeFilter>
+      
+      <!-- Exclude CLI/scaffolding executable -->
+      <ExcludeFilter>
+        <ModulePath>\\Jaunty\.Scaffolding\.Cli\.dll$</ModulePath>
+      </ExcludeFilter>
+      
+      <!-- Exclude third-party and framework assemblies -->
+      <ExcludeFilter>
+        <ModulePath>\\Microsoft\\</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>\\System\\</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>\\xunit\\</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>\\NuGet\\</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>\\netstandard\\</ModulePath>
+      </ExcludeFilter>
+      <ExcludeFilter>
+        <ModulePath>\\net8\\.0\\</ModulePath>
+      </ExcludeFilter>
+    </ExcludeFilters>
+  </Filters>
+</Root>
