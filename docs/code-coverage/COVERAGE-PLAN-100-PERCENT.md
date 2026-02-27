@@ -95,6 +95,30 @@
 **Coverage Impact**: GridReader testable methods fully covered
 **Final Coverage**: 89% (11% is defensive exception handlers and platform-specific code)
 **Test Count**: +150 tests (347 total GridReader tests)
+
+### 2026-02-27: Marker Methods Excluded
+**Action**: Added `[ExcludeFromCodeCoverage]` to Fluent API marker method classes
+**Files Modified**:
+- `src/Jaunty.Fluent/Sql.cs` - `Sql` class and `CaseBuilder<TFrom,TResult>` class
+- `src/Jaunty.Fluent/WindowBuilder.cs` - `WindowBuilder<TFrom,TResult>` and `WindowAggregateBuilder<TFrom,TResult>` classes
+**Reason**: These methods throw `InvalidOperationException` when called directly - they are expression tree markers only
+**Coverage Impact**: Removes ~69 statements from coverage denominator (tested indirectly via ToSql tests)
+
+### 2026-02-27: Scaffolding Projects Excluded
+**Action**: Added `<ExcludeFromCoverage>true</ExcludeFromCoverage>` to Scaffolding projects
+**Files Modified**:
+- `src/Jaunty.Scaffolding/Jaunty.Scaffolding.csproj`
+- `src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj`
+**Reason**: Development tooling, not runtime library code
+**Coverage Impact**: Removes 636 statements from coverage denominator
+
+### 2026-02-27: Extensions.Reflection Edge Cases
+**Added**: 4 new tests for SpecialTypeMappers null handling
+**Tests Added**:
+- `Query_Dictionary_WithNullValue_MapsNullAsNull` (2 dialects)
+- `Query_ExpandoObject_WithNullValue_MapsNullAsNull` (2 dialects)
+**Coverage Impact**: SpecialTypeMappers null handling paths now covered
+**Test Count**: +8 tests (42 total SpecialTypeMapper tests)
 - Created temp tables OUTSIDE transaction, inserts INSIDE transaction
 - Dialect-specific temp table syntax (TEMP TABLE, #temp, TEMPORARY TABLE)
 
