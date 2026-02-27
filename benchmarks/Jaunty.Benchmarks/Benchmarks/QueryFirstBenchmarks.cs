@@ -19,7 +19,7 @@ public class QueryFirstBenchmarks
 {
     private DbConnection _connection = null!;
 
-    [Params(DatabaseProvider.Sqlite)]
+    [Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
     public DatabaseProvider Provider { get; set; }
 
     [GlobalSetup]
@@ -28,8 +28,7 @@ public class QueryFirstBenchmarks
         if (!DatabaseSetup.IsAvailable(Provider))
             throw new InvalidOperationException($"{Provider} is not available");
 
-        RepoDb.GlobalConfiguration.Setup().UseSqlite();
-        RepoDb.TypeMapper.Add(typeof(bool), System.Data.DbType.Int64);
+        DatabaseSetup.InitializeRepoDb(Provider);
 
         _connection = DatabaseSetup.CreateConnection(Provider);
         _connection.Open();
@@ -68,7 +67,7 @@ public class QueryFirstBenchmarks
     [Benchmark(Description = "EF Core First")]
     public EfProduct EfCore_QueryFirst()
     {
-        using var context = new BenchmarkDbContext(_connection, "sqlite");
+        using var context = new BenchmarkDbContext(_connection, DatabaseSetup.GetEfProviderName(Provider));
         return context.BenchmarkProducts
             .FromSqlRaw("SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products WHERE product_id = {0}", 1)
             .First();
@@ -87,7 +86,7 @@ public class QueryFirstBenchmarks
     [Benchmark(Description = "linq2db First")]
     public Linq2DbProduct Linq2Db_QueryFirst()
     {
-        using var db = new BenchmarkDb(_connection);
+        using var db = new BenchmarkDb(_connection, Provider);
         return db.BenchmarkProducts.First(p => p.ProductId == 1);
     }
 }

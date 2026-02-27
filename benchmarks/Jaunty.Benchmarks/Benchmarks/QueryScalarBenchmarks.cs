@@ -19,7 +19,7 @@ public class QueryScalarBenchmarks
 {
     private DbConnection _connection = null!;
 
-    [Params(DatabaseProvider.Sqlite)]
+    [Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
     public DatabaseProvider Provider { get; set; }
 
     [GlobalSetup]
@@ -28,7 +28,7 @@ public class QueryScalarBenchmarks
         if (!DatabaseSetup.IsAvailable(Provider))
             throw new InvalidOperationException($"{Provider} is not available");
 
-        RepoDb.GlobalConfiguration.Setup().UseSqlite();
+        DatabaseSetup.InitializeRepoDb(Provider);
 
         _connection = DatabaseSetup.CreateConnection(Provider);
         _connection.Open();
@@ -63,7 +63,7 @@ public class QueryScalarBenchmarks
     [Benchmark(Description = "EF Core Count")]
     public int EfCore_QueryScalar()
     {
-        using var context = new BenchmarkDbContext(_connection, "sqlite");
+        using var context = new BenchmarkDbContext(_connection, DatabaseSetup.GetEfProviderName(Provider));
         return context.BenchmarkProducts.Count();
     }
 
@@ -80,7 +80,7 @@ public class QueryScalarBenchmarks
     [Benchmark(Description = "linq2db Count")]
     public int Linq2Db_QueryScalar()
     {
-        using var db = new BenchmarkDb(_connection);
+        using var db = new BenchmarkDb(_connection, Provider);
         return db.BenchmarkProducts.Count();
     }
 }

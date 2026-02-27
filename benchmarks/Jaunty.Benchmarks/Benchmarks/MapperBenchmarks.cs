@@ -16,7 +16,7 @@ public class MapperBenchmarks
 {
     private DbConnection _connection = null!;
 
-    [Params(DatabaseProvider.Sqlite)]
+    [Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
     public DatabaseProvider Provider { get; set; }
 
     [GlobalSetup]

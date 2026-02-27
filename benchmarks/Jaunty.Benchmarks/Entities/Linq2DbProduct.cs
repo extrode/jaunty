@@ -1,7 +1,13 @@
 using System.Data.Common;
 
+using Jaunty.Benchmarks.Config;
+
 using LinqToDB;
 using LinqToDB.Data;
+using LinqToDB.DataProvider;
+using LinqToDB.DataProvider.MySql;
+using LinqToDB.DataProvider.PostgreSQL;
+using LinqToDB.DataProvider.SqlServer;
 using LinqToDB.DataProvider.SQLite;
 using LinqToDB.Mapping;
 
@@ -23,15 +29,24 @@ public partial class Linq2DbProduct
     public int UnitsInStock { get; set; }
 
     [Column("discontinued")]
-    public long Discontinued { get; set; }
+    public bool Discontinued { get; set; }
 }
 
 public class BenchmarkDb : DataConnection
 {
-    public BenchmarkDb(DbConnection connection)
-        : base(SQLiteTools.GetDataProvider(SQLiteProvider.Microsoft), connection, disposeConnection: false)
+    public BenchmarkDb(DbConnection connection, DatabaseProvider provider)
+        : base(GetDataProvider(provider), connection, disposeConnection: false)
     {
     }
 
     public ITable<Linq2DbProduct> BenchmarkProducts => this.GetTable<Linq2DbProduct>();
+
+    private static IDataProvider GetDataProvider(DatabaseProvider provider) => provider switch
+    {
+        DatabaseProvider.Sqlite => SQLiteTools.GetDataProvider(SQLiteProvider.Microsoft),
+        DatabaseProvider.SqlServer => SqlServerTools.GetDataProvider(SqlServerVersion.v2017, SqlServerProvider.MicrosoftDataSqlClient),
+        DatabaseProvider.PostgreSql => PostgreSQLTools.GetDataProvider(PostgreSQLVersion.v95),
+        DatabaseProvider.MariaDb => MySqlTools.GetDataProvider(),
+        _ => throw new ArgumentOutOfRangeException(nameof(provider))
+    };
 }

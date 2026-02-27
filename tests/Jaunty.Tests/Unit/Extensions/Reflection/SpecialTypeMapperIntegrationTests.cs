@@ -226,4 +226,203 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     }
 
     #endregion
+
+    #region Dictionary<string, TValue> Typed Value Tests
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_DictionaryStringDecimal_MapsTypedValues(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP (1) CategoryId, CategoryName FROM Categories"
+            : "SELECT category_id AS CategoryId, category_name AS CategoryName FROM categories LIMIT 1";
+
+        var results = connection.Query<Dictionary<string, decimal>>(sql);
+
+        Assert.Equal(1, results.Count);
+        var row = results[0];
+
+        // Verify values are converted to decimal
+        var categoryIdKey = row.Keys.FirstOrDefault(k => k.Equals("CategoryId", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(categoryIdKey);
+        Assert.IsType<decimal>(row[categoryIdKey]);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void Query_DictionaryStringDecimal_WithNullValue_HandlesNull(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP (1) CategoryId, CAST(NULL AS DECIMAL(10,2)) AS Price FROM Categories ORDER BY CategoryId"
+            : "SELECT category_id AS CategoryId, CAST(NULL AS DECIMAL(10,2)) AS Price FROM categories ORDER BY category_id LIMIT 1";
+
+        var results = connection.Query<Dictionary<string, decimal?>>(sql);
+
+        Assert.Equal(1, results.Count);
+        var row = results[0];
+
+        // Verify nullable decimal handles null
+        var priceKey = row.Keys.FirstOrDefault(k => k.Equals("Price", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(priceKey);
+        Assert.Null(row[priceKey]);
+    }
+
+    #endregion
+
+    #region ValueTuple Edge Cases
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_ValueTuple_WithNullValues_HandlesNulls(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Name FROM Categories"
+            : "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Name FROM categories LIMIT 1";
+
+        var results = connection.Query<(int, string)>(sql);
+
+        Assert.Equal(1, results.Count);
+        var tuple = results[0];
+        Assert.True(tuple.Item1 > 0);
+        Assert.Null(tuple.Item2);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_ValueTuple_WithMixedTypes_MapsCorrectly(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP (1) CategoryId, CategoryName, 123, 45.67 FROM Categories"
+            : "SELECT category_id AS CategoryId, category_name AS CategoryName, 123, 45.67 FROM categories LIMIT 1";
+
+        var results = connection.Query<(int, string, int, double)>(sql);
+
+        Assert.Equal(1, results.Count);
+        var tuple = results[0];
+        Assert.Equal(123, tuple.Item3);
+        Assert.Equal(45.67, tuple.Item4, 2);
+    }
+
+    #endregion
+
+    #region KeyValuePair Edge Cases
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_KeyValuePair_WithNullValue_HandlesNull(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP (1) CategoryId, CAST(NULL AS NVARCHAR(100)) AS Name FROM Categories"
+            : "SELECT category_id AS CategoryId, CAST(NULL AS TEXT) AS Name FROM categories LIMIT 1";
+
+        var results = connection.Query<KeyValuePair<int, string?>>(sql);
+
+        Assert.Equal(1, results.Count);
+        var kvp = results[0];
+        Assert.True(kvp.Key > 0);
+        Assert.Null(kvp.Value);
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_KeyValuePair_WithTypedValues_MapsCorrectly(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP (1) CategoryId, 123.45 FROM Categories"
+            : "SELECT category_id AS CategoryId, 123.45 FROM categories LIMIT 1";
+
+        var results = connection.Query<KeyValuePair<int, decimal>>(sql);
+
+        Assert.Equal(1, results.Count);
+        var kvp = results[0];
+        Assert.True(kvp.Key > 0);
+        Assert.Equal(123.45m, kvp.Value);
+    }
+
+    #endregion
+
+    #region ExpandoObject Edge Cases
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_Dynamic_MultipleColumns_MapsAll(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP (1) CategoryId, CategoryName, Description FROM Categories"
+            : "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories LIMIT 1";
+
+        var results = connection.Query<dynamic>(sql);
+
+        Assert.Equal(1, results.Count);
+        dynamic row = results[0];
+
+        // Verify all columns are mapped
+        Assert.True(((int)row.CategoryId) > 0);
+        Assert.NotNull((string)row.CategoryName);
+        // Description might be null for some rows
+    }
+
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_Dynamic_WithNumericColumns_MapsCorrectly(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP (1) CategoryId, 123 AS NumValue FROM Categories"
+            : "SELECT category_id AS CategoryId, 123 AS NumValue FROM categories LIMIT 1";
+
+        var results = connection.Query<dynamic>(sql);
+
+        Assert.Equal(1, results.Count);
+        dynamic row = results[0];
+
+        Assert.True(((int)row.CategoryId) > 0);
+        Assert.Equal(123, (int)row.NumValue);
+    }
+
+    #endregion
 }
