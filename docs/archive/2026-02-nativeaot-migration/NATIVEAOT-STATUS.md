@@ -113,9 +113,16 @@ All warnings originate from third-party database providers and framework assembl
 - Optionally include reflection extension for special types
 - Follow the NativeAOT guide for trimming configuration
 
+### Zero-Allocation Mapping Path (2026-02-27)
+The source generator now emits `OrdinalMap` instead of `OrdinalCache`. Previously, every row read allocated a `Dictionary<string, int>` for column ordinal lookups. Now ordinals are resolved once (first row) and cached in a static `int[]`, eliminating per-row dictionary allocations. For a 1000-row query, this removes ~1000 dictionary allocations (~160KB of GC pressure).
+
+### Scaffolding CLI AOT (2026-02-27)
+`PublishAot=true` added to `Jaunty.Scaffolding.Cli.csproj`. Two pre-existing IL2057 warnings surfaced from `Type.GetType()` calls in `MySqlSchemaReader.cs` and `SqlServerSchemaReader.cs` — these are schema readers that resolve CLR types from database type names at runtime.
+
 ### Build Configuration (Verified 2026-02-27)
 - `IsAotCompatible=true` in `Jaunty.csproj` (net8.0 conditional) and `src/Directory.Build.props`
 - `IsTrimmable=true` in `src/Directory.Build.props`
+- `PublishAot=true` in `Jaunty.Scaffolding.Cli.csproj`
 - Verification script: **PASS** - zero issues
 - CI/CD: GitHub Actions pipeline at `.github/workflows/ci.yml` with 3 jobs:
   - `build-and-test`: Restore, build, run SQLite tests
