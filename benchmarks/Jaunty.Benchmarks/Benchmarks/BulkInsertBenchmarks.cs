@@ -12,8 +12,6 @@ using LinqToDB.Data;
 
 using Microsoft.EntityFrameworkCore;
 
-using RepoDb;
-
 namespace Jaunty.Benchmarks.Benchmarks;
 
 public class BulkInsertBenchmarks

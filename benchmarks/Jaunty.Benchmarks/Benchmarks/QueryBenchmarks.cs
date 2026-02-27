@@ -7,11 +7,7 @@ using Dapper;
 using Jaunty.Benchmarks.Config;
 using Jaunty.Benchmarks.Entities;
 
-using LinqToDB;
-
 using Microsoft.EntityFrameworkCore;
-
-using RepoDb;
 
 namespace Jaunty.Benchmarks.Benchmarks;
 
