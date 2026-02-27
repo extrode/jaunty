@@ -1,8 +1,14 @@
 # Jaunty NativeAOT Compatibility Plan
 
-## Current Status (Updated 2026-02-22)
+## Current Status (Updated 2026-02-27)
 
 Jaunty is **NativeAOT-ready**. The verification script (`scripts/Verify-NativeAOT.ps1`) reports **PASS** with zero issues. All reflection-based code has been moved to `Jaunty.Extensions.Reflection` (opt-in) and the core library uses source-generated mappers exclusively.
+
+**Build Configuration Verified:**
+- `IsAotCompatible=true` set in `Jaunty.csproj` (net8.0) and `Directory.Build.props`
+- `IsTrimmable=true` set globally via `Directory.Build.props`
+- Source generator (`Jaunty.SourceGenerator`) integrated as analyzer
+- 4 acceptable reflection sites in core, all suppressed with `[UnconditionalSuppressMessage]`
 
 ### Original Blockers (All Resolved)
 1.  ~~**Runtime Reflection**: `MetadataBuilder` and `AttributeHelper` use reflection~~ → Moved to `Jaunty.Extensions.Reflection`
@@ -33,14 +39,26 @@ Goal: Eliminate runtime reflection entirely by moving metadata resolution to com
 ### Phase 3: AOT-First Architecture (In Progress)
 Goal: Ensure 0 warnings and verified runtime stability.
 
-- [ ] **Enable `IsAotCompatible`**: Set the property in `Jaunty.csproj` for net8.0 target
+- [x] **Enable `IsAotCompatible`**: Set in `Jaunty.csproj` (net8.0) and `Directory.Build.props`
 - [ ] **Automated AOT Testing**: Integrate `build-aot.ps1` into CI pipeline
 - [ ] **Zero-Allocation Hot Path**: Leverage the Source Generator to achieve a truly zero-allocation mapping path
 
 ---
 
-## Action Items
-1.  Set `IsAotCompatible=true` in `Jaunty.csproj` (net8.0 target) and verify zero AOT warnings
-2.  Run `build-aot.ps1` end-to-end and document binary size
-3.  Create NativeAOT sample projects (`samples/NativeAOT-Basic`, etc.)
-4.  Integrate `build-aot.ps1` into CI pipeline
+## Remaining Action Items (Priority Order)
+
+### P0 - Critical
+1.  Create CI/CD pipeline (`.github/workflows`) with AOT verification step (`Verify-NativeAOT.ps1`)
+2.  Add NativeAOT publish step to CI (`build-aot.ps1`)
+
+### P1 - High
+3.  Run `build-aot.ps1` end-to-end and document binary size and warning count
+4.  Create NativeAOT sample projects (`samples/NativeAOT-Basic`, `NativeAOT-WithReflection`, `NativeAOT-CustomMapper`)
+5.  Investigate 224 failing tests for any AOT-relevant regressions
+
+### P2 - Medium
+6.  Zero-allocation hot path via source generator for value type mapping
+7.  Add `PublishAot=true` natively in `Jaunty.Scaffolding.Cli.csproj`
+
+### Completed
+- ~~Set `IsAotCompatible=true` in `Jaunty.csproj` (net8.0 target) and verify zero AOT warnings~~
