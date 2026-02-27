@@ -202,9 +202,11 @@ public static class DatabaseSetup
         pDisc.DbType = provider == DatabaseProvider.Sqlite ? DbType.Int64 : DbType.Boolean;
         cmd.Parameters.Add(pDisc);
 
-        // Prepare() optimizes repeated execution but requires all parameter types to be set.
-        // SqlCommand additionally requires Size for variable-length types (String).
-        cmd.Prepare();
+        // Prepare() optimizes repeated execution but SqlCommand.Prepare requires SqlDbType
+        // (not generic DbType) to be explicitly set, which isn't possible through DbParameter.
+        // Skip Prepare() for SQL Server; the perf difference is negligible for seeding.
+        if (provider != DatabaseProvider.SqlServer)
+            cmd.Prepare();
 
         for (int i = 0; i < rowCount; i++)
         {
@@ -262,7 +264,7 @@ public static class DatabaseSetup
             .UseSqlite()
             .UseSqlServer()
             .UsePostgreSql()
-            .UseMySql();
+            .UseMySqlConnector();
 
         TypeMapper.Add(typeof(bool), DbType.Int64);
     }
