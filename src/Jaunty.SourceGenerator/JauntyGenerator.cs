@@ -131,7 +131,14 @@ public class JauntyGenerator : IIncrementalGenerator
             var getter = GetReaderMethod(p.TypeName);
             sb.AppendLine($"            if (!reader.IsDBNull(ord[{i}]))");
             sb.AppendLine("            {");
-            sb.AppendLine($"                entity.{p.PropertyName} = {getter}(ord[{i}]);");
+            if (getter != null)
+            {
+                sb.AppendLine($"                entity.{p.PropertyName} = {getter}(ord[{i}]);");
+            }
+            else
+            {
+                sb.AppendLine($"                entity.{p.PropertyName} = ({p.TypeName})reader.GetValue(ord[{i}]);");
+            }
             sb.AppendLine("            }");
         }
         sb.AppendLine("            return entity;");
@@ -214,22 +221,22 @@ public class JauntyGenerator : IIncrementalGenerator
     private static AttributeData? GetAttribute(ISymbol symbol, string attributeName)
         => symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == attributeName);
 
-    private static string GetReaderMethod(string typeName)
+    private static string? GetReaderMethod(string typeName)
     {
         return typeName switch
         {
-            "int" or "Int32" or "int?" => "reader.GetInt32",
-            "long" or "Int64" or "long?" => "reader.GetInt64",
-            "string" or "String" => "reader.GetString",
-            "bool" or "Boolean" or "bool?" => "reader.GetBoolean",
-            "decimal" or "Decimal" or "decimal?" => "reader.GetDecimal",
-            "double" or "Double" or "double?" => "reader.GetDouble",
-            "float" or "Single" or "float?" => "reader.GetFloat",
-            "short" or "Int16" or "short?" => "reader.GetInt16",
-            "byte" or "Byte" or "byte?" => "reader.GetByte",
-            "Guid" or "Guid?" => "reader.GetGuid",
-            "DateTime" or "DateTime?" => "reader.GetDateTime",
-            _ => "((" + typeName + ")reader.GetValue)"
+            "int" or "Int32" or "int?" or "Int32?" or "System.Int32" => "reader.GetInt32",
+            "long" or "Int64" or "long?" or "Int64?" or "System.Int64" => "reader.GetInt64",
+            "string" or "String" or "string?" or "String?" or "System.String" => "reader.GetString",
+            "bool" or "Boolean" or "bool?" or "Boolean?" or "System.Boolean" => "reader.GetBoolean",
+            "decimal" or "Decimal" or "decimal?" or "Decimal?" or "System.Decimal" => "reader.GetDecimal",
+            "double" or "Double" or "double?" or "Double?" or "System.Double" => "reader.GetDouble",
+            "float" or "Single" or "float?" or "Single?" or "System.Single" => "reader.GetFloat",
+            "short" or "Int16" or "short?" or "Int16?" or "System.Int16" => "reader.GetInt16",
+            "byte" or "Byte" or "byte?" or "Byte?" or "System.Byte" => "reader.GetByte",
+            "Guid" or "Guid?" or "System.Guid" => "reader.GetGuid",
+            "DateTime" or "DateTime?" or "System.DateTime" => "reader.GetDateTime",
+            _ => null
         };
     }
 

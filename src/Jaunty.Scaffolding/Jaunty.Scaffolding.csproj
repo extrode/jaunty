@@ -24,7 +24,7 @@
     <PackageId>Beparey.Jaunty.Scaffolding</PackageId>
     <Version>2026.01.01</Version>
     <Authors>Syed Beparey</Authors>
-    <Description>Database-first scaffolding tool for Jaunty ORM - generates C# entity classes from database schema</Description>
+    <Description>Database-first entity class scaffolding for Jaunty.</Description>
     <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
