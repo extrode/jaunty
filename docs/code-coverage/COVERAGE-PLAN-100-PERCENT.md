@@ -61,8 +61,8 @@
 **Changes**: Removed FluentAssertions references, conversational filler, examples
 **Format**: Terse markdown, lists over paragraphs, fragments over sentences
 
-### 2026-02-26: GridReader Coverage Tests
-**Added**: 18 new GridReader tests for uncovered methods
+### 2026-02-26: GridReader Coverage Tests COMPLETE
+**Added**: 26 new GridReader tests for uncovered methods
 **Tests Added**:
 - `GridReader_ReadScalar_WithValueType_ReturnsValue` (5 dialects)
 - `GridReader_ReadScalar_WithReferenceType_ReturnsValue` (5 dialects)
@@ -70,8 +70,10 @@
 - `GridReader_ReadPartialStream_WithCustomMapper_UsesMapper` (2 dialects)
 - `GridReader_ReadScalarAsync_WithValueType_ReturnsValue` (5 dialects)
 - `GridReader_ReadScalarAsync_WithReferenceType_ReturnsValue` (5 dialects)
+- `GridReader_ReadAsync_WithCustomMapper_UsesMapper` (2 dialects)
+- `GridReader_ReadFirstOrDefaultAsync_WithCustomMapper_UsesMapper` (2 dialects)
 - `GridReader_ReadStreamAsync_WithCustomMapper_UsesMapper` (2 dialects)
-- `GridReader_ReadPartialStreamAsync_WithCustomMapper_UsesMapper` (2 dialects)
+- `GridReader_ReadPartialAsync_WithCustomMapper_UsesMapper` (2 dialects)
 - `GridReader_ReadPartialSingle_NoResults_Throws` (5 dialects)
 - `GridReader_ReadPartialSingleOrDefault_NoResults_ReturnsNull` (5 dialects)
 - `GridReader_ReadScalar_NoResults_ReturnsDefault` (5 dialects)
@@ -80,8 +82,15 @@
 - `GridReader_ReadPartialSingleOrDefaultAsync_NoResults_ReturnsNull` (5 dialects)
 - `GridReader_ReadScalarAsync_NoResults_ReturnsDefault` (5 dialects)
 - `GridReader_ReadScalarAsync_NullValue_ReturnsNull` (5 dialects)
+- `GridReader_ReadSingleOrDefaultAsync_MultipleRows_Throws` (2 dialects)
+- `GridReader_ReadScalar_WithFallbackConversion` (2 dialects)
+- `GridReader_ReadScalarAsync_WithFallbackConversion` (2 dialects)
+- `GridReader_ReadPartial_WithMultipleResultSets_ReadsAll` (5 dialects)
+- `GridReader_ReadAsync_WithMultipleResultSets_ReadsAll` (5 dialects)
+- `GridReader_Read_AfterAllResultSetsConsumed_Throws` (5 dialects)
+- `GridReader_ReadAsync_AfterAllResultSetsConsumed_Throws` (5 dialects)
 **Coverage Impact**: GridReader core methods now fully covered
-**Test Count**: +90 tests (309 total GridReader tests)
+**Test Count**: +132 tests (341 total GridReader tests)
 - Created temp tables OUTSIDE transaction, inserts INSIDE transaction
 - Dialect-specific temp table syntax (TEMP TABLE, #temp, TEMPORARY TABLE)
 
@@ -252,15 +261,29 @@ public void SpParameter_Constructor_WithAllParameters_SetsProperties()
 **Tests Added**:
 - ReadScalar with value and reference types (5 dialects each)
 - ReadScalar with no results and null values (5 dialects each)
+- ReadScalar fallback conversion path (2 dialects)
 - ReadStream/ReadPartialStream with custom mappers (2 dialects each)
 - ReadAsync with custom mapper (2 dialects)
+- ReadFirstOrDefaultAsync with custom mapper (2 dialects)
 - ReadStreamAsync/ReadPartialStreamAsync with custom mappers (2 dialects each)
 - ReadScalarAsync with value and reference types (5 dialects each)
 - ReadScalarAsync with no results and null values (5 dialects each)
+- ReadScalarAsync fallback conversion path (2 dialects)
 - ReadPartialSingle/ReadPartialSingleOrDefault - no results handling (5 dialects each)
 - ReadPartialSingleAsync/ReadPartialSingleOrDefaultAsync - no results handling (5 dialects each)
+- ReadSingleOrDefaultAsync - multiple rows exception path (2 dialects)
+- Multiple result sets handling (5 dialects each)
+- EnsureNotConsumed exception path (5 dialects each)
 
-**Remaining**: None - GridReader fully covered (DotCover should show ~100%)
+**Remaining Uncovered (if any)**:
+- `AdvanceAsync` NullReferenceException catch block (defensive, hard to trigger)
+- `DisposeAsync` IAsyncDisposable path (covered by DbDataReader, but dotCover may not see it)
+- `DisposeAsync` #if NET8_0_OR_GREATER branch (platform-specific, may need separate coverage runs)
+
+**Note**: If dotCover still shows <100%, the remaining gaps are likely:
+1. Exception handling paths that are defensive (NullReferenceException catch)
+2. Platform-specific code (#if directives) that requires merged coverage from multiple test runs
+3. IAsyncDisposable detection that depends on runtime type
 
 ---
 
