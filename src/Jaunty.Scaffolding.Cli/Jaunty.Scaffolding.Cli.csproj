@@ -7,6 +7,9 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
 
+    <!-- NativeAOT -->
+    <PublishAot>true</PublishAot>
+
     <!-- .NET Tool configuration -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotnet-jaunty</ToolCommandName>
