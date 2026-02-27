@@ -55,7 +55,7 @@
 		<PackageId>Beparey.Jaunty</PackageId>
 		<Version>2026.01.01</Version>
 		<Authors>Syed Beparey</Authors>
-		<Description>A fast ORM</Description>
+		<Description>A strict, high-performance micro-ORM for .NET with source-generated mapping and NativeAOT support.</Description>
 		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Nullable>enable</Nullable>

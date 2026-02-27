@@ -38,7 +38,7 @@
 		<PackageId>Beparey.Jaunty.Fluent</PackageId>
 		<Version>2026.01.01</Version>
 		<Authors>Syed Beparey</Authors>
-		<Description>Fluent query builder for Jaunty ORM</Description>
+		<Description>Type-safe fluent SQL query builder for Jaunty.</Description>
 		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Nullable>enable</Nullable>
