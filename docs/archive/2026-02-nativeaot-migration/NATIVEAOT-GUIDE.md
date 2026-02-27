@@ -1,6 +1,6 @@
 # Jaunty NativeAOT Usage Guide
 
-**Last Updated:** 2026-02-20  
+**Last Updated:** 2026-02-27
 **Jaunty Version:** 2026.01.01+
 
 ---
@@ -281,7 +281,9 @@ Jaunty is ready for NativeAOT compilation.
 
 ## Sample Projects
 
-See the following sample projects for complete examples:
+> **Note:** Sample projects are planned but not yet created. See [NATIVE-AOT-PLAN.md](NATIVE-AOT-PLAN.md) for status.
+
+Planned samples:
 
 - `samples/NativeAOT-Basic` - Basic NativeAOT with source-generated mappers
 - `samples/NativeAOT-WithReflection` - NativeAOT with reflection extension

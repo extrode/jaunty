@@ -1,6 +1,6 @@
 # NativeAOT Migration - Current Status
 
-**Date:** 2026-02-22
+**Date:** 2026-02-27
 **Verification Script:** `scripts/Verify-NativeAOT.ps1`
 
 ---
@@ -85,13 +85,21 @@ Review failing tests in Visual Studio Test Explorer for details.
 
 ## Next Steps
 
-### Phase 3
-1. Set `IsAotCompatible=true` in `Jaunty.csproj` for net8.0 target
-2. Run `build-aot.ps1` to verify NativeAOT compilation and warning count
-3. Create NativeAOT sample projects
+### Phase 3 (Remaining)
+1. ~~Set `IsAotCompatible=true` in `Jaunty.csproj` for net8.0 target~~ - DONE (also in `Directory.Build.props`)
+2. Run `build-aot.ps1` to verify NativeAOT compilation and document binary size / warning count
+3. Create NativeAOT sample projects (`samples/NativeAOT-Basic`, etc.)
+4. Create CI/CD pipeline with AOT verification and publish steps
+5. Investigate remaining 224 failing tests for AOT-relevant regressions
 
 ### Current State
 **Jaunty is NativeAOT-ready!** Users can:
 - Use source-generated mappers (fully NativeAOT compatible)
 - Optionally include reflection extension for special types
 - Follow the NativeAOT guide for trimming configuration
+
+### Build Configuration (Verified 2026-02-27)
+- `IsAotCompatible=true` in `Jaunty.csproj` (net8.0 conditional) and `src/Directory.Build.props`
+- `IsTrimmable=true` in `src/Directory.Build.props`
+- Verification script: **PASS** - zero issues
+- No CI/CD pipeline exists yet (manual verification only)
