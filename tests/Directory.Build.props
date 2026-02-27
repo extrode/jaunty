@@ -1,7 +1,0 @@
-<Project>
-  <!-- Common properties for all test projects -->
-  <PropertyGroup>
-    <IsTestProject>true</IsTestProject>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
-</Project>

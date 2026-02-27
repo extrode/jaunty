@@ -35,18 +35,18 @@ public partial class Linq2DbProduct
 public class BenchmarkDb : DataConnection
 {
     public BenchmarkDb(DbConnection connection, DatabaseProvider provider)
-        : base(GetDataProvider(provider), connection, disposeConnection: false)
+        : base(GetDataProvider(provider, connection), connection, disposeConnection: false)
     {
     }
 
     public ITable<Linq2DbProduct> BenchmarkProducts => this.GetTable<Linq2DbProduct>();
 
-    private static IDataProvider GetDataProvider(DatabaseProvider provider) => provider switch
+    private static IDataProvider GetDataProvider(DatabaseProvider provider, DbConnection connection) => provider switch
     {
         DatabaseProvider.Sqlite => SQLiteTools.GetDataProvider(SQLiteProvider.Microsoft),
         DatabaseProvider.SqlServer => SqlServerTools.GetDataProvider(SqlServerVersion.v2017, SqlServerProvider.MicrosoftDataSqlClient),
         DatabaseProvider.PostgreSql => PostgreSQLTools.GetDataProvider(PostgreSQLVersion.v95),
-        DatabaseProvider.MariaDb => MySqlTools.GetDataProvider(MySqlVersion.AutoDetect, MySqlProvider.MySqlConnector),
+        DatabaseProvider.MariaDb => MySqlTools.GetDataProvider(MySqlVersion.MariaDB10, MySqlProvider.MySqlConnector),
         _ => throw new ArgumentOutOfRangeException(nameof(provider))
     };
 }
