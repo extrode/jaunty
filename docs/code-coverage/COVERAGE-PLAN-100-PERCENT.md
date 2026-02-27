@@ -119,6 +119,19 @@
 - `Query_ExpandoObject_WithNullValue_MapsNullAsNull` (2 dialects)
 **Coverage Impact**: SpecialTypeMappers null handling paths now covered
 **Test Count**: +8 tests (42 total SpecialTypeMapper tests)
+
+### 2026-02-27: SetOperationBuilder Edge Cases
+**Added**: 9 new tests for SetOperationBuilder parameter handling and terminal methods
+**Tests Added**:
+- `Union_WithParameters_PassesParametersCorrectly` - Tests ExtractParameters, GetAllParameters
+- `Except_WithParameters_PassesParametersCorrectly` - Tests parameter propagation
+- `Intersect_WithParameters_PassesParametersCorrectly` - Tests parameter propagation
+- `UnionAll_WithOrderByString_OrdersCorrectly` - Tests string-based OrderBy
+- `Union_WithSkipAndTake_PaginatesCorrectly` - Tests Skip+Take combination
+- `Except_SelectSingle_ExactlyOneResult_ReturnsProduct` - Tests SelectSingle terminal
+- `Intersect_SelectSingleOrDefault_ExactlyOneResult_ReturnsProduct` - Tests SelectSingleOrDefault
+**Coverage Impact**: SetOperationBuilder private helpers now exercised (GetAllParameters, GetSetOperationKeyword, GetColumnNameFromProperty)
+**Test Count**: +9 tests (56 total SetOperation tests)
 - Created temp tables OUTSIDE transaction, inserts INSIDE transaction
 - Dialect-specific temp table syntax (TEMP TABLE, #temp, TEMPORARY TABLE)
 
