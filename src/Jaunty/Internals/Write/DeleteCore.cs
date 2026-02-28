@@ -14,6 +14,9 @@ public static partial class Jaunty
 {
     internal static int DeleteByEntityCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
+        var binder = WriteParameterCache<T>.DeleteBinder
+            ?? throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
+
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (string.IsNullOrEmpty(cached.DeleteSql))
@@ -26,21 +29,15 @@ public static partial class Jaunty
             if (wasClosed) connection.Open();
 
             using var command = connection.CreateCommand();
-            command.Transaction = options.Transaction;
             command.CommandText = cached.DeleteSql;
+
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            var binder = WriteParameterCache<T>.DeleteBinder;
-            if (binder != null)
-            {
-                binder(command, entity);
-            }
-            else
-            {
-                throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'.");
-            }
+            binder(command, entity);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
@@ -54,6 +51,9 @@ public static partial class Jaunty
 
     internal static async ValueTask<int> DeleteByEntityCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
+        var binder = WriteParameterCache<T>.DeleteBinder
+            ?? throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
+
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (string.IsNullOrEmpty(cached.DeleteSql))
@@ -71,21 +71,15 @@ public static partial class Jaunty
 #else
             using var command = connection.CreateCommand();
 #endif
-            command.Transaction = options.Transaction as DbTransaction;
             command.CommandText = cached.DeleteSql;
+
+            if (options.Transaction is DbTransaction dbTransaction)
+                command.Transaction = dbTransaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            var binder = WriteParameterCache<T>.DeleteBinder;
-            if (binder != null)
-            {
-                binder(command, entity);
-            }
-            else
-            {
-                throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'.");
-            }
+            binder(command, entity);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
@@ -118,8 +112,10 @@ public static partial class Jaunty
             if (wasClosed) connection.Open();
 
             using var command = connection.CreateCommand();
-            command.Transaction = options.Transaction;
             command.CommandText = cached.DeleteByIdSql;
+
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -158,8 +154,10 @@ public static partial class Jaunty
 #else
             using var command = connection.CreateCommand();
 #endif
-            command.Transaction = options.Transaction as DbTransaction;
             command.CommandText = cached.DeleteByIdSql;
+
+            if (options.Transaction is DbTransaction dbTransaction)
+                command.Transaction = dbTransaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -200,8 +198,10 @@ public static partial class Jaunty
             if (wasClosed) connection.Open();
 
             using var command = connection.CreateCommand();
-            command.Transaction = options.Transaction;
             command.CommandText = cached.DeleteByIdSql;
+
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -240,8 +240,10 @@ public static partial class Jaunty
 #else
             using var command = connection.CreateCommand();
 #endif
-            command.Transaction = options.Transaction as DbTransaction;
             command.CommandText = cached.DeleteByIdSql;
+
+            if (options.Transaction is DbTransaction dbTransaction)
+                command.Transaction = dbTransaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;

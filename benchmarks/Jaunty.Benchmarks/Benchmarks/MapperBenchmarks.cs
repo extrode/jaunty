@@ -69,7 +69,7 @@ public class MapperBenchmarks
         {
             ProductId = reader.GetInt32(reader.GetOrdinal("product_id")),
             ProductName = reader.GetString(reader.GetOrdinal("product_name")),
-            UnitPrice = (decimal)reader.GetValue(reader.GetOrdinal("unit_price")),
+            UnitPrice = reader.GetDecimal(reader.GetOrdinal("unit_price")),
             UnitsInStock = reader.GetInt32(reader.GetOrdinal("units_in_stock")),
             Discontinued = reader.GetBoolean(reader.GetOrdinal("discontinued"))
         });

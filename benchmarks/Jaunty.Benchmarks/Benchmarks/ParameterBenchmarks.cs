@@ -2,6 +2,8 @@ using System.Data.Common;
 
 using BenchmarkDotNet.Attributes;
 
+using Dapper;
+
 using Jaunty.Benchmarks.Config;
 using Jaunty.Benchmarks.Entities;
 
@@ -65,5 +67,15 @@ public class ParameterBenchmarks
         return _connection.QueryFirst<DapperProduct>(
             "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products WHERE product_id = @Id",
             new { Id = 1 });
+    }
+
+    // --- Dapper positional parameter (via anonymous object matching @p0) ---
+
+    [Benchmark(Description = "Dapper positional param")]
+    public DapperProduct Dapper_PositionalParameter()
+    {
+        return _connection.QueryFirst<DapperProduct>(
+            "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products WHERE product_id = @p0",
+            new { p0 = 1 });
     }
 }
