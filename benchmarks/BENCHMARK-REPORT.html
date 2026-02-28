@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty Benchmark Report</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922; --purple: #bc8cff; --orange: #f0883e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+  h1 { font-size: 2rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.5rem; margin: 2.5rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; color: var(--muted); }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: 0.9rem; }
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+  .chart-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; }
+  .chart-box.full { grid-column: 1 / -1; }
+  .chart-box h4 { font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--muted); }
+  canvas { width: 100% !important; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { padding: 0.5rem 0.75rem; border: 1px solid var(--border); text-align: right; }
+  th { background: var(--surface); color: var(--muted); font-weight: 600; }
+  td:first-child, th:first-child { text-align: left; }
+  .faster { color: var(--green); font-weight: 600; }
+  .slower { color: var(--red); }
+  .same { color: var(--muted); }
+  .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600; }
+  .badge-green { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-red { background: rgba(248,81,73,0.15); color: var(--red); }
+  .badge-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.5rem 0; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+  .stat-card .value { font-size: 1.75rem; font-weight: 700; }
+  .stat-card .label { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+  .note { background: rgba(88,166,255,0.1); border: 1px solid rgba(88,166,255,0.3); border-radius: 6px; padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.85rem; }
+  @media (max-width: 768px) { .chart-row { grid-template-columns: 1fr; } .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Jaunty Benchmark Report</h1>
+<p class="subtitle">
+  BenchmarkDotNet v0.14.0 &middot; Windows 11 &middot; AMD Ryzen 7 7840HS (8C/16T) &middot; .NET 8.0.24 &middot; SQLite in-memory<br>
+  ORMs: <strong>Jaunty</strong> (source-gen), <strong>Dapper</strong> (baseline), <strong>EF Core 9</strong>, <strong>RepoDb</strong>, <strong>linq2db</strong>
+</p>
+
+<!-- Executive Summary -->
+<div class="summary-grid">
+  <div class="stat-card"><div class="value" style="color:var(--green)">1.1-1.4x</div><div class="label">Faster than Dapper (Query)</div></div>
+  <div class="stat-card"><div class="value" style="color:var(--green)">2.4-2.9x</div><div class="label">Faster (Bulk Insert)</div></div>
+  <div class="stat-card"><div class="value" style="color:var(--green)">3.5x</div><div class="label">Less Memory (Query)</div></div>
+  <div class="stat-card"><div class="value" style="color:var(--red)">1.17x</div><div class="label">Slower (Single Insert)</div></div>
+</div>
+
+<!-- 1. Query Performance -->
+<h2>1. Query Performance (SELECT * FROM ...)</h2>
+
+<div class="chart-row">
+  <div class="chart-box"><h4>Warm: Mean Time by Row Count</h4><canvas id="queryWarmTime"></canvas></div>
+  <div class="chart-box"><h4>Warm: Speed vs Dapper (higher = faster)</h4><canvas id="queryWarmRatio"></canvas></div>
+</div>
+<div class="chart-row">
+  <div class="chart-box"><h4>Warm: Memory Allocated (KB)</h4><canvas id="queryWarmMemory"></canvas></div>
+  <div class="chart-box"><h4>Cold Start: Mean Time</h4><canvas id="queryColdTime"></canvas></div>
+</div>
+
+<!-- 2. Single-Row Operations -->
+<h2>2. Single-Row Operations</h2>
+
+<div class="chart-row">
+  <div class="chart-box"><h4>QueryFirst &amp; QueryScalar (Warm, us)</h4><canvas id="singleRowWarm"></canvas></div>
+  <div class="chart-box"><h4>Single Insert (Warm, us)</h4><canvas id="insertWarm"></canvas></div>
+</div>
+
+<!-- 3. Bulk Insert -->
+<h2>3. Bulk Insert Performance</h2>
+
+<div class="chart-row">
+  <div class="chart-box"><h4>Warm: Mean Time by Batch Size</h4><canvas id="bulkWarmTime"></canvas></div>
+  <div class="chart-box"><h4>Warm: Speed vs Dapper (higher = faster)</h4><canvas id="bulkWarmRatio"></canvas></div>
+</div>
+
+<!-- 4. Memory Efficiency -->
+<h2>4. Memory Efficiency</h2>
+
+<div class="chart-row">
+  <div class="chart-box full"><h4>Warm Memory Ratio vs Dapper (lower = better, 1.0 = same)</h4><canvas id="memoryRatio"></canvas></div>
+</div>
+
+<!-- 5. Parameter Binding -->
+<h2>5. Parameter Binding &amp; Mapper Internals</h2>
+
+<div class="chart-row">
+  <div class="chart-box"><h4>Parameter Binding (Warm, us)</h4><canvas id="paramWarm"></canvas></div>
+  <div class="chart-box"><h4>Mapper Comparison (Warm, us) - 100 rows</h4><canvas id="mapperWarm"></canvas></div>
+</div>
+
+<!-- 6. Cold vs Warm Summary -->
+<h2>6. Jaunty vs Dapper: Complete Summary</h2>
+
+<table>
+  <thead>
+    <tr><th>Benchmark</th><th>Cold (Jaunty)</th><th>Cold (Dapper)</th><th>Warm Speed</th><th>Warm Memory</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Query 1 row</td><td>76 us</td><td>229 us</td><td class="faster">1.35x faster</td><td class="faster">2.19x less</td></tr>
+    <tr><td>Query 100 rows</td><td>191 us</td><td>313 us</td><td class="faster">1.21x faster</td><td class="faster">3.51x less</td></tr>
+    <tr><td>Query 10,000 rows</td><td>12.1 ms</td><td>19.7 ms</td><td class="faster">1.22x faster</td><td class="faster">3.51x less</td></tr>
+    <tr><td>Query 100,000 rows</td><td>146.8 ms</td><td>193.4 ms</td><td class="faster">1.41x faster</td><td class="faster">3.60x less</td></tr>
+    <tr><td>QueryFirst</td><td>51.3 us</td><td>66.1 us</td><td class="faster">1.29x faster</td><td class="faster">1.82x less</td></tr>
+    <tr><td>QueryScalar</td><td>20.5 us</td><td>15.4 us</td><td class="slower">1.16x slower</td><td class="same">same</td></tr>
+    <tr><td>Single Insert</td><td>38.4 us</td><td>65.1 us</td><td class="slower">1.17x slower</td><td class="same">same</td></tr>
+    <tr><td>Bulk Insert 100</td><td>420 us</td><td>809 us</td><td class="faster">2.86x faster</td><td class="faster">3.59x less</td></tr>
+    <tr><td>Bulk Insert 1,000</td><td>2,801 us</td><td>7,901 us</td><td class="faster">2.77x faster</td><td class="faster">3.72x less</td></tr>
+    <tr><td>Bulk Insert 10,000</td><td>25,024 us</td><td>87,418 us</td><td class="faster">2.38x faster</td><td class="faster">3.67x less</td></tr>
+    <tr><td>Named Params</td><td>117 us</td><td>259 us</td><td class="faster">1.34x faster</td><td class="faster">1.82x less</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>Note:</strong> These results are from SQLite in-memory benchmarks only. Multi-database results (SQL Server, PostgreSQL, MariaDB)
+  need to be re-run after the recent multi-DB support fixes. The positional parameter and hand-written mapper benchmarks
+  previously showed NA due to bugs that have now been fixed in this session.
+</div>
+
+</div>
+
+<script>
+const C = { jaunty: '#58a6ff', dapper: '#f0883e', efcore: '#f85149', repodb: '#3fb950', linq2db: '#bc8cff' };
+const opts = (yLabel, log) => ({
+  responsive: true, plugins: { legend: { labels: { color: '#8b949e', font: { size: 11 } } } },
+  scales: {
+    x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+    y: { type: log ? 'logarithmic' : 'linear', ticks: { color: '#8b949e' }, grid: { color: '#21262d' }, title: { display: true, text: yLabel, color: '#8b949e' } }
+  }
+});
+
+// 1. Query Warm Time
+new Chart(document.getElementById('queryWarmTime'), {
+  type: 'line', data: {
+    labels: ['1', '10', '100', '1K', '10K', '100K'],
+    datasets: [
+      { label: 'Jaunty', data: [4.52, 13.92, 102.12, 870.7, 9190, 109790], borderColor: C.jaunty, tension: 0.3 },
+      { label: 'Dapper', data: [6.10, 17.99, 123.64, 970.13, 11210, 154270], borderColor: C.dapper, tension: 0.3 },
+      { label: 'EF Core', data: [88.3, 98.56, 186.52, 978.82, 10560, 127290], borderColor: C.efcore, tension: 0.3 },
+      { label: 'RepoDb', data: [5.34, 10.29, 56.84, 433.89, 4490, 59180], borderColor: C.repodb, tension: 0.3 },
+      { label: 'linq2db', data: [6.95, 13.56, 71.59, 534.49, 6340, 81100], borderColor: C.linq2db, tension: 0.3 },
+    ]
+  }, options: opts('Time (us)', true)
+});
+
+// 2. Query Warm Ratio vs Dapper
+new Chart(document.getElementById('queryWarmRatio'), {
+  type: 'bar', data: {
+    labels: ['1 row', '10', '100', '1K', '10K', '100K'],
+    datasets: [
+      { label: 'Jaunty', data: [1.35, 1.29, 1.21, 1.11, 1.22, 1.41], backgroundColor: C.jaunty },
+      { label: 'RepoDb', data: [1.14, 1.75, 2.18, 2.24, 2.50, 2.61], backgroundColor: C.repodb },
+      { label: 'linq2db', data: [-1.14, 1.33, 1.73, 1.82, 1.78, 1.91], backgroundColor: C.linq2db },
+    ]
+  }, options: { ...opts('Speed ratio vs Dapper', false), plugins: { legend: { labels: { color: '#8b949e' } }, annotation: {} } }
+});
+
+// 3. Query Warm Memory
+new Chart(document.getElementById('queryWarmMemory'), {
+  type: 'bar', data: {
+    labels: ['1 row', '100', '1K', '10K', '100K'],
+    datasets: [
+      { label: 'Jaunty', data: [1.18, 16.27, 150.31, 1536.77, 15330.92], backgroundColor: C.jaunty },
+      { label: 'Dapper', data: [2.59, 57.50, 549.37, 5394.88, 55175.95], backgroundColor: C.dapper },
+      { label: 'EF Core', data: [68.50, 102.20, 403.95, 3461.30, 34147.38], backgroundColor: C.efcore },
+      { label: 'RepoDb', data: [1.88, 14.32, 120.08, 1237.52, 12206.94], backgroundColor: C.repodb },
+      { label: 'linq2db', data: [3.61, 15.93, 121.41, 1237.84, 12208.27], backgroundColor: C.linq2db },
+    ]
+  }, options: opts('Memory (KB)', true)
+});
+
+// 4. Cold Start
+new Chart(document.getElementById('queryColdTime'), {
+  type: 'bar', data: {
+    labels: ['1 row', '100', '1K', '10K'],
+    datasets: [
+      { label: 'Jaunty', data: [76, 191, 1291, 12100], backgroundColor: C.jaunty },
+      { label: 'Dapper', data: [229, 313, 1986, 19700], backgroundColor: C.dapper },
+      { label: 'RepoDb', data: [96, 208, 773, 6700], backgroundColor: C.repodb },
+      { label: 'linq2db', data: [1113, 788, 1610, 9900], backgroundColor: C.linq2db },
+    ]
+  }, options: opts('Time (us)', true)
+});
+
+// 5. Single Row Warm
+new Chart(document.getElementById('singleRowWarm'), {
+  type: 'bar', data: {
+    labels: ['QueryFirst', 'QueryScalar'],
+    datasets: [
+      { label: 'Jaunty', data: [5.40, 2.42], backgroundColor: C.jaunty },
+      { label: 'Dapper', data: [6.65, 2.12], backgroundColor: C.dapper },
+      { label: 'EF Core', data: [127.96, 76.51], backgroundColor: C.efcore },
+      { label: 'RepoDb', data: [7.55, 2.46], backgroundColor: C.repodb },
+      { label: 'linq2db', data: [16.42, 4.68], backgroundColor: C.linq2db },
+    ]
+  }, options: opts('Time (us)', false)
+});
+
+// 6. Insert Warm
+new Chart(document.getElementById('insertWarm'), {
+  type: 'bar', data: {
+    labels: ['Single Insert'],
+    datasets: [
+      { label: 'Jaunty', data: [29.74], backgroundColor: C.jaunty },
+      { label: 'Dapper', data: [26.00], backgroundColor: C.dapper },
+      { label: 'EF Core', data: [309.39], backgroundColor: C.efcore },
+      { label: 'RepoDb', data: [40.75], backgroundColor: C.repodb },
+      { label: 'linq2db', data: [144.56], backgroundColor: C.linq2db },
+    ]
+  }, options: opts('Time (us)', false)
+});
+
+// 7. Bulk Warm Time
+new Chart(document.getElementById('bulkWarmTime'), {
+  type: 'bar', data: {
+    labels: ['100 rows', '1,000 rows', '10,000 rows'],
+    datasets: [
+      { label: 'Jaunty', data: [260, 2762, 22586], backgroundColor: C.jaunty },
+      { label: 'Dapper', data: [743, 7635, 53536], backgroundColor: C.dapper },
+      { label: 'EF Core', data: [2962, 32731, 143198], backgroundColor: C.efcore },
+      { label: 'RepoDb', data: [1477, 15773, 114513], backgroundColor: C.repodb },
+      { label: 'linq2db', data: [237, 1815, 16460], backgroundColor: C.linq2db },
+    ]
+  }, options: opts('Time (us)', true)
+});
+
+// 8. Bulk Warm Ratio
+new Chart(document.getElementById('bulkWarmRatio'), {
+  type: 'bar', data: {
+    labels: ['100 rows', '1,000 rows', '10,000 rows'],
+    datasets: [
+      { label: 'Jaunty', data: [2.86, 2.77, 2.38], backgroundColor: C.jaunty },
+      { label: 'linq2db', data: [3.17, 4.23, 3.26], backgroundColor: C.linq2db },
+    ]
+  }, options: opts('Speed ratio vs Dapper', false)
+});
+
+// 9. Memory Ratio
+new Chart(document.getElementById('memoryRatio'), {
+  type: 'bar', data: {
+    labels: ['Query 1r', 'Query 100r', 'Query 1Kr', 'QueryFirst', 'QueryScalar', 'Insert', 'Bulk 100', 'Bulk 1K', 'Bulk 10K'],
+    datasets: [
+      { label: 'Jaunty', data: [0.46, 0.28, 0.27, 0.55, 1.0, 1.0, 0.28, 0.27, 0.27], backgroundColor: C.jaunty },
+      { label: 'EF Core', data: [26.45, 1.78, 0.74, 22.38, 77.20, 23.55, 3.97, 3.76, 3.66], backgroundColor: C.efcore },
+      { label: 'RepoDb', data: [0.73, 0.25, 0.22, 1.53, 1.05, 1.25, 2.13, 2.11, 2.14], backgroundColor: C.repodb },
+      { label: 'linq2db', data: [1.39, 0.28, 0.22, 2.92, 4.44, 3.06, 0.19, 0.17, 0.12], backgroundColor: C.linq2db },
+    ]
+  }, options: { ...opts('Memory ratio vs Dapper (1.0 = same)', false), scales: { x: { ticks: { color: '#8b949e' } }, y: { type: 'logarithmic', ticks: { color: '#8b949e' }, grid: { color: '#21262d' } } } }
+});
+
+// 10. Parameter Binding
+new Chart(document.getElementById('paramWarm'), {
+  type: 'bar', data: {
+    labels: ['Named (anon obj)'],
+    datasets: [
+      { label: 'Jaunty', data: [4.98], backgroundColor: C.jaunty },
+      { label: 'Dapper', data: [6.66], backgroundColor: C.dapper },
+    ]
+  }, options: opts('Time (us)', false)
+});
+
+// 11. Mapper
+new Chart(document.getElementById('mapperWarm'), {
+  type: 'bar', data: {
+    labels: ['Source-Gen', 'Reflection (Dict)'],
+    datasets: [
+      { label: 'Time (us)', data: [104.17, 95.98], backgroundColor: [C.jaunty, C.dapper] },
+    ]
+  }, options: opts('Time (us)', false)
+});
+</script>
+</body>
+</html>
