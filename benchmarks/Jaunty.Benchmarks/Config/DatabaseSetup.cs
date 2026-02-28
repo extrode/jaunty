@@ -9,8 +9,20 @@ using MySqlConnector;
 using Npgsql;
 
 using RepoDb;
+using RepoDb.Interfaces;
+using RepoDb.Options;
 
 namespace Jaunty.Benchmarks.Config;
+
+/// <summary>
+/// Handles SQLite Int64 → bool conversion for RepoDb.
+/// SQLite stores BOOLEAN as INTEGER (0/1); RepoDb can't coerce Int64 to bool natively.
+/// </summary>
+internal class SqliteInt64BoolHandler : IPropertyHandler<long?, bool?>
+{
+    public bool? Get(long? input, PropertyHandlerGetOptions options) => input.HasValue ? input.Value != 0 : null;
+    public long? Set(bool? input, PropertyHandlerSetOptions options) => input.HasValue ? (input.Value ? 1L : 0L) : null;
+}
 
 public enum DatabaseProvider
 {
@@ -267,6 +279,9 @@ public static class DatabaseSetup
             .UseMySqlConnector();
 
         TypeMapper.Add(typeof(bool), DbType.Int64);
+
+        // RepoDb can't coerce SQLite's Int64 to bool natively; register a property handler.
+        PropertyHandlerMapper.Add(typeof(bool), new SqliteInt64BoolHandler(), true);
     }
 
     /// <summary>

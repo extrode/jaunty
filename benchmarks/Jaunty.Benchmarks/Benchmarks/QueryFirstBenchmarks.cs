@@ -73,7 +73,10 @@ public class QueryFirstBenchmarks
     [Benchmark(Description = "RepoDb Query (first)")]
     public RepoDbProduct RepoDb_QueryFirst()
     {
-        return RepoDb.DbConnectionExtension.Query<RepoDbProduct>(_connection, 1).First();
+        return RepoDb.DbConnectionExtension.ExecuteQuery<RepoDbProduct>(
+            _connection,
+            "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products WHERE product_id = @Id",
+            new { Id = 1 }).First();
     }
 
     // --- linq2db ---

@@ -2,6 +2,7 @@ using System.Data;
 #if NET5_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
 #endif
+using System.Linq.Expressions;
 using System.Reflection;
 using Jaunty.Interfaces;
 using Jaunty.Configuration;
@@ -45,18 +46,28 @@ internal static class WriteParameterCache<T> where T : new()
         var metadata = ResolveMetadata();
         if (metadata == null) return null;
 
-        // Insert uses NonIdentityColumns (excluding computed) — same order as PrepareInsertParameters
+        // Insert uses NonIdentityColumns (excluding computed) — same order as PrepareInsertParameters.
+        // Pre-compile property getters to avoid PropertyInfo.GetValue() reflection in the hot loop.
         var columns = metadata.NonIdentityColumns;
+        var getters = new Func<T, object?>[columns.Count];
+        var isComputed = new bool[columns.Count];
+        int getterCount = 0;
+        for (int i = 0; i < columns.Count; i++)
+        {
+            isComputed[i] = columns[i].IsComputed;
+            if (!isComputed[i])
+            {
+                getters[getterCount] = CreateTypedGetter(columns[i].Property);
+                getterCount++;
+            }
+        }
+
         return (pc, entity) =>
         {
-            int paramIndex = 0;
-            for (int i = 0; i < columns.Count; i++)
+            int count = Math.Min(getterCount, pc.Count);
+            for (int i = 0; i < count; i++)
             {
-                var col = columns[i];
-                if (col.IsComputed) continue;
-                if (paramIndex < pc.Count)
-                    ((IDbDataParameter)pc[paramIndex]).Value = col.Property.GetValue(entity) ?? DBNull.Value;
-                paramIndex++;
+                ((IDbDataParameter)pc[i]).Value = getters[i](entity) ?? DBNull.Value;
             }
         };
     }
@@ -66,29 +77,32 @@ internal static class WriteParameterCache<T> where T : new()
         var metadata = ResolveMetadata();
         if (metadata == null) return null;
 
-        // Update: non-key/non-identity/non-computed columns for SET, then primary keys for WHERE
-        // Same order as PrepareUpdateParameters
+        // Update: non-key/non-identity/non-computed columns for SET, then primary keys for WHERE.
+        // Pre-compile all getters into a single flat array matching parameter order.
         var allColumns = metadata.Columns;
         var primaryKeys = metadata.PrimaryKeys;
+        var getterList = new List<Func<T, object?>>();
+
+        // SET clause columns
+        for (int i = 0; i < allColumns.Count; i++)
+        {
+            var col = allColumns[i];
+            if (col.IsPrimaryKey || col.IsIdentity || col.IsComputed) continue;
+            getterList.Add(CreateTypedGetter(col.Property));
+        }
+        // WHERE clause primary keys
+        for (int i = 0; i < primaryKeys.Count; i++)
+        {
+            getterList.Add(CreateTypedGetter(primaryKeys[i].Property));
+        }
+
+        var getters = getterList.ToArray();
         return (pc, entity) =>
         {
-            int paramIndex = 0;
-            // SET clause parameters
-            for (int i = 0; i < allColumns.Count; i++)
+            int count = Math.Min(getters.Length, pc.Count);
+            for (int i = 0; i < count; i++)
             {
-                var col = allColumns[i];
-                if (col.IsPrimaryKey || col.IsIdentity || col.IsComputed) continue;
-                if (paramIndex < pc.Count)
-                    ((IDbDataParameter)pc[paramIndex]).Value = col.Property.GetValue(entity) ?? DBNull.Value;
-                paramIndex++;
-            }
-            // WHERE clause parameters (primary keys)
-            for (int i = 0; i < primaryKeys.Count; i++)
-            {
-                var key = primaryKeys[i];
-                if (paramIndex < pc.Count)
-                    ((IDbDataParameter)pc[paramIndex]).Value = key.Property.GetValue(entity) ?? DBNull.Value;
-                paramIndex++;
+                ((IDbDataParameter)pc[i]).Value = getters[i](entity) ?? DBNull.Value;
             }
         };
     }
@@ -98,17 +112,34 @@ internal static class WriteParameterCache<T> where T : new()
         var metadata = ResolveMetadata();
         if (metadata == null) return null;
 
-        // Delete uses only primary key columns — same order as PrepareDeleteParameters
+        // Delete uses only primary key columns — same order as PrepareDeleteParameters.
         var primaryKeys = metadata.PrimaryKeys;
+        var getters = new Func<T, object?>[primaryKeys.Count];
+        for (int i = 0; i < primaryKeys.Count; i++)
+        {
+            getters[i] = CreateTypedGetter(primaryKeys[i].Property);
+        }
+
         return (pc, entity) =>
         {
-            for (int i = 0; i < primaryKeys.Count; i++)
+            int count = Math.Min(getters.Length, pc.Count);
+            for (int i = 0; i < count; i++)
             {
-                var key = primaryKeys[i];
-                if (i < pc.Count)
-                    ((IDbDataParameter)pc[i]).Value = key.Property.GetValue(entity) ?? DBNull.Value;
+                ((IDbDataParameter)pc[i]).Value = getters[i](entity) ?? DBNull.Value;
             }
         };
+    }
+
+    /// <summary>
+    /// Compiles a strongly-typed property getter delegate using expression trees.
+    /// ~10x faster than PropertyInfo.GetValue() on repeated calls.
+    /// </summary>
+    private static Func<T, object?> CreateTypedGetter(PropertyInfo prop)
+    {
+        var param = Expression.Parameter(typeof(T), "e");
+        var access = Expression.Property(param, prop);
+        var box = Expression.Convert(access, typeof(object));
+        return Expression.Lambda<Func<T, object?>>(box, param).Compile();
     }
 
     private static EntityMetadata? ResolveMetadata()

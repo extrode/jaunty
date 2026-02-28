@@ -137,27 +137,61 @@ public static partial class Jaunty
 
     private static async ValueTask<T> QueryScalarCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken)
     {
-        return await ExecuteReaderAsync<T>(connection, sql, parameters, options, async (reader, ct) =>
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        var wasClosed = connection.State == ConnectionState.Closed;
+
+        try
         {
-            // Prefer async path for DbDataReader, otherwise use synchronous IDataReader methods.
-            if (reader is DbDataReader dbReader)
+            if (wasClosed)
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NET8_0_OR_GREATER
+            await using var command = connection.CreateCommand();
+#else
+            using var command = connection.CreateCommand();
+#endif
+            command.CommandText = sql;
+
+            if (options.Transaction is DbTransaction dbTransaction)
+                command.Transaction = dbTransaction;
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
+            var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+
+            if (result is null || result is DBNull)
+                return default!;
+
+            if (result is T direct)
+                return direct;
+
+            return ConvertScalarValue<T>(result);
+        }
+        finally
+        {
+            if (wasClosed && connection.State != ConnectionState.Closed)
             {
-                if (!await dbReader.ReadAsync(ct).ConfigureAwait(false) || await dbReader.IsDBNullAsync(0, ct).ConfigureAwait(false))
-                    return default!;
-
-                try
-                {
-                    return await dbReader.GetFieldValueAsync<T>(0, ct).ConfigureAwait(false);
-                }
-                catch (InvalidCastException)
-                {
-                    return ConvertScalarValue<T>(dbReader.GetValue(0));
-                }
+#if NET8_0_OR_GREATER
+                await connection.CloseAsync().ConfigureAwait(false);
+#else
+                connection.Close();
+#endif
             }
-
-            if (!reader.Read() || reader.IsDBNull(0)) return default!;
-            return ConvertScalarValue<T>(reader.GetValue(0));
-        }, cancellationToken).ConfigureAwait(false);
+        }
     }
 
 #if ASYNC_ENUMERABLE_SUPPORT

@@ -12,6 +12,9 @@ public static partial class Jaunty
 {
     internal static long InsertCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
+        var binder = WriteParameterCache<T>.InsertBinder
+            ?? throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
+
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (string.IsNullOrEmpty(cached.InsertSql))
@@ -24,34 +27,25 @@ public static partial class Jaunty
             if (wasClosed) connection.Open();
 
             using var command = connection.CreateCommand();
-            command.Transaction = options.Transaction;
             command.CommandText = cached.InsertCommandText;
+
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            // Bind parameters using our decision tree
-            var binder = WriteParameterCache<T>.InsertBinder;
-            if (binder is not null)
-            {
-                binder(command, entity);
-            }
-            else
-            {
-                throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
-            }
+            binder(command, entity);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
             if (cached.HasIdentityKey)
             {
                 var result = command.ExecuteScalar();
-                long id = result == null || result == DBNull.Value ? 0 : Convert.ToInt64(result);
+                long id = result is null or DBNull ? 0 : Convert.ToInt64(result);
 
                 if (id > 0)
-                {
                     WriteParameterCache<T>.IdSetter?.Invoke(entity, id);
-                }
 
                 return id;
             }
@@ -66,6 +60,9 @@ public static partial class Jaunty
 
     internal static async ValueTask<long> InsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
+        var binder = WriteParameterCache<T>.InsertBinder
+            ?? throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
+
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (string.IsNullOrEmpty(cached.InsertSql))
@@ -83,35 +80,26 @@ public static partial class Jaunty
 #else
             using var command = connection.CreateCommand();
 #endif
-            command.Transaction = options.Transaction as DbTransaction;
             command.CommandText = cached.InsertCommandText;
+
+            if (options.Transaction is DbTransaction dbTransaction)
+                command.Transaction = dbTransaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            // Bind parameters
-            var binder = WriteParameterCache<T>.InsertBinder;
-            if (binder != null)
-            {
-                binder(command, entity);
-            }
-            else
-            {
-                throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'.");
-            }
+            binder(command, entity);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, entity);
 
             if (cached.HasIdentityKey)
             {
                 var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-                long id = result == null || result == DBNull.Value ? 0 : Convert.ToInt64(result);
-                
+                long id = result is null or DBNull ? 0 : Convert.ToInt64(result);
+
                 if (id > 0)
-                {
                     WriteParameterCache<T>.IdSetter?.Invoke(entity, id);
-                }
-                
+
                 return id;
             }
 
