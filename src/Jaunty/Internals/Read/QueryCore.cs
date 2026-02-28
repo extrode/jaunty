@@ -112,26 +112,41 @@ public static partial class Jaunty
 
     private static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options)
     {
-        return ExecuteReader(connection, sql, parameters, options, reader =>
+        var wasClosed = connection.State == ConnectionState.Closed;
+
+        try
         {
-            if (!reader.Read() || reader.IsDBNull(0))
+            if (wasClosed) connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = sql;
+
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
+            var result = command.ExecuteScalar();
+
+            if (result is null || result is DBNull)
                 return default!;
 
-            if (reader is DbDataReader dbReader)
-            {
-                try
-                {
-                    return dbReader.GetFieldValue<T>(0);
-                }
-                catch (InvalidCastException)
-                {
-                    // Fallback to slower conversion if direct cast fails
-                    return ConvertScalarValue<T>(dbReader.GetValue(0));
-                }
-            }
+            if (result is T direct)
+                return direct;
 
-            return ConvertScalarValue<T>(reader.GetValue(0));
-        });
+            return ConvertScalarValue<T>(result);
+        }
+        finally
+        {
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
+        }
     }
 
     private static T ConvertScalarValue<T>(object value)

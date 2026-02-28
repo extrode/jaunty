@@ -19,16 +19,16 @@ internal static class CrudSqlCache
 
     /// <summary>
     /// Gets or creates cached SQL for the specified entity type and connection.
+    /// Uses (Type, connectionType) as key — dialect is resolved from connection type via cached factory.
     /// </summary>
     public static CachedCrudSql GetSql<T>(IDbConnection connection) where T : new()
     {
-        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
-        Type dialectType = dialect.GetType();
-        var key = (typeof(T), dialectType);
+        var key = (typeof(T), connection.GetType());
 
         if (_cache.TryGetValue(key, out CachedCrudSql? cached))
             return cached;
 
+        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
         cached = BuildCachedSql<T>(dialect);
         _cache.TryAdd(key, cached);
         return cached;
