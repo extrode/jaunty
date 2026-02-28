@@ -179,7 +179,7 @@ public static partial class Jaunty
             if (result is T direct)
                 return direct;
 
-            return ConvertScalarValue<T>(result);
+            return ScalarConverter<T>.Convert(result);
         }
         finally
         {
