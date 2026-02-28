@@ -785,6 +785,83 @@ public class ParameterBinderTests
 
     #endregion
 
+    #region Scalar Parameter Binding
+
+    [Fact]
+    public void Bind_ScalarInt_BindsToSqlParameter()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE id = @p0");
+
+        ParameterBinder.Bind(command, 42);
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("p0", command.Parameters[0].ParameterName);
+        Assert.Equal(42, command.Parameters[0].Value);
+    }
+
+    [Fact]
+    public void Bind_ScalarString_BindsToSqlParameter()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE name = @name");
+
+        ParameterBinder.Bind(command, "John");
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("name", command.Parameters[0].ParameterName);
+        Assert.Equal("John", command.Parameters[0].Value);
+    }
+
+    [Fact]
+    public void Bind_ScalarGuid_BindsToSqlParameter()
+    {
+        var guid = Guid.NewGuid();
+        var command = new MockDbCommand("SELECT * FROM users WHERE id = @id");
+
+        ParameterBinder.Bind(command, guid);
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("id", command.Parameters[0].ParameterName);
+        Assert.Equal(guid, command.Parameters[0].Value);
+    }
+
+    [Fact]
+    public void Bind_ScalarLong_BindsToSqlParameter()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE id = @id");
+
+        ParameterBinder.Bind(command, 123L);
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("id", command.Parameters[0].ParameterName);
+        Assert.Equal(123L, command.Parameters[0].Value);
+    }
+
+    [Fact]
+    public void Bind_ScalarDecimal_BindsToSqlParameter()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE price = @price");
+
+        ParameterBinder.Bind(command, 19.99m);
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("price", command.Parameters[0].ParameterName);
+        Assert.Equal(19.99m, command.Parameters[0].Value);
+    }
+
+    [Fact]
+    public void Bind_ScalarBool_BindsToSqlParameter()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE active = @active");
+
+        ParameterBinder.Bind(command, true);
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("active", command.Parameters[0].ParameterName);
+        Assert.Equal(true, command.Parameters[0].Value);
+    }
+
+    #endregion
+
     #region Test Helpers
 
     private enum TestEnum

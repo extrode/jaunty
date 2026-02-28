@@ -25,7 +25,7 @@ public static partial class Jaunty
 
             using var command = connection.CreateCommand();
             command.Transaction = options.Transaction;
-            command.CommandText = ComposeInsertCommandText(cached);
+            command.CommandText = cached.InsertCommandText;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -47,12 +47,12 @@ public static partial class Jaunty
             {
                 var result = command.ExecuteScalar();
                 long id = result == null || result == DBNull.Value ? 0 : Convert.ToInt64(result);
-                
+
                 if (id > 0)
                 {
                     WriteParameterCache<T>.IdSetter?.Invoke(entity, id);
                 }
-                
+
                 return id;
             }
 
@@ -84,7 +84,7 @@ public static partial class Jaunty
             using var command = connection.CreateCommand();
 #endif
             command.Transaction = options.Transaction as DbTransaction;
-            command.CommandText = ComposeInsertCommandText(cached);
+            command.CommandText = cached.InsertCommandText;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -130,18 +130,4 @@ public static partial class Jaunty
         }
     }
 
-    private static string ComposeInsertCommandText(CachedCrudSql cached)
-    {
-        if (!cached.HasIdentityKey)
-            return cached.InsertSql;
-
-        var lastInsertIdSql = cached.LastInsertIdSql?.TrimStart();
-        if (!string.IsNullOrEmpty(lastInsertIdSql) &&
-            lastInsertIdSql.StartsWith("RETURNING", StringComparison.OrdinalIgnoreCase))
-        {
-            return $"{cached.InsertSql} {cached.LastInsertIdSql}";
-        }
-
-        return $"{cached.InsertSql}; {cached.LastInsertIdSql}";
-    }
 }

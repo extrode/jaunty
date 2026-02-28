@@ -32,6 +32,14 @@ internal static class ParameterBinder
             return;
         }
 
+        // Handle scalar/value-type parameters (int, string, Guid, etc.)
+        // These have no public instance properties to bind by name, so we bind positionally.
+        if (IsScalarType(parameters.GetType()))
+        {
+            BindScalar(command, parameters);
+            return;
+        }
+
         var sql = command.CommandText;
         var type = parameters.GetType();
         var commandType = command.GetType();
@@ -142,16 +150,17 @@ internal static class ParameterBinder
     private class CommandTemplate(TemplateItem[] items)
     {
         private IDbDataParameter[]? _templates;
-        private Type? _templateParameterType;
+        private Type? _templateCommandType;
 
         public void Bind(IDbCommand command, object parameters)
         {
             _templates ??= CreateTemplates(command);
 
-            // Check if the command's parameter type matches the cached template type.
+            // Check if the command type matches the cached template's originating command type.
             // This prevents cross-provider bugs when multiple providers (e.g.,
             // System.Data.SQLite and Microsoft.Data.Sqlite) share the same SQL cache key.
-            bool sameProvider = command.CreateParameter().GetType() == _templateParameterType;
+            // Uses command type comparison (no allocation) instead of CreateParameter().GetType().
+            bool sameProvider = command.GetType() == _templateCommandType;
 
             var pCollection = command.Parameters;
             for (int i = 0; i < items.Length; i++)
@@ -169,6 +178,7 @@ internal static class ParameterBinder
 
         private IDbDataParameter[] CreateTemplates(IDbCommand command)
         {
+            _templateCommandType = command.GetType();
             var templates = new IDbDataParameter[items.Length];
             for (int i = 0; i < items.Length; i++)
             {
@@ -176,7 +186,6 @@ internal static class ParameterBinder
                 p.ParameterName = items[i].Name;
                 templates[i] = p;
             }
-            _templateParameterType = templates.Length > 0 ? templates[0].GetType() : null;
             return templates;
         }
 
@@ -344,6 +353,37 @@ internal static class ParameterBinder
         public readonly string Name = name;
         public readonly IEnumerable Items = items;
         public readonly int Count = count;
+    }
+
+    private static bool IsScalarType(Type type)
+    {
+        var underlying = Nullable.GetUnderlyingType(type) ?? type;
+        return underlying.IsPrimitive
+            || underlying.IsEnum
+            || underlying == typeof(string)
+            || underlying == typeof(decimal)
+            || underlying == typeof(DateTime)
+            || underlying == typeof(DateTimeOffset)
+            || underlying == typeof(TimeSpan)
+            || underlying == typeof(Guid)
+            || underlying == typeof(byte[]);
+    }
+
+    private static void BindScalar(IDbCommand command, object value)
+    {
+        string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText);
+        var bound = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < sqlParamNames.Length; i++)
+        {
+            string sqlName = sqlParamNames[i];
+            if (!bound.Add(sqlName)) continue;
+
+            var p = command.CreateParameter();
+            p.ParameterName = sqlName;
+            p.Value = value ?? DBNull.Value;
+            command.Parameters.Add(p);
+        }
     }
 
     private static void BindFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)
