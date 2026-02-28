@@ -140,29 +140,13 @@ public static partial class Jaunty
             if (result is T direct)
                 return direct;
 
-            return ConvertScalarValue<T>(result);
+            return ScalarConverter<T>.Convert(result);
         }
         finally
         {
             if (wasClosed && connection.State != ConnectionState.Closed)
                 connection.Close();
         }
-    }
-
-    private static T ConvertScalarValue<T>(object value)
-    {
-        if (value is T direct)
-            return direct;
-
-        var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
-        if (targetType.IsEnum)
-        {
-            var enumUnderlyingType = Enum.GetUnderlyingType(targetType);
-            var numeric = Convert.ChangeType(value, enumUnderlyingType);
-            return (T)Enum.ToObject(targetType, numeric!);
-        }
-
-        return (T)Convert.ChangeType(value, targetType);
     }
 
     private static IEnumerable<T> QueryStreamCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
@@ -483,5 +467,5 @@ public static partial class Jaunty
     }
 
     #endregion
-}
 
+}
