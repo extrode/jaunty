@@ -487,14 +487,14 @@ public static class CsvImportExtensions
         int i = 0;
         int len = line.Length;
 
-        while (i <= len)
+        if (len == 0)
         {
-            if (i == len)
-            {
-                fields.Add(string.Empty);
-                break;
-            }
+            fields.Add(string.Empty);
+            return fields.ToArray();
+        }
 
+        while (i < len)
+        {
             if (line[i] == quote)
             {
                 // Quoted field
@@ -525,7 +525,12 @@ public static class CsvImportExtensions
 
                 // Skip delimiter after quoted field
                 if (i < len && line[i] == delimiter)
+                {
                     i++;
+                    // Trailing delimiter means one more empty field
+                    if (i == len)
+                        fields.Add(string.Empty);
+                }
             }
             else
             {
@@ -535,7 +540,12 @@ public static class CsvImportExtensions
                     i++;
                 fields.Add(line.Substring(start, i - start));
                 if (i < len)
+                {
                     i++; // skip delimiter
+                    // Trailing delimiter means one more empty field
+                    if (i == len)
+                        fields.Add(string.Empty);
+                }
             }
         }
 
