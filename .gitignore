@@ -379,3 +379,6 @@ FodyWeavers.xsd
 
 # Ignore generated data files
 /data/
+
+# Ignore benchmark artifacts
+/docs/benchmark-artifacts/
