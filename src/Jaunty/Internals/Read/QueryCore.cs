@@ -121,6 +121,9 @@ public static partial class Jaunty
             using var command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType == CommandType.StoredProcedure || options.CommandType == CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             if (options.Transaction is not null)
                 command.Transaction = options.Transaction;
 
