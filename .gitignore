@@ -367,6 +367,15 @@ FodyWeavers.xsd
 # Test configuration (may contain connection strings with credentials)
 **/appsettings.json
 !**/appsettings.example.json
+
+# Ignore AOT publish output 
 /publish-aot/
+
+# Ignore .NET SDK installation folder (may contain sensitive information about installed workloads and runtimes)
 /.dotnet
+
+# Ignore code coverage results from .NET tools that may contain sensitive information about the codebase and test results
 *.dcvr
+
+# Ignore generated data files
+/data/
