@@ -123,6 +123,10 @@ internal sealed class PostgreSqlDialect : ISqlDialect
     public string GenerateMonth(string expression) => $"EXTRACT(MONTH FROM {expression})";
     public string GenerateDay(string expression) => $"EXTRACT(DAY FROM {expression})";
 
+    // Multi-row insert support
+    public bool SupportsMultiRowInsert => true;
+    public int MaxParametersPerStatement => 65535;
+
     // Upsert support - PostgreSQL uses ON CONFLICT (like SQLite)
     public bool SupportsUpsert => true;
 
