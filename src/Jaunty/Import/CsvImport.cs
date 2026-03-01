@@ -43,14 +43,14 @@ public static class CsvImportExtensions
 
         options ??= new CsvImportOptions();
 
-        string connectionTypeName = connection.GetType().Name;
-        return connectionTypeName switch
+        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+        return dialect switch
         {
-            "SQLiteConnection" or "SqliteConnection" => ImportSqlite(connection, tableName, filePath, options),
-            "NpgsqlConnection" => ImportPostgreSql(connection, tableName, filePath, options),
-            "MySqlConnection" => ImportMySql(connection, tableName, filePath, options),
-            "SqlConnection" => ImportSqlServer(connection, tableName, filePath, options),
-            _ => throw new NotSupportedException($"CSV import is not supported for connection type: {connectionTypeName}")
+            SQLiteDialect => ImportSqlite(connection, tableName, filePath, options),
+            PostgreSqlDialect => ImportPostgreSql(connection, tableName, filePath, options),
+            MySqlDialect => ImportMySql(connection, tableName, filePath, options),
+            SqlServerDialect => ImportSqlServer(connection, tableName, filePath, options),
+            _ => throw new NotSupportedException($"CSV import is not supported for connection type: {connection.GetType().Name}")
         };
     }
 
@@ -74,14 +74,14 @@ public static class CsvImportExtensions
 
         options ??= new CsvImportOptions();
 
-        string connectionTypeName = connection.GetType().Name;
-        return connectionTypeName switch
+        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+        return dialect switch
         {
-            "SQLiteConnection" or "SqliteConnection" => await ImportSqliteAsync(connection, tableName, filePath, options, cancellationToken).ConfigureAwait(false),
-            "NpgsqlConnection" => await ImportPostgreSqlAsync(connection, tableName, filePath, options, cancellationToken).ConfigureAwait(false),
-            "MySqlConnection" => await ImportMySqlAsync(connection, tableName, filePath, options, cancellationToken).ConfigureAwait(false),
-            "SqlConnection" => await ImportSqlServerAsync(connection, tableName, filePath, options, cancellationToken).ConfigureAwait(false),
-            _ => throw new NotSupportedException($"CSV import is not supported for connection type: {connectionTypeName}")
+            SQLiteDialect => await ImportSqliteAsync(connection, tableName, filePath, options, cancellationToken).ConfigureAwait(false),
+            PostgreSqlDialect => await ImportPostgreSqlAsync(connection, tableName, filePath, options, cancellationToken).ConfigureAwait(false),
+            MySqlDialect => await ImportMySqlAsync(connection, tableName, filePath, options, cancellationToken).ConfigureAwait(false),
+            SqlServerDialect => await ImportSqlServerAsync(connection, tableName, filePath, options, cancellationToken).ConfigureAwait(false),
+            _ => throw new NotSupportedException($"CSV import is not supported for connection type: {connection.GetType().Name}")
         };
     }
 
