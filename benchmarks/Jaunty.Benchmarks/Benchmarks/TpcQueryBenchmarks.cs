@@ -88,6 +88,6 @@ public class TpcQueryBenchmarks
     [Benchmark(Description = "Dapper Query<T>")]
     public List<DapperOrder> Dapper_Query()
     {
-        return _connection.Query<DapperOrder>(OrdersQueryDapper, new { Limit }).AsList();
+        return SqlMapper.Query<DapperOrder>(_connection, OrdersQueryDapper, new { Limit }).AsList();
     }
 }

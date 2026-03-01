@@ -235,6 +235,21 @@ internal interface ISqlDialect
         string[] keyColumns);
 
     // ==========================================
+    // Multi-Row Insert Support
+    // ==========================================
+
+    /// <summary>
+    /// Indicates whether this dialect supports multi-row INSERT VALUES syntax.
+    /// </summary>
+    bool SupportsMultiRowInsert { get; }
+
+    /// <summary>
+    /// Gets the maximum number of parameters allowed per SQL statement.
+    /// Used to compute optimal batch sizes for multi-row INSERT operations.
+    /// </summary>
+    int MaxParametersPerStatement { get; }
+
+    // ==========================================
     // Window Functions
     // ==========================================
 

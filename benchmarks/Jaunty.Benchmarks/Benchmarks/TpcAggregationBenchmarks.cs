@@ -59,7 +59,7 @@ public class TpcAggregationBenchmarks
     [Benchmark(Description = "Dapper COUNT(*) orders")]
     public long Dapper_CountOrders()
     {
-        return _connection.ExecuteScalar<long>("SELECT COUNT(*) FROM orders");
+        return SqlMapper.ExecuteScalar<long>(_connection, "SELECT COUNT(*) FROM orders");
     }
 
     // =============================================
@@ -83,7 +83,7 @@ public class TpcAggregationBenchmarks
     [Benchmark(Description = "Dapper SUM orders")]
     public decimal Dapper_SumOrders()
     {
-        return _connection.ExecuteScalar<decimal>("SELECT SUM(o_totalprice) FROM orders");
+        return SqlMapper.ExecuteScalar<decimal>(_connection, "SELECT SUM(o_totalprice) FROM orders");
     }
 
     // =============================================
@@ -114,7 +114,7 @@ public class TpcAggregationBenchmarks
     [Benchmark(Description = "Dapper GROUP BY lineitem")]
     public List<LineitemGroupResult> Dapper_GroupByLineitem()
     {
-        return _connection.Query<LineitemGroupResult>(
+        return SqlMapper.Query<LineitemGroupResult>(_connection,
             "SELECT l_returnflag AS ReturnFlag, COUNT(*) as Count FROM lineitem GROUP BY l_returnflag ORDER BY l_returnflag")
             .AsList();
     }

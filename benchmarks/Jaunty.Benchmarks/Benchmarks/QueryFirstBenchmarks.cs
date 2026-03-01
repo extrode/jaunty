@@ -3,6 +3,8 @@ using System.Data.Common;
 
 using BenchmarkDotNet.Attributes;
 
+using Dapper;
+
 using Jaunty.Benchmarks.Config;
 using Jaunty.Benchmarks.Entities;
 
@@ -78,7 +80,7 @@ public class QueryFirstBenchmarks
     [Benchmark(Description = "Dapper QueryFirst")]
     public DapperProduct Dapper_QueryFirst()
     {
-        return _connection.QueryFirst<DapperProduct>(
+        return SqlMapper.QueryFirst<DapperProduct>(_connection,
             "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products WHERE product_id = @Id",
             new { Id = 1 });
     }
