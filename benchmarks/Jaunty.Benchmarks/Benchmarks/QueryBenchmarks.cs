@@ -79,7 +79,7 @@ public class QueryBenchmarks
     [Benchmark(Description = "Dapper Query<T>")]
     public List<DapperProduct> Dapper_Query()
     {
-        return _connection.Query<DapperProduct>(
+        return SqlMapper.Query<DapperProduct>(_connection,
             "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products")
             .AsList();
     }

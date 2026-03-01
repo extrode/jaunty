@@ -1,5 +1,3 @@
-using Dapper.Contrib.Extensions;
-
 namespace Jaunty.Benchmarks.Entities;
 
 [Dapper.Contrib.Extensions.Table("benchmark_products")]

@@ -64,7 +64,7 @@ public class ParameterBenchmarks
     [Benchmark(Description = "Dapper named param (anon obj)")]
     public DapperProduct Dapper_NamedParameter()
     {
-        return _connection.QueryFirst<DapperProduct>(
+        return SqlMapper.QueryFirst<DapperProduct>(_connection,
             "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products WHERE product_id = @Id",
             new { Id = 1 });
     }
@@ -74,7 +74,7 @@ public class ParameterBenchmarks
     [Benchmark(Description = "Dapper positional param")]
     public DapperProduct Dapper_PositionalParameter()
     {
-        return _connection.QueryFirst<DapperProduct>(
+        return SqlMapper.QueryFirst<DapperProduct>(_connection,
             "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products WHERE product_id = @p0",
             new { p0 = 1 });
     }
