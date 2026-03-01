@@ -134,6 +134,10 @@ internal sealed class SqlServerDialect : ISqlDialect
     public string GenerateMonth(string expression) => $"MONTH({expression})";
     public string GenerateDay(string expression) => $"DAY({expression})";
 
+    // Multi-row insert support
+    public bool SupportsMultiRowInsert => true;
+    public int MaxParametersPerStatement => 2100;
+
     // Upsert support - SQL Server uses MERGE
     public bool SupportsUpsert => true;
 

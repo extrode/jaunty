@@ -135,6 +135,10 @@ internal sealed class MySqlDialect : ISqlDialect
     public string GenerateMonth(string expression) => $"MONTH({expression})";
     public string GenerateDay(string expression) => $"DAY({expression})";
 
+    // Multi-row insert support
+    public bool SupportsMultiRowInsert => true;
+    public int MaxParametersPerStatement => 65535;
+
     // Upsert support - MySQL uses ON DUPLICATE KEY UPDATE
     public bool SupportsUpsert => true;
 
