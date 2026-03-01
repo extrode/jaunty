@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.Common;
 
 using BenchmarkDotNet.Attributes;
@@ -88,6 +89,53 @@ public class BulkInsertBenchmarks
         cmd.ExecuteNonQuery();
     }
 
+    // --- ADO.NET (hand-coded baseline) ---
+
+    [Benchmark(Description = "ADO.NET loop (transaction)", Baseline = true)]
+    public void AdoNet_BulkInsert()
+    {
+        using var transaction = _connection.BeginTransaction();
+        using var cmd = _connection.CreateCommand();
+        cmd.Transaction = transaction;
+        cmd.CommandText = "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@name, @price, @stock, @disc)";
+
+        var pName = cmd.CreateParameter();
+        pName.ParameterName = "@name";
+        pName.DbType = DbType.String;
+        cmd.Parameters.Add(pName);
+
+        var pPrice = cmd.CreateParameter();
+        pPrice.ParameterName = "@price";
+        pPrice.DbType = DbType.Decimal;
+        cmd.Parameters.Add(pPrice);
+
+        var pStock = cmd.CreateParameter();
+        pStock.ParameterName = "@stock";
+        pStock.DbType = DbType.Int32;
+        cmd.Parameters.Add(pStock);
+
+        var pDisc = cmd.CreateParameter();
+        pDisc.ParameterName = "@disc";
+        pDisc.DbType = Provider == DatabaseProvider.Sqlite ? DbType.Int64 : DbType.Boolean;
+        cmd.Parameters.Add(pDisc);
+
+        if (Provider != DatabaseProvider.SqlServer)
+            cmd.Prepare();
+
+        foreach (var p in _jauntyProducts)
+        {
+            pName.Value = p.ProductName;
+            pPrice.Value = p.UnitPrice;
+            pStock.Value = p.UnitsInStock;
+            pDisc.Value = Provider == DatabaseProvider.Sqlite
+                ? (object)(p.Discontinued ? 1L : 0L)
+                : (object)p.Discontinued;
+            cmd.ExecuteNonQuery();
+        }
+
+        transaction.Commit();
+    }
+
     // --- Jaunty BulkInsert ---
 
     [Benchmark(Description = "Jaunty BulkInsert")]
@@ -98,7 +146,7 @@ public class BulkInsertBenchmarks
 
     // --- Dapper loop insert (no built-in bulk) ---
 
-    [Benchmark(Description = "Dapper Execute loop", Baseline = true)]
+    [Benchmark(Description = "Dapper Execute loop")]
     public void Dapper_LoopInsert()
     {
         foreach (var p in _jauntyProducts)
