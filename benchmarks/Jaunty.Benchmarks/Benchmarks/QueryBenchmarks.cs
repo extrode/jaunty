@@ -42,6 +42,29 @@ public class QueryBenchmarks
         _connection?.Dispose();
     }
 
+    // --- ADO.NET (hand-coded baseline) ---
+
+    [Benchmark(Description = "ADO.NET (hand-coded)", Baseline = true)]
+    public List<JauntyProduct> AdoNet_Query()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products";
+        using var reader = cmd.ExecuteReader();
+        var results = new List<JauntyProduct>();
+        while (reader.Read())
+        {
+            results.Add(new JauntyProduct
+            {
+                ProductId = reader.GetInt32(0),
+                ProductName = reader.GetString(1),
+                UnitPrice = reader.GetDecimal(2),
+                UnitsInStock = reader.GetInt32(3),
+                Discontinued = reader.GetBoolean(4)
+            });
+        }
+        return results;
+    }
+
     // --- Jaunty ---
 
     [Benchmark(Description = "Jaunty Query<T>")]
@@ -53,7 +76,7 @@ public class QueryBenchmarks
 
     // --- Dapper ---
 
-    [Benchmark(Description = "Dapper Query<T>", Baseline = true)]
+    [Benchmark(Description = "Dapper Query<T>")]
     public List<DapperProduct> Dapper_Query()
     {
         return _connection.Query<DapperProduct>(

@@ -39,6 +39,16 @@ public class QueryScalarBenchmarks
         _connection?.Dispose();
     }
 
+    // --- ADO.NET (hand-coded baseline) ---
+
+    [Benchmark(Description = "ADO.NET ExecuteScalar", Baseline = true)]
+    public int AdoNet_QueryScalar()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM benchmark_products";
+        return Convert.ToInt32(cmd.ExecuteScalar());
+    }
+
     // --- Jaunty ---
 
     [Benchmark(Description = "Jaunty QueryScalar")]
@@ -49,7 +59,7 @@ public class QueryScalarBenchmarks
 
     // --- Dapper ---
 
-    [Benchmark(Description = "Dapper ExecuteScalar", Baseline = true)]
+    [Benchmark(Description = "Dapper ExecuteScalar")]
     public int Dapper_QueryScalar()
     {
         return _connection.ExecuteScalar<int>("SELECT COUNT(*) FROM benchmark_products");

@@ -173,6 +173,169 @@ public static class DatabaseSetup
         cmd.ExecuteNonQuery();
     }
 
+    public static void CreateTpcSchema(DbConnection connection, DatabaseProvider provider)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = provider switch
+        {
+            DatabaseProvider.Sqlite => """
+                CREATE TABLE IF NOT EXISTS orders (
+                    o_orderkey INTEGER PRIMARY KEY,
+                    o_custkey INTEGER NOT NULL,
+                    o_orderstatus TEXT NOT NULL,
+                    o_totalprice REAL NOT NULL,
+                    o_orderdate TEXT NOT NULL,
+                    o_orderpriority TEXT NOT NULL,
+                    o_clerk TEXT NOT NULL,
+                    o_shippriority INTEGER NOT NULL,
+                    o_comment TEXT NOT NULL
+                );
+                """,
+
+            DatabaseProvider.SqlServer => """
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'orders')
+                CREATE TABLE orders (
+                    o_orderkey INT PRIMARY KEY,
+                    o_custkey INT NOT NULL,
+                    o_orderstatus NVARCHAR(1) NOT NULL,
+                    o_totalprice DECIMAL(15,2) NOT NULL,
+                    o_orderdate DATE NOT NULL,
+                    o_orderpriority NVARCHAR(15) NOT NULL,
+                    o_clerk NVARCHAR(15) NOT NULL,
+                    o_shippriority INT NOT NULL,
+                    o_comment NVARCHAR(79) NOT NULL
+                );
+                """,
+
+            DatabaseProvider.PostgreSql => """
+                CREATE TABLE IF NOT EXISTS orders (
+                    o_orderkey INT PRIMARY KEY,
+                    o_custkey INT NOT NULL,
+                    o_orderstatus CHAR(1) NOT NULL,
+                    o_totalprice NUMERIC(15,2) NOT NULL,
+                    o_orderdate DATE NOT NULL,
+                    o_orderpriority VARCHAR(15) NOT NULL,
+                    o_clerk VARCHAR(15) NOT NULL,
+                    o_shippriority INT NOT NULL,
+                    o_comment VARCHAR(79) NOT NULL
+                );
+                """,
+
+            DatabaseProvider.MariaDb => """
+                CREATE TABLE IF NOT EXISTS orders (
+                    o_orderkey INT PRIMARY KEY,
+                    o_custkey INT NOT NULL,
+                    o_orderstatus CHAR(1) NOT NULL,
+                    o_totalprice DECIMAL(15,2) NOT NULL,
+                    o_orderdate DATE NOT NULL,
+                    o_orderpriority VARCHAR(15) NOT NULL,
+                    o_clerk VARCHAR(15) NOT NULL,
+                    o_shippriority INT NOT NULL,
+                    o_comment VARCHAR(79) NOT NULL
+                );
+                """,
+
+            _ => throw new ArgumentOutOfRangeException(nameof(provider))
+        };
+        cmd.ExecuteNonQuery();
+
+        using var cmd2 = connection.CreateCommand();
+        cmd2.CommandText = provider switch
+        {
+            DatabaseProvider.Sqlite => """
+                CREATE TABLE IF NOT EXISTS lineitem (
+                    l_orderkey INTEGER NOT NULL,
+                    l_partkey INTEGER NOT NULL,
+                    l_suppkey INTEGER NOT NULL,
+                    l_linenumber INTEGER NOT NULL,
+                    l_quantity REAL NOT NULL,
+                    l_extendedprice REAL NOT NULL,
+                    l_discount REAL NOT NULL,
+                    l_tax REAL NOT NULL,
+                    l_returnflag TEXT NOT NULL,
+                    l_linestatus TEXT NOT NULL,
+                    l_shipdate TEXT NOT NULL,
+                    l_commitdate TEXT NOT NULL,
+                    l_receiptdate TEXT NOT NULL,
+                    l_shipinstruct TEXT NOT NULL,
+                    l_shipmode TEXT NOT NULL,
+                    l_comment TEXT NOT NULL,
+                    PRIMARY KEY (l_orderkey, l_linenumber)
+                );
+                """,
+
+            DatabaseProvider.SqlServer => """
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'lineitem')
+                CREATE TABLE lineitem (
+                    l_orderkey INT NOT NULL,
+                    l_partkey INT NOT NULL,
+                    l_suppkey INT NOT NULL,
+                    l_linenumber INT NOT NULL,
+                    l_quantity DECIMAL(15,2) NOT NULL,
+                    l_extendedprice DECIMAL(15,2) NOT NULL,
+                    l_discount DECIMAL(15,2) NOT NULL,
+                    l_tax DECIMAL(15,2) NOT NULL,
+                    l_returnflag NVARCHAR(1) NOT NULL,
+                    l_linestatus NVARCHAR(1) NOT NULL,
+                    l_shipdate DATE NOT NULL,
+                    l_commitdate DATE NOT NULL,
+                    l_receiptdate DATE NOT NULL,
+                    l_shipinstruct NVARCHAR(25) NOT NULL,
+                    l_shipmode NVARCHAR(10) NOT NULL,
+                    l_comment NVARCHAR(44) NOT NULL,
+                    PRIMARY KEY (l_orderkey, l_linenumber)
+                );
+                """,
+
+            DatabaseProvider.PostgreSql => """
+                CREATE TABLE IF NOT EXISTS lineitem (
+                    l_orderkey INT NOT NULL,
+                    l_partkey INT NOT NULL,
+                    l_suppkey INT NOT NULL,
+                    l_linenumber INT NOT NULL,
+                    l_quantity NUMERIC(15,2) NOT NULL,
+                    l_extendedprice NUMERIC(15,2) NOT NULL,
+                    l_discount NUMERIC(15,2) NOT NULL,
+                    l_tax NUMERIC(15,2) NOT NULL,
+                    l_returnflag CHAR(1) NOT NULL,
+                    l_linestatus CHAR(1) NOT NULL,
+                    l_shipdate DATE NOT NULL,
+                    l_commitdate DATE NOT NULL,
+                    l_receiptdate DATE NOT NULL,
+                    l_shipinstruct VARCHAR(25) NOT NULL,
+                    l_shipmode VARCHAR(10) NOT NULL,
+                    l_comment VARCHAR(44) NOT NULL,
+                    PRIMARY KEY (l_orderkey, l_linenumber)
+                );
+                """,
+
+            DatabaseProvider.MariaDb => """
+                CREATE TABLE IF NOT EXISTS lineitem (
+                    l_orderkey INT NOT NULL,
+                    l_partkey INT NOT NULL,
+                    l_suppkey INT NOT NULL,
+                    l_linenumber INT NOT NULL,
+                    l_quantity DECIMAL(15,2) NOT NULL,
+                    l_extendedprice DECIMAL(15,2) NOT NULL,
+                    l_discount DECIMAL(15,2) NOT NULL,
+                    l_tax DECIMAL(15,2) NOT NULL,
+                    l_returnflag CHAR(1) NOT NULL,
+                    l_linestatus CHAR(1) NOT NULL,
+                    l_shipdate DATE NOT NULL,
+                    l_commitdate DATE NOT NULL,
+                    l_receiptdate DATE NOT NULL,
+                    l_shipinstruct VARCHAR(25) NOT NULL,
+                    l_shipmode VARCHAR(10) NOT NULL,
+                    l_comment VARCHAR(44) NOT NULL,
+                    PRIMARY KEY (l_orderkey, l_linenumber)
+                );
+                """,
+
+            _ => throw new ArgumentOutOfRangeException(nameof(provider))
+        };
+        cmd2.ExecuteNonQuery();
+    }
+
     public static void SeedData(DbConnection connection, DatabaseProvider provider, int rowCount)
     {
         // Clear existing data

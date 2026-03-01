@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.Common;
 
 using BenchmarkDotNet.Attributes;
@@ -37,6 +38,31 @@ public class QueryFirstBenchmarks
         _connection?.Dispose();
     }
 
+    // --- ADO.NET (hand-coded baseline) ---
+
+    [Benchmark(Description = "ADO.NET (hand-coded)", Baseline = true)]
+    public JauntyProduct AdoNet_QueryFirst()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products WHERE product_id = @Id";
+        var param = cmd.CreateParameter();
+        param.ParameterName = "@Id";
+        param.Value = 1;
+        param.DbType = DbType.Int32;
+        cmd.Parameters.Add(param);
+
+        using var reader = cmd.ExecuteReader();
+        reader.Read();
+        return new JauntyProduct
+        {
+            ProductId = reader.GetInt32(0),
+            ProductName = reader.GetString(1),
+            UnitPrice = reader.GetDecimal(2),
+            UnitsInStock = reader.GetInt32(3),
+            Discontinued = reader.GetBoolean(4)
+        };
+    }
+
     // --- Jaunty ---
 
     [Benchmark(Description = "Jaunty QueryFirst")]
@@ -49,7 +75,7 @@ public class QueryFirstBenchmarks
 
     // --- Dapper ---
 
-    [Benchmark(Description = "Dapper QueryFirst", Baseline = true)]
+    [Benchmark(Description = "Dapper QueryFirst")]
     public DapperProduct Dapper_QueryFirst()
     {
         return _connection.QueryFirst<DapperProduct>(
