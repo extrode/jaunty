@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.Common;
 
 using BenchmarkDotNet.Attributes;
@@ -16,6 +17,7 @@ namespace Jaunty.Benchmarks.Benchmarks;
 public class InsertBenchmarks
 {
     private DbConnection _connection = null!;
+    private string _adoNetInsertWithIdentitySql = null!;
     private string _dapperInsertWithIdentitySql = null!;
 
     [Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
@@ -33,6 +35,15 @@ public class InsertBenchmarks
         _connection = DatabaseSetup.CreateConnection(Provider);
         _connection.Open();
         DatabaseSetup.CreateSchema(_connection, Provider);
+
+        _adoNetInsertWithIdentitySql = Provider switch
+        {
+            DatabaseProvider.Sqlite => "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@name, @price, @stock, @disc); SELECT last_insert_rowid();",
+            DatabaseProvider.SqlServer => "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@name, @price, @stock, @disc); SELECT CAST(SCOPE_IDENTITY() AS BIGINT);",
+            DatabaseProvider.PostgreSql => "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@name, @price, @stock, @disc) RETURNING product_id;",
+            DatabaseProvider.MariaDb => "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@name, @price, @stock, @disc); SELECT LAST_INSERT_ID();",
+            _ => throw new InvalidOperationException()
+        };
 
         _dapperInsertWithIdentitySql = Provider switch
         {
@@ -58,6 +69,37 @@ public class InsertBenchmarks
         cmd.ExecuteNonQuery();
     }
 
+    // --- ADO.NET (hand-coded baseline) ---
+
+    [Benchmark(Description = "ADO.NET ExecuteScalar (INSERT)", Baseline = true)]
+    public long AdoNet_Insert()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = _adoNetInsertWithIdentitySql;
+
+        var pName = cmd.CreateParameter();
+        pName.ParameterName = "@name";
+        pName.Value = "Test Product";
+        cmd.Parameters.Add(pName);
+
+        var pPrice = cmd.CreateParameter();
+        pPrice.ParameterName = "@price";
+        pPrice.Value = 19.99m;
+        cmd.Parameters.Add(pPrice);
+
+        var pStock = cmd.CreateParameter();
+        pStock.ParameterName = "@stock";
+        pStock.Value = 100;
+        cmd.Parameters.Add(pStock);
+
+        var pDisc = cmd.CreateParameter();
+        pDisc.ParameterName = "@disc";
+        pDisc.Value = Provider == DatabaseProvider.Sqlite ? (object)0 : (object)false;
+        cmd.Parameters.Add(pDisc);
+
+        return Convert.ToInt64(cmd.ExecuteScalar());
+    }
+
     // --- Jaunty single insert ---
 
     [Benchmark(Description = "Jaunty Insert")]
@@ -73,19 +115,9 @@ public class InsertBenchmarks
         return _connection.Insert(product);
     }
 
-    // --- Dapper single insert (no identity) ---
-
-    [Benchmark(Description = "Dapper Execute (INSERT)")]
-    public void Dapper_Insert()
-    {
-        _connection.Execute(
-            "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@product_name, @unit_price, @units_in_stock, @discontinued)",
-            new { product_name = "Test Product", unit_price = 19.99m, units_in_stock = 100, discontinued = false });
-    }
-
     // --- Dapper insert + identity retrieval (fair comparison) ---
 
-    [Benchmark(Description = "Dapper ExecuteScalar (INSERT)", Baseline = true)]
+    [Benchmark(Description = "Dapper ExecuteScalar (INSERT)")]
     public long Dapper_InsertWithIdentity()
     {
         return _connection.ExecuteScalar<long>(
