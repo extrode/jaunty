@@ -2,6 +2,8 @@ using System.Data.Common;
 
 using BenchmarkDotNet.Attributes;
 
+using Dapper;
+
 using Jaunty.Benchmarks.Config;
 using Jaunty.Benchmarks.Entities;
 
@@ -62,7 +64,7 @@ public class QueryScalarBenchmarks
     [Benchmark(Description = "Dapper ExecuteScalar")]
     public int Dapper_QueryScalar()
     {
-        return _connection.ExecuteScalar<int>("SELECT COUNT(*) FROM benchmark_products");
+        return SqlMapper.ExecuteScalar<int>(_connection, "SELECT COUNT(*) FROM benchmark_products");
     }
 
     // --- EF Core ---

@@ -120,7 +120,7 @@ public class InsertBenchmarks
     [Benchmark(Description = "Dapper ExecuteScalar (INSERT)")]
     public long Dapper_InsertWithIdentity()
     {
-        return _connection.ExecuteScalar<long>(
+        return SqlMapper.ExecuteScalar<long>(_connection,
             _dapperInsertWithIdentitySql,
             new { product_name = "Test Product", unit_price = 19.99m, units_in_stock = 100, discontinued = false });
     }
