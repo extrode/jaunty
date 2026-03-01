@@ -148,6 +148,10 @@ internal sealed class SQLiteDialect : ISqlDialect
     public string GenerateMonth(string expression) => $"CAST(strftime('%m', {expression}) AS INTEGER)";
     public string GenerateDay(string expression) => $"CAST(strftime('%d', {expression}) AS INTEGER)";
 
+    // Multi-row insert support
+    public bool SupportsMultiRowInsert => true;
+    public int MaxParametersPerStatement => 999;
+
     // Upsert support - SQLite 3.24+ supports ON CONFLICT
     public bool SupportsUpsert => true;
 

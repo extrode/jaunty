@@ -10,6 +10,8 @@ internal class TestDialect : ISqlDialect
 {
     public bool SupportsForeignKeyToggle => false;
     public bool SupportsUpsert => true;
+    public bool SupportsMultiRowInsert => true;
+    public int MaxParametersPerStatement => 2100;
 
     public string GetDefaultSchema() => "dbo";
 

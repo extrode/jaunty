@@ -141,35 +141,18 @@ public static partial class Jaunty
 
             try
             {
-                // Provider-specific fast paths removed from core to ensure 100% NativeAOT/Zero-Reflection compatibility.
-                // Use explicit provider extensions if specialized bulk operations are needed.
-
-#if NET8_0_OR_GREATER
-                await using var command = connection.CreateCommand();
-#else
-                using var command = connection.CreateCommand();
-#endif
-                command.Transaction = transaction;
-                command.CommandText = cached.InsertSql;
-
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
-
-                PrepareInsertParameters(command, cached.Metadata);
-
                 var valueSetter = WriteParameterCache<T>.InsertValueSetter;
                 if (valueSetter == null)
+                    throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
+
+                // Try multi-row INSERT path
+                if (dialect.SupportsMultiRowInsert && entityList.Count > 1)
                 {
-                    throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure the class is source-generated or reflection extension is loaded.");
+                    totalInserted = await BulkInsertMultiRowAsync(connection, entityList, cached, dialect, transaction, options, valueSetter, cancellationToken).ConfigureAwait(false);
                 }
-
-                var pCollection = command.Parameters;
-
-                foreach (var entity in entityList)
+                else
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    valueSetter(pCollection, entity);
-                    totalInserted += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    totalInserted = await BulkInsertLoopAsync(connection, entityList, cached, transaction, options, valueSetter, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (ignoreConstraints)
@@ -250,5 +233,127 @@ public static partial class Jaunty
 #endif
             }
         }
+    }
+
+    /// <summary>
+    /// Async multi-row INSERT path: batches entities into INSERT ... VALUES (...), (...), ... statements.
+    /// Dramatically reduces round-trips compared to individual INSERTs.
+    /// </summary>
+    private static async ValueTask<int> BulkInsertMultiRowAsync<T>(
+        DbConnection connection,
+        IList<T> entityList,
+        CachedCrudSql cached,
+        ISqlDialect dialect,
+        DbTransaction? transaction,
+        CommandOptions options,
+        Action<IDataParameterCollection, T> valueSetter,
+        CancellationToken cancellationToken) where T : new()
+    {
+        var insertableColumns = MultiRowInsertCache.GetInsertableColumns(cached.Metadata);
+        int colCount = insertableColumns.Count;
+        if (colCount == 0) return 0;
+
+        // Compute optimal batch size respecting provider parameter limits
+        int maxBatchSize = Math.Min(dialect.MaxParametersPerStatement / colCount, 1000);
+        if (maxBatchSize < 1) maxBatchSize = 1;
+
+        // Pre-compile property getters for multi-row binding
+        var getters = new Func<T, object?>[colCount];
+        for (int c = 0; c < colCount; c++)
+        {
+            var prop = insertableColumns[c].Property;
+            var param = System.Linq.Expressions.Expression.Parameter(typeof(T), "e");
+            var access = System.Linq.Expressions.Expression.Property(param, prop);
+            var box = System.Linq.Expressions.Expression.Convert(access, typeof(object));
+            getters[c] = System.Linq.Expressions.Expression.Lambda<Func<T, object?>>(box, param).Compile();
+        }
+
+        int totalInserted = 0;
+        int entityCount = entityList.Count;
+        int offset = 0;
+
+        while (offset < entityCount)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            int batchSize = Math.Min(maxBatchSize, entityCount - offset);
+
+            string sql = MultiRowInsertCache.GetOrBuild(
+                typeof(T), connection.GetType(), batchSize, cached.Metadata, dialect);
+
+#if NET8_0_OR_GREATER
+            await using var command = connection.CreateCommand();
+#else
+            using var command = connection.CreateCommand();
+#endif
+            command.Transaction = transaction;
+            command.CommandText = sql;
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            // Create parameters for all rows in this batch
+            for (int row = 0; row < batchSize; row++)
+            {
+                T entity = entityList[offset + row];
+                for (int c = 0; c < colCount; c++)
+                {
+                    var p = command.CreateParameter();
+                    p.ParameterName = "@" + insertableColumns[c].Property.Name + "_" + row;
+                    p.Value = getters[c](entity) ?? DBNull.Value;
+                    command.Parameters.Add(p);
+                }
+            }
+
+            totalInserted += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            offset += batchSize;
+        }
+
+        return totalInserted;
+    }
+
+    /// <summary>
+    /// Async loop-based INSERT fallback: executes individual INSERT statements.
+    /// Used when multi-row INSERT is not supported or for single entities.
+    /// </summary>
+    private static async ValueTask<int> BulkInsertLoopAsync<T>(
+        DbConnection connection,
+        IList<T> entityList,
+        CachedCrudSql cached,
+        DbTransaction? transaction,
+        CommandOptions options,
+        Action<IDataParameterCollection, T> valueSetter,
+        CancellationToken cancellationToken) where T : new()
+    {
+#if NET8_0_OR_GREATER
+        await using var command = connection.CreateCommand();
+#else
+        using var command = connection.CreateCommand();
+#endif
+        command.Transaction = transaction;
+        command.CommandText = cached.InsertSql;
+
+        if (options.CommandTimeout.HasValue)
+            command.CommandTimeout = options.CommandTimeout.Value;
+
+        PrepareInsertParameters(command, cached.Metadata);
+
+        // Set first entity values before Prepare() so providers can infer parameter types.
+        // Prepare() is a best-effort optimization; some providers (e.g. SQL Server on .NET Framework)
+        // require explicit DbType on all parameters, which we can't guarantee here.
+        var pCollection = command.Parameters;
+        valueSetter(pCollection, entityList[0]);
+        try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
+
+        int totalInserted = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+        for (int i = 1; i < entityList.Count; i++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            valueSetter(pCollection, entityList[i]);
+            totalInserted += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return totalInserted;
     }
 }
