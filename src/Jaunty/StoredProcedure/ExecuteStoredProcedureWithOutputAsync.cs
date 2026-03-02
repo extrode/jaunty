@@ -66,7 +66,7 @@ public static partial class Jaunty
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteWithOutputParametersAsync(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
         {
-            var results = new List<T>();
+            var results = new List<T>(16);
             var map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
             while (await ReadAsync(reader, ct).ConfigureAwait(false))
             {

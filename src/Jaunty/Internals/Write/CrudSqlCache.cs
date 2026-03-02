@@ -53,9 +53,22 @@ internal static class CrudSqlCache
         string deleteSql = BuildDeleteSql(metadata, dialect, escapedTableName);
         string deleteByIdSql = BuildDeleteByIdSql(metadata, dialect, escapedTableName);
         string upsertSql = dialect.SupportsUpsert ? BuildUpsertSql(metadata, dialect, escapedTableName) : string.Empty;
-        
-        var identityColumnNames = metadata.PrimaryKeys.Where(c => c.IsIdentity).Select(c => dialect.EscapeColumnName(c.ColumnName)).ToArray();
-        string lastInsertIdSql = dialect.GetLastInsertIdSql(identityColumnNames);
+
+        // Extract identity column names without LINQ (zero allocation)
+        var identityColumnNames = new string[metadata.PrimaryKeys.Count];
+        int identityCount = 0;
+        for (int i = 0; i < metadata.PrimaryKeys.Count; i++)
+        {
+            if (metadata.PrimaryKeys[i].IsIdentity)
+                identityColumnNames[identityCount++] = dialect.EscapeColumnName(metadata.PrimaryKeys[i].ColumnName);
+        }
+        string lastInsertIdSql = dialect.GetLastInsertIdSql(System.Array.Empty<string>());
+        if (identityCount > 0)
+        {
+            var trimmed = new string[identityCount];
+            System.Array.Copy(identityColumnNames, 0, trimmed, 0, identityCount);
+            lastInsertIdSql = dialect.GetLastInsertIdSql(trimmed);
+        }
 
         return new CachedCrudSql(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, metadata, dialect.SupportsUpsert);
     }

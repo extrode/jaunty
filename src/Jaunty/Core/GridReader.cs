@@ -317,7 +317,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     private List<T> ReadCore<T>(CommandOptions<T> options, MappingMode mode) where T : new()
     {
         EnsureNotConsumed();
-        var results = new List<T>();
+        var results = new List<T>(16);
         var map = DrDispatcher.Resolve(reader, options, mode);
 
         while (reader.Read())
@@ -548,7 +548,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
-        var results = new List<T>();
+        var results = new List<T>(16);
         Func<IDataReader, T>? map = null;
         var hasRead = false;
 
