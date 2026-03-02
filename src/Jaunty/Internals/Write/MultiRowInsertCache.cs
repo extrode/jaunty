@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Data;
+using System.Linq.Expressions;
 using System.Text;
 
 using Jaunty.Internals.Dialects;
@@ -14,6 +15,31 @@ namespace Jaunty.Internals.Write;
 internal static class MultiRowInsertCache
 {
     private static readonly ConcurrentDictionary<(Type EntityType, Type ConnectionType, int BatchSize), string> _cache = new();
+    private static readonly ConcurrentDictionary<Type, Delegate[]> _getterCache = new();
+
+    /// <summary>
+    /// Gets or creates cached compiled property getters for multi-row parameter binding.
+    /// Avoids re-compiling Expression trees on every BulkInsert call.
+    /// </summary>
+    public static Func<T, object?>[] GetOrBuildGetters<T>(EntityMetadata metadata)
+    {
+        if (_getterCache.TryGetValue(typeof(T), out var cached))
+            return (Func<T, object?>[])cached;
+
+        var columns = GetInsertableColumns(metadata);
+        var getters = new Func<T, object?>[columns.Count];
+        for (int c = 0; c < columns.Count; c++)
+        {
+            var prop = columns[c].Property;
+            var param = Expression.Parameter(typeof(T), "e");
+            var access = Expression.Property(param, prop);
+            var box = Expression.Convert(access, typeof(object));
+            getters[c] = Expression.Lambda<Func<T, object?>>(box, param).Compile();
+        }
+
+        _getterCache.TryAdd(typeof(T), getters);
+        return getters;
+    }
 
     /// <summary>
     /// Gets or creates cached multi-row INSERT SQL for the specified batch size.
