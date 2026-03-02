@@ -110,6 +110,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("using System;");
         sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine("using System.Data;");
+        sb.AppendLine("using System.Data.Common;");
         sb.AppendLine("using Jaunty.Interfaces;");
         sb.AppendLine();
         sb.AppendLine($"namespace {namespaceName}");
@@ -132,7 +133,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        }");
         sb.AppendLine();
 
-        // 1. ReadEntity
+        // 1. ReadEntity - dual path for DbDataReader (fast) vs IDataReader (fallback)
         sb.AppendLine("        #if NET8_0_OR_GREATER");
         sb.AppendLine($"        public static {className} ReadEntity(IDataReader reader)");
         sb.AppendLine("        #else");
@@ -141,25 +142,47 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        {");
         sb.AppendLine("            var ord = OrdinalMap.Resolve(reader);");
         sb.AppendLine($"            var entity = new {className}();");
+        sb.AppendLine("            if (reader is DbDataReader dbReader)");
+        sb.AppendLine("            {");
         for (int i = 0; i < properties.Count; i++)
         {
             var p = properties[i];
             var typeInfo = GetReaderTypeInfo(p.TypeName);
+            var typeForGetFieldValue = typeInfo.TypeForGetFieldValue;
             var needsNullCheck = typeInfo.NeedsNullCheck;
-            var getter = typeInfo.Getter;
             
+            // DbDataReader path - use GetFieldValue<T>
             if (needsNullCheck)
             {
-                sb.AppendLine($"            if (!reader.IsDBNull(ord[{i}]))");
-                sb.AppendLine("            {");
-                sb.AppendLine($"                entity.{p.PropertyName} = {getter}(ord[{i}]);");
-                sb.AppendLine("            }");
+                sb.AppendLine($"                entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default : dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
             }
             else
             {
-                sb.AppendLine($"            entity.{p.PropertyName} = {getter}(ord[{i}]);");
+                sb.AppendLine($"                entity.{p.PropertyName} = dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
             }
         }
+        sb.AppendLine("            }");
+        sb.AppendLine("            else");
+        sb.AppendLine("            {");
+        for (int i = 0; i < properties.Count; i++)
+        {
+            var p = properties[i];
+            var typeInfo = GetReaderTypeInfo(p.TypeName);
+            var getter = typeInfo.Getter;
+            var needsNullCheck = typeInfo.NeedsNullCheck;
+            
+            // Fallback IDataReader path
+            if (needsNullCheck)
+            {
+                sb.AppendLine($"                if (!reader.IsDBNull(ord[{i}]))");
+                sb.AppendLine($"                    entity.{p.PropertyName} = {getter}(ord[{i}]);");
+            }
+            else
+            {
+                sb.AppendLine($"                entity.{p.PropertyName} = {getter}(ord[{i}]);");
+            }
+        }
+        sb.AppendLine("            }");
         sb.AppendLine("            return entity;");
         sb.AppendLine("        }");
 
@@ -289,44 +312,45 @@ public class JauntyGenerator : IIncrementalGenerator
         return typeName switch
         {
             // Non-nullable value types - no null check needed
-            "int" or "Int32" or "System.Int32" => new("reader.GetInt32", false),
-            "long" or "Int64" or "System.Int64" => new("reader.GetInt64", false),
-            "bool" or "Boolean" or "System.Boolean" => new("reader.GetBoolean", false),
-            "decimal" or "Decimal" or "System.Decimal" => new("reader.GetDecimal", false),
-            "double" or "Double" or "System.Double" => new("reader.GetDouble", false),
-            "float" or "Single" or "System.Single" => new("reader.GetFloat", false),
-            "short" or "Int16" or "System.Int16" => new("reader.GetInt16", false),
-            "byte" or "Byte" or "System.Byte" => new("reader.GetByte", false),
-            "Guid" or "System.Guid" => new("reader.GetGuid", false),
-            "DateTime" or "System.DateTime" => new("reader.GetDateTime", false),
-            "TimeSpan" or "System.TimeSpan" => new("reader.GetValue", false),
-            "DateTimeOffset" or "System.DateTimeOffset" => new("reader.GetValue", false),
+            "int" or "Int32" or "System.Int32" => new("reader.GetInt32", "int", false),
+            "long" or "Int64" or "System.Int64" => new("reader.GetInt64", "long", false),
+            "bool" or "Boolean" or "System.Boolean" => new("reader.GetBoolean", "bool", false),
+            "decimal" or "Decimal" or "System.Decimal" => new("reader.GetDecimal", "decimal", false),
+            "double" or "Double" or "System.Double" => new("reader.GetDouble", "double", false),
+            "float" or "Single" or "System.Single" => new("reader.GetFloat", "float", false),
+            "short" or "Int16" or "System.Int16" => new("reader.GetInt16", "short", false),
+            "byte" or "Byte" or "System.Byte" => new("reader.GetByte", "byte", false),
+            "Guid" or "System.Guid" => new("reader.GetGuid", "Guid", false),
+            "DateTime" or "System.DateTime" => new("reader.GetDateTime", "DateTime", false),
+            "TimeSpan" or "System.TimeSpan" => new("reader.GetValue", "object", false),
+            "DateTimeOffset" or "System.DateTimeOffset" => new("reader.GetValue", "object", false),
             
             // Nullable value types - needs null check
-            "int?" or "Int32?" => new("reader.GetInt32", true),
-            "long?" or "Int64?" => new("reader.GetInt64", true),
-            "bool?" or "Boolean?" => new("reader.GetBoolean", true),
-            "decimal?" or "Decimal?" => new("reader.GetDecimal", true),
-            "double?" or "Double?" => new("reader.GetDouble", true),
-            "float?" or "Single?" => new("reader.GetFloat", true),
-            "short?" or "Int16?" => new("reader.GetInt16", true),
-            "byte?" or "Byte?" => new("reader.GetByte", true),
-            "Guid?" => new("reader.GetGuid", true),
-            "DateTime?" => new("reader.GetDateTime", true),
-            "TimeSpan?" => new("reader.GetValue", true),
-            "DateTimeOffset?" => new("reader.GetValue", true),
+            "int?" or "Int32?" => new("reader.GetInt32", "int", true),
+            "long?" or "Int64?" => new("reader.GetInt64", "long", true),
+            "bool?" or "Boolean?" => new("reader.GetBoolean", "bool", true),
+            "decimal?" or "Decimal?" => new("reader.GetDecimal", "decimal", true),
+            "double?" or "Double?" => new("reader.GetDouble", "double", true),
+            "float?" or "Single?" => new("reader.GetFloat", "float", true),
+            "short?" or "Int16?" => new("reader.GetInt16", "short", true),
+            "byte?" or "Byte?" => new("reader.GetByte", "byte", true),
+            "Guid?" => new("reader.GetGuid", "Guid", true),
+            "DateTime?" => new("reader.GetDateTime", "DateTime", true),
+            "TimeSpan?" => new("reader.GetValue", "object", true),
+            "DateTimeOffset?" => new("reader.GetValue", "object", true),
             
             // Reference types - needs null check
-            "string" or "String" or "string?" or "String?" or "System.String" => new("reader.GetString", true),
+            "string" or "String" or "string?" or "String?" or "System.String" => new("reader.GetString", "string", true),
             
             // Unknown types - needs null check, fall back to GetValue
-            _ => new("reader.GetValue", true)
+            _ => new("reader.GetValue", "object", true)
         };
     }
 
-    private readonly struct ReaderTypeInfo(string getter, bool needsNullCheck)
+    private readonly struct ReaderTypeInfo(string getter, string typeForGetFieldValue, bool needsNullCheck)
     {
         public string Getter => getter;
+        public string TypeForGetFieldValue => typeForGetFieldValue;
         public bool NeedsNullCheck => needsNullCheck;
     }
 
