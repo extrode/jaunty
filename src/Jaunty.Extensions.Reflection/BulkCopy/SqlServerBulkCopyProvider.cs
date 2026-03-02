@@ -85,15 +85,13 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
 
-        var sqlConnection = connection as SqlConnection
-            ?? throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
-
+        // Use DbConnection instead of SqlConnection
         var bulkCopyOptions = MapBulkCopyOptions(options);
         object? sqlTransaction = options.Transaction;
 
         var bulkCopy = sqlTransaction != null
-            ? Activator.CreateInstance(SqlBulkCopyType, sqlConnection, bulkCopyOptions, sqlTransaction)
-            : Activator.CreateInstance(SqlBulkCopyType, sqlConnection, bulkCopyOptions);
+            ? Activator.CreateInstance(SqlBulkCopyType, connection, bulkCopyOptions, sqlTransaction)
+            : Activator.CreateInstance(SqlBulkCopyType, connection, bulkCopyOptions);
 
         if (bulkCopy == null)
             throw new InvalidOperationException("Failed to create SqlBulkCopy instance.");
