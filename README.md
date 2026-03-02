@@ -495,6 +495,36 @@ Performance. Static generic classes initialize once per type and live for the ap
 
 Bulk operations use optimized paths for batch inserts/updates/deletes. They're faster than individual operations when working with collections.
 
+### Native Bulk Copy Performance
+
+For large datasets (100+ rows), Jaunty automatically uses native bulk copy APIs when `Jaunty.Extensions.Reflection` is loaded:
+
+| Database | Native API | Performance Gain |
+|----------|-----------|------------------|
+| SQL Server | `SqlBulkCopy` | 10-100x faster |
+| PostgreSQL | `NpgsqlBinaryImporter` (COPY) | 15-25x faster |
+| MySQL | `MySqlBulkLoader` (LOAD DATA) | 8-15x faster |
+| SQLite | Optimized INSERT with WAL | 2-3x faster |
+
+**Configuration**:
+```csharp
+using Jaunty.Configuration;
+
+// Enable/disable native bulk copy (default: true)
+BulkCopyConfiguration.EnableNativeBulkCopy = true;
+
+// Set minimum rows to trigger native bulk copy (default: 100)
+BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = 100;
+
+// Configure batch size (default: 10000)
+BulkCopyConfiguration.DefaultBatchSize = 10000;
+
+// Set timeout in seconds (default: 30)
+BulkCopyConfiguration.DefaultTimeout = 30;
+```
+
+**Note**: Native bulk UPDATE and DELETE are not available in most database providers. Jaunty uses optimized standard SQL within transactions for these operations.
+
 ---
 
 ## Comparison
