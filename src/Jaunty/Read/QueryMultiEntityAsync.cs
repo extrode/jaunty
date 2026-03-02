@@ -272,7 +272,7 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync<List<(T1, T2)>>(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<(T1, T2)>();
+            var results = new List<(T1, T2)>(64);
 
             if (!await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
                 return results;
@@ -317,7 +317,7 @@ public static partial class Jaunty
 
         return await ExecuteReaderAsync<List<TResult>>(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<TResult>();
+            var results = new List<TResult>(64);
 
             if (!await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
                 return results;

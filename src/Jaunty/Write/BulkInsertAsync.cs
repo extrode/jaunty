@@ -294,6 +294,7 @@ public static partial class Jaunty
                 for (int c = 0; c < colCount; c++)
                 {
                     var p = command.CreateParameter();
+                    // Use simple string concatenation (compiler optimizes this)
                     p.ParameterName = "@" + insertableColumns[c].ColumnName + "_" + row;
                     p.Value = getters[c](entity) ?? DBNull.Value;
                     command.Parameters.Add(p);

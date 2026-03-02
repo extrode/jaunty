@@ -15,7 +15,7 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync<List<T>>(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var list = new List<T>();
+            var list = new List<T>(16);
             if (reader is DbDataReader dbReader)
             {
                 var map = DrDispatcher.Resolve(dbReader, options, mode);
@@ -233,7 +233,7 @@ public static partial class Jaunty
 #else
     private static async ValueTask<IEnumerable<T>> QueryStreamCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        var results = new List<T>();
+        var results = new List<T>(64);
         var wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -281,7 +281,7 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync<List<(T1, T2)>>(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<(T1, T2)>();
+            var results = new List<(T1, T2)>(64);
 
             if (reader is DbDataReader dbReader)
             {

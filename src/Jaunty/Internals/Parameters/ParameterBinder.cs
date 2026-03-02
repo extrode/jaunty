@@ -56,7 +56,7 @@ internal static class ParameterBinder
         var meta = ParameterCache.Get(type);
 
         // Build lookup from property names
-        var propertyLookup = new Dictionary<string, ParameterMetadata>(meta.Length, StringComparer.OrdinalIgnoreCase);
+        var propertyLookup = new Dictionary<string, ParameterMetadata>(meta.Length, CommonConstants.OrdinalIgnoreCase);
         for (int i = 0; i < meta.Length; i++)
         {
             propertyLookup[meta[i].Name] = meta[i];
@@ -81,7 +81,7 @@ internal static class ParameterBinder
 
     private static CommandTemplate BuildTemplate(Type type, string sql, string[] sqlParamNames, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] allMeta)
     {
-        var boundNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var boundNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         var items = new List<TemplateItem>();
 
         for (int i = 0; i < sqlParamNames.Length; i++)
@@ -119,7 +119,7 @@ internal static class ParameterBinder
     {
         var type = parameters.GetType();
         var sqlParamNames = SqlParameterParser.ExtractParameterNames(expandedSql);
-        var bound = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
         {
@@ -224,7 +224,7 @@ internal static class ParameterBinder
             object parameters)
     {
         // First pass: find collection parameters (deduplicated)
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seen = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         List<CollectionExpansion>? expansions = null;
 
         foreach (var sqlName in sqlParamNames)
@@ -250,8 +250,8 @@ internal static class ParameterBinder
             return (null, null, null);
 
         // Second pass: build replacements and expanded params
-        var expandedParams = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-        var expandedOriginalNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var expandedParams = new Dictionary<string, object?>(CommonConstants.OrdinalIgnoreCase);
+        var expandedOriginalNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         var result = sql;
 
         foreach (var expansion in expansions)
@@ -372,7 +372,7 @@ internal static class ParameterBinder
     private static void BindScalar(IDbCommand command, object value)
     {
         string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText);
-        var bound = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
         {
@@ -389,7 +389,7 @@ internal static class ParameterBinder
     private static void BindFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)
     {
         string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText);
-        var bound = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
         {
