@@ -7,56 +7,50 @@ public static partial class Jaunty
 {
     private static void PrepareInsertParameters(IDbCommand command, EntityMetadata metadata)
     {
-        IReadOnlyList<ColumnMetadata> columns = metadata.NonIdentityColumns;
+        var columns = metadata.InsertColumns;
 
         for (int i = 0; i < columns.Count; i++)
         {
             ColumnMetadata col = columns[i];
-            if (col.IsComputed)
-                continue;
 
             IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + col.Property.Name;
+            param.ParameterName = "@" + col.ColumnName;
             command.Parameters.Add(param);
         }
     }
 
     private static void PrepareUpdateParameters(IDbCommand command, EntityMetadata metadata)
     {
-        IReadOnlyList<ColumnMetadata> allColumns = metadata.Columns;
-        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
+        var updateColumns = metadata.UpdateColumns;
+        var primaryKeys = metadata.PrimaryKeys;
 
-        // SET clause parameters
-        for (int i = 0; i < allColumns.Count; i++)
+        for (int i = 0; i < updateColumns.Count; i++)
         {
-            ColumnMetadata col = allColumns[i];
-            if (col.IsPrimaryKey || col.IsIdentity || col.IsComputed)
-                continue;
+            ColumnMetadata col = updateColumns[i];
 
             IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + col.Property.Name;
+            param.ParameterName = "@" + col.ColumnName;
             command.Parameters.Add(param);
         }
 
-        // WHERE clause parameters (primary keys)
         for (int i = 0; i < primaryKeys.Count; i++)
         {
             ColumnMetadata key = primaryKeys[i];
             IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + key.Property.Name;
+            param.ParameterName = "@" + key.ColumnName;
             command.Parameters.Add(param);
         }
     }
 
     private static void PrepareDeleteParameters(IDbCommand command, EntityMetadata metadata)
     {
-        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
+        var deleteColumns = metadata.DeleteColumns;
 
-        for (int i = 0; i < primaryKeys.Count; i++)
+        for (int i = 0; i < deleteColumns.Count; i++)
         {
-            ColumnMetadata key = primaryKeys[i];
+            ColumnMetadata key = deleteColumns[i];
             IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + key.Property.Name;
+            param.ParameterName = "@" + key.ColumnName;
             command.Parameters.Add(param);
         }
     }
