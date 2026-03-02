@@ -4,7 +4,9 @@
     <Project Path="src/Jaunty.Fluent/Jaunty.Fluent.csproj" />
     <Project Path="src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj" />
     <Project Path="src/Jaunty.Scaffolding/Jaunty.Scaffolding.csproj" />
-    <Project Path="src/Jaunty.SourceGenerator/Jaunty.SourceGenerator.csproj" />
+    <Project Path="src/Jaunty.SourceGenerator/Jaunty.SourceGenerator.csproj">
+      <Build Solution="Release|*" Project="false" />
+    </Project>
     <Project Path="src/Jaunty/Jaunty.csproj" />
   </Folder>
   <Folder Name="/tests/">
