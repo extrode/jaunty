@@ -249,4 +249,12 @@ internal sealed class SqlServerDialect : ISqlDialect
     {
         return expression is null ? $"{function}(*)" : $"{function}({expression})";
     }
+
+    // Bulk copy support - SQL Server has SqlBulkCopy
+    public bool SupportsNativeBulkCopy => true;
+
+    public IBulkCopyProvider? CreateBulkCopyProvider()
+    {
+        return new SqlServerBulkCopyProvider();
+    }
 }

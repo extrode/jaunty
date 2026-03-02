@@ -19,6 +19,7 @@ Welcome to the Jaunty micro-ORM documentation. This directory contains all techn
 | [`01-api-reference/query-partial-methods.md`](01-api-reference/query-partial-methods.md) | QueryPartial* methods |
 | [`01-api-reference/streaming-methods.md`](01-api-reference/streaming-methods.md) | QueryStream, QueryPartialStream |
 | [`01-api-reference/write-methods.md`](01-api-reference/write-methods.md) | Insert, Update, Delete, Bulk* |
+| [`01-api-reference/bulk-copy-methods.md`](01-api-reference/bulk-copy-methods.md) | **NEW** Bulk copy operations |
 | [`01-api-reference/multiple-result-sets.md`](01-api-reference/multiple-result-sets.md) | QueryMultiple, GridReader |
 | [`01-api-reference/stored-procedures.md`](01-api-reference/stored-procedures.md) | ExecuteStoredProcedure* |
 | [`01-api-reference/attributes.md`](01-api-reference/attributes.md) | [Table], [Column], [Ignore], [Key] |
@@ -32,6 +33,7 @@ Welcome to the Jaunty micro-ORM documentation. This directory contains all techn
 | [`02-architecture/performance.md`](02-architecture/performance.md) | Performance optimizations |
 | [`02-architecture/metadata-system.md`](02-architecture/metadata-system.md) | Entity metadata caching |
 | [`02-architecture/parameter-binding.md`](02-architecture/parameter-binding.md) | SQL parameter parsing and binding |
+| [`02-architecture/bulk-copy-architecture.md`](02-architecture/bulk-copy-architecture.md) | **NEW** Bulk copy architecture |
 
 ### Development
 | Document | Purpose |

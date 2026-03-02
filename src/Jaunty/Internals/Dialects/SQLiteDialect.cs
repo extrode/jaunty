@@ -243,4 +243,13 @@ internal sealed class SQLiteDialect : ISqlDialect
     {
         return expression is null ? $"{function}(*)" : $"{function}({expression})";
     }
+
+    // Bulk copy support - SQLite has no native bulk copy API
+    // We provide an optimized path using transactions and prepared statements
+    public bool SupportsNativeBulkCopy => false;
+
+    public IBulkCopyProvider? CreateBulkCopyProvider()
+    {
+        return new SQLiteBulkCopyProvider();
+    }
 }
