@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Jaunty.Benchmarks.Benchmarks;
 
+[MemoryDiagnoser]
 public class BulkInsertBenchmarks
 {
     private DbConnection _connection = null!;
