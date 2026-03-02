@@ -11,20 +11,6 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    // Plan (pseudocode):
-    // 1. Calls to `ExecuteReaderAsync(...)` are ambiguous to the compiler because generic TResult cannot be inferred.
-    // 2. For each call, supply the explicit generic type argument that matches the lambda return type:
-    //    - `QueryCoreAsync<T>` -> TResult = `List<T>`
-    //    - `QueryFirstCoreAsync<T>` -> TResult = `T`
-    //    - `QueryFirstOrDefaultCoreAsync<T>` -> TResult = `T?`
-    //    - `QuerySingleCoreAsync<T>` -> TResult = `T`
-    //    - `QuerySingleOrDefaultCoreAsync<T>` -> TResult = `T?`
-    //    - `QueryScalarCoreAsync<T>` -> TResult = `T`
-    //    - Multi-entity methods use `List<(T1, T2)>` or `(T1, T2)?` as appropriate
-    // 3. Also fix the scalar handler to consistently use async reads and await the `GetFieldValueAsync<T>` call so the lambda returns `T` (not `Task<T>`).
-    // 4. Leave other logic intact; only add explicit generic arguments and correct await in scalar case.
-    // 5. Return the modified file content.
-
     private static async ValueTask<List<T>> QueryCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         return await ExecuteReaderAsync<List<T>>(connection, sql, parameters, options, async (reader, ct) =>

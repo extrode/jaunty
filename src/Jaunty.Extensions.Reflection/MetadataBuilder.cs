@@ -45,74 +45,74 @@ public static class MetadataBuilder
         {
             // Use string-based detection for System.ComponentModel.DataAnnotations.Schema.TableAttribute
             var dataTableAttr = GetAttributeData(type, TableAttributeTypeName);
-            if (dataTableAttr != null)
+            if (dataTableAttr is not null)
             {
                 object? nameArg = GetConstructorArgument(dataTableAttr, 0) ?? GetNamedArgument(dataTableAttr, "Name");
                 object? schemaArg = GetNamedArgument(dataTableAttr, "Schema");
 
                 if (nameArg is string name && !string.IsNullOrEmpty(name))
                     tableName = name;
+
                 if (schemaArg is string schema && !string.IsNullOrEmpty(schema))
                     schemaName = schema;
             }
         }
 
-        var props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        PropertyInfo[] props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
         var columns = new List<ColumnMetadata>();
 
-        foreach (var p in props)
+        for (var i = 0; i < props.Length; i++)
         {
+            PropertyInfo property = props[i];
+
             // 2. Ignore resolution
-            if (p.GetCustomAttribute<IgnoreAttribute>() != null) continue;
+            if (property.GetCustomAttribute<IgnoreAttribute>() is not null) continue;
 
             // Use string-based detection for NotMappedAttribute
-            if (HasAttribute(p, NotMappedAttributeTypeName)) continue;
+            if (HasAttribute(property, NotMappedAttributeTypeName)) continue;
 
-            if (!p.CanWrite) continue;
+            if (!property.CanWrite) continue;
 
             // 3. Column name resolution
-            string colName = p.Name;
-            var colAttr = p.GetCustomAttribute<ColumnAttribute>();
-            if (colAttr != null)
-            {
+            string colName = JauntyConfig.ColumnNameResolver?.Invoke(property.Name) ?? property.Name;
+            var colAttr = property.GetCustomAttribute<ColumnAttribute>();
+
+            if (colAttr is not null)
                 colName = colAttr.Name;
-            }
             else
             {
                 // Use string-based detection for ColumnAttribute
-                var dataColAttr = GetAttributeData(p, ColumnAttributeTypeName);
-                if (dataColAttr != null)
+                var dataColAttr = GetAttributeData(property, ColumnAttributeTypeName);
+                if (dataColAttr is not null)
                 {
                     var nameArg = GetConstructorArgument(dataColAttr, 0) ?? GetNamedArgument(dataColAttr, "Name");
                     if (nameArg is string name && !string.IsNullOrEmpty(name))
-                    {
                         colName = name;
-                    }
                 }
             }
 
             // 4. Key resolution
-            bool isKey = p.GetCustomAttribute<KeyAttribute>() != null ||
-                         HasAttribute(p, KeyAttributeTypeName) ||
-                         p.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) ||
-                         p.Name.Equals($"{type.Name}Id", StringComparison.OrdinalIgnoreCase);
+            bool isKey = property.GetCustomAttribute<KeyAttribute>() is not null ||
+                         HasAttribute(property, KeyAttributeTypeName) ||
+                         property.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) ||
+                         property.Name.Equals($"{type.Name}Id", StringComparison.OrdinalIgnoreCase);
 
             // 5. DatabaseGenerated resolution
             DatabaseGeneratedOption? genOption = null;
-            var genAttr = p.GetCustomAttribute<DatabaseGeneratedAttribute>();
-            if (genAttr != null)
-            {
+            var genAttr = property.GetCustomAttribute<DatabaseGeneratedAttribute>();
+
+            if (genAttr is not null)
                 genOption = genAttr.Option;
-            }
             else
             {
                 // Use string-based detection for DatabaseGeneratedAttribute
-                var dataGenAttr = GetAttributeData(p, DatabaseGeneratedAttributeTypeName);
-                if (dataGenAttr != null)
+                var dataGenAttr = GetAttributeData(property, DatabaseGeneratedAttributeTypeName);
+                if (dataGenAttr is not null)
                 {
                     // Get the DatabaseGeneratedOption enum value from the attribute
-                    var optionArg = GetConstructorArgument(dataGenAttr, 0) ?? GetNamedArgument(dataGenAttr, "DatabaseGeneratedOption");
-                    if (optionArg != null)
+                    object? optionArg = GetConstructorArgument(dataGenAttr, 0) ?? GetNamedArgument(dataGenAttr, "DatabaseGeneratedOption");
+
+                    if (optionArg is not null)
                     {
                         // Map System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedOption to Jaunty.Attributes.DatabaseGeneratedOption
                         // Both enums have the same underlying values: None=0, Identity=1, Computed=2
@@ -121,7 +121,7 @@ public static class MetadataBuilder
                 }
             }
 
-            columns.Add(new ColumnMetadata(p, colName, isKey, genOption));
+            columns.Add(new ColumnMetadata(property, colName, isKey, genOption));
         }
 
         return new EntityMetadata(tableName, schemaName, columns);
