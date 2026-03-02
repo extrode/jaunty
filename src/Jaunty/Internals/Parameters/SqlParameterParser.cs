@@ -19,7 +19,7 @@ internal static class SqlParameterParser
 #if NET8_0_OR_GREATER
     private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql)
     {
-        var names = new List<string>(4);
+        var names = new List<string>(CommonConstants.InitialParameterCapacity);
         var i = 0;
         var len = sql.Length;
 
@@ -137,7 +137,7 @@ internal static class SqlParameterParser
 
     private static string[] ExtractParameterNamesClassic(string sql)
     {
-        var names = new List<string>(4);
+        var names = new List<string>(CommonConstants.InitialParameterCapacity);
         var i = 0;
         var len = sql.Length;
 

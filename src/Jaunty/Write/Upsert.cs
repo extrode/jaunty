@@ -1,6 +1,7 @@
 using System.Data;
 
 using Jaunty.Core;
+using Jaunty.Internals;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
 
@@ -178,7 +179,7 @@ public static partial class Jaunty
         var insertColumns = metadata.InsertColumns;
         var primaryKeys = metadata.PrimaryKeys;
 
-        var addedParams = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var addedParams = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < insertColumns.Count; i++)
         {

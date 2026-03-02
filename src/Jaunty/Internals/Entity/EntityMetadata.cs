@@ -1,3 +1,7 @@
+#if NET8_0_OR_GREATER
+using System.Collections.Frozen;
+#endif
+
 namespace Jaunty.Internals.Entity;
 
 public sealed class EntityMetadata
@@ -16,7 +20,11 @@ public sealed class EntityMetadata
     public IReadOnlyList<ColumnMetadata> UpdateColumns { get; }
     public IReadOnlyList<ColumnMetadata> DeleteColumns { get; }
 
+#if NET8_0_OR_GREATER
+    public FrozenDictionary<string, ColumnMetadata> ParameterMap { get; }
+#else
     public Dictionary<string, ColumnMetadata> ParameterMap { get; }
+#endif
 
     public EntityMetadata(string tableName, string? schemaName, IEnumerable<ColumnMetadata> columns)
     {
@@ -60,11 +68,14 @@ public sealed class EntityMetadata
         UpdateColumns = updateColumns.AsReadOnly();
         DeleteColumns = primaryKeys.AsReadOnly();
 
-        ParameterMap = new Dictionary<string, ColumnMetadata>(colList.Count, StringComparer.OrdinalIgnoreCase);
-
+#if NET8_0_OR_GREATER
+        ParameterMap = colList.ToFrozenDictionary(c => c.ColumnName, CommonConstants.OrdinalIgnoreCase);
+#else
+        ParameterMap = new Dictionary<string, ColumnMetadata>(colList.Count, CommonConstants.OrdinalIgnoreCase);
         for (int i = 0; i < colList.Count; i++)
         {
             ParameterMap[colList[i].ColumnName] = colList[i];
         }
+#endif
     }
 }
