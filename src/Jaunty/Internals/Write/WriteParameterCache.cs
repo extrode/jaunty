@@ -46,25 +46,16 @@ internal static class WriteParameterCache<T> where T : new()
         var metadata = ResolveMetadata();
         if (metadata == null) return null;
 
-        // Insert uses NonIdentityColumns (excluding computed) — same order as PrepareInsertParameters.
-        // Pre-compile property getters to avoid PropertyInfo.GetValue() reflection in the hot loop.
-        var columns = metadata.NonIdentityColumns;
+        var columns = metadata.InsertColumns;
         var getters = new Func<T, object?>[columns.Count];
-        var isComputed = new bool[columns.Count];
-        int getterCount = 0;
         for (int i = 0; i < columns.Count; i++)
         {
-            isComputed[i] = columns[i].IsComputed;
-            if (!isComputed[i])
-            {
-                getters[getterCount] = CreateTypedGetter(columns[i].Property);
-                getterCount++;
-            }
+            getters[i] = CreateTypedGetter(columns[i].Property);
         }
 
         return (pc, entity) =>
         {
-            int count = Math.Min(getterCount, pc.Count);
+            int count = Math.Min(getters.Length, pc.Count);
             for (int i = 0; i < count; i++)
             {
                 ((IDbDataParameter)pc[i]).Value = getters[i](entity) ?? DBNull.Value;
@@ -77,26 +68,19 @@ internal static class WriteParameterCache<T> where T : new()
         var metadata = ResolveMetadata();
         if (metadata == null) return null;
 
-        // Update: non-key/non-identity/non-computed columns for SET, then primary keys for WHERE.
-        // Pre-compile all getters into a single flat array matching parameter order.
-        var allColumns = metadata.Columns;
+        var updateColumns = metadata.UpdateColumns;
         var primaryKeys = metadata.PrimaryKeys;
-        var getterList = new List<Func<T, object?>>();
+        var getters = new Func<T, object?>[updateColumns.Count + primaryKeys.Count];
 
-        // SET clause columns
-        for (int i = 0; i < allColumns.Count; i++)
+        for (int i = 0; i < updateColumns.Count; i++)
         {
-            var col = allColumns[i];
-            if (col.IsPrimaryKey || col.IsIdentity || col.IsComputed) continue;
-            getterList.Add(CreateTypedGetter(col.Property));
+            getters[i] = CreateTypedGetter(updateColumns[i].Property);
         }
-        // WHERE clause primary keys
         for (int i = 0; i < primaryKeys.Count; i++)
         {
-            getterList.Add(CreateTypedGetter(primaryKeys[i].Property));
+            getters[updateColumns.Count + i] = CreateTypedGetter(primaryKeys[i].Property);
         }
 
-        var getters = getterList.ToArray();
         return (pc, entity) =>
         {
             int count = Math.Min(getters.Length, pc.Count);
@@ -112,12 +96,11 @@ internal static class WriteParameterCache<T> where T : new()
         var metadata = ResolveMetadata();
         if (metadata == null) return null;
 
-        // Delete uses only primary key columns — same order as PrepareDeleteParameters.
-        var primaryKeys = metadata.PrimaryKeys;
-        var getters = new Func<T, object?>[primaryKeys.Count];
-        for (int i = 0; i < primaryKeys.Count; i++)
+        var deleteColumns = metadata.DeleteColumns;
+        var getters = new Func<T, object?>[deleteColumns.Count];
+        for (int i = 0; i < deleteColumns.Count; i++)
         {
-            getters[i] = CreateTypedGetter(primaryKeys[i].Property);
+            getters[i] = CreateTypedGetter(deleteColumns[i].Property);
         }
 
         return (pc, entity) =>

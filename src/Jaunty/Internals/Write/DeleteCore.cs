@@ -120,8 +120,9 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
+            var primaryKey = cached.Metadata.PrimaryKeys[0];
             IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@Id";
+            param.ParameterName = "@" + primaryKey.ColumnName;
             param.Value = id;
             command.Parameters.Add(param);
 
@@ -162,8 +163,9 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
+            var primaryKey = cached.Metadata.PrimaryKeys[0];
             DbParameter param = command.CreateParameter();
-            param.ParameterName = "@Id";
+            param.ParameterName = "@" + primaryKey.ColumnName;
             param.Value = id;
             command.Parameters.Add(param);
 
@@ -206,8 +208,9 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
+            var primaryKey = cached.Metadata.PrimaryKeys[0];
             IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@Id";
+            param.ParameterName = "@" + primaryKey.ColumnName;
             param.Value = id;
             command.Parameters.Add(param);
 
@@ -248,8 +251,9 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
+            var primaryKey = cached.Metadata.PrimaryKeys[0];
             DbParameter param = command.CreateParameter();
-            param.ParameterName = "@Id";
+            param.ParameterName = "@" + primaryKey.ColumnName;
             param.Value = id;
             command.Parameters.Add(param);
 
