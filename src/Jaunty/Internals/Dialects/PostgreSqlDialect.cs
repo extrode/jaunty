@@ -1,3 +1,5 @@
+using Jaunty.Internals.BulkCopy;
+
 namespace Jaunty.Internals.Dialects;
 
 /// <summary>
@@ -220,10 +222,11 @@ internal sealed class PostgreSqlDialect : ISqlDialect
     }
 
     // Bulk copy support - PostgreSQL has COPY command (binary and text formats)
-    public bool SupportsNativeBulkCopy => true;
+    // Implementation moved to Jaunty.Extensions.Reflection (optional package)
+    public bool SupportsNativeBulkCopy => false;
 
     public IBulkCopyProvider? CreateBulkCopyProvider()
     {
-        return new PostgreSqlBulkCopyProvider();
+        return null; // Requires Jaunty.Extensions.Reflection package
     }
 }

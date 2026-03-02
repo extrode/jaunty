@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 using Jaunty.Internals.Entity;
 
-namespace Jaunty.Internals.Write;
+namespace Jaunty.Internals.BulkCopy;
 
 /// <summary>
 /// Adapts an enumerable of entities to <see cref="IDataReader"/> for bulk copy operations.

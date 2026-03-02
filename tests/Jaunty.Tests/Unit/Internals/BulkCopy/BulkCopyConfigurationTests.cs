@@ -1,6 +1,6 @@
 using Jaunty.Configuration;
 
-namespace Jaunty.Tests.Unit.Internals.Dialects;
+namespace Jaunty.Tests.Unit.Internals.BulkCopy;
 
 /// <summary>
 /// Unit tests for BulkCopyOptions and BulkCopyConfiguration.
@@ -27,7 +27,9 @@ public class BulkCopyConfigurationTests : IDisposable
     public void BulkCopyOptions_CanSetAllProperties()
     {
         // Arrange
-        using var transaction = new System.Data.SQLite.SQLiteConnection(":memory:").BeginTransaction();
+        using var connection = new System.Data.SQLite.SQLiteConnection("Data Source=:memory:");
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
         var options = new BulkCopyOptions();
 
         // Act

@@ -1,3 +1,5 @@
+using Jaunty.Internals.BulkCopy;
+
 namespace Jaunty.Internals.Dialects;
 
 /// <summary>
@@ -251,10 +253,11 @@ internal sealed class SqlServerDialect : ISqlDialect
     }
 
     // Bulk copy support - SQL Server has SqlBulkCopy
-    public bool SupportsNativeBulkCopy => true;
+    // Implementation moved to Jaunty.Extensions.Reflection (optional package)
+    public bool SupportsNativeBulkCopy => false;
 
     public IBulkCopyProvider? CreateBulkCopyProvider()
     {
-        return new SqlServerBulkCopyProvider();
+        return null; // Requires Jaunty.Extensions.Reflection package
     }
 }
