@@ -1,20 +1,21 @@
+using System.Collections.Concurrent;
 using System.Collections;
 using System.Data;
 using System.Linq.Expressions;
 
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Write;
 
 namespace Jaunty.Internals.BulkCopy;
 
 /// <summary>
 /// Adapts an enumerable of entities to <see cref="IDataReader"/> for bulk copy operations.
-/// Uses compiled property getters for efficient value access.
+/// Uses compiled property getters cached per type for zero-reflection performance.
 /// </summary>
 /// <typeparam name="T">The entity type.</typeparam>
-internal sealed class EntityDataReader<T> : IDataReader, IEnumerable
+internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : new()
 {
     private readonly IEnumerator<T> _enumerator;
-    private readonly Func<T, object?>[] _getters;
     private readonly ColumnMetadata[] _columns;
     private bool _disposed;
 
@@ -26,8 +27,13 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable
     public EntityDataReader(IEnumerable<T> entities, EntityMetadata metadata)
     {
         _enumerator = entities.GetEnumerator();
-        _columns = GetInsertableColumns(metadata).ToArray();
-        _getters = BuildGetters(metadata);
+        _columns = GetInsertableColumns(metadata);
+        
+        // Initialize cached getters for this type if not already done
+        if (Getters.Length == 0)
+        {
+            EntityDataReaderCache<T>.Initialize(_columns);
+        }
     }
 
     /// <inheritdoc/>
@@ -36,7 +42,7 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable
         if (_enumerator.Current is null)
             return DBNull.Value;
 
-        var value = _getters[i](_enumerator.Current);
+        var value = Getters[i](_enumerator.Current);
         return value ?? DBNull.Value;
     }
 
@@ -48,7 +54,7 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable
 
         for (int i = 0; i < _columns.Length; i++)
         {
-            values[i] = _getters[i](_enumerator.Current) ?? DBNull.Value;
+            values[i] = Getters[i](_enumerator.Current) ?? DBNull.Value;
         }
 
         return _columns.Length;
@@ -119,7 +125,7 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable
     public string GetDataTypeName(int i) => GetFieldType(i).Name;
 
     /// <inheritdoc/>
-    IEnumerator IEnumerable.GetEnumerator() => (IEnumerator)_enumerator;
+    IEnumerator IEnumerable.GetEnumerator() => _enumerator;
 
     /// <inheritdoc/>
     IDataReader IDataRecord.GetData(int i) => throw new NotSupportedException();
@@ -180,9 +186,15 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable
         => Task.FromResult(IsDBNull(i));
 
     /// <summary>
+    /// Gets the cached compiled property getters for type T.
+    /// Getters are compiled once per type and reused for all instances.
+    /// </summary>
+    private static Func<T, object?>[] Getters => EntityDataReaderCache<T>.Getters;
+
+    /// <summary>
     /// Gets the insertable (non-identity, non-computed) columns from metadata.
     /// </summary>
-    private static List<ColumnMetadata> GetInsertableColumns(EntityMetadata metadata)
+    private static ColumnMetadata[] GetInsertableColumns(EntityMetadata metadata)
     {
         IReadOnlyList<ColumnMetadata> columns = metadata.NonIdentityColumns;
         var insertable = new List<ColumnMetadata>(columns.Count);
@@ -191,26 +203,36 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable
             if (!columns[i].IsComputed)
                 insertable.Add(columns[i]);
         }
-        return insertable;
+        return insertable.ToArray();
     }
 
     /// <summary>
-    /// Builds compiled property getters for efficient value access.
+    /// Static generic cache for entity readers.
+    /// Compiled getters are created once per type and reused forever.
     /// </summary>
-    private static Func<T, object?>[] BuildGetters(EntityMetadata metadata)
+    private static class EntityDataReaderCache<TEntity> where TEntity : new()
     {
-        var columns = GetInsertableColumns(metadata);
-        var getters = new Func<T, object?>[columns.Count];
+        public static Func<TEntity, object?>[] Getters { get; private set; } = Array.Empty<Func<TEntity, object?>>();
 
-        for (int i = 0; i < columns.Count; i++)
+        public static void Initialize(ColumnMetadata[] columns)
         {
-            var prop = columns[i].Property;
-            var param = Expression.Parameter(typeof(T), "e");
-            var access = Expression.Property(param, prop);
-            var box = Expression.Convert(access, typeof(object));
-            getters[i] = Expression.Lambda<Func<T, object?>>(box, param).Compile();
+            Getters = BuildGetters(columns);
         }
 
-        return getters;
+        private static Func<TEntity, object?>[] BuildGetters(ColumnMetadata[] columns)
+        {
+            var getters = new Func<TEntity, object?>[columns.Length];
+
+            for (int i = 0; i < columns.Length; i++)
+            {
+                var prop = columns[i].Property;
+                var param = Expression.Parameter(typeof(TEntity), "e");
+                var access = Expression.Property(param, prop);
+                var box = Expression.Convert(access, typeof(object));
+                getters[i] = Expression.Lambda<Func<TEntity, object?>>(box, param).Compile();
+            }
+
+            return getters;
+        }
     }
 }

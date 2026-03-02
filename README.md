@@ -89,6 +89,11 @@ var rows = connection.BulkInsert(products);   // Fast bulk insert
 var rows = connection.BulkUpdate(products);   // Fast bulk update
 var rows = connection.BulkDelete(products);   // Fast bulk delete
 
+// Native bulk copy (10-100x faster for 100+ rows)
+// Automatically enabled when Jaunty.Extensions.Reflection is loaded
+JauntyReflectionExtensions.UseNativeBulkCopy();
+var rows = connection.BulkInsert(largeProductList);  // Uses SqlBulkCopy, NpgsqlBinaryImporter, etc.
+
 // Upsert (insert or update)
 var rows = connection.Upsert(product);  // Inserts if new, updates if exists
 ```
@@ -449,6 +454,8 @@ No surprises. No leaked connections.
 4. **SQL Parsing** — Parameter extraction skips string literals, comments, and quoted identifiers. Cheap compared to network roundtrip.
 
 5. **Command Template Caching** — SQL parameter templates cached per query type.
+
+6. **Bulk Copy Optimization** — Native bulk copy APIs (SqlBulkCopy, NpgsqlBinaryImporter, MySqlBulkLoader) automatically used for 100+ rows via `Jaunty.Extensions.Reflection`. Provides 10-100x performance improvement for large datasets.
 
 ### NULL Handling
 

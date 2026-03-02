@@ -64,12 +64,14 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
             if (options.Timeout > 0)
                 command.CommandTimeout = options.Timeout;
 
-            // Create parameters
+            // Create parameters once
+            var parameters = new IDataParameter[columnCount];
             for (int i = 0; i < columnCount; i++)
             {
                 var param = command.CreateParameter();
                 param.ParameterName = $"@p{i}";
                 command.Parameters.Add(param);
+                parameters[i] = param;
             }
 
             // Prepare the command once
@@ -82,9 +84,7 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
                 // Set parameter values for this row
                 for (int i = 0; i < columnCount; i++)
                 {
-                    var parameter = (IDataParameter)command.Parameters[i];
-                    var value = data.GetValue(i);
-                    parameter.Value = value ?? DBNull.Value;
+                    parameters[i].Value = data.GetValue(i) ?? DBNull.Value;
                 }
 
                 command.ExecuteNonQuery();
