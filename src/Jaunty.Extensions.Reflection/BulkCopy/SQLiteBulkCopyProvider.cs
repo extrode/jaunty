@@ -82,7 +82,7 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
                 // Set parameter values for this row
                 for (int i = 0; i < columnCount; i++)
                 {
-                    var parameter = command.Parameters[i];
+                    var parameter = (IDataParameter)command.Parameters[i];
                     var value = data.GetValue(i);
                     parameter.Value = value ?? DBNull.Value;
                 }

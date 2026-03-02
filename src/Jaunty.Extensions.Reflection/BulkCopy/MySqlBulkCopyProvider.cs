@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -165,12 +167,12 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
                 else
                 {
                     var str = value!.ToString();
-                    if (str!.Contains(',') || str.Contains('"') || str.Contains('\n'))
+                    if (str!.Contains(",") || str.Contains("\"") || str.Contains("\n"))
                     {
                         // Escape quotes and wrap in quotes
-                        writer.Write('"');
+                        writer.Write("\"");
                         writer.Write(str.Replace("\"", "\"\""));
-                        writer.Write('"');
+                        writer.Write("\"");
                     }
                     else
                     {
@@ -206,7 +208,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
                 else
                 {
                     var str = value!.ToString();
-                    if (str!.Contains(',') || str.Contains('"') || str.Contains('\n'))
+                    if (str!.Contains(",") || str.Contains("\"") || str.Contains("\n"))
                     {
                         await writer.WriteAsync("\"");
                         await writer.WriteAsync(str.Replace("\"", "\"\""));
