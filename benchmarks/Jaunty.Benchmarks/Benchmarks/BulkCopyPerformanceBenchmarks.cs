@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Jobs;
 
 using Jaunty.Benchmarks.Config;
 using Jaunty.Benchmarks.Entities;
@@ -31,7 +32,7 @@ public class BulkCopyPerformanceBenchmarks
     public void GlobalSetup()
     {
         if (!DatabaseSetup.IsAvailable(Provider))
-            throw new InvalidOperationException($"{Provider} is not available");
+            throw new InvalidOperationException($"{Provider} is not available. Set JAUNTY_TEST_{Provider.ToString().ToUpper()} environment variable to enable.");
 
         DatabaseSetup.EnsureDatabaseExists(Provider);
 
