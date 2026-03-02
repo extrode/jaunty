@@ -218,4 +218,12 @@ internal sealed class PostgreSqlDialect : ISqlDialect
     {
         return expression is null ? $"{function}(*)" : $"{function}({expression})";
     }
+
+    // Bulk copy support - PostgreSQL has COPY command (binary and text formats)
+    public bool SupportsNativeBulkCopy => true;
+
+    public IBulkCopyProvider? CreateBulkCopyProvider()
+    {
+        return new PostgreSqlBulkCopyProvider();
+    }
 }
