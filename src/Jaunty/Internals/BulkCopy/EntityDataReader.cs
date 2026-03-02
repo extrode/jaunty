@@ -1,10 +1,8 @@
-using System.Collections.Concurrent;
 using System.Collections;
 using System.Data;
 using System.Linq.Expressions;
 
 using Jaunty.Internals.Entity;
-using Jaunty.Internals.Write;
 
 namespace Jaunty.Internals.BulkCopy;
 
@@ -27,7 +25,7 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     public EntityDataReader(IEnumerable<T> entities, EntityMetadata metadata)
     {
         _enumerator = entities.GetEnumerator();
-        _columns = GetInsertableColumns(metadata);
+        _columns = ColumnMetadataHelper.GetInsertableColumns(metadata).ToArray();
         
         // Initialize cached getters for this type if not already done
         if (Getters.Length == 0)
@@ -192,31 +190,36 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     private static Func<T, object?>[] Getters => EntityDataReaderCache<T>.Getters;
 
     /// <summary>
-    /// Gets the insertable (non-identity, non-computed) columns from metadata.
-    /// </summary>
-    private static ColumnMetadata[] GetInsertableColumns(EntityMetadata metadata)
-    {
-        IReadOnlyList<ColumnMetadata> columns = metadata.NonIdentityColumns;
-        var insertable = new List<ColumnMetadata>(columns.Count);
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (!columns[i].IsComputed)
-                insertable.Add(columns[i]);
-        }
-        return insertable.ToArray();
-    }
-
-    /// <summary>
     /// Static generic cache for entity readers.
     /// Compiled getters are created once per type and reused forever.
+    /// Thread-safe initialization using double-check locking pattern.
     /// </summary>
     private static class EntityDataReaderCache<TEntity> where TEntity : new()
     {
-        public static Func<TEntity, object?>[] Getters { get; private set; } = Array.Empty<Func<TEntity, object?>>();
+        private static Func<TEntity, object?>[]? _getters;
+        
+        /// <summary>
+        /// Gets the cached compiled property getters for type TEntity.
+        /// Returns empty array if not yet initialized.
+        /// </summary>
+        public static Func<TEntity, object?>[] Getters => _getters ?? Array.Empty<Func<TEntity, object?>>();
 
+        /// <summary>
+        /// Initializes the cached getters for this type.
+        /// Thread-safe: only the first call takes effect.
+        /// </summary>
+        /// <param name="columns">The column metadata to build getters for.</param>
         public static void Initialize(ColumnMetadata[] columns)
         {
-            Getters = BuildGetters(columns);
+            // Double-check locking pattern for thread-safe lazy initialization
+            if (_getters is null)
+            {
+                lock (columns) // Lock on the columns array (unique per initialization)
+                {
+                    if (_getters is null)
+                        _getters = BuildGetters(columns);
+                }
+            }
         }
 
         private static Func<TEntity, object?>[] BuildGetters(ColumnMetadata[] columns)

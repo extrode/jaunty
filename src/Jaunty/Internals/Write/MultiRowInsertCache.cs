@@ -26,7 +26,7 @@ internal static class MultiRowInsertCache
         if (_getterCache.TryGetValue(typeof(T), out var cached))
             return (Func<T, object?>[])cached;
 
-        var columns = GetInsertableColumns(metadata);
+        var columns = ColumnMetadataHelper.GetInsertableColumns(metadata);
         var getters = new Func<T, object?>[columns.Count];
         for (int c = 0; c < columns.Count; c++)
         {
@@ -70,14 +70,7 @@ internal static class MultiRowInsertCache
         string escapedTableName = dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
 
         // Get insertable columns (non-identity, non-computed)
-        IReadOnlyList<ColumnMetadata> columns = metadata.NonIdentityColumns;
-        var insertableColumns = new List<ColumnMetadata>(columns.Count);
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (!columns[i].IsComputed)
-                insertableColumns.Add(columns[i]);
-        }
-
+        var insertableColumns = ColumnMetadataHelper.GetInsertableColumns(metadata);
         int colCount = insertableColumns.Count;
 
         // Estimate capacity: table + columns + per-row params
@@ -111,20 +104,5 @@ internal static class MultiRowInsertCache
         }
 
         return sb.ToString();
-    }
-
-    /// <summary>
-    /// Gets the insertable (non-identity, non-computed) columns from metadata.
-    /// </summary>
-    public static List<ColumnMetadata> GetInsertableColumns(EntityMetadata metadata)
-    {
-        IReadOnlyList<ColumnMetadata> columns = metadata.NonIdentityColumns;
-        var insertable = new List<ColumnMetadata>(columns.Count);
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (!columns[i].IsComputed)
-                insertable.Add(columns[i]);
-        }
-        return insertable;
     }
 }
