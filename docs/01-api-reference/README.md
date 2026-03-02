@@ -19,6 +19,7 @@ Complete API documentation for Jaunty micro-ORM.
 |----------|---------|---------------|
 | **Individual** | `Insert<T>`, `Update<T>`, `Delete<T>` | [`write-methods.md`](write-methods.md) |
 | **Bulk** | `BulkInsert<T>`, `BulkUpdate<T>`, `BulkDelete<T>` | [`write-methods.md`](write-methods.md) |
+| **Bulk Copy** | Native bulk copy (auto-activated for 100+ rows) | [`bulk-copy-methods.md`](bulk-copy-methods.md) |
 | **Upsert** | `Upsert<T>` | [`write-methods.md`](write-methods.md) |
 
 ### Advanced

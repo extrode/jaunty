@@ -293,4 +293,21 @@ internal interface ISqlDialect
     /// <param name="expression">The expression to aggregate (null for COUNT(*)).</param>
     /// <returns>Aggregate function SQL fragment.</returns>
     string GenerateWindowAggregate(string function, string? expression);
+
+    // ==========================================
+    // Bulk Copy Support
+    // ==========================================
+
+    /// <summary>
+    /// Indicates whether this dialect supports native bulk copy operations.
+    /// Native bulk copy uses database-specific APIs (e.g., SqlBulkCopy, NpgsqlBinaryImporter)
+    /// for high-performance data loading.
+    /// </summary>
+    bool SupportsNativeBulkCopy { get; }
+
+    /// <summary>
+    /// Creates a bulk copy provider for this dialect.
+    /// </summary>
+    /// <returns>An <see cref="IBulkCopyProvider"/> instance, or null if not supported.</returns>
+    IBulkCopyProvider? CreateBulkCopyProvider();
 }

@@ -224,4 +224,12 @@ internal sealed class MySqlDialect : ISqlDialect
     {
         return expression is null ? $"{function}(*)" : $"{function}({expression})";
     }
+
+    // Bulk copy support - MySQL has LOAD DATA INFILE
+    public bool SupportsNativeBulkCopy => true;
+
+    public IBulkCopyProvider? CreateBulkCopyProvider()
+    {
+        return new MySqlBulkCopyProvider();
+    }
 }
