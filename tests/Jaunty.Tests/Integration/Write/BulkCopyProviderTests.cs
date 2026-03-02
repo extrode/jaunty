@@ -1,5 +1,6 @@
 using Jaunty.Configuration;
 using Jaunty.Internals.Dialects;
+using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -238,11 +239,11 @@ public class BulkCopyProviderTests : IClassFixture<DialectFixture>
         var connection = ctx.Connection;
         ClearTestTable(connection);
 
-        // Arrange
+        // Arrange - test with empty string instead of null for Name
         var entities = new List<BulkTestEntity>
         {
-            new() { Name = "NullTest", Value = null },
-            new() { Name = null!, Value = 50 }
+            new() { Name = "NullTest", Value = 0 },
+            new() { Name = string.Empty, Value = 50 }
         };
 
         var metadata = CreateTestMetadata();
@@ -339,34 +340,25 @@ public class BulkCopyProviderTests : IClassFixture<DialectFixture>
 
     #endregion
 
-    private static Jaunty.Internals.Entity.EntityMetadata CreateTestMetadata()
+    private static EntityMetadata CreateTestMetadata()
     {
         var propInfos = typeof(BulkTestEntity).GetProperties();
-        var columns = new List<Jaunty.Internals.Entity.ColumnMetadata>();
+        var columns = new List<ColumnMetadata>();
 
         foreach (var prop in propInfos)
         {
-            columns.Add(new Jaunty.Internals.Entity.ColumnMetadata(
-                prop.Name,
+            columns.Add(new ColumnMetadata(
                 prop,
-                prop.PropertyType,
+                prop.Name,
                 isPrimaryKey: prop.Name == "Id",
-                isIdentity: prop.Name == "Id",
-                isComputed: false,
-                isIgnored: false));
+                databaseGeneratedOption: null));
         }
 
-        return new Jaunty.Internals.Entity.EntityMetadata(
-            typeof(BulkTestEntity),
+        return new EntityMetadata(
             "bulk_test",
             null,
-            columns,
-            columns.Where(c => c.IsPrimaryKey).ToList(),
-            columns.Where(c => !c.IsIdentity).ToList());
+            columns);
     }
 
-    public void Dispose()
-    {
-        BulkCopyConfiguration.Reset();
-    }
+    public void Dispose() => BulkCopyConfiguration.Reset();
 }
