@@ -1,7 +1,7 @@
+using Jaunty.Internals.BulkCopy;
 using Jaunty.Internals.Entity;
-using Jaunty.Internals.Write;
 
-namespace Jaunty.Tests.Unit.Internals.Write;
+namespace Jaunty.Tests.Unit.Internals.BulkCopy;
 
 /// <summary>
 /// Unit tests for EntityDataReader{T}.
@@ -181,8 +181,8 @@ public class EntityDataReaderTests : IDisposable
         // Act & Assert
         Assert.Equal(typeof(int), reader.GetFieldType(0));
         Assert.Equal(typeof(string), reader.GetFieldType(1));
-        Assert.Equal(typeof(decimal), reader.GetFieldType(2));
-        Assert.Equal(typeof(DateTime), reader.GetFieldType(3));
+        Assert.Equal(typeof(decimal?), reader.GetFieldType(2));
+        Assert.Equal(typeof(DateTime?), reader.GetFieldType(3));
 
         reader.Dispose();
     }

@@ -1,3 +1,5 @@
+using Jaunty.Internals.BulkCopy;
+
 namespace Jaunty.Internals.Dialects;
 
 /// <summary>
