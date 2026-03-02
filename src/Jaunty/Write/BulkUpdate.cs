@@ -1,5 +1,6 @@
 using System.Data;
 
+using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
@@ -238,6 +239,11 @@ public static partial class Jaunty
             throw new NotSupportedException(
                 $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
                 "Use BulkUpdate instead, or disable constraints manually before calling this method.");
+
+        // Note: Native bulk UPDATE is not widely supported by database providers.
+        // Most databases (SQL Server, PostgreSQL, MySQL) don't have native bulk UPDATE APIs.
+        // We fall back to standard parameterized UPDATE statements which are still efficient
+        // when executed within a single transaction.
 
         bool wasClosed = connection.State == ConnectionState.Closed;
         IDbTransaction? transaction = options.Transaction;
