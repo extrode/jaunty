@@ -113,10 +113,10 @@ public static class JauntyReflectionExtensions
             if (entityObj is not T entity) return;
             EntityMetadata meta = MetadataCache<T>.Metadata;
 
-            foreach (var col in meta.NonIdentityColumns)
+            foreach (var col in meta.InsertColumns)
             {
                 var p = cmd.CreateParameter();
-                p.ParameterName = "@" + col.Property.Name;
+                p.ParameterName = "@" + col.ColumnName;
                 p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
@@ -130,20 +130,18 @@ public static class JauntyReflectionExtensions
             if (entityObj is not T entity) return;
             EntityMetadata meta = MetadataCache<T>.Metadata;
 
-            // SET
-            foreach (var col in meta.Columns.Where(c => !c.IsPrimaryKey && !c.IsIdentity))
+            foreach (var col in meta.UpdateColumns)
             {
                 IDbDataParameter p = cmd.CreateParameter();
-                p.ParameterName = "@" + col.Property.Name;
+                p.ParameterName = "@" + col.ColumnName;
                 p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
 
-            // WHERE
             foreach (var col in meta.PrimaryKeys)
             {
                 IDbDataParameter p = cmd.CreateParameter();
-                p.ParameterName = "@" + col.Property.Name;
+                p.ParameterName = "@" + col.ColumnName;
                 p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
@@ -157,10 +155,10 @@ public static class JauntyReflectionExtensions
             if (entityObj is not T entity) return;
             EntityMetadata meta = MetadataCache<T>.Metadata;
 
-            foreach (var col in meta.PrimaryKeys)
+            foreach (var col in meta.DeleteColumns)
             {
                 IDbDataParameter p = cmd.CreateParameter();
-                p.ParameterName = "@" + col.Property.Name;
+                p.ParameterName = "@" + col.ColumnName;
                 p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }

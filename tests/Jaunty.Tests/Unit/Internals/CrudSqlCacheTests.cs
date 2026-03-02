@@ -105,8 +105,8 @@ public class CrudSqlCacheTests : IDisposable
 
         Assert.Contains("INSERT INTO", sql.InsertSql);
         Assert.Contains("simple_items", sql.InsertSql);
-        Assert.Contains("@Name", sql.InsertSql);
-        Assert.Contains("@Value", sql.InsertSql);
+        Assert.Contains("@name", sql.InsertSql);
+        Assert.Contains("@value", sql.InsertSql);
     }
 
     [Fact]
@@ -115,9 +115,9 @@ public class CrudSqlCacheTests : IDisposable
         var sql = CrudSqlCache.GetSql<IdentityItem>(_connection);
 
         Assert.Contains("INSERT INTO", sql.InsertSql);
-        Assert.DoesNotContain("@Id", sql.InsertSql);
-        Assert.Contains("@Name", sql.InsertSql);
-        Assert.Contains("@Value", sql.InsertSql);
+        Assert.DoesNotContain("@id", sql.InsertSql);
+        Assert.Contains("@name", sql.InsertSql);
+        Assert.Contains("@value", sql.InsertSql);
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public class CrudSqlCacheTests : IDisposable
         var sql = CrudSqlCache.GetSql<ComputedItem>(_connection);
 
         Assert.DoesNotContain("computed_value", sql.InsertSql);
-        Assert.DoesNotContain("@ComputedValue", sql.InsertSql);
+        Assert.DoesNotContain("@computedvalue", sql.InsertSql);
     }
 
     #endregion
@@ -141,7 +141,7 @@ public class CrudSqlCacheTests : IDisposable
         Assert.Contains("UPDATE", sql.UpdateSql);
         Assert.Contains("SET", sql.UpdateSql);
         Assert.Contains("WHERE", sql.UpdateSql);
-        Assert.Contains("id = @Id", sql.UpdateSql);
+        Assert.Contains("id = @id", sql.UpdateSql);
     }
 
     [Fact]
@@ -160,7 +160,7 @@ public class CrudSqlCacheTests : IDisposable
         var sql = CrudSqlCache.GetSql<IdentityItem>(_connection);
 
         var setClause = sql.UpdateSql.Split(new[] { "WHERE" }, StringSplitOptions.None)[0];
-        Assert.DoesNotContain("@Id", setClause);
+        Assert.DoesNotContain("@id", setClause);
     }
 
     [Fact]
@@ -169,8 +169,8 @@ public class CrudSqlCacheTests : IDisposable
         var sql = CrudSqlCache.GetSql<CompositeKeyItem>(_connection);
 
         Assert.Contains("AND", sql.UpdateSql);
-        Assert.Contains("key1 = @Key1", sql.UpdateSql);
-        Assert.Contains("key2 = @Key2", sql.UpdateSql);
+        Assert.Contains("key1 = @key1", sql.UpdateSql);
+        Assert.Contains("key2 = @key2", sql.UpdateSql);
     }
 
     [Fact]
@@ -213,7 +213,7 @@ public class CrudSqlCacheTests : IDisposable
         var sql = CrudSqlCache.GetSql<SimpleItem>(_connection);
 
         Assert.Contains("DELETE FROM", sql.DeleteByIdSql);
-        Assert.Contains("@Id", sql.DeleteByIdSql);
+        Assert.Contains("@id", sql.DeleteByIdSql);
     }
 
     [Fact]

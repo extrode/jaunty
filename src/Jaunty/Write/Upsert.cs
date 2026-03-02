@@ -175,18 +175,31 @@ public static partial class Jaunty
 
     private static void BindUpsertParameters<T>(IDbCommand command, T entity, EntityMetadata metadata) where T : new()
     {
-        IReadOnlyList<ColumnMetadata> columns = metadata.NonIdentityColumns;
+        var insertColumns = metadata.InsertColumns;
+        var primaryKeys = metadata.PrimaryKeys;
 
-        for (int i = 0; i < columns.Count; i++)
+        var addedParams = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < insertColumns.Count; i++)
         {
-            ColumnMetadata col = columns[i];
+            ColumnMetadata col = insertColumns[i];
 
-            // Skip computed columns
-            if (col.IsComputed)
+            IDbDataParameter param = command.CreateParameter();
+            param.ParameterName = "@" + col.ColumnName;
+            param.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+            command.Parameters.Add(param);
+            addedParams.Add(col.ColumnName);
+        }
+
+        for (int i = 0; i < primaryKeys.Count; i++)
+        {
+            ColumnMetadata col = primaryKeys[i];
+
+            if (addedParams.Contains(col.ColumnName))
                 continue;
 
             IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + col.Property.Name;
+            param.ParameterName = "@" + col.ColumnName;
             param.Value = col.Property.GetValue(entity) ?? DBNull.Value;
             command.Parameters.Add(param);
         }
