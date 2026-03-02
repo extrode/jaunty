@@ -134,6 +134,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine();
 
         // 1. ReadEntity - dual path for DbDataReader (fast) vs IDataReader (fallback)
+        // Cache the reader type once to avoid per-row type check overhead
         sb.AppendLine("        #if NET8_0_OR_GREATER");
         sb.AppendLine($"        public static {className} ReadEntity(IDataReader reader)");
         sb.AppendLine("        #else");
@@ -142,8 +143,10 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        {");
         sb.AppendLine("            var ord = OrdinalMap.Resolve(reader);");
         sb.AppendLine($"            var entity = new {className}();");
-        sb.AppendLine("            if (reader is DbDataReader dbReader)");
+        sb.AppendLine("            bool isDbReader = reader is DbDataReader;");
+        sb.AppendLine("            if (isDbReader)");
         sb.AppendLine("            {");
+        sb.AppendLine("                var dbReader = (DbDataReader)reader;");
         for (int i = 0; i < properties.Count; i++)
         {
             var p = properties[i];
