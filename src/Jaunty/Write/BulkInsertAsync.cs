@@ -4,7 +4,9 @@ using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
 #endif
 
+using Jaunty.Configuration;
 using Jaunty.Core;
+using Jaunty.Internals.BulkCopy;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
@@ -250,7 +252,7 @@ public static partial class Jaunty
         Action<IDataParameterCollection, T> valueSetter,
         CancellationToken cancellationToken) where T : new()
     {
-        var insertableColumns = MultiRowInsertCache.GetInsertableColumns(cached.Metadata);
+        var insertableColumns = ColumnMetadataHelper.GetInsertableColumns(cached.Metadata);
         int colCount = insertableColumns.Count;
         if (colCount == 0) return 0;
 
