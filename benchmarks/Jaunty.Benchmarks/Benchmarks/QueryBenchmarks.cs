@@ -6,6 +6,7 @@ using Dapper;
 
 using Jaunty.Benchmarks.Config;
 using Jaunty.Benchmarks.Entities;
+using Jaunty.Core;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -50,7 +51,7 @@ public class QueryBenchmarks
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products";
         using var reader = cmd.ExecuteReader();
-        var results = new List<JauntyProduct>();
+        var results = new List<JauntyProduct>(RowCount);
         while (reader.Read())
         {
             results.Add(new JauntyProduct
@@ -72,6 +73,15 @@ public class QueryBenchmarks
     {
         return _connection.Query<JauntyProduct>(
             "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products");
+    }
+
+    [Benchmark(Description = "Jaunty Query<T> (WithExpectedRowCount)")]
+    public List<JauntyProduct> Jaunty_QueryWithExpectedRowCount()
+    {
+        var options = CommandOptions<JauntyProduct>.WithExpectedRowCount(RowCount);
+        return _connection.Query(
+            "SELECT product_id, product_name, unit_price, units_in_stock, discontinued FROM benchmark_products",
+            options: options);
     }
 
     // --- Dapper ---
