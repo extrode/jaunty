@@ -1,3 +1,4 @@
+using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
 
 namespace Jaunty.Tests.Unit.Internals.Write;
@@ -337,31 +338,25 @@ public class EntityDataReaderTests : IDisposable
         reader.Dispose();
     }
 
-    private static Jaunty.Internals.Entity.EntityMetadata CreateTestMetadata()
+    private static EntityMetadata CreateTestMetadata()
     {
         // Create mock metadata for TestEntity
         var propInfos = typeof(TestEntity).GetProperties();
-        var columns = new List<Jaunty.Internals.Entity.ColumnMetadata>();
+        var columns = new List<ColumnMetadata>();
 
         foreach (var prop in propInfos)
         {
-            columns.Add(new Jaunty.Internals.Entity.ColumnMetadata(
-                prop.Name,
+            columns.Add(new ColumnMetadata(
                 prop,
-                prop.PropertyType,
+                prop.Name,
                 isPrimaryKey: prop.Name == "Id",
-                isIdentity: prop.Name == "Id",
-                isComputed: false,
-                isIgnored: false));
+                databaseGeneratedOption: null));
         }
 
-        return new Jaunty.Internals.Entity.EntityMetadata(
-            typeof(TestEntity),
+        return new EntityMetadata(
             "TestEntities",
             null,
-            columns,
-            columns.Where(c => c.IsPrimaryKey).ToList(),
-            columns.Where(c => !c.IsIdentity).ToList());
+            columns);
     }
 
     public void Dispose()

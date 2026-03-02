@@ -12,6 +12,9 @@ internal class TestDialect : ISqlDialect
     public bool SupportsUpsert => true;
     public bool SupportsMultiRowInsert => true;
     public int MaxParametersPerStatement => 2100;
+    public bool SupportsNativeBulkCopy => false;
+
+    public IBulkCopyProvider? CreateBulkCopyProvider() => null;
 
     public string GetDefaultSchema() => "dbo";
 
