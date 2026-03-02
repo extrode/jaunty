@@ -1,3 +1,5 @@
+using Jaunty.Internals.BulkCopy;
+
 namespace Jaunty.Internals.Dialects;
 
 /// <summary>
@@ -226,10 +228,11 @@ internal sealed class MySqlDialect : ISqlDialect
     }
 
     // Bulk copy support - MySQL has LOAD DATA INFILE
-    public bool SupportsNativeBulkCopy => true;
+    // Implementation moved to Jaunty.Extensions.Reflection (optional package)
+    public bool SupportsNativeBulkCopy => false;
 
     public IBulkCopyProvider? CreateBulkCopyProvider()
     {
-        return new MySqlBulkCopyProvider();
+        return null; // Requires Jaunty.Extensions.Reflection package
     }
 }

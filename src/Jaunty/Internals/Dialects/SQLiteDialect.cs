@@ -1,3 +1,5 @@
+using Jaunty.Internals.BulkCopy;
+
 namespace Jaunty.Internals.Dialects;
 
 /// <summary>
@@ -246,10 +248,11 @@ internal sealed class SQLiteDialect : ISqlDialect
 
     // Bulk copy support - SQLite has no native bulk copy API
     // We provide an optimized path using transactions and prepared statements
+    // Implementation moved to Jaunty.Extensions.Reflection (optional package)
     public bool SupportsNativeBulkCopy => false;
 
     public IBulkCopyProvider? CreateBulkCopyProvider()
     {
-        return new SQLiteBulkCopyProvider();
+        return null; // Requires Jaunty.Extensions.Reflection package
     }
 }
