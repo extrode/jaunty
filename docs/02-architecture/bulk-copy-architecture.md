@@ -44,9 +44,29 @@ internal sealed class EntityDataReader<T> : IDataReader
 
 **Key Features**:
 - Uses compiled expression trees for property access (no reflection during iteration)
+- Getters cached per type in `EntityDataReaderCache<T>` (thread-safe lazy initialization)
 - Streams entities without buffering entire dataset
 - Handles null values correctly (converts to `DBNull.Value`)
 - Implements full `IDataReader` interface for compatibility
+
+**Thread Safety**:
+Getters are initialized once per type using double-check locking pattern:
+```csharp
+private static class EntityDataReaderCache<TEntity> where TEntity : new()
+{
+    public static void Initialize(ColumnMetadata[] columns)
+    {
+        if (_getters is null)
+        {
+            lock (columns)
+            {
+                if (_getters is null)
+                    _getters = BuildGetters(columns);
+            }
+        }
+    }
+}
+```
 
 **Usage**:
 ```csharp
