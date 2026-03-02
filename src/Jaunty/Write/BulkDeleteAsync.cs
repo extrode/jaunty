@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 
+using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
@@ -252,6 +253,9 @@ public static partial class Jaunty
             throw new NotSupportedException(
                 $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
                 "Use BulkDeleteAsync instead, or disable constraints manually before calling this method.");
+
+        // Note: Native bulk DELETE is not widely supported by database providers.
+        // We fall back to standard parameterized DELETE statements.
 
         bool wasClosed = connection.State == ConnectionState.Closed;
         DbTransaction? transaction = options.Transaction as DbTransaction;
