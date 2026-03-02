@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 
 using Jaunty.Configuration;
+using Jaunty.Extensions.Reflection.Dialects;
+using Jaunty.Internals.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 
@@ -33,6 +35,29 @@ public static class JauntyReflectionExtensions
         JauntyConfig.ReflectionDeleteBinderResolver = ResolveDeleteBinder;
         JauntyConfig.ReflectionTableMetadataResolver = ResolveTableMetadata;
         JauntyConfig.ReflectionMultiMapperResolver = ResolveMultiMapper;
+    }
+
+    /// <summary>
+    /// Enables native bulk copy support for supported database providers.
+    /// This method configures Jaunty to use database-specific bulk copy APIs
+    /// (SqlBulkCopy, NpgsqlBinaryImporter, MySqlBulkLoader) for improved performance.
+    /// </summary>
+    /// <remarks>
+    /// Call this method after <see cref="UseReflectionMapping"/> to enable both
+    /// reflection-based mapping and native bulk copy support.
+    /// <para>
+    /// Supported providers:
+    /// - SQL Server: Microsoft.Data.SqlClient or System.Data.SqlClient
+    /// - PostgreSQL: Npgsql
+    /// - MySQL: MySqlConnector or MySql.Data
+    /// - SQLite: System.Data.SQLite or Microsoft.Data.Sqlite (optimized INSERT)
+    /// </para>
+    /// </remarks>
+    public static void UseNativeBulkCopy()
+    {
+        // Register dialect factory that returns dialects with bulk copy support
+        // This is a simple approach - in production you might want a more sophisticated factory
+        BulkCopyDialectFactory.Enable();
     }
 
     private static object ResolveTableMetadata(Type type)
