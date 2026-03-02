@@ -144,18 +144,21 @@ public class JauntyGenerator : IIncrementalGenerator
         for (int i = 0; i < properties.Count; i++)
         {
             var p = properties[i];
-            var getter = GetReaderMethod(p.TypeName);
-            sb.AppendLine($"            if (!reader.IsDBNull(ord[{i}]))");
-            sb.AppendLine("            {");
-            if (getter != null)
+            var typeInfo = GetReaderTypeInfo(p.TypeName);
+            var needsNullCheck = typeInfo.NeedsNullCheck;
+            var getter = typeInfo.Getter;
+            
+            if (needsNullCheck)
             {
+                sb.AppendLine($"            if (!reader.IsDBNull(ord[{i}]))");
+                sb.AppendLine("            {");
                 sb.AppendLine($"                entity.{p.PropertyName} = {getter}(ord[{i}]);");
+                sb.AppendLine("            }");
             }
             else
             {
-                sb.AppendLine($"                entity.{p.PropertyName} = ({p.TypeName})reader.GetValue(ord[{i}]);");
+                sb.AppendLine($"            entity.{p.PropertyName} = {getter}(ord[{i}]);");
             }
-            sb.AppendLine("            }");
         }
         sb.AppendLine("            return entity;");
         sb.AppendLine("        }");
@@ -205,13 +208,12 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        private static class OrdinalMap");
         sb.AppendLine("        {");
         sb.AppendLine("            private static int[]? _ordinals;");
-        sb.AppendLine("            private static int _fieldCount;");
+        sb.AppendLine("            private static bool _initialized;");
         sb.AppendLine();
         sb.AppendLine($"            public static int[] Resolve(IDataReader reader)");
         sb.AppendLine("            {");
-        sb.AppendLine("                var fc = reader.FieldCount;");
         sb.AppendLine("                var cached = _ordinals;");
-        sb.AppendLine("                if (cached is not null && _fieldCount == fc)");
+        sb.AppendLine("                if (_initialized && cached is not null)");
         sb.AppendLine("                    return cached;");
         sb.AppendLine();
         sb.AppendLine($"                var ords = new int[{properties.Count}];");
@@ -219,8 +221,8 @@ public class JauntyGenerator : IIncrementalGenerator
         {
             sb.AppendLine($"                ords[{i}] = reader.GetOrdinal(\"{properties[i].ColumnName}\");");
         }
-        sb.AppendLine("                _fieldCount = fc;");
         sb.AppendLine("                _ordinals = ords;");
+        sb.AppendLine("                _initialized = true;");
         sb.AppendLine("                return ords;");
         sb.AppendLine("            }");
         sb.AppendLine("        }");
@@ -282,23 +284,50 @@ public class JauntyGenerator : IIncrementalGenerator
     private static AttributeData? GetAttribute(ISymbol symbol, string attributeName)
         => symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == attributeName);
 
-    private static string? GetReaderMethod(string typeName)
+    private static ReaderTypeInfo GetReaderTypeInfo(string typeName)
     {
         return typeName switch
         {
-            "int" or "Int32" or "int?" or "Int32?" or "System.Int32" => "reader.GetInt32",
-            "long" or "Int64" or "long?" or "Int64?" or "System.Int64" => "reader.GetInt64",
-            "string" or "String" or "string?" or "String?" or "System.String" => "reader.GetString",
-            "bool" or "Boolean" or "bool?" or "Boolean?" or "System.Boolean" => "reader.GetBoolean",
-            "decimal" or "Decimal" or "decimal?" or "Decimal?" or "System.Decimal" => "reader.GetDecimal",
-            "double" or "Double" or "double?" or "Double?" or "System.Double" => "reader.GetDouble",
-            "float" or "Single" or "float?" or "Single?" or "System.Single" => "reader.GetFloat",
-            "short" or "Int16" or "short?" or "Int16?" or "System.Int16" => "reader.GetInt16",
-            "byte" or "Byte" or "byte?" or "Byte?" or "System.Byte" => "reader.GetByte",
-            "Guid" or "Guid?" or "System.Guid" => "reader.GetGuid",
-            "DateTime" or "DateTime?" or "System.DateTime" => "reader.GetDateTime",
-            _ => null
+            // Non-nullable value types - no null check needed
+            "int" or "Int32" or "System.Int32" => new("reader.GetInt32", false),
+            "long" or "Int64" or "System.Int64" => new("reader.GetInt64", false),
+            "bool" or "Boolean" or "System.Boolean" => new("reader.GetBoolean", false),
+            "decimal" or "Decimal" or "System.Decimal" => new("reader.GetDecimal", false),
+            "double" or "Double" or "System.Double" => new("reader.GetDouble", false),
+            "float" or "Single" or "System.Single" => new("reader.GetFloat", false),
+            "short" or "Int16" or "System.Int16" => new("reader.GetInt16", false),
+            "byte" or "Byte" or "System.Byte" => new("reader.GetByte", false),
+            "Guid" or "System.Guid" => new("reader.GetGuid", false),
+            "DateTime" or "System.DateTime" => new("reader.GetDateTime", false),
+            "TimeSpan" or "System.TimeSpan" => new("reader.GetValue", false),
+            "DateTimeOffset" or "System.DateTimeOffset" => new("reader.GetValue", false),
+            
+            // Nullable value types - needs null check
+            "int?" or "Int32?" => new("reader.GetInt32", true),
+            "long?" or "Int64?" => new("reader.GetInt64", true),
+            "bool?" or "Boolean?" => new("reader.GetBoolean", true),
+            "decimal?" or "Decimal?" => new("reader.GetDecimal", true),
+            "double?" or "Double?" => new("reader.GetDouble", true),
+            "float?" or "Single?" => new("reader.GetFloat", true),
+            "short?" or "Int16?" => new("reader.GetInt16", true),
+            "byte?" or "Byte?" => new("reader.GetByte", true),
+            "Guid?" => new("reader.GetGuid", true),
+            "DateTime?" => new("reader.GetDateTime", true),
+            "TimeSpan?" => new("reader.GetValue", true),
+            "DateTimeOffset?" => new("reader.GetValue", true),
+            
+            // Reference types - needs null check
+            "string" or "String" or "string?" or "String?" or "System.String" => new("reader.GetString", true),
+            
+            // Unknown types - needs null check, fall back to GetValue
+            _ => new("reader.GetValue", true)
         };
+    }
+
+    private readonly struct ReaderTypeInfo(string getter, bool needsNullCheck)
+    {
+        public string Getter => getter;
+        public bool NeedsNullCheck => needsNullCheck;
     }
 
     private struct PropertyMetadata(string propertyName, string columnName, bool isPrimaryKey, bool isIdentity, string typeName)

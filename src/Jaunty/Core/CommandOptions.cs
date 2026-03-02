@@ -19,6 +19,7 @@ namespace Jaunty.Core;
 /// <item><description><see cref="WithTransaction(IDbTransaction)"/> - Execute within a transaction</description></item>
 /// <item><description><see cref="WithTimeout(int)"/> - Set a command timeout in seconds</description></item>
 /// <item><description><see cref="AsStoredProcedure()"/> - Execute as a stored procedure</description></item>
+/// <item><description><see cref="WithExpectedRowCount(int)"/> - Hint for expected row count to optimize list allocation</description></item>
 /// </list>
 /// <para>
 /// For commands that don't require a custom mapper, use the non-generic <see cref="CommandOptions"/> struct.
@@ -41,11 +42,14 @@ namespace Jaunty.Core;
 /// 
 /// // Combine multiple options
 /// var options = CommandOptions&lt;Product&gt;.WithTransaction(tx).WithTimeout(60);
+/// 
+/// // Pre-size list for large result sets
+/// var options = CommandOptions&lt;Product&gt;.WithExpectedRowCount(10000);
 /// </code>
 /// </example>
 /// <seealso cref="CommandOptions"/>
 public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, IDbTransaction? transaction = null,
-    int? commandTimeout = null, CommandType commandType = CommandType.Text)
+    int? commandTimeout = null, CommandType commandType = CommandType.Text, int? expectedRowCount = null)
 {
     /// <summary>
     /// Gets the custom mapper function, if specified.
@@ -77,6 +81,15 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// Use <see cref="CommandType.StoredProcedure"/> for stored procedures.
     /// </remarks>
     public readonly CommandType CommandType = commandType;
+
+    /// <summary>
+    /// Gets the expected number of rows for the query result.
+    /// </summary>
+    /// <remarks>
+    /// This is a hint used to pre-size the internal list for better performance
+    /// when the approximate result size is known. If not specified, a default capacity is used.
+    /// </remarks>
+    public readonly int? ExpectedRowCount = expectedRowCount;
 
     /// <summary>
     /// Creates a new <see cref="CommandOptions{T}"/> with the specified mapper function.
@@ -114,6 +127,16 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// </summary>
     /// <returns>A new <see cref="CommandOptions{T}"/> instance with CommandType set to StoredProcedure.</returns>
     public static CommandOptions<T> AsStoredProcedure() => new(commandType: CommandType.StoredProcedure);
+
+    /// <summary>
+    /// Creates a new <see cref="CommandOptions{T}"/> with the expected row count hint.
+    /// </summary>
+    /// <param name="rowCount">The expected number of rows to allocate space for.</param>
+    /// <returns>A new <see cref="CommandOptions{T}"/> instance with the expected row count set.</returns>
+    /// <remarks>
+    /// This hint helps optimize memory allocation by pre-sizing the internal list.
+    /// </remarks>
+    public static CommandOptions<T> WithExpectedRowCount(int rowCount) => new(expectedRowCount: rowCount);
 
     /// <summary>
     /// Creates a new <see cref="CommandOptions{T}"/> with all options specified.

@@ -10,14 +10,16 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
+    private const int DefaultCapacity = 32;
+
     private static List<T> QueryCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
-        const int DefaultCapacity = 32;
+        int capacity = options.ExpectedRowCount ?? DefaultCapacity;
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
-                var results = new List<T>(DefaultCapacity);
+                var results = new List<T>(capacity);
                 var map = DrDispatcher.Resolve(reader, options, mode);
 
                 while (reader.Read())
@@ -29,7 +31,7 @@ public static partial class Jaunty
 
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            var results = new List<T>(DefaultCapacity);
+            var results = new List<T>(capacity);
             var map = DrDispatcher.Resolve(reader, options, mode);
 
             while (reader.Read())
