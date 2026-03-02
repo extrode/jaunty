@@ -1,3 +1,4 @@
+using Jaunty.Extensions.Reflection.BulkCopy;
 using Jaunty.Internals.BulkCopy;
 using Jaunty.Internals.Dialects;
 
