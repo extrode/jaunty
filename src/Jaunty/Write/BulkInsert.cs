@@ -111,8 +111,9 @@ public static partial class Jaunty
                 if (valueSetter == null)
                     throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
 
-                // Try multi-row INSERT path
-                if (dialect.SupportsMultiRowInsert && entityList.Count > 1)
+                // Multi-row INSERT reduces round-trips for network databases, but hurts
+                // in-process providers like SQLite where parameter object overhead exceeds savings.
+                if (dialect.SupportsMultiRowInsert && entityList.Count > 1 && dialect is not SQLiteDialect)
                 {
                     totalInserted = BulkInsertMultiRow(connection, entityList, cached, dialect, transaction, options, valueSetter);
                 }
@@ -176,19 +177,11 @@ public static partial class Jaunty
         if (colCount == 0) return 0;
 
         // Compute optimal batch size respecting provider parameter limits
-        int maxBatchSize = Math.Min(dialect.MaxParametersPerStatement / colCount, 1000);
+        int maxBatchSize = Math.Min((dialect.MaxParametersPerStatement - 1) / colCount, 1000);
         if (maxBatchSize < 1) maxBatchSize = 1;
 
-        // Pre-compile property getters for multi-row binding
-        var getters = new Func<T, object?>[colCount];
-        for (int c = 0; c < colCount; c++)
-        {
-            var prop = insertableColumns[c].Property;
-            var param = System.Linq.Expressions.Expression.Parameter(typeof(T), "e");
-            var access = System.Linq.Expressions.Expression.Property(param, prop);
-            var box = System.Linq.Expressions.Expression.Convert(access, typeof(object));
-            getters[c] = System.Linq.Expressions.Expression.Lambda<Func<T, object?>>(box, param).Compile();
-        }
+        // Use cached compiled property getters for multi-row binding
+        var getters = MultiRowInsertCache.GetOrBuildGetters<T>(cached.Metadata);
 
         int totalInserted = 0;
         int entityCount = entityList.Count;
