@@ -1,3 +1,4 @@
+using Jaunty.Internals.BulkCopy;
 using Jaunty.Internals.Dialects;
 
 namespace Jaunty.Fluent.Tests.Helpers;
