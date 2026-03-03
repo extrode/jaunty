@@ -259,7 +259,7 @@ Current provider-specific tests under `Integration/SqlServer/`, `Integration/Pos
    - `SkipSQLiteAsyncAttribute.cs` → no longer needed (omit SQLite attrs)
    - `SQLiteTestBase.cs` → replaced by `DialectFixture`
 3. Remove `Database.cs` if no remaining references
-4. Update `the contributor guide` with new architecture
+4. Update the coding standards with new architecture
 
 ---
 
@@ -353,3 +353,4 @@ After each phase:
 7. **Phase 4** — Delete provider-specific duplicates
 8. **Phase 5** — Cleanup helpers, update docs
 9. **Final verify** — Full `dotnet test`, Test Explorer screenshots
+
