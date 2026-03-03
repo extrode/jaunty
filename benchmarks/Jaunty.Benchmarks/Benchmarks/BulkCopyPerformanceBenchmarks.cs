@@ -25,14 +25,18 @@ public class BulkCopyPerformanceBenchmarks
     private bool _originalEnableNativeBulkCopy;
     private int _originalMinimumRows;
 
-    [Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
+    // Default: SQLite only (always available)
+    // To test other providers, add them here AND set connection env vars:
+    //   JAUNTY_TEST_SQLSERVER, JAUNTY_TEST_POSTGRESQL, JAUNTY_TEST_MARIADB
+    [Params(DatabaseProvider.Sqlite)]
+    //[Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
     public DatabaseProvider Provider { get; set; }
 
     [GlobalSetup]
     public void GlobalSetup()
     {
         if (!DatabaseSetup.IsAvailable(Provider))
-            throw new InvalidOperationException($"{Provider} is not available. Set JAUNTY_TEST_{Provider.ToString().ToUpper()} environment variable to enable.");
+            throw new InvalidOperationException($"{Provider} is not available. Skipping benchmark.");
 
         DatabaseSetup.EnsureDatabaseExists(Provider);
 
