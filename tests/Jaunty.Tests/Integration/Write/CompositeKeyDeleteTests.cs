@@ -95,7 +95,7 @@ public class CompositeKeyDeleteTests
 }
 
 [Table("order_detail")]
-public class OrderDetailEntity
+public partial class OrderDetailEntity
 {
     [Key]
     public int OrderId { get; set; }

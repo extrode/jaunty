@@ -7,7 +7,7 @@ namespace Jaunty.Tests.Entities;
 /// Test entity implementing IEntity&lt;long&gt; for Delete&lt;T, TId&gt; tests.
 /// </summary>
 [Table("bulk_test")]
-public class EntityTestEntity : IEntity<long>
+public partial class EntityTestEntity : IEntity<long>
 {
     [Key]
     [Column("id")]
