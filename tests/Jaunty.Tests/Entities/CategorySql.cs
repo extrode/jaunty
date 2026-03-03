@@ -6,7 +6,7 @@ namespace Jaunty.Tests.Entities;
 /// Category entity for SQL Server tests with PascalCase column names.
 /// </summary>
 [Table("Categories")]
-public class CategorySql
+public partial class CategorySql
 {
     [Key]
     [Column("CategoryID")]

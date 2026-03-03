@@ -240,7 +240,7 @@ public class UpsertTests : IClassFixture<DialectFixture>
 }
 
 [Table("upsert_test")]
-public class UpsertTestEntity
+public partial class UpsertTestEntity
 {
     [Key]
     [Column("id")]

@@ -293,7 +293,7 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         var csvPath = ResolveCsvPath();
         var connString = TestConfiguration.MariaDbConnectionString;
         // LOAD DATA LOCAL INFILE requires AllowLoadLocalInfile=true
-        if (!connString.Contains("AllowLoadLocalInfile", StringComparison.OrdinalIgnoreCase))
+        if (connString.IndexOf("AllowLoadLocalInfile", StringComparison.OrdinalIgnoreCase) < 0)
             connString += ";AllowLoadLocalInfile=true";
 
         using var connection = new MySqlConnection(connString);
@@ -313,7 +313,7 @@ public class CsvImportTests : IClassFixture<DialectFixture>
     {
         var csvPath = ResolveCsvPath();
         var connString = TestConfiguration.MariaDbConnectionString;
-        if (!connString.Contains("AllowLoadLocalInfile", StringComparison.OrdinalIgnoreCase))
+        if (connString.IndexOf("AllowLoadLocalInfile", StringComparison.OrdinalIgnoreCase) < 0)
             connString += ";AllowLoadLocalInfile=true";
 
         using var connection = new MySqlConnection(connString);

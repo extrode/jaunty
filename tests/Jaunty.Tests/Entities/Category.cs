@@ -3,7 +3,7 @@ using Jaunty.Attributes;
 namespace Jaunty.Tests.Entities;
 
 [Table("categories")]
-public class Category
+public partial class Category
 {
     [Key]
     [Column("category_id")]

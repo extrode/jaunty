@@ -111,6 +111,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine("using System.Data;");
         sb.AppendLine("using System.Data.Common;");
+        sb.AppendLine("using System.Runtime.CompilerServices;");
         sb.AppendLine("using Jaunty.Interfaces;");
         sb.AppendLine();
         sb.AppendLine($"namespace {namespaceName}");
@@ -233,23 +234,66 @@ public class JauntyGenerator : IIncrementalGenerator
 
         sb.AppendLine("        private static class OrdinalMap");
         sb.AppendLine("        {");
-        sb.AppendLine("            private static int[]? _ordinals;");
-        sb.AppendLine("            private static bool _initialized;");
+        sb.AppendLine("            private static readonly ConditionalWeakTable<IDataReader, CacheEntry> _cache = new();");
+        sb.AppendLine("            private static CacheEntry? _last;");
         sb.AppendLine();
         sb.AppendLine($"            public static int[] Resolve(IDataReader reader)");
         sb.AppendLine("            {");
-        sb.AppendLine("                var cached = _ordinals;");
-        sb.AppendLine("                if (_initialized && cached is not null)");
-        sb.AppendLine("                    return cached;");
+        sb.AppendLine("                var last = _last;");
+        sb.AppendLine("                if (last is not null && last.Matches(reader))");
+        sb.AppendLine("                    return last.Ordinals;");
+        sb.AppendLine();
+        sb.AppendLine("                if (_cache.TryGetValue(reader, out var cached) && cached.Matches(reader))");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    _last = cached;");
+        sb.AppendLine("                    return cached.Ordinals;");
+        sb.AppendLine("                }");
         sb.AppendLine();
         sb.AppendLine($"                var ords = new int[{properties.Count}];");
         for (int i = 0; i < properties.Count; i++)
         {
             sb.AppendLine($"                ords[{i}] = reader.GetOrdinal(\"{properties[i].ColumnName}\");");
         }
-        sb.AppendLine("                _ordinals = ords;");
-        sb.AppendLine("                _initialized = true;");
+        sb.AppendLine("                var entry = new CacheEntry(reader, ords);");
+        sb.AppendLine("                _cache.Remove(reader);");
+        sb.AppendLine("                _cache.Add(reader, entry);");
+        sb.AppendLine("                _last = entry;");
         sb.AppendLine("                return ords;");
+        sb.AppendLine("            }");
+        sb.AppendLine();
+        sb.AppendLine("            private sealed class CacheEntry");
+        sb.AppendLine("            {");
+        sb.AppendLine("                private readonly IDataReader _reader;");
+        sb.AppendLine("                private readonly int _fieldCount;");
+        sb.AppendLine();
+        sb.AppendLine("                public CacheEntry(IDataReader reader, int[] ordinals)");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    _reader = reader;");
+        sb.AppendLine("                    _fieldCount = reader.FieldCount;");
+        sb.AppendLine("                    Ordinals = ordinals;");
+        sb.AppendLine("                }");
+        sb.AppendLine();
+        sb.AppendLine("                public int[] Ordinals { get; }");
+        sb.AppendLine();
+        sb.AppendLine("                public bool Matches(IDataReader reader)");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    if (!ReferenceEquals(reader, _reader))");
+        sb.AppendLine("                        return false;");
+        sb.AppendLine();
+        sb.AppendLine("                    if (reader.FieldCount != _fieldCount)");
+        sb.AppendLine("                        return false;");
+        sb.AppendLine();
+        for (int i = 0; i < properties.Count; i++)
+        {
+            sb.AppendLine($"                    var ord{i} = Ordinals[{i}];");
+            sb.AppendLine($"                    if ((uint)ord{i} >= (uint)reader.FieldCount)");
+            sb.AppendLine("                        return false;");
+            sb.AppendLine($"                    if (!string.Equals(reader.GetName(ord{i}), \"{properties[i].ColumnName}\", StringComparison.OrdinalIgnoreCase))");
+            sb.AppendLine("                        return false;");
+            sb.AppendLine();
+        }
+        sb.AppendLine("                    return true;");
+        sb.AppendLine("                }");
         sb.AppendLine("            }");
         sb.AppendLine("        }");
 

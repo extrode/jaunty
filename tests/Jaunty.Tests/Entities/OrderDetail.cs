@@ -7,7 +7,7 @@ namespace Jaunty.Tests.Entities;
 /// Maps to the order_details table in Northwind.
 /// </summary>
 [Table("order_details")]
-public class OrderDetail
+public partial class OrderDetail
 {
     [Key]
     [Column("order_id")]

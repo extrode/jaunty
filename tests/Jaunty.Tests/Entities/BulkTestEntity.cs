@@ -7,7 +7,7 @@ namespace Jaunty.Tests.Entities;
 /// Uses a dedicated test table that can be created and dropped.
 /// </summary>
 [Table("bulk_test")]
-public class BulkTestEntity
+public partial class BulkTestEntity
 {
     [Key]
     [Column("id")]
