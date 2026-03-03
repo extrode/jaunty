@@ -1,5 +1,8 @@
 # Jaunty ORM: Commercial Viability & Competitive Analysis Report
 
+> Status note (2026-03-03): this report is historical and contains metrics that may no longer match current repository state.  
+> For current engineering readiness, use `docs/reports/PRODUCTION-READINESS-2026-03-03.md` and `docs/plans/PRODUCTION-READINESS-TASKLIST.md`.
+
 **Date:** 2026-02-26
 **Scope:** Full codebase analysis, competitive landscape, commercial strategy
 

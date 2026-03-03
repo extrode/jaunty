@@ -238,3 +238,4 @@ xychart-beta
 | [`../../00-quick-start/README.md`](../../00-quick-start/README.md) | Quick start guide |
 | [`../../01-api-reference/README.md`](../../01-api-reference/README.md) | API reference |
 | [`../../03-development/README.md`](../../03-development/README.md) | Development guides |
+

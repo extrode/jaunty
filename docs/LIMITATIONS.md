@@ -1,57 +1,47 @@
-# Jaunty.Fluent Known Limitations
+# Jaunty Known Limitations
 
-This document lists known API limitations and inconsistencies that will be addressed in future versions.
+Last reviewed: 2026-03-03
 
-## High Priority (v2 Roadmap)
+This file tracks currently known product limitations that impact API completeness, consistency, or production adoption.
 
-### 1. `IJoinedQuery3<>` (3-Way Joins) Limited API
-The 3-way join interface is significantly less capable than 2-way joins:
-- No async variants
-- No `OrderBy()` / `ThenBy()` support
-- No `Take()` / `Skip()` pagination
-- No `Count()` / `LongCount()`
+## High Priority
 
-**Workaround:** Use raw SQL for complex 3+ table joins, or chain 2-way joins.
+### 1. Source-generated ordinal caching is not schema-shape aware
+- Risk: incorrect column mapping when the same entity type is read with different column order/shape across executions.
+- Scope: generated `IMapped<T>` path.
+- Status: active fix in `P0` roadmap.
+
+### 2. Async API requires `DbConnection` in most methods
+- Sync API is `IDbConnection`-based, async API is mostly `DbConnection`-based.
+- Impact: inconsistent ergonomics for consumers using interface-only abstractions.
+
+### 3. Reflection still exists in core assembly paths
+- Runtime mapper/binder resolution and extension bootstrap still use reflection in `Jaunty` core.
+- Impact: reduces confidence in strict NativeAOT/zero-reflection claims.
 
 ## Medium Priority
 
-### 2. `IDistinctClause<T>` Limited WHERE Methods
-After `.Distinct()`, only basic `Where()` is available. Missing:
-- `WhereIn()` / `WhereNotIn()`
-- `WhereBetween()` / `WhereNotBetween()`
-- `WhereExists()` / `WhereNotExists()`
+### 4. Fluent API parity gaps
+- `IJoinedQuery3<T1,T2,T3>` is missing async/paging/sorting parity with 2-way join flows.
+- Some distinct/CTE method families are still inconsistent.
 
-**Workaround:** Apply these filters before `.Distinct()` in the query chain.
+### 5. Scaffolding lacks navigation property generation
+- Foreign key metadata is discovered but not fully emitted as navigation properties.
 
-### 3. Missing Async in `ICteQueryClause<T>`
-CTE queries have `SelectFirstAsync()` and `SelectFirstOrDefaultAsync()` missing.
+### 6. Benchmark comparability quality is uneven
+- Some benchmark result sets include incomplete competitor rows.
+- Impact: weakens external performance claims unless clearly scoped.
 
-**Workaround:** Use `SelectAsync()` and take the first element.
+## Low Priority / Design Tradeoffs
 
-## Low Priority
+### 7. Provider-specific scalar type differences
+- `COUNT(*)` type differs by provider (`int` vs `long`).
+- Workaround: use `long` for cross-provider scalar counts.
 
-### 4. `SelectCount()` Alias Redundancy
-`IQueryTerminal<T>` has both `Count()` and `SelectCount()` which do the same thing. This pattern is not consistent across all aggregate methods.
+### 8. `IMapped<T>.ReadEntity` is strict-shape oriented
+- Custom mapper assumes required columns exist.
+- Workaround: use `QueryPartial*` with projection-safe mapper for partial shapes.
 
-**Note:** Both work identically. Use whichever you prefer.
-
-### 5. `COUNT(*)` Return Type Varies by Provider
-`COUNT(*)` does not return the same CLR type across providers:
-- SQL Server commonly returns `Int32`
-- PostgreSQL, MariaDB/MySQL, and SQLite commonly return `Int64`
-
-If you call scalar methods with a mismatched type (for example `QueryScalar<int>` against a provider returning `Int64`), a cast/conversion error can occur.
-
-**Workaround:** For cross-dialect code, prefer `QueryScalar<long>` / `ExecuteScalar<long>` (or fluent `LongCount()`).
-
-### 6. `IMapped<T>.ReadEntity` Is Treated As Strict Mapping
-`IMapped<T>` / `ReadEntity(IDataReader)` is intended for full-shape entity mapping. Partial/projection queries may omit columns, so relying on `ReadEntity` for those queries is unsafe unless your mapper explicitly handles missing columns.
-
-**Workaround:** For partial/projection queries, use `QueryPartial*` with a projection-safe mapper via `CommandOptions<T>.WithMapper(...)` (or reflection-based partial mapping).
-
----
-
-## Reporting Issues
-
-If you encounter additional limitations or have feature requests, please open an issue at:
-https://github.com/extrode/jaunty/issues
+## Tracking
+- Active roadmap: [plans/PRODUCTION-READINESS-TASKLIST.md](plans/PRODUCTION-READINESS-TASKLIST.md)
+- Issues: https://github.com/beparey/Jaunty/issues

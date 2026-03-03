@@ -190,3 +190,4 @@ JauntyConfig.ColumnNameResolver = null;  // Ignored for Product
 
 - [`performance.md`](performance.md) - Performance optimizations
 - [`../../01-api-reference/configuration.md`](../../01-api-reference/configuration.md) - Configuration API
+
