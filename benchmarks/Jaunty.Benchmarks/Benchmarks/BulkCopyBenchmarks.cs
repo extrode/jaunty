@@ -1,0 +1,210 @@
+using System.Data;
+using System.Data.Common;
+
+using BenchmarkDotNet.Attributes;
+
+using Dapper;
+
+using Jaunty.Benchmarks.Config;
+using Jaunty.Benchmarks.Entities;
+
+using Jaunty.Configuration;
+using Jaunty.Extensions.Reflection;
+
+using LinqToDB;
+using LinqToDB.Data;
+
+using Microsoft.EntityFrameworkCore;
+
+namespace Jaunty.Benchmarks.Benchmarks;
+
+/// <summary>
+/// Benchmarks comparing native bulk copy operations across ORMs.
+/// Tests Jaunty's native bulk copy (SqlBulkCopy, COPY FROM, LOAD DATA INFILE)
+/// against other ORMs' bulk/batch insert capabilities.
+/// </summary>
+[MemoryDiagnoser]
+public class BulkCopyBenchmarks
+{
+    private DbConnection _connection = null!;
+    private List<JauntyProduct> _jauntyProducts = null!;
+    private List<RepoDbProduct> _repoDbProducts = null!;
+    private List<EfProduct> _efProducts = null!;
+    private List<Linq2DbProduct> _linq2DbProducts = null!;
+    private bool _originalEnableNativeBulkCopy;
+    private int _originalMinimumRows;
+
+    [Params(100, 1_000, 10_000)]
+    public int BatchSize { get; set; }
+
+    [Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
+    public DatabaseProvider Provider { get; set; }
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        if (!DatabaseSetup.IsAvailable(Provider))
+            throw new InvalidOperationException($"{Provider} is not available");
+
+        DatabaseSetup.InitializeRepoDb(Provider);
+        DatabaseSetup.EnsureDatabaseExists(Provider);
+
+        _connection = DatabaseSetup.CreateConnection(Provider);
+        _connection.Open();
+        DatabaseSetup.CreateSchema(_connection, Provider);
+
+        // Save and configure bulk copy settings
+        _originalEnableNativeBulkCopy = BulkCopyConfiguration.EnableNativeBulkCopy;
+        _originalMinimumRows = BulkCopyConfiguration.MinimumRowsForNativeBulkCopy;
+
+        // Enable native bulk copy for Jaunty with a low threshold so it always activates
+        JauntyReflectionExtensions.UseNativeBulkCopy();
+        BulkCopyConfiguration.EnableNativeBulkCopy = true;
+        BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = 1;
+
+        _jauntyProducts = Enumerable.Range(0, BatchSize).Select(i => new JauntyProduct
+        {
+            ProductName = $"Bulk Product {i}",
+            UnitPrice = 10.00m + (i % 100),
+            UnitsInStock = 50 + (i % 200),
+            Discontinued = i % 10 == 0
+        }).ToList();
+
+        _repoDbProducts = Enumerable.Range(0, BatchSize).Select(i => new RepoDbProduct
+        {
+            ProductName = $"Bulk Product {i}",
+            UnitPrice = 10.00m + (i % 100),
+            UnitsInStock = 50 + (i % 200),
+            Discontinued = i % 10 == 0
+        }).ToList();
+
+        _efProducts = Enumerable.Range(0, BatchSize).Select(i => new EfProduct
+        {
+            product_name = $"Bulk Product {i}",
+            unit_price = 10.00m + (i % 100),
+            units_in_stock = 50 + (i % 200),
+            discontinued = i % 10 == 0
+        }).ToList();
+
+        _linq2DbProducts = Enumerable.Range(0, BatchSize).Select(i => new Linq2DbProduct
+        {
+            ProductName = $"Bulk Product {i}",
+            UnitPrice = 10.00m + (i % 100),
+            UnitsInStock = 50 + (i % 200),
+            Discontinued = i % 10 == 0
+        }).ToList();
+    }
+
+    [GlobalCleanup]
+    public void Cleanup()
+    {
+        // Restore original configuration
+        BulkCopyConfiguration.EnableNativeBulkCopy = _originalEnableNativeBulkCopy;
+        BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = _originalMinimumRows;
+
+        _connection?.Dispose();
+    }
+
+    [IterationSetup]
+    public void IterationSetup()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM benchmark_products";
+        cmd.ExecuteNonQuery();
+    }
+
+    // --- ADO.NET (hand-coded baseline) ---
+
+    [Benchmark(Description = "ADO.NET loop (transaction)", Baseline = true)]
+    public void AdoNet_BulkInsert()
+    {
+        using var transaction = _connection.BeginTransaction();
+        using var cmd = _connection.CreateCommand();
+        cmd.Transaction = transaction;
+        cmd.CommandText = "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@name, @price, @stock, @disc)";
+
+        var pName = cmd.CreateParameter();
+        pName.ParameterName = "@name";
+        pName.DbType = DbType.String;
+        cmd.Parameters.Add(pName);
+
+        var pPrice = cmd.CreateParameter();
+        pPrice.ParameterName = "@price";
+        pPrice.DbType = DbType.Decimal;
+        cmd.Parameters.Add(pPrice);
+
+        var pStock = cmd.CreateParameter();
+        pStock.ParameterName = "@stock";
+        pStock.DbType = DbType.Int32;
+        cmd.Parameters.Add(pStock);
+
+        var pDisc = cmd.CreateParameter();
+        pDisc.ParameterName = "@disc";
+        pDisc.DbType = Provider == DatabaseProvider.Sqlite ? DbType.Int64 : DbType.Boolean;
+        cmd.Parameters.Add(pDisc);
+
+        if (Provider != DatabaseProvider.SqlServer)
+            cmd.Prepare();
+
+        foreach (var p in _jauntyProducts)
+        {
+            pName.Value = p.ProductName;
+            pPrice.Value = p.UnitPrice;
+            pStock.Value = p.UnitsInStock;
+            pDisc.Value = Provider == DatabaseProvider.Sqlite
+                ? (object)(p.Discontinued ? 1L : 0L)
+                : (object)p.Discontinued;
+            cmd.ExecuteNonQuery();
+        }
+
+        transaction.Commit();
+    }
+
+    // --- Jaunty BulkInsert (native bulk copy enabled) ---
+
+    [Benchmark(Description = "Jaunty BulkInsert (native)")]
+    public void Jaunty_BulkInsert_Native()
+    {
+        _connection.BulkInsert(_jauntyProducts);
+    }
+
+    // --- Dapper loop insert (no built-in bulk) ---
+
+    [Benchmark(Description = "Dapper Execute loop")]
+    public void Dapper_LoopInsert()
+    {
+        foreach (var p in _jauntyProducts)
+        {
+            _connection.Execute(
+                "INSERT INTO benchmark_products (product_name, unit_price, units_in_stock, discontinued) VALUES (@ProductName, @UnitPrice, @UnitsInStock, @Discontinued)",
+                new { p.ProductName, p.UnitPrice, p.UnitsInStock, p.Discontinued });
+        }
+    }
+
+    // --- EF Core AddRange+SaveChanges ---
+
+    [Benchmark(Description = "EF Core AddRange+Save")]
+    public void EfCore_BulkInsert()
+    {
+        using var context = new BenchmarkDbContext(_connection, DatabaseSetup.GetEfProviderName(Provider));
+        context.BenchmarkProducts.AddRange(_efProducts);
+        context.SaveChanges();
+    }
+
+    // --- RepoDb InsertAll ---
+
+    [Benchmark(Description = "RepoDb InsertAll")]
+    public void RepoDb_InsertAll()
+    {
+        RepoDb.DbConnectionExtension.InsertAll(_connection, _repoDbProducts);
+    }
+
+    // --- linq2db BulkCopy ---
+
+    [Benchmark(Description = "linq2db BulkCopy")]
+    public void Linq2Db_BulkCopy()
+    {
+        using var db = new BenchmarkDb(_connection, Provider);
+        db.BulkCopy(_linq2DbProducts);
+    }
+}

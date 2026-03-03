@@ -196,8 +196,9 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     /// </summary>
     private static class EntityDataReaderCache<TEntity> where TEntity : new()
     {
+        private static readonly object _lock = new();
         private static Func<TEntity, object?>[]? _getters;
-        
+
         /// <summary>
         /// Gets the cached compiled property getters for type TEntity.
         /// Returns empty array if not yet initialized.
@@ -211,10 +212,9 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
         /// <param name="columns">The column metadata to build getters for.</param>
         public static void Initialize(ColumnMetadata[] columns)
         {
-            // Double-check locking pattern for thread-safe lazy initialization
             if (_getters is null)
             {
-                lock (columns) // Lock on the columns array (unique per initialization)
+                lock (_lock)
                 {
                     if (_getters is null)
                         _getters = BuildGetters(columns);
