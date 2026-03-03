@@ -236,7 +236,7 @@ public static partial class Jaunty
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
-                var results = new List<(T1, T2)>();
+                var results = new List<(T1, T2)>(32);
 
                 if (!reader.Read())
                     return results;
@@ -261,7 +261,7 @@ public static partial class Jaunty
 
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            var results = new List<(T1, T2)>();
+            var results = new List<(T1, T2)>(32);
 
             if (!reader.Read())
                 return results;

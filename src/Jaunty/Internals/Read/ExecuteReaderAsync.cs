@@ -61,8 +61,9 @@ public static partial class Jaunty
             }
             else
             {
-                // Fallback for non-DbConnection - use sync methods
-                if (wasClosed) connection.Open();
+                // Fallback for non-DbConnection - use sync methods wrapped in Task.Run to avoid blocking
+                if (wasClosed) 
+                    await Task.Run(() => connection.Open(), cancellationToken).ConfigureAwait(false);
 
                 using var command = connection.CreateCommand();
                 command.CommandText = sql;
@@ -94,6 +95,8 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 if (connection is DbConnection dbConn)
                     await dbConn.CloseAsync().ConfigureAwait(false);
+                else
+                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #else
                 connection.Close();
 #endif
