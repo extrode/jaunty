@@ -25,11 +25,7 @@ public class BulkCopyPerformanceBenchmarks
     private bool _originalEnableNativeBulkCopy;
     private int _originalMinimumRows;
 
-    // Default: SQLite only (always available)
-    // To test other providers, add them here AND set connection env vars:
-    //   JAUNTY_TEST_SQLSERVER, JAUNTY_TEST_POSTGRESQL, JAUNTY_TEST_MARIADB
-    [Params(DatabaseProvider.Sqlite)]
-    //[Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
+    [Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
     public DatabaseProvider Provider { get; set; }
 
     [GlobalSetup]
