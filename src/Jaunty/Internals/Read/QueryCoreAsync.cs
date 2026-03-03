@@ -48,6 +48,7 @@ public static partial class Jaunty
             }
 
             if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+            ct.ThrowIfCancellationRequested();
             var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             return mapFallback(reader);
         }, cancellationToken).ConfigureAwait(false);
@@ -66,6 +67,7 @@ public static partial class Jaunty
             }
 
             if (!reader.Read()) return default;
+            ct.ThrowIfCancellationRequested();
             var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             return mapFallback(reader);
         }, cancellationToken).ConfigureAwait(false);
@@ -88,8 +90,10 @@ public static partial class Jaunty
             }
 
             if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+            ct.ThrowIfCancellationRequested();
             var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             T? entityFallback = mapFallback(reader);
+            ct.ThrowIfCancellationRequested();
             return reader.Read()
                 ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
                 : entityFallback!;
@@ -113,8 +117,10 @@ public static partial class Jaunty
             }
 
             if (!reader.Read()) return default;
+            ct.ThrowIfCancellationRequested();
             var mapFallback = DrDispatcher.Resolve(reader, options, mode);
             T? entityFallback = mapFallback(reader);
+            ct.ThrowIfCancellationRequested();
             return reader.Read()
                 ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
                 : entityFallback;
@@ -311,6 +317,7 @@ public static partial class Jaunty
 
                 do
                 {
+                    ct.ThrowIfCancellationRequested();
                     var t1 = new T1();
                     var t2 = new T2();
 
@@ -399,6 +406,7 @@ public static partial class Jaunty
             if (!reader.Read())
                 return ((T1, T2)?)null;
 
+            ct.ThrowIfCancellationRequested();
             var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
 
             var t1Fallback = new T1();
@@ -407,6 +415,7 @@ public static partial class Jaunty
             mappingFallback.ApplyT1(t1Fallback, reader);
             mappingFallback.ApplyT2(t2Fallback, reader);
 
+            ct.ThrowIfCancellationRequested();
             if (reader.Read())
                 throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
 

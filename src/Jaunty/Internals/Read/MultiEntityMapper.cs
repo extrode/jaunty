@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Data;
 
 using Jaunty.Configuration;
@@ -9,6 +10,8 @@ namespace Jaunty.Internals.Read;
 /// </summary>
 internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new()
 {
+    private static readonly ConcurrentDictionary<(Type, Type), MultiEntityMapper<T1, T2>> _cache = new();
+
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
 
@@ -20,9 +23,20 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
 
     internal static MultiEntityMapper<T1, T2> Build(IDataReader reader)
     {
+        var key = (typeof(T1), typeof(T2));
+        
+        if (_cache.TryGetValue(key, out var cached))
+            return cached;
+
+        var mapper = CreateMapper(reader);
+        _cache.TryAdd(key, mapper);
+        return mapper;
+    }
+
+    private static MultiEntityMapper<T1, T2> CreateMapper(IDataReader reader)
+    {
         if (JauntyConfig.ReflectionMultiMapperResolver?.Invoke(typeof(T1), typeof(T2)) is Action<T1, T2, IDataRecord> combined)
         {
-             // This is a simplified bridge. The extension will provide the actual logic.
              return new MultiEntityMapper<T1, T2>(
                  (t1, r) => combined(t1, default!, r),
                  (t2, r) => combined(default!, t2, r)
