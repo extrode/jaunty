@@ -135,6 +135,8 @@ The following files were searched and **confirmed to be actively used**:
 ## Recommendations
 
 ### Immediate Actions
+
+1. **Update `Internals/the coding standards`**
    - Remove reference to `EntityReader.cs` (already deleted)
    - Keep `WriteParameterHelper.cs` reference (confirmed active)
 
@@ -208,3 +210,4 @@ For each quarterly review:
 **Status**: **CLEAN** - No dead code found (besides EntityReader.cs already deleted)
 
 **Next Review**: 2026-05-24 (Quarterly)
+

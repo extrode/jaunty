@@ -750,3 +750,4 @@ flowchart TD
 | [`parameter-binding-spec.md`](parameter-binding-spec.md) | Parameter binding details |
 | [`performance-spec.md`](performance-spec.md) | Performance optimization guide |
 | [`../../01-api-reference/README.md`](../../01-api-reference/README.md) | API documentation |
+
