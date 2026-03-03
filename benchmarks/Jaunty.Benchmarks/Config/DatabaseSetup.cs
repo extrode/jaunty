@@ -48,14 +48,20 @@ public static class DatabaseSetup
 
     private static bool _repoDbInitialized;
 
-    public static bool IsAvailable(DatabaseProvider provider) => provider switch
+    public static bool IsAvailable(DatabaseProvider provider)
     {
-        DatabaseProvider.Sqlite => true,
-        DatabaseProvider.SqlServer => true,
-        DatabaseProvider.PostgreSql => true,
-        DatabaseProvider.MariaDb => true,
-        _ => false
-    };
+        try
+        {
+            using var conn = CreateConnection(provider);
+            conn.Open();
+            conn.Close();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     public static DbConnection CreateConnection(DatabaseProvider provider) => provider switch
     {
