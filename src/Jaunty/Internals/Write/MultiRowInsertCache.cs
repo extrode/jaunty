@@ -96,7 +96,7 @@ internal static class MultiRowInsertCache
             {
                 if (c > 0) sb.Append(", ");
                 sb.Append('@');
-                sb.Append(insertableColumns[c].Property.Name);
+                sb.Append(insertableColumns[c].ColumnName);
                 sb.Append('_');
                 sb.Append(row);
             }

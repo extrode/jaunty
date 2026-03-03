@@ -27,11 +27,7 @@ public class BulkInsertBenchmarks
     [Params(100, 1_000, 10_000)]
     public int BatchSize { get; set; }
 
-    // Default: SQLite only (always available)
-    // To test other providers, uncomment AND set connection env vars:
-    //   JAUNTY_TEST_SQLSERVER, JAUNTY_TEST_POSTGRESQL, JAUNTY_TEST_MARIADB
-    [Params(DatabaseProvider.Sqlite)]
-    //[Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
+    [Params(DatabaseProvider.Sqlite, DatabaseProvider.SqlServer, DatabaseProvider.PostgreSql, DatabaseProvider.MariaDb)]
     public DatabaseProvider Provider { get; set; }
 
     [GlobalSetup]
