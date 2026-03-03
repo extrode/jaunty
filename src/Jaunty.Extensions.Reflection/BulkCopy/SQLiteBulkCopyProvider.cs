@@ -22,30 +22,39 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
     /// <inheritdoc/>
     public int CopyToServer(IDbConnection connection, string tableName, IDataReader data, BulkCopyOptions options)
     {
-        var sqliteConnection = connection as IDbConnection
-            ?? throw new ArgumentException("Connection must be a valid database connection.", nameof(connection));
-
-        bool wasClosed = sqliteConnection.State == ConnectionState.Closed;
+        bool wasClosed = connection.State == ConnectionState.Closed;
         IDbTransaction? transaction = options.Transaction;
         bool ownTransaction = transaction is null;
 
         try
         {
             if (wasClosed)
-                sqliteConnection.Open();
+                connection.Open();
 
             if (ownTransaction)
-                transaction = sqliteConnection.BeginTransaction();
+                transaction = connection.BeginTransaction();
 
-            // Optimize SQLite for bulk inserts
-            using var pragmaCmd = sqliteConnection.CreateCommand();
+            // Save current PRAGMA values so we can restore them after the bulk insert
+            string? originalJournalMode = null;
+            string? originalSynchronous = null;
+
+            using (var readCmd = connection.CreateCommand())
+            {
+                readCmd.Transaction = transaction;
+
+                readCmd.CommandText = "PRAGMA journal_mode";
+                originalJournalMode = readCmd.ExecuteScalar()?.ToString();
+
+                readCmd.CommandText = "PRAGMA synchronous";
+                originalSynchronous = readCmd.ExecuteScalar()?.ToString();
+            }
+
+            using var pragmaCmd = connection.CreateCommand();
             pragmaCmd.Transaction = transaction;
 
-            // Use WAL mode for better write performance
             pragmaCmd.CommandText = "PRAGMA journal_mode=WAL";
             pragmaCmd.ExecuteNonQuery();
 
-            // Set synchronous to NORMAL for better performance (acceptable durability trade-off for bulk ops)
             pragmaCmd.CommandText = "PRAGMA synchronous=NORMAL";
             pragmaCmd.ExecuteNonQuery();
 
@@ -57,7 +66,7 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
                 columnNames[i] = data.GetName(i);
             }
 
-            using var command = sqliteConnection.CreateCommand();
+            using var command = connection.CreateCommand();
             command.Transaction = transaction;
             command.CommandText = BuildInsertSql(tableName, columnNames);
 
@@ -91,6 +100,25 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
                 rowCount++;
             }
 
+            // Restore original PRAGMA values
+            try
+            {
+                using var restoreCmd = connection.CreateCommand();
+                restoreCmd.Transaction = transaction;
+
+                if (originalJournalMode != null)
+                {
+                    restoreCmd.CommandText = $"PRAGMA journal_mode={originalJournalMode}";
+                    restoreCmd.ExecuteNonQuery();
+                }
+                if (originalSynchronous != null)
+                {
+                    restoreCmd.CommandText = $"PRAGMA synchronous={originalSynchronous}";
+                    restoreCmd.ExecuteNonQuery();
+                }
+            }
+            catch { /* Best effort PRAGMA restore */ }
+
             if (ownTransaction)
                 transaction!.Commit();
 
@@ -107,8 +135,8 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
             if (ownTransaction)
                 transaction?.Dispose();
 
-            if (wasClosed && sqliteConnection.State != ConnectionState.Closed)
-                sqliteConnection.Close();
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
         }
     }
 

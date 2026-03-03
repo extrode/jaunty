@@ -22,7 +22,6 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static readonly Type? SqlBulkCopyOptionsType = Type.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions, Microsoft.Data.SqlClient")
         ?? Type.GetType("System.Data.SqlClient.SqlBulkCopyOptions, System.Data");
 
-    private static readonly PropertyInfo? ColumnMappingsProperty = SqlBulkCopyType?.GetProperty("ColumnMappings");
     private static readonly PropertyInfo? BatchSizeProperty = SqlBulkCopyType?.GetProperty("BatchSize");
     private static readonly PropertyInfo? BulkCopyTimeoutProperty = SqlBulkCopyType?.GetProperty("BulkCopyTimeout");
     private static readonly PropertyInfo? DestinationTableNameProperty = SqlBulkCopyType?.GetProperty("DestinationTableName");
@@ -42,31 +41,24 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         var sqlConnection = connection as DbConnection
             ?? throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
 
-        // Create SqlBulkCopy instance with appropriate options
+        // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
         var bulkCopyOptions = MapBulkCopyOptions(options);
-        object? sqlTransaction = options.Transaction;
 
-        var bulkCopy = sqlTransaction != null
-            ? Activator.CreateInstance(SqlBulkCopyType, sqlConnection, bulkCopyOptions, sqlTransaction)
-            : Activator.CreateInstance(SqlBulkCopyType, sqlConnection, bulkCopyOptions);
+        var bulkCopy = Activator.CreateInstance(SqlBulkCopyType, sqlConnection, bulkCopyOptions, options.Transaction);
 
         if (bulkCopy == null)
             throw new InvalidOperationException("Failed to create SqlBulkCopy instance.");
 
         try
         {
-            // Configure bulk copy
             BatchSizeProperty?.SetValue(bulkCopy, options.BatchSize);
             BulkCopyTimeoutProperty?.SetValue(bulkCopy, options.Timeout);
             DestinationTableNameProperty?.SetValue(bulkCopy, tableName);
 
-            // Column mappings are handled automatically by SqlBulkCopy when using IDataReader
-            // Column names from IDataReader.GetName() are matched to destination columns
-
-            // Execute bulk copy
             WriteToServerMethod?.Invoke(bulkCopy, new object[] { data });
 
-            return GetRowCount(data);
+            // SqlBulkCopy doesn't expose row count; return -1 and let the caller use entityList.Count
+            return -1;
         }
         finally
         {
@@ -85,13 +77,10 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
 
-        // Use DbConnection instead of SqlConnection
+        // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
         var bulkCopyOptions = MapBulkCopyOptions(options);
-        object? sqlTransaction = options.Transaction;
 
-        var bulkCopy = sqlTransaction != null
-            ? Activator.CreateInstance(SqlBulkCopyType, connection, bulkCopyOptions, sqlTransaction)
-            : Activator.CreateInstance(SqlBulkCopyType, connection, bulkCopyOptions);
+        var bulkCopy = Activator.CreateInstance(SqlBulkCopyType, connection, bulkCopyOptions, options.Transaction);
 
         if (bulkCopy == null)
             throw new InvalidOperationException("Failed to create SqlBulkCopy instance.");
@@ -108,11 +97,11 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
             }
             else
             {
-                // Fallback to sync method if async is not available
                 WriteToServerMethod?.Invoke(bulkCopy, new object[] { data });
             }
 
-            return GetRowCount(data);
+            // SqlBulkCopy doesn't expose row count; return -1 and let the caller use entityList.Count
+            return -1;
         }
         finally
         {
@@ -157,14 +146,4 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         return result;
     }
 
-    /// <summary>
-    /// Gets the row count from an IDataReader by consuming it.
-    /// This is a best-effort approach since IDataReader doesn't expose count directly.
-    /// </summary>
-    private static int GetRowCount(IDataReader data)
-    {
-        // Note: This consumes the data reader, so it should only be called after WriteToServer
-        // In practice, the caller should track the count separately
-        return -1; // Return -1 to indicate unknown (common pattern for bulk operations)
-    }
 }
