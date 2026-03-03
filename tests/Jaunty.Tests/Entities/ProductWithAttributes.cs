@@ -3,7 +3,7 @@ using Jaunty.Attributes;
 namespace Jaunty.Tests.Entities;
 
 [Table("products")]
-public class ProductWithAttributes
+public partial class ProductWithAttributes
 {
     [Column("product_id")]
     public long ProductId { get; set; }

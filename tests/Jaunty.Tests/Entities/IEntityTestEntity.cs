@@ -7,7 +7,7 @@ namespace Jaunty.Tests.Entities;
 /// Test entity implementing non-generic IEntity for WriteParameterCache tests.
 /// </summary>
 [Table("bulk_test")]
-public class IEntityTestEntity : IEntity
+public partial class IEntityTestEntity : IEntity
 {
     [Key]
     [Column("id")]
