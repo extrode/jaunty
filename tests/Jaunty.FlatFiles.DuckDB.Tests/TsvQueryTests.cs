@@ -1,5 +1,3 @@
-using Jaunty.FlatFiles;
-using Jaunty.FlatFiles.DuckDB;
 using Jaunty.FlatFiles.DuckDB.Tests.Entities;
 using Jaunty.Fluent;
 

@@ -23,6 +23,9 @@ public sealed class JsonFileSource : IFileSource
     /// <inheritdoc />
     public bool IsPreloaded { get; set; }
 
+    /// <inheritdoc />
+    public string DuckDbFormatName => "JSON";
+
     /// <summary>
     /// Gets or sets the JSON file format (auto, array, or newline-delimited).
     /// Default: Auto.
@@ -47,4 +50,31 @@ public sealed class JsonFileSource : IFileSource
         FilePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
     }
+
+    /// <inheritdoc />
+    public string GenerateReadFunction(string escapedFilePath)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"read_json_auto('{escapedFilePath}'");
+
+        if (JsonFormat != JsonFileFormat.Auto)
+        {
+            var formatValue = JsonFormat switch
+            {
+                JsonFileFormat.Array => "array",
+                JsonFileFormat.NewlineDelimited => "newline_delimited",
+                _ => "auto"
+            };
+            sb.Append($", format = '{formatValue}'");
+        }
+
+        if (MaxDepth.HasValue)
+            sb.Append($", maximum_depth = {MaxDepth.Value}");
+
+        sb.Append(')');
+        return sb.ToString();
+    }
+
+    /// <inheritdoc />
+    public string? GenerateCopyToOptions() => null;
 }

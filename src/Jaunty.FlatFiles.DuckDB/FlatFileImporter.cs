@@ -32,22 +32,11 @@ public static class FlatFileImporter
             throw new FileNotFoundException($"Flat file not found: {fullPath}", fullPath);
 
         var extension = Path.GetExtension(fullPath).ToLowerInvariant();
+        var tableName = TableNameResolver.Resolve<T>();
 
-        // Use the configured Open to register with the correct entity type
-        using var db = FlatFileDatabase.Open(opts =>
-        {
-            switch (extension)
-            {
-                case ".csv": opts.AddCsv<T>(fullPath); break;
-                case ".tsv": opts.AddTsv<T>(fullPath); break;
-                case ".parquet": opts.AddParquet<T>(fullPath); break;
-                case ".json": case ".ndjson": opts.AddJson<T>(fullPath); break;
-                default:
-                    throw new ArgumentException(
-                        $"Unsupported file extension '{extension}'. Supported: .csv, .tsv, .parquet, .json, .ndjson",
-                        nameof(filePath));
-            }
-        });
+        // Use the registry to create a source with the correct entity type
+        var source = FlatFileDatabase.CreateSourceFromExtension(extension, tableName, fullPath, typeof(T));
+        using var db = FlatFileDatabase.Open(opts => opts.AddSource(source));
 
         return await db.ImportIntoAsync<T>(targetConnection, configure, cancellationToken).ConfigureAwait(false);
     }

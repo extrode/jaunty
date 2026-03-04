@@ -285,94 +285,28 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return sb.ToString();
     }
 
+    public string GenerateCopyToSql(string tableName, string outputPath, IFileSource source)
+    {
+        var escapedPath = outputPath.Replace("'", "''");
+
+        var sb = new StringBuilder();
+        sb.Append($"COPY \"{tableName}\" TO '{escapedPath}' (FORMAT {source.DuckDbFormatName}");
+
+        var extraOptions = source.GenerateCopyToOptions();
+        if (!string.IsNullOrEmpty(extraOptions))
+        {
+            sb.Append(", ");
+            sb.Append(extraOptions);
+        }
+
+        sb.Append(')');
+        return sb.ToString();
+    }
+
     internal static string GenerateReadFunction(IFileSource source)
     {
         var escapedPath = source.FilePath.Replace("'", "''");
-
-        return source switch
-        {
-            CsvFileSource csv => GenerateCsvReadFunction(csv, escapedPath),
-            TsvFileSource tsv => GenerateTsvReadFunction(tsv, escapedPath),
-            ParquetFileSource parquet => GenerateParquetReadFunction(parquet, escapedPath),
-            JsonFileSource json => GenerateJsonReadFunction(json, escapedPath),
-            _ => throw new ArgumentException($"Unsupported file source type: {source.GetType().Name}", nameof(source))
-        };
+        return source.GenerateReadFunction(escapedPath);
     }
 
-    private static string GenerateCsvReadFunction(CsvFileSource csv, string escapedPath)
-    {
-        var sb = new StringBuilder();
-        sb.Append($"read_csv('{escapedPath}'");
-
-        if (csv.HasHeader.HasValue)
-            sb.Append($", header = {(csv.HasHeader.Value ? "true" : "false")}");
-
-        if (csv.Delimiter.HasValue)
-            sb.Append($", delim = '{csv.Delimiter.Value}'");
-
-        if (csv.QuoteChar.HasValue)
-            sb.Append($", quote = '{csv.QuoteChar.Value}'");
-
-        if (csv.NullString is not null)
-            sb.Append($", nullstr = '{csv.NullString.Replace("'", "''")}'");
-
-        if (csv.SkipRows > 0)
-            sb.Append($", skip = {csv.SkipRows}");
-
-        sb.Append(", auto_detect = true)");
-        return sb.ToString();
-    }
-
-    private static string GenerateTsvReadFunction(TsvFileSource tsv, string escapedPath)
-    {
-        var sb = new StringBuilder();
-        sb.Append($"read_csv('{escapedPath}', delim = '\t'");
-
-        if (tsv.HasHeader.HasValue)
-            sb.Append($", header = {(tsv.HasHeader.Value ? "true" : "false")}");
-
-        if (tsv.NullString is not null)
-            sb.Append($", nullstr = '{tsv.NullString.Replace("'", "''")}'");
-
-        if (tsv.SkipRows > 0)
-            sb.Append($", skip = {tsv.SkipRows}");
-
-        sb.Append(", auto_detect = true)");
-        return sb.ToString();
-    }
-
-    private static string GenerateParquetReadFunction(ParquetFileSource parquet, string escapedPath)
-    {
-        var sb = new StringBuilder();
-        sb.Append($"read_parquet('{escapedPath}'");
-
-        if (parquet.HivePartitioning)
-            sb.Append(", hive_partitioning = true");
-
-        sb.Append(')');
-        return sb.ToString();
-    }
-
-    private static string GenerateJsonReadFunction(JsonFileSource json, string escapedPath)
-    {
-        var sb = new StringBuilder();
-        sb.Append($"read_json_auto('{escapedPath}'");
-
-        if (json.JsonFormat != JsonFileFormat.Auto)
-        {
-            var formatValue = json.JsonFormat switch
-            {
-                JsonFileFormat.Array => "array",
-                JsonFileFormat.NewlineDelimited => "newline_delimited",
-                _ => "auto"
-            };
-            sb.Append($", format = '{formatValue}'");
-        }
-
-        if (json.MaxDepth.HasValue)
-            sb.Append($", maximum_depth = {json.MaxDepth.Value}");
-
-        sb.Append(')');
-        return sb.ToString();
-    }
 }
