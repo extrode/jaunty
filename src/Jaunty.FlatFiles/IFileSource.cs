@@ -26,12 +26,33 @@ public interface IFileSource
     Type EntityType { get; }
 
     /// <summary>
-    /// Gets whether this source has been promoted from a VIEW to a TABLE (for mutation support).
+    /// Gets or sets whether this source has been promoted from a VIEW to a TABLE (for mutation support).
     /// </summary>
-    bool IsPromotedToTable { get; }
+    bool IsPromotedToTable { get; set; }
 
     /// <summary>
-    /// Gets whether this source was preloaded into memory as a TABLE.
+    /// Gets or sets whether this source was preloaded into memory as a TABLE.
     /// </summary>
-    bool IsPreloaded { get; }
+    bool IsPreloaded { get; set; }
+
+    /// <summary>
+    /// Gets the DuckDB format name used in COPY TO statements (e.g. "CSV", "PARQUET", "JSON").
+    /// </summary>
+    string DuckDbFormatName { get; }
+
+    /// <summary>
+    /// Generates the DuckDB read function expression for this file source
+    /// (e.g. <c>read_csv('path', header = true, auto_detect = true)</c>).
+    /// This allows custom file source implementations to define their own read functions.
+    /// </summary>
+    /// <param name="escapedFilePath">The file path with single quotes escaped.</param>
+    /// <returns>A DuckDB read function expression.</returns>
+    string GenerateReadFunction(string escapedFilePath);
+
+    /// <summary>
+    /// Generates any additional COPY TO options specific to this file format
+    /// (e.g. <c>DELIMITER '\t', HEADER true</c>). Return null or empty for no additional options.
+    /// </summary>
+    /// <returns>Additional COPY TO option clauses, or null.</returns>
+    string? GenerateCopyToOptions();
 }
