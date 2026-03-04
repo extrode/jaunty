@@ -649,6 +649,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     public async ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
+
         if (reader is IAsyncDisposable asyncReader)
             await asyncReader.DisposeAsync().ConfigureAwait(false);
         else
@@ -657,10 +658,12 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         if (closeConnection && connection.State != ConnectionState.Closed)
         {
 #if NET8_0_OR_GREATER
-            var dbConn = connection as DbConnection;
-            await dbConn!.CloseAsync().ConfigureAwait(false);
+            if (connection is DbConnection dbConnection)
+                await dbConnection.CloseAsync().ConfigureAwait(false);
+            else
+                await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #else
-            connection.Close();
+            await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #endif
         }
     }

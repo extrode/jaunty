@@ -45,10 +45,5 @@ public static partial class Jaunty
 
         var reader = command.ExecuteReader();
         return new GridReader(reader, connection, wasClosed);
-        //finally
-        //{
-        //    if (wasClosed && connection.State != ConnectionState.Closed)
-        //        connection.Close();
-        //}
     }
 }

@@ -11,9 +11,9 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static async ValueTask<List<T>> QueryCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private static async ValueTask<List<T>> QueryCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        return await ExecuteReaderAsync<List<T>>(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
             var list = new List<T>(16);
             if (reader is DbDataReader dbReader)
@@ -35,9 +35,9 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<T> QueryFirstCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private static async ValueTask<T> QueryFirstCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        return await ExecuteReaderAsync<T>(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -54,9 +54,9 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<T?> QueryFirstOrDefaultCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private static async ValueTask<T?> QueryFirstOrDefaultCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        return await ExecuteReaderAsync<T?>(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -73,9 +73,9 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<T> QuerySingleCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private static async ValueTask<T> QuerySingleCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        return await ExecuteReaderAsync<T>(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync<T>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -100,9 +100,9 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<T?> QuerySingleOrDefaultCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private static async ValueTask<T?> QuerySingleOrDefaultCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        return await ExecuteReaderAsync<T?>(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -127,28 +127,28 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<T> QueryScalarCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken)
+    private static async ValueTask<T> QueryScalarCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(dbConnection);
         ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (dbConnection is null) throw new ArgumentNullException(nameof(dbConnection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
-        var wasClosed = connection.State == ConnectionState.Closed;
+        var wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
             if (wasClosed)
-                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using var command = connection.CreateCommand();
+            await using var command = dbConnection.CreateCommand();
 #else
-            using var command = connection.CreateCommand();
+            using var command = dbConnection.CreateCommand();
 #endif
             command.CommandText = sql;
 
@@ -178,28 +178,28 @@ public static partial class Jaunty
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                await connection.CloseAsync().ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
     }
 
 #if ASYNC_ENUMERABLE_SUPPORT
-    private static async IAsyncEnumerable<T> QueryStreamCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+    private static async IAsyncEnumerable<T> QueryStreamCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
     {
-        var wasClosed = connection.State == ConnectionState.Closed;
+        var wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
-            if (wasClosed) await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using DbCommand command = connection.CreateCommand();
+            await using DbCommand command = dbConnection.CreateCommand();
 #else
             using DbCommand command = connection.CreateCommand();
 #endif
@@ -226,28 +226,28 @@ public static partial class Jaunty
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                await connection.CloseAsync().ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
     }
 #else
-    private static async ValueTask<IEnumerable<T>> QueryStreamCoreAsync<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private static async ValueTask<IEnumerable<T>> QueryStreamCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         var results = new List<T>(64);
-        var wasClosed = connection.State == ConnectionState.Closed;
+        var wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
             if (wasClosed)
-                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            using var command = connection.CreateCommand();
+            using var command = dbConnection.CreateCommand();
             command.CommandText = sql;
 
             if (options.Transaction is DbTransaction dbTransaction)
@@ -267,12 +267,12 @@ public static partial class Jaunty
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
                 await connection.CloseAsync().ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
@@ -285,7 +285,7 @@ public static partial class Jaunty
 
     private static async ValueTask<List<(T1, T2)>> QueryMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
-        return await ExecuteReaderAsync<List<(T1, T2)>>(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
             var results = new List<(T1, T2)>(64);
 
@@ -339,9 +339,9 @@ public static partial class Jaunty
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    private static async ValueTask<(T1, T2)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
-        return await ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
@@ -360,7 +360,7 @@ public static partial class Jaunty
             }
 
             if (!reader.Read())
-                return ((T1, T2)?)null;
+                return null;
 
             var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
 
@@ -371,23 +371,24 @@ public static partial class Jaunty
             mappingFallback.ApplyT2(t2Fallback, reader);
 
             return (t1Fallback, t2Fallback);
+
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<(T1, T2)> QuerySingleMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    private static async ValueTask<(T1, T2)> QuerySingleMultiEntityCoreAsync<T1, T2>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
-        var result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        var result = await QuerySingleOrDefaultMultiEntityCoreAsync(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    private static async ValueTask<(T1, T2)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
-        return await ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
+        return await ExecuteReaderAsync<(T1, T2)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
             if (reader is DbDataReader dbReader)
             {
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
-                    return ((T1, T2)?)null;
+                    return null;
 
                 var mapping = MultiEntityMapper<T1, T2>.Build(dbReader);
 
@@ -404,7 +405,7 @@ public static partial class Jaunty
             }
 
             if (!reader.Read())
-                return ((T1, T2)?)null;
+                return null;
 
             ct.ThrowIfCancellationRequested();
             var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
@@ -420,19 +421,20 @@ public static partial class Jaunty
                 throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
 
             return (t1Fallback, t2Fallback);
+
         }, cancellationToken).ConfigureAwait(false);
     }
 
 #if ASYNC_ENUMERABLE_SUPPORT
-    private static async IAsyncEnumerable<(T1, T2)> QueryStreamMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    private static async IAsyncEnumerable<(T1, T2)> QueryStreamMultiEntityCoreAsync<T1, T2>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
-        var wasClosed = connection.State == ConnectionState.Closed;
+        var wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
-            if (wasClosed) await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            using var command = connection.CreateCommand();
+            using var command = dbConnection.CreateCommand();
             command.CommandText = sql;
 
             if (options.Transaction is DbTransaction dbTransaction)
@@ -465,12 +467,12 @@ public static partial class Jaunty
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                await connection.CloseAsync().ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }

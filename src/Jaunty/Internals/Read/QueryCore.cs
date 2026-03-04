@@ -197,6 +197,26 @@ public static partial class Jaunty
 
     private static IEnumerable<T> QueryStreamCoreFast<T>(DbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
+        // Resolve mapper early for common cases (user override, source-gen, reflection)
+        // to avoid opening connection if resolution will fail
+        Func<DbDataReader, T>? mapper = null;
+        
+        // 1. User override
+        if (options.Mapper is not null)
+        {
+            var userMapper = options.Mapper;
+            mapper = dbReader => userMapper(dbReader);
+        }
+        // 2. Source-generated (IMapped<T>)
+        else if (mode == MappingMode.Strict && Internals.Read.MappedCache<T>.Mapper is not null)
+        {
+            var sgMapper = Internals.Read.MappedCache<T>.Mapper;
+            mapper = dbReader => sgMapper(dbReader);
+        }
+        
+        // If we couldn't resolve without reader, we'll need to resolve after opening
+        bool needsReaderForMapper = mapper is null;
+
         var wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -216,10 +236,13 @@ public static partial class Jaunty
                 ParameterBinder.Bind(command, parameters);
 
             using var reader = command.ExecuteReader();
-            var map = DrDispatcher.Resolve(reader, options, mode);
+            
+            // Resolve mapper now if we couldn't resolve it earlier
+            if (needsReaderForMapper)
+                mapper = DrDispatcher.Resolve(reader, options, mode);
 
             while (reader.Read())
-                yield return map(reader);
+                yield return mapper!(reader);
         }
         finally
         {

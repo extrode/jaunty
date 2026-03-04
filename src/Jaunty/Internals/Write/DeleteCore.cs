@@ -3,7 +3,6 @@ using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Interfaces;
-using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
 
 using JauntyConfig = Jaunty.Configuration.JauntyConfig;
@@ -49,27 +48,27 @@ public static partial class Jaunty
         }
     }
 
-    internal static async ValueTask<int> DeleteByEntityCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    internal static async ValueTask<int> DeleteByEntityCoreAsync<T>(DbConnection dbConnection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
         var binder = WriteParameterCache<T>.DeleteBinder
             ?? throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
 
-        CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
+        CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
 
         if (string.IsNullOrEmpty(cached.DeleteSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}': No primary key found.");
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
+        bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
             if (wasClosed)
-                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using var command = connection.CreateCommand();
+            await using var command = dbConnection.CreateCommand();
 #else
-            using var command = connection.CreateCommand();
+            using var command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.DeleteSql;
 
@@ -87,12 +86,12 @@ public static partial class Jaunty
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                await connection.CloseAsync().ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
@@ -120,11 +119,7 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            var primaryKey = cached.Metadata.PrimaryKeys[0];
-            IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + primaryKey.ColumnName;
-            param.Value = id;
-            command.Parameters.Add(param);
+            AddPrimaryKeyParameter(command, cached, id);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
 
@@ -136,24 +131,24 @@ public static partial class Jaunty
         }
     }
 
-    internal static async ValueTask<int> DeleteByIdSimpleCoreAsync<T>(DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    internal static async ValueTask<int> DeleteByIdSimpleCoreAsync<T>(DbConnection dbConnection, object id, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
-        CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
+        CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
 
         if (string.IsNullOrEmpty(cached.DeleteByIdSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
+        bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
             if (wasClosed)
-                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using var command = connection.CreateCommand();
+            await using var command = dbConnection.CreateCommand();
 #else
-            using var command = connection.CreateCommand();
+            using var command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.DeleteByIdSql;
 
@@ -163,11 +158,7 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            var primaryKey = cached.Metadata.PrimaryKeys[0];
-            DbParameter param = command.CreateParameter();
-            param.ParameterName = "@" + primaryKey.ColumnName;
-            param.Value = id;
-            command.Parameters.Add(param);
+            AddPrimaryKeyParameter(command, cached, id);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
 
@@ -175,12 +166,12 @@ public static partial class Jaunty
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                await connection.CloseAsync().ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
@@ -208,11 +199,7 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            var primaryKey = cached.Metadata.PrimaryKeys[0];
-            IDbDataParameter param = command.CreateParameter();
-            param.ParameterName = "@" + primaryKey.ColumnName;
-            param.Value = id;
-            command.Parameters.Add(param);
+            AddPrimaryKeyParameter(command, cached, id);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
 
@@ -224,24 +211,24 @@ public static partial class Jaunty
         }
     }
 
-    internal static async ValueTask<int> DeleteByIdCoreAsync<T, TId>(DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
+    internal static async ValueTask<int> DeleteByIdCoreAsync<T, TId>(DbConnection dbConnection, object id, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
     {
-        CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
+        CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
 
         if (string.IsNullOrEmpty(cached.DeleteByIdSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
+        bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
             if (wasClosed)
-                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using var command = connection.CreateCommand();
+            await using var command = dbConnection.CreateCommand();
 #else
-            using var command = connection.CreateCommand();
+            using var command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.DeleteByIdSql;
 
@@ -251,11 +238,7 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            var primaryKey = cached.Metadata.PrimaryKeys[0];
-            DbParameter param = command.CreateParameter();
-            param.ParameterName = "@" + primaryKey.ColumnName;
-            param.Value = id;
-            command.Parameters.Add(param);
+            AddPrimaryKeyParameter(command, cached, id);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
 
@@ -263,14 +246,32 @@ public static partial class Jaunty
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                await connection.CloseAsync().ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
+    }
+
+    private static void AddPrimaryKeyParameter(IDbCommand command, CachedCrudSql cached, object id)
+    {
+        var primaryKey = cached.Metadata.PrimaryKeys[0];
+        IDbDataParameter param = command.CreateParameter();
+        param.ParameterName = "@" + primaryKey.ColumnName;
+        param.Value = id ?? DBNull.Value;
+        command.Parameters.Add(param);
+    }
+
+    private static void AddPrimaryKeyParameter(DbCommand command, CachedCrudSql cached, object id)
+    {
+        var primaryKey = cached.Metadata.PrimaryKeys[0];
+        DbParameter param = command.CreateParameter();
+        param.ParameterName = "@" + primaryKey.ColumnName;
+        param.Value = id ?? DBNull.Value;
+        command.Parameters.Add(param);
     }
 }
