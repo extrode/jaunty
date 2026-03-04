@@ -1,16 +1,14 @@
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
+using Jaunty.Fluent;
 
 namespace Jaunty.FlatFiles;
 
 /// <summary>
 /// Represents an embedded database engine that can query flat files.
 /// </summary>
-public interface IFlatFileDatabase : IDisposable
-#if !NETSTANDARD2_0
-    , IAsyncDisposable
-#endif
+public interface IFlatFileDatabase : IDisposable, IAsyncDisposable
 {
     /// <summary>
     /// Gets the underlying ADO.NET connection to the embedded database.
@@ -42,6 +40,41 @@ public interface IFlatFileDatabase : IDisposable
     /// </summary>
     /// <typeparam name="T">The entity type.</typeparam>
     bool IsModified<T>() where T : class, new();
+
+    // ==========================================
+    // Query Operations
+    // ==========================================
+
+    /// <summary>
+    /// Starts a fluent query for the specified entity type.
+    /// </summary>
+    /// <typeparam name="T">The entity type to query.</typeparam>
+    /// <returns>A fluent query builder for chaining WHERE, ORDER BY, and SELECT operations.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
+    /// <remarks>
+    /// Call <c>.Select()</c> to execute the query and return all columns, or 
+    /// <c>.SelectPartial(...)</c> to select specific columns.
+    /// </remarks>
+    IFromClause<T> Query<T>() where T : class, new();
+
+    /// <summary>
+    /// Executes a raw SQL query and returns the results as strongly-typed entities.
+    /// </summary>
+    /// <typeparam name="T">The entity type to materialize results into.</typeparam>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    /// <returns>A list of entities matching the query.</returns>
+    ValueTask<List<T>> QueryAsync<T>(string sql, CancellationToken cancellationToken = default) where T : class, new();
+
+    /// <summary>
+    /// Executes a raw SQL query with parameters and returns the results as strongly-typed entities.
+    /// </summary>
+    /// <typeparam name="T">The entity type to materialize results into.</typeparam>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="parameters">Parameters for the query.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    /// <returns>A list of entities matching the query.</returns>
+    ValueTask<List<T>> QueryAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CancellationToken cancellationToken = default) where T : class, new();
 
     // ==========================================
     // CRUD Operations

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -13,6 +14,17 @@ namespace Jaunty.FlatFiles.DuckDB;
 /// </summary>
 internal static class FlatFileExpressionHelper
 {
+    /// <summary>
+    /// Cache for column mappings per entity type to avoid repeated reflection.
+    /// </summary>
+    private static readonly ConcurrentDictionary<Type, List<(string ColumnName, PropertyInfo Property)>> _columnMappingCache = new();
+
+    /// <summary>
+    /// Cache for compiled expression delegates to avoid repeated compilation.
+    /// Uses Expression string representation as key since Expression doesn't override GetHashCode.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, Func<object?>> _expressionCache = new();
+
     /// <summary>
     /// Translates a predicate expression into a DuckDB WHERE clause with positional parameters.
     /// </summary>
@@ -38,16 +50,22 @@ internal static class FlatFileExpressionHelper
 
     /// <summary>
     /// Gets all column name-to-property mappings for an entity type.
+    /// Uses caching to avoid repeated reflection on hot paths.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
+        System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
     public static List<(string ColumnName, PropertyInfo Property)> GetColumnMappings(Type entityType)
     {
-        var result = new List<(string, PropertyInfo)>();
-        foreach (var prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        return _columnMappingCache.GetOrAdd(entityType, type =>
         {
-            if (!prop.CanRead || !prop.CanWrite) continue;
-            result.Add((GetColumnName(prop), prop));
-        }
-        return result;
+            var result = new List<(string, PropertyInfo)>();
+            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (!prop.CanRead || !prop.CanWrite) continue;
+                result.Add((GetColumnName(prop), prop));
+            }
+            return result;
+        });
     }
 
     private static string GetColumnName(PropertyInfo prop)
@@ -259,9 +277,13 @@ internal static class FlatFileExpressionHelper
         if (expression is UnaryExpression { NodeType: ExpressionType.Convert } unary)
             return EvaluateExpression(unary.Operand);
 
-        // Compile and invoke for complex expressions (closures, field access, etc.)
-        var lambda = Expression.Lambda(expression);
-        var compiled = lambda.Compile();
-        return compiled.DynamicInvoke();
+        // Compile and cache for complex expressions (closures, field access, etc.)
+        // Use expression ToString() as cache key (works for simple constant/member expressions)
+        var cacheKey = expression.ToString() ?? throw new InvalidOperationException("Expression ToString() returned null");
+        return _expressionCache.GetOrAdd(cacheKey, _ =>
+        {
+            var lambda = Expression.Lambda<Func<object?>>(Expression.Convert(expression, typeof(object)));
+            return lambda.Compile();
+        })();
     }
 }
