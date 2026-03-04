@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<AnalysisLevel>latest</AnalysisLevel>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Jaunty\Jaunty.csproj"
+		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\Jaunty.FlatFiles\Jaunty.FlatFiles.csproj"
+		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="DuckDB.NET.Data.Full" Version="1.3.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Jaunty.FlatFiles.DuckDB.Tests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
+	<PropertyGroup>
+		<PackageId>Beparey.Jaunty.FlatFiles.DuckDB</PackageId>
+		<Version>2026.01.01</Version>
+		<Authors>Syed Beparey</Authors>
+		<Description>DuckDB provider for Jaunty.FlatFiles. Enables SQL queries on CSV, Parquet, and JSON files.</Description>
+		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	</PropertyGroup>
+
+</Project>

@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Jaunty.Configuration;
 using Jaunty.Internals.Entity;
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 
 namespace Jaunty.Fluent.Internals;
 

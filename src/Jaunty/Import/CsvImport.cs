@@ -5,7 +5,7 @@ using System.Text;
 
 using Jaunty.Configuration;
 using Jaunty.Internals;
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 
 namespace Jaunty;
 

@@ -54,6 +54,15 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Jaunty.Extensions.Reflection</_Parameter1>
     </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Jaunty.FlatFiles</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Jaunty.FlatFiles.DuckDB</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Jaunty.FlatFiles.DuckDB.Tests</_Parameter1>
+    </AssemblyAttribute>
 	</ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">

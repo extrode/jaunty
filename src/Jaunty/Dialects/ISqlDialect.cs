@@ -1,12 +1,12 @@
 using Jaunty.Internals.BulkCopy;
 
-namespace Jaunty.Internals.Dialects;
+namespace Jaunty.Dialects;
 
 /// <summary>
 /// Database-specific SQL dialect for identifier escaping and SQL generation.
 /// Only escapes identifiers that are SQL keywords to keep SQL readable.
 /// </summary>
-internal interface ISqlDialect
+public interface ISqlDialect
 {
     /// <summary>
     /// Gets the default schema for this database.

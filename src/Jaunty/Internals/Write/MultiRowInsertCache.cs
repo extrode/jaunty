@@ -3,7 +3,7 @@ using System.Data;
 using System.Linq.Expressions;
 using System.Text;
 
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 
 namespace Jaunty.Internals.Write;

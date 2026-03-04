@@ -8,7 +8,7 @@ using System.Text;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals;
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 using Jaunty.Internals.Read;
