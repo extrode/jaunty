@@ -62,6 +62,11 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
 
         foreach (var source in options.Sources)
         {
+            // Apply global PreloadIntoMemory if the source hasn't been explicitly configured
+            if (options.PreloadIntoMemory && !source.IsPreloaded)
+            {
+                ApplyPreload(source);
+            }
             RegisterSource(source);
         }
     }
@@ -120,6 +125,20 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     /// Gets the DuckDB dialect instance used by this database.
     /// </summary>
     public DuckDbDialect Dialect => _dialect;
+
+    /// <summary>
+    /// Sets IsPreloaded on a source. Works with all concrete source types.
+    /// </summary>
+    private static void ApplyPreload(IFileSource source)
+    {
+        switch (source)
+        {
+            case CsvFileSource csv: csv.IsPreloaded = true; break;
+            case TsvFileSource tsv: tsv.IsPreloaded = true; break;
+            case ParquetFileSource parquet: parquet.IsPreloaded = true; break;
+            case JsonFileSource json: json.IsPreloaded = true; break;
+        }
+    }
 
     public void Dispose()
     {
