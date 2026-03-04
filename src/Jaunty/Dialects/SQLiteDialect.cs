@@ -28,6 +28,8 @@ internal sealed class SQLiteDialect : ISqlDialect
         "WHERE", "WITH", "WITHOUT", "ORDER", "USER"
     };
 
+    public string ParameterPrefix => "@";
+
     public string GetDefaultSchema() => string.Empty; // SQLite doesn't support schemas
 
     public bool IsKeyword(string identifier) => Keywords.Contains(identifier);

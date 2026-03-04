@@ -52,8 +52,8 @@ internal sealed class ParameterCollection
         for (int i = 0; i < _parameters.Count; i++)
         {
             var (name, value) = _parameters[i];
-            // Strip @ prefix if present
-            var key = name.StartsWith("@") ? name.Substring(1) : name;
+            // Strip parameter prefix (@ or $) if present
+            var key = name.Length > 0 && name[0] is '@' or '$' ? name.Substring(1) : name;
             dict[key] = value;
         }
 
