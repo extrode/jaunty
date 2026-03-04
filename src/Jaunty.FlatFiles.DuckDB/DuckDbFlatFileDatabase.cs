@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Data;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using DuckDB.NET.Data;
@@ -125,6 +126,267 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     /// Gets the DuckDB dialect instance used by this database.
     /// </summary>
     public DuckDbDialect Dialect => _dialect;
+
+    // ==========================================
+    // CRUD Operations
+    // ==========================================
+
+    /// <inheritdoc />
+    public async ValueTask<int> InsertAsync<T>(T entity, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+
+        var source = GetSourceOrThrow<T>();
+        await EnsurePromotedToTableAsync(source, cancellationToken).ConfigureAwait(false);
+
+        var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
+        var columns = new StringBuilder();
+        var values = new StringBuilder();
+        var parameters = new List<DuckDBParameter>();
+
+        for (int i = 0; i < mappings.Count; i++)
+        {
+            if (i > 0) { columns.Append(", "); values.Append(", "); }
+            var (columnName, prop) = mappings[i];
+            columns.Append($"\"{columnName}\"");
+            values.Append($"${i + 1}"); // DuckDB uses 1-based positional params
+            parameters.Add(new DuckDBParameter { Value = prop.GetValue(entity) ?? DBNull.Value });
+        }
+
+        var sql = $"INSERT INTO \"{source.TableName}\" ({columns}) VALUES ({values})";
+        var result = await ExecuteNonQueryAsync(sql, parameters, cancellationToken).ConfigureAwait(false);
+        _modified[typeof(T)] = true;
+        return result;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<int> InsertAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+
+        var entityList = entities as IList<T> ?? entities.ToList();
+        if (entityList.Count == 0) return 0;
+
+        var source = GetSourceOrThrow<T>();
+        await EnsurePromotedToTableAsync(source, cancellationToken).ConfigureAwait(false);
+
+        var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
+        var columns = new StringBuilder();
+        for (int i = 0; i < mappings.Count; i++)
+        {
+            if (i > 0) columns.Append(", ");
+            columns.Append($"\"{mappings[i].ColumnName}\"");
+        }
+
+        var totalInserted = 0;
+
+        // Batch insert using multi-row VALUES with positional parameters ($1, $2, ...)
+        var sb = new StringBuilder();
+        var parameters = new List<DuckDBParameter>();
+        var paramCounter = 0;
+
+        for (int row = 0; row < entityList.Count; row++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (row > 0) sb.Append(", ");
+            sb.Append('(');
+            var entity = entityList[row];
+
+            for (int col = 0; col < mappings.Count; col++)
+            {
+                if (col > 0) sb.Append(", ");
+                paramCounter++;
+                sb.Append($"${paramCounter}");
+                parameters.Add(new DuckDBParameter { Value = mappings[col].Property.GetValue(entity) ?? DBNull.Value });
+            }
+            sb.Append(')');
+        }
+
+        var sql = $"INSERT INTO \"{source.TableName}\" ({columns}) VALUES {sb}";
+        totalInserted = await ExecuteNonQueryAsync(sql, parameters, cancellationToken).ConfigureAwait(false);
+
+        if (totalInserted > 0) _modified[typeof(T)] = true;
+        return totalInserted;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<int> UpdateAsync<T>(
+        Expression<Func<T, bool>> predicate,
+        Expression<Func<T, object>> column,
+        object value,
+        CancellationToken cancellationToken = default) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        ArgumentNullException.ThrowIfNull(column);
+
+        var source = GetSourceOrThrow<T>();
+        await EnsurePromotedToTableAsync(source, cancellationToken).ConfigureAwait(false);
+
+        var columnName = FlatFileExpressionHelper.ResolveColumnName(column);
+
+        // SET parameter is $1, WHERE parameters start at $2
+        var setParam = new DuckDBParameter { Value = value ?? DBNull.Value };
+        var (whereSql, whereParams) = FlatFileExpressionHelper.TranslatePredicate(predicate, paramOffset: 1);
+
+        // Build final parameter list: SET param first, then WHERE params
+        var allParams = new List<DuckDBParameter>(whereParams.Count + 1) { setParam };
+        allParams.AddRange(whereParams);
+
+        var sql = $"UPDATE \"{source.TableName}\" SET \"{columnName}\" = $1 WHERE {whereSql}";
+        var result = await ExecuteNonQueryAsync(sql, allParams, cancellationToken).ConfigureAwait(false);
+
+        if (result > 0) _modified[typeof(T)] = true;
+        return result;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<int> DeleteAsync<T>(
+        Expression<Func<T, bool>> predicate,
+        CancellationToken cancellationToken = default) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        var source = GetSourceOrThrow<T>();
+        await EnsurePromotedToTableAsync(source, cancellationToken).ConfigureAwait(false);
+
+        var (whereSql, whereParams) = FlatFileExpressionHelper.TranslatePredicate(predicate);
+
+        var sql = $"DELETE FROM \"{source.TableName}\" WHERE {whereSql}";
+        var result = await ExecuteNonQueryAsync(sql, whereParams, cancellationToken).ConfigureAwait(false);
+
+        if (result > 0) _modified[typeof(T)] = true;
+        return result;
+    }
+
+    // ==========================================
+    // Write-Back Operations
+    // ==========================================
+
+    /// <inheritdoc />
+    public async ValueTask SaveAsync<T>(string outputPath, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(outputPath);
+
+        var source = GetSourceOrThrow<T>();
+        var format = InferFormatFromExtension(outputPath);
+        var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(outputPath), format);
+
+        await ExecuteNonQueryAsync(sql, [], cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask SaveAsync<T>(WriteBackMode mode, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        var source = GetSourceOrThrow<T>();
+
+        if (mode == WriteBackMode.NewFile)
+        {
+            throw new InvalidOperationException(
+                "WriteBackMode.NewFile requires an output path. Use the SaveAsync<T>(string outputPath) overload instead.");
+        }
+
+        // WriteBackMode.Overwrite — atomic replace: write to temp file, then rename
+        var originalPath = source.FilePath;
+        var directory = Path.GetDirectoryName(originalPath) ?? ".";
+        var tempPath = Path.Combine(directory, $".{Path.GetFileNameWithoutExtension(originalPath)}.tmp{Path.GetExtension(originalPath)}");
+
+        try
+        {
+            var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(tempPath), source.Format);
+            await ExecuteNonQueryAsync(sql, [], cancellationToken).ConfigureAwait(false);
+
+            // Atomic replace: delete original, rename temp
+            File.Delete(originalPath);
+            File.Move(tempPath, originalPath);
+        }
+        catch
+        {
+            // Clean up temp file on failure
+            try { File.Delete(tempPath); } catch { }
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async ValueTask ExportAsync<T>(string outputPath, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(outputPath);
+
+        var source = GetSourceOrThrow<T>();
+        var format = InferFormatFromExtension(outputPath);
+        var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(outputPath), format);
+
+        await ExecuteNonQueryAsync(sql, [], cancellationToken).ConfigureAwait(false);
+    }
+
+    // ==========================================
+    // Private Helpers
+    // ==========================================
+
+    private IFileSource GetSourceOrThrow<T>() where T : class, new()
+    {
+        if (!_sources.TryGetValue(typeof(T), out var source))
+        {
+            throw new InvalidOperationException(
+                $"No file source registered for entity type '{typeof(T).Name}'. " +
+                $"Register it via AddCsv<{typeof(T).Name}>(), AddParquet<{typeof(T).Name}>(), etc.");
+        }
+        return source;
+    }
+
+    /// <summary>
+    /// Promotes a VIEW source to a TABLE on first mutation. Preloaded sources and already-promoted sources are no-ops.
+    /// </summary>
+    private async ValueTask EnsurePromotedToTableAsync(IFileSource source, CancellationToken cancellationToken)
+    {
+        // Already a table (preloaded or previously promoted)
+        if (source.IsPreloaded || source.IsPromotedToTable) return;
+
+        var sql = _dialect.GeneratePromoteToTableSql(source);
+
+        await using var cmd = _connection.CreateCommand();
+        cmd.CommandText = sql;
+        await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+        // Mark as promoted
+        SetPromotedToTable(source);
+    }
+
+    private static void SetPromotedToTable(IFileSource source)
+    {
+        switch (source)
+        {
+            case CsvFileSource csv: csv.IsPromotedToTable = true; break;
+            case TsvFileSource tsv: tsv.IsPromotedToTable = true; break;
+            case ParquetFileSource parquet: parquet.IsPromotedToTable = true; break;
+            case JsonFileSource json: json.IsPromotedToTable = true; break;
+        }
+    }
+
+    private async ValueTask<int> ExecuteNonQueryAsync(string sql, List<DuckDBParameter> parameters, CancellationToken cancellationToken)
+    {
+        await using var cmd = _connection.CreateCommand();
+        cmd.CommandText = sql;
+        foreach (var param in parameters)
+            cmd.Parameters.Add(param);
+        return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private static FileFormat InferFormatFromExtension(string path)
+    {
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        return ext switch
+        {
+            ".csv" => FileFormat.Csv,
+            ".tsv" => FileFormat.Tsv,
+            ".parquet" => FileFormat.Parquet,
+            ".json" or ".ndjson" => FileFormat.Json,
+            _ => throw new ArgumentException(
+                $"Cannot infer output format from extension '{ext}'. Supported: .csv, .tsv, .parquet, .json, .ndjson",
+                nameof(path))
+        };
+    }
 
     /// <summary>
     /// Sets IsPreloaded on a source. Works with all concrete source types.
