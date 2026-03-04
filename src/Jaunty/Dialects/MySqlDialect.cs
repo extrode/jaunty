@@ -42,6 +42,8 @@ internal sealed class MySqlDialect : ISqlDialect
         "WHERE", "WHILE", "WITH", "WRITE", "XOR", "YEAR_MONTH", "ZEROFILL", "ORDER", "USER"
     };
 
+    public string ParameterPrefix => "@";
+
     public string GetDefaultSchema() => string.Empty; // MySQL uses databases, not schemas
 
     public bool IsKeyword(string identifier) => identifier is not null && Keywords.Contains(identifier);

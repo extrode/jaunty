@@ -17,6 +17,7 @@ internal class TestDialect : ISqlDialect
 
     public IBulkCopyProvider? CreateBulkCopyProvider() => null;
 
+    public string ParameterPrefix => "@";
     public string GetDefaultSchema() => "dbo";
 
     public string EscapeTableName(string? schemaName, string tableName)

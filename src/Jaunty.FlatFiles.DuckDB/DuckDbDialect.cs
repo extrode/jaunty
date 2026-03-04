@@ -38,6 +38,8 @@ public sealed class DuckDbDialect : IFlatFileDialect
         "UPDATE", "USER", "USING", "VALUES", "VARCHAR", "WHEN", "WHERE", "WINDOW", "WITH"
     };
 
+    public string ParameterPrefix => "$";
+
     public string GetDefaultSchema() => "main";
 
     public bool IsKeyword(string identifier) => identifier is not null && Keywords.Contains(identifier);
@@ -56,6 +58,12 @@ public sealed class DuckDbDialect : IFlatFileDialect
 
     public string EscapeColumnName(string columnName)
     {
+        // If already escaped (starts and ends with quotes), return as-is to prevent double-escaping.
+        // This is necessary because CachedDialectMetadata pre-escapes column names,
+        // and BuildSelectSql calls EscapeColumnName again on those cached values.
+        if (columnName.Length >= 2 && columnName[0] == '"' && columnName[^1] == '"')
+            return columnName;
+
         return $"\"{columnName}\"";
     }
 
@@ -273,7 +281,7 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return sb.ToString();
     }
 
-    private static string GenerateReadFunction(IFileSource source)
+    internal static string GenerateReadFunction(IFileSource source)
     {
         var escapedPath = source.FilePath.Replace("'", "''");
 

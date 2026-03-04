@@ -138,12 +138,13 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
 
         foreach (var (name, value) in parameters.GetAll())
         {
-            var baseName = name.TrimStart('@');
-            var newName = $"@{prefix}_{baseName}";
+            // Detect prefix from the parameter name itself (@ or $)
+            var paramPrefix = name.Length > 0 && name[0] is '@' or '$' ? name[0].ToString() : "@";
+            var baseName = name.TrimStart('@').TrimStart('$');
+            var newName = $"{paramPrefix}{prefix}_{baseName}";
 
             // Replace in SQL - use word boundary to avoid partial matches
-            // Match @paramName but not @paramName2
-            var pattern = $@"@{Regex.Escape(baseName)}(?![a-zA-Z0-9_])";
+            var pattern = $@"{Regex.Escape(paramPrefix)}{Regex.Escape(baseName)}(?![a-zA-Z0-9_])";
             renamedSql = Regex.Replace(renamedSql, pattern, newName);
 
             renamedParams.Add(newName, value);
