@@ -1,16 +1,17 @@
 using System.Collections.Concurrent;
 using System.Data;
 
-namespace Jaunty.Internals.Dialects;
+namespace Jaunty.Dialects;
 
 /// <summary>
 /// Factory for creating SQL dialects based on connection type.
 /// Auto-detects the database provider from the connection object.
 /// Dialect instances are cached per connection type for zero-allocation lookups.
 /// </summary>
-internal static class SqlDialectFactory
+public static class SqlDialectFactory
 {
     private static readonly ConcurrentDictionary<Type, ISqlDialect> _dialectCache = new();
+    private static readonly ConcurrentDictionary<string, ISqlDialect> _customDialects = new();
 
     public static ISqlDialect GetDialect(IDbConnection connection)
     {
@@ -23,8 +24,35 @@ internal static class SqlDialectFactory
         return dialect;
     }
 
+    /// <summary>
+    /// Registers a custom SQL dialect for a specific connection type name.
+    /// Custom registrations take priority over built-in dialect resolution.
+    /// </summary>
+    /// <param name="connectionTypeName">The Type.Name of the connection class (e.g., "DuckDBConnection").</param>
+    /// <param name="dialect">The dialect instance to use for that connection type.</param>
+    public static void RegisterDialect(string connectionTypeName, ISqlDialect dialect)
+    {
+        _customDialects[connectionTypeName] = dialect;
+    }
+
+    /// <summary>
+    /// Registers a custom SQL dialect for a specific connection type.
+    /// Custom registrations take priority over built-in dialect resolution.
+    /// </summary>
+    /// <typeparam name="TConnection">The connection type to register the dialect for.</typeparam>
+    /// <param name="dialect">The dialect instance to use for that connection type.</param>
+    public static void RegisterDialect<TConnection>(ISqlDialect dialect) where TConnection : IDbConnection
+    {
+        var typeName = typeof(TConnection).Name;
+        _customDialects[typeName] = dialect;
+        _dialectCache[typeof(TConnection)] = dialect;
+    }
+
     private static ISqlDialect ResolveDialect(string connectionTypeName)
     {
+        if (_customDialects.TryGetValue(connectionTypeName, out var custom))
+            return custom;
+
         ISqlDialect dialect = connectionTypeName switch
         {
             "SqlConnection" or "Microsoft.Data.SqlClient.SqlConnection" => new SqlServerDialect(),

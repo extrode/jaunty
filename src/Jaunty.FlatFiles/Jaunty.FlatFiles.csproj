@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<AnalysisLevel>latest</AnalysisLevel>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<LangVersion>latest</LangVersion>
+		<DefineConstants>AsyncInterfaces</DefineConstants>
+	</PropertyGroup>
+
+	<Choose>
+		<When Condition="$(DefineConstants.Contains('AsyncInterfaces'))">
+			<ItemGroup>
+				<PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
+					<Version>10.0.3</Version>
+				</PackageReference>
+			</ItemGroup>
+		</When>
+	</Choose>
+
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<IsAotCompatible>true</IsAotCompatible>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<ProjectReference Include="..\Jaunty\Jaunty.csproj"
+		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<ProjectReference Include="..\Jaunty\Jaunty.csproj"
+		                  SetTargetFramework="TargetFramework=netstandard2.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Jaunty.FlatFiles.Tests</_Parameter1>
+		</AssemblyAttribute>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Jaunty.FlatFiles.DuckDB</_Parameter1>
+		</AssemblyAttribute>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Jaunty.FlatFiles.DuckDB.Tests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
+	<PropertyGroup>
+		<PackageId>Beparey.Jaunty.FlatFiles</PackageId>
+		<Version>2026.01.01</Version>
+		<Authors>Syed Beparey</Authors>
+		<Description>Flat file (CSV/TSV/Parquet/JSON) abstractions for the Jaunty micro-ORM.</Description>
+		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+</Project>

@@ -3,7 +3,7 @@ using System.Data;
 using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.BulkCopy;
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
 
