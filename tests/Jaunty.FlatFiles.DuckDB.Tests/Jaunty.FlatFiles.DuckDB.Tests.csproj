@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<NoWarn>CS1591;CS8618</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+		<PackageReference Include="xunit" Version="2.9.3" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Jaunty.FlatFiles.DuckDB\Jaunty.FlatFiles.DuckDB.csproj" />
+		<ProjectReference Include="..\..\src\Jaunty.FlatFiles\Jaunty.FlatFiles.csproj"
+		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj"
+		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj"
+		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="data\**\*.*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+</Project>

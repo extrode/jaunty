@@ -1,6 +1,6 @@
 using Jaunty.Internals.BulkCopy;
 
-namespace Jaunty.Internals.Dialects;
+namespace Jaunty.Dialects;
 
 /// <summary>
 /// MySQL dialect.
@@ -157,7 +157,7 @@ internal sealed class MySqlDialect : ISqlDialect
         sb.Append("INSERT INTO ");
         sb.Append(tableName);
         sb.Append(" (");
-        
+
         for (int i = 0; i < insertColumns.Length; i++)
         {
             if (i > 0) sb.Append(", ");

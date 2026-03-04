@@ -50,7 +50,7 @@ public enum BulkCopyIdentityMode
 /// <summary>
 /// Configuration options for bulk copy operations.
 /// </summary>
-internal sealed class BulkCopyOptions
+public sealed class BulkCopyOptions
 {
     /// <summary>
     /// Gets or sets the number of rows in each batch.
