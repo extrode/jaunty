@@ -30,6 +30,8 @@ internal sealed class PostgreSqlDialect : ISqlDialect
         "WHEN", "WHERE", "WINDOW", "WITH", "ORDER", "USER"
     };
 
+    public string ParameterPrefix => "@";
+
     public string GetDefaultSchema() => "public";
 
     public bool IsKeyword(string identifier) => identifier is not null && Keywords.Contains(identifier);

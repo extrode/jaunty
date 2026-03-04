@@ -39,6 +39,8 @@ internal sealed class SqlServerDialect : ISqlDialect
         "WITH", "WITHIN GROUP", "WRITETEXT", "ORDER", "USER"
     };
 
+    public string ParameterPrefix => "@";
+
     public string GetDefaultSchema() => "dbo";
 
     public bool IsKeyword(string identifier) => identifier is not null && Keywords.Contains(identifier);
