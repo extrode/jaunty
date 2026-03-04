@@ -23,6 +23,9 @@ public sealed class ParquetFileSource : IFileSource
     /// <inheritdoc />
     public bool IsPreloaded { get; set; }
 
+    /// <inheritdoc />
+    public string DuckDbFormatName => "PARQUET";
+
     /// <summary>
     /// Gets or sets whether to enable Hive partitioning.
     /// Default: false.
@@ -41,4 +44,20 @@ public sealed class ParquetFileSource : IFileSource
         FilePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
     }
+
+    /// <inheritdoc />
+    public string GenerateReadFunction(string escapedFilePath)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"read_parquet('{escapedFilePath}'");
+
+        if (HivePartitioning)
+            sb.Append(", hive_partitioning = true");
+
+        sb.Append(')');
+        return sb.ToString();
+    }
+
+    /// <inheritdoc />
+    public string? GenerateCopyToOptions() => null;
 }

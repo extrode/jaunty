@@ -93,4 +93,15 @@ public sealed class FlatFileDatabaseOptions
         Sources.Add(source);
         return this;
     }
+
+    /// <summary>
+    /// Registers a custom file source directly. Use this to add file sources
+    /// for formats not natively supported (e.g. custom <see cref="IFileSource"/> implementations).
+    /// </summary>
+    /// <param name="source">The file source to register.</param>
+    public FlatFileDatabaseOptions AddSource(IFileSource source)
+    {
+        Sources.Add(source ?? throw new ArgumentNullException(nameof(source)));
+        return this;
+    }
 }

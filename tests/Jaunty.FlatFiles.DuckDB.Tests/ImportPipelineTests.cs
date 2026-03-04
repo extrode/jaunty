@@ -1,8 +1,7 @@
 using DuckDB.NET.Data;
-using Jaunty.FlatFiles;
-using Jaunty.FlatFiles.DuckDB;
+
 using Jaunty.FlatFiles.DuckDB.Tests.Entities;
-using Jaunty.Fluent;
+
 using Microsoft.Data.Sqlite;
 
 namespace Jaunty.FlatFiles.DuckDB.Tests;
