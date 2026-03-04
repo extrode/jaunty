@@ -11,7 +11,7 @@ public static class FlatFileDatabase
     /// Opens a single flat file as a queryable database. The file format is inferred from the extension,
     /// and the view name is derived from the filename (without extension).
     /// </summary>
-    /// <param name="filePath">Path to the flat file (.csv, .tsv).</param>
+    /// <param name="filePath">Path to the flat file (.csv, .tsv, .parquet, .json, .ndjson).</param>
     /// <returns>A flat file database with the file registered as a queryable view.</returns>
     /// <exception cref="ArgumentException">Thrown when the file extension is not supported.</exception>
     /// <exception cref="FileNotFoundException">Thrown when the file does not exist.</exception>
@@ -55,8 +55,11 @@ public static class FlatFileDatabase
         {
             ".csv" => new CsvFileSource(tableName, fullPath, typeof(object)),
             ".tsv" => new TsvFileSource(tableName, fullPath, typeof(object)),
+            ".parquet" => new ParquetFileSource(tableName, fullPath, typeof(object)),
+            ".json" => new JsonFileSource(tableName, fullPath, typeof(object)),
+            ".ndjson" => new JsonFileSource(tableName, fullPath, typeof(object)) { JsonFormat = JsonFileFormat.NewlineDelimited },
             _ => throw new ArgumentException(
-                $"Unsupported file extension '{extension}'. Supported extensions: .csv, .tsv",
+                $"Unsupported file extension '{extension}'. Supported extensions: .csv, .tsv, .parquet, .json, .ndjson",
                 nameof(extension))
         };
     }
