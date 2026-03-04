@@ -285,10 +285,11 @@ public static partial class Jaunty
 #endif
 
         bool wasClosed = connection.State == ConnectionState.Closed;
+        var dbConnection = connection as DbConnection;
 
         try
         {
-            if (connection is DbConnection dbConnection)
+            if (dbConnection is not null)
             {
                 if (wasClosed)
                     await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -320,7 +321,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await reader.CloseAsync().ConfigureAwait(false);
 #else
-                reader.Close();
+                await Task.Run(() => reader.Close(), cancellationToken).ConfigureAwait(false);
 #endif
 
                 // Read output parameter values
@@ -360,12 +361,12 @@ public static partial class Jaunty
             if (wasClosed && connection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                if (connection is DbConnection dbConn)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+                if (dbConnection is not null)
+                    await dbConnection.CloseAsync().ConfigureAwait(false);
                 else
-                    connection.Close();
+                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
@@ -384,10 +385,11 @@ public static partial class Jaunty
 #endif
 
         bool wasClosed = connection.State == ConnectionState.Closed;
+        var dbConnection = connection as DbConnection;
 
         try
         {
-            if (connection is DbConnection dbConnection)
+            if (dbConnection is not null)
             {
                 if (wasClosed)
                     await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -458,12 +460,12 @@ public static partial class Jaunty
             if (wasClosed && connection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                if (connection is DbConnection dbConn)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+                if (dbConnection is not null)
+                    await dbConnection.CloseAsync().ConfigureAwait(false);
                 else
-                    connection.Close();
+                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
@@ -482,10 +484,11 @@ public static partial class Jaunty
 #endif
 
         bool wasClosed = connection.State == ConnectionState.Closed;
+        var dbConnection = connection as DbConnection;
 
         try
         {
-            if (connection is DbConnection dbConnection)
+            if (dbConnection is not null)
             {
                 if (wasClosed)
                     await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -542,12 +545,12 @@ public static partial class Jaunty
             if (wasClosed && connection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                if (connection is DbConnection dbConn)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+                if (dbConnection is not null)
+                    await dbConnection.CloseAsync().ConfigureAwait(false);
                 else
-                    connection.Close();
+                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }

@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Text;
 
+using Jaunty.Internals;
 using Jaunty.Internals.Dialects;
 
 namespace Jaunty;
@@ -483,7 +484,7 @@ public static class CsvImportExtensions
 
     internal static string[] ParseCsvLine(string line, char delimiter, char quote)
     {
-        var fields = new List<string>();
+        var fields = new List<string>(16);
         int i = 0;
         int len = line.Length;
 
