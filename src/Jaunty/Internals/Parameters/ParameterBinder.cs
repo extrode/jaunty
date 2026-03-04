@@ -82,7 +82,7 @@ internal static class ParameterBinder
     private static CommandTemplate BuildTemplate(Type type, string sql, string[] sqlParamNames, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] allMeta)
     {
         var boundNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
-        var items = new List<TemplateItem>();
+        var items = new List<TemplateItem>(CommonConstants.DefaultCollectionCapacity);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
         {
@@ -100,7 +100,7 @@ internal static class ParameterBinder
         }
 
         // Validate unused
-        var unused = new List<string>();
+        var unused = new List<string>(CommonConstants.DefaultCollectionCapacity);
         for (int i = 0; i < allMeta.Length; i++)
         {
             if (!boundNames.Contains(allMeta[i].Name))
@@ -415,10 +415,10 @@ internal static class ParameterBinder
         var meta = ParameterCache.Get(parameters.GetType());
         for (int i = 0; i < meta.Length; i++)
         {
-            var p = command.CreateParameter();
-            p.ParameterName = meta[i].Name;
-            p.Value = meta[i].Getter(parameters) ?? DBNull.Value;
-            command.Parameters.Add(p);
+            IDbDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = meta[i].Name;
+            parameter.Value = meta[i].Getter(parameters) ?? DBNull.Value;
+            command.Parameters.Add(parameter);
         }
     }
 
@@ -426,10 +426,10 @@ internal static class ParameterBinder
     {
         foreach (var kvp in dictParams)
         {
-            var p = command.CreateParameter();
-            p.ParameterName = kvp.Key;
-            p.Value = kvp.Value ?? DBNull.Value;
-            command.Parameters.Add(p);
+            IDbDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = kvp.Key;
+            parameter.Value = kvp.Value ?? DBNull.Value;
+            command.Parameters.Add(parameter);
         }
     }
 }

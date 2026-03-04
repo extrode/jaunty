@@ -2,7 +2,6 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
-using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
 
 using JauntyConfig = Jaunty.Configuration.JauntyConfig;
@@ -48,27 +47,27 @@ public static partial class Jaunty
         }
     }
 
-    internal static async ValueTask<int> UpdateCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    internal static async ValueTask<int> UpdateCoreAsync<T>(DbConnection dbConnection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
         var binder = WriteParameterCache<T>.UpdateBinder
             ?? throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
 
-        CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
+        CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
 
         if (string.IsNullOrEmpty(cached.UpdateSql))
             throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No primary key found or no columns to update.");
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
+        bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
             if (wasClosed)
-                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using var command = connection.CreateCommand();
+            await using var command = dbConnection.CreateCommand();
 #else
-            using var command = connection.CreateCommand();
+            using var command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.UpdateSql;
 
@@ -86,12 +85,12 @@ public static partial class Jaunty
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                await connection.CloseAsync().ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }

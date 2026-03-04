@@ -244,7 +244,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await connection.CloseAsync().ConfigureAwait(false);
 #else
-                connection.Close();
+                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
@@ -457,7 +457,7 @@ public static partial class Jaunty
             }
 
             if (wasClosed && connection.State != ConnectionState.Closed)
-                connection.Close();
+                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
         }
     }
 }
