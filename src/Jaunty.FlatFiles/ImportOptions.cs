@@ -27,4 +27,11 @@ public sealed class ImportOptions
     /// Parameters: (rowsImportedSoFar, totalRowsOrNull).
     /// </summary>
     public Action<long, long?>? OnProgress { get; set; }
+
+    /// <summary>
+    /// Gets or sets a custom import dialect for generating database-specific DDL and INSERT SQL.
+    /// When null, the import pipeline auto-detects the target database from the connection type.
+    /// Set this when importing into a database engine that is not natively supported.
+    /// </summary>
+    public IImportDialect? Dialect { get; set; }
 }

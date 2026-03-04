@@ -7,11 +7,33 @@ namespace Jaunty.FlatFiles.DuckDB;
 /// </summary>
 public static class FlatFileDatabase
 {
+    private static readonly Dictionary<string, Func<string, string, Type, IFileSource>> _extensionRegistry = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [".csv"] = (tableName, fullPath, entityType) => new CsvFileSource(tableName, fullPath, entityType),
+        [".tsv"] = (tableName, fullPath, entityType) => new TsvFileSource(tableName, fullPath, entityType),
+        [".parquet"] = (tableName, fullPath, entityType) => new ParquetFileSource(tableName, fullPath, entityType),
+        [".json"] = (tableName, fullPath, entityType) => new JsonFileSource(tableName, fullPath, entityType),
+        [".ndjson"] = (tableName, fullPath, entityType) => new JsonFileSource(tableName, fullPath, entityType) { JsonFormat = JsonFileFormat.NewlineDelimited },
+    };
+
+    /// <summary>
+    /// Registers a custom file extension so that <see cref="Open(string)"/> can handle it.
+    /// The factory receives (tableName, fullPath, entityType) and must return an <see cref="IFileSource"/>.
+    /// </summary>
+    /// <param name="extension">The file extension including the dot (e.g. ".xlsx").</param>
+    /// <param name="factory">A factory that creates an <see cref="IFileSource"/> from a table name, file path, and entity type.</param>
+    public static void RegisterExtension(string extension, Func<string, string, Type, IFileSource> factory)
+    {
+        ArgumentNullException.ThrowIfNull(extension);
+        ArgumentNullException.ThrowIfNull(factory);
+        _extensionRegistry[extension.StartsWith('.') ? extension : "." + extension] = factory;
+    }
+
     /// <summary>
     /// Opens a single flat file as a queryable database. The file format is inferred from the extension,
     /// and the view name is derived from the filename (without extension).
     /// </summary>
-    /// <param name="filePath">Path to the flat file (.csv, .tsv, .parquet, .json, .ndjson).</param>
+    /// <param name="filePath">Path to the flat file (.csv, .tsv, .parquet, .json, .ndjson, or any registered extension).</param>
     /// <returns>A flat file database with the file registered as a queryable view.</returns>
     /// <exception cref="ArgumentException">Thrown when the file extension is not supported.</exception>
     /// <exception cref="FileNotFoundException">Thrown when the file does not exist.</exception>
@@ -27,7 +49,7 @@ public static class FlatFileDatabase
         var tableName = Path.GetFileNameWithoutExtension(fullPath).ToLowerInvariant();
 
         var options = new FlatFileDatabaseOptions();
-        var source = CreateSourceFromExtension(extension, tableName, fullPath);
+        var source = CreateSourceFromExtension(extension, tableName, fullPath, typeof(object));
         options.Sources.Add(source);
 
         return new DuckDbFlatFileDatabase(options);
@@ -49,18 +71,15 @@ public static class FlatFileDatabase
         return new DuckDbFlatFileDatabase(options);
     }
 
-    private static IFileSource CreateSourceFromExtension(string extension, string tableName, string fullPath)
+    internal static IFileSource CreateSourceFromExtension(string extension, string tableName, string fullPath, Type entityType)
     {
-        return extension switch
-        {
-            ".csv" => new CsvFileSource(tableName, fullPath, typeof(object)),
-            ".tsv" => new TsvFileSource(tableName, fullPath, typeof(object)),
-            ".parquet" => new ParquetFileSource(tableName, fullPath, typeof(object)),
-            ".json" => new JsonFileSource(tableName, fullPath, typeof(object)),
-            ".ndjson" => new JsonFileSource(tableName, fullPath, typeof(object)) { JsonFormat = JsonFileFormat.NewlineDelimited },
-            _ => throw new ArgumentException(
-                $"Unsupported file extension '{extension}'. Supported extensions: .csv, .tsv, .parquet, .json, .ndjson",
-                nameof(extension))
-        };
+        if (_extensionRegistry.TryGetValue(extension, out var factory))
+            return factory(tableName, fullPath, entityType);
+
+        var supported = string.Join(", ", _extensionRegistry.Keys.OrderBy(k => k));
+        throw new ArgumentException(
+            $"Unsupported file extension '{extension}'. Supported extensions: {supported}. " +
+            $"Use FlatFileDatabase.RegisterExtension() to add custom file types.",
+            nameof(extension));
     }
 }

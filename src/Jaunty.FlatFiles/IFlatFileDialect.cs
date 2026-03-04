@@ -38,4 +38,14 @@ public interface IFlatFileDialect : ISqlDialect
     /// <param name="format">The output file format.</param>
     /// <returns>The COPY TO SQL statement.</returns>
     string GenerateCopyToSql(string tableName, string outputPath, FileFormat format);
+
+    /// <summary>
+    /// Generates SQL to export a table to a file via COPY TO, using source-specific options.
+    /// Custom <see cref="IFileSource"/> implementations can provide their own format name and COPY TO options.
+    /// </summary>
+    /// <param name="tableName">The table name to export.</param>
+    /// <param name="outputPath">The output file path.</param>
+    /// <param name="source">The file source whose format and options to use.</param>
+    /// <returns>The COPY TO SQL statement.</returns>
+    string GenerateCopyToSql(string tableName, string outputPath, IFileSource source);
 }
