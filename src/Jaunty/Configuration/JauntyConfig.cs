@@ -18,6 +18,40 @@ public static class JauntyConfig
     private static Func<Type, Action<IDbCommand, object>>? _reflectionUpdateBinderResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionDeleteBinderResolver;
 
+    private static int _parameterParsingCapacity = 8;
+    private static int _queryResultCapacity = 64;
+    private static int _csvFieldCapacity = 16;
+
+    /// <summary>
+    /// Gets or sets the initial capacity for parameter name lists when parsing SQL.
+    /// Default: 8. Most queries have fewer than 8 parameters.
+    /// </summary>
+    public static int ParameterParsingCapacity
+    {
+        get => _parameterParsingCapacity;
+        set => _parameterParsingCapacity = value > 0 ? value : 8;
+    }
+
+    /// <summary>
+    /// Gets or sets the initial capacity for query result lists.
+    /// Default: 64. Suitable for most queries without immediate reallocation.
+    /// </summary>
+    public static int QueryResultCapacity
+    {
+        get => _queryResultCapacity;
+        set => _queryResultCapacity = value > 0 ? value : 64;
+    }
+
+    /// <summary>
+    /// Gets or sets the initial capacity for CSV field lists when parsing CSV rows.
+    /// Default: 16. Typical CSV files have fewer than 16 columns.
+    /// </summary>
+    public static int CsvFieldCapacity
+    {
+        get => _csvFieldCapacity;
+        set => _csvFieldCapacity = value > 0 ? value : 16;
+    }
+
     /// <summary>
     /// Gets or sets a custom resolver for schema names.
     /// </summary>
@@ -131,5 +165,8 @@ public static class JauntyConfig
         _reflectionDeleteBinderResolver = null;
         ReflectionTableMetadataResolver = null;
         ReflectionMultiMapperResolver = null;
+        _parameterParsingCapacity = 8;
+        _queryResultCapacity = 64;
+        _csvFieldCapacity = 16;
     }
 }

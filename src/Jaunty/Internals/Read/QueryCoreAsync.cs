@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 using System.Runtime.CompilerServices;
 
+using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Enums;
 using Jaunty.Internals.Parameters;
@@ -15,7 +16,7 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
-            var list = new List<T>(16);
+            var list = new List<T>(JauntyConfig.QueryResultCapacity);
             if (reader is DbDataReader dbReader)
             {
                 var map = DrDispatcher.Resolve(dbReader, options, mode);
@@ -201,7 +202,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
             await using DbCommand command = dbConnection.CreateCommand();
 #else
-            using DbCommand command = connection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
             command.CommandText = sql;
 
@@ -220,9 +221,11 @@ public static partial class Jaunty
             using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
             var map = DrDispatcher.Resolve(reader, options, mode);
-
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
                 yield return map(reader);
+            }
         }
         finally
         {
@@ -231,7 +234,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
@@ -239,7 +242,7 @@ public static partial class Jaunty
 #else
     private static async ValueTask<IEnumerable<T>> QueryStreamCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        var results = new List<T>(64);
+        var results = new List<T>(JauntyConfig.QueryResultCapacity);
         var wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
@@ -270,7 +273,7 @@ public static partial class Jaunty
             if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                await connection.CloseAsync().ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
                 await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
@@ -287,7 +290,7 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<(T1, T2)>(64);
+            var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity * 2);
 
             if (reader is DbDataReader dbReader)
             {
@@ -472,7 +475,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }

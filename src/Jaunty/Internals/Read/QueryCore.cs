@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 
+using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Enums;
 using Jaunty.Internals.Parameters;
@@ -10,11 +11,9 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private const int DefaultCapacity = 32;
-
     private static List<T> QueryCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
-        int capacity = options.ExpectedRowCount ?? DefaultCapacity;
+        int capacity = options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity;
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
@@ -259,7 +258,7 @@ public static partial class Jaunty
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
-                var results = new List<(T1, T2)>(32);
+                var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity * 2);
 
                 if (!reader.Read())
                     return results;
@@ -284,7 +283,7 @@ public static partial class Jaunty
 
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            var results = new List<(T1, T2)>(32);
+            var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity * 2);
 
             if (!reader.Read())
                 return results;

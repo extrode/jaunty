@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Text;
 
+using Jaunty.Configuration;
+
 namespace Jaunty.Internals.Parameters;
 
 internal static class ParameterBinder
@@ -82,7 +84,7 @@ internal static class ParameterBinder
     private static CommandTemplate BuildTemplate(Type type, string sql, string[] sqlParamNames, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] allMeta)
     {
         var boundNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
-        var items = new List<TemplateItem>(CommonConstants.DefaultCollectionCapacity);
+        var items = new List<TemplateItem>(JauntyConfig.ParameterParsingCapacity);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
         {
@@ -100,7 +102,7 @@ internal static class ParameterBinder
         }
 
         // Validate unused
-        var unused = new List<string>(CommonConstants.DefaultCollectionCapacity);
+        var unused = new List<string>(JauntyConfig.ParameterParsingCapacity);
         for (int i = 0; i < allMeta.Length; i++)
         {
             if (!boundNames.Contains(allMeta[i].Name))
