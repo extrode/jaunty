@@ -30,6 +30,14 @@ public sealed class FlatFileDatabaseOptions
     public bool ValidateSchema { get; set; }
 
     /// <summary>
+    /// Gets or sets whether to preload file data into in-memory tables (CREATE TABLE AS) instead of views.
+    /// When true, data is loaded once at registration time, making subsequent queries faster.
+    /// Individual sources can override this via their <c>IsPreloaded</c> property.
+    /// Default: false.
+    /// </summary>
+    public bool PreloadIntoMemory { get; set; }
+
+    /// <summary>
     /// Gets the file sources to register on creation.
     /// </summary>
     public List<IFileSource> Sources { get; } = new();
@@ -55,6 +63,32 @@ public sealed class FlatFileDatabaseOptions
     {
         var tableName = TableNameResolver.Resolve<T>();
         var source = new TsvFileSource(tableName, filePath, typeof(T));
+        configure?.Invoke(source);
+        Sources.Add(source);
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a Parquet file source mapped to the specified entity type.
+    /// The table name is resolved from the entity's <c>[Table]</c> attribute, or the class name lowercased.
+    /// </summary>
+    public FlatFileDatabaseOptions AddParquet<T>(string filePath, Action<ParquetFileSource>? configure = null) where T : class, new()
+    {
+        var tableName = TableNameResolver.Resolve<T>();
+        var source = new ParquetFileSource(tableName, filePath, typeof(T));
+        configure?.Invoke(source);
+        Sources.Add(source);
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a JSON file source mapped to the specified entity type.
+    /// The table name is resolved from the entity's <c>[Table]</c> attribute, or the class name lowercased.
+    /// </summary>
+    public FlatFileDatabaseOptions AddJson<T>(string filePath, Action<JsonFileSource>? configure = null) where T : class, new()
+    {
+        var tableName = TableNameResolver.Resolve<T>();
+        var source = new JsonFileSource(tableName, filePath, typeof(T));
         configure?.Invoke(source);
         Sources.Add(source);
         return this;
