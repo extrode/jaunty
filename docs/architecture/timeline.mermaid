@@ -1,0 +1,23 @@
+---
+title: Jaunty.FlatFiles — Milestone Dependencies
+---
+gantt
+    title Implementation Timeline
+    dateFormat  YYYY-MM-DD
+    axisFormat  %b %d
+
+    section Foundation
+    M0 Foundation & DuckDB Integration   :m0, 2026-03-03, 4d
+
+    section Read Operations
+    M1 CSV/TSV Query Support             :m1, after m0, 5d
+    M2 Parquet & JSON Support            :m2, after m1, 3d
+
+    section Write Operations
+    M3 CRUD & Write-Back                 :m3, after m2, 6d
+
+    section Import
+    M4 Import Pipeline                   :m4, after m1, 6d
+
+    section Release
+    M5 Polish, Docs & Release            :m5, after m3 m4, 3d

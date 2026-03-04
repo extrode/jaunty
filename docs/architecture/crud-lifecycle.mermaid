@@ -1,0 +1,51 @@
+---
+title: Jaunty.FlatFiles — CRUD & Write-Back Lifecycle
+---
+stateDiagram-v2
+    [*] --> ViewMode: FlatFileDatabase.Open()
+
+    state ViewMode {
+        [*] --> ViewCreated: CREATE VIEW FROM read_csv_auto()
+        ViewCreated --> ReadOnly: Query via VIEW
+        ReadOnly --> ReadOnly: .Where() .OrderBy() .Take()
+    }
+
+    ViewMode --> TableMode: First mutation (INSERT/UPDATE/DELETE)
+
+    state TableMode {
+        [*] --> Promoted: DROP VIEW + CREATE TABLE AS
+        Promoted --> Modified: INSERT/UPDATE/DELETE
+        Modified --> Modified: More mutations
+        Modified --> QueryModified: .Query() reads modified data
+        QueryModified --> Modified
+    }
+
+    state WriteBack {
+        [*] --> ChooseMode
+        ChooseMode --> NonDestructive: SaveAsync("new-file.csv")
+        ChooseMode --> Destructive: SaveAsync(WriteBackMode.Overwrite)
+        ChooseMode --> CrossFormat: ExportAsync("output.parquet")
+
+        NonDestructive --> CopyTo: COPY TO 'new-file.csv'
+        Destructive --> TempFile: COPY TO 'temp-xyz.csv'
+        TempFile --> AtomicRename: Rename temp → original
+        CrossFormat --> CopyTo: COPY TO 'output.parquet' (FORMAT PARQUET)
+    }
+
+    TableMode --> WriteBack: SaveAsync() / ExportAsync()
+    WriteBack --> [*]: File written to disk
+
+    ViewMode --> Disposed: Dispose()
+    TableMode --> Disposed: Dispose()
+    Disposed --> [*]: DuckDB closed, handles released
+
+    note right of ViewMode
+        Lazy mode: data read from disk on query.
+        Efficient for one-shot queries.
+    end note
+
+    note right of TableMode
+        Eager mode: data in DuckDB columnar storage.
+        Required for mutations.
+        Automatic promotion — transparent to user.
+    end note

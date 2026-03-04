@@ -1,0 +1,57 @@
+---
+title: Jaunty.FlatFiles — Package Architecture
+---
+graph TB
+    subgraph "NuGet Packages"
+        subgraph "Jaunty.FlatFiles<br/>(netstandard2.0 + net10.0)"
+            IF[IFlatFileDatabase]
+            IFS[IFileSource]
+            IFD[IFlatFileDialect]
+            CFG[Configuration Types<br/>CsvOptions, ParquetOptions, etc.]
+            IMP[IImportPipeline<br/>ImportOptions, ConflictStrategy]
+            WB[IWriteBackStrategy<br/>WriteBackMode, ExportFormat]
+        end
+
+        subgraph "Jaunty.FlatFiles.DuckDB<br/>(net8.0 + net10.0)"
+            DFDB[DuckDbFlatFileDatabase]
+            DD[DuckDbDialect]
+            CSV[DuckDbCsvSource]
+            TSV[DuckDbTsvSource]
+            PQ[DuckDbParquetSource]
+            JS[DuckDbJsonSource]
+            DIMP[DuckDbImportPipeline]
+            DWB[DuckDbWriteBackEngine]
+        end
+    end
+
+    subgraph "Dependencies"
+        JC[Jaunty Core<br/>Fluent API, Entity Mapping,<br/>IDialect, Materialization]
+        DDB[DuckDB.NET.Data.Full<br/>ADO.NET Provider +<br/>Native Binary]
+    end
+
+    DFDB -->|implements| IF
+    DD -->|implements| IFD
+    CSV -->|implements| IFS
+    TSV -->|implements| IFS
+    PQ -->|implements| IFS
+    JS -->|implements| IFS
+    DIMP -->|implements| IMP
+    DWB -->|implements| WB
+
+    DFDB -->|uses| DD
+    DFDB -->|uses| CSV
+    DFDB -->|uses| TSV
+    DFDB -->|uses| PQ
+    DFDB -->|uses| JS
+
+    DD -->|extends| JC
+    DFDB -->|uses materialization from| JC
+    DFDB -->|connects via| DDB
+
+    style IF fill:#4a9eff,color:#fff
+    style IFS fill:#4a9eff,color:#fff
+    style IFD fill:#4a9eff,color:#fff
+    style DFDB fill:#ff9f43,color:#fff
+    style DD fill:#ff9f43,color:#fff
+    style JC fill:#2ed573,color:#fff
+    style DDB fill:#a55eea,color:#fff
