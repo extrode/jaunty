@@ -29,6 +29,9 @@
 		<ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj"
 		                  SetTargetFramework="TargetFramework=net8.0"
 		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\..\src\Jaunty.Fluent\Jaunty.Fluent.csproj"
+		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
 	</ItemGroup>
 
 	<ItemGroup>

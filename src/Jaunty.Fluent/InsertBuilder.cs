@@ -43,7 +43,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
             if (!col.IsComputed)
             {
                 var value = col.Property.GetValue(entity);
-                var paramName = $"@{col.Property.Name}";
+                var paramName = $"{_dialect.ParameterPrefix}{col.Property.Name}";
                 _parameters.Add(paramName, value);
                 _columns.Add(new InsertColumn(_dialect.EscapeColumnName(col.ColumnName), paramName));
             }
@@ -62,7 +62,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
             if (colMeta?.IsIdentity == true || colMeta?.IsComputed == true)
                 continue;
 
-            var paramName = $"@{prop.Name}";
+            var paramName = $"{_dialect.ParameterPrefix}{prop.Name}";
             _parameters.Add(paramName, prop.GetValue(values));
             _columns.Add(new InsertColumn(_dialect.EscapeColumnName(columnName), paramName));
         }
@@ -73,7 +73,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(selector);
         string columnName = GetColumnNameFromProperty(propertyName);
-        var paramName = $"@{propertyName}";
+        var paramName = $"{_dialect.ParameterPrefix}{propertyName}";
         _parameters.Add(paramName, value);
         _columns.Add(new InsertColumn(_dialect.EscapeColumnName(columnName), paramName));
         return this;
@@ -81,7 +81,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
 
     public IValuesClause<T> Value(string column, object? value)
     {
-        var paramName = $"@{column}";
+        var paramName = $"{_dialect.ParameterPrefix}{column}";
         _parameters.Add(paramName, value);
         _columns.Add(new InsertColumn(_dialect.EscapeColumnName(column), paramName));
         return this;
