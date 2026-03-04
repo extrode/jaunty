@@ -3,11 +3,11 @@
 **Target**: 100% Code Coverage for net8.0 (netstandard2.0 excluded for Fluent API)
 **Created**: 2026-02-24
 **Coverage Report**: code-coverage-dotCover-2026-02-26.png
-**Last Updated**: 2026-02-26
+**Last Updated**: 2026-03-04
 - Fluent API net8.0: 33% → 72% (+39%)
 - Fluent API netstandard2.0: EXCLUDED
-- FluentAssertions: REMOVED (xUnit Assert only)
-- Test Count: 2865 (all passing)
+- FluentAssertions: REMOVED from active tests (archived tests deleted 2026-03-04)
+- Test Count: 7387 (Rider) / 4241 (net8.0 only) - all passing when databases available
 
 ---
 
@@ -175,6 +175,12 @@
 **Coverage Impact**: QueryBuilder SelectPartial* methods (string/expression columns, sync/async) now covered, plus ThenBy(string) methods
 **Test Count**: +24 tests (26 total new QueryBuilder tests)
 
+### 2026-03-04: Archived Tests Deleted
+**Action**: Deleted `tests/Jaunty.Tests/Integration/ARCHIVED-FOR-DELETION/` folder
+**Files Removed**: 5 files (QueryDatabaseConnectionTests.cs, NullParameterTests.cs, EdgeCaseTests.cs, ConfigResolverTests.cs, ConfigurationTests.cs)
+**Reason**: Folder contained FluentAssertions reference; archived tests no longer needed
+**Result**: FluentAssertions completely removed from codebase
+
 ### 2026-02-27: ParameterBinder Edge Cases
 **Added**: 8 new tests for ParameterBinder edge cases
 **Tests Added**:
@@ -234,8 +240,9 @@
 
 ## Current Status
 
-**Test Count**: 2977 tests (Jaunty.Tests) + 408 tests (Fluent API) = **3385 total**  
-**Pass Rate**: 100% (3385/3385 passing)
+**Test Count**: ~7387 tests (JetBrains Rider) / ~4241 tests (net8.0 single-target)  
+**Pass Rate**: 100% when all database backends available (SQL Server, PostgreSQL, MySQL, MariaDB, SQLite)  
+**Note**: Integration tests require external databases; unit tests and Fluent API tests pass without external dependencies  
 **Overall Progress**: 7/10 phases complete (70%)
 
 ---
