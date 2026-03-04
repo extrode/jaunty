@@ -1,5 +1,7 @@
 using System.Text;
 
+using JauntyConfig = Jaunty.Configuration.JauntyConfig;
+
 namespace Jaunty.Internals.Parameters;
 
 internal static class SqlParameterParser
@@ -19,7 +21,7 @@ internal static class SqlParameterParser
 #if NET8_0_OR_GREATER
     private static string[] ExtractParameterNamesSpan(ReadOnlySpan<char> sql)
     {
-        var names = new List<string>(CommonConstants.DefaultCollectionCapacity);
+        var names = new List<string>(JauntyConfig.ParameterParsingCapacity);
         var i = 0;
         var len = sql.Length;
 
@@ -137,7 +139,7 @@ internal static class SqlParameterParser
 
     private static string[] ExtractParameterNamesClassic(string sql)
     {
-        var names = new List<string>(CommonConstants.DefaultCollectionCapacity);
+        var names = new List<string>(JauntyConfig.ParameterParsingCapacity);
         var i = 0;
         var len = sql.Length;
 
