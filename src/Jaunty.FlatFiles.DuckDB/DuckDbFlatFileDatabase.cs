@@ -9,6 +9,7 @@ using Jaunty.Attributes;
 using Jaunty.Dialects;
 using Jaunty.FlatFiles;
 using Jaunty.FlatFiles.DuckDB.ImportPipeline;
+using Jaunty.Fluent;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -128,6 +129,62 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     /// Gets the DuckDB dialect instance used by this database.
     /// </summary>
     public DuckDbDialect Dialect => _dialect;
+
+    // ==========================================
+    // Query Operations
+    // ==========================================
+
+    /// <inheritdoc />
+    public IFromClause<T> Query<T>() where T : class, new()
+    {
+        var source = GetSourceOrThrow<T>();
+        // Use Jaunty.Fluent's From which returns IFromClause<T> for fluent queries
+        // The table name will be resolved from [Table] attribute on the entity
+        return FluentExtensions.From<T>(_connection);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<List<T>> QueryAsync<T>(string sql, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        return await QueryAsync<T>(sql, Enumerable.Empty<(string, object?)>(), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<List<T>> QueryAsync<T>(
+        string sql, 
+        IEnumerable<(string Name, object? Value)> parameters, 
+        CancellationToken cancellationToken = default) where T : class, new()
+    {
+        await using var cmd = _connection.CreateCommand();
+        cmd.CommandText = sql;
+        
+        foreach (var (name, value) in parameters)
+        {
+            var param = cmd.CreateParameter();
+            param.ParameterName = name;
+            param.Value = value ?? DBNull.Value;
+            cmd.Parameters.Add(param);
+        }
+        
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        // Materialize using Jaunty core's extension method
+        var results = new List<T>();
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            var entity = new T();
+            foreach (var mapping in FlatFileExpressionHelper.GetColumnMappings(typeof(T)))
+            {
+                var ordinal = reader.GetOrdinal(mapping.ColumnName);
+                if (!reader.IsDBNull(ordinal))
+                {
+                    var value = reader.GetValue(ordinal);
+                    mapping.Property.SetValue(entity, value);
+                }
+            }
+            results.Add(entity);
+        }
+        return results;
+    }
 
     // ==========================================
     // CRUD Operations

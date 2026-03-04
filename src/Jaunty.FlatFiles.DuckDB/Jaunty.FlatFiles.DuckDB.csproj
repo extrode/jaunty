@@ -16,6 +16,9 @@
 		<ProjectReference Include="..\Jaunty.FlatFiles\Jaunty.FlatFiles.csproj"
 		                  SetTargetFramework="TargetFramework=net8.0"
 		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\Jaunty.Fluent\Jaunty.Fluent.csproj"
+		                  SetTargetFramework="TargetFramework=net8.0"
+		                  SkipGetTargetFrameworkProperties="true" />
 	</ItemGroup>
 
 	<ItemGroup>
