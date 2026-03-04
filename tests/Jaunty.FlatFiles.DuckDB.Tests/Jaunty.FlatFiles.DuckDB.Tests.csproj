@@ -10,6 +10,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.3" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
 		<PackageReference Include="xunit" Version="2.9.3" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
@@ -20,18 +21,10 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Jaunty.FlatFiles.DuckDB\Jaunty.FlatFiles.DuckDB.csproj" />
-		<ProjectReference Include="..\..\src\Jaunty.FlatFiles\Jaunty.FlatFiles.csproj"
-		                  SetTargetFramework="TargetFramework=net8.0"
-		                  SkipGetTargetFrameworkProperties="true" />
-		<ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj"
-		                  SetTargetFramework="TargetFramework=net8.0"
-		                  SkipGetTargetFrameworkProperties="true" />
-		<ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj"
-		                  SetTargetFramework="TargetFramework=net8.0"
-		                  SkipGetTargetFrameworkProperties="true" />
-		<ProjectReference Include="..\..\src\Jaunty.Fluent\Jaunty.Fluent.csproj"
-		                  SetTargetFramework="TargetFramework=net8.0"
-		                  SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\..\src\Jaunty.FlatFiles\Jaunty.FlatFiles.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\..\src\Jaunty.Fluent\Jaunty.Fluent.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
 	</ItemGroup>
 
 	<ItemGroup>
