@@ -20,6 +20,7 @@
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Jaunty.Benchmarks/Jaunty.Benchmarks.csproj" />
+    <Project Path="benchmarks/Jaunty.FlatFiles.Benchmarks/Jaunty.FlatFiles.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/NativeAOT-Basic/NativeAOT-Basic.csproj" />
