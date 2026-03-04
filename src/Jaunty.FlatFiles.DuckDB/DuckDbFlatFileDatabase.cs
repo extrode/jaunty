@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Data;
+using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -7,6 +8,7 @@ using DuckDB.NET.Data;
 using Jaunty.Attributes;
 using Jaunty.Dialects;
 using Jaunty.FlatFiles;
+using Jaunty.FlatFiles.DuckDB.ImportPipeline;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -318,6 +320,26 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(outputPath), format);
 
         await ExecuteNonQueryAsync(sql, [], cancellationToken).ConfigureAwait(false);
+    }
+
+    // ==========================================
+    // Import Operations
+    // ==========================================
+
+    /// <inheritdoc />
+    public async ValueTask<long> ImportIntoAsync<T>(
+        DbConnection targetConnection,
+        Action<ImportOptions>? configure = null,
+        CancellationToken cancellationToken = default) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(targetConnection);
+
+        var source = GetSourceOrThrow<T>();
+        var options = new ImportOptions();
+        configure?.Invoke(options);
+
+        return await ImportExecutor.ExecuteAsync<T>(
+            _connection, source, targetConnection, options, cancellationToken).ConfigureAwait(false);
     }
 
     // ==========================================
