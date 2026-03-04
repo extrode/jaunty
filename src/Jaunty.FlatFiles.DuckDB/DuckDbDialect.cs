@@ -277,7 +277,11 @@ public sealed class DuckDbDialect : IFlatFileDialect
         if (format == FileFormat.Tsv)
             sb.Append(", DELIMITER '\t'");
 
-        sb.Append(", HEADER true)");
+        // HEADER is only valid for CSV/TSV, not Parquet or JSON
+        if (format is FileFormat.Csv or FileFormat.Tsv)
+            sb.Append(", HEADER true");
+
+        sb.Append(')');
         return sb.ToString();
     }
 
