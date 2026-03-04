@@ -25,6 +25,7 @@ internal sealed class PostgreSqlDialectWithBulkCopy : ISqlDialect
     public bool SupportsMultiRowInsert => _inner.SupportsMultiRowInsert;
     public int MaxParametersPerStatement => _inner.MaxParametersPerStatement;
 
+    public string ParameterPrefix => _inner.ParameterPrefix;
     public string GetDefaultSchema() => _inner.GetDefaultSchema();
     public string EscapeTableName(string? schemaName, string tableName) => _inner.EscapeTableName(schemaName, tableName);
     public string EscapeColumnName(string columnName) => _inner.EscapeColumnName(columnName);

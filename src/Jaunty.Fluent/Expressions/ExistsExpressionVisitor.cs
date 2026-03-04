@@ -48,15 +48,16 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
 
     private string GetParameterName(string baseName)
     {
+        var prefix = _dialect.ParameterPrefix;
         if (_parameterCounts.TryGetValue(baseName, out int count))
         {
             _parameterCounts[baseName] = count + 1;
-            return $"@{baseName}{count + 1}";
+            return $"{prefix}{baseName}{count + 1}";
         }
         else
         {
             _parameterCounts[baseName] = 1;
-            return $"@{baseName}";
+            return $"{prefix}{baseName}";
         }
     }
 
