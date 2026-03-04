@@ -11,6 +11,11 @@ public interface ISqlDialect
     /// <summary>
     /// Gets the default schema for this database.
     /// </summary>
+    /// <summary>
+    /// Gets the parameter prefix used in SQL queries (e.g., "@" for SQL Server/SQLite, "$" for DuckDB).
+    /// </summary>
+    string ParameterPrefix { get; }
+
     string GetDefaultSchema();
 
     /// <summary>
