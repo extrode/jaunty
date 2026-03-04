@@ -1,8 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Reflection;
-using System.Text;
-using Jaunty.Attributes;
+using Jaunty.FlatFiles;
 
 namespace Jaunty.FlatFiles.DuckDB.ImportPipeline;
 
@@ -26,6 +25,9 @@ internal static class ImportExecutor
         var mappings = FlatFileExpressionHelper.GetColumnMappings(entityType);
         var tableName = source.TableName;
 
+        // Resolve the import dialect (explicit > custom registry > auto-detect)
+        var dialect = ImportDialectResolver.Resolve(targetConnection, options.Dialect);
+
         // Ensure target connection is open
         if (targetConnection.State != ConnectionState.Open)
             await targetConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -33,7 +35,7 @@ internal static class ImportExecutor
         // Create table if requested
         if (options.CreateTableIfMissing)
         {
-            var ddl = TargetDdlGenerator.GenerateCreateTableSql(entityType, tableName, targetConnection);
+            var ddl = TargetDdlGenerator.GenerateCreateTableSql(entityType, tableName, dialect);
             await using var ddlCmd = targetConnection.CreateCommand();
             ddlCmd.CommandText = ddl;
             await ddlCmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -50,8 +52,11 @@ internal static class ImportExecutor
             var reader = await sourceCmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             await using (reader.ConfigureAwait(false))
             {
-                // Build the insert SQL template
-                var insertSql = BuildInsertSql(tableName, mappings, options.OnConflict, entityType, targetConnection);
+                // Build the insert SQL template using the dialect
+                var columnNames = mappings.Select(m => m.ColumnName).ToList();
+                var parameterNames = Enumerable.Range(0, mappings.Count).Select(i => $"@p{i}").ToList();
+                var keyColumnName = TargetDdlGenerator.GetKeyColumnName(entityType);
+                var insertSql = dialect.GenerateInsertSql(tableName, columnNames, parameterNames, options.OnConflict, keyColumnName);
 
                 // Import in batches within a transaction
                 return await ImportBatchesAsync(
@@ -59,93 +64,6 @@ internal static class ImportExecutor
                     options.BatchSize, options.OnProgress, cancellationToken).ConfigureAwait(false);
             }
         }
-    }
-
-    private static string BuildInsertSql(
-        string tableName,
-        List<(string ColumnName, PropertyInfo Property)> mappings,
-        ConflictStrategy conflictStrategy,
-        Type entityType,
-        DbConnection targetConnection)
-    {
-        var sb = new StringBuilder();
-        var dbTypeName = targetConnection.GetType().FullName ?? "";
-        var isSqlite = dbTypeName.Contains("Sqlite", StringComparison.OrdinalIgnoreCase);
-
-        // INSERT prefix depends on conflict strategy
-        switch (conflictStrategy)
-        {
-            case ConflictStrategy.Error:
-                sb.Append($"INSERT INTO \"{tableName}\"");
-                break;
-            case ConflictStrategy.Skip:
-                if (isSqlite)
-                    sb.Append($"INSERT OR IGNORE INTO \"{tableName}\"");
-                else
-                    sb.Append($"INSERT INTO \"{tableName}\""); // Will be enhanced for PG/SQL Server
-                break;
-            case ConflictStrategy.Upsert:
-                if (isSqlite)
-                    sb.Append($"INSERT OR REPLACE INTO \"{tableName}\"");
-                else
-                    sb.Append($"INSERT INTO \"{tableName}\""); // Will be enhanced for PG/SQL Server
-                break;
-        }
-
-        // Column names
-        sb.Append(" (");
-        for (int i = 0; i < mappings.Count; i++)
-        {
-            if (i > 0) sb.Append(", ");
-            sb.Append($"\"{mappings[i].ColumnName}\"");
-        }
-        sb.Append(") VALUES (");
-
-        // Parameter placeholders — use @p0, @p1, etc. (standard ADO.NET named parameters)
-        for (int i = 0; i < mappings.Count; i++)
-        {
-            if (i > 0) sb.Append(", ");
-            sb.Append($"@p{i}");
-        }
-        sb.Append(')');
-
-        // For PostgreSQL upsert, add ON CONFLICT clause
-        if (conflictStrategy == ConflictStrategy.Upsert && !isSqlite)
-        {
-            var keyColumn = TargetDdlGenerator.GetKeyColumnName(entityType);
-            if (keyColumn is not null)
-            {
-                var isPostgres = dbTypeName.Contains("Npgsql", StringComparison.OrdinalIgnoreCase);
-                if (isPostgres)
-                {
-                    sb.Append($" ON CONFLICT (\"{keyColumn}\") DO UPDATE SET ");
-                    var first = true;
-                    foreach (var (colName, _) in mappings)
-                    {
-                        if (colName == keyColumn) continue;
-                        if (!first) sb.Append(", ");
-                        sb.Append($"\"{colName}\" = EXCLUDED.\"{colName}\"");
-                        first = false;
-                    }
-                }
-            }
-        }
-
-        // For PostgreSQL skip, add ON CONFLICT DO NOTHING
-        if (conflictStrategy == ConflictStrategy.Skip && !isSqlite)
-        {
-            var keyColumn = TargetDdlGenerator.GetKeyColumnName(entityType);
-            if (keyColumn is not null)
-            {
-                var isPostgres = dbTypeName.Contains("Npgsql", StringComparison.OrdinalIgnoreCase);
-                if (isPostgres)
-                {
-                    sb.Append($" ON CONFLICT (\"{keyColumn}\") DO NOTHING");
-                }
-            }
-        }
-
-        return sb.ToString();
     }
 
     private static async ValueTask<long> ImportBatchesAsync(
@@ -251,7 +169,6 @@ internal static class ImportExecutor
         // DuckDB returns DuckDBDateOnly for DATE columns
         if (valueTypeName.Contains("DuckDBDateOnly") && underlyingType == typeof(DateTime))
         {
-            // DuckDBDateOnly has a DaysSinceEpoch property
             var daysProp = valueType.GetProperty("DaysSinceEpoch");
             if (daysProp is not null)
             {

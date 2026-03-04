@@ -23,6 +23,9 @@ public sealed class CsvFileSource : IFileSource
     /// <inheritdoc />
     public bool IsPreloaded { get; set; }
 
+    /// <inheritdoc />
+    public string DuckDbFormatName => "CSV";
+
     /// <summary>
     /// Gets or sets whether the CSV file has a header row.
     /// Null means auto-detect. Default: null.
@@ -63,4 +66,32 @@ public sealed class CsvFileSource : IFileSource
         FilePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
     }
+
+    /// <inheritdoc />
+    public string GenerateReadFunction(string escapedFilePath)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"read_csv('{escapedFilePath}'");
+
+        if (HasHeader.HasValue)
+            sb.Append($", header = {(HasHeader.Value ? "true" : "false")}");
+
+        if (Delimiter.HasValue)
+            sb.Append($", delim = '{Delimiter.Value}'");
+
+        if (QuoteChar.HasValue)
+            sb.Append($", quote = '{QuoteChar.Value}'");
+
+        if (NullString is not null)
+            sb.Append($", nullstr = '{NullString.Replace("'", "''")}'");
+
+        if (SkipRows > 0)
+            sb.Append($", skip = {SkipRows}");
+
+        sb.Append(", auto_detect = true)");
+        return sb.ToString();
+    }
+
+    /// <inheritdoc />
+    public string? GenerateCopyToOptions() => "HEADER true";
 }

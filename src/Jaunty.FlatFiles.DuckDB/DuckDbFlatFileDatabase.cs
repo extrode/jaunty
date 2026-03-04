@@ -295,7 +295,7 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
 
         try
         {
-            var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(tempPath), source.Format);
+            var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(tempPath), source);
             await ExecuteNonQueryAsync(sql, [], cancellationToken).ConfigureAwait(false);
 
             // Atomic replace: delete original, rename temp
@@ -372,18 +372,7 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
         // Mark as promoted
-        SetPromotedToTable(source);
-    }
-
-    private static void SetPromotedToTable(IFileSource source)
-    {
-        switch (source)
-        {
-            case CsvFileSource csv: csv.IsPromotedToTable = true; break;
-            case TsvFileSource tsv: tsv.IsPromotedToTable = true; break;
-            case ParquetFileSource parquet: parquet.IsPromotedToTable = true; break;
-            case JsonFileSource json: json.IsPromotedToTable = true; break;
-        }
+        source.IsPromotedToTable = true;
     }
 
     private async ValueTask<int> ExecuteNonQueryAsync(string sql, List<DuckDBParameter> parameters, CancellationToken cancellationToken)
@@ -411,17 +400,11 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     }
 
     /// <summary>
-    /// Sets IsPreloaded on a source. Works with all concrete source types.
+    /// Sets IsPreloaded on a source via the IFileSource interface setter.
     /// </summary>
     private static void ApplyPreload(IFileSource source)
     {
-        switch (source)
-        {
-            case CsvFileSource csv: csv.IsPreloaded = true; break;
-            case TsvFileSource tsv: tsv.IsPreloaded = true; break;
-            case ParquetFileSource parquet: parquet.IsPreloaded = true; break;
-            case JsonFileSource json: json.IsPreloaded = true; break;
-        }
+        source.IsPreloaded = true;
     }
 
     public void Dispose()
