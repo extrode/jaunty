@@ -429,14 +429,29 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     /// <inheritdoc />
     public async ValueTask<long> ImportIntoAsync<T>(
         DbConnection targetConnection,
-        Action<ImportOptions>? configure = null,
         CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(targetConnection);
 
         var source = GetSourceOrThrow<T>();
         var options = new ImportOptions();
-        configure?.Invoke(options);
+
+        return await ImportExecutor.ExecuteAsync<T>(
+            _connection, source, targetConnection, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<long> ImportIntoAsync<T>(
+        DbConnection targetConnection,
+        Action<ImportOptions> configure,
+        CancellationToken cancellationToken = default) where T : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(targetConnection);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var source = GetSourceOrThrow<T>();
+        var options = new ImportOptions();
+        configure(options);
 
         return await ImportExecutor.ExecuteAsync<T>(
             _connection, source, targetConnection, options, cancellationToken).ConfigureAwait(false);
