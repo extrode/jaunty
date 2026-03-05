@@ -157,15 +157,15 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     {
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
-        
-        foreach (var (name, value) in parameters)
+
+        // DuckDB uses positional parameters ($1, $2, ...) - add in order
+        foreach (var (_, value) in parameters)
         {
             var param = cmd.CreateParameter();
-            param.ParameterName = name;
             param.Value = value ?? DBNull.Value;
             cmd.Parameters.Add(param);
         }
-        
+
         await using var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         // Materialize using Jaunty core's extension method
         var results = new List<T>();
@@ -174,10 +174,41 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
             var entity = new T();
             foreach (var mapping in FlatFileExpressionHelper.GetColumnMappings(typeof(T)))
             {
-                var ordinal = reader.GetOrdinal(mapping.ColumnName);
-                if (!reader.IsDBNull(ordinal))
+                int ordinal = -1;
+                try
+                {
+                    // DuckDB returns lowercase column names - use case-insensitive lookup
+                    ordinal = reader.GetOrdinal(mapping.ColumnName);
+                }
+                catch (DuckDBException)
+                {
+                    // Column not found by exact name - try case-insensitive lookup
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        if (string.Equals(reader.GetName(i), mapping.ColumnName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            ordinal = i;
+                            break;
+                        }
+                    }
+                }
+                
+                if (ordinal >= 0 && !reader.IsDBNull(ordinal))
                 {
                     var value = reader.GetValue(ordinal);
+                    // Convert value to property type if needed
+                    var targetType = mapping.Property.PropertyType;
+                    if (value != null && value.GetType() != targetType)
+                    {
+                        try
+                        {
+                            value = Convert.ChangeType(value, Nullable.GetUnderlyingType(targetType) ?? targetType);
+                        }
+                        catch
+                        {
+                            // If conversion fails, let the property setter handle it
+                        }
+                    }
                     mapping.Property.SetValue(entity, value);
                 }
             }
