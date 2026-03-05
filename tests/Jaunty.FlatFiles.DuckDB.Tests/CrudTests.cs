@@ -13,7 +13,7 @@ public class CrudTests : IDisposable
 {
     private static readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_crud_tests_{Guid.NewGuid():N}");
     private readonly string _csvPath;
-    private readonly DuckDbFlatFileDatabase _db;
+    private readonly DuckDb _db;
 
     public CrudTests()
     {
@@ -38,7 +38,7 @@ public class CrudTests : IDisposable
 
         var options = new FlatFileDatabaseOptions();
         options.AddCsv<InventoryItem>(_csvPath);
-        _db = new DuckDbFlatFileDatabase(options);
+        _db = new DuckDb(options);
     }
 
     public void Dispose()

@@ -3,7 +3,7 @@ namespace Jaunty.FlatFiles.DuckDB;
 /// <summary>
 /// Static factory for opening flat file databases backed by DuckDB.
 /// </summary>
-public static class FlatFileDatabase
+public static class FlatFile
 {
     private static readonly Dictionary<string, Func<string, string, Type, IFileSource>> _extensionRegistry = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -35,7 +35,7 @@ public static class FlatFileDatabase
     /// <returns>A flat file database with the file registered as a queryable view.</returns>
     /// <exception cref="ArgumentException">Thrown when the file extension is not supported.</exception>
     /// <exception cref="FileNotFoundException">Thrown when the file does not exist.</exception>
-    public static IFlatFileDatabase Open(string filePath)
+    public static IFlatFile Open(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
 
@@ -50,7 +50,7 @@ public static class FlatFileDatabase
         var source = CreateSourceFromExtension(extension, tableName, fullPath, typeof(object));
         options.Sources.Add(source);
 
-        return new DuckDbFlatFileDatabase(options);
+        return new DuckDb(options);
     }
 
     /// <summary>
@@ -59,14 +59,14 @@ public static class FlatFileDatabase
     /// </summary>
     /// <param name="configure">Action to configure the database options and register file sources.</param>
     /// <returns>A flat file database with all configured sources registered.</returns>
-    public static IFlatFileDatabase Open(Action<FlatFileDatabaseOptions> configure)
+    public static IFlatFile Open(Action<FlatFileDatabaseOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
 
         var options = new FlatFileDatabaseOptions();
         configure(options);
 
-        return new DuckDbFlatFileDatabase(options);
+        return new DuckDb(options);
     }
 
     internal static IFileSource CreateSourceFromExtension(string extension, string tableName, string fullPath, Type entityType)

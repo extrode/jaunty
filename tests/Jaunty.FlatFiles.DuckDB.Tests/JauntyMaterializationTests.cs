@@ -189,7 +189,7 @@ public class JauntyMaterializationTests : IDisposable
         var csvPath = Path.Combine(AppContext.BaseDirectory, "data", "csv", "sales.csv");
         Assert.True(File.Exists(csvPath), $"Test CSV file not found at: {csvPath}");
 
-        using var db = new DuckDbFlatFileDatabase();
+        using var db = new DuckDb();
 
         db.RegisterSource(new CsvFileSource("sales", csvPath, typeof(SalesRecord)));
 
@@ -206,7 +206,7 @@ public class JauntyMaterializationTests : IDisposable
         var jsonPath = Path.Combine(AppContext.BaseDirectory, "data", "json", "customers.json");
         Assert.True(File.Exists(jsonPath), $"Test JSON file not found at: {jsonPath}");
 
-        using var db = new DuckDbFlatFileDatabase();
+        using var db = new DuckDb();
 
         db.RegisterSource(new JsonFileSource("customers", jsonPath, typeof(CustomerProfile))
         {
@@ -226,7 +226,7 @@ public class JauntyMaterializationTests : IDisposable
         var tsvPath = Path.Combine(AppContext.BaseDirectory, "data", "tsv", "sales.tsv");
         Assert.True(File.Exists(tsvPath), $"Test TSV file not found at: {tsvPath}");
 
-        using var db = new DuckDbFlatFileDatabase();
+        using var db = new DuckDb();
 
         db.RegisterSource(new TsvFileSource("sales", tsvPath, typeof(SalesRecord)));
 
@@ -242,7 +242,7 @@ public class JauntyMaterializationTests : IDisposable
     {
         var csvPath = Path.Combine(AppContext.BaseDirectory, "data", "csv", "sales.csv");
 
-        using var db = new DuckDbFlatFileDatabase();
+        using var db = new DuckDb();
 
         var source = new CsvFileSource("sales", csvPath, typeof(SalesRecord));
         db.RegisterSource(source);
@@ -256,7 +256,7 @@ public class JauntyMaterializationTests : IDisposable
     [Fact]
     public void DuckDbFlatFileDatabase_GetSource_ReturnsNull_WhenNotRegistered()
     {
-        using var db = new DuckDbFlatFileDatabase();
+        using var db = new DuckDb();
         Assert.Null(db.GetSource<SalesRecord>());
     }
 

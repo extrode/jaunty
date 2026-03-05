@@ -9,7 +9,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests;
 /// </summary>
 public class CsvQueryTests : IDisposable
 {
-    private readonly DuckDbFlatFileDatabase _db;
+    private readonly DuckDb _db;
     private static readonly string DataDir = Path.Combine(AppContext.BaseDirectory, "data");
 
     public CsvQueryTests()
@@ -17,7 +17,7 @@ public class CsvQueryTests : IDisposable
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
         var options = new FlatFileDatabaseOptions();
         options.AddCsv<SalesRecord>(csvPath);
-        _db = new DuckDbFlatFileDatabase(options);
+        _db = new DuckDb(options);
     }
 
     public void Dispose() => _db.Dispose();

@@ -15,9 +15,9 @@ public class FlatFilesBenchmarks
     private const string ParquetPath = "Data/inventory.parquet";
     private const string JsonPath = "Data/customers.json";
 
-    private IFlatFileDatabase? _csvDb;
-    private IFlatFileDatabase? _parquetDb;
-    private IFlatFileDatabase? _jsonDb;
+    private IFlatFile? _csvDb;
+    private IFlatFile? _parquetDb;
+    private IFlatFile? _jsonDb;
 
     [GlobalSetup]
     public void Setup()
@@ -26,13 +26,13 @@ public class FlatFilesBenchmarks
         TestDataGenerator.GenerateAll();
 
         // Open databases for benchmarks
-        _csvDb = FlatFileDatabase.Open(opts =>
+        _csvDb = FlatFile.Open(opts =>
             opts.AddCsv<SalesRecord>(SmallCsvPath, csv => csv.HasHeader = true));
 
-        _parquetDb = FlatFileDatabase.Open(opts =>
+        _parquetDb = FlatFile.Open(opts =>
             opts.AddParquet<InventoryItem>(ParquetPath));
 
-        _jsonDb = FlatFileDatabase.Open(opts =>
+        _jsonDb = FlatFile.Open(opts =>
             opts.AddJson<CustomerProfile>(JsonPath, json =>
                 json.JsonFormat = JsonFileFormat.NewlineDelimited));
     }
@@ -51,16 +51,16 @@ public class FlatFilesBenchmarks
 
     [Benchmark]
     [BenchmarkCategory("FileOpen")]
-    public IFlatFileDatabase Open_SingleCsv()
+    public IFlatFile Open_SingleCsv()
     {
-        return FlatFileDatabase.Open(SmallCsvPath);
+        return FlatFile.Open(SmallCsvPath);
     }
 
     [Benchmark]
     [BenchmarkCategory("FileOpen")]
-    public IFlatFileDatabase Open_MultiSource()
+    public IFlatFile Open_MultiSource()
     {
-        return FlatFileDatabase.Open(opts =>
+        return FlatFile.Open(opts =>
         {
             opts.AddCsv<SalesRecord>(SmallCsvPath, csv => csv.HasHeader = true);
             opts.AddParquet<InventoryItem>(ParquetPath);
@@ -77,7 +77,7 @@ public class FlatFilesBenchmarks
     [BenchmarkCategory("CRUD")]
     public async Task<int> Crud_Insert_Single()
     {
-        var db = FlatFileDatabase.Open(opts =>
+        var db = FlatFile.Open(opts =>
             opts.AddCsv<SalesRecord>(SmallCsvPath, csv => csv.HasHeader = true));
 
         try
@@ -102,7 +102,7 @@ public class FlatFilesBenchmarks
     [BenchmarkCategory("CRUD")]
     public async Task<int> Crud_Insert_Batch()
     {
-        var db = FlatFileDatabase.Open(opts =>
+        var db = FlatFile.Open(opts =>
             opts.AddCsv<SalesRecord>(SmallCsvPath, csv => csv.HasHeader = true));
 
         try
@@ -132,7 +132,7 @@ public class FlatFilesBenchmarks
     [BenchmarkCategory("CRUD")]
     public async Task<int> Crud_Update()
     {
-        var db = FlatFileDatabase.Open(opts =>
+        var db = FlatFile.Open(opts =>
             opts.AddCsv<SalesRecord>(SmallCsvPath, csv => csv.HasHeader = true));
 
         try
@@ -152,7 +152,7 @@ public class FlatFilesBenchmarks
     [BenchmarkCategory("CRUD")]
     public async Task<int> Crud_Delete()
     {
-        var db = FlatFileDatabase.Open(opts =>
+        var db = FlatFile.Open(opts =>
             opts.AddCsv<SalesRecord>(SmallCsvPath, csv => csv.HasHeader = true));
 
         try
@@ -173,7 +173,7 @@ public class FlatFilesBenchmarks
     [BenchmarkCategory("WriteBack")]
     public async Task WriteBack_Export_Csv()
     {
-        var db = FlatFileDatabase.Open(opts =>
+        var db = FlatFile.Open(opts =>
             opts.AddCsv<SalesRecord>(SmallCsvPath, csv => csv.HasHeader = true));
 
         try
@@ -192,7 +192,7 @@ public class FlatFilesBenchmarks
     [BenchmarkCategory("WriteBack")]
     public async Task WriteBack_Export_Parquet()
     {
-        var db = FlatFileDatabase.Open(opts =>
+        var db = FlatFile.Open(opts =>
             opts.AddCsv<SalesRecord>(SmallCsvPath, csv => csv.HasHeader = true));
 
         try
@@ -215,7 +215,7 @@ public class FlatFilesBenchmarks
     [BenchmarkCategory("Import")]
     public async Task<long> Import_ToSqlite()
     {
-        using var db = FlatFileDatabase.Open(opts =>
+        using var db = FlatFile.Open(opts =>
             opts.AddCsv<SalesRecord>(SmallCsvPath, csv => csv.HasHeader = true));
 
         using var target = new SqliteConnection("Data Source=:memory:");

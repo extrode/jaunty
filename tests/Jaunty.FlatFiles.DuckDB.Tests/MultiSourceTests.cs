@@ -15,7 +15,7 @@ public class MultiSourceTests : IDisposable
     private static readonly string DataDir = Path.Combine(AppContext.BaseDirectory, "data");
     private readonly string _tempDir;
     private readonly string _parquetPath;
-    private readonly DuckDbFlatFileDatabase _db;
+    private readonly DuckDb _db;
 
     public MultiSourceTests()
     {
@@ -46,7 +46,7 @@ public class MultiSourceTests : IDisposable
         options.AddParquet<InventoryItem>(_parquetPath);
         options.AddJson<CustomerProfile>(jsonPath);
 
-        _db = new DuckDbFlatFileDatabase(options);
+        _db = new DuckDb(options);
     }
 
     public void Dispose()
@@ -185,7 +185,7 @@ public class MultiSourceTests : IDisposable
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
         var jsonPath = Path.Combine(DataDir, "json", "customers.json");
 
-        using var db = FlatFileDatabase.Open(options =>
+        using var db = FlatFile.Open(options =>
         {
             options.AddCsv<SalesRecord>(csvPath);
             options.AddParquet<InventoryItem>(_parquetPath);
