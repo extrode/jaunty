@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Reflection;
+using System.Text;
 
 namespace Jaunty.FlatFiles.DuckDB.ImportPipeline;
 
@@ -93,10 +94,17 @@ internal static class ImportExecutor
             }
             catch (IndexOutOfRangeException)
             {
+                // Build available columns list without LINQ allocation
+                var availableColumns = new StringBuilder();
+                for (int j = 0; j < reader.FieldCount; j++)
+                {
+                    if (j > 0) availableColumns.Append(", ");
+                    availableColumns.Append(reader.GetName(j));
+                }
+                
                 throw new InvalidOperationException(
                     $"Schema alignment failed: Source does not contain column '{mappings[i].ColumnName}' " +
-                    $"required by entity mapping. Available columns: " +
-                    string.Join(", ", Enumerable.Range(0, reader.FieldCount).Select(reader.GetName)));
+                    $"required by entity mapping. Available columns: {availableColumns}");
             }
         }
 
