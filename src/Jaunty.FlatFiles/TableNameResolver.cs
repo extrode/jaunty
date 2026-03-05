@@ -24,13 +24,17 @@ internal static class TableNameResolver
             return jauntyAttr.Name;
 
         // Also check System.ComponentModel.DataAnnotations.Schema.TableAttribute for compatibility
-        var dataAnnotationsAttr = entityType.GetCustomAttributes(inherit: false)
-            .FirstOrDefault(a => a.GetType().FullName == "System.ComponentModel.DataAnnotations.Schema.TableAttribute");
-        if (dataAnnotationsAttr is not null)
+        // Avoid LINQ allocation by using for loop instead of FirstOrDefault
+        var attrs = entityType.GetCustomAttributes(inherit: false);
+        foreach (var attr in attrs)
         {
-            var nameProp = dataAnnotationsAttr.GetType().GetProperty("Name");
-            if (nameProp?.GetValue(dataAnnotationsAttr) is string name)
-                return name;
+            var attrType = attr.GetType();
+            if (attrType.FullName == "System.ComponentModel.DataAnnotations.Schema.TableAttribute")
+            {
+                var nameProp = attrType.GetProperty("Name");
+                if (nameProp?.GetValue(attr) is string name)
+                    return name;
+            }
         }
 
         return entityType.Name.ToLowerInvariant();
