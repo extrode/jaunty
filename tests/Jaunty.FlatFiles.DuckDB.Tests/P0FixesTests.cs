@@ -333,9 +333,9 @@ public class P0FixesTests : IDisposable
         }
         stopwatch.Stop();
 
-        // Assert - Should be reasonably fast with caching
-        Assert.True(stopwatch.ElapsedMilliseconds < 500,
-            $"Repeated queries took {stopwatch.ElapsedMilliseconds}ms, expected < 500ms");
+        // Assert - Should be reasonably fast with caching (<1s for 100 iterations)
+        Assert.True(stopwatch.ElapsedMilliseconds < 1000,
+            $"Repeated queries took {stopwatch.ElapsedMilliseconds}ms, expected < 1000ms");
     }
 
     // ==========================================

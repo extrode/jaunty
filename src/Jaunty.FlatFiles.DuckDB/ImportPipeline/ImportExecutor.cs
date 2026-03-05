@@ -41,7 +41,7 @@ internal static class ImportExecutor
         }
 
         // Validate schema alignment — check that the target table exists and has compatible columns
-        ValidateTargetSchema(targetConnection, tableName, mappings);
+        ValidateTargetSchema(targetConnection, tableName, mappings, options.CreateTableIfMissing);
 
         // Read all rows from DuckDB source
         var sourceCmd = (sourceConnection as DbConnection)!.CreateCommand();
@@ -211,7 +211,8 @@ internal static class ImportExecutor
     private static void ValidateTargetSchema(
         DbConnection targetConnection,
         string tableName,
-        List<(string ColumnName, PropertyInfo Property)> mappings)
+        List<(string ColumnName, PropertyInfo Property)> mappings,
+        bool createTableIfMissing)
     {
         // Check if the table exists in the target
         try
@@ -239,8 +240,16 @@ internal static class ImportExecutor
         }
         catch (Exception ex) when (ex is not InvalidOperationException)
         {
-            // Table doesn't exist — if CreateTableIfMissing was true, it should have been created already.
-            // If not, the INSERT will fail with a clear error anyway.
+            // Table doesn't exist
+            if (!createTableIfMissing)
+            {
+                // If we didn't create the table, this is a real error
+                throw new InvalidOperationException(
+                    $"Target table '{tableName}' does not exist and CreateTableIfMissing is false. " +
+                    $"Set CreateTableIfMissing = true to auto-create the table, or create it manually before importing.", ex);
+            }
+            // If createTableIfMissing is true, the table should have been created already.
+            // If it still doesn't exist, there was likely a DDL error that will surface on INSERT.
         }
     }
 }
