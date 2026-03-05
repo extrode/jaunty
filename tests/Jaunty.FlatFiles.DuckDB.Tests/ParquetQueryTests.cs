@@ -13,7 +13,7 @@ public class ParquetQueryTests : IDisposable
 {
     private static readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_parquet_tests_{Guid.NewGuid():N}");
     private readonly string _parquetPath;
-    private readonly DuckDbFlatFileDatabase _db;
+    private readonly DuckDb _db;
 
     public ParquetQueryTests()
     {
@@ -43,7 +43,7 @@ public class ParquetQueryTests : IDisposable
 
         var options = new FlatFileDatabaseOptions();
         options.AddParquet<InventoryItem>(_parquetPath);
-        _db = new DuckDbFlatFileDatabase(options);
+        _db = new DuckDb(options);
     }
 
     public void Dispose()
@@ -186,7 +186,7 @@ public class ParquetQueryTests : IDisposable
         options.Sources.Add(source);
 
         // Verify it doesn't throw — the parquet file isn't hive-partitioned but DuckDB should handle it
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
         Assert.NotNull(db);
     }
 }

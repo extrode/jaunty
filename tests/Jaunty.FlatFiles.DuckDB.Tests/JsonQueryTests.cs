@@ -10,14 +10,14 @@ namespace Jaunty.FlatFiles.DuckDB.Tests;
 public class JsonQueryTests : IDisposable
 {
     private static readonly string DataDir = Path.Combine(AppContext.BaseDirectory, "data");
-    private readonly DuckDbFlatFileDatabase _db;
+    private readonly DuckDb _db;
 
     public JsonQueryTests()
     {
         var jsonPath = Path.Combine(DataDir, "json", "customers.json");
         var options = new FlatFileDatabaseOptions();
         options.AddJson<CustomerProfile>(jsonPath);
-        _db = new DuckDbFlatFileDatabase(options);
+        _db = new DuckDb(options);
     }
 
     public void Dispose()
@@ -141,7 +141,7 @@ public class JsonQueryTests : IDisposable
             json.JsonFormat = JsonFileFormat.Array;
         });
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
         var count = db.Connection.From<CustomerProfile>().Count();
         Assert.Equal(3, count);
     }
@@ -156,7 +156,7 @@ public class JsonQueryTests : IDisposable
             json.MaxDepth = 5;
         });
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
         var count = db.Connection.From<CustomerProfile>().Count();
         Assert.Equal(3, count);
     }

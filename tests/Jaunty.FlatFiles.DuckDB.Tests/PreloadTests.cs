@@ -54,7 +54,7 @@ public class PreloadTests : IDisposable
             parquet.IsPreloaded = true;
         });
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
 
         // Verify it was created as a TABLE (not VIEW)
         using var cmd = db.Connection.CreateCommand();
@@ -72,7 +72,7 @@ public class PreloadTests : IDisposable
             parquet.IsPreloaded = true;
         });
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
         var results = db.Connection.From<InventoryItem>().Select();
         Assert.Equal(3, results.Count);
     }
@@ -83,7 +83,7 @@ public class PreloadTests : IDisposable
         var options = new FlatFileDatabaseOptions();
         options.AddParquet<InventoryItem>(_parquetPath);
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
 
         // Verify it was created as a VIEW
         using var cmd = db.Connection.CreateCommand();
@@ -110,7 +110,7 @@ public class PreloadTests : IDisposable
         options.AddParquet<InventoryItem>(_parquetPath);
         options.AddJson<CustomerProfile>(jsonPath);
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
 
         // All should be tables, not views
         using var cmd = db.Connection.CreateCommand();
@@ -139,7 +139,7 @@ public class PreloadTests : IDisposable
         options.AddParquet<InventoryItem>(_parquetPath);
         options.AddJson<CustomerProfile>(jsonPath);
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
 
         var salesCount = db.Connection.From<SalesRecord>().Count();
         var itemCount = db.Connection.From<InventoryItem>().Count();
@@ -164,7 +164,7 @@ public class PreloadTests : IDisposable
             csv.IsPreloaded = true;
         });
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
 
         using var cmd = db.Connection.CreateCommand();
         cmd.CommandText = "SELECT table_type FROM information_schema.tables WHERE table_name = 'sales'";
@@ -188,7 +188,7 @@ public class PreloadTests : IDisposable
             json.IsPreloaded = true;
         });
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
 
         using var cmd = db.Connection.CreateCommand();
         cmd.CommandText = "SELECT table_type FROM information_schema.tables WHERE table_name = 'customers'";
@@ -208,7 +208,7 @@ public class PreloadTests : IDisposable
         // Create VIEW-based db
         var viewOptions = new FlatFileDatabaseOptions();
         viewOptions.AddParquet<InventoryItem>(_parquetPath);
-        using var viewDb = new DuckDbFlatFileDatabase(viewOptions);
+        using var viewDb = new DuckDb(viewOptions);
         var viewResults = viewDb.Connection.From<InventoryItem>()
             .OrderBy(i => i.ItemId)
             .Select();
@@ -216,7 +216,7 @@ public class PreloadTests : IDisposable
         // Create TABLE-based db
         var tableOptions = new FlatFileDatabaseOptions();
         tableOptions.AddParquet<InventoryItem>(_parquetPath, p => p.IsPreloaded = true);
-        using var tableDb = new DuckDbFlatFileDatabase(tableOptions);
+        using var tableDb = new DuckDb(tableOptions);
         var tableResults = tableDb.Connection.From<InventoryItem>()
             .OrderBy(i => i.ItemId)
             .Select();

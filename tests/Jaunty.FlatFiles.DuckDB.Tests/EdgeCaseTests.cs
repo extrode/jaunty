@@ -22,7 +22,7 @@ public class EdgeCaseTests
         var options = new FlatFileDatabaseOptions();
         options.AddCsv<SalesRecord>(emptyPath);
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
         var results = db.Connection.From<SalesRecord>().Select();
 
         Assert.Empty(results);
@@ -38,7 +38,7 @@ public class EdgeCaseTests
         var source = new CsvFileSource("empty_sales", emptyPath, typeof(SalesRecord));
         options.Sources.Add(source);
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
 
         // Query via raw SQL since entity table name "sales" != view name "empty_sales"
         using var cmd = db.Connection.CreateCommand();
@@ -63,7 +63,7 @@ public class EdgeCaseTests
         var options = new FlatFileDatabaseOptions();
         options.Sources.Add(source);
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
 
         // With HasHeader=false, DuckDB names columns "column0", "column1", etc.
         using var cmd = db.Connection.CreateCommand();
@@ -88,7 +88,7 @@ public class EdgeCaseTests
         var options = new FlatFileDatabaseOptions();
         options.AddCsv<SalesRecord>(csvPath);
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
         var results = db.Connection.From<SalesRecord>()
             .Where(s => s.ProductName == "Gadget X")
             .Select();
@@ -124,7 +124,7 @@ public class EdgeCaseTests
         options.Sources.Add(source);
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            new DuckDbFlatFileDatabase(options));
+            new DuckDb(options));
 
         Assert.Contains("NonExistentColumn", ex.Message);
         Assert.Contains("does not exist", ex.Message);
@@ -143,7 +143,7 @@ public class EdgeCaseTests
         options.Sources.Add(source);
 
         // Should not throw even with mismatched schema
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
         Assert.NotNull(db);
     }
 
@@ -168,7 +168,7 @@ public class EdgeCaseTests
         var options = new FlatFileDatabaseOptions();
         options.Sources.Add(source);
 
-        using var db = new DuckDbFlatFileDatabase(options);
+        using var db = new DuckDb(options);
 
         using var cmd = db.Connection.CreateCommand();
         cmd.CommandText = "SELECT * FROM \"special\" ORDER BY \"Id\"";

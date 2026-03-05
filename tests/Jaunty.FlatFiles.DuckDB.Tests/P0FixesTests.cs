@@ -11,7 +11,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests;
 /// </summary>
 public class P0FixesTests : IDisposable
 {
-    private readonly DuckDbFlatFileDatabase _db;
+    private readonly DuckDb _db;
     private readonly string _testCsvPath;
 
     public P0FixesTests()
@@ -27,7 +27,7 @@ public class P0FixesTests : IDisposable
         // Create database
         var options = new FlatFileDatabaseOptions();
         options.AddCsv<SalesRecord>(_testCsvPath);
-        _db = new DuckDbFlatFileDatabase(options);
+        _db = new DuckDb(options);
     }
 
     private void CreateTestCsv()
@@ -333,9 +333,9 @@ public class P0FixesTests : IDisposable
         }
         stopwatch.Stop();
 
-        // Assert - Should be reasonably fast with caching (<1s for 100 iterations)
-        Assert.True(stopwatch.ElapsedMilliseconds < 1000,
-            $"Repeated queries took {stopwatch.ElapsedMilliseconds}ms, expected < 1000ms");
+        // Assert - Should be reasonably fast with caching
+        Assert.True(stopwatch.ElapsedMilliseconds < 500,
+            $"Repeated queries took {stopwatch.ElapsedMilliseconds}ms, expected < 500ms");
     }
 
     // ==========================================

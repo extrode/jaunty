@@ -11,7 +11,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests;
 public class PerformanceTests : IDisposable
 {
     private readonly string _largeCsvPath;
-    private readonly DuckDbFlatFileDatabase _db;
+    private readonly DuckDb _db;
 
     public PerformanceTests()
     {
@@ -41,7 +41,7 @@ public class PerformanceTests : IDisposable
 
         var options = new FlatFileDatabaseOptions();
         options.AddCsv<SalesRecord>(_largeCsvPath);
-        _db = new DuckDbFlatFileDatabase(options);
+        _db = new DuckDb(options);
     }
 
     public void Dispose()

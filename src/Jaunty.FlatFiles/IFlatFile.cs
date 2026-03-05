@@ -8,7 +8,7 @@ namespace Jaunty.FlatFiles;
 /// <summary>
 /// Represents an embedded database engine that can query flat files.
 /// </summary>
-public interface IFlatFileDatabase : IDisposable, IAsyncDisposable
+public interface IFlatFile : IDisposable, IAsyncDisposable
 {
     /// <summary>
     /// Gets the underlying ADO.NET connection to the embedded database.
