@@ -10,7 +10,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests;
 public class NdjsonQueryTests : IDisposable
 {
     private static readonly string DataDir = Path.Combine(AppContext.BaseDirectory, "data");
-    private readonly DuckDbFlatFileDatabase _db;
+    private readonly DuckDb _db;
 
     public NdjsonQueryTests()
     {
@@ -20,7 +20,7 @@ public class NdjsonQueryTests : IDisposable
         {
             json.JsonFormat = JsonFileFormat.NewlineDelimited;
         });
-        _db = new DuckDbFlatFileDatabase(options);
+        _db = new DuckDb(options);
     }
 
     public void Dispose()

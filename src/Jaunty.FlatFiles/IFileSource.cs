@@ -1,7 +1,7 @@
 namespace Jaunty.FlatFiles;
 
 /// <summary>
-/// Represents a flat file data source that can be registered with an <see cref="IFlatFileDatabase"/>.
+/// Represents a flat file data source that can be registered with an <see cref="IFlatFile"/>.
 /// </summary>
 public interface IFileSource
 {

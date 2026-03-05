@@ -14,7 +14,7 @@ public class WriteBackTests : IDisposable
 {
     private static readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_writeback_tests_{Guid.NewGuid():N}");
     private readonly string _csvPath;
-    private readonly DuckDbFlatFileDatabase _db;
+    private readonly DuckDb _db;
 
     public WriteBackTests()
     {
@@ -39,7 +39,7 @@ public class WriteBackTests : IDisposable
 
         var options = new FlatFileDatabaseOptions();
         options.AddCsv<InventoryItem>(_csvPath);
-        _db = new DuckDbFlatFileDatabase(options);
+        _db = new DuckDb(options);
     }
 
     public void Dispose()

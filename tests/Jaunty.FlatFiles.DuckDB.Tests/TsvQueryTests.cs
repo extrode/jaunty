@@ -8,7 +8,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests;
 /// </summary>
 public class TsvQueryTests : IDisposable
 {
-    private readonly DuckDbFlatFileDatabase _db;
+    private readonly DuckDb _db;
     private static readonly string DataDir = Path.Combine(AppContext.BaseDirectory, "data");
 
     public TsvQueryTests()
@@ -16,7 +16,7 @@ public class TsvQueryTests : IDisposable
         var tsvPath = Path.Combine(DataDir, "tsv", "sales.tsv");
         var options = new FlatFileDatabaseOptions();
         options.AddTsv<SalesRecord>(tsvPath);
-        _db = new DuckDbFlatFileDatabase(options);
+        _db = new DuckDb(options);
     }
 
     public void Dispose() => _db.Dispose();

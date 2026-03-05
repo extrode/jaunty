@@ -16,7 +16,7 @@ public class ImportPipelineTests : IDisposable
     private static readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_import_tests_{Guid.NewGuid():N}");
     private readonly string _csvPath;
     private readonly string _parquetPath;
-    private readonly DuckDbFlatFileDatabase _db;
+    private readonly DuckDb _db;
 
     public ImportPipelineTests()
     {
@@ -57,7 +57,7 @@ public class ImportPipelineTests : IDisposable
 
         var options = new FlatFileDatabaseOptions();
         options.AddCsv<InventoryItem>(_csvPath);
-        _db = new DuckDbFlatFileDatabase(options);
+        _db = new DuckDb(options);
     }
 
     public void Dispose()
@@ -155,7 +155,7 @@ public class ImportPipelineTests : IDisposable
         // Create a separate FlatFileDatabase with Parquet source
         var parquetOpts = new FlatFileDatabaseOptions();
         parquetOpts.AddParquet<InventoryItem>(_parquetPath);
-        using var parquetDb = new DuckDbFlatFileDatabase(parquetOpts);
+        using var parquetDb = new DuckDb(parquetOpts);
 
         using var sqlite = CreateSqliteConnection();
         CreateInventoryTable(sqlite);

@@ -18,7 +18,7 @@ namespace Jaunty.FlatFiles.DuckDB;
 /// A flat file database backed by DuckDB. Creates an in-memory (or file-backed) DuckDB instance
 /// and registers flat file sources as queryable views.
 /// </summary>
-public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
+public sealed class DuckDb : IFlatFile
 {
     private readonly DuckDBConnection _connection;
     private readonly DuckDbDialect _dialect;
@@ -33,7 +33,7 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     /// <summary>
     /// Creates a new DuckDB flat file database with default options (in-memory).
     /// </summary>
-    public DuckDbFlatFileDatabase()
+    public DuckDb()
         : this(new FlatFileDatabaseOptions())
     {
     }
@@ -42,7 +42,7 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     /// Creates a new DuckDB flat file database with the specified options.
     /// </summary>
     /// <param name="options">Configuration options for the database.</param>
-    public DuckDbFlatFileDatabase(FlatFileDatabaseOptions options)
+    public DuckDb(FlatFileDatabaseOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -431,13 +431,7 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         DbConnection targetConnection,
         CancellationToken cancellationToken = default) where T : class, new()
     {
-        ArgumentNullException.ThrowIfNull(targetConnection);
-
-        var source = GetSourceOrThrow<T>();
-        var options = new ImportOptions();
-
-        return await ImportExecutor.ExecuteAsync<T>(
-            _connection, source, targetConnection, options, cancellationToken).ConfigureAwait(false);
+        return await ImportIntoAsync<T>(targetConnection, null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -447,11 +441,10 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(targetConnection);
-        ArgumentNullException.ThrowIfNull(configure);
 
         var source = GetSourceOrThrow<T>();
         var options = new ImportOptions();
-        configure(options);
+        configure?.Invoke(options);
 
         return await ImportExecutor.ExecuteAsync<T>(
             _connection, source, targetConnection, options, cancellationToken).ConfigureAwait(false);
@@ -461,12 +454,6 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     // Private Helpers
     // ==========================================
 
-    /// <summary>
-    /// Gets the registered file source for the specified entity type, or throws if not found.
-    /// </summary>
-    /// <typeparam name="T">The entity type.</typeparam>
-    /// <returns>The registered file source.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when no source is registered for the entity type.</exception>
     private IFileSource GetSourceOrThrow<T>() where T : class, new()
     {
         if (!_sources.TryGetValue(typeof(T), out var source))
@@ -496,13 +483,6 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         source.IsPromotedToTable = true;
     }
 
-    /// <summary>
-    /// Executes a SQL command with the specified parameters.
-    /// </summary>
-    /// <param name="sql">The SQL command text.</param>
-    /// <param name="parameters">The command parameters.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
-    /// <returns>The number of rows affected.</returns>
     private async ValueTask<int> ExecuteNonQueryAsync(string sql, List<DuckDBParameter> parameters, CancellationToken cancellationToken)
     {
         await using var cmd = _connection.CreateCommand();
@@ -512,12 +492,6 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Infers the file format from the file extension.
-    /// </summary>
-    /// <param name="path">The file path.</param>
-    /// <returns>The inferred file format.</returns>
-    /// <exception cref="ArgumentException">Thrown when the extension is not supported.</exception>
     private static FileFormat InferFormatFromExtension(string path)
     {
         var ext = Path.GetExtension(path).ToLowerInvariant();
@@ -536,7 +510,6 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     /// <summary>
     /// Sets IsPreloaded on a source via the IFileSource interface setter.
     /// </summary>
-    /// <param name="source">The file source to mark as preloaded.</param>
     private static void ApplyPreload(IFileSource source)
     {
         source.IsPreloaded = true;
@@ -560,8 +533,6 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     /// Generates the SQL to register a file source, handling DATE→TIMESTAMP casting
     /// for entity properties of type DateTime.
     /// </summary>
-    /// <param name="source">The file source to register.</param>
-    /// <returns>The CREATE VIEW or CREATE TABLE AS SQL statement.</returns>
     private string GenerateRegistrationSql(IFileSource source)
     {
         // If we have entity metadata, check for DateTime properties that need DATE→TIMESTAMP casting.
@@ -583,8 +554,6 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     /// Uses a two-step approach: first queries column names from the read function,
     /// then generates a SELECT with explicit CAST for date columns.
     /// </summary>
-    /// <param name="source">The file source to register.</param>
-    /// <returns>The CREATE VIEW SQL with CAST expressions for DateTime columns.</returns>
     private string GenerateViewSqlWithDateTimeCasts(IFileSource source)
     {
         var readFunction = DuckDbDialect.GenerateReadFunction(source);
@@ -627,8 +596,6 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     /// <summary>
     /// Gets the set of column names (from the file, not C# property names) that map to DateTime properties.
     /// </summary>
-    /// <param name="entityType">The entity type to inspect.</param>
-    /// <returns>A hash set of column names that require DATE→TIMESTAMP casting.</returns>
     private static HashSet<string> GetDateTimeColumnNames(Type entityType)
     {
         var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -645,11 +612,6 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         return result;
     }
 
-    /// <summary>
-    /// Checks whether the entity type has any DateTime properties that require DATE→TIMESTAMP casting.
-    /// </summary>
-    /// <param name="entityType">The entity type to inspect.</param>
-    /// <returns>True if the entity has DateTime properties; otherwise, false.</returns>
     private static bool HasDateTimeProperties(Type entityType)
     {
         foreach (var prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
@@ -663,8 +625,6 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     /// <summary>
     /// Validates that the file's inferred schema is compatible with the entity type.
     /// </summary>
-    /// <param name="source">The file source to validate.</param>
-    /// <exception cref="InvalidOperationException">Thrown when schema validation fails.</exception>
     private void ValidateSchema(IFileSource source)
     {
         // Get columns from the view
