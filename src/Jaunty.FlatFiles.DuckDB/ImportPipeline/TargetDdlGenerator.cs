@@ -1,6 +1,6 @@
 using System.Reflection;
+
 using Jaunty.Attributes;
-using Jaunty.FlatFiles;
 
 namespace Jaunty.FlatFiles.DuckDB.ImportPipeline;
 

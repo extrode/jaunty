@@ -1,5 +1,4 @@
 using System.Data.Common;
-using Jaunty.FlatFiles;
 
 namespace Jaunty.FlatFiles.DuckDB;
 

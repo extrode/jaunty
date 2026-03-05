@@ -2,7 +2,9 @@ using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+
 using DuckDB.NET.Data;
+
 using Jaunty.Attributes;
 
 namespace Jaunty.FlatFiles.DuckDB;
