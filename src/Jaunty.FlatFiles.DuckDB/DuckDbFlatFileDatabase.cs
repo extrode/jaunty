@@ -230,9 +230,10 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         await EnsurePromotedToTableAsync(source, cancellationToken).ConfigureAwait(false);
 
         var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
-        var columns = new StringBuilder();
-        var values = new StringBuilder();
-        var parameters = new List<DuckDBParameter>();
+        // Pre-size StringBuilders to avoid reallocations (~20 chars per column name, ~10 chars per parameter)
+        var columns = new StringBuilder(mappings.Count * 20);
+        var values = new StringBuilder(mappings.Count * 10);
+        var parameters = new List<DuckDBParameter>(mappings.Count);
 
         for (int i = 0; i < mappings.Count; i++)
         {
@@ -245,7 +246,7 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
 
         var sql = $"INSERT INTO \"{source.TableName}\" ({columns}) VALUES ({values})";
         var result = await ExecuteNonQueryAsync(sql, parameters, cancellationToken).ConfigureAwait(false);
-        _modified[typeof(T)] = true;
+        _modified.TryAdd(typeof(T), true);
         return result;
     }
 
@@ -254,14 +255,23 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        var entityList = entities as IList<T> ?? entities.ToList();
+        // Avoid unnecessary ToList() if already a list
+        // Check common collection types first to avoid allocation
+        var entityList = entities switch
+        {
+            IList<T> list => list,
+            ICollection<T> collection => collection.ToList(), // At least we know the count
+            _ => entities.ToList()
+        };
+        
         if (entityList.Count == 0) return 0;
 
         var source = GetSourceOrThrow<T>();
         await EnsurePromotedToTableAsync(source, cancellationToken).ConfigureAwait(false);
 
         var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
-        var columns = new StringBuilder();
+        // Pre-size StringBuilder (~20 chars per column name)
+        var columns = new StringBuilder(mappings.Count * 20);
         for (int i = 0; i < mappings.Count; i++)
         {
             if (i > 0) columns.Append(", ");
@@ -271,8 +281,9 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         var totalInserted = 0;
 
         // Batch insert using multi-row VALUES with positional parameters ($1, $2, ...)
-        var sb = new StringBuilder();
-        var parameters = new List<DuckDBParameter>();
+        // Pre-size StringBuilder: ~10 chars per value * mappings.Count * entityList.Count
+        var sb = new StringBuilder(entityList.Count * mappings.Count * 10);
+        var parameters = new List<DuckDBParameter>(entityList.Count * mappings.Count);
         var paramCounter = 0;
 
         for (int row = 0; row < entityList.Count; row++)
@@ -296,7 +307,7 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         var sql = $"INSERT INTO \"{source.TableName}\" ({columns}) VALUES {sb}";
         totalInserted = await ExecuteNonQueryAsync(sql, parameters, cancellationToken).ConfigureAwait(false);
 
-        if (totalInserted > 0) _modified[typeof(T)] = true;
+        if (totalInserted > 0) _modified.TryAdd(typeof(T), true);
         return totalInserted;
     }
 
@@ -326,7 +337,7 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         var sql = $"UPDATE \"{source.TableName}\" SET \"{columnName}\" = $1 WHERE {whereSql}";
         var result = await ExecuteNonQueryAsync(sql, allParams, cancellationToken).ConfigureAwait(false);
 
-        if (result > 0) _modified[typeof(T)] = true;
+        if (result > 0) _modified.TryAdd(typeof(T), true);
         return result;
     }
 
@@ -345,7 +356,7 @@ public sealed class DuckDbFlatFileDatabase : IFlatFileDatabase
         var sql = $"DELETE FROM \"{source.TableName}\" WHERE {whereSql}";
         var result = await ExecuteNonQueryAsync(sql, whereParams, cancellationToken).ConfigureAwait(false);
 
-        if (result > 0) _modified[typeof(T)] = true;
+        if (result > 0) _modified.TryAdd(typeof(T), true);
         return result;
     }
 
