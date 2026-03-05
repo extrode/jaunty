@@ -313,11 +313,7 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
-    public async ValueTask<int> UpdateAsync<T>(
-        Expression<Func<T, bool>> predicate,
-        Expression<Func<T, object>> column,
-        object value,
-        CancellationToken cancellationToken = default) where T : class, new()
+    public async ValueTask<int> UpdateAsync<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column,         object value, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(predicate);
         ArgumentNullException.ThrowIfNull(column);
@@ -343,9 +339,7 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
-    public async ValueTask<int> DeleteAsync<T>(
-        Expression<Func<T, bool>> predicate,
-        CancellationToken cancellationToken = default) where T : class, new()
+    public async ValueTask<int> DeleteAsync<T>(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(predicate);
 
@@ -427,18 +421,13 @@ public sealed class DuckDb : IFlatFile
     // ==========================================
 
     /// <inheritdoc />
-    public async ValueTask<long> ImportIntoAsync<T>(
-        DbConnection targetConnection,
-        CancellationToken cancellationToken = default) where T : class, new()
+    public async ValueTask<long> ImportIntoAsync<T>(DbConnection targetConnection, CancellationToken cancellationToken = default) where T : class, new()
     {
         return await ImportIntoAsync<T>(targetConnection, null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public async ValueTask<long> ImportIntoAsync<T>(
-        DbConnection targetConnection,
-        Action<ImportOptions> configure,
-        CancellationToken cancellationToken = default) where T : class, new()
+    public async ValueTask<long> ImportIntoAsync<T>(DbConnection targetConnection, Action<ImportOptions> configure,         CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(targetConnection);
 
