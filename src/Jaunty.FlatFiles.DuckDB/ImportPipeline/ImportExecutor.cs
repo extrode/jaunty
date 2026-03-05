@@ -53,8 +53,15 @@ internal static class ImportExecutor
             await using (reader.ConfigureAwait(false))
             {
                 // Build the insert SQL template using the dialect
-                var columnNames = mappings.Select(m => m.ColumnName).ToList();
-                var parameterNames = Enumerable.Range(0, mappings.Count).Select(i => $"@p{i}").ToList();
+                // Avoid LINQ allocations by using pre-sized lists
+                var columnNames = new List<string>(mappings.Count);
+                foreach (var mapping in mappings)
+                    columnNames.Add(mapping.ColumnName);
+                
+                var parameterNames = new List<string>(mappings.Count);
+                for (int i = 0; i < mappings.Count; i++)
+                    parameterNames.Add($"@p{i}");
+                
                 var keyColumnName = TargetDdlGenerator.GetKeyColumnName(entityType);
                 var insertSql = dialect.GenerateInsertSql(tableName, columnNames, parameterNames, options.OnConflict, keyColumnName);
 
