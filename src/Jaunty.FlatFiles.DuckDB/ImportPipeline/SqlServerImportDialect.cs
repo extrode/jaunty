@@ -1,5 +1,4 @@
 using System.Text;
-using Jaunty.FlatFiles;
 
 namespace Jaunty.FlatFiles.DuckDB.ImportPipeline;
 

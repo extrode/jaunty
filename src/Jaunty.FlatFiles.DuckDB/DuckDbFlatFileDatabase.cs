@@ -4,10 +4,11 @@ using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+
 using DuckDB.NET.Data;
+
 using Jaunty.Attributes;
 using Jaunty.Dialects;
-using Jaunty.FlatFiles;
 using Jaunty.FlatFiles.DuckDB.ImportPipeline;
 using Jaunty.Fluent;
 

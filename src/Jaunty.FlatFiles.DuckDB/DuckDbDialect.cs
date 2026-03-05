@@ -1,6 +1,6 @@
 using System.Text;
+
 using Jaunty.Dialects;
-using Jaunty.FlatFiles;
 using Jaunty.Internals.BulkCopy;
 
 namespace Jaunty.FlatFiles.DuckDB;
