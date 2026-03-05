@@ -159,8 +159,18 @@ public interface IFlatFileDatabase : IDisposable, IAsyncDisposable
     /// </summary>
     /// <typeparam name="T">The entity type.</typeparam>
     /// <param name="targetConnection">The target ADO.NET connection to import into.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    /// <returns>The total number of rows imported.</returns>
+    ValueTask<long> ImportIntoAsync<T>(DbConnection targetConnection, CancellationToken cancellationToken = default) where T : class, new();
+
+    /// <summary>
+    /// Imports data for the specified entity type into a target database connection with custom import options.
+    /// Reads from the flat file source (via DuckDB) and writes to the target using batched INSERTs.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="targetConnection">The target ADO.NET connection to import into.</param>
     /// <param name="configure">An action to configure import options (batch size, conflict strategy, etc.).</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The total number of rows imported.</returns>
-    ValueTask<long> ImportIntoAsync<T>(DbConnection targetConnection, Action<ImportOptions>? configure = null, CancellationToken cancellationToken = default) where T : class, new();
+    ValueTask<long> ImportIntoAsync<T>(DbConnection targetConnection, Action<ImportOptions> configure, CancellationToken cancellationToken = default) where T : class, new();
 }
