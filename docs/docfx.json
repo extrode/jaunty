@@ -1,0 +1,47 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": [
+            "src/Jaunty/Jaunty.csproj",
+            "src/Jaunty.Fluent/Jaunty.Fluent.csproj",
+            "src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj",
+            "src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj"
+          ],
+          "src": ".."
+        }
+      ],
+      "dest": "api",
+      "properties": {
+        "TargetFramework": "net8.0"
+      }
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": ["api/**.yml", "api/index.md"]
+      },
+      {
+        "files": ["*.md", "toc.yml"],
+        "src": "."
+      }
+    ],
+    "resource": [
+      {
+        "files": ["screenshots/**"]
+      }
+    ],
+    "dest": "_site",
+    "globalMetadataFiles": [],
+    "fileMetadataFiles": [],
+    "template": ["default", "modern"],
+    "globalMetadata": {
+      "_appTitle": "Jaunty API Documentation",
+      "_appFooter": "Jaunty — A high-performance .NET micro-ORM",
+      "_enableSearch": true
+    },
+    "postProcessors": ["ExtractSearchIndex"]
+  }
+}

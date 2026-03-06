@@ -1,0 +1,6 @@
+Id,Name,Value
+1,Good,100
+2,Missing
+3,Extra,200,bonus_col
+4,"Unclosed quote,400
+5,Ok,500

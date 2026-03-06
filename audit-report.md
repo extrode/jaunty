@@ -118,17 +118,22 @@ Both are now `readonly struct` types -- **consistent**. Both use:
 
 ### P3 -- Nice-to-have
 
-8. **Test coverage gaps:**
-   - No Unicode/non-ASCII character tests
-   - No corrupted/malformed file tests
-   - No concurrent access tests
-   - No nested JSON structure tests with actual data
-   - Performance only tested at 100K rows
+8. ~~**Test coverage gaps** -- added `P3EdgeCaseTests.cs` (13 tests) covering:~~
+   - ~~Unicode/non-ASCII (German, Japanese, Cyrillic, Portuguese, Chinese) + WHERE filtering~~
+   - ~~Malformed CSV, nonexistent file, empty JSON array~~
+   - ~~Concurrent reads (10 parallel, mixed query types)~~
+   - ~~Nested JSON (struct field access, array length, WHERE on nested field)~~
+   - ~~250K row CSV (count, aggregation, filtered query) + 200K streaming early-exit~~
+   DONE
 
-9. **16 query methods (~6%) still need example sections** in XML docs (mostly QueryPartialFirstOrDefault family).
+9. ~~**16 query methods (~6%) still need example sections** -- only `QueryPartialFirstOrDefault.cs` (4 overloads) was actually missing examples. Added full `<example>` blocks matching sibling method style.~~ DONE
 
-10. **No DocFX setup** for automated API documentation generation.
+10. ~~**No DocFX setup** -- added `docs/docfx.json` config targeting Jaunty, Jaunty.Fluent, Jaunty.FlatFiles, and Jaunty.FlatFiles.DuckDB. Enabled `GenerateDocumentationFile` in `src/Directory.Build.props`. Created `docs/toc.yml` and `docs/api/index.md`. Run `docfx docs/docfx.json` to generate.~~ DONE
 
-11. **Options type inconsistency across codebase** -- `ImportOptions`/`CommandOptions` are `readonly struct`, everything else is `sealed class` with varying mutability.
+11. ~~**Options type inconsistency across codebase** -- reviewed and determined this is intentional, not an inconsistency:~~
+    - ~~`CommandOptions`/`ImportOptions` → `readonly struct` (small, few fields, passed per-call as value types)~~
+    - ~~`FlatFileOptions`/`WriteBackOptions`/`BulkCopyOptions`/`CsvImportOptions`/`ScaffoldOptions` → `sealed class` with `get/set` (complex builder-style config with collections/delegates)~~
+    - ~~`CodeGeneratorOptions`/`SchemaReaderOptions` → `sealed class` with `get/init` (configured once, then immutable)~~
+    ~~Each pattern fits its usage context. No refactoring needed.~~ NOT AN ISSUE
 
-12. **`cmd.Prepare()` call in ImportExecutor** (`ImportExecutor.cs:131`) may be a no-op for DuckDB. Harmless but dead code.
+12. ~~**`cmd.Prepare()` call in ImportExecutor** -- actually runs on the *target* connection (SqlServer/Postgres/SQLite), not DuckDB. Correct and beneficial for repeated parameterized INSERTs.~~ NOT AN ISSUE

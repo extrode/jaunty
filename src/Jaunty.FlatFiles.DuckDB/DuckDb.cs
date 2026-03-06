@@ -149,10 +149,7 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
-    public async ValueTask<List<T>> QueryAsync<T>(
-        string sql, 
-        IEnumerable<(string Name, object? Value)> parameters, 
-        CancellationToken cancellationToken = default) where T : class, new()
+    public async ValueTask<List<T>> QueryAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters,         CancellationToken cancellationToken = default) where T : class, new()
     {
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
