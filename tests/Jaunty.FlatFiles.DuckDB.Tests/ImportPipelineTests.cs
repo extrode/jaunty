@@ -152,7 +152,7 @@ public class ImportPipelineTests : IDisposable
     [Fact]
     public async Task ImportIntoAsync_ParquetToSqlite_AllRowsImported()
     {
-        // Create a separate FlatFileDatabase with Parquet source
+        // Create a separate FlatFile with Parquet source
         var parquetOpts = new FlatFileOptions();
         parquetOpts.AddParquet<InventoryItem>(_parquetPath);
         using var parquetDb = new DuckDb(parquetOpts);

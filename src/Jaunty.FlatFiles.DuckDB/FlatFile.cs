@@ -77,7 +77,7 @@ public static class FlatFile
         var supported = string.Join(", ", _extensionRegistry.Keys.OrderBy(k => k));
         throw new ArgumentException(
             $"Unsupported file extension '{extension}'. Supported extensions: {supported}. " +
-            $"Use FlatFileDatabase.RegisterExtension() to add custom file types.",
+            $"Use {nameof(FlatFile)}.RegisterExtension() to add custom file types.",
             nameof(extension));
     }
 }

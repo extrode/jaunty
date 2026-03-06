@@ -8,7 +8,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests;
 /// <summary>
 /// Tests for multi-source sessions: CSV + Parquet + JSON in one database.
 /// Covers T032 (multi-source session) and T037 (multi-source mixed queries).
-/// This is the M2 exit gate: all four formats queryable through one FlatFileDatabase instance.
+/// This is the M2 exit gate: all four formats queryable through one FlatFile instance.
 /// </summary>
 public class MultiSourceTests : IDisposable
 {
@@ -176,7 +176,7 @@ public class MultiSourceTests : IDisposable
     }
 
     // ==========================================
-    // Builder API via FlatFileDatabase.Open()
+    // Builder API via FlatFile.Open()
     // ==========================================
 
     [Fact]
