@@ -2,12 +2,12 @@ using Jaunty.FlatFiles;
 
 namespace Jaunty.FlatFiles.Tests;
 
-public class FlatFileDatabaseOptionsTests
+public class FlatFileOptionsTests
 {
     [Fact]
     public void Defaults_AreCorrect()
     {
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
 
         Assert.Equal(":memory:", options.DatabasePath);
         Assert.True(options.AutoOpen);
@@ -19,7 +19,7 @@ public class FlatFileDatabaseOptionsTests
     [Fact]
     public void Properties_CanBeSet()
     {
-        var options = new FlatFileDatabaseOptions
+        var options = new FlatFileOptions
         {
             DatabasePath = "/tmp/test.duckdb",
             AutoOpen = false,
@@ -34,7 +34,7 @@ public class FlatFileDatabaseOptionsTests
     [Fact]
     public void Sources_CanBeAdded()
     {
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         var source = new CsvFileSource("sales", "sales.csv", typeof(object));
 
         options.Sources.Add(source);

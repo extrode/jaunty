@@ -25,7 +25,7 @@ public class P0FixesTests : IDisposable
         CreateTestCsv();
         
         // Create database
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddCsv<SalesRecord>(_testCsvPath);
         _db = new DuckDb(options);
     }

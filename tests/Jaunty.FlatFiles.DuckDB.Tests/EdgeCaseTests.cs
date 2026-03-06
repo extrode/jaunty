@@ -19,7 +19,7 @@ public class EdgeCaseTests
     public void EmptyFile_ReturnsEmptyList()
     {
         var emptyPath = Path.Combine(DataDir, "csv", "empty.csv");
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddCsv<SalesRecord>(emptyPath);
 
         using var db = new DuckDb(options);
@@ -32,7 +32,7 @@ public class EdgeCaseTests
     public void EmptyFile_Count_ReturnsZero()
     {
         var emptyPath = Path.Combine(DataDir, "csv", "empty.csv");
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         // Use a table name that won't conflict — empty_sales maps to "sales" via [Table],
         // so use raw source with explicit table name
         var source = new CsvFileSource("empty_sales", emptyPath, typeof(SalesRecord));
@@ -60,7 +60,7 @@ public class EdgeCaseTests
             HasHeader = false
         };
 
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.Sources.Add(source);
 
         using var db = new DuckDb(options);
@@ -85,7 +85,7 @@ public class EdgeCaseTests
         // SalesRecord has [Column("product_name")] on ProductName property
         // CSV file has column "product_name" — the attribute should resolve this
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddCsv<SalesRecord>(csvPath);
 
         using var db = new DuckDb(options);
@@ -117,7 +117,7 @@ public class EdgeCaseTests
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
         var source = new CsvFileSource("mismatch_test", csvPath, typeof(MismatchEntity));
 
-        var options = new FlatFileDatabaseOptions
+        var options = new FlatFileOptions
         {
             ValidateSchema = true
         };
@@ -136,7 +136,7 @@ public class EdgeCaseTests
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
         var source = new CsvFileSource("mismatch_test2", csvPath, typeof(MismatchEntity));
 
-        var options = new FlatFileDatabaseOptions
+        var options = new FlatFileOptions
         {
             ValidateSchema = false // default
         };
@@ -165,7 +165,7 @@ public class EdgeCaseTests
         var specialPath = Path.Combine(DataDir, "csv", "special-chars.csv");
         var source = new CsvFileSource("special", specialPath, typeof(SpecialCharsEntity));
 
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.Sources.Add(source);
 
         using var db = new DuckDb(options);
