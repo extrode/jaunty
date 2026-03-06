@@ -39,7 +39,7 @@ public class PerformanceTests : IDisposable
             ) TO '{_largeCsvPath.Replace("\\", "/").Replace("'", "''")}' (HEADER, DELIMITER ',')";
         cmd.ExecuteNonQuery();
 
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddCsv<SalesRecord>(_largeCsvPath);
         _db = new DuckDb(options);
     }

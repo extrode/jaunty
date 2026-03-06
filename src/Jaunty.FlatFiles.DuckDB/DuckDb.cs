@@ -22,7 +22,7 @@ public sealed class DuckDb : IFlatFile
 {
     private readonly DuckDBConnection _connection;
     private readonly DuckDbDialect _dialect;
-    private readonly FlatFileDatabaseOptions _options;
+    private readonly FlatFileOptions _options;
     private readonly ConcurrentDictionary<Type, IFileSource> _sources = new();
     private readonly ConcurrentDictionary<Type, bool> _modified = new();
     private bool _disposed;
@@ -34,7 +34,7 @@ public sealed class DuckDb : IFlatFile
     /// Creates a new DuckDB flat file database with default options (in-memory).
     /// </summary>
     public DuckDb()
-        : this(new FlatFileDatabaseOptions())
+        : this(new FlatFileOptions())
     {
     }
 
@@ -42,7 +42,7 @@ public sealed class DuckDb : IFlatFile
     /// Creates a new DuckDB flat file database with the specified options.
     /// </summary>
     /// <param name="options">Configuration options for the database.</param>
-    public DuckDb(FlatFileDatabaseOptions options)
+    public DuckDb(FlatFileOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 

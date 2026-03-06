@@ -15,7 +15,7 @@ public class NdjsonQueryTests : IDisposable
     public NdjsonQueryTests()
     {
         var ndjsonPath = Path.Combine(DataDir, "json", "customers.ndjson");
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddJson<CustomerProfile>(ndjsonPath, json =>
         {
             json.JsonFormat = JsonFileFormat.NewlineDelimited;

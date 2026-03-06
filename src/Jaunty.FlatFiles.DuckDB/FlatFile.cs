@@ -46,7 +46,7 @@ public static class FlatFile
         var extension = Path.GetExtension(fullPath).ToLowerInvariant();
         var tableName = Path.GetFileNameWithoutExtension(fullPath).ToLowerInvariant();
 
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         var source = CreateSourceFromExtension(extension, tableName, fullPath, typeof(object));
         options.Sources.Add(source);
 
@@ -59,11 +59,11 @@ public static class FlatFile
     /// </summary>
     /// <param name="configure">Action to configure the database options and register file sources.</param>
     /// <returns>A flat file database with all configured sources registered.</returns>
-    public static IFlatFile Open(Action<FlatFileDatabaseOptions> configure)
+    public static IFlatFile Open(Action<FlatFileOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
 
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         configure(options);
 
         return new DuckDb(options);

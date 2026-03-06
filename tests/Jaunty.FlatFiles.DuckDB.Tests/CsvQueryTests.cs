@@ -15,7 +15,7 @@ public class CsvQueryTests : IDisposable
     public CsvQueryTests()
     {
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddCsv<SalesRecord>(csvPath);
         _db = new DuckDb(options);
     }

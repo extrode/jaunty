@@ -55,7 +55,7 @@ public class ImportPipelineTests : IDisposable
             ) TO '{_parquetPath.Replace("\\", "/").Replace("'", "''")}' (FORMAT PARQUET)";
         cmd.ExecuteNonQuery();
 
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddCsv<InventoryItem>(_csvPath);
         _db = new DuckDb(options);
     }
@@ -153,7 +153,7 @@ public class ImportPipelineTests : IDisposable
     public async Task ImportIntoAsync_ParquetToSqlite_AllRowsImported()
     {
         // Create a separate FlatFileDatabase with Parquet source
-        var parquetOpts = new FlatFileDatabaseOptions();
+        var parquetOpts = new FlatFileOptions();
         parquetOpts.AddParquet<InventoryItem>(_parquetPath);
         using var parquetDb = new DuckDb(parquetOpts);
 

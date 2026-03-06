@@ -36,7 +36,7 @@ public class CrudTests : IDisposable
             ) TO '{_csvPath.Replace("\\", "/").Replace("'", "''")}' (HEADER, DELIMITER ',')";
         cmd.ExecuteNonQuery();
 
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddCsv<InventoryItem>(_csvPath);
         _db = new DuckDb(options);
     }

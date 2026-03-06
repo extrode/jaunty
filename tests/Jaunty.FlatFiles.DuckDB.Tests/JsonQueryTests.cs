@@ -15,7 +15,7 @@ public class JsonQueryTests : IDisposable
     public JsonQueryTests()
     {
         var jsonPath = Path.Combine(DataDir, "json", "customers.json");
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddJson<CustomerProfile>(jsonPath);
         _db = new DuckDb(options);
     }
@@ -135,7 +135,7 @@ public class JsonQueryTests : IDisposable
     public void Json_ExplicitArrayFormat_Works()
     {
         var jsonPath = Path.Combine(DataDir, "json", "customers.json");
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddJson<CustomerProfile>(jsonPath, json =>
         {
             json.JsonFormat = JsonFileFormat.Array;
@@ -150,7 +150,7 @@ public class JsonQueryTests : IDisposable
     public void Json_MaxDepth_CanBeConfigured()
     {
         var jsonPath = Path.Combine(DataDir, "json", "customers.json");
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddJson<CustomerProfile>(jsonPath, json =>
         {
             json.MaxDepth = 5;
