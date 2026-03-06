@@ -156,6 +156,11 @@ internal static class ImportExecutor
         return totalImported;
     }
 
+    // Cache reflected PropertyInfo for DuckDB-specific types to avoid repeated reflection lookups.
+    // ConcurrentDictionary handles thread safety; the key is the runtime Type of the DuckDB value.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, PropertyInfo?> s_duckDbDatePropCache = new();
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, PropertyInfo?> s_duckDbTimePropCache = new();
+
     /// <summary>
     /// Converts a value from the DuckDB reader to a type suitable for the target database parameter.
     /// </summary>
@@ -172,23 +177,29 @@ internal static class ImportExecutor
         // DuckDB returns DuckDBDateOnly for DATE columns
         if (valueTypeName.Contains("DuckDBDateOnly") && underlyingType == typeof(DateTime))
         {
-            var daysProp = valueType.GetProperty("DaysSinceEpoch");
-            if (daysProp is not null)
+            var daysProp = s_duckDbDatePropCache.GetOrAdd(valueType, t => t.GetProperty("DaysSinceEpoch"));
+            if (daysProp is null)
             {
-                var days = (int)daysProp.GetValue(value)!;
-                return new DateTime(1970, 1, 1).AddDays(days);
+                throw new InvalidOperationException(
+                    $"Cannot convert DuckDB date type '{valueTypeName}': expected a 'DaysSinceEpoch' property " +
+                    $"but it was not found. This may indicate an incompatible DuckDB.NET version.");
             }
+            var days = (int)daysProp.GetValue(value)!;
+            return new DateTime(1970, 1, 1).AddDays(days);
         }
 
         // DuckDB returns DuckDBTimeOnly for TIME columns
         if (valueTypeName.Contains("DuckDBTimeOnly") && underlyingType == typeof(TimeSpan))
         {
-            var ticksProp = valueType.GetProperty("Ticks");
-            if (ticksProp is not null)
+            var ticksProp = s_duckDbTimePropCache.GetOrAdd(valueType, t => t.GetProperty("Ticks"));
+            if (ticksProp is null)
             {
-                var ticks = (long)ticksProp.GetValue(value)!;
-                return new TimeSpan(ticks);
+                throw new InvalidOperationException(
+                    $"Cannot convert DuckDB time type '{valueTypeName}': expected a 'Ticks' property " +
+                    $"but it was not found. This may indicate an incompatible DuckDB.NET version.");
             }
+            var ticks = (long)ticksProp.GetValue(value)!;
+            return new TimeSpan(ticks);
         }
 
         // Standard conversions
@@ -207,7 +218,13 @@ internal static class ImportExecutor
 
     private static void ValidateTargetSchema(DbConnection targetConnection, string tableName, List<(string ColumnName, PropertyInfo Property)> mappings, bool createTableIfMissing)
     {
-        // Check if the table exists in the target
+        // Check if the table exists in the target by querying it with a WHERE 0=1 (no rows).
+        // Different database providers throw different exception types for "table not found":
+        //   - SQLite: SqliteException
+        //   - PostgreSQL: NpgsqlException / PostgresException
+        //   - SQL Server: SqlException
+        // We catch DbException (the ADO.NET base class for all provider exceptions) to handle
+        // "table not found" errors specifically, while letting non-database errors propagate.
         try
         {
             using var cmd = targetConnection.CreateCommand();
@@ -231,12 +248,11 @@ internal static class ImportExecutor
                 }
             }
         }
-        catch (Exception ex) when (ex is not InvalidOperationException)
+        catch (DbException ex)
         {
-            // Table doesn't exist
+            // DbException covers all ADO.NET provider-specific exceptions (table not found, etc.)
             if (!createTableIfMissing)
             {
-                // If we didn't create the table, this is a real error
                 throw new InvalidOperationException(
                     $"Target table '{tableName}' does not exist and CreateTableIfMissing is false. " +
                     $"Set CreateTableIfMissing = true to auto-create the table, or create it manually before importing.", ex);
