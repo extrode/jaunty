@@ -25,6 +25,9 @@ public sealed class FlatFileOptions
 
     /// <summary>
     /// Gets or sets whether to validate entity schema against inferred file schema on registration.
+    /// When enabled, verifies that every mapped entity property has a corresponding column in the file.
+    /// Extra file columns that are not mapped to entity properties are allowed and silently ignored,
+    /// similar to <c>SELECT col1, col2 FROM table</c> semantics.
     /// Default: false.
     /// </summary>
     public bool ValidateSchema { get; set; }

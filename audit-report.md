@@ -109,15 +109,12 @@ Both are now `readonly struct` types -- **consistent**. Both use:
 2. ~~**DuckDB type conversion uses fragile property name lookups** -- added cached reflection with defensive errors~~ DONE
 3. ~~**Table existence check catches all exceptions** -- narrowed to `DbException`~~ DONE
 
-### P2 -- Important
+### P2 -- Important (ALL COMPLETED)
 
 4. ~~**Remove direct reflection from DuckDb.cs** -- replaced with compiled expression delegates via `ColumnMapping` struct~~ DONE
-
-5. **Schema validation is one-directional** (`DuckDb.cs:609-638`). Only checks entity properties have matching file columns, not the reverse. Extra file columns are silently ignored -- document this behavior or add a warning/strict mode.
-
-6. **Expression translation coverage is limited** (`FlatFileExpressionHelper.cs`). No support for: nested method calls, property method calls, complex nested expressions. Throws `NotSupportedException` with no graceful fallback. Consider documenting supported expression patterns in the API docs.
-
-7. **Case-insensitive column lookup is O(n)** (`DuckDb.cs:176-195`). Falls back to manual scan when ordinal lookup fails for DuckDB's lowercase column names. Not a problem at current scale but could be optimized with a pre-built dictionary.
+5. ~~**Schema validation is one-directional** -- documented as intentional SELECT-style semantics on `FlatFileOptions.ValidateSchema` and `DuckDb.ValidateSchema`~~ DONE
+6. ~~**Expression translation coverage is limited** -- documented supported/unsupported patterns in `FlatFileExpressionHelper` class and `TranslatePredicate` XML docs~~ DONE
+7. ~~**Case-insensitive column lookup is O(n)** -- replaced try/catch + O(n) scan with pre-built `Dictionary<string,int>` + ordinal pre-resolution before row loop~~ DONE
 
 ### P3 -- Nice-to-have
 
