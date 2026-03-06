@@ -448,6 +448,7 @@ public sealed class DuckDb : IFlatFile
 
     /// <summary>
     /// Promotes a VIEW source to a TABLE on first mutation. Preloaded sources and already-promoted sources are no-ops.
+    /// Uses a transaction to ensure the three-step promotion (CREATE TABLE AS, DROP VIEW, RENAME) is atomic.
     /// </summary>
     private async ValueTask EnsurePromotedToTableAsync(IFileSource source, CancellationToken cancellationToken)
     {
@@ -456,9 +457,15 @@ public sealed class DuckDb : IFlatFile
 
         var sql = _dialect.GeneratePromoteToTableSql(source);
 
-        await using var cmd = _connection.CreateCommand();
-        cmd.CommandText = sql;
-        await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        var transaction = await _connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        await using (transaction.ConfigureAwait(false))
+        {
+            await using var cmd = _connection.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.Transaction = transaction;
+            await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        }
 
         // Mark as promoted
         source.IsPromotedToTable = true;
