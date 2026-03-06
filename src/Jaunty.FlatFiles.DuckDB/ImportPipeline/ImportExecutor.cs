@@ -1,6 +1,5 @@
 using System.Data;
 using System.Data.Common;
-using System.Reflection;
 using System.Text;
 
 namespace Jaunty.FlatFiles.DuckDB.ImportPipeline;
@@ -17,7 +16,7 @@ internal static class ImportExecutor
     public static async ValueTask<long> ExecuteAsync<T>(IDbConnection sourceConnection, IFileSource source, DbConnection targetConnection, ImportOptions options, CancellationToken cancellationToken) where T : class, new()
     {
         var entityType = typeof(T);
-        List<(string ColumnName, PropertyInfo Property)> mappings = FlatFileExpressionHelper.GetColumnMappings(entityType);
+        List<ColumnMapping> mappings = FlatFileExpressionHelper.GetColumnMappings(entityType);
         string tableName = source.TableName;
 
         // Resolve the import dialect (explicit > custom registry > auto-detect)
@@ -69,7 +68,7 @@ internal static class ImportExecutor
     }
 
     private static async ValueTask<long> ImportBatchesAsync(DbDataReader reader, DbConnection targetConnection, string insertSql,
-        List<(string ColumnName, PropertyInfo Property)> mappings, int batchSize, Action<long, long?>? onProgress, CancellationToken cancellationToken)
+        List<ColumnMapping> mappings, int batchSize, Action<long, long?>? onProgress, CancellationToken cancellationToken)
     {
         long totalImported = 0;
 
@@ -128,7 +127,7 @@ internal static class ImportExecutor
                     for (int i = 0; i < mappings.Count; i++)
                     {
                         var value = reader.GetValue(readerColumnMap[i]);
-                        paramArray[i].Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappings[i].Property.PropertyType);
+                        paramArray[i].Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappings[i].PropertyType);
                     }
 
                     await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -158,8 +157,8 @@ internal static class ImportExecutor
 
     // Cache reflected PropertyInfo for DuckDB-specific types to avoid repeated reflection lookups.
     // ConcurrentDictionary handles thread safety; the key is the runtime Type of the DuckDB value.
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, PropertyInfo?> s_duckDbDatePropCache = new();
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, PropertyInfo?> s_duckDbTimePropCache = new();
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, System.Reflection.PropertyInfo?> s_duckDbDatePropCache = new();
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, System.Reflection.PropertyInfo?> s_duckDbTimePropCache = new();
 
     /// <summary>
     /// Converts a value from the DuckDB reader to a type suitable for the target database parameter.
@@ -216,7 +215,7 @@ internal static class ImportExecutor
         }
     }
 
-    private static void ValidateTargetSchema(DbConnection targetConnection, string tableName, List<(string ColumnName, PropertyInfo Property)> mappings, bool createTableIfMissing)
+    private static void ValidateTargetSchema(DbConnection targetConnection, string tableName, List<ColumnMapping> mappings, bool createTableIfMissing)
     {
         // Check if the table exists in the target by querying it with a WHERE 0=1 (no rows).
         // Different database providers throw different exception types for "table not found":
@@ -238,12 +237,12 @@ internal static class ImportExecutor
                 targetColumns.Add(reader.GetName(i));
             }
 
-            foreach (var (columnName, _) in mappings)
+            foreach (var mapping in mappings)
             {
-                if (!targetColumns.Contains(columnName))
+                if (!targetColumns.Contains(mapping.ColumnName))
                 {
                     throw new InvalidOperationException(
-                        $"Schema alignment failed: Target table '{tableName}' does not contain column '{columnName}' " +
+                        $"Schema alignment failed: Target table '{tableName}' does not contain column '{mapping.ColumnName}' " +
                         $"required by entity mapping. Available columns: {string.Join(", ", targetColumns)}");
                 }
             }
