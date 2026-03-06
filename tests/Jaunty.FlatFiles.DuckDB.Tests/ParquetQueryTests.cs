@@ -41,7 +41,7 @@ public class ParquetQueryTests : IDisposable
             ) TO '{_parquetPath.Replace("\\", "/").Replace("'", "''")}' (FORMAT PARQUET)";
         cmd.ExecuteNonQuery();
 
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddParquet<InventoryItem>(_parquetPath);
         _db = new DuckDb(options);
     }
@@ -182,7 +182,7 @@ public class ParquetQueryTests : IDisposable
             HivePartitioning = true
         };
 
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.Sources.Add(source);
 
         // Verify it doesn't throw — the parquet file isn't hive-partitioned but DuckDB should handle it

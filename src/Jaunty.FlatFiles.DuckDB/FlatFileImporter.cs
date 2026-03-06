@@ -51,7 +51,7 @@ public static class FlatFileImporter
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The total number of rows imported.</returns>
     public static async ValueTask<long> ImportAsync<T>(
-        Action<FlatFileDatabaseOptions> configureSource,
+        Action<FlatFileOptions> configureSource,
         DbConnection targetConnection,
         ImportOptions options = default,
         CancellationToken cancellationToken = default) where T : class, new()

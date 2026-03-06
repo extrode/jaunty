@@ -48,7 +48,7 @@ public class PreloadTests : IDisposable
     [Fact]
     public void Preload_PerSource_CreatesTable()
     {
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddParquet<InventoryItem>(_parquetPath, parquet =>
         {
             parquet.IsPreloaded = true;
@@ -66,7 +66,7 @@ public class PreloadTests : IDisposable
     [Fact]
     public void Preload_PerSource_QueriesWork()
     {
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddParquet<InventoryItem>(_parquetPath, parquet =>
         {
             parquet.IsPreloaded = true;
@@ -80,7 +80,7 @@ public class PreloadTests : IDisposable
     [Fact]
     public void NoPreload_CreatesView()
     {
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddParquet<InventoryItem>(_parquetPath);
 
         using var db = new DuckDb(options);
@@ -102,7 +102,7 @@ public class PreloadTests : IDisposable
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
         var jsonPath = Path.Combine(DataDir, "json", "customers.json");
 
-        var options = new FlatFileDatabaseOptions
+        var options = new FlatFileOptions
         {
             PreloadIntoMemory = true
         };
@@ -131,7 +131,7 @@ public class PreloadTests : IDisposable
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
         var jsonPath = Path.Combine(DataDir, "json", "customers.json");
 
-        var options = new FlatFileDatabaseOptions
+        var options = new FlatFileOptions
         {
             PreloadIntoMemory = true
         };
@@ -158,7 +158,7 @@ public class PreloadTests : IDisposable
     public void Preload_Csv_CreatesTableAndQueries()
     {
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddCsv<SalesRecord>(csvPath, csv =>
         {
             csv.IsPreloaded = true;
@@ -182,7 +182,7 @@ public class PreloadTests : IDisposable
     public void Preload_Json_CreatesTableAndQueries()
     {
         var jsonPath = Path.Combine(DataDir, "json", "customers.json");
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddJson<CustomerProfile>(jsonPath, json =>
         {
             json.IsPreloaded = true;
@@ -206,7 +206,7 @@ public class PreloadTests : IDisposable
     public void ViewVsTable_BothReturnSameData()
     {
         // Create VIEW-based db
-        var viewOptions = new FlatFileDatabaseOptions();
+        var viewOptions = new FlatFileOptions();
         viewOptions.AddParquet<InventoryItem>(_parquetPath);
         using var viewDb = new DuckDb(viewOptions);
         var viewResults = viewDb.Connection.From<InventoryItem>()
@@ -214,7 +214,7 @@ public class PreloadTests : IDisposable
             .Select();
 
         // Create TABLE-based db
-        var tableOptions = new FlatFileDatabaseOptions();
+        var tableOptions = new FlatFileOptions();
         tableOptions.AddParquet<InventoryItem>(_parquetPath, p => p.IsPreloaded = true);
         using var tableDb = new DuckDb(tableOptions);
         var tableResults = tableDb.Connection.From<InventoryItem>()

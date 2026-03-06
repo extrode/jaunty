@@ -3,7 +3,7 @@ namespace Jaunty.FlatFiles;
 /// <summary>
 /// Configuration options for creating a flat file database instance.
 /// </summary>
-public sealed class FlatFileDatabaseOptions
+public sealed class FlatFileOptions
 {
     /// <summary>
     /// Gets or sets the path to the database file. Use ":memory:" for in-memory databases.
@@ -46,7 +46,7 @@ public sealed class FlatFileDatabaseOptions
     /// Registers a CSV file source mapped to the specified entity type.
     /// The table name is resolved from the entity's <c>[Table]</c> attribute, or the class name lowercased.
     /// </summary>
-    public FlatFileDatabaseOptions AddCsv<T>(string filePath, Action<CsvFileSource>? configure = null) where T : class, new()
+    public FlatFileOptions AddCsv<T>(string filePath, Action<CsvFileSource>? configure = null) where T : class, new()
     {
         var tableName = TableNameResolver.Resolve<T>();
         var source = new CsvFileSource(tableName, filePath, typeof(T));
@@ -59,7 +59,7 @@ public sealed class FlatFileDatabaseOptions
     /// Registers a TSV file source mapped to the specified entity type.
     /// The table name is resolved from the entity's <c>[Table]</c> attribute, or the class name lowercased.
     /// </summary>
-    public FlatFileDatabaseOptions AddTsv<T>(string filePath, Action<TsvFileSource>? configure = null) where T : class, new()
+    public FlatFileOptions AddTsv<T>(string filePath, Action<TsvFileSource>? configure = null) where T : class, new()
     {
         var tableName = TableNameResolver.Resolve<T>();
         var source = new TsvFileSource(tableName, filePath, typeof(T));
@@ -72,7 +72,7 @@ public sealed class FlatFileDatabaseOptions
     /// Registers a Parquet file source mapped to the specified entity type.
     /// The table name is resolved from the entity's <c>[Table]</c> attribute, or the class name lowercased.
     /// </summary>
-    public FlatFileDatabaseOptions AddParquet<T>(string filePath, Action<ParquetFileSource>? configure = null) where T : class, new()
+    public FlatFileOptions AddParquet<T>(string filePath, Action<ParquetFileSource>? configure = null) where T : class, new()
     {
         var tableName = TableNameResolver.Resolve<T>();
         var source = new ParquetFileSource(tableName, filePath, typeof(T));
@@ -85,7 +85,7 @@ public sealed class FlatFileDatabaseOptions
     /// Registers a JSON file source mapped to the specified entity type.
     /// The table name is resolved from the entity's <c>[Table]</c> attribute, or the class name lowercased.
     /// </summary>
-    public FlatFileDatabaseOptions AddJson<T>(string filePath, Action<JsonFileSource>? configure = null) where T : class, new()
+    public FlatFileOptions AddJson<T>(string filePath, Action<JsonFileSource>? configure = null) where T : class, new()
     {
         var tableName = TableNameResolver.Resolve<T>();
         var source = new JsonFileSource(tableName, filePath, typeof(T));
@@ -99,7 +99,7 @@ public sealed class FlatFileDatabaseOptions
     /// for formats not natively supported (e.g. custom <see cref="IFileSource"/> implementations).
     /// </summary>
     /// <param name="source">The file source to register.</param>
-    public FlatFileDatabaseOptions AddSource(IFileSource source)
+    public FlatFileOptions AddSource(IFileSource source)
     {
         Sources.Add(source ?? throw new ArgumentNullException(nameof(source)));
         return this;

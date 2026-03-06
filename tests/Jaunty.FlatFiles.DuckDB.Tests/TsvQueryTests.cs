@@ -14,7 +14,7 @@ public class TsvQueryTests : IDisposable
     public TsvQueryTests()
     {
         var tsvPath = Path.Combine(DataDir, "tsv", "sales.tsv");
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddTsv<SalesRecord>(tsvPath);
         _db = new DuckDb(options);
     }

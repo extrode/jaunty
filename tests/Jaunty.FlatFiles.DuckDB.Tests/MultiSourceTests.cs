@@ -41,7 +41,7 @@ public class MultiSourceTests : IDisposable
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
         var jsonPath = Path.Combine(DataDir, "json", "customers.json");
 
-        var options = new FlatFileDatabaseOptions();
+        var options = new FlatFileOptions();
         options.AddCsv<SalesRecord>(csvPath);
         options.AddParquet<InventoryItem>(_parquetPath);
         options.AddJson<CustomerProfile>(jsonPath);
