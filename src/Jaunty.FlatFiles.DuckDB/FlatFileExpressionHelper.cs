@@ -27,6 +27,18 @@ internal readonly struct ColumnMapping
 /// Lightweight expression-to-SQL translator for flat file CRUD operations.
 /// Handles basic predicates and column selectors without depending on Jaunty.Fluent.
 /// Uses DuckDB positional parameters ($1, $2, ...) which are 1-based.
+/// <para><b>Supported predicate patterns:</b></para>
+/// <list type="bullet">
+///   <item>Comparison operators: <c>==</c>, <c>!=</c>, <c>&lt;</c>, <c>&lt;=</c>, <c>&gt;</c>, <c>&gt;=</c></item>
+///   <item>Logical operators: <c>&amp;&amp;</c> (AND), <c>||</c> (OR), <c>!</c> (NOT)</item>
+///   <item>Null checks: <c>x.Prop == null</c> → <c>IS NULL</c>, <c>x.Prop != null</c> → <c>IS NOT NULL</c></item>
+///   <item>Boolean properties: <c>x.IsActive</c> → <c>"IsActive" = true</c></item>
+///   <item>String methods: <c>x.Name.Contains("foo")</c>, <c>StartsWith</c>, <c>EndsWith</c> → <c>LIKE</c></item>
+///   <item>IN clauses: <c>list.Contains(x.Id)</c> or <c>Enumerable.Contains(list, x.Id)</c></item>
+///   <item>Closure/captured variables: evaluated via compiled expression cache</item>
+/// </list>
+/// <para><b>Not supported:</b> nested method calls, arithmetic expressions, property-to-property comparisons,
+/// custom method translations. Unsupported patterns throw <see cref="NotSupportedException"/>.</para>
 /// </summary>
 internal static class FlatFileExpressionHelper
 {
@@ -43,7 +55,9 @@ internal static class FlatFileExpressionHelper
 
     /// <summary>
     /// Translates a predicate expression into a DuckDB WHERE clause with positional parameters.
+    /// See <see cref="FlatFileExpressionHelper"/> class documentation for supported expression patterns.
     /// </summary>
+    /// <exception cref="NotSupportedException">Thrown when the expression contains unsupported patterns.</exception>
     public static (string Sql, List<DuckDBParameter> Parameters) TranslatePredicate<T>(
         Expression<Func<T, bool>> predicate, int paramOffset = 0)
     {

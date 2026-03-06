@@ -166,37 +166,34 @@ public sealed class DuckDb : IFlatFile
         }
 
         await using var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        // Materialize using Jaunty core's extension method
+
+        // Build a case-insensitive column name → ordinal map once before the row loop.
+        // DuckDB lowercases column names, so exact-match lookups via GetOrdinal can fail
+        // for PascalCase entity properties. A dictionary avoids per-column O(n) fallback scans.
+        var columnOrdinals = new Dictionary<string, int>(reader.FieldCount, StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < reader.FieldCount; i++)
+            columnOrdinals[reader.GetName(i)] = i;
+
+        var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
+
+        // Pre-resolve ordinals for each mapping (once, not per row)
+        var ordinalMap = new int[mappings.Count];
+        for (int i = 0; i < mappings.Count; i++)
+            ordinalMap[i] = columnOrdinals.TryGetValue(mappings[i].ColumnName, out var ord) ? ord : -1;
+
+        // Materialize rows
         var results = new List<T>();
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             var entity = new T();
-            foreach (var mapping in FlatFileExpressionHelper.GetColumnMappings(typeof(T)))
+            for (int i = 0; i < mappings.Count; i++)
             {
-                int ordinal = -1;
-                try
-                {
-                    // DuckDB returns lowercase column names - use case-insensitive lookup
-                    ordinal = reader.GetOrdinal(mapping.ColumnName);
-                }
-                catch (DuckDBException)
-                {
-                    // Column not found by exact name - try case-insensitive lookup
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        if (string.Equals(reader.GetName(i), mapping.ColumnName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            ordinal = i;
-                            break;
-                        }
-                    }
-                }
-                
+                var ordinal = ordinalMap[i];
                 if (ordinal >= 0 && !reader.IsDBNull(ordinal))
                 {
                     var value = reader.GetValue(ordinal);
                     // Convert value to property type if needed
-                    var targetType = mapping.PropertyType;
+                    var targetType = mappings[i].PropertyType;
                     if (value != null && value.GetType() != targetType)
                     {
                         try
@@ -208,7 +205,7 @@ public sealed class DuckDb : IFlatFile
                             // If conversion fails, let the property setter handle it
                         }
                     }
-                    mapping.Setter(entity, value);
+                    mappings[i].Setter(entity, value);
                 }
             }
             results.Add(entity);
@@ -605,6 +602,8 @@ public sealed class DuckDb : IFlatFile
 
     /// <summary>
     /// Validates that the file's inferred schema is compatible with the entity type.
+    /// Checks that every mapped entity property has a corresponding column in the file.
+    /// Extra file columns not mapped to entity properties are allowed (SELECT-style semantics).
     /// </summary>
     private void ValidateSchema(IFileSource source)
     {
@@ -621,7 +620,8 @@ public sealed class DuckDb : IFlatFile
             fileColumns[colName] = colType;
         }
 
-        // Validate entity properties have matching columns
+        // Validate that every mapped entity property has a matching file column.
+        // Extra file columns are intentionally allowed — the entity only maps the columns it needs.
         foreach (var mapping in FlatFileExpressionHelper.GetColumnMappings(source.EntityType))
         {
             if (!fileColumns.ContainsKey(mapping.ColumnName))
