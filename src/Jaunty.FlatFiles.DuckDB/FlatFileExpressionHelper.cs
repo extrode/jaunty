@@ -10,16 +10,42 @@ using Jaunty.Attributes;
 namespace Jaunty.FlatFiles.DuckDB;
 
 /// <summary>
+/// Pre-computed column mapping with compiled getter/setter delegates.
+/// Eliminates per-call reflection for property access.
+/// </summary>
+internal readonly struct ColumnMapping
+{
+    public string ColumnName { get; init; }
+    public PropertyInfo Property { get; init; }
+    public Func<object, object?> Getter { get; init; }
+    public Action<object, object?> Setter { get; init; }
+    public Type PropertyType { get; init; }
+    public bool IsDateTime { get; init; }
+}
+
+/// <summary>
 /// Lightweight expression-to-SQL translator for flat file CRUD operations.
 /// Handles basic predicates and column selectors without depending on Jaunty.Fluent.
 /// Uses DuckDB positional parameters ($1, $2, ...) which are 1-based.
+/// <para><b>Supported predicate patterns:</b></para>
+/// <list type="bullet">
+///   <item>Comparison operators: <c>==</c>, <c>!=</c>, <c>&lt;</c>, <c>&lt;=</c>, <c>&gt;</c>, <c>&gt;=</c></item>
+///   <item>Logical operators: <c>&amp;&amp;</c> (AND), <c>||</c> (OR), <c>!</c> (NOT)</item>
+///   <item>Null checks: <c>x.Prop == null</c> → <c>IS NULL</c>, <c>x.Prop != null</c> → <c>IS NOT NULL</c></item>
+///   <item>Boolean properties: <c>x.IsActive</c> → <c>"IsActive" = true</c></item>
+///   <item>String methods: <c>x.Name.Contains("foo")</c>, <c>StartsWith</c>, <c>EndsWith</c> → <c>LIKE</c></item>
+///   <item>IN clauses: <c>list.Contains(x.Id)</c> or <c>Enumerable.Contains(list, x.Id)</c></item>
+///   <item>Closure/captured variables: evaluated via compiled expression cache</item>
+/// </list>
+/// <para><b>Not supported:</b> nested method calls, arithmetic expressions, property-to-property comparisons,
+/// custom method translations. Unsupported patterns throw <see cref="NotSupportedException"/>.</para>
 /// </summary>
 internal static class FlatFileExpressionHelper
 {
     /// <summary>
     /// Cache for column mappings per entity type to avoid repeated reflection.
     /// </summary>
-    private static readonly ConcurrentDictionary<Type, List<(string ColumnName, PropertyInfo Property)>> _columnMappingCache = new();
+    private static readonly ConcurrentDictionary<Type, List<ColumnMapping>> _columnMappingCache = new();
 
     /// <summary>
     /// Cache for compiled expression delegates to avoid repeated compilation.
@@ -29,7 +55,9 @@ internal static class FlatFileExpressionHelper
 
     /// <summary>
     /// Translates a predicate expression into a DuckDB WHERE clause with positional parameters.
+    /// See <see cref="FlatFileExpressionHelper"/> class documentation for supported expression patterns.
     /// </summary>
+    /// <exception cref="NotSupportedException">Thrown when the expression contains unsupported patterns.</exception>
     public static (string Sql, List<DuckDBParameter> Parameters) TranslatePredicate<T>(
         Expression<Func<T, bool>> predicate, int paramOffset = 0)
     {
@@ -51,23 +79,59 @@ internal static class FlatFileExpressionHelper
     }
 
     /// <summary>
-    /// Gets all column name-to-property mappings for an entity type.
+    /// Gets all column mappings for an entity type, including compiled getter/setter delegates.
     /// Uses caching to avoid repeated reflection on hot paths.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
         System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
-    public static List<(string ColumnName, PropertyInfo Property)> GetColumnMappings(Type entityType)
+    public static List<ColumnMapping> GetColumnMappings(Type entityType)
     {
         return _columnMappingCache.GetOrAdd(entityType, type =>
         {
-            var result = new List<(string, PropertyInfo)>();
+            var result = new List<ColumnMapping>();
             foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 if (!prop.CanRead || !prop.CanWrite) continue;
-                result.Add((GetColumnName(prop), prop));
+
+                var underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+
+                result.Add(new ColumnMapping
+                {
+                    ColumnName = GetColumnName(prop),
+                    Property = prop,
+                    Getter = CreateGetter(prop),
+                    Setter = CreateSetter(prop),
+                    PropertyType = prop.PropertyType,
+                    IsDateTime = underlyingType == typeof(DateTime)
+                });
             }
             return result;
         });
+    }
+
+    /// <summary>
+    /// Compiles a getter delegate: (object entity) => (object?)entity.Property
+    /// </summary>
+    private static Func<object, object?> CreateGetter(PropertyInfo prop)
+    {
+        var param = Expression.Parameter(typeof(object), "entity");
+        var cast = Expression.Convert(param, prop.DeclaringType!);
+        var access = Expression.Property(cast, prop);
+        var box = Expression.Convert(access, typeof(object));
+        return Expression.Lambda<Func<object, object?>>(box, param).Compile();
+    }
+
+    /// <summary>
+    /// Compiles a setter delegate: (object entity, object? value) => entity.Property = (PropertyType)value
+    /// </summary>
+    private static Action<object, object?> CreateSetter(PropertyInfo prop)
+    {
+        var entityParam = Expression.Parameter(typeof(object), "entity");
+        var valueParam = Expression.Parameter(typeof(object), "value");
+        var cast = Expression.Convert(entityParam, prop.DeclaringType!);
+        var convertedValue = Expression.Convert(valueParam, prop.PropertyType);
+        var assign = Expression.Assign(Expression.Property(cast, prop), convertedValue);
+        return Expression.Lambda<Action<object, object?>>(assign, entityParam, valueParam).Compile();
     }
 
     private static string GetColumnName(PropertyInfo prop)

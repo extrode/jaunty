@@ -2,12 +2,10 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 
 using DuckDB.NET.Data;
 
-using Jaunty.Attributes;
 using Jaunty.Dialects;
 using Jaunty.FlatFiles.DuckDB.ImportPipeline;
 using Jaunty.Fluent;
@@ -168,37 +166,34 @@ public sealed class DuckDb : IFlatFile
         }
 
         await using var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        // Materialize using Jaunty core's extension method
+
+        // Build a case-insensitive column name → ordinal map once before the row loop.
+        // DuckDB lowercases column names, so exact-match lookups via GetOrdinal can fail
+        // for PascalCase entity properties. A dictionary avoids per-column O(n) fallback scans.
+        var columnOrdinals = new Dictionary<string, int>(reader.FieldCount, StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < reader.FieldCount; i++)
+            columnOrdinals[reader.GetName(i)] = i;
+
+        var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
+
+        // Pre-resolve ordinals for each mapping (once, not per row)
+        var ordinalMap = new int[mappings.Count];
+        for (int i = 0; i < mappings.Count; i++)
+            ordinalMap[i] = columnOrdinals.TryGetValue(mappings[i].ColumnName, out var ord) ? ord : -1;
+
+        // Materialize rows
         var results = new List<T>();
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             var entity = new T();
-            foreach (var mapping in FlatFileExpressionHelper.GetColumnMappings(typeof(T)))
+            for (int i = 0; i < mappings.Count; i++)
             {
-                int ordinal = -1;
-                try
-                {
-                    // DuckDB returns lowercase column names - use case-insensitive lookup
-                    ordinal = reader.GetOrdinal(mapping.ColumnName);
-                }
-                catch (DuckDBException)
-                {
-                    // Column not found by exact name - try case-insensitive lookup
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        if (string.Equals(reader.GetName(i), mapping.ColumnName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            ordinal = i;
-                            break;
-                        }
-                    }
-                }
-                
+                var ordinal = ordinalMap[i];
                 if (ordinal >= 0 && !reader.IsDBNull(ordinal))
                 {
                     var value = reader.GetValue(ordinal);
                     // Convert value to property type if needed
-                    var targetType = mapping.Property.PropertyType;
+                    var targetType = mappings[i].PropertyType;
                     if (value != null && value.GetType() != targetType)
                     {
                         try
@@ -210,7 +205,7 @@ public sealed class DuckDb : IFlatFile
                             // If conversion fails, let the property setter handle it
                         }
                     }
-                    mapping.Property.SetValue(entity, value);
+                    mappings[i].Setter(entity, value);
                 }
             }
             results.Add(entity);
@@ -239,10 +234,10 @@ public sealed class DuckDb : IFlatFile
         for (int i = 0; i < mappings.Count; i++)
         {
             if (i > 0) { columns.Append(", "); values.Append(", "); }
-            var (columnName, prop) = mappings[i];
-            columns.Append($"\"{columnName}\"");
+            var mapping = mappings[i];
+            columns.Append($"\"{mapping.ColumnName}\"");
             values.Append($"${i + 1}"); // DuckDB uses 1-based positional params
-            parameters.Add(new DuckDBParameter { Value = prop.GetValue(entity) ?? DBNull.Value });
+            parameters.Add(new DuckDBParameter { Value = mapping.Getter(entity) ?? DBNull.Value });
         }
 
         var sql = $"INSERT INTO \"{source.TableName}\" ({columns}) VALUES ({values})";
@@ -300,7 +295,7 @@ public sealed class DuckDb : IFlatFile
                 if (col > 0) sb.Append(", ");
                 paramCounter++;
                 sb.Append($"${paramCounter}");
-                parameters.Add(new DuckDBParameter { Value = mappings[col].Property.GetValue(entity) ?? DBNull.Value });
+                parameters.Add(new DuckDBParameter { Value = mappings[col].Getter(entity) ?? DBNull.Value });
             }
             sb.Append(')');
         }
@@ -527,9 +522,13 @@ public sealed class DuckDb : IFlatFile
         // DuckDB's read_csv_auto infers DATE for date-only values, but Jaunty's materialization
         // uses Convert.ChangeType which fails on DuckDB's DuckDBDateOnly type.
         // Solution: generate a view with explicit CAST for DateTime columns.
-        if (source.EntityType != typeof(object) && HasDateTimeProperties(source.EntityType))
+        if (source.EntityType != typeof(object))
         {
-            return GenerateViewSqlWithDateTimeCasts(source);
+            var mappings = FlatFileExpressionHelper.GetColumnMappings(source.EntityType);
+            if (HasDateTimeColumns(mappings))
+            {
+                return GenerateViewSqlWithDateTimeCasts(source, mappings);
+            }
         }
 
         return source.IsPreloaded
@@ -542,10 +541,10 @@ public sealed class DuckDb : IFlatFile
     /// Uses a two-step approach: first queries column names from the read function,
     /// then generates a SELECT with explicit CAST for date columns.
     /// </summary>
-    private string GenerateViewSqlWithDateTimeCasts(IFileSource source)
+    private string GenerateViewSqlWithDateTimeCasts(IFileSource source, List<ColumnMapping> mappings)
     {
         var readFunction = DuckDbDialect.GenerateReadFunction(source);
-        var dateTimeColumns = GetDateTimeColumnNames(source.EntityType);
+        var dateTimeColumns = GetDateTimeColumnNamesFromMappings(mappings);
 
         // Query the file to get actual column names
         List<string> fileColumns;
@@ -581,37 +580,30 @@ public sealed class DuckDb : IFlatFile
         return $"CREATE OR REPLACE {keyword} \"{source.TableName}\" AS SELECT {sb} FROM {readFunction}";
     }
 
-    /// <summary>
-    /// Gets the set of column names (from the file, not C# property names) that map to DateTime properties.
-    /// </summary>
-    private static HashSet<string> GetDateTimeColumnNames(Type entityType)
+    private static bool HasDateTimeColumns(List<ColumnMapping> mappings)
     {
-        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (var mapping in mappings)
         {
-            var propType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-            if (propType != typeof(DateTime)) continue;
-
-            // Use [Column] attribute name if present, otherwise property name
-            var columnAttr = prop.GetCustomAttribute<ColumnAttribute>();
-            var columnName = columnAttr?.Name ?? prop.Name;
-            result.Add(columnName);
-        }
-        return result;
-    }
-
-    private static bool HasDateTimeProperties(Type entityType)
-    {
-        foreach (var prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-        {
-            var propType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-            if (propType == typeof(DateTime)) return true;
+            if (mapping.IsDateTime) return true;
         }
         return false;
     }
 
+    private static HashSet<string> GetDateTimeColumnNamesFromMappings(List<ColumnMapping> mappings)
+    {
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var mapping in mappings)
+        {
+            if (mapping.IsDateTime)
+                result.Add(mapping.ColumnName);
+        }
+        return result;
+    }
+
     /// <summary>
     /// Validates that the file's inferred schema is compatible with the entity type.
+    /// Checks that every mapped entity property has a corresponding column in the file.
+    /// Extra file columns not mapped to entity properties are allowed (SELECT-style semantics).
     /// </summary>
     private void ValidateSchema(IFileSource source)
     {
@@ -628,17 +620,15 @@ public sealed class DuckDb : IFlatFile
             fileColumns[colName] = colType;
         }
 
-        // Validate entity properties have matching columns
-        foreach (var prop in source.EntityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        // Validate that every mapped entity property has a matching file column.
+        // Extra file columns are intentionally allowed — the entity only maps the columns it needs.
+        foreach (var mapping in FlatFileExpressionHelper.GetColumnMappings(source.EntityType))
         {
-            var columnAttr = prop.GetCustomAttribute<ColumnAttribute>();
-            var columnName = columnAttr?.Name ?? prop.Name;
-
-            if (!fileColumns.ContainsKey(columnName))
+            if (!fileColumns.ContainsKey(mapping.ColumnName))
             {
                 throw new InvalidOperationException(
-                    $"Schema validation failed for '{source.TableName}': Entity property '{prop.Name}' " +
-                    $"maps to column '{columnName}' which does not exist in the file. " +
+                    $"Schema validation failed for '{source.TableName}': Entity property '{mapping.Property.Name}' " +
+                    $"maps to column '{mapping.ColumnName}' which does not exist in the file. " +
                     $"Available columns: {string.Join(", ", fileColumns.Keys)}");
             }
         }
