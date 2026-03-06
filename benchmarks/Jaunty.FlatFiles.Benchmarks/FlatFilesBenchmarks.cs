@@ -1,8 +1,9 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
+
 using Jaunty.FlatFiles.DuckDB;
-using System.Data.Common;
+
 using Microsoft.Data.Sqlite;
 
 namespace Jaunty.FlatFiles.Benchmarks;
@@ -221,11 +222,7 @@ public class FlatFilesBenchmarks
         using var target = new SqliteConnection("Data Source=:memory:");
         await target.OpenAsync();
 
-        return await db.ImportIntoAsync<SalesRecord>(target, import =>
-        {
-            import.BatchSize = 1000;
-            import.CreateTableIfMissing = true;
-        });
+        return await db.ImportIntoAsync<SalesRecord>(target, new ImportOptions(batchSize: 1000, createTableIfMissing: true));
     }
 }
 
