@@ -176,10 +176,7 @@ public class ImportPipelineTests : IDisposable
         using var sqlite = CreateSqliteConnection();
         // Do NOT create table manually
 
-        var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-        {
-            opts.CreateTableIfMissing = true;
-        });
+        var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(createTableIfMissing: true));
 
         Assert.Equal(5, count);
         Assert.Equal(5, CountRows(sqlite, "inventory"));
@@ -190,10 +187,7 @@ public class ImportPipelineTests : IDisposable
     {
         using var sqlite = CreateSqliteConnection();
 
-        await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-        {
-            opts.CreateTableIfMissing = true;
-        });
+        await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(createTableIfMissing: true));
 
         // Verify table structure
         using var cmd = sqlite.CreateCommand();
@@ -221,10 +215,7 @@ public class ImportPipelineTests : IDisposable
         CreateInventoryTable(sqlite);
 
         // Should not throw even though table already exists
-        var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-        {
-            opts.CreateTableIfMissing = true;
-        });
+        var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(createTableIfMissing: true));
 
         Assert.Equal(5, count);
     }
@@ -245,10 +236,7 @@ public class ImportPipelineTests : IDisposable
         // Second import should fail on duplicate primary key
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-            {
-                opts.OnConflict = ConflictStrategy.Error;
-            });
+            await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Error));
         });
     }
 
@@ -267,10 +255,7 @@ public class ImportPipelineTests : IDisposable
         Assert.Equal(5, CountRows(sqlite, "inventory"));
 
         // Second import with Skip — should not add duplicates
-        var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-        {
-            opts.OnConflict = ConflictStrategy.Skip;
-        });
+        var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Skip));
 
         // Still 5 rows — duplicates skipped
         Assert.Equal(5, CountRows(sqlite, "inventory"));
@@ -288,15 +273,16 @@ public class ImportPipelineTests : IDisposable
         // Add a new row to the DuckDB source
         await _db.InsertAsync(new InventoryItem
         {
-            ItemId = 10, ItemName = "New Item", Category = "Test",
-            StockQuantity = 1, UnitPrice = 1.00m, InStock = true
+            ItemId = 10,
+            ItemName = "New Item",
+            Category = "Test",
+            StockQuantity = 1,
+            UnitPrice = 1.00m,
+            InStock = true
         });
 
         // Import again with Skip — should insert the new row only
-        await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-        {
-            opts.OnConflict = ConflictStrategy.Skip;
-        });
+        await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Skip));
 
         Assert.Equal(6, CountRows(sqlite, "inventory"));
     }
@@ -321,10 +307,7 @@ public class ImportPipelineTests : IDisposable
             999);
 
         // Import again with Upsert
-        await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-        {
-            opts.OnConflict = ConflictStrategy.Upsert;
-        });
+        await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Upsert));
 
         // Should still have 5 rows, but row 1 should have updated StockQuantity
         Assert.Equal(5, CountRows(sqlite, "inventory"));
@@ -348,15 +331,11 @@ public class ImportPipelineTests : IDisposable
         var progressCallCount = 0;
         var lastReported = 0L;
 
-        var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
+        var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(batchSize: 2, onProgress: (imported, _) =>
         {
-            opts.BatchSize = 2; // Small batch for testing
-            opts.OnProgress = (imported, _) =>
-            {
-                progressCallCount++;
-                lastReported = imported;
-            };
-        });
+            progressCallCount++;
+            lastReported = imported;
+        }));
 
         Assert.Equal(5, count);
         // With batch size 2 and 5 rows: progress at 2, 4, then final at 5
@@ -375,14 +354,10 @@ public class ImportPipelineTests : IDisposable
 
         var progressReports = new List<(long Imported, long? Total)>();
 
-        await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
+        await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(batchSize: 3, onProgress: (imported, total) =>
         {
-            opts.BatchSize = 3;
-            opts.OnProgress = (imported, total) =>
-            {
-                progressReports.Add((imported, total));
-            };
-        });
+            progressReports.Add((imported, total));
+        }));
 
         Assert.NotEmpty(progressReports);
 
@@ -400,14 +375,10 @@ public class ImportPipelineTests : IDisposable
 
         var importedCounts = new List<long>();
 
-        await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
+        await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(batchSize: 2, onProgress: (imported, _) =>
         {
-            opts.BatchSize = 2;
-            opts.OnProgress = (imported, _) =>
-            {
-                importedCounts.Add(imported);
-            };
-        });
+            importedCounts.Add(imported);
+        }));
 
         // Counts should be non-decreasing
         for (int i = 1; i < importedCounts.Count; i++)
@@ -468,11 +439,7 @@ public class ImportPipelineTests : IDisposable
 
         var count = await FlatFileImporter.ImportAsync<InventoryItem>(
             _csvPath, sqlite,
-            opts =>
-            {
-                opts.CreateTableIfMissing = true;
-                opts.BatchSize = 2;
-            });
+            new ImportOptions(createTableIfMissing: true, batchSize: 2));
 
         Assert.Equal(5, count);
         Assert.Equal(5, CountRows(sqlite, "inventory"));
@@ -515,27 +482,18 @@ public class ImportPipelineTests : IDisposable
         using var sqlite = CreateSqliteConnection();
 
         // 1. Import with CreateTableIfMissing
-        var imported = await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-        {
-            opts.CreateTableIfMissing = true;
-        });
+        var imported = await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(createTableIfMissing: true));
         Assert.Equal(5, imported);
         Assert.Equal(5, CountRows(sqlite, "inventory"));
 
         // 2. ConflictStrategy.Error — should throw on duplicate
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-            {
-                opts.OnConflict = ConflictStrategy.Error;
-            });
+            await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Error));
         });
 
         // 3. ConflictStrategy.Skip — should not change count
-        await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-        {
-            opts.OnConflict = ConflictStrategy.Skip;
-        });
+        await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Skip));
         Assert.Equal(5, CountRows(sqlite, "inventory"));
 
         // 4. Mutate in DuckDB, then upsert
@@ -544,10 +502,7 @@ public class ImportPipelineTests : IDisposable
             i => i.ItemName,
             "Updated Widget A");
 
-        await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-        {
-            opts.OnConflict = ConflictStrategy.Upsert;
-        });
+        await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Upsert));
         Assert.Equal(5, CountRows(sqlite, "inventory"));
 
         // Verify the upserted row
@@ -558,11 +513,8 @@ public class ImportPipelineTests : IDisposable
 
         // 5. Progress callback worked
         var progressFired = false;
-        await _db.ImportIntoAsync<InventoryItem>(sqlite, opts =>
-        {
-            opts.OnConflict = ConflictStrategy.Upsert;
-            opts.OnProgress = (_, _) => progressFired = true;
-        });
+        await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Upsert, onProgress: (_, _) => progressFired = true));
+
         Assert.True(progressFired);
     }
 }
