@@ -14,16 +14,11 @@ internal static class ImportExecutor
     /// <summary>
     /// Imports data from a DuckDB source table into a target database connection.
     /// </summary>
-    public static async ValueTask<long> ExecuteAsync<T>(
-        IDbConnection sourceConnection,
-        IFileSource source,
-        DbConnection targetConnection,
-        ImportOptions options,
-        CancellationToken cancellationToken) where T : class, new()
+    public static async ValueTask<long> ExecuteAsync<T>(IDbConnection sourceConnection, IFileSource source, DbConnection targetConnection, ImportOptions options, CancellationToken cancellationToken) where T : class, new()
     {
         var entityType = typeof(T);
-        var mappings = FlatFileExpressionHelper.GetColumnMappings(entityType);
-        var tableName = source.TableName;
+        List<(string ColumnName, PropertyInfo Property)> mappings = FlatFileExpressionHelper.GetColumnMappings(entityType);
+        string tableName = source.TableName;
 
         // Resolve the import dialect (explicit > custom registry > auto-detect)
         var dialect = ImportDialectResolver.Resolve(targetConnection, options.Dialect);
@@ -73,14 +68,8 @@ internal static class ImportExecutor
         }
     }
 
-    private static async ValueTask<long> ImportBatchesAsync(
-        DbDataReader reader,
-        DbConnection targetConnection,
-        string insertSql,
-        List<(string ColumnName, PropertyInfo Property)> mappings,
-        int batchSize,
-        Action<long, long?>? onProgress,
-        CancellationToken cancellationToken)
+    private static async ValueTask<long> ImportBatchesAsync(DbDataReader reader, DbConnection targetConnection, string insertSql,
+        List<(string ColumnName, PropertyInfo Property)> mappings, int batchSize, Action<long, long?>? onProgress, CancellationToken cancellationToken)
     {
         long totalImported = 0;
 
@@ -216,11 +205,7 @@ internal static class ImportExecutor
         }
     }
 
-    private static void ValidateTargetSchema(
-        DbConnection targetConnection,
-        string tableName,
-        List<(string ColumnName, PropertyInfo Property)> mappings,
-        bool createTableIfMissing)
+    private static void ValidateTargetSchema(DbConnection targetConnection, string tableName, List<(string ColumnName, PropertyInfo Property)> mappings, bool createTableIfMissing)
     {
         // Check if the table exists in the target
         try
