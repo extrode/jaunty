@@ -14,13 +14,13 @@ public static class FlatFileImporter
     /// <typeparam name="T">The entity type. Must have a <c>[Table]</c> attribute or uses class name lowercased.</typeparam>
     /// <param name="filePath">The path to the source flat file (CSV, TSV, Parquet, or JSON).</param>
     /// <param name="targetConnection">The target ADO.NET connection to import into.</param>
-    /// <param name="configure">An optional action to configure import options.</param>
+    /// <param name="options">Import options (batch size, conflict strategy, etc.).</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The total number of rows imported.</returns>
     public static async ValueTask<long> ImportAsync<T>(
         string filePath,
         DbConnection targetConnection,
-        Action<ImportOptions>? configure = null,
+        ImportOptions options = default,
         CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -37,7 +37,7 @@ public static class FlatFileImporter
         var source = FlatFile.CreateSourceFromExtension(extension, tableName, fullPath, typeof(T));
         using var db = FlatFile.Open(opts => opts.AddSource(source));
 
-        return await db.ImportIntoAsync<T>(targetConnection, configure, cancellationToken).ConfigureAwait(false);
+        return await db.ImportIntoAsync<T>(targetConnection, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -47,19 +47,19 @@ public static class FlatFileImporter
     /// <typeparam name="T">The entity type.</typeparam>
     /// <param name="configureSource">An action to configure the flat file database options.</param>
     /// <param name="targetConnection">The target ADO.NET connection to import into.</param>
-    /// <param name="configureImport">An optional action to configure import options.</param>
+    /// <param name="options">Import options (batch size, conflict strategy, etc.).</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The total number of rows imported.</returns>
     public static async ValueTask<long> ImportAsync<T>(
         Action<FlatFileDatabaseOptions> configureSource,
         DbConnection targetConnection,
-        Action<ImportOptions>? configureImport = null,
+        ImportOptions options = default,
         CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(configureSource);
         ArgumentNullException.ThrowIfNull(targetConnection);
 
         using var db = FlatFile.Open(configureSource);
-        return await db.ImportIntoAsync<T>(targetConnection, configureImport, cancellationToken).ConfigureAwait(false);
+        return await db.ImportIntoAsync<T>(targetConnection, options, cancellationToken).ConfigureAwait(false);
     }
 }
