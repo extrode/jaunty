@@ -389,3 +389,6 @@ FodyWeavers.xsd
 
 # Ignore scripts folder
 /scripts/
+
+# ignore all dlls
+*.dll
