@@ -423,6 +423,42 @@ public sealed class DuckDb : IFlatFile
             _connection, source, targetConnection, options, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Attaches an external database (MySQL, PostgreSQL, or SQLite) to DuckDB, making its tables queryable.
+    /// Requires the corresponding DuckDB extension to be installed and loaded.
+    /// </summary>
+    /// <param name="connectionString">The connection string for the external database.</param>
+    /// <param name="alias">The alias to use when referencing the attached database in queries (e.g. <c>SELECT * FROM alias.table</c>).</param>
+    /// <param name="type">The database type: <c>"mysql"</c>, <c>"postgres"</c>, or <c>"sqlite"</c>.</param>
+    /// <param name="readOnly">Whether to attach in read-only mode. Default: false.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    public async ValueTask AttachAsync(string connectionString, string alias, string type, bool readOnly = false, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(connectionString);
+        ArgumentNullException.ThrowIfNull(alias);
+        ArgumentNullException.ThrowIfNull(type);
+
+        var escapedConnStr = connectionString.Replace("'", "''");
+        var escapedAlias = alias.Replace("\"", "\"\"");
+        var escapedType = type.Replace("'", "''");
+
+        var sql = $"ATTACH '{escapedConnStr}' AS \"{escapedAlias}\" (TYPE {escapedType}{(readOnly ? ", READ_ONLY" : "")})";
+        await ExecuteNonQueryAsync(sql, [], cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Detaches a previously attached external database.
+    /// </summary>
+    /// <param name="alias">The alias of the database to detach.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    public async ValueTask DetachAsync(string alias, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(alias);
+
+        var escapedAlias = alias.Replace("\"", "\"\"");
+        await ExecuteNonQueryAsync($"DETACH \"{escapedAlias}\"", [], cancellationToken).ConfigureAwait(false);
+    }
+
     // ==========================================
     // Private Helpers
     // ==========================================
@@ -472,21 +508,35 @@ public sealed class DuckDb : IFlatFile
         return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static string InferFormatFromExtension(string path)
+    private string InferFormatFromExtension(string path)
     {
         var ext = Path.GetExtension(path).ToLowerInvariant();
-        return ext switch
+
+        // Check built-in formats first
+        var format = ext switch
         {
             ".csv" => FileFormats.Csv,
             ".tsv" => FileFormats.Tsv,
             ".parquet" => FileFormats.Parquet,
             ".json" or ".ndjson" => FileFormats.Json,
             ".xlsx" or ".xls" => FileFormats.Excel,
-            _ => throw new ArgumentException(
-                $"Cannot infer output format from extension '{ext}'. Supported: .csv, .tsv, .parquet, .json, .ndjson, .xlsx, .xls. " +
-                $"Use FlatFile.RegisterExtension() to add custom file types.",
-                nameof(path))
+            _ => (string?)null
         };
+
+        if (format is not null)
+            return format;
+
+        // Fall back to registered sources — check if this entity type has a source with a known format
+        foreach (var source in _sources.Values)
+        {
+            if (!string.IsNullOrEmpty(source.DuckDbFormatName))
+                return source.Format;
+        }
+
+        throw new ArgumentException(
+            $"Cannot infer output format from extension '{ext}'. " +
+            $"Use FlatFile.RegisterExtension() to add custom file types, or use the IFileSource-based overload.",
+            nameof(path));
     }
 
     /// <summary>

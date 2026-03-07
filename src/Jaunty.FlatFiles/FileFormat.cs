@@ -19,4 +19,10 @@ public static class FileFormats
 
     /// <summary>Microsoft Excel (.xlsx) format.</summary>
     public const string Excel = "XLSX";
+
+    /// <summary>Delta Lake table format.</summary>
+    public const string DeltaLake = "DELTA";
+
+    /// <summary>Apache Iceberg table format.</summary>
+    public const string Iceberg = "ICEBERG";
 }

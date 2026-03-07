@@ -114,6 +114,38 @@ public sealed class FlatFileOptions
     }
 
     /// <summary>
+    /// Adds a Delta Lake table source for the specified entity type.
+    /// Requires the DuckDB <c>delta</c> extension.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map rows to.</typeparam>
+    /// <param name="filePath">The path to the Delta Lake table directory.</param>
+    /// <param name="configure">Optional configuration for the Delta Lake source.</param>
+    public FlatFileOptions AddDeltaLake<T>(string filePath, Action<DeltaLakeFileSource>? configure = null) where T : class, new()
+    {
+        var tableName = TableNameResolver.Resolve<T>();
+        var source = new DeltaLakeFileSource(tableName, filePath, typeof(T));
+        configure?.Invoke(source);
+        Sources.Add(source);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds an Apache Iceberg table source for the specified entity type.
+    /// Requires the DuckDB <c>iceberg</c> extension.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map rows to.</typeparam>
+    /// <param name="filePath">The path to the Iceberg table directory or metadata file.</param>
+    /// <param name="configure">Optional configuration for the Iceberg source.</param>
+    public FlatFileOptions AddIceberg<T>(string filePath, Action<IcebergFileSource>? configure = null) where T : class, new()
+    {
+        var tableName = TableNameResolver.Resolve<T>();
+        var source = new IcebergFileSource(tableName, filePath, typeof(T));
+        configure?.Invoke(source);
+        Sources.Add(source);
+        return this;
+    }
+
+    /// <summary>
     /// Registers a custom file source directly. Use this to add file sources
     /// for formats not natively supported (e.g. custom <see cref="IFileSource"/> implementations).
     /// </summary>
