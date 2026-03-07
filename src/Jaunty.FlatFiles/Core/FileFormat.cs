@@ -1,4 +1,4 @@
-namespace Jaunty.FlatFiles;
+namespace Jaunty.FlatFiles.Core;
 
 /// <summary>
 /// Well-known flat file format identifiers. Custom formats can use any string value.

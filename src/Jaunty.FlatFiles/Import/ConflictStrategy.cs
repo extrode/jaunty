@@ -1,4 +1,4 @@
-namespace Jaunty.FlatFiles;
+namespace Jaunty.FlatFiles.Import;
 
 /// <summary>
 /// Specifies how primary key conflicts are handled during import.

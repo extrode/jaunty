@@ -2,6 +2,9 @@ using System.Data;
 using System.Data.Common;
 using System.Text;
 
+using Jaunty.FlatFiles.Import;
+using Jaunty.FlatFiles.Interfaces;
+
 namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 
 /// <summary>

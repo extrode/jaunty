@@ -1,4 +1,7 @@
-namespace Jaunty.FlatFiles;
+using Jaunty.FlatFiles.Core;
+using Jaunty.FlatFiles.Interfaces;
+
+namespace Jaunty.FlatFiles.FileSources;
 
 /// <summary>
 /// Represents a CSV file data source.

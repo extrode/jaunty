@@ -1,7 +1,7 @@
 using Jaunty.Attributes;
-using Jaunty.FlatFiles;
+using Jaunty.FlatFiles.Internals;
 
-namespace Jaunty.FlatFiles.Tests;
+namespace Jaunty.FlatFiles.Tests.Internals;
 
 public class TableNameResolverTests
 {

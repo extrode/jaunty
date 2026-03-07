@@ -1,3 +1,7 @@
+using Jaunty.FlatFiles.Core;
+using Jaunty.FlatFiles.FileSources;
+using Jaunty.FlatFiles.Interfaces;
+
 namespace Jaunty.FlatFiles.DuckDB;
 
 /// <summary>

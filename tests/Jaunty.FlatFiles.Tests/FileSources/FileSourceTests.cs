@@ -1,6 +1,7 @@
-using Jaunty.FlatFiles;
+using Jaunty.FlatFiles.Core;
+using Jaunty.FlatFiles.FileSources;
 
-namespace Jaunty.FlatFiles.Tests;
+namespace Jaunty.FlatFiles.Tests.FileSources;
 
 public class TsvFileSourceTests
 {
