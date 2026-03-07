@@ -1,6 +1,3 @@
-#if NET8_0_OR_GREATER
-using System.Collections.Frozen;
-#endif
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -10,26 +7,13 @@ using DuckDB.NET.Data;
 
 using Jaunty.Attributes;
 
-namespace Jaunty.FlatFiles.DuckDB;
+namespace Jaunty.FlatFiles.DuckDB.Internals;
 
 /// <summary>
-/// Pre-computed column mapping with compiled getter/setter delegates.
-/// Eliminates per-call reflection for property access.
+/// Translates C# lambda expressions to DuckDB SQL WHERE clauses.
+/// Uses positional parameters ($1, $2, ...) which are 1-based.
 /// </summary>
-internal readonly struct ColumnMapping
-{
-    public string ColumnName { get; init; }
-    public PropertyInfo Property { get; init; }
-    public Func<object, object?> Getter { get; init; }
-    public Action<object, object?> Setter { get; init; }
-    public Type PropertyType { get; init; }
-    public bool IsDateTime { get; init; }
-}
-
-/// <summary>
-/// Lightweight expression-to-SQL translator for flat file CRUD operations.
-/// Handles basic predicates and column selectors without depending on Jaunty.Fluent.
-/// Uses DuckDB positional parameters ($1, $2, ...) which are 1-based.
+/// <remarks>
 /// <para><b>Supported predicate patterns:</b></para>
 /// <list type="bullet">
 ///   <item>Comparison operators: <c>==</c>, <c>!=</c>, <c>&lt;</c>, <c>&lt;=</c>, <c>&gt;</c>, <c>&gt;=</c></item>
@@ -42,22 +26,9 @@ internal readonly struct ColumnMapping
 /// </list>
 /// <para><b>Not supported:</b> nested method calls, arithmetic expressions, property-to-property comparisons,
 /// custom method translations. Unsupported patterns throw <see cref="NotSupportedException"/>.</para>
-/// </summary>
-internal static class FlatFileExpressionHelper
+/// </remarks>
+internal static class ExpressionTranslator
 {
-#if NET8_0_OR_GREATER
-    /// <summary>
-    /// Cache for column mappings per entity type to avoid repeated reflection.
-    /// Uses FrozenDictionary for optimal read performance on .NET 8+.
-    /// </summary>
-    private static readonly ConcurrentDictionary<Type, FrozenDictionary<string, ColumnMapping>> _columnMappingCache = new();
-#else
-    /// <summary>
-    /// Cache for column mappings per entity type to avoid repeated reflection.
-    /// </summary>
-    private static readonly ConcurrentDictionary<Type, Dictionary<string, ColumnMapping>> _columnMappingCache = new();
-#endif
-
     /// <summary>
     /// Cache for compiled expression delegates to avoid repeated compilation.
     /// Uses Expression string representation as key since Expression doesn't override GetHashCode.
@@ -66,11 +37,15 @@ internal static class FlatFileExpressionHelper
 
     /// <summary>
     /// Translates a predicate expression into a DuckDB WHERE clause with positional parameters.
-    /// See <see cref="FlatFileExpressionHelper"/> class documentation for supported expression patterns.
     /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="predicate">The predicate expression to translate.</param>
+    /// <param name="paramOffset">Starting offset for parameter numbering (default: 0).</param>
+    /// <returns>The SQL WHERE clause and list of parameters.</returns>
     /// <exception cref="NotSupportedException">Thrown when the expression contains unsupported patterns.</exception>
-    public static (string Sql, List<DuckDBParameter> Parameters) TranslatePredicate<T>(
-        Expression<Func<T, bool>> predicate, int paramOffset = 0)
+    public static (string Sql, List<DuckDBParameter> Parameters) Translate<T>(
+        Expression<Func<T, bool>> predicate,
+        int paramOffset = 0)
     {
         var parameters = new List<DuckDBParameter>();
         var sql = VisitExpression(predicate.Body, parameters, paramOffset);
@@ -87,68 +62,6 @@ internal static class FlatFileExpressionHelper
             throw new ArgumentException("Column selector must be a property access expression.", nameof(columnSelector));
 
         return GetColumnName(prop);
-    }
-
-    /// <summary>
-    /// Gets all column mappings for an entity type, including compiled getter/setter delegates.
-    /// Uses caching to avoid repeated reflection on hot paths.
-    /// </summary>
-    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
-        System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
-    public static IReadOnlyDictionary<string, ColumnMapping> GetColumnMappings(Type entityType)
-    {
-        return _columnMappingCache.GetOrAdd(entityType, type =>
-        {
-            var dict = new Dictionary<string, ColumnMapping>(StringComparer.OrdinalIgnoreCase);
-            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                if (!prop.CanRead || !prop.CanWrite) continue;
-
-                var underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-                var columnName = GetColumnName(prop);
-
-                dict[columnName] = new ColumnMapping
-                {
-                    ColumnName = columnName,
-                    Property = prop,
-                    Getter = CreateGetter(prop),
-                    Setter = CreateSetter(prop),
-                    PropertyType = prop.PropertyType,
-                    IsDateTime = underlyingType == typeof(DateTime)
-                };
-            }
-
-#if NET8_0_OR_GREATER
-            return dict.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
-#else
-            return dict;
-#endif
-        });
-    }
-
-    /// <summary>
-    /// Compiles a getter delegate: (object entity) => (object?)entity.Property
-    /// </summary>
-    private static Func<object, object?> CreateGetter(PropertyInfo prop)
-    {
-        var param = Expression.Parameter(typeof(object), "entity");
-        var cast = Expression.Convert(param, prop.DeclaringType!);
-        var access = Expression.Property(cast, prop);
-        var box = Expression.Convert(access, typeof(object));
-        return Expression.Lambda<Func<object, object?>>(box, param).Compile();
-    }
-
-    /// <summary>
-    /// Compiles a setter delegate: (object entity, object? value) => entity.Property = (PropertyType)value
-    /// </summary>
-    private static Action<object, object?> CreateSetter(PropertyInfo prop)
-    {
-        var entityParam = Expression.Parameter(typeof(object), "entity");
-        var valueParam = Expression.Parameter(typeof(object), "value");
-        var cast = Expression.Convert(entityParam, prop.DeclaringType!);
-        var convertedValue = Expression.Convert(valueParam, prop.PropertyType);
-        var assign = Expression.Assign(Expression.Property(cast, prop), convertedValue);
-        return Expression.Lambda<Action<object, object?>>(assign, entityParam, valueParam).Compile();
     }
 
     private static string GetColumnName(PropertyInfo prop)
@@ -187,7 +100,6 @@ internal static class FlatFileExpressionHelper
 
     private static string VisitBinary(BinaryExpression binary, List<DuckDBParameter> parameters, int paramOffset)
     {
-        // Handle logical operators (AND, OR)
         if (binary.NodeType is ExpressionType.AndAlso or ExpressionType.OrElse)
         {
             var left = VisitExpression(binary.Left, parameters, paramOffset);
@@ -196,7 +108,6 @@ internal static class FlatFileExpressionHelper
             return $"({left} {op} {right})";
         }
 
-        // Handle comparison operators
         var (columnName, value) = ExtractColumnAndValue(binary);
 
         if (value is null)
@@ -216,7 +127,6 @@ internal static class FlatFileExpressionHelper
             _ => throw new NotSupportedException($"Binary operator '{binary.NodeType}' is not supported.")
         };
 
-        // DuckDB uses 1-based positional parameters: $1, $2, ...
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = value });
         return $"\"{columnName}\" {sqlOp} ${paramIndex}";
@@ -224,7 +134,6 @@ internal static class FlatFileExpressionHelper
 
     private static string VisitMethodCall(MethodCallExpression method, List<DuckDBParameter> parameters, int paramOffset)
     {
-        // Handle string.Contains, StartsWith, EndsWith
         if (method.Object is MemberExpression member && method.Method.DeclaringType == typeof(string))
         {
             var columnName = ResolveColumnFromMember(member);
@@ -239,7 +148,6 @@ internal static class FlatFileExpressionHelper
             };
         }
 
-        // Handle Enumerable.Contains for IN clauses
         if (method.Method.Name == "Contains" && method.Method.DeclaringType != null &&
             (method.Method.DeclaringType == typeof(Enumerable) ||
              method.Method.DeclaringType.IsGenericType && method.Method.DeclaringType.GetGenericTypeDefinition() == typeof(List<>)))
@@ -273,7 +181,6 @@ internal static class FlatFileExpressionHelper
 
     private static string HandleInClause(MethodCallExpression method, List<DuckDBParameter> parameters, int paramOffset)
     {
-        // Enumerable.Contains(collection, item) or collection.Contains(item)
         Expression collectionExpr;
         Expression itemExpr;
 
@@ -313,7 +220,6 @@ internal static class FlatFileExpressionHelper
 
     private static (string ColumnName, object? Value) ExtractColumnAndValue(BinaryExpression binary)
     {
-        // Try left = column, right = value
         var leftMember = ExtractMemberExpression(binary.Left);
         var rightMember = ExtractMemberExpression(binary.Right);
 
@@ -336,7 +242,6 @@ internal static class FlatFileExpressionHelper
 
     private static bool IsEntityMember(MemberExpression member)
     {
-        // Entity members have a parameter expression as root
         var current = member.Expression;
         while (current is MemberExpression nested)
             current = nested.Expression;
@@ -352,20 +257,16 @@ internal static class FlatFileExpressionHelper
 
     private static object? EvaluateExpression(Expression expression)
     {
-        // Handle constants directly
         if (expression is ConstantExpression constant)
             return constant.Value;
 
-        // Handle Convert expressions (e.g., boxing)
         if (expression is UnaryExpression { NodeType: ExpressionType.Convert } unary)
             return EvaluateExpression(unary.Operand);
 
-        // Compile and cache for complex expressions (closures, field access, etc.)
-        // Use expression ToString() as cache key (works for simple constant/member expressions)
         var cacheKey = expression.ToString() ?? throw new InvalidOperationException("Expression ToString() returned null");
         return _expressionCache.GetOrAdd(cacheKey, _ =>
         {
-            var lambda = Expression.Lambda<Func<object?>>(Expression.Convert(expression, typeof(object)));
+            var lambda = System.Linq.Expressions.Expression.Lambda<Func<object?>>(System.Linq.Expressions.Expression.Convert(expression, typeof(object)));
             return lambda.Compile();
         })();
     }

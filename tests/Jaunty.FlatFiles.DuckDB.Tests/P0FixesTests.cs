@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.FlatFiles.DuckDB.Tests.Entities;
 using Jaunty.Fluent;
 
@@ -235,13 +236,13 @@ public class P0FixesTests : IDisposable
         var entityType = typeof(SalesRecord);
 
         // Act - First call (populates cache)
-        var mappings1 = FlatFileExpressionHelper.GetColumnMappings(entityType);
-        
+        var mappings1 = ColumnMappingCache.Get(entityType);
+
         // Get cache count before second call
         var cacheCountBefore = GetCacheCount();
 
         // Second call (should use cache)
-        var mappings2 = FlatFileExpressionHelper.GetColumnMappings(entityType);
+        var mappings2 = ColumnMappingCache.Get(entityType);
 
         // Assert
         Assert.Same(mappings1, mappings2); // Same reference from cache
@@ -252,8 +253,8 @@ public class P0FixesTests : IDisposable
     public void GetColumnMappings_DifferentTypes_CachedSeparately()
     {
         // Arrange & Act
-        var salesMappings = FlatFileExpressionHelper.GetColumnMappings(typeof(SalesRecord));
-        var inventoryMappings = FlatFileExpressionHelper.GetColumnMappings(typeof(InventoryItem));
+        var salesMappings = ColumnMappingCache.Get(typeof(SalesRecord));
+        var inventoryMappings = ColumnMappingCache.Get(typeof(InventoryItem));
 
         // Assert
         Assert.NotSame(salesMappings, inventoryMappings);
@@ -265,7 +266,7 @@ public class P0FixesTests : IDisposable
     public void GetColumnMappings_RespectsColumnAttribute()
     {
         // Arrange & Act
-        var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(SalesRecord));
+        var mappings = ColumnMappingCache.Get(typeof(SalesRecord));
 
         // Assert
         var productNameMapping = mappings.First(m => m.Value.Property.Name == "ProductName");
@@ -279,18 +280,18 @@ public class P0FixesTests : IDisposable
         var entityType = typeof(SalesRecord);
 
         // Warm up cache
-        FlatFileExpressionHelper.GetColumnMappings(entityType);
+        ColumnMappingCache.Get(entityType);
 
         // Act - Measure cached access time
         var stopwatch = Stopwatch.StartNew();
         for (int i = 0; i < 1000; i++)
         {
-            FlatFileExpressionHelper.GetColumnMappings(entityType);
+            ColumnMappingCache.Get(entityType);
         }
         stopwatch.Stop();
 
         // Assert - Should be very fast (< 10ms for 1000 cached accesses)
-        Assert.True(stopwatch.ElapsedMilliseconds < 10, 
+        Assert.True(stopwatch.ElapsedMilliseconds < 10,
             $"Cached access took {stopwatch.ElapsedMilliseconds}ms, expected < 10ms");
     }
 
@@ -385,8 +386,8 @@ public class P0FixesTests : IDisposable
     private int GetCacheCount()
     {
         // Use reflection to access the private cache for testing
-        var helperType = typeof(FlatFileExpressionHelper);
-        var cacheField = helperType.GetField("_columnMappingCache", 
+        var cacheType = typeof(ColumnMappingCache);
+        var cacheField = cacheType.GetField("_cache",
             BindingFlags.Static | BindingFlags.NonPublic);
         var cache = cacheField?.GetValue(null);
         var countProperty = cache?.GetType().GetProperty("Count");
@@ -396,7 +397,7 @@ public class P0FixesTests : IDisposable
     private object? InvokeEvaluateExpression(System.Linq.Expressions.Expression expr)
     {
         // Use reflection to call the private EvaluateExpression method
-        var helperType = typeof(FlatFileExpressionHelper);
+        var helperType = typeof(ExpressionTranslator);
         var method = helperType.GetMethod("EvaluateExpression",
             BindingFlags.Static | BindingFlags.NonPublic);
         return method?.Invoke(null, new[] { expr });
