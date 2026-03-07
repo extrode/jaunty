@@ -1,5 +1,3 @@
-using Jaunty;
-
 namespace Jaunty.FlatFiles.DuckDB;
 
 public sealed partial class DuckDb

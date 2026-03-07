@@ -1,8 +1,6 @@
-using System.Data;
-
 using DuckDB.NET.Data;
 
-using Jaunty.FlatFiles.DuckDB.Internals.Dialects;
+using Jaunty.FlatFiles.DuckDB.Dialects;
 
 namespace Jaunty.FlatFiles.DuckDB.Internals;
 
@@ -50,11 +48,7 @@ internal static class TablePromoter
     /// <param name="source">The file source to promote.</param>
     /// <param name="dialect">The DuckDB dialect for SQL generation.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
-    public static async ValueTask EnsurePromotedToTableAsync(
-        DuckDBConnection connection,
-        IFileSource source,
-        DuckDbDialect dialect,
-        CancellationToken cancellationToken)
+    public static async ValueTask EnsurePromotedToTableAsync(DuckDBConnection connection, IFileSource source,         DuckDbDialect dialect, CancellationToken cancellationToken)
     {
         if (source.IsPreloaded || source.IsPromotedToTable)
             return;

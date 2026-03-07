@@ -3,7 +3,7 @@ using System.Text;
 using Jaunty.Dialects;
 using Jaunty.Internals.BulkCopy;
 
-namespace Jaunty.FlatFiles.DuckDB.Internals.Dialects;
+namespace Jaunty.FlatFiles.DuckDB.Dialects;
 
 /// <summary>
 /// SQL dialect for DuckDB, implementing both <see cref="ISqlDialect"/> for standard SQL generation

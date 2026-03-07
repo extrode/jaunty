@@ -1,4 +1,4 @@
-using Jaunty.FlatFiles.DuckDB.Internals.Dialects;
+using Jaunty.FlatFiles.DuckDB.Dialects;
 
 namespace Jaunty.FlatFiles.DuckDB.Tests;
 

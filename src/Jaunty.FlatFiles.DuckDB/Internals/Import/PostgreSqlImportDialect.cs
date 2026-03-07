@@ -5,7 +5,7 @@ namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 /// <summary>
 /// Import dialect for PostgreSQL databases.
 /// </summary>
-public sealed class PostgreSqlImportDialect : IImportDialect
+internal sealed class PostgreSqlImportDialect : IImportDialect
 {
     /// <summary>
     /// Singleton instance.

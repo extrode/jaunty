@@ -7,7 +7,7 @@ namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 /// Supports auto-detection for SQLite, PostgreSQL, and SQL Server.
 /// Custom dialects can be registered via <see cref="Register"/>.
 /// </summary>
-public static class ImportDialectResolver
+internal static class ImportDialectResolver
 {
     private static readonly Dictionary<string, IImportDialect> _registry = new(StringComparer.OrdinalIgnoreCase);
 
