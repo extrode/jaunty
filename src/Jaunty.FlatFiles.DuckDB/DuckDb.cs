@@ -6,8 +6,8 @@ using System.Text;
 using DuckDB.NET.Data;
 
 using Jaunty.Dialects;
+using Jaunty.FlatFiles.DuckDB.Dialects;
 using Jaunty.FlatFiles.DuckDB.Internals;
-using Jaunty.FlatFiles.DuckDB.Internals.Dialects;
 using Jaunty.FlatFiles.DuckDB.Internals.Import;
 
 namespace Jaunty.FlatFiles.DuckDB;

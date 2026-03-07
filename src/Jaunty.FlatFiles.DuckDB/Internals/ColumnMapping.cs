@@ -1,7 +1,5 @@
 using System.Reflection;
 
-using Jaunty.Attributes;
-
 namespace Jaunty.FlatFiles.DuckDB.Internals;
 
 /// <summary>

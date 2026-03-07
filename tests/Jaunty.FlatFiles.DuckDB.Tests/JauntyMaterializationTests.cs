@@ -1,7 +1,7 @@
 using DuckDB.NET.Data;
 
 using Jaunty.Dialects;
-using Jaunty.FlatFiles.DuckDB.Internals.Dialects;
+using Jaunty.FlatFiles.DuckDB.Dialects;
 using Jaunty.FlatFiles.DuckDB.Tests.Entities;
 
 namespace Jaunty.FlatFiles.DuckDB.Tests;
