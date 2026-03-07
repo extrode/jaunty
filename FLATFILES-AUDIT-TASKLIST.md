@@ -73,11 +73,14 @@
   - [x] FlatFiles methods reviewed - pattern is consistent
   - [x] **Status: ACCEPTABLE** - FlatFiles uses consistent overloading
 
-- [ ] **P1-8: Add sync counterparts for async methods**
-  - [ ] `IFlatFile` interface only has async CRUD methods
-  - [ ] Jaunty core provides both sync and async versions
-  - [ ] Add `Insert<T>()`, `Update<T>()`, `Delete<T>()` sync versions
+- [x] **P1-8: Add sync counterparts for async methods**
+  - [x] Added sync `Insert<T>()`, `Insert<T>(IEnumerable<T>)` methods
+  - [x] Added sync `Update<T>()`, `Delete<T>()` methods
+  - [x] Added sync `Save<T>()`, `Save<T>(WriteBackMode)` methods
+  - [x] Added sync `Export<T>()` method
+  - [x] Sync methods wrap async with `.GetAwaiter().GetResult()` (consistent with .NET patterns)
   - **Files:** `src/Jaunty.FlatFiles/IFlatFile.cs`, `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`
+  - **Status:** COMPLETE - All 279 tests pass
 
 - [x] **P1-9: Fix generic type constraints**
   - [x] **RESOLVED: Finding was INCORRECT**

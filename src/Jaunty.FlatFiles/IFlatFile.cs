@@ -85,9 +85,25 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     /// </summary>
     /// <typeparam name="T">The entity type.</typeparam>
     /// <param name="entity">The entity to insert.</param>
+    /// <returns>The number of rows affected.</returns>
+    int Insert<T>(T entity) where T : class, new();
+
+    /// <summary>
+    /// Inserts a single entity into the flat file table. Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="entity">The entity to insert.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The number of rows affected.</returns>
     ValueTask<int> InsertAsync<T>(T entity, CancellationToken cancellationToken = default) where T : class, new();
+
+    /// <summary>
+    /// Inserts multiple entities into the flat file table. Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="entities">The entities to insert.</param>
+    /// <returns>The number of rows affected.</returns>
+    int Insert<T>(IEnumerable<T> entities) where T : class, new();
 
     /// <summary>
     /// Inserts multiple entities into the flat file table. Promotes the source from VIEW to TABLE on first mutation.
@@ -106,9 +122,28 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     /// <param name="predicate">A filter expression to select rows to update.</param>
     /// <param name="column">An expression selecting the column to update.</param>
     /// <param name="value">The new value for the column.</param>
+    /// <returns>The number of rows affected.</returns>
+    int Update<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value) where T : class, new();
+
+    /// <summary>
+    /// Updates rows matching the predicate by setting the specified column to the given value.
+    /// Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="predicate">A filter expression to select rows to update.</param>
+    /// <param name="column">An expression selecting the column to update.</param>
+    /// <param name="value">The new value for the column.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The number of rows affected.</returns>
     ValueTask<int> UpdateAsync<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CancellationToken cancellationToken = default) where T : class, new();
+
+    /// <summary>
+    /// Deletes rows matching the predicate. Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="predicate">A filter expression to select rows to delete.</param>
+    /// <returns>The number of rows affected.</returns>
+    int Delete<T>(Expression<Func<T, bool>> predicate) where T : class, new();
 
     /// <summary>
     /// Deletes rows matching the predicate. Promotes the source from VIEW to TABLE on first mutation.
@@ -128,6 +163,13 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     /// </summary>
     /// <typeparam name="T">The entity type.</typeparam>
     /// <param name="outputPath">The file path to write to. Format is inferred from extension.</param>
+    void Save<T>(string outputPath) where T : class, new();
+
+    /// <summary>
+    /// Saves modified data to a new file (non-destructive). The original file is not modified.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="outputPath">The file path to write to. Format is inferred from extension.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     ValueTask SaveAsync<T>(string outputPath, CancellationToken cancellationToken = default) where T : class, new();
 
@@ -137,8 +179,24 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     /// </summary>
     /// <typeparam name="T">The entity type.</typeparam>
     /// <param name="mode">The write-back mode.</param>
+    void Save<T>(WriteBackMode mode) where T : class, new();
+
+    /// <summary>
+    /// Saves modified data using the specified write-back mode.
+    /// When <see cref="WriteBackMode.Overwrite"/>, the original file is replaced atomically (temp + rename).
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="mode">The write-back mode.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     ValueTask SaveAsync<T>(WriteBackMode mode, CancellationToken cancellationToken = default) where T : class, new();
+
+    /// <summary>
+    /// Exports data for the specified entity type to a file, with format inferred from extension.
+    /// Can be used for cross-format export (e.g., CSV source → Parquet output).
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="outputPath">The file path to export to. Format is inferred from extension.</param>
+    void Export<T>(string outputPath) where T : class, new();
 
     /// <summary>
     /// Exports data for the specified entity type to a file, with format inferred from extension.
