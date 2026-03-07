@@ -16,6 +16,37 @@ namespace Jaunty.FlatFiles.DuckDB;
 /// A flat file database backed by DuckDB. Creates an in-memory (or file-backed) DuckDB instance
 /// and registers flat file sources as queryable views.
 /// </summary>
+/// <remarks>
+/// <para>
+/// <see cref="DuckDb"/> is the core implementation of <see cref="IFlatFile"/> that uses DuckDB as the embedded query engine.
+/// It provides fast, memory-efficient querying of flat files (CSV, TSV, Parquet, JSON, Excel, Delta Lake, Iceberg)
+/// using DuckDB's native read functions.
+/// </para>
+/// <para>
+/// Files are registered as DuckDB views by default (lazy, read-only). On the first mutation operation
+/// (INSERT, UPDATE, DELETE), views are automatically promoted to tables. This is transparent to the caller.
+/// </para>
+/// <para>
+/// <b>Thread Safety:</b> DuckDB allows multiple concurrent readers but only one writer. Do not perform
+/// concurrent write operations on the same <see cref="DuckDb"/> instance.
+/// </para>
+/// </remarks>
+/// <example>
+/// <code>
+/// // Open a single CSV file
+/// using var db = FlatFile.Open("data/sales.csv");
+/// var results = await db.QueryAsync&lt;SalesRecord&gt;("SELECT * FROM sales WHERE revenue > 1000");
+///
+/// // Configure multiple sources
+/// using var db = FlatFile.Open(options =>
+/// {
+///     options.AddCsv&lt;SalesRecord&gt;("data/sales.csv");
+///     options.AddParquet&lt;InventoryItem&gt;("data/inventory.parquet");
+/// });
+/// </code>
+/// </example>
+/// <seealso cref="IFlatFile"/>
+/// <seealso cref="FlatFile"/>
 public sealed class DuckDb : IFlatFile
 {
     private readonly DuckDBConnection _connection;
@@ -31,6 +62,10 @@ public sealed class DuckDb : IFlatFile
     /// <summary>
     /// Creates a new DuckDB flat file database with default options (in-memory).
     /// </summary>
+    /// <remarks>
+    /// The database is opened immediately and ready for queries.
+    /// Use <see cref="FlatFile.Open(string)"/> or <see cref="FlatFile.Open(Action{FlatFileOptions})"/> for a more convenient API.
+    /// </remarks>
     public DuckDb()
         : this(new FlatFileOptions())
     {
@@ -40,6 +75,11 @@ public sealed class DuckDb : IFlatFile
     /// Creates a new DuckDB flat file database with the specified options.
     /// </summary>
     /// <param name="options">Configuration options for the database.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null.</exception>
+    /// <remarks>
+    /// The database is opened immediately if <see cref="FlatFileOptions.AutoOpen"/> is true (default).
+    /// File sources are registered and validated if <see cref="FlatFileOptions.ValidateSchema"/> is enabled.
+    /// </remarks>
     public DuckDb(FlatFileOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -75,6 +115,12 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The source is registered immediately and becomes available for queries.
+    /// If <see cref="FlatFileOptions.ValidateSchema"/> is enabled, the file schema is validated against the entity type.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="source"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when schema validation fails.</exception>
     public void RegisterSource(IFileSource source)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -94,6 +140,12 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The source is registered asynchronously and becomes available for queries.
+    /// If <see cref="FlatFileOptions.ValidateSchema"/> is enabled, the file schema is validated against the entity type.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="source"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when schema validation fails.</exception>
     public async ValueTask RegisterSourceAsync(IFileSource source, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -127,13 +179,14 @@ public sealed class DuckDb : IFlatFile
     /// <summary>
     /// Gets the DuckDB dialect instance used by this database.
     /// </summary>
-    public DuckDbDialect Dialect => _dialect;
+    internal DuckDbDialect Dialect => _dialect;
 
     // ==========================================
     // Query Operations
     // ==========================================
 
     /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
     public IFromClause<T> Query<T>() where T : class, new()
     {
         var source = GetSourceOrThrow<T>();
@@ -143,13 +196,23 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
     public async ValueTask<List<T>> QueryAsync<T>(string sql, CancellationToken cancellationToken = default) where T : class, new()
     {
         return await QueryAsync<T>(sql, Enumerable.Empty<(string, object?)>(), cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public async ValueTask<List<T>> QueryAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters,         CancellationToken cancellationToken = default) where T : class, new()
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="parameters">Parameters for the query (name, value pairs).</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    /// <returns>A list of entities mapped from the query results.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
+    /// <remarks>
+    /// DuckDB uses positional parameters ($1, $2, ...). Parameters are bound in the order they are provided.
+    /// Column name matching is case-insensitive to accommodate DuckDB's lowercase column naming.
+    /// </remarks>
+    public async ValueTask<List<T>> QueryAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CancellationToken cancellationToken = default) where T : class, new()
     {
         await using var cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
@@ -215,6 +278,12 @@ public sealed class DuckDb : IFlatFile
     // ==========================================
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="entity"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
+    /// <remarks>
+    /// On the first mutation, the file source is automatically promoted from a VIEW to a TABLE.
+    /// This is transparent to the caller but loads the entire file into memory.
+    /// </remarks>
     public async ValueTask<int> InsertAsync<T>(T entity, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(entity);
@@ -244,6 +313,12 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="entities"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
+    /// <remarks>
+    /// Uses multi-row INSERT for better performance. All entities are inserted in a single statement.
+    /// On the first mutation, the file source is automatically promoted from a VIEW to a TABLE.
+    /// </remarks>
     public async ValueTask<int> InsertAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(entities);
@@ -256,7 +331,7 @@ public sealed class DuckDb : IFlatFile
             ICollection<T> collection => collection.ToList(), // At least we know the count
             _ => entities.ToList()
         };
-        
+
         if (entityList.Count == 0) return 0;
 
         var source = GetSourceOrThrow<T>();
@@ -305,7 +380,13 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
-    public async ValueTask<int> UpdateAsync<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column,         object value, CancellationToken cancellationToken = default) where T : class, new()
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="predicate"/> or <paramref name="column"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
+    /// <remarks>
+    /// Updates rows matching the predicate. On the first mutation, the file source is automatically promoted from a VIEW to a TABLE.
+    /// Only the specified column is updated; other columns remain unchanged.
+    /// </remarks>
+    public async ValueTask<int> UpdateAsync<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(predicate);
         ArgumentNullException.ThrowIfNull(column);
@@ -331,6 +412,11 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="predicate"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
+    /// <remarks>
+    /// Deletes rows matching the predicate. On the first mutation, the file source is automatically promoted from a VIEW to a TABLE.
+    /// </remarks>
     public async ValueTask<int> DeleteAsync<T>(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(predicate);
@@ -352,6 +438,12 @@ public sealed class DuckDb : IFlatFile
     // ==========================================
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="outputPath"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
+    /// <remarks>
+    /// Exports the current state of the table to a new file. The format is inferred from the file extension.
+    /// Supported formats: .csv, .tsv, .parquet, .json, .xlsx.
+    /// </remarks>
     public async ValueTask SaveAsync<T>(string outputPath, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(outputPath);
@@ -364,6 +456,19 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <see cref="WriteBackMode.NewFile"/> is specified (use <see cref="SaveAsync{T}(string, CancellationToken)"/> instead).
+    /// </exception>
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
+    /// <remarks>
+    /// <para>
+    /// When <see cref="WriteBackMode.Overwrite"/> is specified, the original file is replaced atomically
+    /// using a temp file + rename pattern. This ensures data integrity even if the export fails.
+    /// </para>
+    /// <para>
+    /// On the first mutation, the file source is automatically promoted from a VIEW to a TABLE.
+    /// </para>
+    /// </remarks>
     public async ValueTask SaveAsync<T>(WriteBackMode mode, CancellationToken cancellationToken = default) where T : class, new()
     {
         var source = GetSourceOrThrow<T>();
@@ -397,6 +502,13 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="outputPath"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
+    /// <remarks>
+    /// Exports the current state of the table to a new file. The format is inferred from the file extension.
+    /// Unlike <see cref="SaveAsync{T}(string, CancellationToken)"/>, this method does not modify the original file.
+    /// Supports cross-format export (e.g., CSV source → Parquet output).
+    /// </remarks>
     public async ValueTask ExportAsync<T>(string outputPath, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(outputPath);
@@ -413,6 +525,12 @@ public sealed class DuckDb : IFlatFile
     // ==========================================
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="targetConnection"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
+    /// <remarks>
+    /// Reads data from the flat file source via DuckDB and writes to the target database using batched INSERTs.
+    /// The import process respects the <see cref="ImportOptions"/> for batch sizing and conflict resolution.
+    /// </remarks>
     public async ValueTask<long> ImportIntoAsync<T>(DbConnection targetConnection, ImportOptions options = default, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(targetConnection);
@@ -432,6 +550,14 @@ public sealed class DuckDb : IFlatFile
     /// <param name="type">The database type: <c>"mysql"</c>, <c>"postgres"</c>, or <c>"sqlite"</c>.</param>
     /// <param name="readOnly">Whether to attach in read-only mode. Default: false.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    /// <exception cref="ArgumentNullException">Thrown when any parameter is null.</exception>
+    /// <remarks>
+    /// After attaching, you can query the external database tables using standard SQL:
+    /// <code>
+    /// await db.AttachAsync(connectionString, "mydb", "postgres");
+    /// var results = await db.QueryAsync&lt;MyEntity&gt;("SELECT * FROM mydb.my_table");
+    /// </code>
+    /// </remarks>
     public async ValueTask AttachAsync(string connectionString, string alias, string type, bool readOnly = false, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(connectionString);
@@ -451,6 +577,7 @@ public sealed class DuckDb : IFlatFile
     /// </summary>
     /// <param name="alias">The alias of the database to detach.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="alias"/> is null.</exception>
     public async ValueTask DetachAsync(string alias, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(alias);
