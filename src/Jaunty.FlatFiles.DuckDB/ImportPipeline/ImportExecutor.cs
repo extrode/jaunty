@@ -2,6 +2,8 @@ using System.Data;
 using System.Data.Common;
 using System.Text;
 
+using Jaunty.FlatFiles.DuckDB.Internals;
+
 namespace Jaunty.FlatFiles.DuckDB.ImportPipeline;
 
 /// <summary>
@@ -16,7 +18,7 @@ internal static class ImportExecutor
     public static async ValueTask<long> ExecuteAsync<T>(IDbConnection sourceConnection, IFileSource source, DbConnection targetConnection, ImportOptions options, CancellationToken cancellationToken) where T : class, new()
     {
         var entityType = typeof(T);
-        IReadOnlyDictionary<string, ColumnMapping> mappings = FlatFileExpressionHelper.GetColumnMappings(entityType);
+        IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(entityType);
         string tableName = source.TableName;
 
         // Resolve the import dialect (explicit > custom registry > auto-detect)
