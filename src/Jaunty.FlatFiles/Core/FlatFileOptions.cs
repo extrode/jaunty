@@ -1,4 +1,8 @@
-namespace Jaunty.FlatFiles;
+using Jaunty.FlatFiles.FileSources;
+using Jaunty.FlatFiles.Internals;
+using Jaunty.FlatFiles.Interfaces;
+
+namespace Jaunty.FlatFiles.Core;
 
 /// <summary>
 /// Configuration options for creating a flat file database instance.

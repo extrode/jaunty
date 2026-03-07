@@ -1,4 +1,4 @@
-namespace Jaunty.FlatFiles;
+namespace Jaunty.FlatFiles.WriteBack;
 
 /// <summary>
 /// Specifies how modified data should be written back to disk.

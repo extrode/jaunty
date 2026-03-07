@@ -1,6 +1,7 @@
 using System.Reflection;
 
 using Jaunty.Attributes;
+using Jaunty.FlatFiles.Interfaces;
 
 namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 

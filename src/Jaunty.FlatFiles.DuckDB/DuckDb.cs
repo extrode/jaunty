@@ -6,9 +6,13 @@ using System.Text;
 using DuckDB.NET.Data;
 
 using Jaunty.Dialects;
+using Jaunty.FlatFiles.Core;
 using Jaunty.FlatFiles.DuckDB.Dialects;
 using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.FlatFiles.DuckDB.Internals.Import;
+using Jaunty.FlatFiles.Import;
+using Jaunty.FlatFiles.Interfaces;
+using Jaunty.FlatFiles.WriteBack;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -271,6 +275,7 @@ public sealed partial class DuckDb : IFlatFile
         _connection.Dispose();
     }
 
+    /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;

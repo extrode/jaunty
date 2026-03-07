@@ -3,8 +3,10 @@ using System.Data.Common;
 using System.Linq.Expressions;
 using Jaunty.Core;
 using Jaunty.Fluent;
+using Jaunty.FlatFiles.Import;
+using Jaunty.FlatFiles.WriteBack;
 
-namespace Jaunty.FlatFiles;
+namespace Jaunty.FlatFiles.Interfaces;
 
 /// <summary>
 /// Represents an embedded database engine that can query flat files.

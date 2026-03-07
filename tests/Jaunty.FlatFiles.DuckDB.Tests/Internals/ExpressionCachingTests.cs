@@ -68,6 +68,7 @@ public class ExpressionCachingTests : IDisposable
         Assert.Equal(42, result2);
     }
 
+    //[Fact(Skip = "Performance test - timing dependent on system load")]
     [Fact]
     public void ExpressionCaching_ImprovesQueryPerformance()
     {

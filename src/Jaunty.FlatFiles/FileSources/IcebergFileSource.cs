@@ -1,9 +1,13 @@
-namespace Jaunty.FlatFiles;
+using Jaunty.FlatFiles.Core;
+using Jaunty.FlatFiles.Interfaces;
+
+namespace Jaunty.FlatFiles.FileSources;
 
 /// <summary>
-/// Represents a TSV (tab-separated values) file data source.
+/// Represents an Apache Iceberg table source backed by DuckDB's <c>iceberg_scan</c> function.
+/// Requires the DuckDB <c>iceberg</c> extension to be installed and loaded.
 /// </summary>
-public sealed class TsvFileSource : IFileSource
+public sealed class IcebergFileSource : IFileSource
 {
     /// <inheritdoc />
     public string TableName { get; }
@@ -15,7 +19,7 @@ public sealed class TsvFileSource : IFileSource
     public IReadOnlyList<string> FilePaths { get; }
 
     /// <inheritdoc />
-    public string Format => FileFormats.Tsv;
+    public string Format => FileFormats.Iceberg;
 
     /// <inheritdoc />
     public Type EntityType { get; }
@@ -27,42 +31,33 @@ public sealed class TsvFileSource : IFileSource
     public bool IsPreloaded { get; set; }
 
     /// <inheritdoc />
-    public string DuckDbFormatName => "CSV";
+    public string DuckDbFormatName => "ICEBERG";
 
     /// <summary>
-    /// Gets or sets whether the TSV file has a header row.
-    /// Null means auto-detect. Default: null.
+    /// Gets or sets whether to allow moved paths.
+    /// When true, DuckDB will try to read files that have been moved from their original location.
+    /// Default: false.
     /// </summary>
-    public bool? HasHeader { get; set; }
+    public bool AllowMovedPaths { get; set; }
 
     /// <summary>
-    /// Gets or sets the string that represents NULL values.
-    /// </summary>
-    public string? NullString { get; set; }
-
-    /// <summary>
-    /// Gets or sets the number of rows to skip at the beginning of the file.
-    /// </summary>
-    public int SkipRows { get; set; }
-
-    /// <summary>
-    /// Creates a new TSV file source.
+    /// Creates a new Iceberg file source.
     /// </summary>
     /// <param name="tableName">The logical table name for SQL queries.</param>
-    /// <param name="filePath">The path to the TSV file.</param>
+    /// <param name="filePath">The path to the Iceberg table directory or metadata file.</param>
     /// <param name="entityType">The entity type to map rows to.</param>
-    public TsvFileSource(string tableName, string filePath, Type entityType)
+    public IcebergFileSource(string tableName, string filePath, Type entityType)
         : this(tableName, [filePath], entityType)
     {
     }
 
     /// <summary>
-    /// Creates a new TSV file source from multiple files.
+    /// Creates a new Iceberg file source from multiple paths.
     /// </summary>
     /// <param name="tableName">The logical table name for SQL queries.</param>
-    /// <param name="filePaths">The paths to the TSV files (local, glob, or remote).</param>
+    /// <param name="filePaths">The paths to the Iceberg table directories or metadata files.</param>
     /// <param name="entityType">The entity type to map rows to.</param>
-    public TsvFileSource(string tableName, string[] filePaths, Type entityType)
+    public IcebergFileSource(string tableName, string[] filePaths, Type entityType)
     {
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         if (filePaths is null) throw new ArgumentNullException(nameof(filePaths));
@@ -76,22 +71,12 @@ public sealed class TsvFileSource : IFileSource
     /// <inheritdoc />
     public string GenerateReadFunction(string pathExpression)
     {
-        var sb = new System.Text.StringBuilder();
-        sb.Append($"read_csv({pathExpression}, delim = '\t'");
+        if (AllowMovedPaths)
+            return $"iceberg_scan({pathExpression}, allow_moved_paths = true)";
 
-        if (HasHeader.HasValue)
-            sb.Append($", header = {(HasHeader.Value ? "true" : "false")}");
-
-        if (NullString is not null)
-            sb.Append($", nullstr = '{NullString.Replace("'", "''")}'");
-
-        if (SkipRows > 0)
-            sb.Append($", skip = {SkipRows}");
-
-        sb.Append(", auto_detect = true)");
-        return sb.ToString();
+        return $"iceberg_scan({pathExpression})";
     }
 
     /// <inheritdoc />
-    public string? GenerateCopyToOptions() => "DELIMITER '\t', HEADER true";
+    public string? GenerateCopyToOptions() => null;
 }

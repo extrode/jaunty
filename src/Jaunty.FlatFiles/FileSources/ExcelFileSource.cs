@@ -1,9 +1,13 @@
-namespace Jaunty.FlatFiles;
+using Jaunty.FlatFiles.Core;
+using Jaunty.FlatFiles.Interfaces;
+
+namespace Jaunty.FlatFiles.FileSources;
 
 /// <summary>
-/// Represents a JSON file data source.
+/// Represents an Excel (.xlsx) file source backed by DuckDB's <c>read_xlsx</c> function.
+/// Requires the DuckDB <c>excel</c> extension to be installed and loaded.
 /// </summary>
-public sealed class JsonFileSource : IFileSource
+public sealed class ExcelFileSource : IFileSource
 {
     /// <inheritdoc />
     public string TableName { get; }
@@ -15,7 +19,7 @@ public sealed class JsonFileSource : IFileSource
     public IReadOnlyList<string> FilePaths { get; }
 
     /// <inheritdoc />
-    public string Format => FileFormats.Json;
+    public string Format => FileFormats.Excel;
 
     /// <inheritdoc />
     public Type EntityType { get; }
@@ -27,38 +31,43 @@ public sealed class JsonFileSource : IFileSource
     public bool IsPreloaded { get; set; }
 
     /// <inheritdoc />
-    public string DuckDbFormatName => "JSON";
+    public string DuckDbFormatName => "XLSX";
 
     /// <summary>
-    /// Gets or sets the JSON file format (auto, array, or newline-delimited).
-    /// Default: Auto.
+    /// Gets or sets the sheet name to read. When null, reads the first sheet.
     /// </summary>
-    public JsonFileFormat JsonFormat { get; set; } = JsonFileFormat.Auto;
+    public string? SheetName { get; set; }
 
     /// <summary>
-    /// Gets or sets the maximum JSON nesting depth.
-    /// Null means use the default.
+    /// Gets or sets whether the first row contains column headers.
+    /// Null means auto-detect. Default: null.
     /// </summary>
-    public int? MaxDepth { get; set; }
+    public bool? HasHeader { get; set; }
 
     /// <summary>
-    /// Creates a new JSON file source.
+    /// Gets or sets the cell range to read (e.g. "A1:D100").
+    /// When null, reads the entire sheet.
+    /// </summary>
+    public string? Range { get; set; }
+
+    /// <summary>
+    /// Creates a new Excel file source.
     /// </summary>
     /// <param name="tableName">The logical table name for SQL queries.</param>
-    /// <param name="filePath">The path to the JSON file.</param>
+    /// <param name="filePath">The path to the Excel (.xlsx) file.</param>
     /// <param name="entityType">The entity type to map rows to.</param>
-    public JsonFileSource(string tableName, string filePath, Type entityType)
+    public ExcelFileSource(string tableName, string filePath, Type entityType)
         : this(tableName, [filePath], entityType)
     {
     }
 
     /// <summary>
-    /// Creates a new JSON file source from multiple files.
+    /// Creates a new Excel file source from multiple files.
     /// </summary>
     /// <param name="tableName">The logical table name for SQL queries.</param>
-    /// <param name="filePaths">The paths to the JSON files (local, glob, or remote).</param>
+    /// <param name="filePaths">The paths to the Excel files (local or remote).</param>
     /// <param name="entityType">The entity type to map rows to.</param>
-    public JsonFileSource(string tableName, string[] filePaths, Type entityType)
+    public ExcelFileSource(string tableName, string[] filePaths, Type entityType)
     {
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         if (filePaths is null) throw new ArgumentNullException(nameof(filePaths));
@@ -73,21 +82,16 @@ public sealed class JsonFileSource : IFileSource
     public string GenerateReadFunction(string pathExpression)
     {
         var sb = new System.Text.StringBuilder();
-        sb.Append($"read_json_auto({pathExpression}");
+        sb.Append($"read_xlsx({pathExpression}");
 
-        if (JsonFormat != JsonFileFormat.Auto)
-        {
-            var formatValue = JsonFormat switch
-            {
-                JsonFileFormat.Array => "array",
-                JsonFileFormat.NewlineDelimited => "newline_delimited",
-                _ => "auto"
-            };
-            sb.Append($", format = '{formatValue}'");
-        }
+        if (SheetName is not null)
+            sb.Append($", sheet = '{SheetName.Replace("'", "''")}'");
 
-        if (MaxDepth.HasValue)
-            sb.Append($", maximum_depth = {MaxDepth.Value}");
+        if (HasHeader.HasValue)
+            sb.Append($", header = {(HasHeader.Value ? "true" : "false")}");
+
+        if (Range is not null)
+            sb.Append($", range = '{Range}'");
 
         sb.Append(')');
         return sb.ToString();

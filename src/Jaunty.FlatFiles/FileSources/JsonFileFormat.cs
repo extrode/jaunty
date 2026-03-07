@@ -1,4 +1,4 @@
-namespace Jaunty.FlatFiles;
+namespace Jaunty.FlatFiles.FileSources;
 
 /// <summary>
 /// The JSON file structure format.
