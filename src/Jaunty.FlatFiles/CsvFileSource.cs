@@ -54,6 +54,9 @@ public sealed class CsvFileSource : IFileSource
     /// </summary>
     public int SkipRows { get; set; }
 
+    /// <inheritdoc />
+    public IReadOnlyList<string> FilePaths { get; }
+
     /// <summary>
     /// Creates a new CSV file source.
     /// </summary>
@@ -61,17 +64,31 @@ public sealed class CsvFileSource : IFileSource
     /// <param name="filePath">The path to the CSV file.</param>
     /// <param name="entityType">The entity type to map rows to.</param>
     public CsvFileSource(string tableName, string filePath, Type entityType)
+        : this(tableName, [filePath], entityType)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new CSV file source from multiple files.
+    /// </summary>
+    /// <param name="tableName">The logical table name for SQL queries.</param>
+    /// <param name="filePaths">The paths to the CSV files (local, glob, or remote).</param>
+    /// <param name="entityType">The entity type to map rows to.</param>
+    public CsvFileSource(string tableName, string[] filePaths, Type entityType)
     {
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
-        FilePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
+        if (filePaths is null) throw new ArgumentNullException(nameof(filePaths));
+        if (filePaths.Length == 0) throw new ArgumentException("At least one file path is required.", nameof(filePaths));
+        FilePaths = filePaths;
+        FilePath = filePaths[0];
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
     }
 
     /// <inheritdoc />
-    public string GenerateReadFunction(string escapedFilePath)
+    public string GenerateReadFunction(string pathExpression)
     {
         var sb = new System.Text.StringBuilder();
-        sb.Append($"read_csv('{escapedFilePath}'");
+        sb.Append($"read_csv({pathExpression}");
 
         if (HasHeader.HasValue)
             sb.Append($", header = {(HasHeader.Value ? "true" : "false")}");

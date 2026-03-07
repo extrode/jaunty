@@ -175,4 +175,64 @@ public sealed class FlatFileOptions
         Sources.Add(source);
         return this;
     }
+
+    /// <summary>
+    /// Registers a CSV file source from multiple files mapped to the specified entity type.
+    /// </summary>
+    public FlatFileOptions AddCsv<T>(string[] filePaths, Action<CsvFileSource>? configure = null) where T : class, new()
+    {
+        var tableName = TableNameResolver.Resolve<T>();
+        var source = new CsvFileSource(tableName, filePaths, typeof(T));
+        configure?.Invoke(source);
+        Sources.Add(source);
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a TSV file source from multiple files mapped to the specified entity type.
+    /// </summary>
+    public FlatFileOptions AddTsv<T>(string[] filePaths, Action<TsvFileSource>? configure = null) where T : class, new()
+    {
+        var tableName = TableNameResolver.Resolve<T>();
+        var source = new TsvFileSource(tableName, filePaths, typeof(T));
+        configure?.Invoke(source);
+        Sources.Add(source);
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a Parquet file source from multiple files mapped to the specified entity type.
+    /// </summary>
+    public FlatFileOptions AddParquet<T>(string[] filePaths, Action<ParquetFileSource>? configure = null) where T : class, new()
+    {
+        var tableName = TableNameResolver.Resolve<T>();
+        var source = new ParquetFileSource(tableName, filePaths, typeof(T));
+        configure?.Invoke(source);
+        Sources.Add(source);
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a JSON file source from multiple files mapped to the specified entity type.
+    /// </summary>
+    public FlatFileOptions AddJson<T>(string[] filePaths, Action<JsonFileSource>? configure = null) where T : class, new()
+    {
+        var tableName = TableNameResolver.Resolve<T>();
+        var source = new JsonFileSource(tableName, filePaths, typeof(T));
+        configure?.Invoke(source);
+        Sources.Add(source);
+        return this;
+    }
+
+    /// <summary>
+    /// Registers an Excel file source from multiple files mapped to the specified entity type.
+    /// </summary>
+    public FlatFileOptions AddExcel<T>(string[] filePaths, Action<ExcelFileSource>? configure = null) where T : class, new()
+    {
+        var tableName = TableNameResolver.Resolve<T>();
+        var source = new ExcelFileSource(tableName, filePaths, typeof(T));
+        configure?.Invoke(source);
+        Sources.Add(source);
+        return this;
+    }
 }

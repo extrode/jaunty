@@ -11,9 +11,16 @@ public interface IFileSource
     string TableName { get; }
 
     /// <summary>
-    /// Gets the file path pointing to the data file.
+    /// Gets the primary file path pointing to the data file.
+    /// For multi-file sources, this is the first path.
     /// </summary>
     string FilePath { get; }
+
+    /// <summary>
+    /// Gets all file paths for this source. Returns a single-element list for single-file sources.
+    /// Supports local paths, glob patterns, and remote URLs.
+    /// </summary>
+    IReadOnlyList<string> FilePaths { get; }
 
     /// <summary>
     /// Gets the file format identifier (e.g. <see cref="FileFormats.Csv"/>, <see cref="FileFormats.Parquet"/>).
@@ -46,9 +53,10 @@ public interface IFileSource
     /// (e.g. <c>read_csv('path', header = true, auto_detect = true)</c>).
     /// This allows custom file source implementations to define their own read functions.
     /// </summary>
-    /// <param name="escapedFilePath">The file path with single quotes escaped.</param>
+    /// <param name="pathExpression">A pre-formatted path expression: either <c>'path'</c> for single files
+    /// or <c>['path1', 'path2']</c> for multiple files. Already escaped.</param>
     /// <returns>A DuckDB read function expression.</returns>
-    string GenerateReadFunction(string escapedFilePath);
+    string GenerateReadFunction(string pathExpression);
 
     /// <summary>
     /// Generates any additional COPY TO options specific to this file format

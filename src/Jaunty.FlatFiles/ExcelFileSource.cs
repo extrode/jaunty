@@ -13,6 +13,9 @@ public sealed class ExcelFileSource : IFileSource
     public string FilePath { get; }
 
     /// <inheritdoc />
+    public IReadOnlyList<string> FilePaths { get; }
+
+    /// <inheritdoc />
     public string Format => FileFormats.Excel;
 
     /// <inheritdoc />
@@ -51,17 +54,31 @@ public sealed class ExcelFileSource : IFileSource
     /// <param name="filePath">The path to the Excel (.xlsx) file.</param>
     /// <param name="entityType">The entity type to map rows to.</param>
     public ExcelFileSource(string tableName, string filePath, Type entityType)
+        : this(tableName, [filePath], entityType)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new Excel file source from multiple files.
+    /// </summary>
+    /// <param name="tableName">The logical table name for SQL queries.</param>
+    /// <param name="filePaths">The paths to the Excel files (local or remote).</param>
+    /// <param name="entityType">The entity type to map rows to.</param>
+    public ExcelFileSource(string tableName, string[] filePaths, Type entityType)
     {
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
-        FilePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
+        if (filePaths is null) throw new ArgumentNullException(nameof(filePaths));
+        if (filePaths.Length == 0) throw new ArgumentException("At least one file path is required.", nameof(filePaths));
+        FilePaths = filePaths;
+        FilePath = filePaths[0];
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
     }
 
     /// <inheritdoc />
-    public string GenerateReadFunction(string escapedFilePath)
+    public string GenerateReadFunction(string pathExpression)
     {
         var sb = new System.Text.StringBuilder();
-        sb.Append($"read_xlsx('{escapedFilePath}'");
+        sb.Append($"read_xlsx({pathExpression}");
 
         if (SheetName is not null)
             sb.Append($", sheet = '{SheetName.Replace("'", "''")}'");
