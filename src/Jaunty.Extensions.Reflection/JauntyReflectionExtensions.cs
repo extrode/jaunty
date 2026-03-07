@@ -5,7 +5,7 @@ using System.Reflection;
 
 using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection.Dialects;
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 

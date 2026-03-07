@@ -1,0 +1,25 @@
+---
+title: Jaunty.FlatFiles — Query Data Flow
+---
+sequenceDiagram
+    participant Dev as Developer Code
+    participant FDB as FlatFileDatabase
+    participant Src as FileSource
+    participant Dial as DuckDbDialect
+    participant DDB as DuckDB (in-memory)
+    participant Mat as Jaunty Materialization
+
+    Dev->>FDB: FlatFileDatabase.Open("sales.csv")
+    FDB->>Src: Create CsvFileSource("sales.csv")
+    Src->>Dial: GenerateCreateViewSql()
+    Dial-->>Src: CREATE VIEW sales AS SELECT * FROM read_csv_auto(...)
+    Src->>DDB: Execute CREATE VIEW
+    DDB-->>FDB: View registered
+
+    Dev->>FDB: .Query<SalesRecord>().Where(x => x.Revenue > 10000).Take(50)
+    FDB->>Dial: Generate SQL from expression tree
+    Dial-->>FDB: SELECT * FROM "sales" WHERE "Revenue" > $1 LIMIT 50
+    FDB->>DDB: Execute SQL via DuckDBCommand
+    DDB-->>FDB: DbDataReader with results
+    FDB->>Mat: Materialize DbDataReader → List<SalesRecord>
+    Mat-->>Dev: List<SalesRecord> (strongly typed)

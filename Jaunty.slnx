@@ -8,14 +8,19 @@
       <Build Solution="Release|*" Project="false" />
     </Project>
     <Project Path="src/Jaunty/Jaunty.csproj" />
+    <Project Path="src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj" />
+    <Project Path="src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Jaunty.Fluent.Tests/Jaunty.Fluent.Tests.csproj" />
     <Project Path="tests/Jaunty.Scaffolding.Tests/Jaunty.Scaffolding.Tests.csproj" />
     <Project Path="tests/Jaunty.Tests/Jaunty.Tests.csproj" />
+    <Project Path="tests/Jaunty.FlatFiles.Tests/Jaunty.FlatFiles.Tests.csproj" />
+    <Project Path="tests/Jaunty.FlatFiles.DuckDB.Tests/Jaunty.FlatFiles.DuckDB.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Jaunty.Benchmarks/Jaunty.Benchmarks.csproj" />
+    <Project Path="benchmarks/Jaunty.FlatFiles.Benchmarks/Jaunty.FlatFiles.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/NativeAOT-Basic/NativeAOT-Basic.csproj" />
