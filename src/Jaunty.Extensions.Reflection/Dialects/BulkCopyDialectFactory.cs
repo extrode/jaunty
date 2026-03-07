@@ -1,4 +1,4 @@
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 
 namespace Jaunty.Extensions.Reflection.Dialects;
 

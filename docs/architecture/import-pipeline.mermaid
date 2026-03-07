@@ -1,0 +1,57 @@
+---
+title: Jaunty.FlatFiles — Import Pipeline
+---
+flowchart LR
+    subgraph Source["Source (Flat File)"]
+        CSV[" CSV"]
+        TSV[" TSV"]
+        PQ[" Parquet"]
+        JSON[" JSON"]
+    end
+
+    subgraph DuckDB["DuckDB Engine"]
+        READ["read_csv_auto()<br/>read_parquet()<br/>read_json_auto()"]
+        BATCH["Batched Read<br/>(configurable size)"]
+    end
+
+    subgraph Mapping["Jaunty Entity Mapping"]
+        VALIDATE["Schema Validation<br/>source cols ↔ entity props"]
+        MAP["Column Mapping<br/>[Table] [Column] [Key]"]
+    end
+
+    subgraph Target["Target Database"]
+        direction TB
+        SQLITE[" SQLite<br/>Batched INSERT<br/>+ Transaction"]
+        PG[" PostgreSQL<br/>Npgsql COPY<br/>Binary Protocol"]
+        MSSQL[" SQL Server<br/>SqlBulkCopy"]
+    end
+
+    subgraph Options["Import Options"]
+        BS["BatchSize: 5000"]
+        CS["OnConflict: Upsert"]
+        CT["CreateTable: true"]
+        PR["OnProgress: callback"]
+    end
+
+    CSV --> READ
+    TSV --> READ
+    PQ --> READ
+    JSON --> READ
+    READ --> BATCH
+    BATCH --> VALIDATE
+    VALIDATE -->|" Mismatch"| ERROR["SchemaException<br/>before any rows imported"]
+    VALIDATE -->|" Match"| MAP
+    MAP --> SQLITE
+    MAP --> PG
+    MAP --> MSSQL
+    Options -.->|configures| BATCH
+    Options -.->|configures| MAP
+
+    style CSV fill:#4ecdc4,color:#fff
+    style TSV fill:#4ecdc4,color:#fff
+    style PQ fill:#4ecdc4,color:#fff
+    style JSON fill:#4ecdc4,color:#fff
+    style SQLITE fill:#ff6b6b,color:#fff
+    style PG fill:#ff6b6b,color:#fff
+    style MSSQL fill:#ff6b6b,color:#fff
+    style ERROR fill:#e74c3c,color:#fff

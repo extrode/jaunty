@@ -1,0 +1,11 @@
+Id,product_name,Revenue,Quantity,Date,region
+1,Widget A,15000.50,120,2024-01-15,Northeast
+2,Widget B,8500.00,85,2024-02-20,Southeast
+3,Gadget X,22000.75,200,2024-03-10,Midwest
+4,Gadget Y,5200.00,45,2024-04-05,West
+5,Component Z,31000.00,310,2024-05-18,Northeast
+6,Widget A,12000.25,100,2024-06-22,Southeast
+7,Gadget X,18500.50,175,2024-07-30,West
+8,Widget B,9200.00,92,2024-08-14,Midwest
+9,Component Z,27500.75,280,2024-09-01,Northeast
+10,Gadget Y,6100.00,55,2024-10-10,Southeast

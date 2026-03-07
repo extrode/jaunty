@@ -6,7 +6,7 @@ using System.Text;
 using Jaunty.Core;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 
@@ -69,7 +69,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public IWhereClause<T> Where(string column, object? value)
     {
         var escapedColumn = _dialect.EscapeColumnName(column);
-        var paramName = $"@{column}";
+        var paramName = $"{_dialect.ParameterPrefix}{column}";
 
         if (value is null)
         {
@@ -1290,7 +1290,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     private string GetUniqueParamName(string baseName)
     {
-        return $"@{baseName}_{_parameters.Count}";
+        return $"{_dialect.ParameterPrefix}{baseName}_{_parameters.Count}";
     }
 
     private void AddParametersFromObject(object parameters)
@@ -1301,7 +1301,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         {
             var prop = props[i];
             var value = prop.GetValue(parameters);
-            _parameters.Add($"@{prop.Name}", value);
+            _parameters.Add($"{_dialect.ParameterPrefix}{prop.Name}", value);
         }
     }
 
@@ -1324,7 +1324,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         for (int i = 0; i < valueList.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            var paramName = $"@p_in_{_parameters.Count}";
+            var paramName = $"{_dialect.ParameterPrefix}p_in_{_parameters.Count}";
             sb.Append(paramName);
             _parameters.Add(paramName, valueList[i]);
         }
@@ -1338,10 +1338,10 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         var columnName = GetColumnNameFromSelector(selector);
         var escapedColumn = _dialect.EscapeColumnName(columnName);
 
-        var fromParamName = $"@p_between_from_{_parameters.Count}";
+        var fromParamName = $"{_dialect.ParameterPrefix}p_between_from_{_parameters.Count}";
         _parameters.Add(fromParamName, from);
 
-        var toParamName = $"@p_between_to_{_parameters.Count}";
+        var toParamName = $"{_dialect.ParameterPrefix}p_between_to_{_parameters.Count}";
         _parameters.Add(toParamName, to);
 
         return negate
@@ -1419,10 +1419,11 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             var prefix = $"sq{_parameters.Count}";
             foreach (var (name, value) in subqueryParams.GetAll())
             {
-                var baseName = name.TrimStart('@');
-                var newName = $"@{prefix}_{baseName}";
+                var paramPrefix = _dialect.ParameterPrefix;
+                var baseName = name.TrimStart('@').TrimStart('$');
+                var newName = $"{paramPrefix}{prefix}_{baseName}";
                 // Update the SQL with the new parameter name
-                var pattern = $@"@{System.Text.RegularExpressions.Regex.Escape(baseName)}(?![a-zA-Z0-9_])";
+                var pattern = $@"{System.Text.RegularExpressions.Regex.Escape(paramPrefix)}{System.Text.RegularExpressions.Regex.Escape(baseName)}(?![a-zA-Z0-9_])";
                 subquerySql = System.Text.RegularExpressions.Regex.Replace(subquerySql, pattern, newName);
                 _parameters.Add(newName, value);
             }
@@ -1649,7 +1650,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IUpdateWhereClause<T> ISetClause<T>.Where(string column, object? value)
     {
         var escapedColumn = _dialect.EscapeColumnName(column);
-        var paramName = $"@{column}";
+        var paramName = $"{_dialect.ParameterPrefix}{column}";
 
         if (value is null)
         {

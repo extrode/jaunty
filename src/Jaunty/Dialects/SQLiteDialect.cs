@@ -1,6 +1,6 @@
 using Jaunty.Internals.BulkCopy;
 
-namespace Jaunty.Internals.Dialects;
+namespace Jaunty.Dialects;
 
 /// <summary>
 /// SQLite dialect.
@@ -27,6 +27,8 @@ internal sealed class SQLiteDialect : ISqlDialect
         "UNION", "UNIQUE", "UPDATE", "USING", "VACUUM", "VALUES", "VIEW", "VIRTUAL", "WHEN",
         "WHERE", "WITH", "WITHOUT", "ORDER", "USER"
     };
+
+    public string ParameterPrefix => "@";
 
     public string GetDefaultSchema() => string.Empty; // SQLite doesn't support schemas
 
@@ -170,7 +172,7 @@ internal sealed class SQLiteDialect : ISqlDialect
         sb.Append("INSERT INTO ");
         sb.Append(tableName);
         sb.Append(" (");
-        
+
         for (int i = 0; i < insertColumns.Length; i++)
         {
             if (i > 0) sb.Append(", ");

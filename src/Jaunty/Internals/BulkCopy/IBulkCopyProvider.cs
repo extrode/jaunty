@@ -9,7 +9,7 @@ namespace Jaunty.Internals.BulkCopy;
 /// Provides bulk copy functionality for a specific database provider.
 /// Implementations use native bulk copy APIs when available (e.g., SqlBulkCopy, NpgsqlBinaryImporter).
 /// </summary>
-internal interface IBulkCopyProvider
+public interface IBulkCopyProvider
 {
     /// <summary>
     /// Gets a value indicating whether this bulk copy provider is supported on the current platform.

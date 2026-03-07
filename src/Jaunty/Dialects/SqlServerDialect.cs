@@ -1,6 +1,6 @@
 using Jaunty.Internals.BulkCopy;
 
-namespace Jaunty.Internals.Dialects;
+namespace Jaunty.Dialects;
 
 /// <summary>
 /// SQL Server dialect (T-SQL).
@@ -38,6 +38,8 @@ internal sealed class SqlServerDialect : ISqlDialect
         "USE", "USER", "VALUES", "VARYING", "VIEW", "WAITFOR", "WHEN", "WHERE", "WHILE",
         "WITH", "WITHIN GROUP", "WRITETEXT", "ORDER", "USER"
     };
+
+    public string ParameterPrefix => "@";
 
     public string GetDefaultSchema() => "dbo";
 
@@ -156,7 +158,7 @@ internal sealed class SqlServerDialect : ISqlDialect
         sb.Append("MERGE INTO ");
         sb.Append(tableName);
         sb.Append(" AS target USING (VALUES (");
-        
+
         for (int i = 0; i < insertParams.Length; i++)
         {
             if (i > 0) sb.Append(", ");
