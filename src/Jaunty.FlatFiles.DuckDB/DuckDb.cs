@@ -237,23 +237,24 @@ public sealed class DuckDb : IFlatFile
         var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
 
         // Pre-resolve ordinals for each mapping (once, not per row)
-        var ordinalMap = new int[mappings.Count];
-        for (int i = 0; i < mappings.Count; i++)
-            ordinalMap[i] = columnOrdinals.TryGetValue(mappings[i].ColumnName, out var ord) ? ord : -1;
+        var mappingList = mappings.Values.ToList();
+        var ordinalMap = new int[mappingList.Count];
+        for (int i = 0; i < mappingList.Count; i++)
+            ordinalMap[i] = columnOrdinals.TryGetValue(mappingList[i].ColumnName, out var ord) ? ord : -1;
 
         // Materialize rows
         var results = new List<T>();
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             var entity = new T();
-            for (int i = 0; i < mappings.Count; i++)
+            for (int i = 0; i < mappingList.Count; i++)
             {
                 var ordinal = ordinalMap[i];
                 if (ordinal >= 0 && !reader.IsDBNull(ordinal))
                 {
                     var value = reader.GetValue(ordinal);
                     // Convert value to property type if needed
-                    var targetType = mappings[i].PropertyType;
+                    var targetType = mappingList[i].PropertyType;
                     if (value != null && value.GetType() != targetType)
                     {
                         try
@@ -265,7 +266,7 @@ public sealed class DuckDb : IFlatFile
                             // If conversion fails, let the property setter handle it
                         }
                     }
-                    mappings[i].Setter(entity, value);
+                    mappingList[i].Setter(entity, value);
                 }
             }
             results.Add(entity);
@@ -313,10 +314,11 @@ public sealed class DuckDb : IFlatFile
         var values = new StringBuilder(mappings.Count * 10);
         var parameters = new List<DuckDBParameter>(mappings.Count);
 
-        for (int i = 0; i < mappings.Count; i++)
+        var mappingList = mappings.Values.ToList();
+        for (int i = 0; i < mappingList.Count; i++)
         {
             if (i > 0) { columns.Append(", "); values.Append(", "); }
-            var mapping = mappings[i];
+            var mapping = mappingList[i];
             columns.Append($"\"{mapping.ColumnName}\"");
             values.Append($"${i + 1}"); // DuckDB uses 1-based positional params
             parameters.Add(new DuckDBParameter { Value = mapping.Getter(entity) ?? DBNull.Value });
@@ -356,10 +358,11 @@ public sealed class DuckDb : IFlatFile
         var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
         // Pre-size StringBuilder (~20 chars per column name)
         var columns = new StringBuilder(mappings.Count * 20);
-        for (int i = 0; i < mappings.Count; i++)
+        var mappingList = mappings.Values.ToList();
+        for (int i = 0; i < mappingList.Count; i++)
         {
             if (i > 0) columns.Append(", ");
-            columns.Append($"\"{mappings[i].ColumnName}\"");
+            columns.Append($"\"{mappingList[i].ColumnName}\"");
         }
 
         var totalInserted = 0;
@@ -378,12 +381,12 @@ public sealed class DuckDb : IFlatFile
             sb.Append('(');
             var entity = entityList[row];
 
-            for (int col = 0; col < mappings.Count; col++)
+            for (int col = 0; col < mappingList.Count; col++)
             {
                 if (col > 0) sb.Append(", ");
                 paramCounter++;
                 sb.Append($"${paramCounter}");
-                parameters.Add(new DuckDBParameter { Value = mappings[col].Getter(entity) ?? DBNull.Value });
+                parameters.Add(new DuckDBParameter { Value = mappingList[col].Getter(entity) ?? DBNull.Value });
             }
             sb.Append(')');
         }
@@ -738,7 +741,7 @@ public sealed class DuckDb : IFlatFile
     /// Uses a two-step approach: first queries column names from the read function,
     /// then generates a SELECT with explicit CAST for date columns.
     /// </summary>
-    private string GenerateViewSqlWithDateTimeCasts(IFileSource source, List<ColumnMapping> mappings)
+    private string GenerateViewSqlWithDateTimeCasts(IFileSource source, IReadOnlyDictionary<string, ColumnMapping> mappings)
     {
         var readFunction = DuckDbDialect.GenerateReadFunction(source);
         var dateTimeColumns = GetDateTimeColumnNamesFromMappings(mappings);
@@ -777,19 +780,19 @@ public sealed class DuckDb : IFlatFile
         return $"CREATE OR REPLACE {keyword} \"{source.TableName}\" AS SELECT {sb} FROM {readFunction}";
     }
 
-    private static bool HasDateTimeColumns(List<ColumnMapping> mappings)
+    private static bool HasDateTimeColumns(IReadOnlyDictionary<string, ColumnMapping> mappings)
     {
-        foreach (var mapping in mappings)
+        foreach (var mapping in mappings.Values)
         {
             if (mapping.IsDateTime) return true;
         }
         return false;
     }
 
-    private static HashSet<string> GetDateTimeColumnNamesFromMappings(List<ColumnMapping> mappings)
+    private static HashSet<string> GetDateTimeColumnNamesFromMappings(IReadOnlyDictionary<string, ColumnMapping> mappings)
     {
         var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var mapping in mappings)
+        foreach (var mapping in mappings.Values)
         {
             if (mapping.IsDateTime)
                 result.Add(mapping.ColumnName);
@@ -819,7 +822,7 @@ public sealed class DuckDb : IFlatFile
 
         // Validate that every mapped entity property has a matching file column.
         // Extra file columns are intentionally allowed — the entity only maps the columns it needs.
-        foreach (var mapping in FlatFileExpressionHelper.GetColumnMappings(source.EntityType))
+        foreach (var mapping in FlatFileExpressionHelper.GetColumnMappings(source.EntityType).Values)
         {
             if (!fileColumns.ContainsKey(mapping.ColumnName))
             {

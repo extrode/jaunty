@@ -268,8 +268,8 @@ public class P0FixesTests : IDisposable
         var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(SalesRecord));
 
         // Assert
-        var productNameMapping = mappings.First(m => m.Property.Name == "ProductName");
-        Assert.Equal("product_name", productNameMapping.ColumnName); // From [Column] attribute
+        var productNameMapping = mappings.First(m => m.Value.Property.Name == "ProductName");
+        Assert.Equal("product_name", productNameMapping.Value.ColumnName); // From [Column] attribute
     }
 
     [Fact]

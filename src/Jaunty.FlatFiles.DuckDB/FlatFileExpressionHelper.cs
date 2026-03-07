@@ -1,3 +1,6 @@
+#if NET8_0_OR_GREATER
+using System.Collections.Frozen;
+#endif
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -42,10 +45,18 @@ internal readonly struct ColumnMapping
 /// </summary>
 internal static class FlatFileExpressionHelper
 {
+#if NET8_0_OR_GREATER
+    /// <summary>
+    /// Cache for column mappings per entity type to avoid repeated reflection.
+    /// Uses FrozenDictionary for optimal read performance on .NET 8+.
+    /// </summary>
+    private static readonly ConcurrentDictionary<Type, FrozenDictionary<string, ColumnMapping>> _columnMappingCache = new();
+#else
     /// <summary>
     /// Cache for column mappings per entity type to avoid repeated reflection.
     /// </summary>
-    private static readonly ConcurrentDictionary<Type, List<ColumnMapping>> _columnMappingCache = new();
+    private static readonly ConcurrentDictionary<Type, Dictionary<string, ColumnMapping>> _columnMappingCache = new();
+#endif
 
     /// <summary>
     /// Cache for compiled expression delegates to avoid repeated compilation.
@@ -84,28 +95,34 @@ internal static class FlatFileExpressionHelper
     /// </summary>
     [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
         System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
-    public static List<ColumnMapping> GetColumnMappings(Type entityType)
+    public static IReadOnlyDictionary<string, ColumnMapping> GetColumnMappings(Type entityType)
     {
         return _columnMappingCache.GetOrAdd(entityType, type =>
         {
-            var result = new List<ColumnMapping>();
+            var dict = new Dictionary<string, ColumnMapping>(StringComparer.OrdinalIgnoreCase);
             foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 if (!prop.CanRead || !prop.CanWrite) continue;
 
                 var underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                var columnName = GetColumnName(prop);
 
-                result.Add(new ColumnMapping
+                dict[columnName] = new ColumnMapping
                 {
-                    ColumnName = GetColumnName(prop),
+                    ColumnName = columnName,
                     Property = prop,
                     Getter = CreateGetter(prop),
                     Setter = CreateSetter(prop),
                     PropertyType = prop.PropertyType,
                     IsDateTime = underlyingType == typeof(DateTime)
-                });
+                };
             }
-            return result;
+
+#if NET8_0_OR_GREATER
+            return dict.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+#else
+            return dict;
+#endif
         });
     }
 

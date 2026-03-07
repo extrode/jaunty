@@ -16,7 +16,7 @@ internal static class ImportExecutor
     public static async ValueTask<long> ExecuteAsync<T>(IDbConnection sourceConnection, IFileSource source, DbConnection targetConnection, ImportOptions options, CancellationToken cancellationToken) where T : class, new()
     {
         var entityType = typeof(T);
-        List<ColumnMapping> mappings = FlatFileExpressionHelper.GetColumnMappings(entityType);
+        IReadOnlyDictionary<string, ColumnMapping> mappings = FlatFileExpressionHelper.GetColumnMappings(entityType);
         string tableName = source.TableName;
 
         // Resolve the import dialect (explicit > custom registry > auto-detect)
@@ -49,13 +49,13 @@ internal static class ImportExecutor
                 // Build the insert SQL template using the dialect
                 // Avoid LINQ allocations by using pre-sized lists
                 var columnNames = new List<string>(mappings.Count);
-                foreach (var mapping in mappings)
+                foreach (var mapping in mappings.Values)
                     columnNames.Add(mapping.ColumnName);
-                
+
                 var parameterNames = new List<string>(mappings.Count);
                 for (int i = 0; i < mappings.Count; i++)
                     parameterNames.Add($"@p{i}");
-                
+
                 var keyColumnName = TargetDdlGenerator.GetKeyColumnName(entityType);
                 var insertSql = dialect.GenerateInsertSql(tableName, columnNames, parameterNames, options.OnConflict, keyColumnName);
 
@@ -68,17 +68,18 @@ internal static class ImportExecutor
     }
 
     private static async ValueTask<long> ImportBatchesAsync(DbDataReader reader, DbConnection targetConnection, string insertSql,
-        List<ColumnMapping> mappings, int batchSize, Action<long, long?>? onProgress, CancellationToken cancellationToken)
+        IReadOnlyDictionary<string, ColumnMapping> mappings, int batchSize, Action<long, long?>? onProgress, CancellationToken cancellationToken)
     {
         long totalImported = 0;
 
         // Build a column index map for the reader (source column name → reader ordinal)
         var readerColumnMap = new int[mappings.Count];
-        for (int i = 0; i < mappings.Count; i++)
+        var mappingList = mappings.Values.ToList();
+        for (int i = 0; i < mappingList.Count; i++)
         {
             try
             {
-                readerColumnMap[i] = reader.GetOrdinal(mappings[i].ColumnName);
+                readerColumnMap[i] = reader.GetOrdinal(mappingList[i].ColumnName);
             }
             catch (IndexOutOfRangeException)
             {
@@ -89,9 +90,9 @@ internal static class ImportExecutor
                     if (j > 0) availableColumns.Append(", ");
                     availableColumns.Append(reader.GetName(j));
                 }
-                
+
                 throw new InvalidOperationException(
-                    $"Schema alignment failed: Source does not contain column '{mappings[i].ColumnName}' " +
+                    $"Schema alignment failed: Source does not contain column '{mappingList[i].ColumnName}' " +
                     $"required by entity mapping. Available columns: {availableColumns}");
             }
         }
@@ -124,10 +125,10 @@ internal static class ImportExecutor
                     cancellationToken.ThrowIfCancellationRequested();
 
                     // Set parameter values from reader
-                    for (int i = 0; i < mappings.Count; i++)
+                    for (int i = 0; i < mappingList.Count; i++)
                     {
                         var value = reader.GetValue(readerColumnMap[i]);
-                        paramArray[i].Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappings[i].PropertyType);
+                        paramArray[i].Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappingList[i].PropertyType);
                     }
 
                     await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -215,7 +216,7 @@ internal static class ImportExecutor
         }
     }
 
-    private static void ValidateTargetSchema(DbConnection targetConnection, string tableName, List<ColumnMapping> mappings, bool createTableIfMissing)
+    private static void ValidateTargetSchema(DbConnection targetConnection, string tableName, IReadOnlyDictionary<string, ColumnMapping> mappings, bool createTableIfMissing)
     {
         // Check if the table exists in the target by querying it with a WHERE 0=1 (no rows).
         // Different database providers throw different exception types for "table not found":
@@ -237,7 +238,7 @@ internal static class ImportExecutor
                 targetColumns.Add(reader.GetName(i));
             }
 
-            foreach (var mapping in mappings)
+            foreach (var mapping in mappings.Values)
             {
                 if (!targetColumns.Contains(mapping.ColumnName))
                 {

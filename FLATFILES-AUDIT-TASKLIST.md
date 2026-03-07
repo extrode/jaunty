@@ -123,11 +123,14 @@
   - [ ] Add caching for predicate translation
   - **Files:** `src/Jaunty.FlatFiles.DuckDB/FlatFileExpressionHelper.cs`
 
-- [ ] **P1-15: Use `FrozenDictionary` for .NET 8+**
-  - [ ] Jaunty core uses `FrozenDictionary` for cached metadata
-  - [ ] FlatFiles should use `FrozenDictionary` for column mappings
-  - [ ] Match Jaunty's conditional compilation pattern
-  - **Files:** `src/Jaunty.FlatFiles.DuckDB/FlatFileExpressionHelper.cs`
+- [x] **P1-15: Use `FrozenDictionary` for .NET 8+**
+  - [x] Updated `_columnMappingCache` to use `FrozenDictionary<string, ColumnMapping>` on .NET 8+
+  - [x] Changed `GetColumnMappings()` return type from `List<ColumnMapping>` to `IReadOnlyDictionary<string, ColumnMapping>`
+  - [x] Updated all call sites to use `.Values` iteration
+  - [x] Provides O(1) column lookup by name instead of O(n) list scan
+  - [x] Falls back to regular `Dictionary` on .NET Standard 2.0
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/FlatFileExpressionHelper.cs`, `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`, `src/Jaunty.FlatFiles.DuckDB/ImportPipeline/ImportExecutor.cs`
+  - **Status:** COMPLETE - All 279 tests pass, improved lookup performance
 
 ---
 
