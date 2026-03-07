@@ -1,12 +1,12 @@
-using Jaunty.FlatFiles.DuckDB.Tests.Entities;
+using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 using Jaunty.Fluent;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Core;
 
 /// <summary>
 /// Tests for the FlatFile.Open() static factory methods.
 /// </summary>
-public class FlatFileOpenTests
+public class FlatFileTests
 {
     private static readonly string DataDir = Path.Combine(AppContext.BaseDirectory, "data");
 

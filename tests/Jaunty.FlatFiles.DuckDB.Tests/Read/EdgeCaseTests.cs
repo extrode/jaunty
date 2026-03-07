@@ -1,8 +1,8 @@
 using Jaunty.Attributes;
-using Jaunty.FlatFiles.DuckDB.Tests.Entities;
+using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 using Jaunty.Fluent;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Read;
 
 /// <summary>
 /// Edge case tests: empty files, no-header CSVs, column mismatches, schema validation.

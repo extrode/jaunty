@@ -1,9 +1,9 @@
 using DuckDB.NET.Data;
 
-using Jaunty.FlatFiles.DuckDB.Tests.Entities;
+using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 using Jaunty.Fluent;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests;
+namespace Jaunty.FlatFiles.DuckDB.Tests.WriteBack;
 
 /// <summary>
 /// Tests for SaveAsync and ExportAsync write-back operations.

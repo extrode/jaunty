@@ -1,6 +1,6 @@
 using DuckDB.NET.Data;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Helpers;
 
 /// <summary>
 /// Generates test fixture files on demand.
