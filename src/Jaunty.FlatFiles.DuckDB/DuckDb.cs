@@ -6,6 +6,7 @@ using System.Text;
 
 using DuckDB.NET.Data;
 
+using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.FlatFiles.DuckDB.ImportPipeline;
 using Jaunty.Fluent;
@@ -283,16 +284,32 @@ public sealed class DuckDb : IFlatFile
         => InsertAsync(entity, CancellationToken.None).GetAwaiter().GetResult();
 
     /// <inheritdoc />
+    public int Insert<T>(T entity, CommandOptions options) where T : class, new()
+        => InsertAsync(entity, options, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc />
     public int Insert<T>(IEnumerable<T> entities) where T : class, new()
         => InsertAsync(entities, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc />
+    public int Insert<T>(IEnumerable<T> entities, CommandOptions options) where T : class, new()
+        => InsertAsync(entities, options, CancellationToken.None).GetAwaiter().GetResult();
 
     /// <inheritdoc />
     public int Update<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value) where T : class, new()
         => UpdateAsync(predicate, column, value, CancellationToken.None).GetAwaiter().GetResult();
 
     /// <inheritdoc />
+    public int Update<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CommandOptions options) where T : class, new()
+        => UpdateAsync(predicate, column, value, options, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc />
     public int Delete<T>(Expression<Func<T, bool>> predicate) where T : class, new()
         => DeleteAsync(predicate, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc />
+    public int Delete<T>(Expression<Func<T, bool>> predicate, CommandOptions options) where T : class, new()
+        => DeleteAsync(predicate, options, CancellationToken.None).GetAwaiter().GetResult();
 
     /// <inheritdoc />
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="entity"/> is null.</exception>
@@ -328,6 +345,15 @@ public sealed class DuckDb : IFlatFile
         var result = await ExecuteNonQueryAsync(sql, parameters, cancellationToken).ConfigureAwait(false);
         _modified.TryAdd(typeof(T), true);
         return result;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<int> InsertAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        // For FlatFiles, CommandOptions.Transaction and CommandOptions.CommandTimeout are not applicable
+        // DuckDB doesn't support external transactions for flat file operations
+        // This overload exists for API consistency with Jaunty core
+        return await InsertAsync(entity, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -399,6 +425,15 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
+    public async ValueTask<int> InsertAsync<T>(IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        // For FlatFiles, CommandOptions.Transaction and CommandOptions.CommandTimeout are not applicable
+        // DuckDB doesn't support external transactions for flat file operations
+        // This overload exists for API consistency with Jaunty core
+        return await InsertAsync(entities, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="predicate"/> or <paramref name="column"/> is null.</exception>
     /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
     /// <remarks>
@@ -431,6 +466,15 @@ public sealed class DuckDb : IFlatFile
     }
 
     /// <inheritdoc />
+    public async ValueTask<int> UpdateAsync<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        // For FlatFiles, CommandOptions.Transaction and CommandOptions.CommandTimeout are not applicable
+        // DuckDB doesn't support external transactions for flat file operations
+        // This overload exists for API consistency with Jaunty core
+        return await UpdateAsync(predicate, column, value, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="predicate"/> is null.</exception>
     /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
     /// <remarks>
@@ -450,6 +494,15 @@ public sealed class DuckDb : IFlatFile
 
         if (result > 0) _modified.TryAdd(typeof(T), true);
         return result;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<int> DeleteAsync<T>(Expression<Func<T, bool>> predicate, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        // For FlatFiles, CommandOptions.Transaction and CommandOptions.CommandTimeout are not applicable
+        // DuckDB doesn't support external transactions for flat file operations
+        // This overload exists for API consistency with Jaunty core
+        return await DeleteAsync(predicate, cancellationToken).ConfigureAwait(false);
     }
 
     // ==========================================

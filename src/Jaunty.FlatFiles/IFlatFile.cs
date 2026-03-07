@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
+using Jaunty.Core;
 using Jaunty.Fluent;
 
 namespace Jaunty.FlatFiles;
@@ -93,9 +94,28 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     /// </summary>
     /// <typeparam name="T">The entity type.</typeparam>
     /// <param name="entity">The entity to insert.</param>
+    /// <param name="options">Command options for transaction and timeout.</param>
+    /// <returns>The number of rows affected.</returns>
+    int Insert<T>(T entity, CommandOptions options) where T : class, new();
+
+    /// <summary>
+    /// Inserts a single entity into the flat file table. Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="entity">The entity to insert.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The number of rows affected.</returns>
     ValueTask<int> InsertAsync<T>(T entity, CancellationToken cancellationToken = default) where T : class, new();
+
+    /// <summary>
+    /// Inserts a single entity into the flat file table. Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="entity">The entity to insert.</param>
+    /// <param name="options">Command options for transaction and timeout.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    /// <returns>The number of rows affected.</returns>
+    ValueTask<int> InsertAsync<T>(T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new();
 
     /// <summary>
     /// Inserts multiple entities into the flat file table. Promotes the source from VIEW to TABLE on first mutation.
@@ -110,9 +130,28 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     /// </summary>
     /// <typeparam name="T">The entity type.</typeparam>
     /// <param name="entities">The entities to insert.</param>
+    /// <param name="options">Command options for transaction and timeout.</param>
+    /// <returns>The number of rows affected.</returns>
+    int Insert<T>(IEnumerable<T> entities, CommandOptions options) where T : class, new();
+
+    /// <summary>
+    /// Inserts multiple entities into the flat file table. Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="entities">The entities to insert.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The number of rows affected.</returns>
     ValueTask<int> InsertAsync<T>(IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : class, new();
+
+    /// <summary>
+    /// Inserts multiple entities into the flat file table. Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="entities">The entities to insert.</param>
+    /// <param name="options">Command options for transaction and timeout.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    /// <returns>The number of rows affected.</returns>
+    ValueTask<int> InsertAsync<T>(IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new();
 
     /// <summary>
     /// Updates rows matching the predicate by setting the specified column to the given value.
@@ -133,9 +172,34 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     /// <param name="predicate">A filter expression to select rows to update.</param>
     /// <param name="column">An expression selecting the column to update.</param>
     /// <param name="value">The new value for the column.</param>
+    /// <param name="options">Command options for transaction and timeout.</param>
+    /// <returns>The number of rows affected.</returns>
+    int Update<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CommandOptions options) where T : class, new();
+
+    /// <summary>
+    /// Updates rows matching the predicate by setting the specified column to the given value.
+    /// Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="predicate">A filter expression to select rows to update.</param>
+    /// <param name="column">An expression selecting the column to update.</param>
+    /// <param name="value">The new value for the column.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The number of rows affected.</returns>
     ValueTask<int> UpdateAsync<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CancellationToken cancellationToken = default) where T : class, new();
+
+    /// <summary>
+    /// Updates rows matching the predicate by setting the specified column to the given value.
+    /// Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="predicate">A filter expression to select rows to update.</param>
+    /// <param name="column">An expression selecting the column to update.</param>
+    /// <param name="value">The new value for the column.</param>
+    /// <param name="options">Command options for transaction and timeout.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    /// <returns>The number of rows affected.</returns>
+    ValueTask<int> UpdateAsync<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new();
 
     /// <summary>
     /// Deletes rows matching the predicate. Promotes the source from VIEW to TABLE on first mutation.
@@ -150,9 +214,28 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     /// </summary>
     /// <typeparam name="T">The entity type.</typeparam>
     /// <param name="predicate">A filter expression to select rows to delete.</param>
+    /// <param name="options">Command options for transaction and timeout.</param>
+    /// <returns>The number of rows affected.</returns>
+    int Delete<T>(Expression<Func<T, bool>> predicate, CommandOptions options) where T : class, new();
+
+    /// <summary>
+    /// Deletes rows matching the predicate. Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="predicate">A filter expression to select rows to delete.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The number of rows affected.</returns>
     ValueTask<int> DeleteAsync<T>(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default) where T : class, new();
+
+    /// <summary>
+    /// Deletes rows matching the predicate. Promotes the source from VIEW to TABLE on first mutation.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
+    /// <param name="predicate">A filter expression to select rows to delete.</param>
+    /// <param name="options">Command options for transaction and timeout.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation.</param>
+    /// <returns>The number of rows affected.</returns>
+    ValueTask<int> DeleteAsync<T>(Expression<Func<T, bool>> predicate, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new();
 
     // ==========================================
     // Write-Back Operations
