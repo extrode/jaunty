@@ -526,16 +526,9 @@ public sealed class DuckDb : IFlatFile
         if (format is not null)
             return format;
 
-        // Fall back to registered sources — check if this entity type has a source with a known format
-        foreach (var source in _sources.Values)
-        {
-            if (!string.IsNullOrEmpty(source.DuckDbFormatName))
-                return source.Format;
-        }
-
         throw new ArgumentException(
             $"Cannot infer output format from extension '{ext}'. " +
-            $"Use FlatFile.RegisterExtension() to add custom file types, or use the IFileSource-based overload.",
+            $"Supported extensions: .csv, .tsv, .parquet, .json, .ndjson, .xlsx, .xls.",
             nameof(path));
     }
 

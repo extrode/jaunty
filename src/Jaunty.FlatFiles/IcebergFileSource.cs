@@ -59,6 +59,7 @@ public sealed class IcebergFileSource : IFileSource
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         if (filePaths is null) throw new ArgumentNullException(nameof(filePaths));
         if (filePaths.Length == 0) throw new ArgumentException("At least one file path is required.", nameof(filePaths));
+        if (filePaths[0] is null) throw new ArgumentNullException(nameof(filePaths), "File path must not be null.");
         FilePaths = filePaths;
         FilePath = filePaths[0];
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
