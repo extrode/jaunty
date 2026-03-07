@@ -69,8 +69,8 @@ public class P3EdgeCaseTests
 
         using var db = new DuckDb(options);
         var results = db.Connection.Query<UnicodeEntity>(
-            "SELECT * FROM \"unicode_where\" WHERE \"City\" = $1",
-            new { p1 = "東京" });
+            "SELECT * FROM \"unicode_where\" WHERE \"City\" = $city",
+            new { city = "東京" });
 
         Assert.Single(results);
         Assert.Equal("田中太郎", results[0].Name);

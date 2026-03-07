@@ -283,7 +283,7 @@ public class WriteBackTests : IDisposable
     [Fact]
     public async Task FormatInference_UnsupportedExtension_Throws()
     {
-        var path = Path.Combine(DataDir, "bad.xlsx");
+        var path = Path.Combine(DataDir, "bad.xyz");
         await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
             await _db.ExportAsync<InventoryItem>(path);
