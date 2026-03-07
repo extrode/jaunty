@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Jaunty.FlatFiles.DuckDB.ImportPipeline;
+namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 
 /// <summary>
 /// Import dialect for PostgreSQL databases.

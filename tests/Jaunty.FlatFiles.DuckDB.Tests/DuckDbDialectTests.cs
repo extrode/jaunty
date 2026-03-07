@@ -1,3 +1,5 @@
+using Jaunty.FlatFiles.DuckDB.Internals.Dialects;
+
 namespace Jaunty.FlatFiles.DuckDB.Tests;
 
 public class DuckDbDialectTests

@@ -1,7 +1,3 @@
-using System.Data.Common;
-
-using DuckDB.NET.Data;
-
 using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.Fluent;
 
