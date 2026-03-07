@@ -12,7 +12,7 @@ public sealed class CsvFileSource : IFileSource
     public string FilePath { get; }
 
     /// <inheritdoc />
-    public FileFormat Format => FileFormat.Csv;
+    public string Format => FileFormats.Csv;
 
     /// <inheritdoc />
     public Type EntityType { get; }

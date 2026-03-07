@@ -12,7 +12,7 @@ public sealed class JsonFileSource : IFileSource
     public string FilePath { get; }
 
     /// <inheritdoc />
-    public FileFormat Format => FileFormat.Json;
+    public string Format => FileFormats.Json;
 
     /// <inheritdoc />
     public Type EntityType { get; }

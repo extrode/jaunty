@@ -472,17 +472,19 @@ public sealed class DuckDb : IFlatFile
         return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static FileFormat InferFormatFromExtension(string path)
+    private static string InferFormatFromExtension(string path)
     {
         var ext = Path.GetExtension(path).ToLowerInvariant();
         return ext switch
         {
-            ".csv" => FileFormat.Csv,
-            ".tsv" => FileFormat.Tsv,
-            ".parquet" => FileFormat.Parquet,
-            ".json" or ".ndjson" => FileFormat.Json,
+            ".csv" => FileFormats.Csv,
+            ".tsv" => FileFormats.Tsv,
+            ".parquet" => FileFormats.Parquet,
+            ".json" or ".ndjson" => FileFormats.Json,
+            ".xlsx" or ".xls" => FileFormats.Excel,
             _ => throw new ArgumentException(
-                $"Cannot infer output format from extension '{ext}'. Supported: .csv, .tsv, .parquet, .json, .ndjson",
+                $"Cannot infer output format from extension '{ext}'. Supported: .csv, .tsv, .parquet, .json, .ndjson, .xlsx, .xls. " +
+                $"Use FlatFile.RegisterExtension() to add custom file types.",
                 nameof(path))
         };
     }
