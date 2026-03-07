@@ -66,6 +66,8 @@
 		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Nullable>enable</Nullable>
+		<ErrorReport>none</ErrorReport>
+		<PackageTags>$(PackageTags);flat-files;csv;parquet;json;duckdb</PackageTags>
 	</PropertyGroup>
 
 </Project>
