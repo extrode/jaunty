@@ -1,10 +1,10 @@
 using DuckDB.NET.Data;
 
-using Jaunty.FlatFiles.DuckDB.Tests.Entities;
+using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 
 using Microsoft.Data.Sqlite;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Import;
 
 /// <summary>
 /// Tests for the M4 Import Pipeline.

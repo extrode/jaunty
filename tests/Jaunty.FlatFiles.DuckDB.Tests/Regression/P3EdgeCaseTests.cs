@@ -1,7 +1,8 @@
 using Jaunty.Attributes;
+using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 using Jaunty.Fluent;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Regression;
 
 /// <summary>
 /// P3-8 edge case tests: Unicode, malformed files, concurrent access, nested JSON, large datasets.
@@ -165,17 +166,17 @@ public class P3EdgeCaseTests
     {
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
         var options = new FlatFileOptions();
-        options.AddCsv<Entities.SalesRecord>(csvPath);
+        options.AddCsv<SalesRecord>(csvPath);
 
         using var db = new DuckDb(options);
 
         // Get expected count
-        var expected = db.Connection.From<Entities.SalesRecord>().Select().Count;
+        var expected = db.Connection.From<SalesRecord>().Select().Count;
 
         // Run 10 concurrent queries
         var tasks = Enumerable.Range(0, 10).Select(_ => Task.Run(() =>
         {
-            var results = db.Connection.Query<Entities.SalesRecord>(
+            var results = db.Connection.Query<SalesRecord>(
                 "SELECT * FROM \"sales\"");
             return results.Count;
         }));
@@ -191,20 +192,20 @@ public class P3EdgeCaseTests
     {
         var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
         var options = new FlatFileOptions();
-        options.AddCsv<Entities.SalesRecord>(csvPath);
+        options.AddCsv<SalesRecord>(csvPath);
 
         using var db = new DuckDb(options);
 
         var tasks = new List<Task<int>>
         {
-            Task.Run(() => db.Connection.Query<Entities.SalesRecord>("SELECT * FROM \"sales\"").Count),
+            Task.Run(() => db.Connection.Query<SalesRecord>("SELECT * FROM \"sales\"").Count),
             Task.Run(() =>
             {
                 using var cmd = db.Connection.CreateCommand();
                 cmd.CommandText = "SELECT COUNT(*) FROM \"sales\"";
                 return Convert.ToInt32(cmd.ExecuteScalar());
             }),
-            Task.Run(() => db.Connection.Query<Entities.SalesRecord>(
+            Task.Run(() => db.Connection.Query<SalesRecord>(
                 "SELECT * FROM \"sales\" WHERE \"Quantity\" > 0").Count)
         };
 

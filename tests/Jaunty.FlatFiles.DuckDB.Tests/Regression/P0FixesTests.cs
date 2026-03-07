@@ -2,10 +2,10 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using Jaunty.FlatFiles.DuckDB.Internals;
-using Jaunty.FlatFiles.DuckDB.Tests.Entities;
+using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 using Jaunty.Fluent;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Regression;
 
 /// <summary>
 /// Tests for the new Query API and performance optimizations added in P0 fixes.
