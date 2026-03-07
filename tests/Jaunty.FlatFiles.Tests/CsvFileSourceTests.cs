@@ -1,5 +1,3 @@
-using Jaunty.FlatFiles;
-
 namespace Jaunty.FlatFiles.Tests;
 
 public class CsvFileSourceTests
@@ -57,7 +55,7 @@ public class CsvFileSourceTests
     [Fact]
     public void Constructor_NullFilePath_Throws()
     {
-        Assert.Throws<ArgumentNullException>(() => new CsvFileSource("t", null!, typeof(SalesRecord)));
+        Assert.Throws<ArgumentNullException>(() => new CsvFileSource("t", (string)null!, typeof(SalesRecord)));
     }
 
     [Fact]

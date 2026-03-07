@@ -17,11 +17,11 @@ public static class FlatFile
     };
 
     /// <summary>
-    /// URI schemes that DuckDB supports for remote file access.
-    /// The <c>file://</c> scheme is intentionally excluded to prevent path traversal.
+    /// URI schemes that DuckDB supports for remote and local file access.
     /// </summary>
-    private static readonly HashSet<string> _allowedRemoteSchemes = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> _allowedSchemes = new(StringComparer.OrdinalIgnoreCase)
     {
+        "file",                 // Local file access
         "http", "https",        // httpfs extension
         "s3", "s3a", "s3n",     // AWS S3
         "az", "abfss",          // Azure Blob Storage
@@ -63,9 +63,9 @@ public static class FlatFile
 
         if (IsRemoteUri(filePath, out var scheme))
         {
-            if (!_allowedRemoteSchemes.Contains(scheme))
+            if (!_allowedSchemes.Contains(scheme))
                 throw new ArgumentException(
-                    $"URI scheme '{scheme}://' is not allowed. Allowed schemes: {string.Join(", ", _allowedRemoteSchemes.OrderBy(s => s).Select(s => s + "://"))}.",
+                    $"URI scheme '{scheme}://' is not allowed. Allowed schemes: {string.Join(", ", _allowedSchemes.OrderBy(s => s).Select(s => s + "://"))}.",
                     nameof(filePath));
 
             resolvedPath = filePath;
