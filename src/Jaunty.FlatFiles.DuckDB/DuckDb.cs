@@ -278,6 +278,22 @@ public sealed class DuckDb : IFlatFile
     // ==========================================
 
     /// <inheritdoc />
+    public int Insert<T>(T entity) where T : class, new()
+        => InsertAsync(entity, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc />
+    public int Insert<T>(IEnumerable<T> entities) where T : class, new()
+        => InsertAsync(entities, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc />
+    public int Update<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value) where T : class, new()
+        => UpdateAsync(predicate, column, value, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc />
+    public int Delete<T>(Expression<Func<T, bool>> predicate) where T : class, new()
+        => DeleteAsync(predicate, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc />
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="entity"/> is null.</exception>
     /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
     /// <remarks>
@@ -436,6 +452,18 @@ public sealed class DuckDb : IFlatFile
     // ==========================================
     // Write-Back Operations
     // ==========================================
+
+    /// <inheritdoc />
+    public void Save<T>(string outputPath) where T : class, new()
+        => SaveAsync<T>(outputPath, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc />
+    public void Save<T>(WriteBackMode mode) where T : class, new()
+        => SaveAsync<T>(mode, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc />
+    public void Export<T>(string outputPath) where T : class, new()
+        => ExportAsync<T>(outputPath, CancellationToken.None).GetAwaiter().GetResult();
 
     /// <inheritdoc />
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="outputPath"/> is null.</exception>
