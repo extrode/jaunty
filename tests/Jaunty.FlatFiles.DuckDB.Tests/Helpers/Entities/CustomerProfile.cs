@@ -1,6 +1,6 @@
 using Jaunty.Attributes;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests.Entities;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 
 [Table("customers")]
 public class CustomerProfile

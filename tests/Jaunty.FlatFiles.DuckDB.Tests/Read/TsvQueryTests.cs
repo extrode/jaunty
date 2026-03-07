@@ -1,7 +1,7 @@
-using Jaunty.FlatFiles.DuckDB.Tests.Entities;
+using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 using Jaunty.Fluent;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Read;
 
 /// <summary>
 /// Integration tests for querying TSV files via Jaunty's fluent API.

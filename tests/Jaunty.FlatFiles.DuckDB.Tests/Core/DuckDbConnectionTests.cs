@@ -2,7 +2,7 @@ using System.Data;
 using System.Data.Common;
 using DuckDB.NET.Data;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Core;
 
 /// <summary>
 /// Integration tests verifying DuckDB.NET ADO.NET compatibility.

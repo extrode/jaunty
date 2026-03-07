@@ -2,9 +2,9 @@ using DuckDB.NET.Data;
 
 using Jaunty.Dialects;
 using Jaunty.FlatFiles.DuckDB.Dialects;
-using Jaunty.FlatFiles.DuckDB.Tests.Entities;
+using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Integration;
 
 /// <summary>
 /// M0 Exit Gate Tests: Proves that Jaunty's materialization pipeline works correctly

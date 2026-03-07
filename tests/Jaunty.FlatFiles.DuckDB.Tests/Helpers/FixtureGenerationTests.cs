@@ -1,4 +1,4 @@
-namespace Jaunty.FlatFiles.DuckDB.Tests;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Helpers;
 
 /// <summary>
 /// Fixture generation tests - run once to create test data files.
