@@ -17,11 +17,7 @@ public static class FlatFileImporter
     /// <param name="options">Import options (batch size, conflict strategy, etc.).</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The total number of rows imported.</returns>
-    public static async ValueTask<long> ImportAsync<T>(
-        string filePath,
-        DbConnection targetConnection,
-        ImportOptions options = default,
-        CancellationToken cancellationToken = default) where T : class, new()
+    public static async ValueTask<long> ImportAsync<T>(string filePath, DbConnection targetConnection, ImportOptions options = default, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(filePath);
         ArgumentNullException.ThrowIfNull(targetConnection);
@@ -50,11 +46,7 @@ public static class FlatFileImporter
     /// <param name="options">Import options (batch size, conflict strategy, etc.).</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The total number of rows imported.</returns>
-    public static async ValueTask<long> ImportAsync<T>(
-        Action<FlatFileOptions> configureSource,
-        DbConnection targetConnection,
-        ImportOptions options = default,
-        CancellationToken cancellationToken = default) where T : class, new()
+    public static async ValueTask<long> ImportAsync<T>(Action<FlatFileOptions> configureSource, DbConnection targetConnection, ImportOptions options = default, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(configureSource);
         ArgumentNullException.ThrowIfNull(targetConnection);
