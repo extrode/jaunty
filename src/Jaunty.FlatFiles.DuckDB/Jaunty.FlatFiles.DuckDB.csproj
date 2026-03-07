@@ -38,6 +38,9 @@
 		<Description>DuckDB provider for Jaunty.FlatFiles. Enables SQL queries on CSV, TSV, Parquet, JSON, Excel, Delta Lake, and Iceberg sources, including remote files via S3, Azure, and HTTP.</Description>
 		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Nullable>enable</Nullable>
+		<ErrorReport>none</ErrorReport>
+		<PackageTags>$(PackageTags);flat-files;csv;parquet;json;duckdb</PackageTags>
 	</PropertyGroup>
 
 </Project>
