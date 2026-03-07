@@ -98,6 +98,22 @@ public sealed class FlatFileOptions
     }
 
     /// <summary>
+    /// Adds an Excel (.xlsx) file source for the specified entity type.
+    /// Requires the DuckDB <c>excel</c> extension.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map rows to.</typeparam>
+    /// <param name="filePath">The path to the Excel file.</param>
+    /// <param name="configure">Optional configuration for the Excel source (sheet name, range, etc.).</param>
+    public FlatFileOptions AddExcel<T>(string filePath, Action<ExcelFileSource>? configure = null) where T : class, new()
+    {
+        var tableName = TableNameResolver.Resolve<T>();
+        var source = new ExcelFileSource(tableName, filePath, typeof(T));
+        configure?.Invoke(source);
+        Sources.Add(source);
+        return this;
+    }
+
+    /// <summary>
     /// Registers a custom file source directly. Use this to add file sources
     /// for formats not natively supported (e.g. custom <see cref="IFileSource"/> implementations).
     /// </summary>
@@ -105,6 +121,26 @@ public sealed class FlatFileOptions
     public FlatFileOptions AddSource(IFileSource source)
     {
         Sources.Add(source ?? throw new ArgumentNullException(nameof(source)));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a custom file source for the specified entity type. Use this for custom <see cref="IFileSource"/>
+    /// implementations that support formats beyond the built-in CSV, TSV, Parquet, JSON, and Excel.
+    /// </summary>
+    /// <typeparam name="T">The entity type to map rows to.</typeparam>
+    /// <typeparam name="TSource">The file source type implementing <see cref="IFileSource"/>.</typeparam>
+    /// <param name="filePath">The path to the data file.</param>
+    /// <param name="factory">A factory function that creates the file source given (tableName, filePath, entityType).</param>
+    /// <param name="configure">Optional configuration callback for the file source.</param>
+    public FlatFileOptions AddSource<T, TSource>(string filePath, Func<string, string, Type, TSource> factory, Action<TSource>? configure = null)
+        where T : class, new()
+        where TSource : IFileSource
+    {
+        var tableName = TableNameResolver.Resolve<T>();
+        var source = factory(tableName, filePath, typeof(T));
+        configure?.Invoke(source);
+        Sources.Add(source);
         return this;
     }
 }

@@ -16,9 +16,10 @@ public sealed class WriteBackOptions
     public string? OutputPath { get; set; }
 
     /// <summary>
-    /// Gets or sets the output format. When null, the format is inferred from the file extension.
+    /// Gets or sets the output format (e.g. <see cref="FileFormats.Csv"/>, <see cref="FileFormats.Parquet"/>).
+    /// When null, the format is inferred from the file extension.
     /// </summary>
-    public FileFormat? OutputFormat { get; set; }
+    public string? OutputFormat { get; set; }
 
     /// <summary>
     /// Gets or sets whether to include a header row in CSV/TSV output. Default: true.

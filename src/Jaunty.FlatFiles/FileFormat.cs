@@ -1,19 +1,22 @@
 namespace Jaunty.FlatFiles;
 
 /// <summary>
-/// Supported flat file formats.
+/// Well-known flat file format identifiers. Custom formats can use any string value.
 /// </summary>
-public enum FileFormat
+public static class FileFormats
 {
     /// <summary>Comma-separated values.</summary>
-    Csv,
+    public const string Csv = "CSV";
 
     /// <summary>Tab-separated values.</summary>
-    Tsv,
+    public const string Tsv = "TSV";
 
     /// <summary>Apache Parquet columnar format.</summary>
-    Parquet,
+    public const string Parquet = "PARQUET";
 
     /// <summary>JSON (array or newline-delimited).</summary>
-    Json
+    public const string Json = "JSON";
+
+    /// <summary>Microsoft Excel (.xlsx) format.</summary>
+    public const string Excel = "XLSX";
 }

@@ -12,7 +12,7 @@ public sealed class ParquetFileSource : IFileSource
     public string FilePath { get; }
 
     /// <inheritdoc />
-    public FileFormat Format => FileFormat.Parquet;
+    public string Format => FileFormats.Parquet;
 
     /// <inheritdoc />
     public Type EntityType { get; }

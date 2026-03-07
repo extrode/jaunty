@@ -16,9 +16,10 @@ public interface IFileSource
     string FilePath { get; }
 
     /// <summary>
-    /// Gets the file format.
+    /// Gets the file format identifier (e.g. <see cref="FileFormats.Csv"/>, <see cref="FileFormats.Parquet"/>).
+    /// Custom implementations can return any string value.
     /// </summary>
-    FileFormat Format { get; }
+    string Format { get; }
 
     /// <summary>
     /// Gets the entity type associated with this file source.

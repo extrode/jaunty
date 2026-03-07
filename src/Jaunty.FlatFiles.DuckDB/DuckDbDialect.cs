@@ -259,26 +259,32 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return sb.ToString();
     }
 
-    public string GenerateCopyToSql(string tableName, string outputPath, FileFormat format)
+    public string GenerateCopyToSql(string tableName, string outputPath, string format)
     {
+        ArgumentNullException.ThrowIfNull(format);
+
         var escapedPath = outputPath.Replace("'", "''");
-        var formatName = format switch
+
+        // Map logical format to DuckDB format name
+        var duckDbFormat = format.ToUpperInvariant() switch
         {
-            FileFormat.Csv => "CSV",
-            FileFormat.Tsv => "CSV",
-            FileFormat.Parquet => "PARQUET",
-            FileFormat.Json => "JSON",
-            _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unsupported export format.")
+            "CSV" => "CSV",
+            "TSV" => "CSV",
+            "PARQUET" => "PARQUET",
+            "JSON" => "JSON",
+            "XLSX" => "XLSX",
+            _ => format.ToUpperInvariant() // Pass through for custom formats
         };
 
         var sb = new StringBuilder();
-        sb.Append($"COPY \"{tableName}\" TO '{escapedPath}' (FORMAT {formatName}");
+        sb.Append($"COPY \"{tableName}\" TO '{escapedPath}' (FORMAT {duckDbFormat}");
 
-        if (format == FileFormat.Tsv)
+        if (string.Equals(format, FileFormats.Tsv, StringComparison.OrdinalIgnoreCase))
             sb.Append(", DELIMITER '\t'");
 
-        // HEADER is only valid for CSV/TSV, not Parquet or JSON
-        if (format is FileFormat.Csv or FileFormat.Tsv)
+        // HEADER is only valid for CSV/TSV
+        if (string.Equals(format, FileFormats.Csv, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(format, FileFormats.Tsv, StringComparison.OrdinalIgnoreCase))
             sb.Append(", HEADER true");
 
         sb.Append(')');
