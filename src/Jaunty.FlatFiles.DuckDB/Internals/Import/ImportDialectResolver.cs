@@ -1,6 +1,6 @@
 using System.Data.Common;
 
-namespace Jaunty.FlatFiles.DuckDB.ImportPipeline;
+namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 
 /// <summary>
 /// Resolves an <see cref="IImportDialect"/> from a <see cref="DbConnection"/> type.

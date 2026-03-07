@@ -2,7 +2,7 @@ using System.Reflection;
 
 using Jaunty.Attributes;
 
-namespace Jaunty.FlatFiles.DuckDB.ImportPipeline;
+namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 
 /// <summary>
 /// Generates CREATE TABLE DDL for target databases based on entity metadata,

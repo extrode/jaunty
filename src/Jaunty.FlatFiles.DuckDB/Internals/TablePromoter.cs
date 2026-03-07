@@ -2,6 +2,8 @@ using System.Data;
 
 using DuckDB.NET.Data;
 
+using Jaunty.FlatFiles.DuckDB.Internals.Dialects;
+
 namespace Jaunty.FlatFiles.DuckDB.Internals;
 
 /// <summary>

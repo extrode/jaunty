@@ -4,7 +4,7 @@ using System.Text;
 
 using Jaunty.FlatFiles.DuckDB.Internals;
 
-namespace Jaunty.FlatFiles.DuckDB.ImportPipeline;
+namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 
 /// <summary>
 /// Executes the import pipeline: reads from a DuckDB source and writes to a target database
