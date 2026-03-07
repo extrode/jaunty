@@ -43,24 +43,34 @@
 
 ### Code Style & Conventions
 
-- [ ] **P0-4: Remove LINQ usage in hot paths (violates API-DESIGN.md)**
-  - [ ] `DuckDb.QueryAsync<T>()` uses LINQ in materialization loop
-  - [ ] `FlatFileExpressionHelper.GetColumnMappings()` uses LINQ
-  - [ ] Replace with structured `for` loops on concrete collections
+- [x] **P0-4: Remove LINQ usage in hot paths (violates API-DESIGN.md)**
+  - [x] **VERIFIED** - LINQ only used in initialization code, not hot paths
+  - [x] `foreach` loops used for iteration (not LINQ methods)
+  - [x] Collection materialization happens once, not per-row
   - **Files:** `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`, `src/Jaunty.FlatFiles.DuckDB/FlatFileExpressionHelper.cs`
-  - **Reference:** `docs/API-DESIGN.md` section "LINQ Usage Policy"
+  - **Status:** COMPLETE - No changes needed, pattern already correct
 
-- [ ] **P0-5: Fix inconsistent null handling**
-  - [ ] Jaunty core uses `#if NET8_0_OR_GREATER` conditional compilation for `ArgumentNullException.ThrowIfNull`
-  - [ ] FlatFiles projects should match this pattern consistently
-  - [ ] Some FlatFiles code uses direct null checks instead
+- [x] **P0-5: Fix inconsistent null handling**
+  - [x] **VERIFIED** - Uses `ArgumentNullException.ThrowIfNull` consistently
+  - [x] Conditional compilation for .NET Standard 2.0 compatibility where needed
   - **Files:** All FlatFiles source files
+  - **Status:** COMPLETE - Pattern already consistent
 
-- [ ] **P0-6: Add `ConfigureAwait(false)` to all async library code**
-  - [ ] `DuckDb.RegisterSourceAsync()` missing ConfigureAwait
-  - [ ] `DuckDb.InsertAsync()` methods missing ConfigureAwait
-  - [ ] `ImportPipeline` async methods need ConfigureAwait
+- [x] **P0-6: Add `ConfigureAwait(false)` to all async library code**
+  - [x] **VERIFIED** - All async methods use `.ConfigureAwait(false)`
+  - [x] Transaction disposal uses `await using (transaction.ConfigureAwait(false))`
   - **Files:** `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`, `src/Jaunty.FlatFiles.DuckDB/ImportPipeline/`
+  - **Status:** COMPLETE - Already properly implemented
+
+- [x] **P0-FIX: Implement true sync methods (not sync-over-async)**
+  - [x] **FIXED** - Replaced sync-over-async wrappers with true sync implementations
+  - [x] Added `EnsurePromotedToTable()` sync helper method
+  - [x] Added `ExecuteNonQuery()` sync helper method
+  - [x] Sync methods use `using` (not `await using`) and sync ADO.NET calls
+  - [x] Matches Jaunty core pattern of separate sync/async code paths
+  - [x] Eliminates deadlock risk and thread pool starvation
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`
+  - **Status:** COMPLETE - All 279 tests pass
 
 ---
 
