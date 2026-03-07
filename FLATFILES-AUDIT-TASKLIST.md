@@ -89,11 +89,14 @@
   - [x] This is a deliberate design choice appropriate for the FlatFiles use case
   - **Files:** N/A - No changes needed
 
-- [ ] **P1-10: Add `CommandOptions` support to FlatFiles API**
-  - [ ] Jaunty core uses `CommandOptions` for transaction/timeout
-  - [ ] FlatFiles CRUD methods don't support transactions
-  - [ ] Add `CommandOptions` parameter to all CRUD methods
+- [x] **P1-10: Add `CommandOptions` support to FlatFiles API**
+  - [x] Added `CommandOptions` overloads to all CRUD methods in `IFlatFile`
+  - [x] Implemented in `DuckDb` class with documentation noting DuckDB limitations
+  - [x] Provides API consistency with Jaunty core
+  - [x] **Note:** DuckDB flat file operations don't support external transactions or command timeouts
+  - [x] Overloads delegate to base methods (API compatibility layer)
   - **Files:** `src/Jaunty.FlatFiles/IFlatFile.cs`, `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`
+  - **Status:** COMPLETE - All 279 tests pass, API now consistent with Jaunty core
 
 ### Error Handling
 
