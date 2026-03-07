@@ -281,35 +281,154 @@ public sealed class DuckDb : IFlatFile
 
     /// <inheritdoc />
     public int Insert<T>(T entity) where T : class, new()
-        => InsertAsync(entity, CancellationToken.None).GetAwaiter().GetResult();
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+
+        var source = GetSourceOrThrow<T>();
+        EnsurePromotedToTable(source);
+
+        var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
+        var columns = new StringBuilder(mappings.Count * 20);
+        var values = new StringBuilder(mappings.Count * 10);
+        var parameters = new List<DuckDBParameter>(mappings.Count);
+
+        var mappingList = mappings.Values.ToList();
+        for (int i = 0; i < mappingList.Count; i++)
+        {
+            if (i > 0) { columns.Append(", "); values.Append(", "); }
+            var mapping = mappingList[i];
+            columns.Append($"\"{mapping.ColumnName}\"");
+            values.Append($"${i + 1}");
+            parameters.Add(new DuckDBParameter { Value = mapping.Getter(entity) ?? DBNull.Value });
+        }
+
+        var sql = $"INSERT INTO \"{source.TableName}\" ({columns}) VALUES ({values})";
+        var result = ExecuteNonQuery(sql, parameters);
+        _modified.TryAdd(typeof(T), true);
+        return result;
+    }
 
     /// <inheritdoc />
     public int Insert<T>(T entity, CommandOptions options) where T : class, new()
-        => InsertAsync(entity, options, CancellationToken.None).GetAwaiter().GetResult();
+    {
+        // CommandOptions not applicable - see async overload for details
+        return Insert(entity);
+    }
 
     /// <inheritdoc />
     public int Insert<T>(IEnumerable<T> entities) where T : class, new()
-        => InsertAsync(entities, CancellationToken.None).GetAwaiter().GetResult();
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+
+        var entityList = entities switch
+        {
+            IList<T> list => list,
+            ICollection<T> collection => collection.ToList(),
+            _ => entities.ToList()
+        };
+
+        if (entityList.Count == 0) return 0;
+
+        var source = GetSourceOrThrow<T>();
+        EnsurePromotedToTable(source);
+
+        var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
+        var columns = new StringBuilder(mappings.Count * 20);
+        var mappingList = mappings.Values.ToList();
+        for (int i = 0; i < mappingList.Count; i++)
+        {
+            if (i > 0) columns.Append(", ");
+            columns.Append($"\"{mappingList[i].ColumnName}\"");
+        }
+
+        var sb = new StringBuilder(entityList.Count * mappings.Count * 10);
+        var parameters = new List<DuckDBParameter>(entityList.Count * mappings.Count);
+        var paramCounter = 0;
+
+        for (int row = 0; row < entityList.Count; row++)
+        {
+            if (row > 0) sb.Append(", ");
+            sb.Append('(');
+            var entity = entityList[row];
+
+            for (int col = 0; col < mappingList.Count; col++)
+            {
+                if (col > 0) sb.Append(", ");
+                paramCounter++;
+                sb.Append($"${paramCounter}");
+                parameters.Add(new DuckDBParameter { Value = mappingList[col].Getter(entity) ?? DBNull.Value });
+            }
+            sb.Append(')');
+        }
+
+        var sql = $"INSERT INTO \"{source.TableName}\" ({columns}) VALUES {sb}";
+        var totalInserted = ExecuteNonQuery(sql, parameters);
+
+        if (totalInserted > 0) _modified.TryAdd(typeof(T), true);
+        return totalInserted;
+    }
 
     /// <inheritdoc />
     public int Insert<T>(IEnumerable<T> entities, CommandOptions options) where T : class, new()
-        => InsertAsync(entities, options, CancellationToken.None).GetAwaiter().GetResult();
+    {
+        // CommandOptions not applicable - see async overload for details
+        return Insert(entities);
+    }
 
     /// <inheritdoc />
     public int Update<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value) where T : class, new()
-        => UpdateAsync(predicate, column, value, CancellationToken.None).GetAwaiter().GetResult();
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        ArgumentNullException.ThrowIfNull(column);
+
+        var source = GetSourceOrThrow<T>();
+        EnsurePromotedToTable(source);
+
+        var columnName = FlatFileExpressionHelper.ResolveColumnName(column);
+
+        var setParam = new DuckDBParameter { Value = value ?? DBNull.Value };
+        var (whereSql, whereParams) = FlatFileExpressionHelper.TranslatePredicate(predicate, paramOffset: 1);
+
+        var allParams = new List<DuckDBParameter>(whereParams.Count + 1) { setParam };
+        allParams.AddRange(whereParams);
+
+        var sql = $"UPDATE \"{source.TableName}\" SET \"{columnName}\" = $1 WHERE {whereSql}";
+        var result = ExecuteNonQuery(sql, allParams);
+
+        if (result > 0) _modified.TryAdd(typeof(T), true);
+        return result;
+    }
 
     /// <inheritdoc />
     public int Update<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CommandOptions options) where T : class, new()
-        => UpdateAsync(predicate, column, value, options, CancellationToken.None).GetAwaiter().GetResult();
+    {
+        // CommandOptions not applicable - see async overload for details
+        return Update(predicate, column, value);
+    }
 
     /// <inheritdoc />
     public int Delete<T>(Expression<Func<T, bool>> predicate) where T : class, new()
-        => DeleteAsync(predicate, CancellationToken.None).GetAwaiter().GetResult();
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        var source = GetSourceOrThrow<T>();
+        EnsurePromotedToTable(source);
+
+        var (whereSql, whereParams) = FlatFileExpressionHelper.TranslatePredicate(predicate);
+
+        var sql = $"DELETE FROM \"{source.TableName}\" WHERE {whereSql}";
+        var result = ExecuteNonQuery(sql, whereParams);
+
+        if (result > 0) _modified.TryAdd(typeof(T), true);
+        return result;
+    }
 
     /// <inheritdoc />
     public int Delete<T>(Expression<Func<T, bool>> predicate, CommandOptions options) where T : class, new()
-        => DeleteAsync(predicate, options, CancellationToken.None).GetAwaiter().GetResult();
+    {
+        // CommandOptions not applicable - see async overload for details
+        return Delete(predicate);
+    }
 
     /// <inheritdoc />
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="entity"/> is null.</exception>
@@ -326,7 +445,6 @@ public sealed class DuckDb : IFlatFile
         await EnsurePromotedToTableAsync(source, cancellationToken).ConfigureAwait(false);
 
         var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
-        // Pre-size StringBuilders to avoid reallocations (~20 chars per column name, ~10 chars per parameter)
         var columns = new StringBuilder(mappings.Count * 20);
         var values = new StringBuilder(mappings.Count * 10);
         var parameters = new List<DuckDBParameter>(mappings.Count);
@@ -337,7 +455,7 @@ public sealed class DuckDb : IFlatFile
             if (i > 0) { columns.Append(", "); values.Append(", "); }
             var mapping = mappingList[i];
             columns.Append($"\"{mapping.ColumnName}\"");
-            values.Append($"${i + 1}"); // DuckDB uses 1-based positional params
+            values.Append($"${i + 1}");
             parameters.Add(new DuckDBParameter { Value = mapping.Getter(entity) ?? DBNull.Value });
         }
 
@@ -367,12 +485,10 @@ public sealed class DuckDb : IFlatFile
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        // Avoid unnecessary ToList() if already a list
-        // Check common collection types first to avoid allocation
         var entityList = entities switch
         {
             IList<T> list => list,
-            ICollection<T> collection => collection.ToList(), // At least we know the count
+            ICollection<T> collection => collection.ToList(),
             _ => entities.ToList()
         };
 
@@ -382,7 +498,6 @@ public sealed class DuckDb : IFlatFile
         await EnsurePromotedToTableAsync(source, cancellationToken).ConfigureAwait(false);
 
         var mappings = FlatFileExpressionHelper.GetColumnMappings(typeof(T));
-        // Pre-size StringBuilder (~20 chars per column name)
         var columns = new StringBuilder(mappings.Count * 20);
         var mappingList = mappings.Values.ToList();
         for (int i = 0; i < mappingList.Count; i++)
@@ -391,10 +506,6 @@ public sealed class DuckDb : IFlatFile
             columns.Append($"\"{mappingList[i].ColumnName}\"");
         }
 
-        var totalInserted = 0;
-
-        // Batch insert using multi-row VALUES with positional parameters ($1, $2, ...)
-        // Pre-size StringBuilder: ~10 chars per value * mappings.Count * entityList.Count
         var sb = new StringBuilder(entityList.Count * mappings.Count * 10);
         var parameters = new List<DuckDBParameter>(entityList.Count * mappings.Count);
         var paramCounter = 0;
@@ -418,7 +529,7 @@ public sealed class DuckDb : IFlatFile
         }
 
         var sql = $"INSERT INTO \"{source.TableName}\" ({columns}) VALUES {sb}";
-        totalInserted = await ExecuteNonQueryAsync(sql, parameters, cancellationToken).ConfigureAwait(false);
+        var totalInserted = await ExecuteNonQueryAsync(sql, parameters, cancellationToken).ConfigureAwait(false);
 
         if (totalInserted > 0) _modified.TryAdd(typeof(T), true);
         return totalInserted;
@@ -511,15 +622,60 @@ public sealed class DuckDb : IFlatFile
 
     /// <inheritdoc />
     public void Save<T>(string outputPath) where T : class, new()
-        => SaveAsync<T>(outputPath, CancellationToken.None).GetAwaiter().GetResult();
+    {
+        ArgumentNullException.ThrowIfNull(outputPath);
+
+        var source = GetSourceOrThrow<T>();
+        var format = InferFormatFromExtension(outputPath);
+        var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(outputPath), format);
+
+        ExecuteNonQuery(sql, []);
+    }
 
     /// <inheritdoc />
     public void Save<T>(WriteBackMode mode) where T : class, new()
-        => SaveAsync<T>(mode, CancellationToken.None).GetAwaiter().GetResult();
+    {
+        var source = GetSourceOrThrow<T>();
+
+        if (mode == WriteBackMode.NewFile)
+        {
+            throw new InvalidOperationException(
+                "WriteBackMode.NewFile requires an output path. Use the Save<T>(string outputPath) overload instead.");
+        }
+
+        // WriteBackMode.Overwrite — atomic replace: write to temp file, then rename
+        var originalPath = source.FilePath;
+        var directory = Path.GetDirectoryName(originalPath) ?? ".";
+        var tempPath = Path.Combine(directory, $".{Path.GetFileNameWithoutExtension(originalPath)}.tmp{Path.GetExtension(originalPath)}");
+
+        try
+        {
+            var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(tempPath), source);
+            ExecuteNonQuery(sql, []);
+
+            // Atomic replace: delete original, rename temp
+            File.Delete(originalPath);
+            File.Move(tempPath, originalPath);
+        }
+        catch
+        {
+            // Clean up temp file on failure
+            try { File.Delete(tempPath); } catch { }
+            throw;
+        }
+    }
 
     /// <inheritdoc />
     public void Export<T>(string outputPath) where T : class, new()
-        => ExportAsync<T>(outputPath, CancellationToken.None).GetAwaiter().GetResult();
+    {
+        ArgumentNullException.ThrowIfNull(outputPath);
+
+        var source = GetSourceOrThrow<T>();
+        var format = InferFormatFromExtension(outputPath);
+        var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(outputPath), format);
+
+        ExecuteNonQuery(sql, []);
+    }
 
     /// <inheritdoc />
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="outputPath"/> is null.</exception>
@@ -689,6 +845,36 @@ public sealed class DuckDb : IFlatFile
     /// Promotes a VIEW source to a TABLE on first mutation. Preloaded sources and already-promoted sources are no-ops.
     /// Uses a transaction to ensure the three-step promotion (CREATE TABLE AS, DROP VIEW, RENAME) is atomic.
     /// </summary>
+    private void EnsurePromotedToTable(IFileSource source)
+    {
+        // Already a table (preloaded or previously promoted)
+        if (source.IsPreloaded || source.IsPromotedToTable) return;
+
+        var sql = _dialect.GeneratePromoteToTableSql(source);
+
+        using var transaction = _connection.BeginTransaction();
+        try
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.CommandText = sql;
+            cmd.Transaction = transaction;
+            cmd.ExecuteNonQuery();
+            transaction.Commit();
+        }
+        catch
+        {
+            try { transaction.Rollback(); } catch { }
+            throw;
+        }
+
+        // Mark as promoted
+        source.IsPromotedToTable = true;
+    }
+
+    /// <summary>
+    /// Promotes a VIEW source to a TABLE on first mutation. Preloaded sources and already-promoted sources are no-ops.
+    /// Uses a transaction to ensure the three-step promotion (CREATE TABLE AS, DROP VIEW, RENAME) is atomic.
+    /// </summary>
     private async ValueTask EnsurePromotedToTableAsync(IFileSource source, CancellationToken cancellationToken)
     {
         // Already a table (preloaded or previously promoted)
@@ -708,6 +894,15 @@ public sealed class DuckDb : IFlatFile
 
         // Mark as promoted
         source.IsPromotedToTable = true;
+    }
+
+    private int ExecuteNonQuery(string sql, List<DuckDBParameter> parameters)
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = sql;
+        foreach (var param in parameters)
+            cmd.Parameters.Add(param);
+        return cmd.ExecuteNonQuery();
     }
 
     private async ValueTask<int> ExecuteNonQueryAsync(string sql, List<DuckDBParameter> parameters, CancellationToken cancellationToken)
