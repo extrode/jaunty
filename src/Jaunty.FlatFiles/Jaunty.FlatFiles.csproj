@@ -62,7 +62,7 @@
 		<PackageId>Beparey.Jaunty.FlatFiles</PackageId>
 		<Version>2026.01.01</Version>
 		<Authors>Syed Beparey</Authors>
-		<Description>Flat file (CSV/TSV/Parquet/JSON) abstractions for the Jaunty micro-ORM.</Description>
+		<Description>Flat file abstractions for the Jaunty micro-ORM. Supports CSV, TSV, Parquet, JSON, Excel, Delta Lake, and Iceberg formats with extensible custom format registration.</Description>
 		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Nullable>enable</Nullable>
