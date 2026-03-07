@@ -383,3 +383,9 @@ FodyWeavers.xsd
 # Ignore benchmark artifacts
 /docs/benchmark-artifacts/
 /data/sqlite/Northwind.db
+
+# Ignore dist folder
+/dist/
+
+# Ignore scripts folder
+/scripts/
