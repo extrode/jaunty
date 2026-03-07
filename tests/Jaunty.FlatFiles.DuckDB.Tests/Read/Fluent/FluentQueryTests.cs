@@ -1,30 +1,27 @@
-using System.Diagnostics;
-using System.Reflection;
 using System.Text;
-using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 using Jaunty.Fluent;
 
-namespace Jaunty.FlatFiles.DuckDB.Tests.Regression;
+namespace Jaunty.FlatFiles.DuckDB.Tests.Read.Fluent;
 
 /// <summary>
-/// Tests for the new Query API and performance optimizations added in P0 fixes.
+/// Tests for the Fluent Query API (Query, QueryAsync, From, Where, OrderBy, etc.).
 /// </summary>
-public class P0FixesTests : IDisposable
+public class FluentQueryTests : IDisposable
 {
     private readonly DuckDb _db;
     private readonly string _testCsvPath;
 
-    public P0FixesTests()
+    public FluentQueryTests()
     {
-        _testCsvPath = Path.Combine(AppContext.BaseDirectory, "test-data", "p0-test-sales.csv");
-        
+        _testCsvPath = Path.Combine(AppContext.BaseDirectory, "test-data", "fluent-query-test-sales.csv");
+
         // Ensure test data directory exists
         Directory.CreateDirectory(Path.GetDirectoryName(_testCsvPath)!);
-        
+
         // Create test CSV
         CreateTestCsv();
-        
+
         // Create database
         var options = new FlatFileOptions();
         options.AddCsv<SalesRecord>(_testCsvPath);
@@ -226,121 +223,6 @@ public class P0FixesTests : IDisposable
     }
 
     // ==========================================
-    // Column Mapping Caching Tests
-    // ==========================================
-
-    [Fact]
-    public void GetColumnMappings_CachesResults()
-    {
-        // Arrange
-        var entityType = typeof(SalesRecord);
-
-        // Act - First call (populates cache)
-        var mappings1 = ColumnMappingCache.Get(entityType);
-
-        // Get cache count before second call
-        var cacheCountBefore = GetCacheCount();
-
-        // Second call (should use cache)
-        var mappings2 = ColumnMappingCache.Get(entityType);
-
-        // Assert
-        Assert.Same(mappings1, mappings2); // Same reference from cache
-        Assert.Equal(cacheCountBefore, GetCacheCount()); // Cache count unchanged
-    }
-
-    [Fact]
-    public void GetColumnMappings_DifferentTypes_CachedSeparately()
-    {
-        // Arrange & Act
-        var salesMappings = ColumnMappingCache.Get(typeof(SalesRecord));
-        var inventoryMappings = ColumnMappingCache.Get(typeof(InventoryItem));
-
-        // Assert
-        Assert.NotSame(salesMappings, inventoryMappings);
-        Assert.Equal(6, salesMappings.Count); // Id, ProductName, Revenue, Quantity, Date, Region
-        Assert.Equal(6, inventoryMappings.Count); // ItemId, ItemName, Category, StockQuantity, UnitPrice, InStock
-    }
-
-    [Fact]
-    public void GetColumnMappings_RespectsColumnAttribute()
-    {
-        // Arrange & Act
-        var mappings = ColumnMappingCache.Get(typeof(SalesRecord));
-
-        // Assert
-        var productNameMapping = mappings.First(m => m.Value.Property.Name == "ProductName");
-        Assert.Equal("product_name", productNameMapping.Value.ColumnName); // From [Column] attribute
-    }
-
-    [Fact]
-    public void ColumnCaching_ImprovesPerformance()
-    {
-        // Arrange
-        var entityType = typeof(SalesRecord);
-
-        // Warm up cache
-        ColumnMappingCache.Get(entityType);
-
-        // Act - Measure cached access time
-        var stopwatch = Stopwatch.StartNew();
-        for (int i = 0; i < 1000; i++)
-        {
-            ColumnMappingCache.Get(entityType);
-        }
-        stopwatch.Stop();
-
-        // Assert - Should be very fast (< 10ms for 1000 cached accesses)
-        Assert.True(stopwatch.ElapsedMilliseconds < 10,
-            $"Cached access took {stopwatch.ElapsedMilliseconds}ms, expected < 10ms");
-    }
-
-    // ==========================================
-    // Expression Caching Tests
-    // ==========================================
-
-    [Fact]
-    public void EvaluateExpression_CachesCompiledDelegates()
-    {
-        // Arrange
-        var constantExpr = System.Linq.Expressions.Expression.Constant(42);
-
-        // Act - First evaluation
-        var result1 = InvokeEvaluateExpression(constantExpr);
-
-        // Act - Second evaluation (should use cache)
-        var result2 = InvokeEvaluateExpression(constantExpr);
-
-        // Assert
-        Assert.Equal(42, result1);
-        Assert.Equal(42, result2);
-    }
-
-    [Fact]
-    public void ExpressionCaching_ImprovesQueryPerformance()
-    {
-        // Warm up
-        _db.Connection.From<SalesRecord>()
-            .Where(x => x.Revenue > 1000m)
-            .Select();
-
-        // Act - Measure repeated query performance
-        var stopwatch = Stopwatch.StartNew();
-        for (int i = 0; i < 100; i++)
-        {
-            _db.Connection.From<SalesRecord>()
-                .Where(x => x.Revenue > 1000m)
-                .Select();
-        }
-        stopwatch.Stop();
-
-        // Assert - Should be reasonably fast with caching
-        // Threshold set generously to account for system load variations
-        Assert.True(stopwatch.ElapsedMilliseconds < 1000,
-            $"Repeated queries took {stopwatch.ElapsedMilliseconds}ms, expected < 1000ms");
-    }
-
-    // ==========================================
     // Integration Tests
     // ==========================================
 
@@ -377,29 +259,5 @@ public class P0FixesTests : IDisposable
         Assert.NotNull(results);
         Assert.Equal(4, results.Count);
         Assert.All(results, r => Assert.True(r.Revenue >= minRevenue));
-    }
-
-    // ==========================================
-    // Helper Methods
-    // ==========================================
-
-    private int GetCacheCount()
-    {
-        // Use reflection to access the private cache for testing
-        var cacheType = typeof(ColumnMappingCache);
-        var cacheField = cacheType.GetField("_cache",
-            BindingFlags.Static | BindingFlags.NonPublic);
-        var cache = cacheField?.GetValue(null);
-        var countProperty = cache?.GetType().GetProperty("Count");
-        return (int)(countProperty?.GetValue(cache) ?? 0);
-    }
-
-    private object? InvokeEvaluateExpression(System.Linq.Expressions.Expression expr)
-    {
-        // Use reflection to call the private EvaluateExpression method
-        var helperType = typeof(ExpressionTranslator);
-        var method = helperType.GetMethod("EvaluateExpression",
-            BindingFlags.Static | BindingFlags.NonPublic);
-        return method?.Invoke(null, new[] { expr });
     }
 }
