@@ -1,0 +1,5 @@
+[
+  {"Id": 1, "Name": "Alice", "Address": {"Street": "123 Main St", "City": "Springfield", "Zip": "62701"}, "Tags": ["admin", "user"]},
+  {"Id": 2, "Name": "Bob", "Address": {"Street": "456 Oak Ave", "City": "Shelbyville", "Zip": "62702"}, "Tags": ["user"]},
+  {"Id": 3, "Name": "Charlie", "Address": {"Street": "789 Pine Rd", "City": "Capital City", "Zip": "62703"}, "Tags": []}
+]

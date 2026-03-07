@@ -1,6 +1,6 @@
 using System.Data;
 
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 
 namespace Jaunty.Tests.Unit.Internals;
 

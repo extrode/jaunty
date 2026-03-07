@@ -39,21 +39,30 @@ jobs:
       - name: Build
         run: dotnet build Jaunty.slnx -c Release --no-restore
 
-      - name: Test
+      - name: Test - Core (SQLite)
         run: >-
           dotnet test Jaunty.slnx
           -c Release
           --no-build
           --framework net8.0
           --filter "FullyQualifiedName~Sqlite"
-          --logger "trx;LogFileName=test-results.trx"
+          --logger "trx;LogFileName=test-results-core.trx"
+
+      - name: Test - FlatFiles (DuckDB)
+        run: >-
+          dotnet test Jaunty.slnx
+          -c Release
+          --no-build
+          --framework net8.0
+          --filter "FullyQualifiedName~Jaunty.FlatFiles"
+          --logger "trx;LogFileName=test-results-flatfiles.trx"
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: "**/test-results.trx"
+          path: "**/test-results-*.trx"
           retention-days: 7
 
   verify-aot:

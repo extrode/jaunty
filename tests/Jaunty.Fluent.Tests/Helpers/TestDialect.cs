@@ -1,5 +1,5 @@
 using Jaunty.Internals.BulkCopy;
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 
 namespace Jaunty.Fluent.Tests.Helpers;
 
@@ -17,6 +17,7 @@ internal class TestDialect : ISqlDialect
 
     public IBulkCopyProvider? CreateBulkCopyProvider() => null;
 
+    public string ParameterPrefix => "@";
     public string GetDefaultSchema() => "dbo";
 
     public string EscapeTableName(string? schemaName, string tableName)

@@ -3,7 +3,7 @@ using System.Data;
 using System.Text;
 
 using Jaunty.Configuration;
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Interfaces;
 

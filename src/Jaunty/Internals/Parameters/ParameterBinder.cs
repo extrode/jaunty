@@ -252,6 +252,8 @@ internal static class ParameterBinder
             return (null, null, null);
 
         // Second pass: build replacements and expanded params
+        // Detect parameter prefix from the SQL (@ or $)
+        var paramPrefix = DetectParameterPrefix(sql);
         var expandedParams = new Dictionary<string, object?>(CommonConstants.OrdinalIgnoreCase);
         var expandedOriginalNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         var result = sql;
@@ -268,7 +270,6 @@ internal static class ParameterBinder
             }
             else
             {
-                // Pre-size StringBuilder for replacement: (@Name0, @Name1, ...)
                 var sb = new StringBuilder(expansion.Count * (expansion.Name.Length + 5));
                 sb.Append('(');
                 int i = 0;
@@ -276,7 +277,7 @@ internal static class ParameterBinder
                 {
                     if (i > 0) sb.Append(", ");
                     var expandedName = expansion.Name + i;
-                    sb.Append('@').Append(expandedName);
+                    sb.Append(paramPrefix).Append(expandedName);
                     expandedParams[expandedName] = item;
                     i++;
                 }
@@ -285,10 +286,26 @@ internal static class ParameterBinder
             }
 
             // Replace all occurrences (case-insensitive)
-            result = ReplaceCaseInsensitive(result, "@" + expansion.Name, replacement);
+            result = ReplaceCaseInsensitive(result, paramPrefix + expansion.Name, replacement);
         }
 
         return (result, expandedParams, expandedOriginalNames);
+    }
+
+    private static string DetectParameterPrefix(string sql)
+    {
+        // Detect parameter prefix from the SQL text (@ or $)
+        for (int i = 0; i < sql.Length; i++)
+        {
+            var c = sql[i];
+            if (c is '@' or '$')
+            {
+                // Check that next char is a valid parameter name start
+                if (i + 1 < sql.Length && IsParameterChar(sql[i + 1]))
+                    return c.ToString();
+            }
+        }
+        return "@"; // default
     }
 
     private static string ReplaceCaseInsensitive(string source, string oldValue, string newValue)

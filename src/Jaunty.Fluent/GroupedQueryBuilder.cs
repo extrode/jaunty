@@ -6,7 +6,7 @@ using System.Text;
 
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 
 namespace Jaunty.Fluent;

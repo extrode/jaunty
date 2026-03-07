@@ -8,7 +8,7 @@ using System.Text;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals;
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 using Jaunty.Internals.Read;
@@ -89,7 +89,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public IJoinedQuery<TFrom, TJoin> Where(string column, object value)
     {
-        var paramName = $"@{column.Replace(".", "_")}";
+        var paramName = $"{_dialect.ParameterPrefix}{column.Replace(".", "_")}";
         _conditions.Add(WhereCondition.Column($"{column} = {paramName}", LogicalOperator.None));
         _parameters.Add(paramName, value);
         return this;

@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Text;
 
 using Jaunty.Fluent;
-using Jaunty.Internals.Dialects;
+using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Fluent.Internals;
 
@@ -38,15 +38,16 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
 
     private string GetParameterName(string baseName)
     {
+        var prefix = _dialect.ParameterPrefix;
         if (_parameterCounts.TryGetValue(baseName, out int count))
         {
             _parameterCounts[baseName] = count + 1;
-            return $"@{baseName}{count + 1}";
+            return $"{prefix}{baseName}{count + 1}";
         }
         else
         {
             _parameterCounts[baseName] = 1;
-            return $"@{baseName}";
+            return $"{prefix}{baseName}";
         }
     }
 

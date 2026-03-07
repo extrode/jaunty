@@ -63,8 +63,8 @@ internal static class SqlParameterParser
                 continue;
             }
 
-            // Found parameter
-            if (c == '@')
+            // Found parameter (@ for SQL Server/SQLite, $ for DuckDB/PostgreSQL)
+            if (c is '@' or '$')
             {
                 i = ExtractAndAddParameterName(sql, i + 1, names);
                 continue;
@@ -177,7 +177,7 @@ internal static class SqlParameterParser
                 continue;
             }
 
-            if (c == '@')
+            if (c is '@' or '$')
             {
                 i = ExtractAndAddParameterNameClassic(sql, i + 1, len, names);
                 continue;
