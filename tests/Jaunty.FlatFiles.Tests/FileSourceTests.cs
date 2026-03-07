@@ -11,7 +11,7 @@ public class TsvFileSourceTests
 
         Assert.Equal("logs", source.TableName);
         Assert.Equal("data/logs.tsv", source.FilePath);
-        Assert.Equal(FileFormat.Tsv, source.Format);
+        Assert.Equal(FileFormats.Tsv, source.Format);
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public class ParquetFileSourceTests
 
         Assert.Equal("inventory", source.TableName);
         Assert.Equal("data/inv.parquet", source.FilePath);
-        Assert.Equal(FileFormat.Parquet, source.Format);
+        Assert.Equal(FileFormats.Parquet, source.Format);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class JsonFileSourceTests
 
         Assert.Equal("customers", source.TableName);
         Assert.Equal("data/cust.json", source.FilePath);
-        Assert.Equal(FileFormat.Json, source.Format);
+        Assert.Equal(FileFormats.Json, source.Format);
     }
 
     [Fact]

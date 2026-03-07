@@ -496,7 +496,7 @@ public class DuckDbDialectTests
     [Fact]
     public void GenerateCopyToSql_Csv_GeneratesCorrectSql()
     {
-        var result = _dialect.GenerateCopyToSql("sales", "/output/sales.csv", FileFormat.Csv);
+        var result = _dialect.GenerateCopyToSql("sales", "/output/sales.csv", FileFormats.Csv);
 
         Assert.Contains("COPY \"sales\" TO '/output/sales.csv'", result);
         Assert.Contains("FORMAT CSV", result);
@@ -506,7 +506,7 @@ public class DuckDbDialectTests
     [Fact]
     public void GenerateCopyToSql_Tsv_IncludesTabDelimiter()
     {
-        var result = _dialect.GenerateCopyToSql("sales", "/output/sales.tsv", FileFormat.Tsv);
+        var result = _dialect.GenerateCopyToSql("sales", "/output/sales.tsv", FileFormats.Tsv);
 
         Assert.Contains("FORMAT CSV", result);
         Assert.Contains("DELIMITER '\t'", result);
@@ -515,7 +515,7 @@ public class DuckDbDialectTests
     [Fact]
     public void GenerateCopyToSql_Parquet_GeneratesCorrectSql()
     {
-        var result = _dialect.GenerateCopyToSql("sales", "/output/sales.parquet", FileFormat.Parquet);
+        var result = _dialect.GenerateCopyToSql("sales", "/output/sales.parquet", FileFormats.Parquet);
 
         Assert.Contains("FORMAT PARQUET", result);
     }
@@ -523,7 +523,7 @@ public class DuckDbDialectTests
     [Fact]
     public void GenerateCopyToSql_Json_GeneratesCorrectSql()
     {
-        var result = _dialect.GenerateCopyToSql("sales", "/output/sales.json", FileFormat.Json);
+        var result = _dialect.GenerateCopyToSql("sales", "/output/sales.json", FileFormats.Json);
 
         Assert.Contains("FORMAT JSON", result);
     }

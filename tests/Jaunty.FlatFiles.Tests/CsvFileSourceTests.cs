@@ -11,7 +11,7 @@ public class CsvFileSourceTests
 
         Assert.Equal("sales", source.TableName);
         Assert.Equal("data/sales.csv", source.FilePath);
-        Assert.Equal(FileFormat.Csv, source.Format);
+        Assert.Equal(FileFormats.Csv, source.Format);
         Assert.Equal(typeof(SalesRecord), source.EntityType);
     }
 

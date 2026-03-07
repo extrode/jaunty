@@ -12,6 +12,8 @@ public static class FlatFile
         [".parquet"] = (tableName, fullPath, entityType) => new ParquetFileSource(tableName, fullPath, entityType),
         [".json"] = (tableName, fullPath, entityType) => new JsonFileSource(tableName, fullPath, entityType),
         [".ndjson"] = (tableName, fullPath, entityType) => new JsonFileSource(tableName, fullPath, entityType) { JsonFormat = JsonFileFormat.NewlineDelimited },
+        [".xlsx"] = (tableName, fullPath, entityType) => new ExcelFileSource(tableName, fullPath, entityType),
+        [".xls"] = (tableName, fullPath, entityType) => new ExcelFileSource(tableName, fullPath, entityType),
     };
 
     /// <summary>
