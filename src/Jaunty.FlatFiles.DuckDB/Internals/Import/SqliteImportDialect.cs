@@ -5,7 +5,7 @@ namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 /// <summary>
 /// Import dialect for SQLite databases.
 /// </summary>
-public sealed class SqliteImportDialect : IImportDialect
+internal sealed class SqliteImportDialect : IImportDialect
 {
     /// <summary>
     /// Singleton instance.

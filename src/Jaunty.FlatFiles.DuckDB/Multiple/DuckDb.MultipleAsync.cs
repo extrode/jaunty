@@ -1,5 +1,3 @@
-using System.Data;
-
 using Jaunty.Core;
 
 namespace Jaunty.FlatFiles.DuckDB;
