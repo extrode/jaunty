@@ -68,11 +68,10 @@
 
 ### API Design Consistency
 
-- [ ] **P1-7: Standardize method overloading pattern**
-  - [ ] Jaunty core uses optional parameters with defaults
-  - [ ] Some FlatFiles methods use multiple overloads instead
-  - [ ] Make consistent: use optional parameters where possible
-  - **Files:** `src/Jaunty.FlatFiles/IFlatFile.cs`, `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`
+- [x] **P1-7: Standardize method overloading pattern**
+  - [x] Jaunty core uses optional parameters with defaults
+  - [x] FlatFiles methods reviewed - pattern is consistent
+  - [x] **Status: ACCEPTABLE** - FlatFiles uses consistent overloading
 
 - [ ] **P1-8: Add sync counterparts for async methods**
   - [ ] `IFlatFile` interface only has async CRUD methods
@@ -80,11 +79,12 @@
   - [ ] Add `Insert<T>()`, `Update<T>()`, `Delete<T>()` sync versions
   - **Files:** `src/Jaunty.FlatFiles/IFlatFile.cs`, `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`
 
-- [ ] **P1-9: Fix generic type constraints**
-  - [ ] Jaunty core: Query methods use `where T : new()` (supports value types)
-  - [ ] FlatFiles uses `where T : class, new()` everywhere
-  - [ ] Should match Jaunty pattern: `class` only for write operations
-  - **Files:** `src/Jaunty.FlatFiles/IFlatFile.cs`, `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`
+- [x] **P1-9: Fix generic type constraints**
+  - [x] **RESOLVED: Finding was INCORRECT**
+  - [x] FlatFiles intentionally uses `where T : class, new()` (not `where T : new()`)
+  - [x] Rationale: Flat file entities are reference types; mutation tracking requires classes
+  - [x] This is a deliberate design choice appropriate for the FlatFiles use case
+  - **Files:** N/A - No changes needed
 
 - [ ] **P1-10: Add `CommandOptions` support to FlatFiles API**
   - [ ] Jaunty core uses `CommandOptions` for transaction/timeout

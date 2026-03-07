@@ -52,7 +52,7 @@ public interface IFlatFile : IDisposable, IAsyncDisposable
     /// <returns>A fluent query builder for chaining WHERE, ORDER BY, and SELECT operations.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no file source is registered for the entity type.</exception>
     /// <remarks>
-    /// Call <c>.Select()</c> to execute the query and return all columns, or 
+    /// Call <c>.Select()</c> to execute the query and return all columns, or
     /// <c>.SelectPartial(...)</c> to select specific columns.
     /// </remarks>
     IFromClause<T> Query<T>() where T : class, new();
