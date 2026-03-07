@@ -311,8 +311,20 @@ public sealed class DuckDbDialect : IFlatFileDialect
 
     internal static string GenerateReadFunction(IFileSource source)
     {
-        var escapedPath = source.FilePath.Replace("'", "''");
-        return source.GenerateReadFunction(escapedPath);
+        string pathExpression;
+        if (source.FilePaths.Count > 1)
+        {
+            // Multiple files: ['path1', 'path2', ...]
+            var escaped = source.FilePaths.Select(p => $"'{p.Replace("'", "''")}'");
+            pathExpression = $"[{string.Join(", ", escaped)}]";
+        }
+        else
+        {
+            // Single file: 'path'
+            pathExpression = $"'{source.FilePath.Replace("'", "''")}'";
+        }
+
+        return source.GenerateReadFunction(pathExpression);
     }
 
 }
