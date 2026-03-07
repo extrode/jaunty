@@ -1,4 +1,6 @@
+using Jaunty.FlatFiles.Core;
 using Jaunty.FlatFiles.DuckDB.Internals;
+using Jaunty.FlatFiles.WriteBack;
 
 namespace Jaunty.FlatFiles.DuckDB;
 

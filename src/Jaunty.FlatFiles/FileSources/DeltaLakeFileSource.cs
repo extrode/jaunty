@@ -1,4 +1,7 @@
-namespace Jaunty.FlatFiles;
+using Jaunty.FlatFiles.Core;
+using Jaunty.FlatFiles.Interfaces;
+
+namespace Jaunty.FlatFiles.FileSources;
 
 /// <summary>
 /// Represents a Delta Lake table source backed by DuckDB's <c>delta_scan</c> function.

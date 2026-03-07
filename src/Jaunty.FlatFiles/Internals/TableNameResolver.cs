@@ -1,7 +1,7 @@
 using System.Reflection;
 using Jaunty.Attributes;
 
-namespace Jaunty.FlatFiles;
+namespace Jaunty.FlatFiles.Internals;
 
 /// <summary>
 /// Resolves the logical table name for an entity type by reading the <see cref="TableAttribute"/>.

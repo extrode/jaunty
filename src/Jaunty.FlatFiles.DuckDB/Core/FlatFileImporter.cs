@@ -1,5 +1,9 @@
 using System.Data.Common;
 
+using Jaunty.FlatFiles.Core;
+using Jaunty.FlatFiles.Import;
+using Jaunty.FlatFiles.Internals;
+
 namespace Jaunty.FlatFiles.DuckDB;
 
 /// <summary>

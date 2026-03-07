@@ -1,7 +1,8 @@
 using System.Data.Common;
 using System.Text;
+using Jaunty.FlatFiles.Import;
 
-namespace Jaunty.FlatFiles;
+namespace Jaunty.FlatFiles.Interfaces;
 
 /// <summary>
 /// Provides database-specific SQL generation for the import pipeline.

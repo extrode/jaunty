@@ -1,4 +1,6 @@
-namespace Jaunty.FlatFiles;
+using Jaunty.FlatFiles.Interfaces;
+
+namespace Jaunty.FlatFiles.Import;
 
 /// <summary>
 /// Options for controlling how data is imported from a flat file into a target database.

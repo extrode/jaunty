@@ -1,6 +1,6 @@
 using Jaunty.Dialects;
 
-namespace Jaunty.FlatFiles;
+namespace Jaunty.FlatFiles.Interfaces;
 
 /// <summary>
 /// Extends <see cref="ISqlDialect"/> with flat-file-specific SQL generation.
