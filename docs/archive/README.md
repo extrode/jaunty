@@ -1,6 +1,20 @@
 # Archived Documentation
 
-This directory contains historical documents from early project development (January 2026).
+This directory contains historical documents from early project development.
+
+---
+
+## Recent Archives (2026-03)
+
+### 2026-03-misc-artifacts/
+Miscellaneous artifacts from documentation reorganization:
+- `benchmark-artifacts/` - Performance benchmark results
+- `html-docs/` - Generated HTML documentation
+- `screenshots/` - UI screenshots and diagrams
+
+---
+
+## Early Development (2026-01)
 
 ## Contents
 
