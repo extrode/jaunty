@@ -2,9 +2,9 @@ using System.Data;
 using System.Linq.Expressions;
 using System.Text;
 
+using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
-using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 
 namespace Jaunty.Fluent;

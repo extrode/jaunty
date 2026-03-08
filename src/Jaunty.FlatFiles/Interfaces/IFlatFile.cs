@@ -1,10 +1,11 @@
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
+
 using Jaunty.Core;
-using Jaunty.Fluent;
 using Jaunty.FlatFiles.Import;
 using Jaunty.FlatFiles.WriteBack;
+using Jaunty.Fluent;
 
 namespace Jaunty.FlatFiles.Interfaces;
 

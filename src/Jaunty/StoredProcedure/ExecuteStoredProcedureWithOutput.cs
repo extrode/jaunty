@@ -444,7 +444,7 @@ public static partial class Jaunty
                 dbParam.Size = sp.Size.Value;
 
             // Set value for Input and InputOutput parameters
-            if (sp.Direction == ParameterDirection.Input || sp.Direction == ParameterDirection.InputOutput)
+            if (sp.Direction is ParameterDirection.Input or ParameterDirection.InputOutput)
                 dbParam.Value = sp.Value ?? DBNull.Value;
 
             command.Parameters.Add(dbParam);
@@ -462,9 +462,9 @@ public static partial class Jaunty
         {
             SpParameter sp = paramList[i];
 
-            if (sp.Direction == ParameterDirection.Output ||
-                sp.Direction == ParameterDirection.InputOutput ||
-                sp.Direction == ParameterDirection.ReturnValue)
+            if (sp.Direction is ParameterDirection.Output or
+                ParameterDirection.InputOutput or
+                ParameterDirection.ReturnValue)
             {
                 // The DbParameter already has the value set by the database
                 // SpParameters.Get<T>() will read from sp.DbParameter.Value

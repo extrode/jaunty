@@ -169,7 +169,7 @@ internal static class ImportExecutor
     /// </summary>
     private static object ConvertValue(object value, Type targetType)
     {
-        if (value is null || value is DBNull) return DBNull.Value;
+        if (value is null or DBNull) return DBNull.Value;
 
         var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
