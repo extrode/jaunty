@@ -37,7 +37,7 @@ public static partial class Jaunty
             ParameterBinder.Bind(command, parameters);
 
         // Do NOT use 'using' — the GridReader owns the reader and disposes it.
-        var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         return new GridReader(reader, connection, wasClosed);
     }
 }

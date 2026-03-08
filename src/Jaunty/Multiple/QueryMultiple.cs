@@ -217,7 +217,7 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
-        using var gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
+        using GridReader gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
         reader(gridReader);
     }
 
@@ -262,7 +262,7 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
-        using var gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
+        using GridReader gridReader = ExecuteQueryMultiple(connection, sql, parameters, options);
         return reader(gridReader);
     }
 }

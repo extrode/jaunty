@@ -79,7 +79,7 @@ internal sealed class SqliteImportDialect : IImportDialect
         for (int i = 0; i < columns.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            var (name, clrType, isPrimaryKey, isNullable) = columns[i];
+            (string? name, Type? clrType, bool isPrimaryKey, bool isNullable) = columns[i];
             sb.Append($"\"{name}\" {MapClrTypeToSqlType(clrType)}");
             if (isPrimaryKey) sb.Append(" PRIMARY KEY");
             if (!isNullable && !isPrimaryKey) sb.Append(" NOT NULL");

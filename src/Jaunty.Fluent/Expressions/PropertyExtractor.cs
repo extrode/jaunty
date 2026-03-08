@@ -14,7 +14,7 @@ internal static class PropertyExtractor
     /// </summary>
     public static string ExtractPropertyName<T, TProperty>(Expression<Func<T, TProperty>> selector)
     {
-        var memberInfo = GetMemberInfo(selector.Body);
+        MemberInfo? memberInfo = GetMemberInfo(selector.Body);
         return memberInfo?.Name ?? throw new ArgumentException($"Expression '{selector}' does not refer to a property.", nameof(selector));
     }
 
@@ -30,7 +30,7 @@ internal static class PropertyExtractor
         var names = new string[selectors.Length];
         for (int i = 0; i < selectors.Length; i++)
         {
-            var memberInfo = GetMemberInfo(selectors[i].Body);
+            MemberInfo? memberInfo = GetMemberInfo(selectors[i].Body);
             names[i] = memberInfo?.Name ?? throw new ArgumentException($"Expression '{selectors[i]}' does not refer to a property.", nameof(selectors));
         }
         return names;
@@ -68,7 +68,7 @@ internal static class PropertyExtractor
     /// </summary>
     public static string ExtractOrderByProperty<T>(Expression<Func<T, object?>> selector)
     {
-        var memberInfo = GetMemberInfo(selector.Body);
+        MemberInfo? memberInfo = GetMemberInfo(selector.Body);
         return memberInfo?.Name ?? throw new ArgumentException($"Expression '{selector}' does not refer to a property.", nameof(selector));
     }
 }

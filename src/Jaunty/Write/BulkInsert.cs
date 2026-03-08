@@ -73,7 +73,7 @@ public static partial class Jaunty
 
     private static int BulkInsertCore<T>(IDbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints) where T : new()
     {
-        var entityList = entities as IList<T> ?? entities.ToList();
+        IList<T> entityList = entities as IList<T> ?? entities.ToList();
         if (entityList.Count == 0)
             return 0;
 
@@ -93,7 +93,7 @@ public static partial class Jaunty
             dialect.SupportsNativeBulkCopy &&
             entityList.Count >= BulkCopyConfiguration.MinimumRowsForNativeBulkCopy)
         {
-            var bulkProvider = dialect.CreateBulkCopyProvider();
+            IBulkCopyProvider? bulkProvider = dialect.CreateBulkCopyProvider();
             if (bulkProvider != null && bulkProvider.IsSupported)
             {
                 return BulkInsertNativeCore(connection, entityList, cached, bulkProvider, options, ignoreConstraints);
@@ -111,7 +111,7 @@ public static partial class Jaunty
 
             if (ignoreConstraints)
             {
-                using var fkOffCmd = connection.CreateCommand();
+                using IDbCommand fkOffCmd = connection.CreateCommand();
                 fkOffCmd.Transaction = transaction;
                 fkOffCmd.CommandText = dialect.GetDisableForeignKeyChecksSql()!;
                 fkOffCmd.ExecuteNonQuery();
@@ -121,7 +121,7 @@ public static partial class Jaunty
 
             try
             {
-                var valueSetter = WriteParameterCache<T>.InsertValueSetter;
+                Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.InsertValueSetter;
                 if (valueSetter == null)
                     throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
 
@@ -138,7 +138,7 @@ public static partial class Jaunty
 
                 if (ignoreConstraints)
                 {
-                    using var fkOnCmd = connection.CreateCommand();
+                    using IDbCommand fkOnCmd = connection.CreateCommand();
                     fkOnCmd.Transaction = transaction;
                     fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
                     fkOnCmd.ExecuteNonQuery();
@@ -154,7 +154,7 @@ public static partial class Jaunty
                 {
                     try
                     {
-                        using var fkOnCmd = connection.CreateCommand();
+                        using IDbCommand fkOnCmd = connection.CreateCommand();
                         fkOnCmd.Transaction = transaction;
                         fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
                         fkOnCmd.ExecuteNonQuery();
@@ -235,7 +235,7 @@ public static partial class Jaunty
     /// </summary>
     private static int BulkInsertMultiRow<T>(IDbConnection connection, IList<T> entityList, CachedCrudSql cached, ISqlDialect dialect, IDbTransaction? transaction, CommandOptions options, Action<IDataParameterCollection, T> valueSetter) where T : new()
     {
-        var insertableColumns = ColumnMetadataHelper.GetInsertableColumns(cached.Metadata);
+        IReadOnlyList<ColumnMetadata> insertableColumns = ColumnMetadataHelper.GetInsertableColumns(cached.Metadata);
         int colCount = insertableColumns.Count;
         if (colCount == 0) return 0;
 
@@ -244,7 +244,7 @@ public static partial class Jaunty
         if (maxBatchSize < 1) maxBatchSize = 1;
 
         // Use cached compiled property getters for multi-row binding
-        var getters = MultiRowInsertCache.GetOrBuildGetters<T>(cached.Metadata);
+        Func<T, object?>[] getters = MultiRowInsertCache.GetOrBuildGetters<T>(cached.Metadata);
 
         int totalInserted = 0;
         int entityCount = entityList.Count;
@@ -257,7 +257,7 @@ public static partial class Jaunty
             string sql = MultiRowInsertCache.GetOrBuild(
                 typeof(T), connection.GetType(), batchSize, cached.Metadata, dialect);
 
-            using var command = connection.CreateCommand();
+            using IDbCommand command = connection.CreateCommand();
             command.Transaction = transaction;
             command.CommandText = sql;
 
@@ -270,7 +270,7 @@ public static partial class Jaunty
                 T entity = entityList[offset + row];
                 for (int c = 0; c < colCount; c++)
                 {
-                    var p = command.CreateParameter();
+                    IDbDataParameter p = command.CreateParameter();
                     // Parameter name matches SQL generated in MultiRowInsertCache.Build()
                     p.ParameterName = insertableColumns[c].ColumnName + "_" + row;
                     p.Value = getters[c](entity) ?? DBNull.Value;
@@ -291,7 +291,7 @@ public static partial class Jaunty
     /// </summary>
     private static int BulkInsertLoop<T>(IDbConnection connection, IList<T> entityList, CachedCrudSql cached, IDbTransaction? transaction, CommandOptions options, Action<IDataParameterCollection, T> valueSetter) where T : new()
     {
-        using var command = connection.CreateCommand();
+        using IDbCommand command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = cached.InsertSql;
 
@@ -303,7 +303,7 @@ public static partial class Jaunty
         // Set first entity values before Prepare() so providers can infer parameter types.
         // Prepare() is a best-effort optimization; some providers (e.g. SQL Server on .NET Framework)
         // require explicit DbType on all parameters, which we can't guarantee here.
-        var pCollection = command.Parameters;
+        IDataParameterCollection pCollection = command.Parameters;
         valueSetter(pCollection, entityList[0]);
         try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
 

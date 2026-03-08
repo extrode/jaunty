@@ -35,9 +35,9 @@ public class JauntyGenerator : IIncrementalGenerator
     {
         var classDeclaration = (ClassDeclarationSyntax)context.Node;
 
-        foreach (var attributeList in classDeclaration.AttributeLists)
+        foreach (AttributeListSyntax attributeList in classDeclaration.AttributeLists)
         {
-            foreach (var attribute in attributeList.Attributes)
+            foreach (AttributeSyntax attribute in attributeList.Attributes)
             {
                 var name = attribute.Name.ToString();
                 if (name is "Table" or "Jaunty.Attributes.Table" or "TableAttribute" or "System.ComponentModel.DataAnnotations.Schema.TableAttribute")
@@ -55,9 +55,9 @@ public class JauntyGenerator : IIncrementalGenerator
         if (classes.IsDefaultOrEmpty)
             return;
 
-        foreach (var classSyntax in classes.Distinct())
+        foreach (ClassDeclarationSyntax? classSyntax in classes.Distinct())
         {
-            var model = compilation.GetSemanticModel(classSyntax.SyntaxTree);
+            SemanticModel model = compilation.GetSemanticModel(classSyntax.SyntaxTree);
             if (model.GetDeclaredSymbol(classSyntax) is not INamedTypeSymbol classSymbol)
                 continue;
 
@@ -76,24 +76,24 @@ public class JauntyGenerator : IIncrementalGenerator
             .ToList();
 
         var properties = new List<PropertyMetadata>();
-        foreach (var prop in allProperties)
+        foreach (IPropertySymbol? prop in allProperties)
         {
             // Support [Ignore] and [NotMapped]
             if (HasAttribute(prop, "IgnoreAttribute") || HasAttribute(prop, "NotMappedAttribute")) continue;
 
             // Support [Column] from both
-            var columnAttr = GetAttribute(prop, "ColumnAttribute");
+            AttributeData? columnAttr = GetAttribute(prop, "ColumnAttribute");
             var columnName = columnAttr?.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? prop.Name;
 
             // Support [Key] from both, plus conventions
             var isKey = HasAttribute(prop, "KeyAttribute") || prop.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) || prop.Name.Equals($"{className}Id", StringComparison.OrdinalIgnoreCase);
 
             // Support [DatabaseGenerated] from both
-            var dbGenAttr = GetAttribute(prop, "DatabaseGeneratedAttribute");
+            AttributeData? dbGenAttr = GetAttribute(prop, "DatabaseGeneratedAttribute");
             var isIdentity = false;
             if (dbGenAttr != null)
             {
-                var arg = dbGenAttr.ConstructorArguments.FirstOrDefault();
+                TypedConstant arg = dbGenAttr.ConstructorArguments.FirstOrDefault();
                 // Both Jaunty and DataAnnotations use 1 for Identity
                 if (arg.Value is int val && val == 1) isIdentity = true;
             }
@@ -151,8 +151,8 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("                var dbReader = (DbDataReader)reader;");
         for (int i = 0; i < properties.Count; i++)
         {
-            var p = properties[i];
-            var typeInfo = GetReaderTypeInfo(p.TypeName);
+            PropertyMetadata p = properties[i];
+            ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var typeForGetFieldValue = typeInfo.TypeForGetFieldValue;
             var needsNullCheck = typeInfo.NeedsNullCheck;
 
@@ -171,8 +171,8 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            {");
         for (int i = 0; i < properties.Count; i++)
         {
-            var p = properties[i];
-            var typeInfo = GetReaderTypeInfo(p.TypeName);
+            PropertyMetadata p = properties[i];
+            ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var getter = typeInfo.Getter;
             var needsNullCheck = typeInfo.NeedsNullCheck;
 
@@ -195,7 +195,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        public static void BindInsert(IDbCommand command, {className} entity)");
         sb.AppendLine("        {");
         sb.AppendLine("            var p = command.Parameters;");
-        foreach (var p in properties.Where(x => !x.IsIdentity))
+        foreach (PropertyMetadata p in properties.Where(x => !x.IsIdentity))
         {
             sb.AppendLine($"            AddParam(command, p, \"@{p.ColumnName}\", entity.{p.PropertyName});");
         }
@@ -205,11 +205,11 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        public static void BindUpdate(IDbCommand command, {className} entity)");
         sb.AppendLine("        {");
         sb.AppendLine("            var p = command.Parameters;");
-        foreach (var p in properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity))
+        foreach (PropertyMetadata p in properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity))
         {
             sb.AppendLine($"            AddParam(command, p, \"@{p.ColumnName}\", entity.{p.PropertyName});");
         }
-        foreach (var p in properties.Where(x => x.IsPrimaryKey))
+        foreach (PropertyMetadata p in properties.Where(x => x.IsPrimaryKey))
         {
             sb.AppendLine($"            AddParam(command, p, \"@{p.ColumnName}\", entity.{p.PropertyName});");
         }
@@ -219,7 +219,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        public static void BindDelete(IDbCommand command, {className} entity)");
         sb.AppendLine("        {");
         sb.AppendLine("            var p = command.Parameters;");
-        foreach (var p in properties.Where(x => x.IsPrimaryKey))
+        foreach (PropertyMetadata p in properties.Where(x => x.IsPrimaryKey))
         {
             sb.AppendLine($"            AddParam(command, p, \"@{p.ColumnName}\", entity.{p.PropertyName});");
         }
@@ -307,7 +307,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            = new ColumnInfo[] {");
         for (int i = 0; i < insertProps.Count; i++)
         {
-            var p = insertProps[i];
+            PropertyMetadata p = insertProps[i];
             sb.AppendLine($"            new ColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}),");
         }
         sb.AppendLine("        };");
@@ -317,7 +317,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            = new ColumnInfo[] {");
         for (int i = 0; i < updateProps.Count; i++)
         {
-            var p = updateProps[i];
+            PropertyMetadata p = updateProps[i];
             sb.AppendLine($"            new ColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}),");
         }
         sb.AppendLine("        };");
@@ -327,7 +327,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            = new ColumnInfo[] {");
         for (int i = 0; i < deleteProps.Count; i++)
         {
-            var p = deleteProps[i];
+            PropertyMetadata p = deleteProps[i];
             sb.AppendLine($"            new ColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}),");
         }
         sb.AppendLine("        };");
@@ -338,7 +338,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            {");
         for (int i = 0; i < properties.Count; i++)
         {
-            var p = properties[i];
+            PropertyMetadata p = properties[i];
             sb.AppendLine($"            [\"{p.ColumnName}\"] = new ColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}),");
         }
         sb.AppendLine("        };");

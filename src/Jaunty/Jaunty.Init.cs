@@ -40,8 +40,9 @@ public static partial class Jaunty
         {
             // Auto-discover and enable reflection mapping if the extension assembly is present
             var assembly = Assembly.Load(new AssemblyName("Jaunty.Extensions.Reflection"));
-            var type = assembly.GetType("Jaunty.Extensions.Reflection.JauntyReflectionExtensions");
-            var method = type?.GetMethod("UseReflectionMapping", BindingFlags.Public | BindingFlags.Static);
+
+            Type? type = assembly.GetType("Jaunty.Extensions.Reflection.JauntyReflectionExtensions");
+            MethodInfo? method = type?.GetMethod("UseReflectionMapping", BindingFlags.Public | BindingFlags.Static);
             method?.Invoke(null, null);
         }
         catch (Exception ex) when (ex is FileNotFoundException or TypeLoadException or MissingMethodException)

@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -35,7 +36,7 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
         _selectColumns.Clear();
         _columnAliases.Clear();
 
-        var body = selector.Body;
+        Expression body = selector.Body;
 
         if (body is NewExpression newExpr)
         {
@@ -50,7 +51,7 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
         else
         {
             // Single expression: g.Key or g.Count()
-            var (sql, alias) = TranslateExpression(body, "Value");
+            (string? sql, string? alias) = TranslateExpression(body, "Value");
             _selectColumns.Add(sql);
             _columnAliases.Add(alias);
         }
@@ -60,13 +61,13 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
 
     private void TranslateNewExpression(NewExpression newExpr)
     {
-        var members = newExpr.Members;
-        var arguments = newExpr.Arguments;
+        ReadOnlyCollection<MemberInfo>? members = newExpr.Members;
+        ReadOnlyCollection<Expression> arguments = newExpr.Arguments;
 
         for (int i = 0; i < arguments.Count; i++)
         {
             var memberName = members?[i]?.Name ?? $"Column{i}";
-            var (sql, _) = TranslateExpression(arguments[i], memberName);
+            (string? sql, string _) = TranslateExpression(arguments[i], memberName);
             _selectColumns.Add($"{sql} AS {_dialect.EscapeColumnName(memberName)}");
             _columnAliases.Add(memberName);
         }
@@ -74,12 +75,13 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
 
     private void TranslateMemberInit(MemberInitExpression memberInit)
     {
-        foreach (var binding in memberInit.Bindings)
+
+        foreach (MemberBinding? binding in memberInit.Bindings)
         {
             if (binding is MemberAssignment assignment)
             {
                 var memberName = assignment.Member.Name;
-                var (sql, _) = TranslateExpression(assignment.Expression, memberName);
+                (string? sql, string _) = TranslateExpression(assignment.Expression, memberName);
                 _selectColumns.Add($"{sql} AS {_dialect.EscapeColumnName(memberName)}");
                 _columnAliases.Add(memberName);
             }
@@ -244,7 +246,7 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
 
     private string GetColumnName(string propertyName)
     {
-        var columns = _metadata.Columns;
+        IReadOnlyList<ColumnMetadata> columns = _metadata.Columns;
         for (int i = 0; i < columns.Count; i++)
         {
             if (columns[i].Property.Name == propertyName)

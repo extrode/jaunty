@@ -21,7 +21,7 @@ internal static class DrDispatcher
             return MappedCache<T>.Mapper;
 
         // 3. Special Types (Dictionary, dynamic - uses extension hook)
-        var specialMapper = TryResolveSpecialTypeFromExtension<T>(reader);
+        Func<IDataReader, T>? specialMapper = TryResolveSpecialTypeFromExtension<T>(reader);
         if (specialMapper is not null)
             return specialMapper;
 
@@ -58,7 +58,7 @@ internal static class DrDispatcher
             return dbReader => MappedCache<T>.Mapper(dbReader);
 
         // 3. Special Types
-        var specialMapper = TryResolveSpecialTypeFromExtension<T>(reader);
+        Func<IDataReader, T>? specialMapper = TryResolveSpecialTypeFromExtension<T>(reader);
         if (specialMapper is not null)
             return dbReader => specialMapper(dbReader);
 

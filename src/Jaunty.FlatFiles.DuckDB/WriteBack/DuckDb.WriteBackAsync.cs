@@ -1,5 +1,6 @@
 using Jaunty.FlatFiles.Core;
 using Jaunty.FlatFiles.DuckDB.Internals;
+using Jaunty.FlatFiles.Interfaces;
 using Jaunty.FlatFiles.WriteBack;
 
 namespace Jaunty.FlatFiles.DuckDB;
@@ -11,7 +12,7 @@ public sealed partial class DuckDb
     {
         ArgumentNullException.ThrowIfNull(outputPath);
 
-        var source = GetSourceOrThrow<T>();
+        IFileSource source = GetSourceOrThrow<T>();
         var format = InferFormatFromExtension(outputPath);
         var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(outputPath), format);
 
@@ -21,7 +22,7 @@ public sealed partial class DuckDb
     /// <inheritdoc />
     public async ValueTask SaveAsync<T>(WriteBackMode mode, CancellationToken cancellationToken = default) where T : class, new()
     {
-        var source = GetSourceOrThrow<T>();
+        IFileSource source = GetSourceOrThrow<T>();
 
         if (mode == WriteBackMode.NewFile)
         {
@@ -53,7 +54,7 @@ public sealed partial class DuckDb
     {
         ArgumentNullException.ThrowIfNull(outputPath);
 
-        var source = GetSourceOrThrow<T>();
+        IFileSource source = GetSourceOrThrow<T>();
         var format = InferFormatFromExtension(outputPath);
         var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(outputPath), format);
 

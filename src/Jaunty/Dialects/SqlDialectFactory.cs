@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Data;
+using System.Reflection;
 
 namespace Jaunty.Dialects;
 
@@ -15,11 +16,11 @@ public static class SqlDialectFactory
 
     public static ISqlDialect GetDialect(IDbConnection connection)
     {
-        var connectionType = connection.GetType();
+        Type connectionType = connection.GetType();
         if (_dialectCache.TryGetValue(connectionType, out ISqlDialect? cached))
             return cached;
 
-        var dialect = ResolveDialect(connectionType.Name);
+        ISqlDialect dialect = ResolveDialect(connectionType.Name);
         _dialectCache.TryAdd(connectionType, dialect);
         return dialect;
     }
@@ -50,7 +51,7 @@ public static class SqlDialectFactory
 
     private static ISqlDialect ResolveDialect(string connectionTypeName)
     {
-        if (_customDialects.TryGetValue(connectionTypeName, out var custom))
+        if (_customDialects.TryGetValue(connectionTypeName, out ISqlDialect? custom))
             return custom;
 
         ISqlDialect dialect = connectionTypeName switch
@@ -78,7 +79,7 @@ public static class SqlDialectFactory
             if (factoryType == null)
                 return dialect;
 
-            var getDialectMethod = factoryType.GetMethod("GetDialect", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            MethodInfo? getDialectMethod = factoryType.GetMethod("GetDialect", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
             if (getDialectMethod == null)
                 return dialect;
 

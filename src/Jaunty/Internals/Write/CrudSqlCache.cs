@@ -23,7 +23,7 @@ internal static class CrudSqlCache
     /// </summary>
     public static CachedCrudSql GetSql<T>(IDbConnection connection) where T : new()
     {
-        var key = (typeof(T), connection.GetType());
+        (Type, Type) key = (typeof(T), connection.GetType());
 
         if (_cache.TryGetValue(key, out CachedCrudSql? cached))
             return cached;
@@ -90,7 +90,7 @@ internal static class CrudSqlCache
 
     private static string BuildInsertSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)
     {
-        var columns = metadata.InsertColumns;
+        IReadOnlyList<ColumnMetadata> columns = metadata.InsertColumns;
 
         if (columns.Count == 0)
             return string.Empty;
@@ -124,11 +124,11 @@ internal static class CrudSqlCache
 
     private static string BuildUpdateSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)
     {
-        var primaryKeys = metadata.PrimaryKeys;
+        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
         if (primaryKeys.Count == 0)
             return string.Empty;
 
-        var updateColumns = metadata.UpdateColumns;
+        IReadOnlyList<ColumnMetadata> updateColumns = metadata.UpdateColumns;
         if (updateColumns.Count == 0)
             return string.Empty;
 
@@ -154,7 +154,7 @@ internal static class CrudSqlCache
 
     private static string BuildDeleteSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)
     {
-        var primaryKeys = metadata.PrimaryKeys;
+        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
         if (primaryKeys.Count == 0)
             return string.Empty;
 
@@ -169,7 +169,7 @@ internal static class CrudSqlCache
 
     private static string BuildDeleteByIdSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)
     {
-        var primaryKeys = metadata.PrimaryKeys;
+        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
         if (primaryKeys.Count != 1)
             return string.Empty;
 
@@ -186,12 +186,12 @@ internal static class CrudSqlCache
 
     private static string BuildUpsertSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)
     {
-        var primaryKeys = metadata.PrimaryKeys;
+        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
         if (primaryKeys.Count == 0)
             return string.Empty;
 
-        var insertColumns = metadata.InsertColumns;
-        var updateColumns = metadata.UpdateColumns;
+        IReadOnlyList<ColumnMetadata> insertColumns = metadata.InsertColumns;
+        IReadOnlyList<ColumnMetadata> updateColumns = metadata.UpdateColumns;
 
         if (insertColumns.Count == 0)
             return string.Empty;

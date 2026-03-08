@@ -2,6 +2,7 @@ using System.Data.Common;
 
 using Jaunty.FlatFiles.Core;
 using Jaunty.FlatFiles.Import;
+using Jaunty.FlatFiles.Interfaces;
 using Jaunty.FlatFiles.Internals;
 
 namespace Jaunty.FlatFiles.DuckDB;
@@ -34,8 +35,8 @@ public static class FlatFileImporter
         var tableName = TableNameResolver.Resolve<T>();
 
         // Use the registry to create a source with the correct entity type
-        var source = FlatFile.CreateSourceFromExtension(extension, tableName, fullPath, typeof(T));
-        using var db = FlatFile.Open(opts => opts.AddSource(source));
+        IFileSource source = FlatFile.CreateSourceFromExtension(extension, tableName, fullPath, typeof(T));
+        using IFlatFile db = FlatFile.Open(opts => opts.AddSource(source));
 
         return await db.ImportIntoAsync<T>(targetConnection, options, cancellationToken).ConfigureAwait(false);
     }
@@ -55,7 +56,7 @@ public static class FlatFileImporter
         ArgumentNullException.ThrowIfNull(configureSource);
         ArgumentNullException.ThrowIfNull(targetConnection);
 
-        using var db = FlatFile.Open(configureSource);
+        using IFlatFile db = FlatFile.Open(configureSource);
         return await db.ImportIntoAsync<T>(targetConnection, options, cancellationToken).ConfigureAwait(false);
     }
 }

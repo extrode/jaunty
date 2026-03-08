@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -57,7 +58,7 @@ internal static class ExpressionTranslator
     /// </summary>
     public static string ResolveColumnName<T>(Expression<Func<T, object>> columnSelector)
     {
-        var member = ExtractMemberExpression(columnSelector.Body);
+        MemberExpression? member = ExtractMemberExpression(columnSelector.Body);
         if (member?.Member is not PropertyInfo prop)
             throw new ArgumentException("Column selector must be a property access expression.", nameof(columnSelector));
 
@@ -66,7 +67,7 @@ internal static class ExpressionTranslator
 
     private static string GetColumnName(PropertyInfo prop)
     {
-        var attr = prop.GetCustomAttribute<ColumnAttribute>();
+        ColumnAttribute? attr = prop.GetCustomAttribute<ColumnAttribute>();
         return attr?.Name ?? prop.Name;
     }
 
@@ -108,7 +109,7 @@ internal static class ExpressionTranslator
             return $"({left} {op} {right})";
         }
 
-        var (columnName, value) = ExtractColumnAndValue(binary);
+        (string? columnName, object? value) = ExtractColumnAndValue(binary);
 
         if (value is null)
         {
@@ -195,12 +196,12 @@ internal static class ExpressionTranslator
             itemExpr = method.Arguments[0];
         }
 
-        var memberExpr = ExtractMemberExpression(itemExpr);
+        MemberExpression? memberExpr = ExtractMemberExpression(itemExpr);
         if (memberExpr is null)
             throw new NotSupportedException("IN clause requires a property access on the entity.");
 
         var columnName = ResolveColumnFromMember(memberExpr);
-        var collection = EvaluateExpression(collectionExpr) as System.Collections.IEnumerable
+        IEnumerable collection = EvaluateExpression(collectionExpr) as System.Collections.IEnumerable
             ?? throw new NotSupportedException("IN clause requires an enumerable collection.");
 
         var sb = new StringBuilder();
@@ -220,8 +221,8 @@ internal static class ExpressionTranslator
 
     private static (string ColumnName, object? Value) ExtractColumnAndValue(BinaryExpression binary)
     {
-        var leftMember = ExtractMemberExpression(binary.Left);
-        var rightMember = ExtractMemberExpression(binary.Right);
+        MemberExpression? leftMember = ExtractMemberExpression(binary.Left);
+        MemberExpression? rightMember = ExtractMemberExpression(binary.Right);
 
         if (leftMember != null && IsEntityMember(leftMember))
         {
@@ -242,7 +243,7 @@ internal static class ExpressionTranslator
 
     private static bool IsEntityMember(MemberExpression member)
     {
-        var current = member.Expression;
+        Expression? current = member.Expression;
         while (current is MemberExpression nested)
             current = nested.Expression;
         return current is ParameterExpression;

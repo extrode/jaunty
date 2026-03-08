@@ -93,7 +93,7 @@ public static partial class Jaunty
         if (entities is null) throw new ArgumentNullException(nameof(entities));
 #endif
 
-        var entityList = entities as IList<T> ?? entities.ToList();
+        IList<T> entityList = entities as IList<T> ?? entities.ToList();
         if (entityList.Count == 0)
             return 0;
 
@@ -114,7 +114,7 @@ public static partial class Jaunty
             dialect.SupportsNativeBulkCopy &&
             entityList.Count >= BulkCopyConfiguration.MinimumRowsForNativeBulkCopy)
         {
-            var bulkProvider = dialect.CreateBulkCopyProvider();
+            IBulkCopyProvider? bulkProvider = dialect.CreateBulkCopyProvider();
             if (bulkProvider != null && bulkProvider.IsSupported)
             {
                 return await BulkInsertNativeCoreAsync(connection, entityList, cached, bulkProvider, options, ignoreConstraints, cancellationToken).ConfigureAwait(false);
@@ -142,9 +142,9 @@ public static partial class Jaunty
             if (ignoreConstraints)
             {
 #if NET8_0_OR_GREATER
-                await using var fkOffCmd = connection.CreateCommand();
+                await using DbCommand fkOffCmd = connection.CreateCommand();
 #else
-                using var fkOffCmd = connection.CreateCommand();
+                using DbCommand fkOffCmd = connection.CreateCommand();
 #endif
                 fkOffCmd.Transaction = transaction;
                 fkOffCmd.CommandText = dialect.GetDisableForeignKeyChecksSql()!;
@@ -155,7 +155,7 @@ public static partial class Jaunty
 
             try
             {
-                var valueSetter = WriteParameterCache<T>.InsertValueSetter;
+                Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.InsertValueSetter;
                 if (valueSetter == null)
                     throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
 
@@ -173,9 +173,9 @@ public static partial class Jaunty
                 if (ignoreConstraints)
                 {
 #if NET8_0_OR_GREATER
-                    await using var fkOnCmd = connection.CreateCommand();
+                    await using DbCommand fkOnCmd = connection.CreateCommand();
 #else
-                    using var fkOnCmd = connection.CreateCommand();
+                    using DbCommand fkOnCmd = connection.CreateCommand();
 #endif
                     fkOnCmd.Transaction = transaction;
                     fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
@@ -200,9 +200,9 @@ public static partial class Jaunty
                     try
                     {
 #if NET8_0_OR_GREATER
-                        await using var fkOnCmd = connection.CreateCommand();
+                        await using DbCommand fkOnCmd = connection.CreateCommand();
 #else
-                        using var fkOnCmd = connection.CreateCommand();
+                        using DbCommand fkOnCmd = connection.CreateCommand();
 #endif
                         fkOnCmd.Transaction = transaction;
                         fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
@@ -264,7 +264,7 @@ public static partial class Jaunty
         Action<IDataParameterCollection, T> valueSetter,
         CancellationToken cancellationToken) where T : new()
     {
-        var insertableColumns = ColumnMetadataHelper.GetInsertableColumns(cached.Metadata);
+        IReadOnlyList<ColumnMetadata> insertableColumns = ColumnMetadataHelper.GetInsertableColumns(cached.Metadata);
         int colCount = insertableColumns.Count;
         if (colCount == 0) return 0;
 
@@ -273,7 +273,7 @@ public static partial class Jaunty
         if (maxBatchSize < 1) maxBatchSize = 1;
 
         // Use cached compiled property getters for multi-row binding
-        var getters = MultiRowInsertCache.GetOrBuildGetters<T>(cached.Metadata);
+        Func<T, object?>[] getters = MultiRowInsertCache.GetOrBuildGetters<T>(cached.Metadata);
 
         int totalInserted = 0;
         int entityCount = entityList.Count;
@@ -289,9 +289,9 @@ public static partial class Jaunty
                 typeof(T), connection.GetType(), batchSize, cached.Metadata, dialect);
 
 #if NET8_0_OR_GREATER
-            await using var command = connection.CreateCommand();
+            await using DbCommand command = connection.CreateCommand();
 #else
-            using var command = connection.CreateCommand();
+            using DbCommand command = connection.CreateCommand();
 #endif
             command.Transaction = transaction;
             command.CommandText = sql;
@@ -305,7 +305,7 @@ public static partial class Jaunty
                 T entity = entityList[offset + row];
                 for (int c = 0; c < colCount; c++)
                 {
-                    var p = command.CreateParameter();
+                    DbParameter p = command.CreateParameter();
                     // Parameter name matches SQL generated in MultiRowInsertCache.Build()
                     p.ParameterName = insertableColumns[c].ColumnName + "_" + row;
                     p.Value = getters[c](entity) ?? DBNull.Value;
@@ -334,9 +334,9 @@ public static partial class Jaunty
         CancellationToken cancellationToken) where T : new()
     {
 #if NET8_0_OR_GREATER
-        await using var command = connection.CreateCommand();
+        await using DbCommand command = connection.CreateCommand();
 #else
-        using var command = connection.CreateCommand();
+        using DbCommand command = connection.CreateCommand();
 #endif
         command.Transaction = transaction;
         command.CommandText = cached.InsertSql;
@@ -349,7 +349,7 @@ public static partial class Jaunty
         // Set first entity values before Prepare() so providers can infer parameter types.
         // Prepare() is a best-effort optimization; some providers (e.g. SQL Server on .NET Framework)
         // require explicit DbType on all parameters, which we can't guarantee here.
-        var pCollection = command.Parameters;
+        DbParameterCollection pCollection = command.Parameters;
         valueSetter(pCollection, entityList[0]);
         try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
 
@@ -412,7 +412,7 @@ public static partial class Jaunty
             try
             {
                 // Create EntityDataReader for streaming entity-to-datareader conversion
-                var metadata = cached.Metadata;
+                EntityMetadata metadata = cached.Metadata;
                 using var reader = new EntityDataReader<T>(entityList, metadata);
 
                 // Execute native bulk copy

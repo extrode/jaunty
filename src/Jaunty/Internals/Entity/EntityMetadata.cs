@@ -31,7 +31,7 @@ public sealed class EntityMetadata
         TableName = tableName;
         SchemaName = schemaName;
 
-        var colList = columns is List<ColumnMetadata> list ? list : columns.ToList();
+        List<ColumnMetadata> colList = columns is List<ColumnMetadata> list ? list : columns.ToList();
 
         Columns = colList.AsReadOnly();
 
@@ -43,7 +43,7 @@ public sealed class EntityMetadata
 
         for (int i = 0; i < colList.Count; i++)
         {
-            var col = colList[i];
+            ColumnMetadata col = colList[i];
 
             if (col.IsPrimaryKey)
                 primaryKeys.Add(col);
