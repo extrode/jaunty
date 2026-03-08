@@ -23,14 +23,10 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     private readonly ParameterCollection _parameters;
     private readonly string[] _groupByColumns;
     private readonly Expression<Func<T, TKey>> _keySelector;
-    private readonly List<string> _havingConditions = new();
+    private readonly List<string> _havingConditions = [];
 
-    internal GroupedQueryBuilder(
-        IDbConnection connection,
-        ISqlDialect dialect,
-        List<WhereCondition> whereConditions,
-        ParameterCollection parameters,
-        Expression<Func<T, TKey>> keySelector)
+    internal GroupedQueryBuilder(IDbConnection connection, ISqlDialect dialect, List<WhereCondition> whereConditions,
+        ParameterCollection parameters, Expression<Func<T, TKey>> keySelector)
     {
         _connection = connection;
         _dialect = dialect;
@@ -156,9 +152,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken)
     {
         if (_connection is not DbConnection dbConn)
-        {
-            return ExecuteQuery<TResult>(sql, selector);
-        }
+            return ExecuteQuery(sql, selector);
 
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
         (string[] _, string[]? aliases) = visitor.TranslateSelect(selector);
@@ -169,14 +163,16 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         command.CommandText = sql;
         BindParameters(command);
 
-        var wasClosed = _connection.State == ConnectionState.Closed;
+        bool wasClosed = _connection.State == ConnectionState.Closed;
         if (wasClosed) await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
         try
         {
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                TResult? result = MapResult<TResult>(reader, aliases, selector);
+                TResult? result = MapResult(reader, aliases, selector);
                 results.Add(result);
             }
         }
@@ -200,15 +196,17 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
             ConstructorInfo? constructor = resultType.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == aliases.Length);
 
-            if (constructor != null)
+            if (constructor is not null)
             {
                 ParameterInfo[] parameters = constructor.GetParameters();
+
                 for (int i = 0; i < aliases.Length; i++)
                 {
-                    var ordinal = reader.GetOrdinal(aliases[i]);
+                    int ordinal = reader.GetOrdinal(aliases[i]);
+
                     if (!reader.IsDBNull(ordinal))
                     {
-                        var value = reader.GetValue(ordinal);
+                        object value = reader.GetValue(ordinal);
                         Type targetType = parameters[i].ParameterType;
                         Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
                         values[i] = Convert.ChangeType(value, underlyingType);
@@ -229,19 +227,22 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 #pragma warning disable IL2090
             PropertyInfo? property = resultType.GetProperty(aliases[i]);
 #pragma warning restore IL2090
-            if (property != null && property.CanWrite)
+
+            if (property is not null && property.CanWrite)
             {
-                var ordinal = reader.GetOrdinal(aliases[i]);
+                int ordinal = reader.GetOrdinal(aliases[i]);
+
                 if (!reader.IsDBNull(ordinal))
                 {
-                    var value = reader.GetValue(ordinal);
+                    object value = reader.GetValue(ordinal);
                     Type targetType = property.PropertyType;
                     Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-                    var converted = Convert.ChangeType(value, underlyingType);
+                    object converted = Convert.ChangeType(value, underlyingType);
                     property.SetValue(instance, converted);
                 }
             }
         }
+
         return instance;
     }
 
@@ -256,20 +257,22 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         // Single property: p => p.CategoryId
         if (body is MemberExpression member)
         {
-            var columnName = GetColumnName(member.Member.Name);
-            return new[] { _dialect.EscapeColumnName(columnName) };
+            string columnName = GetColumnName(member.Member.Name);
+            return [_dialect.EscapeColumnName(columnName)];
         }
 
         // Composite key: p => new { p.CategoryId, p.SupplierId }
         if (body is NewExpression newExpr)
         {
-            var columns = new string[newExpr.Arguments.Count];
+            string[] columns = new string[newExpr.Arguments.Count];
+
             for (int i = 0; i < newExpr.Arguments.Count; i++)
             {
                 Expression arg = newExpr.Arguments[i];
+
                 if (arg is MemberExpression memberArg)
                 {
-                    var columnName = GetColumnName(memberArg.Member.Name);
+                    string columnName = GetColumnName(memberArg.Member.Name);
                     columns[i] = _dialect.EscapeColumnName(columnName);
                 }
                 else
@@ -289,9 +292,9 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
         if (body is BinaryExpression binary)
         {
-            var left = TranslateHavingExpression(binary.Left);
-            var right = TranslateHavingExpression(binary.Right);
-            var op = GetSqlOperator(binary.NodeType);
+            object left = TranslateHavingExpression(binary.Left);
+            object right = TranslateHavingExpression(binary.Right);
+            object op = GetSqlOperator(binary.NodeType);
             return $"{left} {op} {right}";
         }
 
@@ -303,7 +306,8 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         // g.Count() > 5
         if (expr is MethodCallExpression methodCall)
         {
-            var methodName = methodCall.Method.Name;
+            object methodName = methodCall.Method.Name;
+
             return methodName switch
             {
                 "Count" when methodCall.Arguments.Count == 0 => "COUNT(*)",
@@ -319,10 +323,15 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         // Constants
         if (expr is ConstantExpression constant)
         {
-            if (constant.Value is null) return "NULL";
-            if (constant.Value is string s) return $"'{s.Replace("'", "''")}'";
-            if (constant.Value is bool b) return b ? "1" : "0";
-            return constant.Value.ToString() ?? "NULL";
+            return constant.Value is null
+                ? "NULL"
+                : constant.Value is string s
+                ? $"'{s.Replace("'", "''")}'"
+                : constant.Value is bool b
+                ? b
+                    ? "1"
+                    : "0"
+                        : constant.Value.ToString() ?? "NULL";
         }
 
         throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
@@ -336,12 +345,13 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         if (selectorExpr is LambdaExpression lambda)
         {
             Expression body = lambda.Body;
+
             if (body is UnaryExpression unaryBody)
                 body = unaryBody.Operand;
 
             if (body is MemberExpression memberExpr)
             {
-                var columnName = GetColumnName(memberExpr.Member.Name);
+                string columnName = GetColumnName(memberExpr.Member.Name);
                 return $"{aggregate}({_dialect.EscapeColumnName(columnName)})";
             }
         }
@@ -352,11 +362,11 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     private string GetColumnName(string propertyName)
     {
         IReadOnlyList<ColumnMetadata> columns = _metadata.Columns;
+
         for (int i = 0; i < columns.Count; i++)
-        {
             if (columns[i].Property.Name == propertyName)
                 return columns[i].ColumnName;
-        }
+
         return propertyName;
     }
 
@@ -375,7 +385,8 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
     private void BindParameters(IDbCommand command)
     {
-        var paramObj = _parameters.ToParameterObject();
+        object? paramObj = _parameters.ToParameterObject();
+
         if (paramObj is IDictionary<string, object?> dict)
         {
             foreach (KeyValuePair<string, object?> kvp in dict)
