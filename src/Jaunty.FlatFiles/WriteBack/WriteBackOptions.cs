@@ -1,3 +1,5 @@
+using Jaunty.FlatFiles.Core;
+
 namespace Jaunty.FlatFiles.WriteBack;
 
 /// <summary>
