@@ -52,7 +52,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="QueryFirstOrDefault{T}(IDbConnection, string)"/>
     /// <seealso cref="QuerySingle{T}(IDbConnection, string)"/>
-    /// <seealso cref="QueryFirstAsync{T}(IDbConnection, string)"/>
+    /// <seealso cref="QueryFirstAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static T QueryFirst<T>(this IDbConnection connection, string sql) where T : new()
     {
 #if NET8_0_OR_GREATER

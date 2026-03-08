@@ -24,6 +24,12 @@ public static class MetadataBuilder
     private const string NotMappedAttributeTypeName = "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute";
     private const string DatabaseGeneratedAttributeTypeName = "System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute";
 
+    /// <summary>
+    /// Builds entity metadata for the specified type using reflection.
+    /// </summary>
+    /// <typeparam name="T">The entity type to build metadata for.</typeparam>
+    /// <returns>The entity metadata containing table and column information.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the type is abstract.</exception>
     public static EntityMetadata Build<T>()
     {
         Type type = typeof(T);

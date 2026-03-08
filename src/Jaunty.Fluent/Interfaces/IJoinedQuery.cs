@@ -442,11 +442,30 @@ public interface IJoinClause<T1, T2, T3> where T1 : new() where T2 : new() where
 /// </summary>
 public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() where T3 : new()
 {
+    /// <summary>
+    /// Adds a WHERE clause using a predicate expression.
+    /// </summary>
+    /// <param name="predicate">Expression predicate for the WHERE condition.</param>
     IJoinedQuery3<T1, T2, T3> Where(Expression<Func<T1, T2, T3, bool>> predicate);
+
+    /// <summary>
+    /// Adds a WHERE clause using a raw SQL condition.
+    /// </summary>
+    /// <param name="condition">The raw SQL condition.</param>
     IJoinedQuery3<T1, T2, T3> Where(string condition);
 
+    /// <summary>
+    /// Executes the query and returns the primary (first) entity.
+    /// </summary>
     List<T1> Select();
+
+    /// <summary>
+    /// Executes the query and returns all three entities as tuples.
+    /// </summary>
     List<(T1, T2, T3)> SelectAll();
 
+    /// <summary>
+    /// Returns the generated SQL for debugging purposes.
+    /// </summary>
     string ToSql();
 }

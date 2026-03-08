@@ -14,6 +14,15 @@ public static class SqlDialectFactory
     private static readonly ConcurrentDictionary<Type, ISqlDialect> _dialectCache = new();
     private static readonly ConcurrentDictionary<string, ISqlDialect> _customDialects = new();
 
+    /// <summary>
+    /// Gets the SQL dialect for the specified database connection.
+    /// </summary>
+    /// <param name="connection">The database connection.</param>
+    /// <returns>The SQL dialect instance for the connection type.</returns>
+    /// <remarks>
+    /// Dialects are cached per connection type for optimal performance.
+    /// Custom dialects registered via <see cref="RegisterDialect(string, ISqlDialect)"/> take priority.
+    /// </remarks>
     public static ISqlDialect GetDialect(IDbConnection connection)
     {
         Type connectionType = connection.GetType();

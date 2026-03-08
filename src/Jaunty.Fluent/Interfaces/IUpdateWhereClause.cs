@@ -11,34 +11,54 @@ public interface IUpdateWhereClause<T> where T : new()
     /// <summary>
     /// Adds AND condition using column name and value.
     /// </summary>
+    /// <param name="column">The column name.</param>
+    /// <param name="value">The value to match.</param>
     IUpdateWhereClause<T> And(string column, object? value);
 
     /// <summary>
     /// Adds AND condition using expression predicate.
     /// </summary>
+    /// <param name="predicate">Expression predicate for the condition.</param>
     IUpdateWhereClause<T> And(Expression<Func<T, bool>> predicate);
 
     /// <summary>
     /// Adds AND condition using raw SQL.
     /// </summary>
+    /// <param name="rawSql">The raw SQL condition.</param>
     IUpdateWhereClause<T> AndRaw(string rawSql);
+
+    /// <summary>
+    /// Adds AND condition using raw SQL with parameters.
+    /// </summary>
+    /// <param name="rawSql">The raw SQL condition.</param>
+    /// <param name="parameters">Anonymous object containing parameter values.</param>
     IUpdateWhereClause<T> AndRaw(string rawSql, object parameters);
 
     // OR conditions
     /// <summary>
     /// Adds OR condition using column name and value.
     /// </summary>
+    /// <param name="column">The column name.</param>
+    /// <param name="value">The value to match.</param>
     IUpdateWhereClause<T> Or(string column, object? value);
 
     /// <summary>
     /// Adds OR condition using expression predicate.
     /// </summary>
+    /// <param name="predicate">Expression predicate for the condition.</param>
     IUpdateWhereClause<T> Or(Expression<Func<T, bool>> predicate);
 
     /// <summary>
     /// Adds OR condition using raw SQL.
     /// </summary>
+    /// <param name="rawSql">The raw SQL condition.</param>
     IUpdateWhereClause<T> OrRaw(string rawSql);
+
+    /// <summary>
+    /// Adds OR condition using raw SQL with parameters.
+    /// </summary>
+    /// <param name="rawSql">The raw SQL condition.</param>
+    /// <param name="parameters">Anonymous object containing parameter values.</param>
     IUpdateWhereClause<T> OrRaw(string rawSql, object parameters);
 
     // AND IN / NOT IN - collection-based filtering
