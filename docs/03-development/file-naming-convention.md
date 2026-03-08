@@ -1,10 +1,41 @@
 # File Naming Convention
 
-Standard naming conventions for documentation files in Jaunty.
+Standard naming conventions for documentation files and directories in Jaunty.
 
 ---
 
-## Standard: `lowercase-with-hyphens.md`
+## Directory Naming
+
+**Standard**: `lowercase-with-hyphens`
+
+### Numbered Sections (Primary Docs)
+
+Numbered prefixes establish a clear reading order:
+
+| Directory | Purpose |
+|-----------|---------|
+| `00-quick-start/` | Getting started guides |
+| `01-api-reference/` | API documentation |
+| `02-architecture/` | Architecture docs |
+| `03-development/` | Development guides |
+| `04-extensions/` | Extension documentation |
+| `05-quality/` | Quality & testing |
+| `06-releases/` | Release documentation |
+
+### Special-Purpose Directories
+
+| Directory | Purpose | Naming Reason |
+|-----------|---------|---------------|
+| `_assets/` | Media assets (screenshots, diagrams) | Underscore sorts first (visual priority) |
+| `99-archive/` | Historical documents | Numeric prefix sorts last (out of the way) |
+
+**Why these conventions?**
+- `_assets/` - Assets support docs but aren't read directly; underscore keeps them visible but distinct
+- `99-archive/` - Archives are rarely accessed; high number ensures they sort after all content folders
+
+---
+
+## File Naming
 
 All documentation files should use lowercase letters with hyphens as word separators.
 
@@ -50,6 +81,23 @@ These filenames are standardized across GitHub and should remain unchanged:
 | `CONTRIBUTING.md` | Repo root | GitHub contribution guide |
 | `LICENSE.md` | Repo root | GitHub license display |
 | `CHANGELOG.md` | Repo root | GitHub changelog display |
+
+### Archive Files (99-archive/)
+
+**Historical documents in `99-archive/` are renamed to follow the standard convention.**
+
+Unlike typical archives that preserve original names, Jaunty's archive files are renamed to:
+- Maintain consistency across all documentation
+- Make files easier to reference and link to
+- Avoid confusion from mixed naming conventions
+
+**Example renames applied**:
+- `CODEBASE_SUMMARY.md` → `codebase-summary.md`
+- `JauntyAnalysis.md` → `jaunty-analysis.md`
+- `NATIVEAOT-GUIDE.md` → `nativeaot-guide.md`
+- `2026-01-11_FinalTestReorganization.md` → `2026-01-11-final-test-reorganization.md`
+
+> **Note**: Dates in filenames are preserved, only the descriptive text is lowercased.
 
 ### Dates in Filenames
 
