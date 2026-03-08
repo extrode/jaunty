@@ -8,7 +8,7 @@
 **Test Count**: 2263 tests (2252 passing, 11 failing)  
 **Fluent API Tests**: 395 tests (371 passing, 24 failing - namespace fix in progress)
 
-> **See**: [`COVERAGE-PLAN-2026-02-24.md`](COVERAGE-PLAN-2026-02-24.md) for the prioritized 100% coverage roadmap.
+> **See**: [`coverage-plan-2026-02-24.md`](coverage-plan-2026-02-24.md) for the prioritized 100% coverage roadmap.
 
 ---
 
