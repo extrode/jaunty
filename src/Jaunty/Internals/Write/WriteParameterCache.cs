@@ -146,7 +146,7 @@ internal static class WriteParameterCache<T> where T : new()
     {
         if (resolver?.Invoke(typeof(T)) is Action<IDbCommand, object> binder)
         {
-            return (cmd, entity) => binder(cmd, entity);
+            return (cmd, entity) => binder(cmd, entity!);
         }
         return null;
     }
@@ -155,7 +155,7 @@ internal static class WriteParameterCache<T> where T : new()
     {
         if (typeof(IEntity).IsAssignableFrom(typeof(T)))
         {
-            return static (target, value) => ((IEntity)target).Id = value;
+            return static (target, value) => ((IEntity)target!).Id = value;
         }
         return null;
     }

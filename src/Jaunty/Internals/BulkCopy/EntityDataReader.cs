@@ -118,7 +118,9 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     public string GetName(int i) => _columns[i].ColumnName;
 
     /// <inheritdoc/>
+#pragma warning disable IL2093 // Interface mismatch in DynamicallyAccessedMembersAttribute
     public Type GetFieldType(int i) => _columns[i].Property.PropertyType;
+#pragma warning restore IL2093
 
     /// <inheritdoc/>
     public string GetDataTypeName(int i) => GetFieldType(i).Name;
