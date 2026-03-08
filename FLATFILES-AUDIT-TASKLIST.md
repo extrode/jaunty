@@ -305,7 +305,7 @@
 
 ## References
 
-- [Jaunty API Design Guidelines](docs/API-DESIGN.md)
-- [Jaunty Code Review Checklist](docs/CODE-REVIEW.md)
+- [Jaunty API Design Guidelines](docs/03-development/api-design-guidelines.md)
+- [Jaunty Code Review Checklist](docs/03-development/code-review-checklist.md)
 - [Jaunty Contributing Guide](CONTRIBUTING.md)
-- [Jaunty Architecture Decisions](docs/ARCHITECTURE-DECISIONS.md)
+- [Jaunty Architecture Decisions](docs/02-architecture/ARCHITECTURE-DECISIONS.md)
