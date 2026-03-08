@@ -30,7 +30,7 @@ public static partial class Jaunty
             command.CommandText = sql;
 
             // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
-            if (commandType == CommandType.StoredProcedure || commandType == CommandType.TableDirect)
+            if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
                 command.CommandType = commandType;
 
             if (options.Transaction is not null)
