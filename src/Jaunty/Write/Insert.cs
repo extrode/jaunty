@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 
 using Jaunty.Core;
 
@@ -81,7 +82,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="Update{T}(IDbConnection, T)"/>
     /// <seealso cref="Delete{T}(IDbConnection, T)"/>
-    /// <seealso cref="InsertAsync{T}(IDbConnection, T)"/>
+    /// <seealso cref="InsertAsync{T}(IDbConnection, T, CancellationToken)"/>
     /// <seealso cref="Attributes.TableAttribute"/>
     /// <seealso cref="Attributes.ColumnAttribute"/>
     /// <seealso cref="Attributes.DatabaseGeneratedAttribute"/>
