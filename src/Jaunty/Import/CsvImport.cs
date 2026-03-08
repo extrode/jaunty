@@ -4,8 +4,8 @@ using System.Diagnostics;
 using System.Text;
 
 using Jaunty.Configuration;
-using Jaunty.Internals;
 using Jaunty.Dialects;
+using Jaunty.Internals;
 
 namespace Jaunty;
 
@@ -95,7 +95,7 @@ public static class CsvImportExtensions
     {
         // Get the database file path from the connection string
         string? dbPath = ExtractSqliteDbPath(connection.ConnectionString);
-        if (dbPath == null || dbPath == ":memory:")
+        if (dbPath is null or ":memory:")
         {
             // For in-memory databases, fall back to prepared statement insert
             return ImportViaPreparedStatements(connection, tableName, filePath, options);
