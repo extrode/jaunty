@@ -120,7 +120,7 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            AddPrimaryKeyParameter(command, cached, id);
+            AddPrimaryKeyParameter(command, cached, id!);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
 
@@ -159,7 +159,7 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            AddPrimaryKeyParameter(command, cached, id);
+            AddPrimaryKeyParameter(command, cached, id!);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
 
@@ -200,7 +200,7 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            AddPrimaryKeyParameter(command, cached, id);
+            AddPrimaryKeyParameter(command, cached, id!);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
 
@@ -239,7 +239,7 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
-            AddPrimaryKeyParameter(command, cached, id);
+            AddPrimaryKeyParameter(command, cached, id!);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
 
