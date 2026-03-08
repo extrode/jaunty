@@ -1105,6 +1105,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return sb.ToString();
     }
 
+#pragma warning disable IL2026 // Using dynamic/ExpandoObject is not trimming-compatible but intentional
     private static dynamic MapToDynamic(IDataReader reader)
     {
         var expando = new ExpandoObject() as IDictionary<string, object?>;
@@ -1116,6 +1117,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         }
         return (ExpandoObject)expando;
     }
+#pragma warning restore IL2026
 
     private string BuildCountSql()
     {
