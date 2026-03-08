@@ -9,7 +9,7 @@ Comprehensive documentation for Jaunty micro-ORM, extensions, and development gu
 New to Jaunty? Start here:
 
 - **[00-quick-start/](00-quick-start/README.md)** - Getting started guide
-  - [Project Structure](00-quick-start/project-structure.md)
+  - [Project Layout](00-quick-start/project-layout.md) - Repository structure
   - [Build and Test](00-quick-start/build-and-test.md)
 
 ---
