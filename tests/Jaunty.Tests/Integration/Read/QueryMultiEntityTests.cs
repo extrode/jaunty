@@ -1,5 +1,3 @@
-using Jaunty;
-using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
@@ -57,10 +55,12 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [Obsolete]
     public void Query_TwoEntities_WithCombiner_BuildsObjectGraph(DialectInfo dialect)
     {
-        using var connection = _fixture.GetConnection(dialect);
-        var results = connection.Query<ProductInfo, CategoryInfo, ProductInfo>(
+        using IDbConnection connection = _fixture.GetConnection(dialect);
+
+        List<ProductInfo> results = connection.Query<ProductInfo, CategoryInfo, ProductInfo>(
             $@"SELECT {TopPrefix(dialect, 5)}
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
