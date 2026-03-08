@@ -142,6 +142,8 @@ Release documentation and task lists:
 3. Add to the section's README.md
 4. Update this index if needed
 
+**Naming Convention**: See [`03-development/file-naming-convention.md`](03-development/file-naming-convention.md) for the complete standard.
+
 ### Updating Links
 
 When moving documentation:

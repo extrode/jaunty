@@ -22,7 +22,7 @@ Jaunty.FlatFiles extends Jaunty core with the ability to:
 
 - [`architecture.md`](architecture.md) - Architecture and design decisions
 - [`code-analysis.md`](code-analysis.md) - Code analysis and audit results
-- [`FlatFileSpec.md`](FlatFileSpec.md) - Original specification document
+- [`flatfile-spec.md`](flatfile-spec.md) - Original specification document
 
 ### API Reference
 

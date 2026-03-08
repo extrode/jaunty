@@ -6,7 +6,7 @@ Use this checklist when reviewing pull requests for Jaunty.
 
 - [Contributing Guide](../CONTRIBUTING.md)
 - [API Design Guidelines](API-DESIGN.md)
-- [Architecture Decisions](ARCHITECTURE-DECISIONS.md)
+- [Architecture Decisions](architecture-decisions.md)
 
 ---
 
