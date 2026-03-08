@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 using Jaunty.Core;
@@ -86,7 +87,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public IWhereClause<T> Where(Expression<Func<T, bool>> predicate)
     {
         var visitor = new WhereExpressionVisitor<T>(_dialect);
-        var (sql, parameters) = visitor.Translate(predicate);
+        (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
         _parameters.AddRange(parameters);
         return this;
@@ -125,7 +126,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public IWhereClause<T> And(Expression<Func<T, bool>> predicate)
     {
         var visitor = new WhereExpressionVisitor<T>(_dialect);
-        var (sql, parameters) = visitor.Translate(predicate);
+        (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
         _parameters.AddRange(parameters);
         return this;
@@ -164,7 +165,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public IWhereClause<T> Or(Expression<Func<T, bool>> predicate)
     {
         var visitor = new WhereExpressionVisitor<T>(_dialect);
-        var (sql, parameters) = visitor.Translate(predicate);
+        (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
         _parameters.AddRange(parameters);
         return this;
@@ -1049,7 +1050,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public string ToSql<TResult>(Expression<Func<T, TResult>> selector)
     {
         var visitor = new SelectExpressionVisitor<T>(_dialect);
-        var selectColumns = visitor.Translate(selector);
+        List<SelectColumn> selectColumns = visitor.Translate(selector);
         return BuildSelectSqlWithProjection(selectColumns);
     }
 
@@ -1110,7 +1111,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             sb.Append(" WHERE ");
             for (int i = 0; i < _conditions.Count; i++)
             {
-                var condition = _conditions[i];
+                WhereCondition condition = _conditions[i];
                 if (i > 0)
                 {
                     sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
@@ -1126,7 +1127,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             for (int i = 0; i < _orderByColumns.Count; i++)
             {
                 if (i > 0) sb.Append(", ");
-                var orderBy = _orderByColumns[i];
+                OrderByColumn orderBy = _orderByColumns[i];
                 sb.Append(_dialect.EscapeColumnName(orderBy.ColumnName));
                 if (orderBy.Descending)
                     sb.Append(" DESC");
@@ -1155,7 +1156,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         for (int i = 0; i < columns.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            var col = columns[i];
+            SelectColumn col = columns[i];
             sb.Append(col.Sql);
             // Add alias if SQL doesn't match alias (i.e., not just a column reference)
             if (!col.Sql.Equals(_dialect.EscapeColumnName(col.Alias), StringComparison.OrdinalIgnoreCase) &&
@@ -1176,7 +1177,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             sb.Append(" WHERE ");
             for (int i = 0; i < _conditions.Count; i++)
             {
-                var condition = _conditions[i];
+                WhereCondition condition = _conditions[i];
                 if (i > 0)
                 {
                     sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
@@ -1192,7 +1193,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             for (int i = 0; i < _orderByColumns.Count; i++)
             {
                 if (i > 0) sb.Append(", ");
-                var orderBy = _orderByColumns[i];
+                OrderByColumn orderBy = _orderByColumns[i];
                 sb.Append(_dialect.EscapeColumnName(orderBy.ColumnName));
                 if (orderBy.Descending)
                     sb.Append(" DESC");
@@ -1224,7 +1225,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             sb.Append(" WHERE ");
             for (int i = 0; i < _conditions.Count; i++)
             {
-                var condition = _conditions[i];
+                WhereCondition condition = _conditions[i];
                 if (i > 0)
                 {
                     sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
@@ -1255,7 +1256,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             sb.Append(" WHERE ");
             for (int i = 0; i < _conditions.Count; i++)
             {
-                var condition = _conditions[i];
+                WhereCondition condition = _conditions[i];
                 if (i > 0)
                 {
                     sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
@@ -1278,8 +1279,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (value is null or DBNull)
             return default!;
 
-        var targetType = typeof(TResult);
-        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+        Type targetType = typeof(TResult);
+        Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
         // Handle conversion from database types to C# types
         var converted = Convert.ChangeType(value, underlyingType);
@@ -1295,11 +1296,11 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     private void AddParametersFromObject(object parameters)
     {
-        var type = parameters.GetType();
-        var props = type.GetProperties();
+        Type type = parameters.GetType();
+        PropertyInfo[] props = type.GetProperties();
         for (int i = 0; i < props.Length; i++)
         {
-            var prop = props[i];
+            PropertyInfo prop = props[i];
             var value = prop.GetValue(parameters);
             _parameters.Add($"{_dialect.ParameterPrefix}{prop.Name}", value);
         }
@@ -1310,7 +1311,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         var columnName = GetColumnNameFromSelector(selector);
         var escapedColumn = _dialect.EscapeColumnName(columnName);
 
-        var valueList = values as IList<TValue> ?? values.ToList();
+        IList<TValue> valueList = values as IList<TValue> ?? values.ToList();
         if (valueList.Count == 0)
         {
             // Empty collection: IN () is always false, NOT IN () is always true
@@ -1352,12 +1353,12 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     private string BuildExistsClause<TSubquery>(Expression<Func<T, TSubquery, bool>> predicate, bool negate)
         where TSubquery : new()
     {
-        var subqueryMetadata = FluentMetadataCache.GetMetadata<TSubquery>();
+        EntityMetadata subqueryMetadata = FluentMetadataCache.GetMetadata<TSubquery>();
         var subqueryTable = _dialect.EscapeTableName(subqueryMetadata.SchemaName, subqueryMetadata.TableName);
 
         // Use ExistsExpressionVisitor to translate the correlation predicate
         var visitor = new ExistsExpressionVisitor<T, TSubquery>(_dialect, _metadata, subqueryMetadata);
-        var (whereClause, parameters) = visitor.Translate(predicate);
+        (string? whereClause, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _parameters.AddRange(parameters);
 
         var sb = new StringBuilder();
@@ -1383,7 +1384,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         // Get subquery column name
         var subqueryPropertyName = PropertyExtractor.ExtractPropertyName(subquerySelector);
-        var subqueryMetadata = FluentMetadataCache.GetMetadata<TSubquery>();
+        EntityMetadata subqueryMetadata = FluentMetadataCache.GetMetadata<TSubquery>();
         var subqueryColumnName = GetColumnNameFromMetadata(subqueryMetadata, subqueryPropertyName);
         var escapedSubqueryColumn = _dialect.EscapeColumnName(subqueryColumnName);
 
@@ -1417,7 +1418,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (subqueryParams != null)
         {
             var prefix = $"sq{_parameters.Count}";
-            foreach (var (name, value) in subqueryParams.GetAll())
+            foreach ((string? name, object? value) in subqueryParams.GetAll())
             {
                 var paramPrefix = _dialect.ParameterPrefix;
                 var baseName = name.TrimStart('@').TrimStart('$');
@@ -1440,7 +1441,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     private static string GetColumnNameFromMetadata(EntityMetadata metadata, string propertyName)
     {
-        var columns = metadata.Columns;
+        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
         for (int i = 0; i < columns.Count; i++)
         {
             if (columns[i].Property.Name == propertyName)
@@ -1506,7 +1507,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             sb.Append(" WHERE ");
             for (int i = 0; i < _conditions.Count; i++)
             {
-                var condition = _conditions[i];
+                WhereCondition condition = _conditions[i];
                 if (i > 0)
                 {
                     sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
@@ -1526,7 +1527,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             if (wasClosed)
                 _connection.Open();
 
-            using var command = _connection.CreateCommand();
+            using IDbCommand command = _connection.CreateCommand();
             command.CommandText = sql;
             _parameters.BindTo(command);
 
@@ -1550,7 +1551,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             if (wasClosed)
                 await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            using var command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
             command.CommandText = sql;
             _parameters.BindTo(command);
 
@@ -1607,7 +1608,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     /// </summary>
     ISetClause<T> IFromClause<T>.Set(object values)
     {
-        foreach (var prop in values.GetType().GetProperties())
+
+        foreach (PropertyInfo? prop in values.GetType().GetProperties())
         {
             string columnName = GetColumnNameFromProperty(prop.Name);
             string paramName = GetUniqueParamName(prop.Name);
@@ -1622,7 +1624,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     /// </summary>
     ISetClause<T> ISetClause<T>.Set(object values)
     {
-        foreach (var prop in values.GetType().GetProperties())
+
+        foreach (PropertyInfo? prop in values.GetType().GetProperties())
         {
             string columnName = GetColumnNameFromProperty(prop.Name);
             string paramName = GetUniqueParamName(prop.Name);
@@ -1638,7 +1641,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IUpdateWhereClause<T> ISetClause<T>.Where(Expression<Func<T, bool>> predicate)
     {
         var visitor = new WhereExpressionVisitor<T>(_dialect);
-        var (sql, parameters) = visitor.Translate(predicate);
+        (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
         _parameters.AddRange(parameters);
         return this;
@@ -1709,7 +1712,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IUpdateWhereClause<T> IUpdateWhereClause<T>.And(Expression<Func<T, bool>> predicate)
     {
         var visitor = new WhereExpressionVisitor<T>(_dialect);
-        var (sql, parameters) = visitor.Translate(predicate);
+        (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
         _parameters.AddRange(parameters);
         return this;
@@ -1760,7 +1763,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IUpdateWhereClause<T> IUpdateWhereClause<T>.Or(Expression<Func<T, bool>> predicate)
     {
         var visitor = new WhereExpressionVisitor<T>(_dialect);
-        var (sql, parameters) = visitor.Translate(predicate);
+        (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
         _parameters.AddRange(parameters);
         return this;
@@ -1897,7 +1900,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         for (int i = 0; i < _setColumns.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            var setCol = _setColumns[i];
+            SetColumn setCol = _setColumns[i];
             sb.Append(setCol.ColumnName);
             sb.Append(" = ");
             sb.Append(setCol.ParameterName);
@@ -1908,7 +1911,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             sb.Append(" WHERE ");
             for (int i = 0; i < _conditions.Count; i++)
             {
-                var condition = _conditions[i];
+                WhereCondition condition = _conditions[i];
                 if (i > 0)
                 {
                     sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");

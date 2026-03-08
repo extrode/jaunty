@@ -59,7 +59,7 @@ public static class SpecialTypeMappers
         // ValueTuple - positional mapping
         if (type.IsValueType && type.FullName?.StartsWith("System.ValueTuple`") == true)
         {
-            var typeArgs = type.GetGenericArguments();
+            Type[] typeArgs = type.GetGenericArguments();
             return reader.FieldCount >= typeArgs.Length
                 ? CreateValueTupleMapper(type, reader, typeArgs)
                 : throw new InvalidOperationException(
@@ -72,8 +72,8 @@ public static class SpecialTypeMappers
 
     private static object CreateKeyValuePairMapper(Type type, IDataReader reader, Type[] typeArgs)
     {
-        var keyType = typeArgs[0];
-        var valueType = typeArgs[1];
+        Type keyType = typeArgs[0];
+        Type valueType = typeArgs[1];
 
         return new Func<IDataReader, object>(r =>
         {
@@ -114,12 +114,12 @@ public static class SpecialTypeMappers
         if (value is null)
             return GetDefault(targetType);
 
-        var valueType = value.GetType();
+        Type valueType = value.GetType();
         if (targetType.IsAssignableFrom(valueType))
             return value;
 
         // Handle nullable types
-        var underlyingType = System.Nullable.GetUnderlyingType(targetType) ?? targetType;
+        Type underlyingType = System.Nullable.GetUnderlyingType(targetType) ?? targetType;
 
         return Convert.ChangeType(value, underlyingType);
     }
@@ -170,7 +170,7 @@ public static class SpecialTypeMappers
         {
             // Dictionary<string, TValue> - convert values to TValue
             // We need to create the properly typed dictionary using reflection
-            var dictType = typeof(Dictionary<,>).MakeGenericType(typeof(string), valueType);
+            Type dictType = typeof(Dictionary<,>).MakeGenericType(typeof(string), valueType);
 
             return new Func<IDataReader, object>(r =>
             {

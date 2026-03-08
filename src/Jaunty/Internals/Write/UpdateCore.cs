@@ -12,7 +12,7 @@ public static partial class Jaunty
 {
     internal static int UpdateCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
-        var binder = WriteParameterCache<T>.UpdateBinder
+        Action<IDbCommand, T> binder = WriteParameterCache<T>.UpdateBinder
             ?? throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
 
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
@@ -26,7 +26,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.UpdateSql;
 
             if (options.Transaction is not null)
@@ -49,7 +49,7 @@ public static partial class Jaunty
 
     internal static async ValueTask<int> UpdateCoreAsync<T>(DbConnection dbConnection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
-        var binder = WriteParameterCache<T>.UpdateBinder
+        Action<IDbCommand, T> binder = WriteParameterCache<T>.UpdateBinder
             ?? throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
 
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
@@ -65,9 +65,9 @@ public static partial class Jaunty
                 await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using var command = dbConnection.CreateCommand();
+            await using DbCommand command = dbConnection.CreateCommand();
 #else
-            using var command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.UpdateSql;
 

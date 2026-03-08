@@ -3,6 +3,7 @@ using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Interfaces;
+using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
 
 using JauntyConfig = Jaunty.Configuration.JauntyConfig;
@@ -13,7 +14,7 @@ public static partial class Jaunty
 {
     internal static int DeleteByEntityCore<T>(IDbConnection connection, T entity, CommandOptions options) where T : new()
     {
-        var binder = WriteParameterCache<T>.DeleteBinder
+        Action<IDbCommand, T> binder = WriteParameterCache<T>.DeleteBinder
             ?? throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
 
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
@@ -27,7 +28,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.DeleteSql;
 
             if (options.Transaction is not null)
@@ -50,7 +51,7 @@ public static partial class Jaunty
 
     internal static async ValueTask<int> DeleteByEntityCoreAsync<T>(DbConnection dbConnection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
-        var binder = WriteParameterCache<T>.DeleteBinder
+        Action<IDbCommand, T> binder = WriteParameterCache<T>.DeleteBinder
             ?? throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
 
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
@@ -66,9 +67,9 @@ public static partial class Jaunty
                 await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using var command = dbConnection.CreateCommand();
+            await using DbCommand command = dbConnection.CreateCommand();
 #else
-            using var command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.DeleteSql;
 
@@ -110,7 +111,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.DeleteByIdSql;
 
             if (options.Transaction is not null)
@@ -146,9 +147,9 @@ public static partial class Jaunty
                 await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using var command = dbConnection.CreateCommand();
+            await using DbCommand command = dbConnection.CreateCommand();
 #else
-            using var command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.DeleteByIdSql;
 
@@ -190,7 +191,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.DeleteByIdSql;
 
             if (options.Transaction is not null)
@@ -226,9 +227,9 @@ public static partial class Jaunty
                 await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using var command = dbConnection.CreateCommand();
+            await using DbCommand command = dbConnection.CreateCommand();
 #else
-            using var command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.DeleteByIdSql;
 
@@ -259,7 +260,7 @@ public static partial class Jaunty
 
     private static void AddPrimaryKeyParameter(IDbCommand command, CachedCrudSql cached, object id)
     {
-        var primaryKey = cached.Metadata.PrimaryKeys[0];
+        ColumnMetadata primaryKey = cached.Metadata.PrimaryKeys[0];
         IDbDataParameter param = command.CreateParameter();
         param.ParameterName = "@" + primaryKey.ColumnName;
         param.Value = id ?? DBNull.Value;
@@ -268,7 +269,7 @@ public static partial class Jaunty
 
     private static void AddPrimaryKeyParameter(DbCommand command, CachedCrudSql cached, object id)
     {
-        var primaryKey = cached.Metadata.PrimaryKeys[0];
+        ColumnMetadata primaryKey = cached.Metadata.PrimaryKeys[0];
         DbParameter param = command.CreateParameter();
         param.ParameterName = "@" + primaryKey.ColumnName;
         param.Value = id ?? DBNull.Value;

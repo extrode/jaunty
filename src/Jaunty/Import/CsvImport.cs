@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 
 using Jaunty.Configuration;
@@ -187,8 +188,8 @@ public static class CsvImportExtensions
         {
             if (wasClosed) connection.Open();
 
-            using var transaction = connection.BeginTransaction();
-            using var command = connection.CreateCommand();
+            using IDbTransaction transaction = connection.BeginTransaction();
+            using IDbCommand command = connection.CreateCommand();
             command.Transaction = transaction;
             command.CommandText = insertSql;
 
@@ -196,7 +197,7 @@ public static class CsvImportExtensions
             var parameters = new IDbDataParameter[headers.Length];
             for (int i = 0; i < headers.Length; i++)
             {
-                var param = command.CreateParameter();
+                IDbDataParameter param = command.CreateParameter();
                 param.ParameterName = $"@p{i}";
                 command.Parameters.Add(param);
                 parameters[i] = param;
@@ -255,7 +256,8 @@ public static class CsvImportExtensions
             string copyCommand = $"COPY {tableName} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
 
             // Use reflection to call BeginTextImport on NpgsqlConnection
-            var beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
+
+            MethodInfo? beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
             if (beginTextImport != null)
             {
                 using var writer = (IDisposable)beginTextImport.Invoke(connection, new object[] { copyCommand })!;
@@ -272,7 +274,7 @@ public static class CsvImportExtensions
             }
 
             // Fallback: Use COPY FROM with file path (requires server access to file)
-            using var cmd = connection.CreateCommand();
+            using IDbCommand cmd = connection.CreateCommand();
             cmd.CommandText = $"COPY {tableName} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
             return cmd.ExecuteNonQuery();
         }
@@ -291,7 +293,7 @@ public static class CsvImportExtensions
 
             string copyCommand = $"COPY {tableName} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
 
-            var beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
+            MethodInfo? beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
             if (beginTextImport != null)
             {
                 using var writer = (IDisposable)beginTextImport.Invoke(connection, new object[] { copyCommand })!;
@@ -307,7 +309,7 @@ public static class CsvImportExtensions
                 return CountCsvRows(filePath, options.HasHeader);
             }
 
-            using var cmd = connection.CreateCommand();
+            using DbCommand cmd = connection.CreateCommand();
             cmd.CommandText = $"COPY {tableName} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
             return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -335,7 +337,7 @@ public static class CsvImportExtensions
         {
             if (wasClosed) connection.Open();
 
-            using var cmd = connection.CreateCommand();
+            using IDbCommand cmd = connection.CreateCommand();
             var sb = new StringBuilder();
             sb.Append($"LOAD DATA LOCAL INFILE '{filePath.Replace("\\", "\\\\").Replace("'", "\\'")}' ");
             sb.Append($"INTO TABLE {tableName} ");
@@ -361,7 +363,7 @@ public static class CsvImportExtensions
         {
             if (wasClosed) await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            using var cmd = connection.CreateCommand();
+            using DbCommand cmd = connection.CreateCommand();
             var sb = new StringBuilder();
             sb.Append($"LOAD DATA LOCAL INFILE '{filePath.Replace("\\", "\\\\").Replace("'", "\\'")}' ");
             sb.Append($"INTO TABLE {tableName} ");
@@ -398,7 +400,7 @@ public static class CsvImportExtensions
         {
             if (wasClosed) connection.Open();
 
-            using var cmd = connection.CreateCommand();
+            using IDbCommand cmd = connection.CreateCommand();
             var sb = new StringBuilder();
             sb.Append($"BULK INSERT {tableName} FROM '{filePath.Replace("'", "''")}' ");
             sb.Append("WITH (");
@@ -425,7 +427,7 @@ public static class CsvImportExtensions
         {
             if (wasClosed) await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            using var cmd = connection.CreateCommand();
+            using DbCommand cmd = connection.CreateCommand();
             var sb = new StringBuilder();
             sb.Append($"BULK INSERT {tableName} FROM '{filePath.Replace("'", "''")}' ");
             sb.Append("WITH (");

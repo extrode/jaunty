@@ -22,7 +22,7 @@ internal static class ScalarConverter<T>
         // Enum path
         if (IsEnum)
         {
-            var enumUnderlyingType = Enum.GetUnderlyingType(TargetType);
+            Type enumUnderlyingType = Enum.GetUnderlyingType(TargetType);
             var numeric = System.Convert.ChangeType(value, enumUnderlyingType);
             return (T)Enum.ToObject(TargetType, numeric!);
         }

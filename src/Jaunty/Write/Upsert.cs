@@ -176,8 +176,8 @@ public static partial class Jaunty
 
     private static void BindUpsertParameters<T>(IDbCommand command, T entity, EntityMetadata metadata) where T : new()
     {
-        var insertColumns = metadata.InsertColumns;
-        var primaryKeys = metadata.PrimaryKeys;
+        IReadOnlyList<ColumnMetadata> insertColumns = metadata.InsertColumns;
+        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
 
         var addedParams = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 

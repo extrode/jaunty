@@ -85,8 +85,8 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
 
     private string GetColumnName<T>(string propertyName, string? alias) where T : new()
     {
-        var metadata = FluentMetadataCache.GetMetadata<T>();
-        var columns = metadata.Columns;
+        EntityMetadata metadata = FluentMetadataCache.GetMetadata<T>();
+        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
 
         string columnName = propertyName;
         for (int i = 0; i < columns.Count; i++)

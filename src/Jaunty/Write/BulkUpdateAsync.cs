@@ -228,7 +228,7 @@ public static partial class Jaunty
         if (entities is null) throw new ArgumentNullException(nameof(entities));
 #endif
 
-        var entityList = entities as IList<T> ?? entities.ToList();
+        IList<T> entityList = entities as IList<T> ?? entities.ToList();
         if (entityList.Count == 0)
             return 0;
 
@@ -271,9 +271,9 @@ public static partial class Jaunty
             if (ignoreConstraints)
             {
 #if NET8_0_OR_GREATER
-                await using var fkOffCmd = connection.CreateCommand();
+                await using DbCommand fkOffCmd = connection.CreateCommand();
 #else
-                using var fkOffCmd = connection.CreateCommand();
+                using DbCommand fkOffCmd = connection.CreateCommand();
 #endif
                 fkOffCmd.Transaction = transaction;
                 fkOffCmd.CommandText = dialect.GetDisableForeignKeyChecksSql()!;
@@ -285,9 +285,9 @@ public static partial class Jaunty
             try
             {
 #if NET8_0_OR_GREATER
-                await using var command = connection.CreateCommand();
+                await using DbCommand command = connection.CreateCommand();
 #else
-                using var command = connection.CreateCommand();
+                using DbCommand command = connection.CreateCommand();
 #endif
                 command.Transaction = transaction;
                 command.CommandText = cached.UpdateSql;
@@ -297,15 +297,15 @@ public static partial class Jaunty
 
                 PrepareUpdateParameters(command, cached.Metadata);
 
-                var valueSetter = WriteParameterCache<T>.UpdateValueSetter;
+                Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.UpdateValueSetter;
                 if (valueSetter == null)
                 {
                     throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
                 }
 
-                var pCollection = command.Parameters;
+                DbParameterCollection pCollection = command.Parameters;
 
-                foreach (var entity in entityList)
+                foreach (T? entity in entityList)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     valueSetter(pCollection, entity);
@@ -315,9 +315,9 @@ public static partial class Jaunty
                 if (ignoreConstraints)
                 {
 #if NET8_0_OR_GREATER
-                    await using var fkOnCmd = connection.CreateCommand();
+                    await using DbCommand fkOnCmd = connection.CreateCommand();
 #else
-                    using var fkOnCmd = connection.CreateCommand();
+                    using DbCommand fkOnCmd = connection.CreateCommand();
 #endif
                     fkOnCmd.Transaction = transaction;
                     fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
@@ -342,9 +342,9 @@ public static partial class Jaunty
                     try
                     {
 #if NET8_0_OR_GREATER
-                        await using var fkOnCmd = connection.CreateCommand();
+                        await using DbCommand fkOnCmd = connection.CreateCommand();
 #else
-                        using var fkOnCmd = connection.CreateCommand();
+                        using DbCommand fkOnCmd = connection.CreateCommand();
 #endif
                         fkOnCmd.Transaction = transaction;
                         fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;

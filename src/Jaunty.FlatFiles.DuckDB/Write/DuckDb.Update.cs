@@ -4,6 +4,7 @@ using DuckDB.NET.Data;
 
 using Jaunty.Core;
 using Jaunty.FlatFiles.DuckDB.Internals;
+using Jaunty.FlatFiles.Interfaces;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -15,13 +16,13 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(predicate);
         ArgumentNullException.ThrowIfNull(column);
 
-        var source = GetSourceOrThrow<T>();
+        IFileSource source = GetSourceOrThrow<T>();
         TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
 
         var columnName = ExpressionTranslator.ResolveColumnName(column);
 
         var setParam = new DuckDBParameter { Value = value ?? DBNull.Value };
-        var (whereSql, whereParams) = ExpressionTranslator.Translate<T>(predicate, paramOffset: 1);
+        (string? whereSql, List<DuckDBParameter>? whereParams) = ExpressionTranslator.Translate<T>(predicate, paramOffset: 1);
 
         var allParams = new List<DuckDBParameter>(whereParams.Count + 1) { setParam };
         allParams.AddRange(whereParams);
