@@ -51,7 +51,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="QueryPartial{T}(IDbConnection, string)"/>
     /// <seealso cref="QueryFirst{T}(IDbConnection, string)"/>
-    /// <seealso cref="QueryAsync{T}(IDbConnection, string)"/>
+    /// <seealso cref="QueryAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static List<T> Query<T>(this IDbConnection connection, string sql) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -107,6 +107,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="Query{T}(IDbConnection, string)"/>
     /// <seealso cref="QueryPartial{T}(IDbConnection, string, object)"/>
+    /// <seealso cref="QueryAsync{T}(IDbConnection, string, object, CancellationToken)"/>
     public static List<T> Query<T>(this IDbConnection connection, string sql, object parameters) where T : new()
     {
 #if NET8_0_OR_GREATER
