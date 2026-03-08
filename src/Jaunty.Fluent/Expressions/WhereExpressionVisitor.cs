@@ -1,9 +1,7 @@
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 
 using Jaunty.Dialects;
-using Jaunty.Fluent;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
 
@@ -11,7 +9,7 @@ namespace Jaunty.Fluent.Expressions;
 
 /// <summary>
 /// Converts Expression{Func{T, bool}} predicates to SQL WHERE clauses.
-/// Supports: ==, !=, <, >, <=, >=, &amp;&amp;, ||, Contains, StartsWith, EndsWith, null checks
+/// Supports: ==, !=, &lt;, >, &lt;=, >=, &amp;&amp;, ||, Contains, StartsWith, EndsWith, null checks
 /// </summary>
 internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : new()
 {
