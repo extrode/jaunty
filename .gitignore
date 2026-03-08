@@ -392,3 +392,4 @@ FodyWeavers.xsd
 
 # ignore all dlls
 *.dll
+/benchmarks/results
