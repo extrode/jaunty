@@ -31,6 +31,3 @@ public class QueryLargeResultSetTests : IClassFixture<DialectFixture>
         public long EmployeeId { get; set; }
     }
 }
-
-
-

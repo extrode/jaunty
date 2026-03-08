@@ -111,7 +111,7 @@ public class QueryPartialStreamTests : IClassFixture<DialectFixture>
 
         var list = summaries.ToList();
         Assert.Equal(5, list.Count);
-        Assert.All(list, s => 
+        Assert.All(list, s =>
         {
             Assert.True(s.ProductId > 0);
             Assert.Equal(string.Empty, s.ProductName); // Default value
@@ -133,5 +133,3 @@ public class QueryPartialStreamTests : IClassFixture<DialectFixture>
         Assert.Empty(list);
     }
 }
-
-

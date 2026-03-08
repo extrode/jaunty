@@ -1,4 +1,5 @@
 using System.Text;
+
 using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 using Jaunty.Fluent;
 

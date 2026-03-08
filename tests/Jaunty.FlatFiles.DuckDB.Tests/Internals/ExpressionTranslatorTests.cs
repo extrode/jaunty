@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
+
 using DuckDB.NET.Data;
+
 using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 

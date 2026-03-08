@@ -106,6 +106,3 @@ public class QueryScalarAsyncTests : IClassFixture<DialectFixture>
         Assert.True(count > 0);
     }
 }
-
-
-

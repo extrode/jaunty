@@ -191,5 +191,3 @@ public class NonNullableEntity
 {
     public int RequiredValue { get; set; }
 }
-
-

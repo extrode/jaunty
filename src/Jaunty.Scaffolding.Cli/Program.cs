@@ -1,4 +1,5 @@
 using System.CommandLine;
+
 using Jaunty.Scaffolding.Cli.Commands;
 
 var rootCommand = new RootCommand("Jaunty Scaffolding CLI - Generate C# entity classes from database schema");

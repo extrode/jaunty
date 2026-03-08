@@ -14,7 +14,7 @@ public class ConcurrentAccessTests : IDisposable
     public ConcurrentAccessTests()
     {
         _csvPath = Path.Combine(AppContext.BaseDirectory, "data", "csv", "sales.csv");
-        
+
         var options = new FlatFileOptions();
         options.AddCsv<SalesRecord>(_csvPath);
         _db = new DuckDb(options);

@@ -136,6 +136,3 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
         }
     }
 }
-
-
-

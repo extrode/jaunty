@@ -527,6 +527,3 @@ public class ObsoleteMultiEntityTests
     #endregion
 }
 #pragma warning restore CS0618
-
-
-

@@ -84,6 +84,3 @@ public class PositionalParameterBindingTests : IClassFixture<DialectFixture>
         Assert.True(count >= 0);
     }
 }
-
-
-

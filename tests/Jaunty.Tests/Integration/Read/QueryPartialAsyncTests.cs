@@ -99,5 +99,3 @@ public class QueryPartialAsyncTests : IClassFixture<DialectFixture>
         Assert.All(summaries, s => Assert.False(string.IsNullOrEmpty(s.ProductName)));
     }
 }
-
-

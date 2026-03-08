@@ -62,7 +62,7 @@ public static class MetadataCache<T>
 
         var signature = new ReaderSignature(reader, mode);
         if (SettersCache.TryGetValue(signature, out var cached)) return cached;
-        
+
         var setters = BuildSetters(reader, mode);
         SettersCache.TryAdd(signature, setters);
         return setters;
@@ -222,7 +222,7 @@ public readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IData
 public readonly struct PropertySetter<T>(PropertyContext<T> context, int ordinal)
 {
     public int Ordinal { get; } = ordinal;
-    
+
     public void Set(T target, IDataRecord record)
     {
         if (!record.IsDBNull(ordinal))

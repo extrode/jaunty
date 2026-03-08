@@ -30,5 +30,3 @@ public class QueryCaseSensitivityTests : IClassFixture<DialectFixture>
         Assert.False(string.IsNullOrEmpty(categories[0].CategoryName));
     }
 }
-
-

@@ -9,7 +9,7 @@ public class Database : IDisposable
     private bool _disposed;
 
     public IDbConnection Connection => _connection;
-    
+
     public bool IsSQLite => true; // Always true for our test database
 
     public Database()

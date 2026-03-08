@@ -24,7 +24,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     #region BulkInsertAsync Tests
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkInsertAsync_InsertsMultipleEntities(DialectInfo dialect)
@@ -45,7 +49,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkInsertAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
@@ -61,7 +69,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkInsertAsync_SingleEntity_Works(DialectInfo dialect)
@@ -80,7 +92,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkInsertAsync_LargeCollection_Works(DialectInfo dialect)
@@ -98,7 +114,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkInsertAsync_CancellationToken_Respects(DialectInfo dialect)
@@ -118,7 +138,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkInsertIgnoreConstraintsAsync_InsertsMultipleEntities(DialectInfo dialect)
@@ -144,7 +168,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkInsertIgnoreConstraintsAsync_WithOptions_InsertsEntities(DialectInfo dialect)
@@ -176,7 +204,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     #region BulkUpdateAsync Tests
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkUpdateAsync_UpdatesMultipleEntities(DialectInfo dialect)
@@ -213,7 +245,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkUpdateAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
@@ -228,7 +264,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkUpdateAsync_NonExistentEntity_ReturnsZeroForThatRow(DialectInfo dialect)
@@ -254,7 +294,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkUpdateIgnoreConstraintsAsync_UpdatesMultipleEntities(DialectInfo dialect)
@@ -288,7 +332,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkUpdateIgnoreConstraintsAsync_WithOptions_UpdatesEntities(DialectInfo dialect)
@@ -330,7 +378,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     #region BulkDeleteAsync Tests
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkDeleteAsync_DeletesMultipleEntities(DialectInfo dialect)
@@ -357,7 +409,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkDeleteAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
@@ -372,7 +428,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkDeleteAsync_PartialDelete_Works(DialectInfo dialect)
@@ -399,7 +459,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkDeleteAsync_NonExistentEntity_ReturnsZeroForThatRow(DialectInfo dialect)
@@ -417,7 +481,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkDeleteIgnoreConstraintsAsync_DeletesMultipleEntities(DialectInfo dialect)
@@ -447,7 +515,11 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
-    [SqlServer][Postgres][MariaDB][MicrosoftSqlite][SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     [MicrosoftSqlite]
     [SystemSqlite]
     public async Task BulkDeleteIgnoreConstraintsAsync_WithOptions_DeletesEntities(DialectInfo dialect)
@@ -479,6 +551,3 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
 
     #endregion
 }
-
-
-

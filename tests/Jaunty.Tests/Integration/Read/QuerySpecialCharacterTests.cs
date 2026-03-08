@@ -31,5 +31,3 @@ public class QuerySpecialCharacterTests : IClassFixture<DialectFixture>
         Assert.NotNull(customers);
     }
 }
-
-

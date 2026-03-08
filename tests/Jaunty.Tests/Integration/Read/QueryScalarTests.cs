@@ -121,5 +121,3 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
         Assert.True(result == null || result is string);
     }
 }
-
-

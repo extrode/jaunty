@@ -59,6 +59,3 @@ public class QueryTransactionTests : IClassFixture<DialectFixture>
         transaction.Rollback();
     }
 }
-
-
-

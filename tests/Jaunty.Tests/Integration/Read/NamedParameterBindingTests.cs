@@ -84,6 +84,3 @@ public class NamedParameterBindingTests : IClassFixture<DialectFixture>
         Assert.True(count >= 0);
     }
 }
-
-
-

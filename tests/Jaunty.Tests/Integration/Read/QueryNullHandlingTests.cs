@@ -24,7 +24,7 @@ public class QueryNullHandlingTests : IClassFixture<DialectFixture>
     public void QueryPartial_WithNullInNonNullableColumn_HandlesGracefully(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        
+
         var sql = dialect.Provider == DialectProvider.SqlServer
             ? "SELECT * FROM Products WHERE UnitPrice IS NULL"
             : "SELECT * FROM products WHERE unit_price IS NULL";
@@ -43,7 +43,7 @@ public class QueryNullHandlingTests : IClassFixture<DialectFixture>
     public void QueryFirstOrDefault_NoResults_ReturnsNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        
+
         var sql = dialect.Provider == DialectProvider.SqlServer
             ? "SELECT CategoryId, CategoryName, Description FROM Categories WHERE CategoryId = 99999"
             : "SELECT category_id, category_name, description FROM categories WHERE category_id = 99999";
@@ -61,7 +61,7 @@ public class QueryNullHandlingTests : IClassFixture<DialectFixture>
     public void QuerySingle_NoResults_ThrowsInvalidOperationException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        
+
         var sql = dialect.Provider == DialectProvider.SqlServer
             ? "SELECT CategoryId, CategoryName, Description FROM Categories WHERE CategoryId = 99999"
             : "SELECT category_id, category_name, description FROM categories WHERE category_id = 99999";
@@ -81,7 +81,7 @@ public class QueryNullHandlingTests : IClassFixture<DialectFixture>
     public void QueryPartialSingle_MultipleResults_ThrowsInvalidOperationException(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        
+
         var sql = dialect.Provider == DialectProvider.SqlServer
             ? "SELECT CategoryId, CategoryName, Description FROM Categories"
             : "SELECT category_id, category_name, description FROM categories";

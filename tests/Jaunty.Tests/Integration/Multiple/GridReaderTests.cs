@@ -693,4 +693,3 @@ public class GridReaderTests : IClassFixture<DialectFixture>
             ? "SELECT COUNT(*) FROM Categories"
             : "SELECT COUNT(*) FROM categories";
 }
-

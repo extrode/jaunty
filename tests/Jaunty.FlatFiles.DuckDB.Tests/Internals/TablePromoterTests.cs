@@ -1,4 +1,5 @@
 using DuckDB.NET.Data;
+
 using Jaunty.FlatFiles.DuckDB.Dialects;
 using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.FlatFiles.Interfaces;

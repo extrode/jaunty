@@ -11,7 +11,7 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-#region Sync Read Tests
+    #region Sync Read Tests
 
     [Theory]
     [SqlServer]
@@ -893,6 +893,3 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
         SELECT order_id AS OrderId, customer_id AS CustomerId FROM orders ORDER BY order_id LIMIT 3;
         SELECT customer_id AS CustomerId, company_name AS CompanyName FROM customers ORDER BY customer_id LIMIT 2;";
 }
-
-
-

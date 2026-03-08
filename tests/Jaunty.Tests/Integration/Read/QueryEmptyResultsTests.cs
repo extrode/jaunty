@@ -67,5 +67,3 @@ public class QueryEmptyResultsTests : IClassFixture<DialectFixture>
         public string CustomerTypeId { get; set; } = string.Empty;
     }
 }
-
-

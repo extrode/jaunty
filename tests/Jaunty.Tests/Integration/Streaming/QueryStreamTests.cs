@@ -114,5 +114,3 @@ public class QueryStreamTests : IClassFixture<DialectFixture>
         Assert.Empty(list);
     }
 }
-
-

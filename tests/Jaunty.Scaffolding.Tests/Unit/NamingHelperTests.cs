@@ -1,4 +1,5 @@
 using Jaunty.Scaffolding.CodeGeneration;
+
 using Xunit;
 
 namespace Jaunty.Scaffolding.Tests.Unit;

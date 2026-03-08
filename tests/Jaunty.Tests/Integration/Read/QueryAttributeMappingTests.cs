@@ -51,4 +51,3 @@ public class QueryAttributeMappingTests : IClassFixture<DialectFixture>
     private static string ProductIdColumn(DialectInfo dialect) =>
         dialect.Provider == DialectProvider.SqlServer ? "ProductId" : "product_id";
 }
-

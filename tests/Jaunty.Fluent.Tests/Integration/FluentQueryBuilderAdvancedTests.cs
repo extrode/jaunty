@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+
 using Jaunty.Fluent;
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;

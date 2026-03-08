@@ -43,5 +43,3 @@ public class QueryParameterBindingErrorTests : IClassFixture<DialectFixture>
         Assert.Contains("Unused parameter", ex.Message);
     }
 }
-
-

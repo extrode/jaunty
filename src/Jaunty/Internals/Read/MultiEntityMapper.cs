@@ -24,7 +24,7 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     internal static MultiEntityMapper<T1, T2> Build(IDataReader reader)
     {
         var key = (typeof(T1), typeof(T2));
-        
+
         if (_cache.TryGetValue(key, out var cached))
             return cached;
 
@@ -37,10 +37,10 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     {
         if (JauntyConfig.ReflectionMultiMapperResolver?.Invoke(typeof(T1), typeof(T2)) is Action<T1, T2, IDataRecord> combined)
         {
-             return new MultiEntityMapper<T1, T2>(
-                 (t1, r) => combined(t1, default!, r),
-                 (t2, r) => combined(default!, t2, r)
-             );
+            return new MultiEntityMapper<T1, T2>(
+                (t1, r) => combined(t1, default!, r),
+                (t2, r) => combined(default!, t2, r)
+            );
         }
 
         throw new InvalidOperationException(
