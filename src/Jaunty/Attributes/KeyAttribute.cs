@@ -9,8 +9,8 @@ namespace Jaunty.Attributes;
 /// Jaunty uses the primary key for update, delete, and upsert operations.
 /// </para>
 /// <para>
-/// This attribute is Jaunty's native primary key attribute. It also supports the standard 
-/// <see cref="System.ComponentModel.DataAnnotations.KeyAttribute"/> for compatibility.
+/// This attribute is Jaunty's native primary key attribute. It also supports the standard
+/// <c>KeyAttribute</c> from System.ComponentModel.DataAnnotations for compatibility.
 /// </para>
 /// <para>
 /// <strong>Note:</strong> Currently, Jaunty only supports single-column primary keys. 

@@ -25,7 +25,7 @@ public static partial class Jaunty
     /// <strong>Identity Column Detection:</strong>
     /// </para>
     /// <list type="bullet">
-    /// <item><description>Properties marked with <see cref="Attributes.DatabaseGeneratedAttribute(DatabaseGeneratedOptions.Identity)"/> are excluded from INSERT</description></item>
+    /// <item><description>Properties marked with <see cref="Attributes.DatabaseGeneratedAttribute"/> set to <c>Identity</c> are excluded from INSERT</description></item>
     /// <item><description>Properties named <c>Id</c> or <c>{TypeName}Id</c> are treated as potential identity columns</description></item>
     /// <item><description>For entities implementing <c>IEntity&lt;T&gt;</c>, the <c>Id</c> property is automatically populated</description></item>
     /// </list>
