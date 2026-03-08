@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-
 #if NET8_0_OR_GREATER
 using System.Text.Json;
 #endif
@@ -70,7 +67,7 @@ public static class TestConfiguration
     {
         // Walk up from the output directory to find appsettings.json
         var dir = AppDomain.CurrentDomain.BaseDirectory;
-        string path = null;
+        string? path = null;
 
         for (int i = 0; i < 6; i++)
         {
