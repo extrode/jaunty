@@ -66,7 +66,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         }
 
         // Handle comparison operators
-        var (columnName, value, isLeftColumn) = ExtractColumnAndValue(node);
+        (string? columnName, object? value, bool isLeftColumn) = ExtractColumnAndValue(node);
 
         if (columnName is null)
         {
@@ -277,7 +277,8 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     {
         var arguments = new List<string>();
 
-        foreach (var arg in node.Arguments)
+
+        foreach (Expression? arg in node.Arguments)
         {
             arguments.Add(TranslateArgumentToSql(arg));
         }
@@ -384,7 +385,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             if (methodCall.Method.Name == "When")
             {
                 // When(condition, result) - arguments[0] is condition, arguments[1] is result
-                var condition = methodCall.Arguments[0];
+                Expression condition = methodCall.Arguments[0];
                 if (condition is LambdaExpression lambda)
                 {
                     condition = lambda.Body;
@@ -412,7 +413,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         // Build the CASE SQL
         _sql.Append("CASE");
 
-        foreach (var (condition, result) in whenClauses)
+        foreach ((Expression? condition, Expression? result) in whenClauses)
         {
             _sql.Append(" WHEN ");
             // Translate the condition expression to SQL
@@ -440,7 +441,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         if (condition is BinaryExpression binary)
         {
             // Handle comparison operators
-            var (columnName, value, isLeftColumn) = ExtractColumnAndValue(binary);
+            (string? columnName, object? value, bool isLeftColumn) = ExtractColumnAndValue(binary);
 
             if (columnName != null)
             {
@@ -650,8 +651,9 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         var propertyName = member.Member.Name;
 
         // Look up the actual column name from metadata
-        var metadata = FluentMetadataCache.GetMetadata<T>();
-        var column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
+        EntityMetadata metadata = FluentMetadataCache.GetMetadata<T>();
+
+        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
 
         return column?.ColumnName ?? propertyName;
     }
@@ -663,8 +665,8 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             return constant.Value;
 
         // Compile and execute
-        var lambda = Expression.Lambda(expression);
-        var compiled = lambda.Compile();
+        LambdaExpression lambda = Expression.Lambda(expression);
+        Delegate compiled = lambda.Compile();
         return compiled.DynamicInvoke();
     }
 

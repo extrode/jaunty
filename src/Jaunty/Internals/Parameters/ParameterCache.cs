@@ -50,12 +50,12 @@ internal static class ParameterCache
 #endif
         Type type)
     {
-        var props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        PropertyInfo[] props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
         var result = new ParameterMetadata[props.Length];
 
         for (int i = 0; i < props.Length; i++)
         {
-            var p = props[i];
+            PropertyInfo p = props[i];
             result[i] = new ParameterMetadata(p.Name, CreateGetter(p));
         }
 
@@ -72,10 +72,10 @@ internal static class ParameterCache
     /// </remarks>
     private static Func<object, object?> CreateGetter(PropertyInfo prop)
     {
-        var obj = Expression.Parameter(typeof(object), "o");
-        var cast = Expression.Convert(obj, prop.DeclaringType!);
-        var access = Expression.Property(cast, prop);
-        var box = Expression.Convert(access, typeof(object));
+        ParameterExpression obj = Expression.Parameter(typeof(object), "o");
+        UnaryExpression cast = Expression.Convert(obj, prop.DeclaringType!);
+        MemberExpression access = Expression.Property(cast, prop);
+        UnaryExpression box = Expression.Convert(access, typeof(object));
 
         return Expression.Lambda<Func<object, object?>>(box, obj).Compile();
     }

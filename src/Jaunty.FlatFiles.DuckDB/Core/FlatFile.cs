@@ -95,7 +95,7 @@ public static class FlatFile
         }
 
         var options = new FlatFileOptions();
-        var source = CreateSourceFromExtension(extension, tableName, resolvedPath, typeof(object));
+        IFileSource source = CreateSourceFromExtension(extension, tableName, resolvedPath, typeof(object));
         options.Sources.Add(source);
 
         return new DuckDb(options);
@@ -119,7 +119,7 @@ public static class FlatFile
 
     internal static IFileSource CreateSourceFromExtension(string extension, string tableName, string fullPath, Type entityType)
     {
-        if (_extensionRegistry.TryGetValue(extension, out var factory))
+        if (_extensionRegistry.TryGetValue(extension, out Func<string, string, Type, IFileSource>? factory))
             return factory(tableName, fullPath, entityType);
 
         var supported = string.Join(", ", _extensionRegistry.Keys.OrderBy(k => k));

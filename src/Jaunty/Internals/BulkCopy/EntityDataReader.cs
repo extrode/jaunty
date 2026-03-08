@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Data;
 using System.Linq.Expressions;
+using System.Reflection;
 
 using Jaunty.Internals.Entity;
 
@@ -228,10 +229,10 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
 
             for (int i = 0; i < columns.Length; i++)
             {
-                var prop = columns[i].Property;
-                var param = Expression.Parameter(typeof(TEntity), "e");
-                var access = Expression.Property(param, prop);
-                var box = Expression.Convert(access, typeof(object));
+                PropertyInfo prop = columns[i].Property;
+                ParameterExpression param = Expression.Parameter(typeof(TEntity), "e");
+                MemberExpression access = Expression.Property(param, prop);
+                UnaryExpression box = Expression.Convert(access, typeof(object));
                 getters[i] = Expression.Lambda<Func<TEntity, object?>>(box, param).Compile();
             }
 

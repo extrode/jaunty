@@ -17,7 +17,7 @@ internal static class TargetDdlGenerator
     /// </summary>
     public static string GenerateCreateTableSql(Type entityType, string tableName, IImportDialect dialect)
     {
-        var columns = GetColumnDefinitions(entityType);
+        List<(string Name, Type ClrType, bool IsPrimaryKey, bool IsNullable)> columns = GetColumnDefinitions(entityType);
         return dialect.GenerateCreateTableSql(tableName, columns);
     }
 
@@ -26,11 +26,11 @@ internal static class TargetDdlGenerator
     /// </summary>
     public static string? GetKeyColumnName(Type entityType)
     {
-        foreach (var prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (PropertyInfo prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             if (prop.GetCustomAttribute<KeyAttribute>() is not null)
             {
-                var colAttr = prop.GetCustomAttribute<ColumnAttribute>();
+                ColumnAttribute? colAttr = prop.GetCustomAttribute<ColumnAttribute>();
                 return colAttr?.Name ?? prop.Name;
             }
         }
@@ -41,15 +41,15 @@ internal static class TargetDdlGenerator
     {
         var result = new List<(string, Type, bool, bool)>();
 
-        foreach (var prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (PropertyInfo prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             if (!prop.CanRead || !prop.CanWrite) continue;
 
-            var colAttr = prop.GetCustomAttribute<ColumnAttribute>();
+            ColumnAttribute? colAttr = prop.GetCustomAttribute<ColumnAttribute>();
             var columnName = colAttr?.Name ?? prop.Name;
             var isPrimaryKey = prop.GetCustomAttribute<KeyAttribute>() is not null;
 
-            var underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+            Type underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
             var isNullable = Nullable.GetUnderlyingType(prop.PropertyType) is not null
                 || (!prop.PropertyType.IsValueType && prop.PropertyType != typeof(string));
 
@@ -67,7 +67,7 @@ internal static class TargetDdlGenerator
     private static bool IsNullableReferenceType(PropertyInfo prop)
     {
         var context = new NullabilityInfoContext();
-        var nullabilityInfo = context.Create(prop);
+        NullabilityInfo nullabilityInfo = context.Create(prop);
         return nullabilityInfo.WriteState == NullabilityState.Nullable;
     }
 }

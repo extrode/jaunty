@@ -30,13 +30,13 @@ internal sealed class ListTablesCommand : Command
         this.SetHandler(async (context) =>
         {
             var connection = context.ParseResult.GetValueForOption(connectionOption)!;
-            var provider = context.ParseResult.GetValueForOption(providerOption);
+            DatabaseProvider provider = context.ParseResult.GetValueForOption(providerOption);
             var schemas = context.ParseResult.GetValueForOption(schemasOption) ?? [];
 
             try
             {
                 var scaffolder = new Scaffolder();
-                var tables = await scaffolder.ListTablesAsync(
+                IReadOnlyList<(string Schema, string Table)> tables = await scaffolder.ListTablesAsync(
                     connection,
                     provider,
                     context.GetCancellationToken());
@@ -53,12 +53,12 @@ internal sealed class ListTablesCommand : Command
                 Console.WriteLine();
 
                 // Group by schema
-                var grouped = tables.GroupBy(t => t.Schema);
-                foreach (var group in grouped.OrderBy(g => g.Key))
+                IEnumerable<IGrouping<string, (string Schema, string Table)>> grouped = tables.GroupBy(t => t.Schema);
+                foreach (IGrouping<string, (string Schema, string Table)>? group in grouped.OrderBy(g => g.Key))
                 {
                     var schemaName = string.IsNullOrEmpty(group.Key) ? "(no schema)" : group.Key;
                     Console.WriteLine($"  {schemaName}:");
-                    foreach (var table in group.OrderBy(t => t.Table))
+                    foreach ((string Schema, string Table) table in group.OrderBy(t => t.Table))
                     {
                         Console.WriteLine($"    - {table.Table}");
                     }

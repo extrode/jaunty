@@ -20,7 +20,7 @@ internal static class TableNameResolver
     /// </summary>
     public static string Resolve(Type entityType)
     {
-        var jauntyAttr = entityType.GetCustomAttribute<TableAttribute>();
+        TableAttribute? jauntyAttr = entityType.GetCustomAttribute<TableAttribute>();
         if (jauntyAttr is not null)
             return jauntyAttr.Name;
 
@@ -29,10 +29,11 @@ internal static class TableNameResolver
         var attrs = entityType.GetCustomAttributes(inherit: false);
         foreach (var attr in attrs)
         {
-            var attrType = attr.GetType();
+            Type attrType = attr.GetType();
             if (attrType.FullName == "System.ComponentModel.DataAnnotations.Schema.TableAttribute")
             {
-                var nameProp = attrType.GetProperty("Name");
+
+                PropertyInfo? nameProp = attrType.GetProperty("Name");
                 if (nameProp?.GetValue(attr) is string name)
                     return name;
             }

@@ -38,7 +38,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
 
-        var sqlConnection = connection as DbConnection
+        DbConnection sqlConnection = connection as DbConnection
             ?? throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
 
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)

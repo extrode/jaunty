@@ -26,7 +26,7 @@ public static class MetadataBuilder
 
     public static EntityMetadata Build<T>()
     {
-        var type = typeof(T);
+        Type type = typeof(T);
 
         if (type.IsAbstract)
             throw new InvalidOperationException($"Type '{type.Name}' cannot be abstract. Only concrete types can be mapped.");
@@ -35,7 +35,7 @@ public static class MetadataBuilder
         string tableName = JauntyConfig.TableNameResolver?.Invoke(type) ?? type.Name;
 
         // 1. Table Attribute resolution (Both namespaces)
-        var tableAttr = type.GetCustomAttribute<TableAttribute>();
+        TableAttribute? tableAttr = type.GetCustomAttribute<TableAttribute>();
         if (tableAttr is not null)
         {
             tableName = tableAttr.Name;
@@ -44,7 +44,7 @@ public static class MetadataBuilder
         else
         {
             // Use string-based detection for System.ComponentModel.DataAnnotations.Schema.TableAttribute
-            var dataTableAttr = GetAttributeData(type, TableAttributeTypeName);
+            CustomAttributeData? dataTableAttr = GetAttributeData(type, TableAttributeTypeName);
             if (dataTableAttr is not null)
             {
                 object? nameArg = GetConstructorArgument(dataTableAttr, 0) ?? GetNamedArgument(dataTableAttr, "Name");
@@ -75,14 +75,14 @@ public static class MetadataBuilder
 
             // 3. Column name resolution
             string colName = JauntyConfig.ColumnNameResolver?.Invoke(property.Name) ?? property.Name;
-            var colAttr = property.GetCustomAttribute<ColumnAttribute>();
+            ColumnAttribute? colAttr = property.GetCustomAttribute<ColumnAttribute>();
 
             if (colAttr is not null)
                 colName = colAttr.Name;
             else
             {
                 // Use string-based detection for ColumnAttribute
-                var dataColAttr = GetAttributeData(property, ColumnAttributeTypeName);
+                CustomAttributeData? dataColAttr = GetAttributeData(property, ColumnAttributeTypeName);
                 if (dataColAttr is not null)
                 {
                     var nameArg = GetConstructorArgument(dataColAttr, 0) ?? GetNamedArgument(dataColAttr, "Name");
@@ -99,14 +99,14 @@ public static class MetadataBuilder
 
             // 5. DatabaseGenerated resolution
             DatabaseGeneratedOption? genOption = null;
-            var genAttr = property.GetCustomAttribute<DatabaseGeneratedAttribute>();
+            DatabaseGeneratedAttribute? genAttr = property.GetCustomAttribute<DatabaseGeneratedAttribute>();
 
             if (genAttr is not null)
                 genOption = genAttr.Option;
             else
             {
                 // Use string-based detection for DatabaseGeneratedAttribute
-                var dataGenAttr = GetAttributeData(property, DatabaseGeneratedAttributeTypeName);
+                CustomAttributeData? dataGenAttr = GetAttributeData(property, DatabaseGeneratedAttributeTypeName);
                 if (dataGenAttr is not null)
                 {
                     // Get the DatabaseGeneratedOption enum value from the attribute
@@ -132,7 +132,8 @@ public static class MetadataBuilder
     /// </summary>
     private static CustomAttributeData? GetAttributeData(MemberInfo member, string attributeTypeName)
     {
-        foreach (var Attr in member.GetCustomAttributesData())
+
+        foreach (CustomAttributeData? Attr in member.GetCustomAttributesData())
             if (Attr.AttributeType.FullName == attributeTypeName) return Attr;
 
         return null;
@@ -143,7 +144,8 @@ public static class MetadataBuilder
     /// </summary>
     private static bool HasAttribute(MemberInfo member, string attributeTypeName)
     {
-        foreach (var Attr in member.GetCustomAttributesData())
+
+        foreach (CustomAttributeData? Attr in member.GetCustomAttributesData())
         {
             if (Attr.AttributeType.FullName == attributeTypeName) return true;
         }
@@ -166,7 +168,7 @@ public static class MetadataBuilder
     {
         var namedArg = new CustomAttributeNamedArgument();
 
-        foreach (var Arg in attributeData.NamedArguments)
+        foreach (CustomAttributeNamedArgument Arg in attributeData.NamedArguments)
         {
             if (Arg.MemberName == argumentName)
             {

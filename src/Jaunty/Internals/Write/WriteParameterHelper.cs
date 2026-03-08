@@ -8,7 +8,7 @@ public static partial class Jaunty
 {
     private static void PrepareInsertParameters(IDbCommand command, EntityMetadata metadata)
     {
-        var columns = metadata.InsertColumns;
+        IReadOnlyList<ColumnMetadata> columns = metadata.InsertColumns;
 
         for (int i = 0; i < columns.Count; i++)
         {
@@ -22,8 +22,8 @@ public static partial class Jaunty
 
     private static void PrepareUpdateParameters(IDbCommand command, EntityMetadata metadata)
     {
-        var updateColumns = metadata.UpdateColumns;
-        var primaryKeys = metadata.PrimaryKeys;
+        IReadOnlyList<ColumnMetadata> updateColumns = metadata.UpdateColumns;
+        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
 
         for (int i = 0; i < updateColumns.Count; i++)
         {
@@ -45,7 +45,7 @@ public static partial class Jaunty
 
     private static void PrepareDeleteParameters(IDbCommand command, EntityMetadata metadata)
     {
-        var deleteColumns = metadata.DeleteColumns;
+        IReadOnlyList<ColumnMetadata> deleteColumns = metadata.DeleteColumns;
 
         for (int i = 0; i < deleteColumns.Count; i++)
         {

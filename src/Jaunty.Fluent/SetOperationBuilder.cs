@@ -67,7 +67,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         _metadata = FluentMetadataCache.GetMetadata<T>();
 
         // Rename first query parameters with prefix "p0_"
-        var (renamedSql, renamedParams) = RenameParameters(firstQuerySql, firstQueryParameters, "p0");
+        (string? renamedSql, ParameterCollection? renamedParams) = RenameParameters(firstQuerySql, firstQueryParameters, "p0");
         _firstQuerySql = renamedSql;
         _firstQueryParameters = renamedParams;
     }
@@ -101,11 +101,11 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     private void AddOperation(SetOperationType operationType, IQueryTerminal<T> other)
     {
         var sql = other.ToSql();
-        var parameters = ExtractParameters(other);
+        ParameterCollection parameters = ExtractParameters(other);
 
         // Rename parameters with unique prefix
         var prefix = $"p{_operationCount}";
-        var (renamedSql, renamedParams) = RenameParameters(sql, parameters, prefix);
+        (string? renamedSql, ParameterCollection? renamedParams) = RenameParameters(sql, parameters, prefix);
 
         _operations.Add(new SetOperationComponent(operationType, renamedSql, renamedParams));
         _operationCount++;
@@ -136,7 +136,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         var renamedParams = new ParameterCollection();
         var renamedSql = sql;
 
-        foreach (var (name, value) in parameters.GetAll())
+        foreach ((string? name, object? value) in parameters.GetAll())
         {
             // Detect prefix from the parameter name itself (@ or $)
             var paramPrefix = name.Length > 0 && name[0] is '@' or '$' ? name[0].ToString() : "@";
@@ -355,7 +355,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         sb.Append(_firstQuerySql);
 
         // Chain operations (each with renamed parameters)
-        foreach (var operation in _operations)
+        foreach (SetOperationComponent operation in _operations)
         {
             sb.Append(' ');
             sb.Append(GetSetOperationKeyword(operation.OperationType));
@@ -370,7 +370,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
             for (int i = 0; i < _orderByColumns.Count; i++)
             {
                 if (i > 0) sb.Append(", ");
-                var orderBy = _orderByColumns[i];
+                OrderByColumn orderBy = _orderByColumns[i];
                 sb.Append(_dialect.EscapeColumnName(orderBy.ColumnName));
                 if (orderBy.Descending)
                     sb.Append(" DESC");
@@ -408,15 +408,15 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         var combined = new ParameterCollection();
 
         // Add first query parameters (already renamed)
-        foreach (var (name, value) in _firstQueryParameters.GetAll())
+        foreach ((string? name, object? value) in _firstQueryParameters.GetAll())
         {
             combined.Add(name, value);
         }
 
         // Add each operation's parameters (already renamed)
-        foreach (var operation in _operations)
+        foreach (SetOperationComponent operation in _operations)
         {
-            foreach (var (name, value) in operation.Parameters.GetAll())
+            foreach ((string? name, object? value) in operation.Parameters.GetAll())
             {
                 combined.Add(name, value);
             }
@@ -427,7 +427,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
 
     private string GetColumnNameFromProperty(string propertyName)
     {
-        var columns = _metadata.Columns;
+        IReadOnlyList<ColumnMetadata> columns = _metadata.Columns;
         for (int i = 0; i < columns.Count; i++)
         {
             if (columns[i].Property.Name == propertyName)

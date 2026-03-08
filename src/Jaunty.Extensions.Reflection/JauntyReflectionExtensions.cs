@@ -124,7 +124,7 @@ public static class JauntyReflectionExtensions
             PropertySetter<T>[] setters = MetadataCache<T>.GetSetters(reader, mode);
             var entity = new T();
 
-            foreach (var setter in setters)
+            foreach (PropertySetter<T> setter in setters)
                 setter.Set(entity, reader);
 
             return entity;
@@ -138,9 +138,9 @@ public static class JauntyReflectionExtensions
             if (entityObj is not T entity) return;
             EntityMetadata meta = MetadataCache<T>.Metadata;
 
-            foreach (var col in meta.InsertColumns)
+            foreach (ColumnMetadata col in meta.InsertColumns)
             {
-                var p = cmd.CreateParameter();
+                IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;
                 p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
@@ -155,7 +155,7 @@ public static class JauntyReflectionExtensions
             if (entityObj is not T entity) return;
             EntityMetadata meta = MetadataCache<T>.Metadata;
 
-            foreach (var col in meta.UpdateColumns)
+            foreach (ColumnMetadata col in meta.UpdateColumns)
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;
@@ -163,7 +163,7 @@ public static class JauntyReflectionExtensions
                 cmd.Parameters.Add(p);
             }
 
-            foreach (var col in meta.PrimaryKeys)
+            foreach (ColumnMetadata col in meta.PrimaryKeys)
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;
@@ -180,7 +180,7 @@ public static class JauntyReflectionExtensions
             if (entityObj is not T entity) return;
             EntityMetadata meta = MetadataCache<T>.Metadata;
 
-            foreach (var col in meta.DeleteColumns)
+            foreach (ColumnMetadata col in meta.DeleteColumns)
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;

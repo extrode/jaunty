@@ -38,7 +38,7 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
             string? originalJournalMode = null;
             string? originalSynchronous = null;
 
-            using (var readCmd = connection.CreateCommand())
+            using (IDbCommand readCmd = connection.CreateCommand())
             {
                 readCmd.Transaction = transaction;
 
@@ -49,7 +49,7 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
                 originalSynchronous = readCmd.ExecuteScalar()?.ToString();
             }
 
-            using var pragmaCmd = connection.CreateCommand();
+            using IDbCommand pragmaCmd = connection.CreateCommand();
             pragmaCmd.Transaction = transaction;
 
             pragmaCmd.CommandText = "PRAGMA journal_mode=WAL";
@@ -66,7 +66,7 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
                 columnNames[i] = data.GetName(i);
             }
 
-            using var command = connection.CreateCommand();
+            using IDbCommand command = connection.CreateCommand();
             command.Transaction = transaction;
             command.CommandText = BuildInsertSql(tableName, columnNames);
 
@@ -77,7 +77,7 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
             var parameters = new IDataParameter[columnCount];
             for (int i = 0; i < columnCount; i++)
             {
-                var param = command.CreateParameter();
+                IDbDataParameter param = command.CreateParameter();
                 param.ParameterName = $"@p{i}";
                 command.Parameters.Add(param);
                 parameters[i] = param;
@@ -103,7 +103,7 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
             // Restore original PRAGMA values
             try
             {
-                using var restoreCmd = connection.CreateCommand();
+                using IDbCommand restoreCmd = connection.CreateCommand();
                 restoreCmd.Transaction = transaction;
 
                 if (originalJournalMode != null)

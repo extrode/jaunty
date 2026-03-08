@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 using Jaunty.Dialects;
@@ -30,7 +31,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
     {
         _columns.Clear();
 
-        var body = selector.Body;
+        Expression body = selector.Body;
 
         // Handle standalone expressions (not New or MemberInit)
         if (body is MethodCallExpression or MemberExpression or ConstantExpression or UnaryExpression or BinaryExpression)
@@ -58,8 +59,8 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
 
         for (int i = 0; i < node.Arguments.Count; i++)
         {
-            var member = node.Members[i];
-            var argument = node.Arguments[i];
+            MemberInfo member = node.Members[i];
+            Expression argument = node.Arguments[i];
             var alias = member.Name;
 
             var sql = TranslateProjectionExpression(argument);
@@ -72,7 +73,8 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
     protected override Expression VisitMemberInit(MemberInitExpression node)
     {
         // Handle object initializer: new ProductDto { Name = p.ProductName, ... }
-        foreach (var binding in node.Bindings)
+
+        foreach (MemberBinding? binding in node.Bindings)
         {
             if (binding is MemberAssignment assignment)
             {
@@ -141,7 +143,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
 
     private string TranslateMethodCall(MethodCallExpression node)
     {
-        var declaringType = node.Method.DeclaringType;
+        Type? declaringType = node.Method.DeclaringType;
 
         // Handle Sql.* static methods
         if (declaringType == typeof(Sql))
@@ -152,7 +154,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         // Handle WindowBuilder / WindowAggregateBuilder method chains
         if (declaringType != null && declaringType.IsGenericType)
         {
-            var genericDef = declaringType.GetGenericTypeDefinition();
+            Type genericDef = declaringType.GetGenericTypeDefinition();
 
             if (genericDef == typeof(WindowBuilder<,>) || genericDef == typeof(WindowAggregateBuilder<,>))
             {
@@ -210,7 +212,8 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         while (current is MethodCallExpression methodCall)
         {
             var methodName = methodCall.Method.Name;
-            var declaringType = methodCall.Method.DeclaringType;
+
+            Type? declaringType = methodCall.Method.DeclaringType;
 
             switch (methodName)
             {
@@ -398,7 +401,8 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
     private string GetColumnName(MemberExpression member)
     {
         var propertyName = member.Member.Name;
-        var column = _metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
+
+        ColumnMetadata? column = _metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
         return column?.ColumnName ?? propertyName;
     }
 
@@ -407,8 +411,8 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         if (expression is ConstantExpression constant)
             return constant.Value;
 
-        var lambda = Expression.Lambda(expression);
-        var compiled = lambda.Compile();
+        LambdaExpression lambda = Expression.Lambda(expression);
+        Delegate compiled = lambda.Compile();
         return compiled.DynamicInvoke();
     }
 
