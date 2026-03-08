@@ -10,7 +10,7 @@ namespace Jaunty.Attributes;
 /// </para>
 /// <para>
 /// This attribute is Jaunty's native column mapping attribute. It also supports the standard 
-/// <see cref="System.ComponentModel.DataAnnotations.Schema.ColumnAttribute"/> for compatibility.
+/// <see cref="ColumnAttribute"/> for compatibility.
 /// </para>
 /// </remarks>
 /// <example>

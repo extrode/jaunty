@@ -1,5 +1,4 @@
 using System.Data;
-using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Internals.Enums;
@@ -70,14 +69,15 @@ public static partial class Jaunty
     public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+
         return ExecuteWithOutputParameters(connection, procedureName, parameters, spOptions, (reader, _) =>
         {
             var results = new List<T>(16);
             Func<IDataReader, T> map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
+
             while (reader.Read())
-            {
                 results.Add(map(reader));
-            }
+
             return results;
         });
     }

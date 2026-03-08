@@ -424,9 +424,9 @@ public static partial class Jaunty
                 if (ownTransaction)
                 {
 #if NET8_0_OR_GREATER
-                    await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                    await transaction!.CommitAsync(cancellationToken).ConfigureAwait(false);
 #else
-                    transaction.Commit();
+                    transaction!.Commit();
 #endif
                 }
 
@@ -437,9 +437,9 @@ public static partial class Jaunty
                 if (ownTransaction)
                 {
 #if NET8_0_OR_GREATER
-                    await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                    await transaction!.RollbackAsync(cancellationToken).ConfigureAwait(false);
 #else
-                    transaction.Rollback();
+                    transaction!.Rollback();
 #endif
                 }
                 throw;
@@ -450,9 +450,9 @@ public static partial class Jaunty
             if (ownTransaction)
             {
 #if NET8_0_OR_GREATER
-                await transaction.DisposeAsync().ConfigureAwait(false);
+                await transaction!.DisposeAsync().ConfigureAwait(false);
 #else
-                transaction.Dispose();
+                transaction!.Dispose();
 #endif
             }
 
