@@ -9,8 +9,8 @@ namespace Jaunty.Attributes;
 /// The property will not be mapped to any database column.
 /// </para>
 /// <para>
-/// This attribute is Jaunty's native ignore attribute. It also supports the standard 
-/// <see cref="System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute"/> for compatibility.
+/// This attribute is Jaunty's native ignore attribute. It also supports the standard
+/// <c>NotMappedAttribute</c> from System.ComponentModel.DataAnnotations.Schema for compatibility.
 /// </para>
 /// <para>
 /// Use this attribute for:
