@@ -100,14 +100,22 @@ Release documentation and task lists:
 
 ## Historical Documents
 
-- **[archive/](archive/README.md)** - Historical and superseded documents
+- **[99-archive/](99-archive/README.md)** - Historical and superseded documents
   - Early development notes (2026-01)
   - Code quality initiatives (2026-02)
   - NativeAOT migration (2026-02)
-  - Old API reference
-  - Miscellaneous artifacts (2026-03)
+  - Miscellaneous artifacts (2026-03+)
 
-> **Note**: Only use `archive/` for context and history. Use documentation outside `archive/` as the source of truth.
+> **Note**: Only use `99-archive/` for context and history. Use documentation outside `99-archive/` as the source of truth.
+
+---
+
+## Media Assets
+
+- **[_assets/](_assets/README.md)** - Screenshots, diagrams, and other media
+  - Screenshots for documentation examples
+  - Architecture diagrams
+  - Flow charts and sequence diagrams
 
 ---
 
