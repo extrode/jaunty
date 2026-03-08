@@ -3,6 +3,9 @@ using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 
 using Jaunty.FlatFiles.DuckDB;
+using Jaunty.FlatFiles.FileSources;
+using Jaunty.FlatFiles.Import;
+using Jaunty.FlatFiles.Interfaces;
 
 using Microsoft.Data.Sqlite;
 
