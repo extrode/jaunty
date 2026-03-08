@@ -72,21 +72,16 @@ public sealed partial class DuckDb : IFlatFile
         _connection = new DuckDBConnection(connectionString);
 
         if (options.RegisterDialect)
-        {
             SqlDialectFactory.RegisterDialect("DuckDBConnection", _dialect);
-        }
 
         if (options.AutoOpen)
-        {
             _connection.Open();
-        }
 
         foreach (IFileSource source in options.Sources)
         {
             if (options.PreloadIntoMemory && !source.IsPreloaded)
-            {
                 source.IsPreloaded = true;
-            }
+
             RegisterSource(source);
         }
     }
@@ -95,7 +90,6 @@ public sealed partial class DuckDb : IFlatFile
     public void RegisterSource(IFileSource source)
     {
         ArgumentNullException.ThrowIfNull(source);
-
         string sql = GenerateRegistrationSql(source);
 
         using DuckDBCommand cmd = _connection.CreateCommand();
@@ -103,9 +97,7 @@ public sealed partial class DuckDb : IFlatFile
         cmd.ExecuteNonQuery();
 
         if (_options.ValidateSchema && source.EntityType != typeof(object))
-        {
             ValidateSchema(source);
-        }
 
         _sources[source.EntityType] = source;
     }
@@ -114,7 +106,6 @@ public sealed partial class DuckDb : IFlatFile
     public async ValueTask RegisterSourceAsync(IFileSource source, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(source);
-
         string sql = GenerateRegistrationSql(source);
 
         await using DuckDBCommand cmd = _connection.CreateCommand();
@@ -122,9 +113,7 @@ public sealed partial class DuckDb : IFlatFile
         await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
         if (_options.ValidateSchema && source.EntityType != typeof(object))
-        {
             ValidateSchema(source);
-        }
 
         _sources[source.EntityType] = source;
     }
@@ -160,10 +149,9 @@ public sealed partial class DuckDb : IFlatFile
         if (source.EntityType != typeof(object))
         {
             IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(source.EntityType);
+
             if (HasDateTimeColumns(mappings))
-            {
                 return GenerateViewSqlWithDateTimeCasts(source, mappings);
-            }
         }
 
         return source.IsPreloaded
@@ -174,10 +162,9 @@ public sealed partial class DuckDb : IFlatFile
     private static bool HasDateTimeColumns(IReadOnlyDictionary<string, ColumnMapping> mappings)
     {
         foreach (ColumnMapping mapping in mappings.Values)
-        {
             if (mapping.IsDateTime)
                 return true;
-        }
+
         return false;
     }
 
@@ -185,8 +172,8 @@ public sealed partial class DuckDb : IFlatFile
     {
         string readFunction = DuckDbDialect.GenerateReadFunction(source);
         HashSet<string> dateTimeColumns = GetDateTimeColumnNamesFromMappings(mappings);
-
         List<string> fileColumns;
+
         using (DuckDBCommand cmd = _connection.CreateCommand())
         {
             cmd.CommandText = $"SELECT * FROM {readFunction} LIMIT 0";
@@ -199,33 +186,32 @@ public sealed partial class DuckDb : IFlatFile
         }
 
         var sb = new StringBuilder();
+
         for (int i = 0; i < fileColumns.Count; i++)
         {
             if (i > 0) sb.Append(", ");
 
             string col = fileColumns[i];
+
             if (dateTimeColumns.Contains(col))
-            {
                 sb.Append($"CAST(\"{col}\" AS TIMESTAMP) AS \"{col}\"");
-            }
             else
-            {
                 sb.Append($"\"{col}\"");
-            }
         }
 
         string keyword = source.IsPreloaded ? "TABLE" : "VIEW";
+
         return $"CREATE OR REPLACE {keyword} \"{source.TableName}\" AS SELECT {sb} FROM {readFunction}";
     }
 
     private static HashSet<string> GetDateTimeColumnNamesFromMappings(IReadOnlyDictionary<string, ColumnMapping> mappings)
     {
         var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (ColumnMapping mapping in mappings.Values)
-        {
             if (mapping.IsDateTime)
                 result.Add(mapping.ColumnName);
-        }
+
         return result;
     }
 
@@ -233,9 +219,10 @@ public sealed partial class DuckDb : IFlatFile
     {
         using DuckDBCommand cmd = _connection.CreateCommand();
         cmd.CommandText = $"DESCRIBE \"{source.TableName}\"";
-        using DuckDBDataReader reader = cmd.ExecuteReader();
 
+        using DuckDBDataReader reader = cmd.ExecuteReader();
         var fileColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         while (reader.Read())
         {
             string colName = reader.GetString(0);
@@ -259,7 +246,6 @@ public sealed partial class DuckDb : IFlatFile
     public async ValueTask<long> ImportIntoAsync<T>(DbConnection targetConnection, ImportOptions options = default, CancellationToken cancellationToken = default) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(targetConnection);
-
         IFileSource source = GetSourceOrThrow<T>();
 
         return await ImportExecutor.ExecuteAsync<T>(_connection, source, targetConnection, options, cancellationToken).ConfigureAwait(false);
