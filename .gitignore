@@ -82,9 +82,13 @@ mono_crash.*
 # TEST & COVERAGE
 # =============================================================================
 
-# Test results
+# Visual Studio Test Explorer (TestResults folder created by default)
+/TestResults/
 [Tt]est[Rr]esult*/
+
+# Test result files
 TestResult.xml
+*.trx
 nunit-*.xml
 *.VisualState.xml
 
