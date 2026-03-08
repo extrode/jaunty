@@ -19,7 +19,7 @@ public static partial class Jaunty
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
                 var results = new List<T>(capacity);
-                var map = DrDispatcher.Resolve(reader, options, mode);
+                Func<DbDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
 
                 while (reader.Read())
                     results.Add(map(reader));
@@ -31,7 +31,7 @@ public static partial class Jaunty
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
             var results = new List<T>(capacity);
-            var map = DrDispatcher.Resolve(reader, options, mode);
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
 
             while (reader.Read())
                 results.Add(map(reader));
@@ -53,7 +53,7 @@ public static partial class Jaunty
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
                 if (!reader.Read()) return default;
-                var map = DrDispatcher.Resolve(reader, options, mode);
+                Func<DbDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
                 return map(reader);
             });
         }
@@ -73,7 +73,7 @@ public static partial class Jaunty
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
                 if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-                var map = DrDispatcher.Resolve(reader, options, mode);
+                Func<DbDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
                 T entity = map(reader);
                 return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.") : entity;
             });
@@ -95,7 +95,7 @@ public static partial class Jaunty
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
                 if (!reader.Read()) return default;
-                var map = DrDispatcher.Resolve(reader, options, mode);
+                Func<DbDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
                 T entity = map(reader);
                 return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.") : entity;
             });
@@ -120,7 +120,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
@@ -158,7 +158,7 @@ public static partial class Jaunty
     {
         if (connection is DbConnection dbConnection)
         {
-            foreach (var item in QueryStreamCoreFast<T>(dbConnection, sql, parameters, options, mode))
+            foreach (T? item in QueryStreamCoreFast<T>(dbConnection, sql, parameters, options, mode))
                 yield return item;
             yield break;
         }
@@ -169,7 +169,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
             if (options.Transaction is DbTransaction dbTransaction)
@@ -181,8 +181,8 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
-            using var reader = command.ExecuteReader();
-            var map = DrDispatcher.Resolve(reader, options, mode);
+            using IDataReader reader = command.ExecuteReader();
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
 
             while (reader.Read())
                 yield return map(reader);
@@ -203,13 +203,13 @@ public static partial class Jaunty
         // 1. User override
         if (options.Mapper is not null)
         {
-            var userMapper = options.Mapper;
+            Func<IDataReader, T> userMapper = options.Mapper;
             mapper = dbReader => userMapper(dbReader);
         }
         // 2. Source-generated (IMapped<T>)
         else if (mode == MappingMode.Strict && Internals.Read.MappedCache<T>.Mapper is not null)
         {
-            var sgMapper = Internals.Read.MappedCache<T>.Mapper;
+            Func<IDataReader, T> sgMapper = Internals.Read.MappedCache<T>.Mapper;
             mapper = dbReader => sgMapper(dbReader);
         }
 
@@ -222,7 +222,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using DbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
             if (options.Transaction is DbTransaction dbTransaction)
@@ -234,7 +234,7 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
-            using var reader = command.ExecuteReader();
+            using DbDataReader reader = command.ExecuteReader();
 
             // Resolve mapper now if we couldn't resolve it earlier
             if (needsReaderForMapper)
@@ -309,7 +309,7 @@ public static partial class Jaunty
 
     private static (T1, T2) QueryFirstMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
-        var result = QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, mode);
+        (T1, T2)? result = QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : result.Value;
     }
 
@@ -353,7 +353,7 @@ public static partial class Jaunty
 
     private static (T1, T2) QuerySingleMultiEntityCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode) where T1 : new() where T2 : new()
     {
-        var result = QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, mode);
+        (T1, T2)? result = QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : result.Value;
     }
 
@@ -399,7 +399,7 @@ public static partial class Jaunty
     {
         if (connection is DbConnection dbConnection)
         {
-            foreach (var item in QueryStreamMultiEntityCoreFast<T1, T2>(dbConnection, sql, parameters, options, mode))
+            foreach ((T1, T2) item in QueryStreamMultiEntityCoreFast<T1, T2>(dbConnection, sql, parameters, options, mode))
                 yield return item;
             yield break;
         }
@@ -410,7 +410,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
             if (options.Transaction is DbTransaction dbTransaction)
@@ -422,7 +422,7 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
-            using var reader = command.ExecuteReader();
+            using IDataReader reader = command.ExecuteReader();
 
             if (!reader.Read())
                 yield break;
@@ -456,7 +456,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using DbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
             if (options.Transaction is DbTransaction dbTransaction)
@@ -468,7 +468,7 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
-            using var reader = command.ExecuteReader();
+            using DbDataReader reader = command.ExecuteReader();
 
             if (!reader.Read())
                 yield break;

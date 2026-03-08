@@ -76,8 +76,8 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         }
 
         // Handle comparison operators - need to determine which side is outer vs subquery
-        var leftInfo = AnalyzeExpression(node.Left);
-        var rightInfo = AnalyzeExpression(node.Right);
+        (bool IsColumn, string Sql, object? Value) leftInfo = AnalyzeExpression(node.Left);
+        (bool IsColumn, string Sql, object? Value) rightInfo = AnalyzeExpression(node.Right);
 
         if (leftInfo.IsColumn)
         {
@@ -111,7 +111,7 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
 
     protected override Expression VisitMember(MemberExpression node)
     {
-        var info = AnalyzeExpression(node);
+        (bool IsColumn, string Sql, object? Value) info = AnalyzeExpression(node);
         if (info.IsColumn)
         {
             _sql.Append(info.Sql);
@@ -168,7 +168,7 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         if (expression is MemberExpression member)
         {
             // Check if it's a member access on the outer parameter
-            var root = GetRootParameter(member);
+            ParameterExpression? root = GetRootParameter(member);
             if (root == _outerParam)
             {
                 var columnName = GetColumnName(member, _outerMetadata);
@@ -211,7 +211,8 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
     private string GetColumnName(MemberExpression member, EntityMetadata metadata)
     {
         var propertyName = member.Member.Name;
-        var column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
+
+        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
         return column?.ColumnName ?? propertyName;
     }
 
@@ -220,8 +221,8 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         if (expression is ConstantExpression constant)
             return constant.Value;
 
-        var lambda = Expression.Lambda(expression);
-        var compiled = lambda.Compile();
+        LambdaExpression lambda = Expression.Lambda(expression);
+        Delegate compiled = lambda.Compile();
         return compiled.DynamicInvoke();
     }
 

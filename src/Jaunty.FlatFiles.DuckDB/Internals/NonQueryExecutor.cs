@@ -17,9 +17,9 @@ internal static class NonQueryExecutor
     /// <returns>The number of rows affected.</returns>
     public static int Execute(DuckDBConnection connection, string sql, List<DuckDBParameter> parameters)
     {
-        using var cmd = connection.CreateCommand();
+        using DuckDBCommand cmd = connection.CreateCommand();
         cmd.CommandText = sql;
-        foreach (var param in parameters)
+        foreach (DuckDBParameter param in parameters)
             cmd.Parameters.Add(param);
         return cmd.ExecuteNonQuery();
     }
@@ -38,9 +38,9 @@ internal static class NonQueryExecutor
         List<DuckDBParameter> parameters,
         CancellationToken cancellationToken)
     {
-        await using var cmd = connection.CreateCommand();
+        await using DuckDBCommand cmd = connection.CreateCommand();
         cmd.CommandText = sql;
-        foreach (var param in parameters)
+        foreach (DuckDBParameter param in parameters)
             cmd.Parameters.Add(param);
         return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }

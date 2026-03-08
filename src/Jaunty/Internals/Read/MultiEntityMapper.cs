@@ -23,12 +23,12 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
 
     internal static MultiEntityMapper<T1, T2> Build(IDataReader reader)
     {
-        var key = (typeof(T1), typeof(T2));
+        (Type, Type) key = (typeof(T1), typeof(T2));
 
-        if (_cache.TryGetValue(key, out var cached))
+        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2>? cached))
             return cached;
 
-        var mapper = CreateMapper(reader);
+        MultiEntityMapper<T1, T2> mapper = CreateMapper(reader);
         _cache.TryAdd(key, mapper);
         return mapper;
     }

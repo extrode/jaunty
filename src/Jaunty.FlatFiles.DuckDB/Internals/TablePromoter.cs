@@ -1,3 +1,5 @@
+using System.Data.Common;
+
 using DuckDB.NET.Data;
 
 using Jaunty.FlatFiles.DuckDB.Dialects;
@@ -24,10 +26,10 @@ internal static class TablePromoter
 
         var sql = dialect.GeneratePromoteToTableSql(source);
 
-        using var transaction = connection.BeginTransaction();
+        using DuckDBTransaction transaction = connection.BeginTransaction();
         try
         {
-            using var cmd = connection.CreateCommand();
+            using DuckDBCommand cmd = connection.CreateCommand();
             cmd.CommandText = sql;
             cmd.Transaction = transaction;
             cmd.ExecuteNonQuery();
@@ -56,10 +58,10 @@ internal static class TablePromoter
 
         var sql = dialect.GeneratePromoteToTableSql(source);
 
-        var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using (transaction.ConfigureAwait(false))
         {
-            await using var cmd = connection.CreateCommand();
+            await using DuckDBCommand cmd = connection.CreateCommand();
             cmd.CommandText = sql;
             cmd.Transaction = transaction;
             await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);

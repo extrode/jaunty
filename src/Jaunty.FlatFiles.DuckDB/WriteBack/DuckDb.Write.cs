@@ -4,6 +4,7 @@ using DuckDB.NET.Data;
 
 using Jaunty.Core;
 using Jaunty.FlatFiles.DuckDB.Internals;
+using Jaunty.FlatFiles.Interfaces;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -14,10 +15,10 @@ public sealed partial class DuckDb
     {
         ArgumentNullException.ThrowIfNull(entity);
 
-        var source = GetSourceOrThrow<T>();
+        IFileSource source = GetSourceOrThrow<T>();
         TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
 
-        var mappings = ColumnMappingCache.Get(typeof(T));
+        IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(typeof(T));
         var columns = new StringBuilder(mappings.Count * 20);
         var values = new StringBuilder(mappings.Count * 10);
         var parameters = new List<DuckDBParameter>(mappings.Count);
@@ -26,7 +27,7 @@ public sealed partial class DuckDb
         for (int i = 0; i < mappingList.Count; i++)
         {
             if (i > 0) { columns.Append(", "); values.Append(", "); }
-            var mapping = mappingList[i];
+            ColumnMapping mapping = mappingList[i];
             columns.Append($"\"{mapping.ColumnName}\"");
             values.Append($"${i + 1}");
             parameters.Add(new DuckDBParameter { Value = mapping.Getter(entity) ?? DBNull.Value });
@@ -49,7 +50,7 @@ public sealed partial class DuckDb
     {
         ArgumentNullException.ThrowIfNull(entities);
 
-        var entityList = entities switch
+        IList<T> entityList = entities switch
         {
             IList<T> list => list,
             ICollection<T> collection => collection.ToList(),
@@ -58,10 +59,10 @@ public sealed partial class DuckDb
 
         if (entityList.Count == 0) return 0;
 
-        var source = GetSourceOrThrow<T>();
+        IFileSource source = GetSourceOrThrow<T>();
         TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
 
-        var mappings = ColumnMappingCache.Get(typeof(T));
+        IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(typeof(T));
         var columns = new StringBuilder(mappings.Count * 20);
         var mappingList = mappings.Values.ToList();
         for (int i = 0; i < mappingList.Count; i++)
@@ -78,7 +79,7 @@ public sealed partial class DuckDb
         {
             if (row > 0) sb.Append(", ");
             sb.Append('(');
-            var entity = entityList[row];
+            T entity = entityList[row];
 
             for (int col = 0; col < mappingList.Count; col++)
             {

@@ -87,7 +87,8 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
             if (metadata != null)
             {
                 var propertyName = node.Member.Name;
-                var column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
+
+                ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
                 var columnName = column?.ColumnName ?? propertyName;
                 var escapedColumn = _dialect.EscapeColumnName(columnName);
 
@@ -114,8 +115,8 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
         if (expression is ConstantExpression constant)
             return constant.Value;
 
-        var lambda = Expression.Lambda(expression);
-        var compiled = lambda.Compile();
+        LambdaExpression lambda = Expression.Lambda(expression);
+        Delegate compiled = lambda.Compile();
         return compiled.DynamicInvoke();
     }
 

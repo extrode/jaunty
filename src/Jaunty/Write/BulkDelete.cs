@@ -226,7 +226,7 @@ public static partial class Jaunty
         if (entities is null) throw new ArgumentNullException(nameof(entities));
 #endif
 
-        var entityList = entities as IList<T> ?? entities.ToList();
+        IList<T> entityList = entities as IList<T> ?? entities.ToList();
         if (entityList.Count == 0)
             return 0;
 
@@ -264,7 +264,7 @@ public static partial class Jaunty
 
             if (ignoreConstraints)
             {
-                using var fkOffCmd = connection.CreateCommand();
+                using IDbCommand fkOffCmd = connection.CreateCommand();
                 fkOffCmd.Transaction = transaction;
                 fkOffCmd.CommandText = dialect.GetDisableForeignKeyChecksSql()!;
                 fkOffCmd.ExecuteNonQuery();
@@ -274,7 +274,7 @@ public static partial class Jaunty
 
             try
             {
-                using var command = connection.CreateCommand();
+                using IDbCommand command = connection.CreateCommand();
                 command.Transaction = transaction;
                 command.CommandText = cached.DeleteSql;
 
@@ -283,15 +283,15 @@ public static partial class Jaunty
 
                 PrepareDeleteParameters(command, cached.Metadata);
 
-                var valueSetter = WriteParameterCache<T>.DeleteValueSetter;
+                Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.DeleteValueSetter;
                 if (valueSetter == null)
                 {
                     throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
                 }
 
-                var pCollection = command.Parameters;
+                IDataParameterCollection pCollection = command.Parameters;
 
-                foreach (var entity in entityList)
+                foreach (T? entity in entityList)
                 {
                     valueSetter(pCollection, entity);
                     totalDeleted += command.ExecuteNonQuery();
@@ -299,7 +299,7 @@ public static partial class Jaunty
 
                 if (ignoreConstraints)
                 {
-                    using var fkOnCmd = connection.CreateCommand();
+                    using IDbCommand fkOnCmd = connection.CreateCommand();
                     fkOnCmd.Transaction = transaction;
                     fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
                     fkOnCmd.ExecuteNonQuery();
@@ -316,7 +316,7 @@ public static partial class Jaunty
                 {
                     try
                     {
-                        using var fkOnCmd = connection.CreateCommand();
+                        using IDbCommand fkOnCmd = connection.CreateCommand();
                         fkOnCmd.Transaction = transaction;
                         fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
                         fkOnCmd.ExecuteNonQuery();

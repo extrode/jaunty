@@ -130,7 +130,7 @@ internal sealed class ScaffoldCommand : Command
         this.SetHandler(async (context) =>
         {
             var connection = context.ParseResult.GetValueForOption(connectionOption)!;
-            var provider = context.ParseResult.GetValueForOption(providerOption);
+            DatabaseProvider provider = context.ParseResult.GetValueForOption(providerOption);
             var output = context.ParseResult.GetValueForOption(outputOption)!;
             var ns = context.ParseResult.GetValueForOption(namespaceOption)!;
             var tables = context.ParseResult.GetValueForOption(tablesOption) ?? [];
@@ -186,7 +186,7 @@ internal sealed class ScaffoldCommand : Command
             }
 
             var scaffolder = new Scaffolder();
-            var result = await scaffolder.ScaffoldAsync(options, context.GetCancellationToken());
+            ScaffoldResult result = await scaffolder.ScaffoldAsync(options, context.GetCancellationToken());
 
             if (result.Success)
             {

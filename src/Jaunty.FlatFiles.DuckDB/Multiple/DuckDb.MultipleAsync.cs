@@ -1,3 +1,8 @@
+using System.Data.Common;
+using System.Reflection;
+
+using DuckDB.NET.Data;
+
 using Jaunty.Core;
 
 namespace Jaunty.FlatFiles.DuckDB;
@@ -65,23 +70,23 @@ public sealed partial class DuckDb
 
     private async ValueTask<GridReader> ExecuteQueryMultipleAsync(string sql, object? parameters, CancellationToken cancellationToken)
     {
-        var cmd = _connection.CreateCommand();
+        DuckDBCommand cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
 
         if (parameters != null)
         {
             // DuckDB uses positional parameters ($1, $2, ...)
             // For simplicity, we'll use named parameters and let DuckDB handle the binding
-            foreach (var prop in parameters.GetType().GetProperties())
+            foreach (PropertyInfo prop in parameters.GetType().GetProperties())
             {
-                var param = cmd.CreateParameter();
+                DbParameter param = cmd.CreateParameter();
                 param.ParameterName = prop.Name;
                 param.Value = prop.GetValue(parameters) ?? DBNull.Value;
                 cmd.Parameters.Add(param);
             }
         }
 
-        var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         return new GridReader(reader, _connection, false);
     }
 }

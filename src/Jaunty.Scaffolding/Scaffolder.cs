@@ -5,6 +5,7 @@ using Jaunty.Scaffolding.Providers.MySql;
 using Jaunty.Scaffolding.Providers.PostgreSql;
 using Jaunty.Scaffolding.Providers.SQLite;
 using Jaunty.Scaffolding.Providers.SqlServer;
+using Jaunty.Scaffolding.Schema;
 
 namespace Jaunty.Scaffolding;
 
@@ -28,12 +29,12 @@ public sealed class Scaffolder
             ValidateOptions(options);
 
             // Resolve provider
-            var provider = options.Provider == DatabaseProvider.AutoDetect
+            DatabaseProvider provider = options.Provider == DatabaseProvider.AutoDetect
                 ? DetectProvider(options.ConnectionString)
                 : options.Provider;
 
             // Get schema reader and type mapper for provider
-            var (schemaReader, typeMapper) = GetProviderComponents(provider);
+            (ISchemaReader? schemaReader, ITypeMapper? typeMapper) = GetProviderComponents(provider);
 
             // Read schema
             var readerOptions = new SchemaReaderOptions
@@ -44,7 +45,7 @@ public sealed class Scaffolder
                 IncludeForeignKeys = options.IncludeForeignKeys
             };
 
-            var schema = await schemaReader.ReadSchemaAsync(
+            DatabaseSchema schema = await schemaReader.ReadSchemaAsync(
                 options.ConnectionString,
                 readerOptions,
                 cancellationToken);
@@ -56,7 +57,7 @@ public sealed class Scaffolder
 
             // Generate code
             var codeGenerator = new EntityCodeGenerator(typeMapper);
-            var codeGenOptions = MapToCodeGenOptions(options);
+            CodeGeneratorOptions codeGenOptions = MapToCodeGenOptions(options);
             var generatedFiles = new List<string>();
 
             // Create output directory
@@ -65,7 +66,7 @@ public sealed class Scaffolder
                 Directory.CreateDirectory(options.OutputDirectory);
             }
 
-            foreach (var table in schema.Tables)
+            foreach (TableSchema table in schema.Tables)
             {
                 var code = codeGenerator.GenerateEntity(table, codeGenOptions);
                 var className = GetClassName(table.TableName, options);
@@ -106,13 +107,13 @@ public sealed class Scaffolder
         DatabaseProvider provider = DatabaseProvider.AutoDetect,
         CancellationToken cancellationToken = default)
     {
-        var resolvedProvider = provider == DatabaseProvider.AutoDetect
+        DatabaseProvider resolvedProvider = provider == DatabaseProvider.AutoDetect
             ? DetectProvider(connectionString)
             : provider;
 
-        var (schemaReader, _) = GetProviderComponents(resolvedProvider);
+        (ISchemaReader? schemaReader, ITypeMapper _) = GetProviderComponents(resolvedProvider);
 
-        var schema = await schemaReader.ReadSchemaAsync(
+        DatabaseSchema schema = await schemaReader.ReadSchemaAsync(
             connectionString,
             new SchemaReaderOptions(),
             cancellationToken);

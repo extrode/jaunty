@@ -67,7 +67,7 @@ public static partial class Jaunty
         return ExecuteWithOutputParametersAsync(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
         {
             var results = new List<T>(16);
-            var map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
             while (await ReadAsync(reader, ct).ConfigureAwait(false))
             {
                 results.Add(map(reader));
@@ -125,7 +125,7 @@ public static partial class Jaunty
         {
             if (!await ReadAsync(reader, ct).ConfigureAwait(false))
                 throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-            var map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
             return map(reader);
         }, cancellationToken);
     }
@@ -179,7 +179,7 @@ public static partial class Jaunty
         {
             if (!await ReadAsync(reader, ct).ConfigureAwait(false))
                 return default;
-            var map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
             return map(reader);
         }, cancellationToken);
     }

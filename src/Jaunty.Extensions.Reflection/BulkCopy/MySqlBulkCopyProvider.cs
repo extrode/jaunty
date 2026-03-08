@@ -136,7 +136,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
         TableNameProperty?.SetValue(bulkLoader, tableName);
 
         // Open stream and assign to SourceStream — MySqlBulkLoader takes ownership of the stream
-        var fileStream = File.OpenRead(tempFile);
+        FileStream fileStream = File.OpenRead(tempFile);
         SourceStreamProperty?.SetValue(bulkLoader, fileStream);
 
         FieldTerminatorProperty?.SetValue(bulkLoader, ",");

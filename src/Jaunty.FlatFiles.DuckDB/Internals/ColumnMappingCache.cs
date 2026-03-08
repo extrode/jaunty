@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Reflection;
 
 using Jaunty.Attributes;
+using System.Linq.Expressions;
 
 namespace Jaunty.FlatFiles.DuckDB.Internals;
 
@@ -31,12 +32,12 @@ internal static class ColumnMappingCache
         {
             var dict = new Dictionary<string, ColumnMapping>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            foreach (PropertyInfo prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 if (!prop.CanRead || !prop.CanWrite)
                     continue;
 
-                var underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                Type underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
                 var columnName = GetColumnName(prop);
 
                 dict[columnName] = new ColumnMapping
@@ -60,7 +61,7 @@ internal static class ColumnMappingCache
 
     private static string GetColumnName(PropertyInfo prop)
     {
-        var attr = prop.GetCustomAttribute<ColumnAttribute>();
+        ColumnAttribute? attr = prop.GetCustomAttribute<ColumnAttribute>();
         return attr?.Name ?? prop.Name;
     }
 
@@ -69,10 +70,10 @@ internal static class ColumnMappingCache
     /// </summary>
     private static Func<object, object?> CreateGetter(PropertyInfo prop)
     {
-        var param = System.Linq.Expressions.Expression.Parameter(typeof(object), "entity");
-        var cast = System.Linq.Expressions.Expression.Convert(param, prop.DeclaringType!);
-        var access = System.Linq.Expressions.Expression.Property(cast, prop);
-        var box = System.Linq.Expressions.Expression.Convert(access, typeof(object));
+        ParameterExpression param = System.Linq.Expressions.Expression.Parameter(typeof(object), "entity");
+        UnaryExpression cast = System.Linq.Expressions.Expression.Convert(param, prop.DeclaringType!);
+        MemberExpression access = System.Linq.Expressions.Expression.Property(cast, prop);
+        UnaryExpression box = System.Linq.Expressions.Expression.Convert(access, typeof(object));
         return System.Linq.Expressions.Expression.Lambda<Func<object, object?>>(box, param).Compile();
     }
 
@@ -81,11 +82,11 @@ internal static class ColumnMappingCache
     /// </summary>
     private static Action<object, object?> CreateSetter(PropertyInfo prop)
     {
-        var entityParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "entity");
-        var valueParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "value");
-        var cast = System.Linq.Expressions.Expression.Convert(entityParam, prop.DeclaringType!);
-        var convertedValue = System.Linq.Expressions.Expression.Convert(valueParam, prop.PropertyType);
-        var assign = System.Linq.Expressions.Expression.Assign(System.Linq.Expressions.Expression.Property(cast, prop), convertedValue);
+        ParameterExpression entityParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "entity");
+        ParameterExpression valueParam = System.Linq.Expressions.Expression.Parameter(typeof(object), "value");
+        UnaryExpression cast = System.Linq.Expressions.Expression.Convert(entityParam, prop.DeclaringType!);
+        UnaryExpression convertedValue = System.Linq.Expressions.Expression.Convert(valueParam, prop.PropertyType);
+        BinaryExpression assign = System.Linq.Expressions.Expression.Assign(System.Linq.Expressions.Expression.Property(cast, prop), convertedValue);
         return System.Linq.Expressions.Expression.Lambda<Action<object, object?>>(assign, entityParam, valueParam).Compile();
     }
 }

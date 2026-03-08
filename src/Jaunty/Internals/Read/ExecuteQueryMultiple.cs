@@ -31,7 +31,7 @@ public static partial class Jaunty
         if (wasClosed)
             connection.Open();
 
-        var command = connection.CreateCommand();
+        IDbCommand command = connection.CreateCommand();
         command.CommandText = sql;
 
         if (options.Transaction is DbTransaction dbTransaction)
@@ -43,7 +43,7 @@ public static partial class Jaunty
         if (parameters is not null)
             ParameterBinder.Bind(command, parameters);
 
-        var reader = command.ExecuteReader();
+        IDataReader reader = command.ExecuteReader();
         return new GridReader(reader, connection, wasClosed);
     }
 }
