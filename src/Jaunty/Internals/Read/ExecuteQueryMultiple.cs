@@ -6,6 +6,9 @@ using Jaunty.Internals.Parameters;
 
 namespace Jaunty;
 
+/// <summary>
+/// Internal helper methods for executing multi-result queries.
+/// </summary>
 public static partial class Jaunty
 {
     /// <summary>
