@@ -1,4 +1,5 @@
 using Jaunty.Dialects;
+using Jaunty.FlatFiles.Core;
 
 namespace Jaunty.FlatFiles.Interfaces;
 
