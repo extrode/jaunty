@@ -31,7 +31,9 @@ public static class SpecialTypeMappers
     /// </summary>
     public static void Register()
     {
+#pragma warning disable CS8621 // Nullability of return type doesn't match target delegate
         JauntyConfig.SpecialTypeMapperResolver = ResolveSpecialTypeMapper;
+#pragma warning restore CS8621
     }
 
     private static object? ResolveSpecialTypeMapper(Type type, IDataReader reader)
@@ -69,6 +71,7 @@ public static class SpecialTypeMappers
         // dynamic (object at compile time) - return ExpandoObject
         return type == typeof(object) ? CreateExpandoMapper(reader) : null;
     }
+#pragma warning restore CS8621 // Nullability of return type doesn't match target delegate
 
     private static object CreateKeyValuePairMapper(Type type, IDataReader reader, Type[] typeArgs)
     {

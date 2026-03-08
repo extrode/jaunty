@@ -25,8 +25,8 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static readonly PropertyInfo? BatchSizeProperty = SqlBulkCopyType?.GetProperty("BatchSize");
     private static readonly PropertyInfo? BulkCopyTimeoutProperty = SqlBulkCopyType?.GetProperty("BulkCopyTimeout");
     private static readonly PropertyInfo? DestinationTableNameProperty = SqlBulkCopyType?.GetProperty("DestinationTableName");
-    private static readonly MethodInfo? WriteToServerMethod = SqlBulkCopyType?.GetMethod("WriteToServer", new[] { typeof(IDataReader) });
-    private static readonly MethodInfo? WriteToServerAsyncMethod = SqlBulkCopyType?.GetMethod("WriteToServerAsync", new[] { typeof(IDataReader), typeof(CancellationToken) });
+    private static readonly MethodInfo? WriteToServerMethod = SqlBulkCopyType?.GetMethod("WriteToServer", [typeof(IDataReader)]);
+    private static readonly MethodInfo? WriteToServerAsyncMethod = SqlBulkCopyType?.GetMethod("WriteToServerAsync", [typeof(IDataReader), typeof(CancellationToken)]);
     private static readonly MethodInfo? DisposeMethod = SqlBulkCopyType?.GetMethod("Dispose");
 
     /// <inheritdoc/>
@@ -42,12 +42,8 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
             ?? throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
 
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
-        var bulkCopyOptions = MapBulkCopyOptions(options);
-
-        var bulkCopy = Activator.CreateInstance(SqlBulkCopyType, sqlConnection, bulkCopyOptions, options.Transaction);
-
-        if (bulkCopy == null)
-            throw new InvalidOperationException("Failed to create SqlBulkCopy instance.");
+        object? bulkCopyOptions = MapBulkCopyOptions(options);
+        object? bulkCopy = Activator.CreateInstance(SqlBulkCopyType, sqlConnection, bulkCopyOptions, options.Transaction) ?? throw new InvalidOperationException("Failed to create SqlBulkCopy instance.");
 
         try
         {
@@ -67,23 +63,14 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     }
 
     /// <inheritdoc/>
-    public async ValueTask<int> CopyToServerAsync(
-        DbConnection connection,
-        string tableName,
-        IDataReader data,
-        BulkCopyOptions options,
-        CancellationToken cancellationToken)
+    public async ValueTask<int> CopyToServerAsync(DbConnection connection, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
     {
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
 
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
-        var bulkCopyOptions = MapBulkCopyOptions(options);
-
-        var bulkCopy = Activator.CreateInstance(SqlBulkCopyType, connection, bulkCopyOptions, options.Transaction);
-
-        if (bulkCopy == null)
-            throw new InvalidOperationException("Failed to create SqlBulkCopy instance.");
+        object? bulkCopyOptions = MapBulkCopyOptions(options);
+        object? bulkCopy = Activator.CreateInstance(SqlBulkCopyType, connection, bulkCopyOptions, options.Transaction) ?? throw new InvalidOperationException("Failed to create SqlBulkCopy instance.");
 
         try
         {
@@ -92,13 +79,9 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
             DestinationTableNameProperty?.SetValue(bulkCopy, tableName);
 
             if (WriteToServerAsyncMethod != null)
-            {
                 await (Task)WriteToServerAsyncMethod.Invoke(bulkCopy, new object[] { data, cancellationToken })!;
-            }
             else
-            {
-                WriteToServerMethod?.Invoke(bulkCopy, new object[] { data });
-            }
+                WriteToServerMethod?.Invoke(bulkCopy, [data]);
 
             // SqlBulkCopy doesn't expose row count; return -1 and let the caller use entityList.Count
             return -1;
@@ -117,12 +100,12 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         if (SqlBulkCopyOptionsType == null)
             return 0; // Default options
 
-        var result = 0;
+        int result = 0;
 
         // Map TableLock option
         if (options.TableLock == TableLockOption.BulkLock)
         {
-            var tableLockValue = SqlBulkCopyOptionsType.GetField("TableLock")?.GetValue(null);
+            object? tableLockValue = SqlBulkCopyOptionsType.GetField("TableLock")?.GetValue(null);
             if (tableLockValue != null)
                 result |= (int)tableLockValue;
         }
@@ -130,7 +113,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         // Map IdentityMode option
         if (options.IdentityMode == BulkCopyIdentityMode.KeepIdentity)
         {
-            var keepIdentityValue = SqlBulkCopyOptionsType.GetField("KeepIdentity")?.GetValue(null);
+            object? keepIdentityValue = SqlBulkCopyOptionsType.GetField("KeepIdentity")?.GetValue(null);
             if (keepIdentityValue != null)
                 result |= (int)keepIdentityValue;
         }
@@ -138,7 +121,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         // Map CheckConstraints option
         if (options.CheckConstraints)
         {
-            var checkConstraintsValue = SqlBulkCopyOptionsType.GetField("CheckConstraints")?.GetValue(null);
+            object? checkConstraintsValue = SqlBulkCopyOptionsType.GetField("CheckConstraints")?.GetValue(null);
             if (checkConstraintsValue != null)
                 result |= (int)checkConstraintsValue;
         }
