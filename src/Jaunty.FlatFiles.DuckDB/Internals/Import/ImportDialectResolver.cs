@@ -16,7 +16,7 @@ internal static class ImportDialectResolver
 
     /// <summary>
     /// Registers a custom import dialect for a connection type name (or substring).
-    /// The key is matched against <see cref="DbConnection.GetType().FullName"/> using contains logic.
+    /// The key is matched against the connection's <c>GetType().FullName</c> using contains logic.
     /// </summary>
     /// <param name="connectionTypeNameContains">A substring of the connection's full type name (e.g. "MySql", "Oracle").</param>
     /// <param name="dialect">The import dialect to use for matching connections.</param>

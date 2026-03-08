@@ -10,6 +10,8 @@
     <Description>Reflection-based mapping extension for Jaunty. Enables Dictionary, dynamic, and ValueTuple mapping.</Description>
     <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- Suppress AOT/trimming warnings - this project uses reflection by design -->
+    <NoWarn>$(NoWarn);IL2057;IL2067;IL2070;IL2077;IL2080;IL2090;IL2091;IL2093;IL3050</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
