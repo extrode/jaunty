@@ -37,6 +37,14 @@ public readonly struct ImportOptions
     /// </summary>
     public readonly IImportDialect? Dialect;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ImportOptions"/> struct.
+    /// </summary>
+    /// <param name="batchSize">The number of rows per batch during import. Default: 1000.</param>
+    /// <param name="onConflict">How primary key conflicts are handled. Default: <see cref="ConflictStrategy.Error"/>.</param>
+    /// <param name="createTableIfMissing">Whether to create the target table if it does not exist.</param>
+    /// <param name="onProgress">An optional progress callback invoked after each batch.</param>
+    /// <param name="dialect">An optional custom import dialect for database-specific SQL generation.</param>
     public ImportOptions(int batchSize = 1000, ConflictStrategy onConflict = ConflictStrategy.Error, bool createTableIfMissing = false, Action<long, long?>? onProgress = null, IImportDialect? dialect = null)
     {
         BatchSize = batchSize;
