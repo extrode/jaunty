@@ -2,10 +2,10 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
-using Jaunty.Fluent;
 using Jaunty.Dialects;
-using Jaunty.Internals.Entity;
+using Jaunty.Fluent;
 using Jaunty.Fluent.Internals;
+using Jaunty.Internals.Entity;
 
 namespace Jaunty.Fluent.Expressions;
 
@@ -112,7 +112,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             node.Method.DeclaringType.IsGenericType &&
             node.Method.DeclaringType.GetGenericTypeDefinition() == typeof(CaseBuilder<,>))
         {
-            if (node.Method.Name == "Else" || node.Method.Name == "End")
+            if (node.Method.Name is "Else" or "End")
             {
                 return HandleCaseExpression(node);
             }

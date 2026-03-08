@@ -1,10 +1,9 @@
 using System.Data;
 using System.Data.Common;
 
+using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Enums;
-
-using Jaunty.Configuration;
 
 namespace Jaunty.Internals.Read;
 

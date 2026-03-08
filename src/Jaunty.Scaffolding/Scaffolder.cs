@@ -3,8 +3,8 @@ using Jaunty.Scaffolding.CodeGeneration;
 using Jaunty.Scaffolding.Configuration;
 using Jaunty.Scaffolding.Providers.MySql;
 using Jaunty.Scaffolding.Providers.PostgreSql;
-using Jaunty.Scaffolding.Providers.SqlServer;
 using Jaunty.Scaffolding.Providers.SQLite;
+using Jaunty.Scaffolding.Providers.SqlServer;
 
 namespace Jaunty.Scaffolding;
 

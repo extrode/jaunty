@@ -1,6 +1,6 @@
 using Jaunty.FlatFiles.FileSources;
-using Jaunty.FlatFiles.Internals;
 using Jaunty.FlatFiles.Interfaces;
+using Jaunty.FlatFiles.Internals;
 
 namespace Jaunty.FlatFiles.Core;
 

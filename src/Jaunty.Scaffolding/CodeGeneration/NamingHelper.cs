@@ -35,7 +35,7 @@ public static class NamingHelper
         {
             char c = name[i];
 
-            if (c == '_' || c == '-' || c == ' ')
+            if (c is '_' or '-' or ' ')
             {
                 capitalizeNext = true;
                 continue;

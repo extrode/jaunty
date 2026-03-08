@@ -4,9 +4,9 @@ using System.Linq.Expressions;
 using System.Text;
 
 using Jaunty.Core;
+using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
-using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 
@@ -1275,7 +1275,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     private static TResult ConvertScalarResult<TResult>(object value)
     {
-        if (value is null || value is DBNull)
+        if (value is null or DBNull)
             return default!;
 
         var targetType = typeof(TResult);
