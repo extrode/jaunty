@@ -53,7 +53,7 @@ public static partial class Jaunty
     /// Thrown when the number of provided parameters doesn't match the SQL.
     /// </exception>
     /// <seealso cref="QueryFirst{T}(IDbConnection, string)"/>
-    /// <seealso cref="QueryFirstOrDefaultAsync{T}(IDbConnection, string)"/>
+    /// <seealso cref="QueryFirstOrDefaultAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QuerySingleOrDefault{T}(IDbConnection, string)"/>
     public static T? QueryFirstOrDefault<T>(this IDbConnection connection, string sql) where T : new()
     {

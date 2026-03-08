@@ -5,9 +5,9 @@ namespace Jaunty.Interfaces;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This interface marks an entity as having a primary key property named <c>Id</c> of type 
-/// <see cref="long"/>. Jaunty uses this interface to identify entities that can be operated 
-/// on by key-based methods such as <see cref="DeleteAsync{T}(IDbConnection, object, CancellationToken)"/>.
+/// This interface marks an entity as having a primary key property named <c>Id</c> of type
+/// <see cref="long"/>. Jaunty uses this interface to identify entities that can be operated
+/// on by key-based methods such as <c>DeleteAsync&lt;T&gt;</c>.
 /// </para>
 /// <para>
 /// Implementing this interface enables type-safe access to the entity's identifier and allows 

@@ -357,7 +357,7 @@ public static partial class Jaunty
     ///     new { Id = 1, CategoryId = 5 });
     /// </code>
     /// </example>
-    /// <seealso cref="QueryMultipleAsync(IDbConnection, string, Func{GridReader, TResult}, object, CommandOptions, CancellationToken)"/>
+    /// <seealso cref="QueryMultipleAsync{TResult}(IDbConnection, string, Func{GridReader, Task{TResult}}, object?, CommandOptions, CancellationToken)"/>
     public static async ValueTask<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, Task<TResult>> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER

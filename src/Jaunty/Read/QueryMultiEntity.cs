@@ -114,7 +114,7 @@ public static partial class Jaunty
     /// Thrown when parameter count doesn't match the SQL.
     /// </exception>
     /// <seealso cref="Query{T1, T2}(IDbConnection, string)"/>
-    /// <seealso cref="Query{T1, T2}(IDbConnection, string, object, CommandOptions{(T1, T2)})"/>
+    /// <seealso cref="Query{T1, T2}(IDbConnection, string, object, CommandOptions{ValueTuple{T1, T2}})"/>
     public static List<(T1, T2)> Query<T1, T2>(this IDbConnection connection, string sql, object parameters) where T1 : new() where T2 : new()
     {
 #if NET8_0_OR_GREATER

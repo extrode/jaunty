@@ -68,7 +68,7 @@ public static partial class Jaunty
     /// Thrown when the number of provided parameters doesn't match the SQL.
     /// </exception>
     /// <seealso cref="Query{T}(IDbConnection, string)"/>
-    /// <seealso cref="QueryPartialAsync{T}(IDbConnection, string)"/>
+    /// <seealso cref="QueryPartialAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryPartialFirst{T}(IDbConnection, string)"/>
     public static List<T> QueryPartial<T>(this IDbConnection connection, string sql) where T : new()
     {

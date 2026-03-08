@@ -9,8 +9,8 @@ namespace Jaunty.Attributes;
 /// If not specified, Jaunty will use the class name as the table name.
 /// </para>
 /// <para>
-/// This attribute is Jaunty's native table mapping attribute. It also supports the standard 
-/// <see cref="System.ComponentModel.DataAnnotations.Schema.TableAttribute"/> for compatibility.
+/// This attribute is Jaunty's native table mapping attribute. It also supports the standard
+/// <c>TableAttribute</c> from System.ComponentModel.DataAnnotations.Schema for compatibility.
 /// </para>
 /// </remarks>
 /// <example>

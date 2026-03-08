@@ -100,7 +100,7 @@ public sealed class SpParameter
 /// </code>
 /// </example>
 /// <seealso cref="SpParameter"/>
-/// <seealso cref="ExecuteStoredProcedure{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
+/// <seealso cref="Jaunty.ExecuteStoredProcedure{T}"/>
 public sealed class SpParameters
 {
     private readonly List<SpParameter> _parameters = new();

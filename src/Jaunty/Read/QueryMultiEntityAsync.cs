@@ -111,7 +111,7 @@ public static partial class Jaunty
     /// Thrown when parameter count doesn't match the SQL.
     /// </exception>
     /// <seealso cref="QueryAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
-    /// <seealso cref="QueryAsync{T1, T2}(IDbConnection, string, object, CommandOptions{(T1, T2)}, CancellationToken)"/>
+    /// <seealso cref="QueryAsync{T1, T2}(IDbConnection, string, object, CommandOptions{ValueTuple{T1, T2}}, CancellationToken)"/>
     public static ValueTask<List<(T1, T2)>> QueryAsync<T1, T2>(
         this IDbConnection connection,
         string sql,
