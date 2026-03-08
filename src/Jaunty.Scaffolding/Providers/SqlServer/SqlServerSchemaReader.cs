@@ -101,7 +101,9 @@ public sealed class SqlServerSchemaReader : ISchemaReader
 
         foreach (var typeName in connectionTypes)
         {
+#pragma warning disable IL2057 // Type name is from trusted source list
             var type = Type.GetType(typeName);
+#pragma warning restore IL2057
             if (type != null)
             {
                 return (DbConnection)Activator.CreateInstance(type, connectionString)!;

@@ -193,6 +193,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         Type resultType = typeof(TResult);
 
         // For anonymous types, we need to use the constructor
+#pragma warning disable IL2090 // Reflection on generic parameter for result mapping
         if (resultType.Name.StartsWith("<>") || resultType.GetConstructors().Any(c => c.GetParameters().Length == aliases.Length))
         {
             var values = new object?[aliases.Length];
@@ -213,16 +214,21 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
                         values[i] = Convert.ChangeType(value, underlyingType);
                     }
                 }
+#pragma warning restore IL2090
                 return (TResult)constructor.Invoke(values);
             }
         }
 
         // For regular classes/structs
+#pragma warning disable IL2091 // Activator.CreateInstance requires public parameterless constructor
         TResult? instance = Activator.CreateInstance<TResult>();
+#pragma warning restore IL2091
         for (int i = 0; i < aliases.Length; i++)
         {
 
+#pragma warning disable IL2090
             PropertyInfo? property = resultType.GetProperty(aliases[i]);
+#pragma warning restore IL2090
             if (property != null && property.CanWrite)
             {
                 var ordinal = reader.GetOrdinal(aliases[i]);
