@@ -190,6 +190,3 @@ public class QueryStreamAsyncTests : IClassFixture<DialectFixture>
     }
 }
 #endif
-
-
-

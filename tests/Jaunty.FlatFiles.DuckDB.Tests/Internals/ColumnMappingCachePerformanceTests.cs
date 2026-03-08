@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
+
 using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 

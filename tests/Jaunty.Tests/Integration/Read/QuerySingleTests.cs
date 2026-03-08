@@ -8,7 +8,7 @@ namespace Jaunty.Tests.Integration.Read;
 public class QuerySingleTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
-    
+
     private const string FullProductColumns = @"
         product_id AS ProductId,
         product_name AS ProductName,
@@ -25,16 +25,16 @@ public class QuerySingleTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
     public void QuerySingle_WithSingleResult_ReturnsResult(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-var product = connection.QuerySingle<Product>(
-            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
-            new { Id = 1 });
+        var product = connection.QuerySingle<Product>(
+                    $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
+                    new { Id = 1 });
 
         Assert.NotNull(product);
         Assert.Equal(1, product.ProductId);
@@ -48,9 +48,9 @@ var product = connection.QuerySingle<Product>(
     public void QuerySingle_WithParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-var product = connection.QuerySingle<Product>(
-            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id AND category_id = @CategoryId",
-            new { Id = 1, CategoryId = 1 });
+        var product = connection.QuerySingle<Product>(
+                    $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id AND category_id = @CategoryId",
+                    new { Id = 1, CategoryId = 1 });
 
         Assert.NotNull(product);
         Assert.Equal(1, product.ProductId);
@@ -79,10 +79,10 @@ var product = connection.QuerySingle<Product>(
     public void QuerySingle_MultipleResults_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-var ex = Assert.Throws<InvalidOperationException>(() =>
-            connection.QuerySingle<Product>(
-                $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
-                new { CategoryId = 1 }));
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+                    connection.QuerySingle<Product>(
+                        $"SELECT {FullProductColumns} FROM products WHERE category_id = @CategoryId",
+                        new { CategoryId = 1 }));
 
         Assert.Contains("Sequence contains more than one element of type 'Product'", ex.Message);
     }
@@ -94,10 +94,10 @@ var ex = Assert.Throws<InvalidOperationException>(() =>
     public void QuerySingle_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-var product = connection.QuerySingle<Product>(
-            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
-            new { Id = 1 },
-            CommandOptions<Product>.WithTimeout(30));
+        var product = connection.QuerySingle<Product>(
+                    $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
+                    new { Id = 1 },
+                    CommandOptions<Product>.WithTimeout(30));
 
         Assert.NotNull(product);
         Assert.Equal(1, product.ProductId);
@@ -118,5 +118,3 @@ var product = connection.QuerySingle<Product>(
                 new { Id = 1 }));
     }
 }
-
-

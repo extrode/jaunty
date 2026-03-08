@@ -60,8 +60,12 @@ public class WriteBackTests : IDisposable
         // Mutate data
         await _db.InsertAsync(new InventoryItem
         {
-            ItemId = 10, ItemName = "New Item", Category = "Test",
-            StockQuantity = 1, UnitPrice = 1.00m, InStock = true
+            ItemId = 10,
+            ItemName = "New Item",
+            Category = "Test",
+            StockQuantity = 1,
+            UnitPrice = 1.00m,
+            InStock = true
         });
 
         // Save to new file
@@ -87,8 +91,12 @@ public class WriteBackTests : IDisposable
         // Mutate data
         await _db.InsertAsync(new InventoryItem
         {
-            ItemId = 10, ItemName = "New Item", Category = "Test",
-            StockQuantity = 1, UnitPrice = 1.00m, InStock = true
+            ItemId = 10,
+            ItemName = "New Item",
+            Category = "Test",
+            StockQuantity = 1,
+            UnitPrice = 1.00m,
+            InStock = true
         });
 
         // Save to a DIFFERENT file
@@ -129,8 +137,12 @@ public class WriteBackTests : IDisposable
         // Mutate data
         await _db.InsertAsync(new InventoryItem
         {
-            ItemId = 10, ItemName = "New Item", Category = "Test",
-            StockQuantity = 1, UnitPrice = 1.00m, InStock = true
+            ItemId = 10,
+            ItemName = "New Item",
+            Category = "Test",
+            StockQuantity = 1,
+            UnitPrice = 1.00m,
+            InStock = true
         });
 
         // Save with overwrite
@@ -220,8 +232,12 @@ public class WriteBackTests : IDisposable
         // Insert and then export
         await _db.InsertAsync(new InventoryItem
         {
-            ItemId = 10, ItemName = "Extra", Category = "Test",
-            StockQuantity = 1, UnitPrice = 1.00m, InStock = true
+            ItemId = 10,
+            ItemName = "Extra",
+            Category = "Test",
+            StockQuantity = 1,
+            UnitPrice = 1.00m,
+            InStock = true
         });
 
         await _db.ExportAsync<InventoryItem>(parquetPath);
@@ -304,8 +320,12 @@ public class WriteBackTests : IDisposable
         // 2. INSERT
         await _db.InsertAsync(new InventoryItem
         {
-            ItemId = 20, ItemName = "Exit Gate Item", Category = "ExitGate",
-            StockQuantity = 100, UnitPrice = 50.00m, InStock = true
+            ItemId = 20,
+            ItemName = "Exit Gate Item",
+            Category = "ExitGate",
+            StockQuantity = 100,
+            UnitPrice = 50.00m,
+            InStock = true
         });
         Assert.Equal(6, _db.Connection.From<InventoryItem>().Count());
 

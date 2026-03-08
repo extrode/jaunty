@@ -199,7 +199,7 @@ public static partial class Jaunty
         // Resolve mapper early for common cases (user override, source-gen, reflection)
         // to avoid opening connection if resolution will fail
         Func<DbDataReader, T>? mapper = null;
-        
+
         // 1. User override
         if (options.Mapper is not null)
         {
@@ -212,7 +212,7 @@ public static partial class Jaunty
             var sgMapper = Internals.Read.MappedCache<T>.Mapper;
             mapper = dbReader => sgMapper(dbReader);
         }
-        
+
         // If we couldn't resolve without reader, we'll need to resolve after opening
         bool needsReaderForMapper = mapper is null;
 
@@ -235,7 +235,7 @@ public static partial class Jaunty
                 ParameterBinder.Bind(command, parameters);
 
             using var reader = command.ExecuteReader();
-            
+
             // Resolve mapper now if we couldn't resolve it earlier
             if (needsReaderForMapper)
                 mapper = DrDispatcher.Resolve(reader, options, mode);

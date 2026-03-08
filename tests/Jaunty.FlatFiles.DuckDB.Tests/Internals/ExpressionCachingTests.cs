@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+
 using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 using Jaunty.Fluent;

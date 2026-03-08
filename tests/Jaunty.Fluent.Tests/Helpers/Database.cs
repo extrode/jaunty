@@ -26,7 +26,7 @@ public class Database : IDisposable
     {
         string scriptPath = Path.Combine(AppContext.BaseDirectory, "data", "initialize_fluent_test_db.sql");
         string sql = File.ReadAllText(scriptPath);
-        
+
         // Split by semicolon and execute individually to ensure all statements are run
         var statements = sql.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
         foreach (var statement in statements)

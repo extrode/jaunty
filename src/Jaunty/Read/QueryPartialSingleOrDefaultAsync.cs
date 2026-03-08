@@ -242,4 +242,3 @@ public static partial class Jaunty
             : QuerySingleOrDefaultCoreAsync<T>(dbConnection, sql, parameters, options, MappingMode.Projection, cancellationToken);
     }
 }
-

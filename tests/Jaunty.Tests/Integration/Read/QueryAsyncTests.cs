@@ -112,5 +112,3 @@ public class QueryAsyncTests : IClassFixture<DialectFixture>
         Assert.NotEmpty(categories);
     }
 }
-
-

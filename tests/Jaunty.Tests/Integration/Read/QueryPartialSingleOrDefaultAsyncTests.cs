@@ -161,7 +161,3 @@ public class QueryPartialSingleOrDefaultAsyncTests : IClassFixture<DialectFixtur
         Assert.Equal(2, product.ProductId);
     }
 }
-
-
-
-

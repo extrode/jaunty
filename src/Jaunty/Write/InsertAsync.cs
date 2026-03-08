@@ -116,4 +116,3 @@ public static partial class Jaunty
             : InsertCoreAsync(dbConnection, entity, options, cancellationToken);
     }
 }
-

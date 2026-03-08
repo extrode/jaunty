@@ -97,6 +97,3 @@ public class ExecuteScalarTests : IClassFixture<DialectFixture>
         Assert.True(maxId > 0);
     }
 }
-
-
-

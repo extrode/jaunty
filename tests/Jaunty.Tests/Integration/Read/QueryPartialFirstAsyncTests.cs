@@ -130,7 +130,3 @@ public class QueryPartialFirstAsyncTests : IClassFixture<DialectFixture>
         Assert.True(product.ProductId > 0);
     }
 }
-
-
-
-

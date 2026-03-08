@@ -8,7 +8,7 @@ namespace Jaunty.Tests.Integration.Read;
 public class QuerySingleOrDefaultTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
-    
+
     private const string FullProductColumns = @"
         product_id AS ProductId,
         product_name AS ProductName,
@@ -25,7 +25,7 @@ public class QuerySingleOrDefaultTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
@@ -117,5 +117,3 @@ public class QuerySingleOrDefaultTests : IClassFixture<DialectFixture>
                 new { Id = 1 }));
     }
 }
-
-

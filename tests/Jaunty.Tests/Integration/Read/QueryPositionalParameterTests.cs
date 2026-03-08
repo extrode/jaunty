@@ -23,7 +23,7 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
         using var connection = _fixture.GetConnection(dialect);
         var categories = connection.Query<Category>(
             "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
-            new { Id = 1});
+            new { Id = 1 });
 
         Assert.Single(categories);
         Assert.Equal(1, categories[0].CategoryId);
@@ -133,5 +133,3 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
 
     #endregion
 }
-
-

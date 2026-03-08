@@ -760,13 +760,13 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
         var sql = dialect.Provider == DialectProvider.SqlServer
             ? "SELECT TOP 2 category_id, category_name FROM categories"
             : "SELECT category_id, category_name FROM categories LIMIT 2";
-        
+
         using var gridReader = await connection.QueryMultipleAsync(sql);
 
         // Use ReadPartialSingleOrDefaultAsync since we're only selecting 2 columns
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => 
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             gridReader.ReadPartialSingleOrDefaultAsync<Category>());
-        
+
         Assert.Contains("Sequence contains more than one element", ex.Message);
     }
 
@@ -852,6 +852,3 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
             ? "SELECT COUNT(*) FROM Categories"
             : "SELECT COUNT(*) FROM categories";
 }
-
-
-

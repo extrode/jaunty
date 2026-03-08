@@ -223,6 +223,3 @@ public class QueryValueTupleTests : IClassFixture<DialectFixture>
         Assert.Equal(5, results.Count);
     }
 }
-
-
-

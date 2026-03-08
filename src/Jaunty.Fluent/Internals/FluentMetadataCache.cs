@@ -12,7 +12,8 @@ internal static class FluentMetadataCache
 
     public static EntityMetadata GetMetadata<T>() where T : new()
     {
-        return _metadataCache.GetOrAdd(typeof(T), _ => {
+        return _metadataCache.GetOrAdd(typeof(T), _ =>
+        {
             if (JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is EntityMetadata metadata)
             {
                 return metadata;
@@ -27,11 +28,12 @@ internal static class FluentMetadataCache
     public static CachedDialectMetadata GetForDialect<T>(ISqlDialect dialect) where T : new()
     {
         var key = (typeof(T), dialect.GetType());
-        return _dialectCache.GetOrAdd(key, _ => {
+        return _dialectCache.GetOrAdd(key, _ =>
+        {
             var meta = GetMetadata<T>();
             var escapedTable = dialect.EscapeTableName(meta.SchemaName, meta.TableName);
             var escapedCols = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            
+
             foreach (var col in meta.Columns)
             {
                 escapedCols[col.Property.Name] = dialect.EscapeColumnName(col.ColumnName);

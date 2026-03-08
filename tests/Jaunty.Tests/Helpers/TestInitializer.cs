@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+
 using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection;
 

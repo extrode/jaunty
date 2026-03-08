@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
+
 using Xunit;
 
 namespace Jaunty.Fluent.Tests.Unit.Expressions;

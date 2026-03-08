@@ -294,6 +294,3 @@ public class QueryDictionaryTests : IClassFixture<DialectFixture>
 
     #endregion
 }
-
-
-

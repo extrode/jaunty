@@ -21,9 +21,9 @@ public class CompositeKeyDeleteTests
         using var connection = dialect.Provider == DialectProvider.SystemSqlite
             ? (System.Data.IDbConnection)new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
             : (System.Data.IDbConnection)new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-        
+
         connection.Open();
-        
+
         // Create OrderDetail table with composite key
         using (var cmd = connection.CreateCommand())
         {
@@ -38,7 +38,7 @@ public class CompositeKeyDeleteTests
                 )";
             cmd.ExecuteNonQuery();
         }
-        
+
         var orderDetail = new OrderDetailEntity
         {
             OrderId = 1,
@@ -69,9 +69,9 @@ public class CompositeKeyDeleteTests
         using var connection = dialect.Provider == DialectProvider.SystemSqlite
             ? (System.Data.IDbConnection)new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
             : (System.Data.IDbConnection)new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-        
+
         connection.Open();
-        
+
         // Create OrderDetail table with composite key
         using (var cmd = connection.CreateCommand())
         {
@@ -86,7 +86,7 @@ public class CompositeKeyDeleteTests
                 )";
             cmd.ExecuteNonQuery();
         }
-        
+
         var ex = Assert.Throws<InvalidOperationException>(() =>
             connection.Delete<OrderDetailEntity>(new { OrderId = 1, ProductId = 1 }));
 

@@ -26,7 +26,7 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     {
         _enumerator = entities.GetEnumerator();
         _columns = ColumnMetadataHelper.GetInsertableColumns(metadata).ToArray();
-        
+
         // Initialize cached getters for this type if not already done
         if (Getters.Length == 0)
         {
@@ -180,7 +180,7 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     public int GetProviderSpecificValues(object[] values) => GetValues(values);
 
     /// <inheritdoc/>
-    public Task<bool> IsDBNullAsync(int i, CancellationToken cancellationToken) 
+    public Task<bool> IsDBNullAsync(int i, CancellationToken cancellationToken)
         => Task.FromResult(IsDBNull(i));
 
     /// <summary>

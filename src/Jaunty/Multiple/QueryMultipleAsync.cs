@@ -372,4 +372,3 @@ public static partial class Jaunty
         return await reader(gridReader);
     }
 }
-

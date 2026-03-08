@@ -36,9 +36,9 @@ public interface IBulkCopyProvider
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task representing the asynchronous operation. The result is the number of rows copied.</returns>
     ValueTask<int> CopyToServerAsync(
-        DbConnection connection, 
-        string tableName, 
-        IDataReader data, 
-        BulkCopyOptions options, 
+        DbConnection connection,
+        string tableName,
+        IDataReader data,
+        BulkCopyOptions options,
         CancellationToken cancellationToken);
 }

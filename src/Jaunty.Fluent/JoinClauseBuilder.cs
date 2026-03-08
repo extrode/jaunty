@@ -24,7 +24,7 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
         _joinMetadata = FluentMetadataCache.GetMetadata<TJoin>();
     }
 
-    public IJoinedQuery<TFrom, TJoin> On<TLeftKey, TRightKey>(Expression<Func<TFrom, TLeftKey>> leftKey,         Expression<Func<TJoin, TRightKey>> rightKey)
+    public IJoinedQuery<TFrom, TJoin> On<TLeftKey, TRightKey>(Expression<Func<TFrom, TLeftKey>> leftKey, Expression<Func<TJoin, TRightKey>> rightKey)
     {
         var leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
         var rightProp = PropertyExtractor.ExtractPropertyName(rightKey);

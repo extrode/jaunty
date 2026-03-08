@@ -34,7 +34,7 @@ public class ConfigResolverTests : IClassFixture<DialectFixture>, IDisposable
     public void Query_WithSnakeCaseColumnResolver_MapsCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        
+
         // Configure snake_case column resolver
         JauntyConfig.ColumnNameResolver = ToSnakeCase;
 
@@ -58,7 +58,7 @@ public class ConfigResolverTests : IClassFixture<DialectFixture>, IDisposable
     public void QueryPartial_AttributeTakesPrecedenceOverResolver(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        
+
         // Configure a resolver that would give wrong names
         JauntyConfig.ColumnNameResolver = name => "wrong_" + name.ToLower();
 

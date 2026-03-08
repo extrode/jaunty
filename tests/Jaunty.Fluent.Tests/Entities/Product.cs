@@ -1,4 +1,5 @@
 using Jaunty.Attributes;
+
 using DatabaseGeneratedAttribute = System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute;
 using DatabaseGeneratedOption = System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedOption;
 

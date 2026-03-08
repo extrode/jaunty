@@ -35,7 +35,7 @@ internal static class MappedCache<T> where T : new()
             var instanceMethod = typeof(T).GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Instance, null, [typeof(IDataReader)], null);
             if (instanceMethod != null)
             {
-                return (IDataReader r) => 
+                return (IDataReader r) =>
                 {
                     var instance = new T();
                     // We need a bridge here because instanceMethod is on IMapped<T> but we call it on T

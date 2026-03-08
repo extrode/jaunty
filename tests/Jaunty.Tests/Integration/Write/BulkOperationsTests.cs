@@ -669,5 +669,3 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
 
     #endregion
 }
-
-

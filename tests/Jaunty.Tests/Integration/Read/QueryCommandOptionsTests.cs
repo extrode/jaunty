@@ -105,5 +105,3 @@ public class QueryCommandOptionsTests : IClassFixture<DialectFixture>
         Assert.Equal(1, categories[0].CategoryId);
     }
 }
-
-

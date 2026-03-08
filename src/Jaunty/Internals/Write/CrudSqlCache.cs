@@ -37,7 +37,7 @@ internal static class CrudSqlCache
     private static CachedCrudSql BuildCachedSql<T>(ISqlDialect dialect) where T : new()
     {
         EntityMetadata? metadata = TryResolveMetadata<T>();
-        
+
         if (metadata == null)
         {
             throw new InvalidOperationException(
@@ -78,7 +78,7 @@ internal static class CrudSqlCache
         // 1. Check if IMapped<T> provides metadata (Source Gen path)
         // Our source gen could implement a GetMetadata() on IMapped, but for now we'll rely on the extension hook
         // for complex metadata like PrimaryKeys/Identity.
-        
+
         // 2. Fallback to extension hook
         if (JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is EntityMetadata metadata)
         {

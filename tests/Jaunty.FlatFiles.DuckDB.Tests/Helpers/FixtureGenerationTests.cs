@@ -10,7 +10,7 @@ public class FixtureGenerationTests
     {
         var outputPath = "data/parquet/inventory.parquet";
         FixtureGenerator.GenerateParquetFixture(outputPath);
-        
+
         Assert.True(File.Exists(outputPath), "Parquet fixture should be generated");
     }
 
@@ -19,9 +19,9 @@ public class FixtureGenerationTests
     {
         var outputPath = "data/csv/large-10k.csv";
         FixtureGenerator.GenerateLargeCsv(outputPath, 10000);
-        
+
         Assert.True(File.Exists(outputPath), "Large CSV fixture should be generated");
-        
+
         var lines = File.ReadAllLines(outputPath);
         Assert.Equal(10001, lines.Length); // Header + 10000 rows
     }

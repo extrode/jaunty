@@ -1,4 +1,5 @@
 using System.Data;
+
 using Jaunty.Internals.Entity;
 
 namespace Jaunty;

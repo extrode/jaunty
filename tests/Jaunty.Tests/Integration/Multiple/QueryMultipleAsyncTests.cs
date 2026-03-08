@@ -190,5 +190,3 @@ public class QueryMultipleAsyncTests : IClassFixture<DialectFixture>
             ? "SELECT COUNT(*) FROM Categories; SELECT COUNT(*) FROM Products WHERE CategoryId = @CategoryId"
             : "SELECT COUNT(*) FROM categories; SELECT COUNT(*) FROM products WHERE category_id = @CategoryId";
 }
-
-
