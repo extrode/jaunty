@@ -153,7 +153,7 @@ public static partial class Jaunty
 #endif
             command.CommandText = sql;
 
-            if (options.CommandType == CommandType.StoredProcedure || options.CommandType == CommandType.TableDirect)
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                 command.CommandType = options.CommandType;
 
             if (options.Transaction is DbTransaction dbTransaction)
@@ -169,7 +169,7 @@ public static partial class Jaunty
 
             var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
-            if (result is null || result is DBNull)
+            if (result is null or DBNull)
                 return default!;
 
             if (result is T direct)

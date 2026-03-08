@@ -4,8 +4,8 @@ using System.Text;
 
 using Jaunty.Configuration;
 using Jaunty.Dialects;
-using Jaunty.Internals.Entity;
 using Jaunty.Interfaces;
+using Jaunty.Internals.Entity;
 
 namespace Jaunty.Internals.Write;
 
