@@ -222,7 +222,9 @@ public static class MetadataCache<T>
 /// Represents metadata context for a property during entity mapping.
 /// </summary>
 /// <typeparam name="T">The entity type containing the property.</typeparam>
+#pragma warning disable CS9113 // Parameter is unread (fastSetter reserved for future use)
 public readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, Action<T, DbDataReader, int> fastSetter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
+#pragma warning restore CS9113
 {
     /// <summary>
     /// Gets the property information.
@@ -261,10 +263,12 @@ public readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IData
 /// <typeparam name="T">The entity type containing the property.</typeparam>
 public readonly struct PropertySetter<T>(PropertyContext<T> context, int ordinal)
 {
+#pragma warning disable CS9124 // Parameter is captured and also used to initialize property
     /// <summary>
     /// Gets the zero-based ordinal position of the column in the data reader.
     /// </summary>
     public int Ordinal { get; } = ordinal;
+#pragma warning restore CS9124
 
     /// <summary>
     /// Sets the property value on the target entity from the data record.

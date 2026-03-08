@@ -48,13 +48,11 @@ internal sealed class CachedCrudSql
         if (!hasIdentityKey)
             return insertSql;
 
-        var trimmed = lastInsertIdSql?.TrimStart();
-        if (!string.IsNullOrEmpty(trimmed) &&
-            trimmed!.StartsWith("RETURNING", StringComparison.OrdinalIgnoreCase))
-        {
-            return $"{insertSql} {lastInsertIdSql}";
-        }
+        string? trimmed = lastInsertIdSql?.TrimStart();
 
-        return $"{insertSql}; {lastInsertIdSql}";
+        return !string.IsNullOrEmpty(trimmed) &&
+            trimmed!.StartsWith("RETURNING", StringComparison.OrdinalIgnoreCase)
+            ? $"{insertSql} {lastInsertIdSql}"
+            : $"{insertSql}; {lastInsertIdSql}";
     }
 }
