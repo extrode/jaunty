@@ -36,7 +36,7 @@ public static partial class Jaunty
 
             // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
             // Note: default(CommandType) is 0, CommandType.Text is 1, so check for both
-            if (options.CommandType == CommandType.StoredProcedure || options.CommandType == CommandType.TableDirect)
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                 command.CommandType = options.CommandType;
 
             if (options.Transaction is not null)
@@ -81,7 +81,7 @@ public static partial class Jaunty
             using var command = connection.CreateCommand();
             command.CommandText = sql;
 
-            if (options.CommandType == CommandType.StoredProcedure || options.CommandType == CommandType.TableDirect)
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                 command.CommandType = options.CommandType;
 
             if (options.Transaction is not null)
@@ -126,7 +126,7 @@ public static partial class Jaunty
             using var command = connection.CreateCommand();
             command.CommandText = sql;
 
-            if (options.CommandType == CommandType.StoredProcedure || options.CommandType == CommandType.TableDirect)
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                 command.CommandType = options.CommandType;
 
             if (options.Transaction is not null)

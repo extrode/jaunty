@@ -1,6 +1,7 @@
 using System.Data;
-using Jaunty.Interfaces;
+
 using Jaunty.Core;
+using Jaunty.Interfaces;
 
 namespace Jaunty;
 

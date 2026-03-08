@@ -15,7 +15,7 @@ internal static class ParameterBinder
     {
         // Stored procedures/table-direct don't expose SQL parameter placeholders in CommandText,
         // so SQL-text parsing/validation is not applicable. Bind all provided values.
-        if (command.CommandType == CommandType.StoredProcedure || command.CommandType == CommandType.TableDirect)
+        if (command.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
         {
             if (parameters is IDictionary<string, object?> dict)
             {

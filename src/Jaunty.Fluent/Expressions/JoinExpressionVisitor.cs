@@ -2,8 +2,8 @@ using System.Linq.Expressions;
 using System.Text;
 
 using Jaunty.Dialects;
-using Jaunty.Internals.Entity;
 using Jaunty.Fluent.Internals;
+using Jaunty.Internals.Entity;
 
 namespace Jaunty.Fluent.Expressions;
 

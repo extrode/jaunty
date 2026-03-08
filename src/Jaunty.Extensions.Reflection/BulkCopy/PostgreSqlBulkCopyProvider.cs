@@ -113,8 +113,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         var copyCommand = BuildCopyCommand(tableName, data);
 
         // BeginBinaryImportAsync returns Task<NpgsqlBinaryImporter>
-        var importerTask = BeginBinaryImportAsyncMethod.Invoke(connection, new object[] { copyCommand, cancellationToken }) as Task;
-        if (importerTask == null)
+        if (BeginBinaryImportAsyncMethod.Invoke(connection, new object[] { copyCommand, cancellationToken }) is not Task importerTask)
             throw new InvalidOperationException("Failed to begin async binary import.");
 
         await importerTask.ConfigureAwait(false);
@@ -135,16 +134,14 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var startTask = StartRowAsyncMethod.Invoke(importer, new object[] { cancellationToken }) as Task;
-                if (startTask != null) await startTask.ConfigureAwait(false);
+                if (StartRowAsyncMethod.Invoke(importer, new object[] { cancellationToken }) is Task startTask) await startTask.ConfigureAwait(false);
 
                 for (int i = 0; i < columnCount; i++)
                 {
                     var value = data.GetValue(i);
                     if (value is DBNull)
                     {
-                        var nullTask = WriteNullAsyncMethod?.Invoke(importer, new object[] { cancellationToken }) as Task;
-                        if (nullTask != null) await nullTask.ConfigureAwait(false);
+                        if (WriteNullAsyncMethod?.Invoke(importer, new object[] { cancellationToken }) is Task nullTask) await nullTask.ConfigureAwait(false);
                     }
                     else
                     {
@@ -159,8 +156,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 
             if (CompleteAsyncMethod != null)
             {
-                var completeTask = CompleteAsyncMethod.Invoke(importer, new object[] { cancellationToken }) as Task;
-                if (completeTask != null) await completeTask.ConfigureAwait(false);
+                if (CompleteAsyncMethod.Invoke(importer, new object[] { cancellationToken }) is Task completeTask) await completeTask.ConfigureAwait(false);
             }
             else
             {

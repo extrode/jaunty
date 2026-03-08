@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 #endif
 using System.Linq.Expressions;
 using System.Reflection;
+
 using Jaunty.Interfaces;
 using Jaunty.Configuration;
 using Jaunty.Internals.Entity;

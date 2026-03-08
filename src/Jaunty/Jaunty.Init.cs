@@ -44,7 +44,7 @@ public static partial class Jaunty
             var method = type?.GetMethod("UseReflectionMapping", BindingFlags.Public | BindingFlags.Static);
             method?.Invoke(null, null);
         }
-        catch (Exception ex) when (ex is FileNotFoundException || ex is TypeLoadException || ex is MissingMethodException)
+        catch (Exception ex) when (ex is FileNotFoundException or TypeLoadException or MissingMethodException)
         {
             // Extension not present or trimmed away, which is fine for source-gen-only users
             // NativeAOT applications should manually initialize if they need reflection mapping
