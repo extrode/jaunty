@@ -7,6 +7,7 @@ Guides for developing and extending Jaunty.
 | Document | Purpose |
 |----------|---------|
 | [`coding-conventions.md`](coding-conventions.md) | C# coding standards and conventions |
+| [`file-naming-convention.md`](file-naming-convention.md) | Documentation file naming standard |
 | [`adding-new-methods.md`](adding-new-methods.md) | How to add new query methods |
 | [`multi-targeting.md`](multi-targeting.md) | Supporting netstandard2.0 and net8.0 |
 | [`performance-checklist.md`](performance-checklist.md) | Performance optimization checklist |

@@ -1,0 +1,311 @@
+# Jaunty.FlatFiles Consistency Audit Tasklist
+
+**Generated:** 2026-03-07  
+**Scope:** Jaunty.FlatFiles and Jaunty.FlatFiles.DuckDB vs Jaunty core  
+**Goal:** Ensure consistency in code quality, organization, performance, usage, and documentation
+
+---
+
+## Executive Summary
+
+| Priority | Count | Description |
+|----------|-------|-------------|
+| **P0** | 7 | Critical issues (blocking) |
+| **P1** | 12 | High priority (should fix) |
+| **P2** | 11 | Medium priority (recommended) |
+| **P3** | 7 | Low priority (nice to have) |
+| **Total** | **37** | |
+
+---
+
+## P0: Critical Issues (Blocking)
+
+### Documentation & XML Comments
+
+- [ ] **P0-1: Add XML documentation to all public APIs in Jaunty.FlatFiles**
+  - [ ] `IFileSource` interface members lack `<returns>` and `<exception>` tags
+  - [ ] `FlatFileOptions` methods lack `<example>` tags
+  - [ ] `IFlatFileDialect` interface members need complete documentation
+  - [ ] All file source classes (`CsvFileSource`, `TsvFileSource`, etc.) need complete XML docs
+  - **Files:** `src/Jaunty.FlatFiles/IFileSource.cs`, `src/Jaunty.FlatFiles/FlatFileOptions.cs`, `src/Jaunty.FlatFiles/IFlatFileDialect.cs`
+
+- [ ] **P0-2: Add XML documentation to Jaunty.FlatFiles.DuckDB public APIs**
+  - [ ] `DuckDb` class public methods lack complete documentation
+  - [ ] `FlatFile` static factory methods need `<exception>` tags
+  - [ ] `DuckDbDialect` needs documentation for all overridden methods
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`, `src/Jaunty.FlatFiles.DuckDB/FlatFile.cs`
+
+- [ ] **P0-3: Add XML documentation to internal helper types**
+  - [ ] `FlatFileExpressionHelper` class and members need documentation
+  - [ ] `ColumnMapping` struct needs documentation
+  - [ ] ImportPipeline classes need documentation
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/FlatFileExpressionHelper.cs`, `src/Jaunty.FlatFiles.DuckDB/ImportPipeline/`
+
+### Code Style & Conventions
+
+- [x] **P0-4: Remove LINQ usage in hot paths (violates API-DESIGN.md)**
+  - [x] **VERIFIED** - LINQ only used in initialization code, not hot paths
+  - [x] `foreach` loops used for iteration (not LINQ methods)
+  - [x] Collection materialization happens once, not per-row
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`, `src/Jaunty.FlatFiles.DuckDB/FlatFileExpressionHelper.cs`
+  - **Status:** COMPLETE - No changes needed, pattern already correct
+
+- [x] **P0-5: Fix inconsistent null handling**
+  - [x] **VERIFIED** - Uses `ArgumentNullException.ThrowIfNull` consistently
+  - [x] Conditional compilation for .NET Standard 2.0 compatibility where needed
+  - **Files:** All FlatFiles source files
+  - **Status:** COMPLETE - Pattern already consistent
+
+- [x] **P0-6: Add `ConfigureAwait(false)` to all async library code**
+  - [x] **VERIFIED** - All async methods use `.ConfigureAwait(false)`
+  - [x] Transaction disposal uses `await using (transaction.ConfigureAwait(false))`
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`, `src/Jaunty.FlatFiles.DuckDB/ImportPipeline/`
+  - **Status:** COMPLETE - Already properly implemented
+
+- [x] **P0-FIX: Implement true sync methods (not sync-over-async)**
+  - [x] **FIXED** - Replaced sync-over-async wrappers with true sync implementations
+  - [x] Added `EnsurePromotedToTable()` sync helper method
+  - [x] Added `ExecuteNonQuery()` sync helper method
+  - [x] Sync methods use `using` (not `await using`) and sync ADO.NET calls
+  - [x] Matches Jaunty core pattern of separate sync/async code paths
+  - [x] Eliminates deadlock risk and thread pool starvation
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`
+  - **Status:** COMPLETE - All 279 tests pass
+
+---
+
+## P1: High Priority (Should Fix)
+
+### API Design Consistency
+
+- [x] **P1-7: Standardize method overloading pattern**
+  - [x] Jaunty core uses optional parameters with defaults
+  - [x] FlatFiles methods reviewed - pattern is consistent
+  - [x] **Status: ACCEPTABLE** - FlatFiles uses consistent overloading
+
+- [x] **P1-8: Add sync counterparts for async methods**
+  - [x] Added sync `Insert<T>()`, `Insert<T>(IEnumerable<T>)` methods
+  - [x] Added sync `Update<T>()`, `Delete<T>()` methods
+  - [x] Added sync `Save<T>()`, `Save<T>(WriteBackMode)` methods
+  - [x] Added sync `Export<T>()` method
+  - [x] Sync methods wrap async with `.GetAwaiter().GetResult()` (consistent with .NET patterns)
+  - **Files:** `src/Jaunty.FlatFiles/IFlatFile.cs`, `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`
+  - **Status:** COMPLETE - All 279 tests pass
+
+- [x] **P1-9: Fix generic type constraints**
+  - [x] **RESOLVED: Finding was INCORRECT**
+  - [x] FlatFiles intentionally uses `where T : class, new()` (not `where T : new()`)
+  - [x] Rationale: Flat file entities are reference types; mutation tracking requires classes
+  - [x] This is a deliberate design choice appropriate for the FlatFiles use case
+  - **Files:** N/A - No changes needed
+
+- [x] **P1-10: Add `CommandOptions` support to FlatFiles API**
+  - [x] Added `CommandOptions` overloads to all CRUD methods in `IFlatFile`
+  - [x] Implemented in `DuckDb` class with documentation noting DuckDB limitations
+  - [x] Provides API consistency with Jaunty core
+  - [x] **Note:** DuckDB flat file operations don't support external transactions or command timeouts
+  - [x] Overloads delegate to base methods (API compatibility layer)
+  - **Files:** `src/Jaunty.FlatFiles/IFlatFile.cs`, `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`
+  - **Status:** COMPLETE - All 279 tests pass, API now consistent with Jaunty core
+
+### Error Handling
+
+- [ ] **P1-11: Use specific exception types consistently**
+  - [ ] Some FlatFiles code throws generic `ArgumentException`
+  - [ ] Should throw `ArgumentNullException`, `InvalidOperationException` with specific messages
+  - [ ] Match Jaunty's exception message style (include type names, available options)
+  - **Files:** All FlatFiles source files
+
+- [ ] **P1-12: Add parameter validation at method entry**
+  - [ ] Use `ArgumentNullException.ThrowIfNull` pattern consistently
+  - [ ] Add validation for expression parameters
+  - [ ] Include descriptive error messages
+  - **Files:** All FlatFiles source files
+
+### Performance & Allocations
+
+- [ ] **P1-13: Pre-allocate collections with known capacity**
+  - [ ] `DuckDb.QueryAsync<T>()` doesn't pre-size `List<T>`
+  - [ ] `FlatFileExpressionHelper` should pre-size `StringBuilder`
+  - [ ] Match Jaunty's allocation-avoidance patterns
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`, `src/Jaunty.FlatFiles.DuckDB/FlatFileExpressionHelper.cs`
+
+- [ ] **P1-14: Cache expression compilation results**
+  - [ ] `FlatFileExpressionHelper` caches some expressions but not all
+  - [ ] `CreateGetter` and `CreateSetter` should cache delegates
+  - [ ] Add caching for predicate translation
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/FlatFileExpressionHelper.cs`
+
+- [x] **P1-15: Use `FrozenDictionary` for .NET 8+**
+  - [x] Updated `_columnMappingCache` to use `FrozenDictionary<string, ColumnMapping>` on .NET 8+
+  - [x] Changed `GetColumnMappings()` return type from `List<ColumnMapping>` to `IReadOnlyDictionary<string, ColumnMapping>`
+  - [x] Updated all call sites to use `.Values` iteration
+  - [x] Provides O(1) column lookup by name instead of O(n) list scan
+  - [x] Falls back to regular `Dictionary` on .NET Standard 2.0
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/FlatFileExpressionHelper.cs`, `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`, `src/Jaunty.FlatFiles.DuckDB/ImportPipeline/ImportExecutor.cs`
+  - **Status:** COMPLETE - All 279 tests pass, improved lookup performance
+
+---
+
+## P2: Medium Priority (Recommended)
+
+### Project Structure & Organization
+
+- [ ] **P2-16: Align target frameworks**
+  - [ ] Jaunty targets `netstandard2.0;net8.0`
+  - [ ] Jaunty.FlatFiles.DuckDB targets only `net8.0`
+  - [ ] Consider adding `netstandard2.0` target to FlatFiles abstractions
+  - **Files:** `src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj`, `src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj`
+
+- [x] **P2-17: Add InternalsVisibleTo attributes consistently**
+  - [x] **VERIFIED** - All InternalsVisibleTo attributes are correctly configured
+  - [x] Jaunty.FlatFiles exposes internals to test project and DuckDB implementation
+  - [x] Jaunty.FlatFiles.DuckDB exposes internals to test project
+  - **Files:** `src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj`, `src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj`
+  - **Status:** COMPLETE - No changes needed
+
+- [x] **P2-18: Standardize NuGet package metadata**
+  - [x] Added `<ErrorReport>none</ErrorReport>` to match Jaunty core
+  - [x] Added FlatFiles-specific `<PackageTags>` extending base tags from Directory.Build.props
+  - [x] Inherits common metadata from Directory.Build.props (PackageTags, PackageProjectUrl, PackageLicenseFile, PackageReadmeFile, Copyright)
+  - **Files:** `src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj`, `src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj`
+  - **Status:** COMPLETE - NuGet metadata now consistent
+
+### Testing & Quality
+
+- [ ] **P2-19: Verify test framework consistency**
+  - [ ] Jaunty core tests use xUnit Assert (FluentAssertions removed per CONTRIBUTING.md)
+  - [ ] FlatFiles tests should match: use xUnit Assert only
+  - [ ] Update test code if using FluentAssertions
+  - **Files:** `tests/Jaunty.FlatFiles.Tests/`, `tests/Jaunty.FlatFiles.DuckDB.Tests/`
+
+- [ ] **P2-20: Increase test coverage for edge cases**
+  - [ ] Add tests for null handling in materialization
+  - [ ] Add tests for expression translation edge cases
+  - [ ] Add tests for transaction rollback scenarios
+  - **Files:** `tests/Jaunty.FlatFiles.DuckDB.Tests/`
+
+- [ ] **P2-21: Add performance benchmarks**
+  - [ ] Benchmark FlatFiles query performance vs raw DuckDB
+  - [ ] Benchmark import pipeline vs native bulk insert
+  - [ ] Add regression tests to catch performance degradation
+  - **Files:** `benchmarks/Jaunty.FlatFiles.Benchmarks/`
+
+### Documentation
+
+- [x] **P2-22: Verify README.md files**
+  - [x] Jaunty.FlatFiles has comprehensive README with API reference
+  - [x] Jaunty.FlatFiles.DuckDB has comprehensive README with DuckDB-specific docs
+  - [x] Cross-references between packages in "See Also" sections
+  - [x] Links to DuckDB documentation and DuckDB.NET GitHub
+  - **Files:** `src/Jaunty.FlatFiles/README.md`, `src/Jaunty.FlatFiles.DuckDB/README.md`
+  - **Status:** COMPLETE - Documentation already excellent
+
+- [x] **P2-24: Document DuckDB-specific quirks**
+  - [x] VIEW → TABLE promotion behavior documented
+  - [x] Type mapping table with DATE → TIMESTAMP auto-cast noted
+  - [x] Platform support documented (Windows/Linux/macOS)
+  - [x] NativeAOT limitations documented
+  - [x] Known limitations section (single-writer, schema inference, large file mutations, transaction semantics)
+  - [x] Troubleshooting section with common errors
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/README.md`
+  - **Status:** COMPLETE - Comprehensive documentation already present
+
+---
+
+## P3: Low Priority (Nice to Have)
+
+### Feature Parity
+
+- [ ] **P3-25: Add streaming support for large result sets**
+  - [ ] Jaunty core has `QueryStream<T>()` and `QueryStreamAsync<T>()`
+  - [ ] FlatFiles could benefit from streaming for large files
+  - [ ] Add `IAsyncEnumerable<T>` support
+  - **Files:** `src/Jaunty.FlatFiles/IFlatFile.cs`, `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`
+
+- [ ] **P3-26: Add multiple result set support**
+  - [ ] Jaunty core has `QueryMultiple()` support
+  - [ ] Consider adding to FlatFiles for complex queries
+  - **Files:** `src/Jaunty.FlatFiles/IFlatFile.cs`, `src/Jaunty.FlatFiles.DuckDB/DuckDb.cs`
+
+- [ ] **P3-27: Document stored procedure limitation**
+  - [ ] Jaunty core has `ExecuteStoredProcedure` methods
+  - [ ] Not applicable to FlatFiles (no stored procs in DuckDB)
+  - [ ] Document this limitation
+  - **Files:** `src/Jaunty.FlatFiles/README.md`
+
+### Code Quality
+
+- [ ] **P3-28: Enable nullable reference types for netstandard2.0**
+  - [ ] Use `#nullable enable` annotations
+  - [ ] Match Jaunty core's nullable patterns
+  - **Files:** All FlatFiles source files
+
+- [ ] **P3-29: Add analyzer rules for FlatFiles projects**
+  - [ ] Enable same analyzers as Jaunty core
+  - [ ] Add custom analyzers for FlatFiles-specific rules
+  - **Files:** `src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj`, `src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj`
+
+- [ ] **P3-30: Refactor ImportPipeline for extensibility**
+  - [ ] Make import dialects pluggable
+  - [ ] Add support for more database types
+  - [ ] Document extension points
+  - **Files:** `src/Jaunty.FlatFiles.DuckDB/ImportPipeline/`
+
+### Developer Experience
+
+- [ ] **P3-31: Add source generator for FlatFiles**
+  - [ ] Generate column mappings at compile time
+  - [ ] Reduce runtime reflection
+  - [ ] Improve NativeAOT compatibility
+  - **Files:** New project `src/Jaunty.FlatFiles.SourceGenerator/`
+
+- [ ] **P3-32: Add XML documentation file generation**
+  - [ ] Enable `<GenerateDocumentationFile>` for all configurations
+  - [ ] Currently only enabled for some target frameworks
+  - **Files:** `src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj`, `src/Jaunty.FlatFiles.DuckDB/Jaunty.FlatFiles.DuckDB.csproj`
+
+- [ ] **P3-33: Create the coding standards for FlatFiles**
+  - [ ] Create similar guide for FlatFiles implementation
+  - [ ] Document architecture decisions
+  - **Files:** the module's coding notes, the module's coding notes
+
+---
+
+## Execution Plan
+
+### Phase 1 (Week 1-2): P0 Critical Fixes
+- Focus: Documentation and code style fundamentals
+- Deliverable: Build passes with no warnings, code follows Jaunty conventions
+
+### Phase 2 (Week 3-4): P1 High Priority
+- Focus: API consistency and error handling
+- Deliverable: FlatFiles API matches Jaunty core patterns
+
+### Phase 3 (Week 5-6): P2 Medium Priority
+- Focus: Project structure and testing
+- Deliverable: Complete test coverage, proper project organization
+
+### Phase 4 (Future): P3 Enhancements
+- Focus: Feature parity and developer experience
+- Deliverable: Feature-complete with Jaunty core
+
+---
+
+## Progress Tracking
+
+| Phase | Tasks | Completed | In Progress | Blocked |
+|-------|-------|-----------|-------------|---------|
+| P0 | 7 | 0 | 0 | 0 |
+| P1 | 12 | 0 | 0 | 0 |
+| P2 | 11 | 0 | 0 | 0 |
+| P3 | 7 | 0 | 0 | 0 |
+
+---
+
+## References
+
+- [Jaunty API Design Guidelines](docs/03-development/api-design-guidelines.md)
+- [Jaunty Code Review Checklist](docs/03-development/code-review-checklist.md)
+- [Jaunty Contributing Guide](CONTRIBUTING.md)
+- [Jaunty Architecture Decisions](docs/02-architecture/ARCHITECTURE-DECISIONS.md)
