@@ -552,9 +552,9 @@ BulkCopyConfiguration.DefaultTimeout = 30;
 For more detailed documentation, see:
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) - Contributing guide
-- [`docs/API-DESIGN.md`](docs/API-DESIGN.md) - API design guidelines
-- [`docs/CODE-REVIEW.md`](docs/CODE-REVIEW.md) - Code review checklist
-- [`docs/ARCHITECTURE-DECISIONS.md`](docs/ARCHITECTURE-DECISIONS.md) - Architecture decision records
+- [`docs/03-development/api-design-guidelines.md`](docs/03-development/api-design-guidelines.md) - API design guidelines
+- [`docs/03-development/code-review-checklist.md`](docs/03-development/code-review-checklist.md) - Code review checklist
+- [`docs/02-architecture/ARCHITECTURE-DECISIONS.md`](docs/02-architecture/ARCHITECTURE-DECISIONS.md) - Architecture decision records
 
 ---
 
