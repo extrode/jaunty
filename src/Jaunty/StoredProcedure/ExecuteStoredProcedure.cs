@@ -363,14 +363,11 @@ public static partial class Jaunty
             // Read output parameter values
             ReadOutputParameters(parameters);
 
-            if (result is null || result == DBNull.Value)
-            {
-                if (default(T) is null)
-                    return default!;
-                throw new InvalidOperationException("Scalar result is null but expected a non-nullable value.");
-            }
-
-            return (T)Convert.ChangeType(result, typeof(T));
+            return result is null || result == DBNull.Value
+                ? default(T) is null
+                    ? default!
+                    : throw new InvalidOperationException("Scalar result is null but expected a non-nullable value.")
+                : (T)Convert.ChangeType(result, typeof(T));
         }
         finally
         {
