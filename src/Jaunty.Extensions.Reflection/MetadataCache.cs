@@ -22,8 +22,16 @@ namespace Jaunty.Extensions.Reflection;
 /// </remarks>
 public static class MetadataCache<T>
 {
+    /// <summary>
+    /// The cached entity metadata for type <typeparamref name="T"/>.
+    /// </summary>
     public static readonly EntityMetadata Metadata;
+
+    /// <summary>
+    /// The cached property contexts for type <typeparamref name="T"/>.
+    /// </summary>
     public static readonly PropertyContext<T>[] Properties;
+
     private static readonly ConcurrentDictionary<ReaderSignature, PropertySetter<T>[]> SettersCache = new();
 
     private static readonly Dictionary<string, int> ColumnToIndex;
@@ -55,6 +63,12 @@ public static class MetadataCache<T>
         ColumnToIndex = nameToIndex;
     }
 
+    /// <summary>
+    /// Gets or builds property setters for mapping data from a reader to entity properties.
+    /// </summary>
+    /// <param name="reader">The data reader to build setters for.</param>
+    /// <param name="mode">The mapping mode (strict or lenient).</param>
+    /// <returns>An array of property setters matched to the reader's columns.</returns>
     public static PropertySetter<T>[] GetSetters(IDataReader reader, MappingMode mode)
     {
         int fieldCount = reader.FieldCount;
@@ -204,25 +218,62 @@ public static class MetadataCache<T>
     private static bool IsNonNullableType(Type type) => type.IsValueType && Nullable.GetUnderlyingType(type) is null;
 }
 
+/// <summary>
+/// Represents metadata context for a property during entity mapping.
+/// </summary>
+/// <typeparam name="T">The entity type containing the property.</typeparam>
 public readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, Action<T, DbDataReader, int> fastSetter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
 {
+    /// <summary>
+    /// Gets the property information.
+    /// </summary>
     public PropertyInfo Property { get; } = property;
 
+    /// <summary>
+    /// Gets the setter action for standard data readers.
+    /// </summary>
     public Action<T, IDataRecord, int> Setter { get; } = setter;
 
+    /// <summary>
+    /// Gets the getter function for retrieving property values.
+    /// </summary>
     public Func<T, object?> Getter { get; } = getter;
 
+    /// <summary>
+    /// Gets the name of the property.
+    /// </summary>
     public string PropertyName { get; } = propertyName;
 
+    /// <summary>
+    /// Gets the name of the corresponding database column.
+    /// </summary>
     public string ColumnName { get; } = columnName;
 
+    /// <summary>
+    /// Gets a value indicating whether the property is a non-nullable value type.
+    /// </summary>
     public bool IsNonNullable { get; } = isNonNullable;
 }
 
+/// <summary>
+/// Represents a property setter with its associated column ordinal for entity mapping.
+/// </summary>
+/// <typeparam name="T">The entity type containing the property.</typeparam>
 public readonly struct PropertySetter<T>(PropertyContext<T> context, int ordinal)
 {
+    /// <summary>
+    /// Gets the zero-based ordinal position of the column in the data reader.
+    /// </summary>
     public int Ordinal { get; } = ordinal;
 
+    /// <summary>
+    /// Sets the property value on the target entity from the data record.
+    /// </summary>
+    /// <param name="target">The target entity to set the property on.</param>
+    /// <param name="record">The data record containing the value.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when a NULL value is encountered for a non-nullable property.
+    /// </exception>
     public void Set(T target, IDataRecord record)
     {
         if (!record.IsDBNull(ordinal))
