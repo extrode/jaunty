@@ -12,6 +12,10 @@ public sealed class EntityCodeGenerator : ICodeGenerator
 {
     private readonly ITypeMapper _typeMapper;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EntityCodeGenerator"/> class.
+    /// </summary>
+    /// <param name="typeMapper">The type mapper for converting database types to C# types.</param>
     public EntityCodeGenerator(ITypeMapper typeMapper)
     {
         _typeMapper = typeMapper;

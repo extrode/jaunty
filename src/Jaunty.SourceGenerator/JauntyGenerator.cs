@@ -10,9 +10,16 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Jaunty.SourceGenerator;
 
+/// <summary>
+/// Source generator that creates entity mappers for classes marked with table mapping attributes.
+/// </summary>
 [Generator]
 public class JauntyGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// Initializes the source generator by registering syntax providers and source output callbacks.
+    /// </summary>
+    /// <param name="context">The initialization context for configuring the generator.</param>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider

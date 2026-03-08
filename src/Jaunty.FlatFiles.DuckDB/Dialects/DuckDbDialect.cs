@@ -40,12 +40,16 @@ public sealed class DuckDbDialect : IFlatFileDialect
         "UPDATE", "USER", "USING", "VALUES", "VARCHAR", "WHEN", "WHERE", "WINDOW", "WITH"
     };
 
+    /// <inheritdoc />
     public string ParameterPrefix => "$";
 
+    /// <inheritdoc />
     public string GetDefaultSchema() => "main";
 
+    /// <inheritdoc />
     public bool IsKeyword(string identifier) => identifier is not null && Keywords.Contains(identifier);
 
+    /// <inheritdoc />
     public string EscapeTableName(string? schemaName, string tableName)
     {
         // DuckDB uses double-quote escaping like PostgreSQL
@@ -58,6 +62,7 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return $"\"{schemaName}\".{escapedTable}";
     }
 
+    /// <inheritdoc />
     public string EscapeColumnName(string columnName)
     {
         // If already escaped (starts and ends with quotes), return as-is to prevent double-escaping.
@@ -69,6 +74,7 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return $"\"{columnName}\"";
     }
 
+    /// <inheritdoc />
     public string GetLastInsertIdSql(params string[] columnNames)
     {
         // DuckDB does not have a direct last_insert_id equivalent
@@ -77,72 +83,103 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return $"RETURNING {string.Join(", ", columnNames)};";
     }
 
+    /// <inheritdoc />
     public string GetPagingSql(string baseSql, int offset, int fetchNext)
     {
         return $"{baseSql} LIMIT {fetchNext} OFFSET {offset}";
     }
 
+    /// <inheritdoc />
     public string GenerateCaseSensitiveLike(string columnName, string parameterName, string escapeChar)
     {
         // DuckDB: LIKE is case-sensitive by default (like PostgreSQL)
         return $"{columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
     }
 
+    /// <inheritdoc />
     public string GenerateCaseInsensitiveLike(string columnName, string parameterName, string escapeChar)
     {
         // DuckDB supports ILIKE (like PostgreSQL)
         return $"{columnName} ILIKE {parameterName} ESCAPE '{escapeChar}'";
     }
 
+    /// <inheritdoc />
     public string GenerateCaseInsensitiveEquals(string columnName, string parameterName)
     {
         return $"LOWER({columnName}) = LOWER({parameterName})";
     }
 
+    /// <inheritdoc />
     public string FormatContainsPattern(string value) => $"%{value}%";
+
+    /// <inheritdoc />
     public string FormatStartsWithPattern(string value) => $"{value}%";
+
+    /// <inheritdoc />
     public string FormatEndsWithPattern(string value) => $"%{value}";
 
-    // DuckDB does not support session-level FK toggling
+    /// <inheritdoc />
     public string? GetDisableForeignKeyChecksSql() => null;
+
+    /// <inheritdoc />
     public string? GetEnableForeignKeyChecksSql() => null;
+
+    /// <inheritdoc />
     public bool SupportsForeignKeyToggle => false;
 
+    /// <inheritdoc />
     public string GenerateCoalesce(params string[] expressions)
     {
         return $"COALESCE({string.Join(", ", expressions)})";
     }
 
+    /// <inheritdoc />
     public string GenerateIsNull(string expression, string defaultExpression)
     {
         // DuckDB uses COALESCE (same as PostgreSQL)
         return $"COALESCE({expression}, {defaultExpression})";
     }
 
+    /// <inheritdoc />
     public string GenerateNullIf(string expression, string compareExpression)
     {
         return $"NULLIF({expression}, {compareExpression})";
     }
 
-    // String functions
+    /// <inheritdoc />
     public string GenerateLength(string expression) => $"LENGTH({expression})";
+
+    /// <inheritdoc />
     public string GenerateUpper(string expression) => $"UPPER({expression})";
+
+    /// <inheritdoc />
     public string GenerateLower(string expression) => $"LOWER({expression})";
+
+    /// <inheritdoc />
     public string GenerateTrim(string expression) => $"TRIM({expression})";
+
+    /// <inheritdoc />
     public string GenerateSubstring(string expression, string start, string length) => $"SUBSTRING({expression}, {start}, {length})";
 
-    // Date functions - DuckDB uses EXTRACT (like PostgreSQL)
+    /// <inheritdoc />
     public string GenerateYear(string expression) => $"EXTRACT(YEAR FROM {expression})";
+
+    /// <inheritdoc />
     public string GenerateMonth(string expression) => $"EXTRACT(MONTH FROM {expression})";
+
+    /// <inheritdoc />
     public string GenerateDay(string expression) => $"EXTRACT(DAY FROM {expression})";
 
-    // Multi-row insert support
+    /// <inheritdoc />
     public bool SupportsMultiRowInsert => true;
+
+    /// <inheritdoc />
     public int MaxParametersPerStatement => 32768;
 
-    // Upsert support - DuckDB supports INSERT OR REPLACE and ON CONFLICT
+    /// <inheritdoc />
     public bool SupportsUpsert => true;
 
+    /// <inheritdoc />
     public string GenerateUpsertSql(
         string tableName,
         string[] insertColumns,
@@ -189,12 +226,19 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return sb.ToString();
     }
 
-    // Window functions - DuckDB supports standard SQL window functions
+    /// <inheritdoc />
     public string GenerateRowNumber() => "ROW_NUMBER()";
+
+    /// <inheritdoc />
     public string GenerateRank() => "RANK()";
+
+    /// <inheritdoc />
     public string GenerateDenseRank() => "DENSE_RANK()";
+
+    /// <inheritdoc />
     public string GenerateNTile(int buckets) => $"NTILE({buckets})";
 
+    /// <inheritdoc />
     public string GenerateOverClause(string[]? partitionBy, (string column, bool descending)[]? orderBy)
     {
         var sb = new StringBuilder(64);
@@ -226,32 +270,37 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return sb.ToString();
     }
 
+    /// <inheritdoc />
     public string GenerateWindowAggregate(string function, string? expression)
     {
         return expression is null ? $"{function}(*)" : $"{function}({expression})";
     }
 
-    // DuckDB has no native bulk copy API accessible via ADO.NET
+    /// <inheritdoc />
     public bool SupportsNativeBulkCopy => false;
 
+    /// <inheritdoc />
     public IBulkCopyProvider? CreateBulkCopyProvider() => null;
 
     // ==========================================
     // IFlatFileDialect Implementation
     // ==========================================
 
+    /// <inheritdoc />
     public string GenerateCreateViewSql(IFileSource source)
     {
         var readFunction = GenerateReadFunction(source);
         return $"CREATE OR REPLACE VIEW \"{source.TableName}\" AS SELECT * FROM {readFunction}";
     }
 
+    /// <inheritdoc />
     public string GenerateCreateTableAsSql(IFileSource source)
     {
         var readFunction = GenerateReadFunction(source);
         return $"CREATE OR REPLACE TABLE \"{source.TableName}\" AS SELECT * FROM {readFunction}";
     }
 
+    /// <inheritdoc />
     public string GeneratePromoteToTableSql(IFileSource source)
     {
         var sb = new StringBuilder();
@@ -261,6 +310,7 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return sb.ToString();
     }
 
+    /// <inheritdoc />
     public string GenerateCopyToSql(string tableName, string outputPath, string format)
     {
         ArgumentNullException.ThrowIfNull(format);
@@ -293,6 +343,7 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return sb.ToString();
     }
 
+    /// <inheritdoc />
     public string GenerateCopyToSql(string tableName, string outputPath, IFileSource source)
     {
         var escapedPath = outputPath.Replace("'", "''");
