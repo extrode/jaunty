@@ -1409,7 +1409,7 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
-        var wasClosed = connection.State == ConnectionState.Closed;
+        bool wasClosed = connection.State == ConnectionState.Closed;
 
         IDbCommand? command = null;
         IDataReader? reader = null;

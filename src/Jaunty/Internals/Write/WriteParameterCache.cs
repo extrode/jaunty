@@ -127,9 +127,7 @@ internal static class WriteParameterCache<T> where T : new()
 
     private static EntityMetadata? ResolveMetadata()
     {
-        if (JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is EntityMetadata meta)
-            return meta;
-        return null;
+        return JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is EntityMetadata meta ? meta : null;
     }
 
 #if NET5_0_OR_GREATER
@@ -144,11 +142,7 @@ internal static class WriteParameterCache<T> where T : new()
 
     private static Action<IDbCommand, T>? TryGetReflectionBinder(Func<Type, Action<IDbCommand, object>>? resolver)
     {
-        if (resolver?.Invoke(typeof(T)) is Action<IDbCommand, object> binder)
-        {
-            return (cmd, entity) => binder(cmd, entity!);
-        }
-        return null;
+        return resolver?.Invoke(typeof(T)) is Action<IDbCommand, object> binder ? ((cmd, entity) => binder(cmd, entity!)) : null;
     }
 
     private static Action<T, long>? CreateIdSetter()
