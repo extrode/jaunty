@@ -1,5 +1,6 @@
 using Jaunty.Scaffolding.Providers.SqlServer;
 using Jaunty.Scaffolding.Schema;
+
 using Xunit;
 
 namespace Jaunty.Scaffolding.Tests.Unit;

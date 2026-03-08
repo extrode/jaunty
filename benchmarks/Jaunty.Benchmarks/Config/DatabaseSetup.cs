@@ -77,48 +77,48 @@ public static class DatabaseSetup
                 return; // In-memory, always exists
 
             case DatabaseProvider.SqlServer:
-            {
-                var builder = new SqlConnectionStringBuilder(SqlServerConnectionString);
-                var dbName = builder.InitialCatalog;
-                builder.InitialCatalog = "master";
-                using var conn = new SqlConnection(builder.ConnectionString);
-                conn.Open();
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = $"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '{dbName}') CREATE DATABASE [{dbName}]";
-                cmd.ExecuteNonQuery();
-                break;
-            }
+                {
+                    var builder = new SqlConnectionStringBuilder(SqlServerConnectionString);
+                    var dbName = builder.InitialCatalog;
+                    builder.InitialCatalog = "master";
+                    using var conn = new SqlConnection(builder.ConnectionString);
+                    conn.Open();
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = $"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '{dbName}') CREATE DATABASE [{dbName}]";
+                    cmd.ExecuteNonQuery();
+                    break;
+                }
 
             case DatabaseProvider.PostgreSql:
-            {
-                var builder = new NpgsqlConnectionStringBuilder(PostgreSqlConnectionString);
-                var dbName = builder.Database;
-                builder.Database = "postgres";
-                using var conn = new NpgsqlConnection(builder.ConnectionString);
-                conn.Open();
-                using var checkCmd = conn.CreateCommand();
-                checkCmd.CommandText = $"SELECT 1 FROM pg_database WHERE datname = '{dbName}'";
-                if (checkCmd.ExecuteScalar() == null)
                 {
-                    using var createCmd = conn.CreateCommand();
-                    createCmd.CommandText = $"CREATE DATABASE \"{dbName}\"";
-                    createCmd.ExecuteNonQuery();
+                    var builder = new NpgsqlConnectionStringBuilder(PostgreSqlConnectionString);
+                    var dbName = builder.Database;
+                    builder.Database = "postgres";
+                    using var conn = new NpgsqlConnection(builder.ConnectionString);
+                    conn.Open();
+                    using var checkCmd = conn.CreateCommand();
+                    checkCmd.CommandText = $"SELECT 1 FROM pg_database WHERE datname = '{dbName}'";
+                    if (checkCmd.ExecuteScalar() == null)
+                    {
+                        using var createCmd = conn.CreateCommand();
+                        createCmd.CommandText = $"CREATE DATABASE \"{dbName}\"";
+                        createCmd.ExecuteNonQuery();
+                    }
+                    break;
                 }
-                break;
-            }
 
             case DatabaseProvider.MariaDb:
-            {
-                var builder = new MySqlConnectionStringBuilder(MariaDbConnectionString);
-                var dbName = builder.Database;
-                builder.Database = "";
-                using var conn = new MySqlConnection(builder.ConnectionString);
-                conn.Open();
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = $"CREATE DATABASE IF NOT EXISTS `{dbName}`";
-                cmd.ExecuteNonQuery();
-                break;
-            }
+                {
+                    var builder = new MySqlConnectionStringBuilder(MariaDbConnectionString);
+                    var dbName = builder.Database;
+                    builder.Database = "";
+                    using var conn = new MySqlConnection(builder.ConnectionString);
+                    conn.Open();
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = $"CREATE DATABASE IF NOT EXISTS `{dbName}`";
+                    cmd.ExecuteNonQuery();
+                    break;
+                }
         }
     }
 

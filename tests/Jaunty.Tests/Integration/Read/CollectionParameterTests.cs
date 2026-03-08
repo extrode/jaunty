@@ -284,6 +284,3 @@ public class CollectionParameterTests : IClassFixture<DialectFixture>
     private static string DiscontinuedColumn(DialectInfo dialect) =>
         dialect.Provider == DialectProvider.SqlServer ? "Discontinued" : "discontinued";
 }
-
-
-

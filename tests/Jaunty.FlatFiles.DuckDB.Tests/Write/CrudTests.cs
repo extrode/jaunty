@@ -65,8 +65,12 @@ public class CrudTests : IDisposable
     {
         var newItem = new InventoryItem
         {
-            ItemId = 100, ItemName = "New Item", Category = "Test",
-            StockQuantity = 1, UnitPrice = 9.99m, InStock = true
+            ItemId = 100,
+            ItemName = "New Item",
+            Category = "Test",
+            StockQuantity = 1,
+            UnitPrice = 9.99m,
+            InStock = true
         };
 
         await _db.InsertAsync(newItem);
@@ -86,8 +90,12 @@ public class CrudTests : IDisposable
         // Insert triggers promotion
         var newItem = new InventoryItem
         {
-            ItemId = 100, ItemName = "New Item", Category = "Test",
-            StockQuantity = 1, UnitPrice = 9.99m, InStock = true
+            ItemId = 100,
+            ItemName = "New Item",
+            Category = "Test",
+            StockQuantity = 1,
+            UnitPrice = 9.99m,
+            InStock = true
         };
         await _db.InsertAsync(newItem);
 
@@ -105,8 +113,12 @@ public class CrudTests : IDisposable
     {
         var newItem = new InventoryItem
         {
-            ItemId = 10, ItemName = "Sprocket", Category = "Hardware",
-            StockQuantity = 500, UnitPrice = 3.50m, InStock = true
+            ItemId = 10,
+            ItemName = "Sprocket",
+            Category = "Hardware",
+            StockQuantity = 500,
+            UnitPrice = 3.50m,
+            InStock = true
         };
 
         var affected = await _db.InsertAsync(newItem);
@@ -130,8 +142,12 @@ public class CrudTests : IDisposable
     {
         var newItem = new InventoryItem
         {
-            ItemId = 10, ItemName = "New", Category = "Test",
-            StockQuantity = 1, UnitPrice = 1.00m, InStock = true
+            ItemId = 10,
+            ItemName = "New",
+            Category = "Test",
+            StockQuantity = 1,
+            UnitPrice = 1.00m,
+            InStock = true
         };
         await _db.InsertAsync(newItem);
 
@@ -156,8 +172,12 @@ public class CrudTests : IDisposable
     {
         var items = Enumerable.Range(100, 100).Select(i => new InventoryItem
         {
-            ItemId = i, ItemName = $"Item_{i}", Category = "Batch",
-            StockQuantity = i * 10, UnitPrice = i * 0.5m, InStock = true
+            ItemId = i,
+            ItemName = $"Item_{i}",
+            Category = "Batch",
+            StockQuantity = i * 10,
+            UnitPrice = i * 0.5m,
+            InStock = true
         }).ToList();
 
         var affected = await _db.InsertAsync<InventoryItem>(items);
@@ -312,8 +332,12 @@ public class CrudTests : IDisposable
     {
         await _db.InsertAsync(new InventoryItem
         {
-            ItemId = 100, ItemName = "New", Category = "Test",
-            StockQuantity = 1, UnitPrice = 1.00m, InStock = true
+            ItemId = 100,
+            ItemName = "New",
+            Category = "Test",
+            StockQuantity = 1,
+            UnitPrice = 1.00m,
+            InStock = true
         });
 
         Assert.True(_db.IsModified<InventoryItem>());
@@ -346,8 +370,12 @@ public class CrudTests : IDisposable
     {
         var newItem = new InventoryItem
         {
-            ItemId = 50, ItemName = "Round Trip Item", Category = "Test",
-            StockQuantity = 42, UnitPrice = 12.34m, InStock = true
+            ItemId = 50,
+            ItemName = "Round Trip Item",
+            Category = "Test",
+            StockQuantity = 42,
+            UnitPrice = 12.34m,
+            InStock = true
         };
 
         await _db.InsertAsync(newItem);
@@ -396,8 +424,12 @@ public class CrudTests : IDisposable
         // Insert
         var newItem = new InventoryItem
         {
-            ItemId = 200, ItemName = "Pipeline Item", Category = "Pipeline",
-            StockQuantity = 10, UnitPrice = 5.00m, InStock = true
+            ItemId = 200,
+            ItemName = "Pipeline Item",
+            Category = "Pipeline",
+            StockQuantity = 10,
+            UnitPrice = 5.00m,
+            InStock = true
         };
         await _db.InsertAsync(newItem);
         Assert.Equal(6, _db.Connection.From<InventoryItem>().Count());

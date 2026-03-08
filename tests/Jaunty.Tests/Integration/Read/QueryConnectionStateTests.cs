@@ -51,5 +51,3 @@ public class QueryConnectionStateTests : IClassFixture<DialectFixture>
         Assert.NotEmpty(categories);
     }
 }
-
-

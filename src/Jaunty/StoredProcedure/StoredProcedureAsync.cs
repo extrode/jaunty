@@ -558,4 +558,3 @@ public static partial class Jaunty
         return ExecuteNonQueryCoreAsync(connection, procedureName, parameters, options, CommandType.StoredProcedure, cancellationToken);
     }
 }
-

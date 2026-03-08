@@ -129,6 +129,3 @@ public class QueryPartialUnbufferedAsyncTests : IClassFixture<DialectFixture>
     }
 }
 #endif
-
-
-

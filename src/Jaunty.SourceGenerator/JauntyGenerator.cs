@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -69,7 +70,7 @@ public class JauntyGenerator : IIncrementalGenerator
     {
         var namespaceName = classSymbol.ContainingNamespace.ToDisplayString();
         var className = classSymbol.Name;
-        
+
         var allProperties = classSymbol.GetMembers().OfType<IPropertySymbol>()
             .Where(p => !p.IsStatic && p.DeclaredAccessibility == Accessibility.Public)
             .ToList();
@@ -83,10 +84,10 @@ public class JauntyGenerator : IIncrementalGenerator
             // Support [Column] from both
             var columnAttr = GetAttribute(prop, "ColumnAttribute");
             var columnName = columnAttr?.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? prop.Name;
-            
+
             // Support [Key] from both, plus conventions
             var isKey = HasAttribute(prop, "KeyAttribute") || prop.Name.Equals("Id", StringComparison.OrdinalIgnoreCase) || prop.Name.Equals($"{className}Id", StringComparison.OrdinalIgnoreCase);
-            
+
             // Support [DatabaseGenerated] from both
             var dbGenAttr = GetAttribute(prop, "DatabaseGeneratedAttribute");
             var isIdentity = false;
@@ -154,7 +155,7 @@ public class JauntyGenerator : IIncrementalGenerator
             var typeInfo = GetReaderTypeInfo(p.TypeName);
             var typeForGetFieldValue = typeInfo.TypeForGetFieldValue;
             var needsNullCheck = typeInfo.NeedsNullCheck;
-            
+
             // DbDataReader path - use GetFieldValue<T>
             if (needsNullCheck)
             {
@@ -174,7 +175,7 @@ public class JauntyGenerator : IIncrementalGenerator
             var typeInfo = GetReaderTypeInfo(p.TypeName);
             var getter = typeInfo.Getter;
             var needsNullCheck = typeInfo.NeedsNullCheck;
-            
+
             // Fallback IDataReader path
             if (needsNullCheck)
             {
@@ -348,7 +349,7 @@ public class JauntyGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
-    private static bool HasAttribute(ISymbol symbol, string attributeName) 
+    private static bool HasAttribute(ISymbol symbol, string attributeName)
         => symbol.GetAttributes().Any(a => a.AttributeClass?.Name == attributeName);
 
     private static AttributeData? GetAttribute(ISymbol symbol, string attributeName)
@@ -371,7 +372,7 @@ public class JauntyGenerator : IIncrementalGenerator
             "DateTime" or "System.DateTime" => new("reader.GetDateTime", "DateTime", false),
             "TimeSpan" or "System.TimeSpan" => new("reader.GetValue", "object", false),
             "DateTimeOffset" or "System.DateTimeOffset" => new("reader.GetValue", "object", false),
-            
+
             // Nullable value types - needs null check
             "int?" or "Int32?" => new("reader.GetInt32", "int", true),
             "long?" or "Int64?" => new("reader.GetInt64", "long", true),
@@ -385,10 +386,10 @@ public class JauntyGenerator : IIncrementalGenerator
             "DateTime?" => new("reader.GetDateTime", "DateTime", true),
             "TimeSpan?" => new("reader.GetValue", "object", true),
             "DateTimeOffset?" => new("reader.GetValue", "object", true),
-            
+
             // Reference types - needs null check
             "string" or "String" or "string?" or "String?" or "System.String" => new("reader.GetString", "string", true),
-            
+
             // Unknown types - needs null check, fall back to GetValue
             _ => new("reader.GetValue", "object", true)
         };

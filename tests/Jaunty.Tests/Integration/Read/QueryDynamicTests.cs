@@ -237,6 +237,3 @@ public class QueryDynamicTests : IClassFixture<DialectFixture>
     private static string CategoryIdColumn(DialectInfo dialect) =>
         dialect.Provider == DialectProvider.SqlServer ? "CategoryId" : "category_id";
 }
-
-
-

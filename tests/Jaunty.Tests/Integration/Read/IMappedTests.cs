@@ -127,5 +127,3 @@ public class IMappedTests : IClassFixture<DialectFixture>
         Assert.Equal(product.ProductId, product.Id);
     }
 }
-
-

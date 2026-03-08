@@ -8,7 +8,7 @@ namespace Jaunty.Tests.Integration.Read;
 public class QueryFirstTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
-    
+
     private const string FullProductColumns = @"
         product_id AS ProductId,
         product_name AS ProductName,
@@ -25,7 +25,7 @@ public class QueryFirstTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
-[Theory]
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
@@ -77,10 +77,10 @@ public class QueryFirstTests : IClassFixture<DialectFixture>
     public void QueryFirst_WithCommandOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-var product = connection.QueryFirst<Product>(
-            $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
-            new { Id = 1 },
-            CommandOptions<Product>.WithTimeout(30));
+        var product = connection.QueryFirst<Product>(
+                    $"SELECT {FullProductColumns} FROM products WHERE product_id = @Id",
+                    new { Id = 1 },
+                    CommandOptions<Product>.WithTimeout(30));
 
         Assert.Equal(1, product.ProductId);
     }
@@ -100,5 +100,3 @@ var product = connection.QueryFirst<Product>(
                 new { Id = 1 }));
     }
 }
-
-

@@ -29,9 +29,9 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
     public List<SelectColumn> Translate<TResult>(Expression<Func<T, TResult>> selector)
     {
         _columns.Clear();
-        
+
         var body = selector.Body;
-        
+
         // Handle standalone expressions (not New or MemberInit)
         if (body is MethodCallExpression or MemberExpression or ConstantExpression or UnaryExpression or BinaryExpression)
         {
@@ -39,7 +39,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
             // Try to find a meaningful alias
             string alias = "Value";
             if (body is MemberExpression member) alias = member.Member.Name;
-            
+
             _columns.Add(new SelectColumn(sql, alias));
             return _columns;
         }

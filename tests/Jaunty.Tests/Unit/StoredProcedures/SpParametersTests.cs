@@ -15,9 +15,9 @@ public class SpParametersTests
     public void AddInput_Simple_AddsParameter()
     {
         var parameters = new SpParameters();
-        
+
         var result = parameters.AddInput("CategoryId", 1);
-        
+
         Assert.Same(parameters, result);
         Assert.Single(parameters.Parameters);
         Assert.Equal("CategoryId", parameters.Parameters[0].Name);
@@ -29,9 +29,9 @@ public class SpParametersTests
     public void AddInput_WithDbType_AddsParameterWithType()
     {
         var parameters = new SpParameters();
-        
+
         var result = parameters.AddInput("ProductName", "Widget", DbType.String, size: 100);
-        
+
         Assert.Same(parameters, result);
         Assert.Single(parameters.Parameters);
         Assert.Equal("ProductName", parameters.Parameters[0].Name);
@@ -44,9 +44,9 @@ public class SpParametersTests
     public void AddInput_NullValue_AddsParameterWithNull()
     {
         var parameters = new SpParameters();
-        
+
         parameters.AddInput("NullableParam", null);
-        
+
         Assert.Single(parameters.Parameters);
         Assert.Null(parameters.Parameters[0].Value);
     }
@@ -59,9 +59,9 @@ public class SpParametersTests
     public void AddOutput_AddsOutputParameter()
     {
         var parameters = new SpParameters();
-        
+
         var result = parameters.AddOutput("TotalCount", DbType.Int32);
-        
+
         Assert.Same(parameters, result);
         Assert.Single(parameters.Parameters);
         Assert.Equal("TotalCount", parameters.Parameters[0].Name);
@@ -73,9 +73,9 @@ public class SpParametersTests
     public void AddOutput_WithSize_AddsParameterWithSize()
     {
         var parameters = new SpParameters();
-        
+
         parameters.AddOutput("ResultMessage", DbType.String, size: 500);
-        
+
         Assert.Single(parameters.Parameters);
         Assert.Equal(DbType.String, parameters.Parameters[0].DbType);
         Assert.Equal(500, parameters.Parameters[0].Size);
@@ -148,9 +148,9 @@ public class SpParametersTests
     public void AddReturnValue_AddsReturnValueParameter()
     {
         var parameters = new SpParameters();
-        
+
         var result = parameters.AddReturnValue();
-        
+
         Assert.Same(parameters, result);
         Assert.Single(parameters.Parameters);
         Assert.Equal(ParameterDirection.ReturnValue, parameters.Parameters[0].Direction);
@@ -165,13 +165,13 @@ public class SpParametersTests
     {
         var parameters = new SpParameters()
             .AddOutput("Count", DbType.Int32);
-        
+
         // Simulate what happens after SP execution
         var param = parameters.Parameters[0];
         param.DbParameter = CreateMockParameter(42);
-        
+
         var result = parameters.Get<int>("Count");
-        
+
         Assert.Equal(42, result);
     }
 
@@ -180,12 +180,12 @@ public class SpParametersTests
     {
         var parameters = new SpParameters()
             .AddOutput("Message", DbType.String);
-        
+
         var param = parameters.Parameters[0];
         param.DbParameter = CreateMockParameter("Hello World");
-        
+
         var result = parameters.Get<string>("Message");
-        
+
         Assert.Equal("Hello World", result);
     }
 
@@ -194,12 +194,12 @@ public class SpParametersTests
     {
         var parameters = new SpParameters()
             .AddOutput("NullableValue", DbType.Int32);
-        
+
         var param = parameters.Parameters[0];
         param.DbParameter = CreateMockParameter(null);
-        
+
         var result = parameters.Get<int?>("NullableValue");
-        
+
         Assert.Null(result);
     }
 
@@ -207,7 +207,7 @@ public class SpParametersTests
     public void Get_NonExistentParameter_Throws()
     {
         var parameters = new SpParameters();
-        
+
         Assert.Throws<ArgumentException>(() => parameters.Get<int>("NonExistent"));
     }
 
@@ -220,12 +220,12 @@ public class SpParametersTests
     {
         var parameters = new SpParameters()
             .AddReturnValue();
-        
+
         var param = parameters.Parameters[0];
         param.DbParameter = CreateMockParameter(1);
-        
+
         var result = parameters.GetReturnValue();
-        
+
         Assert.Equal(1, result);
     }
 
@@ -234,7 +234,7 @@ public class SpParametersTests
     {
         var parameters = new SpParameters()
             .AddInput("Param", 1);
-        
+
         Assert.Throws<InvalidOperationException>(() => parameters.GetReturnValue());
     }
 
@@ -247,10 +247,10 @@ public class SpParametersTests
     {
         var parameters = new SpParameters()
             .AddOutput("Count", DbType.Int32);
-        
+
         var param = parameters.Parameters[0];
         param.DbParameter = CreateMockParameter(42);
-        
+
         Assert.True(parameters.HasValue("Count"));
     }
 
@@ -259,7 +259,7 @@ public class SpParametersTests
     {
         var parameters = new SpParameters()
             .AddOutput("Count", DbType.Int32);
-        
+
         Assert.False(parameters.HasValue("Count"));
     }
 
@@ -267,7 +267,7 @@ public class SpParametersTests
     public void HasValue_False_ForNonExistentParameter()
     {
         var parameters = new SpParameters();
-        
+
         Assert.False(parameters.HasValue("NonExistent"));
     }
 
@@ -281,9 +281,9 @@ public class SpParametersTests
         var parameters = new SpParameters()
             .AddInput("Param1", 1)
             .AddInput("Param2", 2);
-        
+
         var readOnlyList = parameters.Parameters;
-        
+
         Assert.Equal(2, readOnlyList.Count);
         Assert.Equal("Param1", readOnlyList[0].Name);
         Assert.Equal("Param2", readOnlyList[1].Name);
@@ -310,7 +310,7 @@ public class SpParametersTests
         public DbType DbType { get; set; }
         public byte Precision { get; set; }
         public byte Scale { get; set; }
-        
+
         public void ResetDbType() { }
     }
 }

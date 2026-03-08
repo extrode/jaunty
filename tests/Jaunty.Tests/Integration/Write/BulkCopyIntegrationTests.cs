@@ -18,11 +18,11 @@ public class BulkCopyIntegrationTests : IClassFixture<DialectFixture>, IDisposab
     public BulkCopyIntegrationTests(DialectFixture fixture)
     {
         _fixture = fixture;
-        
+
         // Save original configuration
         _originalEnableNativeBulkCopy = BulkCopyConfiguration.EnableNativeBulkCopy;
         _originalMinimumRows = BulkCopyConfiguration.MinimumRowsForNativeBulkCopy;
-        
+
         // Enable native bulk copy for tests
         BulkCopyConfiguration.EnableNativeBulkCopy = true;
         BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = 10; // Lower threshold for tests
@@ -73,7 +73,7 @@ public class BulkCopyIntegrationTests : IClassFixture<DialectFixture>, IDisposab
         // Assert
         Assert.Equal(100, inserted);
         Assert.Equal(100, GetRowCount(connection));
-        
+
         // Native bulk copy should be much faster than standard INSERT
         // For 100 rows, should complete in under 1 second
         Assert.True(elapsed.TotalSeconds < 1.0, $"Bulk insert took too long: {elapsed.TotalSeconds}s");
@@ -110,7 +110,7 @@ public class BulkCopyIntegrationTests : IClassFixture<DialectFixture>, IDisposab
         // Assert
         Assert.Equal(100, inserted);
         Assert.Equal(100, GetRowCount(connection));
-        
+
         // Native bulk copy should be much faster than standard INSERT
         Assert.True(elapsed.TotalSeconds < 1.0, $"Bulk insert took too long: {elapsed.TotalSeconds}s");
     }
@@ -329,7 +329,7 @@ public class BulkCopyIntegrationTests : IClassFixture<DialectFixture>, IDisposab
     {
         // Arrange - Disable native bulk copy
         BulkCopyConfiguration.EnableNativeBulkCopy = false;
-        
+
         using var ctx = _fixture.GetWriteContext(dialect);
         var connection = ctx.Connection;
         ClearTestTable(connection);

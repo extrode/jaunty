@@ -13,7 +13,7 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
     public SpecialTypeMapperIntegrationTests(DialectFixture fixture)
     {
         _fixture = fixture;
-        
+
         // Register special type mappers
         SpecialTypeMappers.Register();
     }
@@ -38,7 +38,7 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
 
         Assert.Equal(1, results.Count);
         var row = results[0];
-        
+
         // PostgreSQL folds column names to lowercase, so use case-insensitive comparison
         var keys = row.Keys.ToList();
         Assert.True(keys.Any(k => k.Equals("CategoryId", StringComparison.OrdinalIgnoreCase)));
@@ -63,7 +63,7 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
 
         Assert.Equal(1, results.Count);
         var row = results[0];
-        
+
         // PostgreSQL folds column names to lowercase, so use case-insensitive comparison
         var key = row.Keys.FirstOrDefault(k => k.Equals("CategoryId", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(key);
@@ -271,7 +271,7 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
         var categoryIdKey = row.Keys.FirstOrDefault(k => k.Equals("CategoryId", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(categoryIdKey);
         Assert.IsType<decimal>(row[categoryIdKey]);
-        
+
         var priceKey = row.Keys.FirstOrDefault(k => k.Equals("Price", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(priceKey);
         Assert.Equal(19.99m, row[priceKey]);

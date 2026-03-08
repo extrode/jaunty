@@ -115,10 +115,10 @@ public class TransactionRollbackTests : IClassFixture<DialectFixture>
         {
             // For other databases, use a temporary table to avoid modifying Northwind
             using var connection = _fixture.GetConnection(dialect);
-            
+
             // Create temporary table OUTSIDE transaction (temp tables persist across transactions)
             using var createCmd = connection.CreateCommand();
-            
+
             var tempTableSql = dialect.Provider == DialectProvider.Postgres
                 ? "CREATE TEMP TABLE temp_categories (category_id SERIAL PRIMARY KEY, category_name VARCHAR(255), description TEXT)"
                 : dialect.Provider == DialectProvider.SqlServer

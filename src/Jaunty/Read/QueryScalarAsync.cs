@@ -180,4 +180,3 @@ public static partial class Jaunty
             : QueryScalarCoreAsync(dbConnection, sql, parameters, options, cancellationToken);
     }
 }
-

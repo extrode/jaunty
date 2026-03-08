@@ -984,19 +984,19 @@ public class SqlDialectTests
         public void SQLiteDialect_GenerateOverClause_AllCombinations()
         {
             var dialect = new SQLiteDialect();
-            
+
             // Both null - note leading space
             var result1 = dialect.GenerateOverClause(null, null);
             Assert.Equal(" OVER ()", result1);
-            
+
             // Partition only
             var result2 = dialect.GenerateOverClause(new[] { "col1" }, null);
             Assert.Contains("PARTITION BY", result2);
-            
+
             // Order only
             var result3 = dialect.GenerateOverClause(null, new[] { ("col1", false) });
             Assert.Contains("ORDER BY", result3);
-            
+
             // Both
             var result4 = dialect.GenerateOverClause(new[] { "col1" }, new[] { ("col2", true) });
             Assert.Contains("PARTITION BY", result4);
@@ -1008,20 +1008,20 @@ public class SqlDialectTests
         public void SqlServerDialect_GenerateOverClause_AllCombinations()
         {
             var dialect = new SqlServerDialect();
-            
+
             // Both null - note leading space
             var result1 = dialect.GenerateOverClause(null, null);
             Assert.Equal(" OVER ()", result1);
-            
+
             // Partition only
             var result2 = dialect.GenerateOverClause(new[] { "col1" }, null);
             Assert.Contains("PARTITION BY", result2);
-            
+
             // Order only ascending
             var result3 = dialect.GenerateOverClause(null, new[] { ("col1", false) });
             Assert.Contains("ORDER BY", result3);
             Assert.DoesNotContain("DESC", result3);
-            
+
             // Order only descending
             var result4 = dialect.GenerateOverClause(null, new[] { ("col1", true) });
             Assert.Contains("ORDER BY", result4);
@@ -1031,12 +1031,12 @@ public class SqlDialectTests
         [Fact]
         public void AllDialects_GenerateCaseInsensitiveEquals()
         {
-            ISqlDialect[] dialects = new ISqlDialect[] 
-            { 
-                new SQLiteDialect(), 
-                new SqlServerDialect(), 
-                new MySqlDialect(), 
-                new PostgreSqlDialect() 
+            ISqlDialect[] dialects = new ISqlDialect[]
+            {
+                new SQLiteDialect(),
+                new SqlServerDialect(),
+                new MySqlDialect(),
+                new PostgreSqlDialect()
             };
 
             foreach (var dialect in dialects)
@@ -1050,28 +1050,28 @@ public class SqlDialectTests
         [Fact]
         public void AllDialects_GenerateWindowAggregate_WithExpression()
         {
-            ISqlDialect[] dialects = new ISqlDialect[] 
-            { 
-                new SQLiteDialect(), 
-                new SqlServerDialect(), 
-                new MySqlDialect(), 
-                new PostgreSqlDialect() 
+            ISqlDialect[] dialects = new ISqlDialect[]
+            {
+                new SQLiteDialect(),
+                new SqlServerDialect(),
+                new MySqlDialect(),
+                new PostgreSqlDialect()
             };
 
             foreach (var dialect in dialects)
             {
                 var sum = dialect.GenerateWindowAggregate("SUM", "col");
                 Assert.Equal("SUM(col)", sum);
-                
+
                 var avg = dialect.GenerateWindowAggregate("AVG", "col");
                 Assert.Equal("AVG(col)", avg);
-                
+
                 var count = dialect.GenerateWindowAggregate("COUNT", "col");
                 Assert.Equal("COUNT(col)", count);
-                
+
                 var min = dialect.GenerateWindowAggregate("MIN", "col");
                 Assert.Equal("MIN(col)", min);
-                
+
                 var max = dialect.GenerateWindowAggregate("MAX", "col");
                 Assert.Equal("MAX(col)", max);
             }
@@ -1080,12 +1080,12 @@ public class SqlDialectTests
         [Fact]
         public void AllDialects_GenerateWindowAggregate_WithoutExpression()
         {
-            ISqlDialect[] dialects = new ISqlDialect[] 
-            { 
-                new SQLiteDialect(), 
-                new SqlServerDialect(), 
-                new MySqlDialect(), 
-                new PostgreSqlDialect() 
+            ISqlDialect[] dialects = new ISqlDialect[]
+            {
+                new SQLiteDialect(),
+                new SqlServerDialect(),
+                new MySqlDialect(),
+                new PostgreSqlDialect()
             };
 
             foreach (var dialect in dialects)
@@ -1099,11 +1099,11 @@ public class SqlDialectTests
         public void SqlServerDialect_GetPagingSql_EdgeCases()
         {
             var dialect = new SqlServerDialect();
-            
+
             // Zero offset
             var result1 = dialect.GetPagingSql("SELECT * FROM t", 0, 10);
             Assert.Equal("SELECT * FROM t OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY", result1);
-            
+
             // Zero fetchNext
             var result2 = dialect.GetPagingSql("SELECT * FROM t", 10, 0);
             Assert.Equal("SELECT * FROM t OFFSET 10 ROWS FETCH NEXT 0 ROWS ONLY", result2);
@@ -1113,11 +1113,11 @@ public class SqlDialectTests
         public void PostgreSqlDialect_GetPagingSql_EdgeCases()
         {
             var dialect = new PostgreSqlDialect();
-            
+
             // Zero offset
             var result1 = dialect.GetPagingSql("SELECT * FROM t", 0, 10);
             Assert.Equal("SELECT * FROM t LIMIT 10 OFFSET 0", result1);
-            
+
             // Zero fetchNext
             var result2 = dialect.GetPagingSql("SELECT * FROM t", 10, 0);
             Assert.Equal("SELECT * FROM t LIMIT 0 OFFSET 10", result2);
@@ -1127,11 +1127,11 @@ public class SqlDialectTests
         public void MySqlDialect_GetPagingSql_EdgeCases()
         {
             var dialect = new MySqlDialect();
-            
+
             // Zero offset
             var result1 = dialect.GetPagingSql("SELECT * FROM t", 0, 10);
             Assert.Equal("SELECT * FROM t LIMIT 0, 10", result1);
-            
+
             // Zero fetchNext
             var result2 = dialect.GetPagingSql("SELECT * FROM t", 10, 0);
             Assert.Equal("SELECT * FROM t LIMIT 10, 0", result2);
@@ -1141,11 +1141,11 @@ public class SqlDialectTests
         public void SQLiteDialect_GetPagingSql_EdgeCases()
         {
             var dialect = new SQLiteDialect();
-            
+
             // Zero offset
             var result1 = dialect.GetPagingSql("SELECT * FROM t", 0, 10);
             Assert.Equal("SELECT * FROM t LIMIT 10 OFFSET 0", result1);
-            
+
             // Zero fetchNext
             var result2 = dialect.GetPagingSql("SELECT * FROM t", 10, 0);
             Assert.Equal("SELECT * FROM t LIMIT 0 OFFSET 10", result2);
@@ -1155,7 +1155,7 @@ public class SqlDialectTests
         public void SqlServerDialect_GenerateSubstring_EdgeCases()
         {
             var dialect = new SqlServerDialect();
-            
+
             // Standard case
             var result1 = dialect.GenerateSubstring("col", "1", "5");
             Assert.Equal("SUBSTRING(col, 1, 5)", result1);
@@ -1165,7 +1165,7 @@ public class SqlDialectTests
         public void PostgreSqlDialect_GenerateSubstring_EdgeCases()
         {
             var dialect = new PostgreSqlDialect();
-            
+
             // Standard case with FROM/FOR syntax
             var result1 = dialect.GenerateSubstring("col", "1", "5");
             Assert.Equal("SUBSTRING(col FROM 1 FOR 5)", result1);
@@ -1174,12 +1174,12 @@ public class SqlDialectTests
         [Fact]
         public void AllDialects_GenerateTrim()
         {
-            ISqlDialect[] dialects = new ISqlDialect[] 
-            { 
-                new SQLiteDialect(), 
-                new SqlServerDialect(), 
-                new MySqlDialect(), 
-                new PostgreSqlDialect() 
+            ISqlDialect[] dialects = new ISqlDialect[]
+            {
+                new SQLiteDialect(),
+                new SqlServerDialect(),
+                new MySqlDialect(),
+                new PostgreSqlDialect()
             };
 
             foreach (var dialect in dialects)
@@ -1193,12 +1193,12 @@ public class SqlDialectTests
         [Fact]
         public void AllDialects_GenerateMonth()
         {
-            ISqlDialect[] dialects = new ISqlDialect[] 
-            { 
-                new SQLiteDialect(), 
-                new SqlServerDialect(), 
-                new MySqlDialect(), 
-                new PostgreSqlDialect() 
+            ISqlDialect[] dialects = new ISqlDialect[]
+            {
+                new SQLiteDialect(),
+                new SqlServerDialect(),
+                new MySqlDialect(),
+                new PostgreSqlDialect()
             };
 
             foreach (var dialect in dialects)
@@ -1212,12 +1212,12 @@ public class SqlDialectTests
         [Fact]
         public void AllDialects_GenerateDay()
         {
-            ISqlDialect[] dialects = new ISqlDialect[] 
-            { 
-                new SQLiteDialect(), 
-                new SqlServerDialect(), 
-                new MySqlDialect(), 
-                new PostgreSqlDialect() 
+            ISqlDialect[] dialects = new ISqlDialect[]
+            {
+                new SQLiteDialect(),
+                new SqlServerDialect(),
+                new MySqlDialect(),
+                new PostgreSqlDialect()
             };
 
             foreach (var dialect in dialects)

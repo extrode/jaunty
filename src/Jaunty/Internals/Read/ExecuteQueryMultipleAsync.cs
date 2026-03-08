@@ -41,5 +41,3 @@ public static partial class Jaunty
         return new GridReader(reader, connection, wasClosed);
     }
 }
-
-

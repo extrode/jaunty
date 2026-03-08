@@ -23,6 +23,3 @@ public class QueryTypeConversionTests : IClassFixture<DialectFixture>
             connection.QueryScalar<DateTime>("SELECT product_name FROM products WHERE product_id = 1"));
     }
 }
-
-
-

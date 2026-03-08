@@ -232,7 +232,7 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
             return param.Type.IsGenericType &&
                    param.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>);
         }
-        
+
         // Also handle cases where it might be a MemberExpression to the parameter
         if (expr?.Type.IsGenericType == true && expr.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>))
         {

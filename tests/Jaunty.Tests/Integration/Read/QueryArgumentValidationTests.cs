@@ -102,5 +102,3 @@ public class QueryArgumentValidationTests : IClassFixture<DialectFixture>
             connection.QueryScalar<int>(null!));
     }
 }
-
-

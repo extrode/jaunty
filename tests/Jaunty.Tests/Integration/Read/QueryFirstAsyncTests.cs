@@ -129,6 +129,3 @@ public class QueryFirstAsyncTests : IClassFixture<DialectFixture>
                 new { Id = 1 }));
     }
 }
-
-
-

@@ -114,4 +114,3 @@ public static partial class Jaunty
             : UpdateCoreAsync(dbConnection, entity, options, cancellationToken);
     }
 }
-

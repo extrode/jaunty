@@ -194,4 +194,3 @@ public static partial class Jaunty
             : QueryFirstOrDefaultCoreAsync<T>(dbConnection, sql, parameters, options, MappingMode.Projection, cancellationToken);
     }
 }
-

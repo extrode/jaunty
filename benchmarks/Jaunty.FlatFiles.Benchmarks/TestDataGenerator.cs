@@ -1,4 +1,5 @@
 using System.Text;
+
 using DuckDB.NET.Data;
 
 namespace Jaunty.FlatFiles.Benchmarks;

@@ -26,7 +26,7 @@ public class ForeignKeyConstraintTests : IClassFixture<DialectFixture>
     public void BulkDeleteIgnoreConstraints_DoesNotThrow(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        
+
         var categories = new List<Category> { new() { CategoryId = 999 } };
 
         // Should not throw even with non-existent category
@@ -51,7 +51,7 @@ public class ForeignKeyConstraintTests : IClassFixture<DialectFixture>
             using var connection = dialect.Provider == DialectProvider.SystemSqlite
                 ? (IDbConnection)new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
                 : (IDbConnection)new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-            
+
             connection.Open();
 
             // Create test table
@@ -76,7 +76,7 @@ public class ForeignKeyConstraintTests : IClassFixture<DialectFixture>
         {
             // For SQL Server, Postgres, MariaDB - just verify the method doesn't throw
             using var connection = _fixture.GetConnection(dialect);
-            
+
             var newEntities = new List<BulkTestEntity>
             {
                 new() { Name = "Test Entity 1", Value = 1 }
@@ -84,7 +84,7 @@ public class ForeignKeyConstraintTests : IClassFixture<DialectFixture>
 
             // May fail due to schema, but should not throw for the method itself
             var ex = Record.Exception(() => connection.BulkInsertIgnoreConstraints(newEntities));
-            
+
             // If it throws, it should be about schema, not the method
             if (ex != null)
             {

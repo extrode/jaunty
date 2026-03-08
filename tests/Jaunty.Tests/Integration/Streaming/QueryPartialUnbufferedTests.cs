@@ -132,5 +132,3 @@ public class QueryPartialUnbufferedTests : IClassFixture<DialectFixture>
         Assert.Empty(list);
     }
 }
-
-

@@ -142,7 +142,3 @@ public class QueryPartialSingleAsyncTests : IClassFixture<DialectFixture>
         Assert.Equal(2, product.ProductId);
     }
 }
-
-
-
-

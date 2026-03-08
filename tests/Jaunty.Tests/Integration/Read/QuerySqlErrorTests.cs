@@ -45,5 +45,3 @@ public class QuerySqlErrorTests : IClassFixture<DialectFixture>
             connection.QueryScalar<int>("SELECT COUNT(*) FROM nonexistent_table"));
     }
 }
-
-
