@@ -57,10 +57,9 @@ internal static class WriteParameterCache<T> where T : new()
         return (pc, entity) =>
         {
             int count = Math.Min(getters.Length, pc.Count);
+
             for (int i = 0; i < count; i++)
-            {
-                ((IDbDataParameter)pc[i]).Value = getters[i](entity) ?? DBNull.Value;
-            }
+                (pc[i] as IDbDataParameter)?.Value = getters[i](entity) ?? DBNull.Value;
         };
     }
 
@@ -87,7 +86,7 @@ internal static class WriteParameterCache<T> where T : new()
             int count = Math.Min(getters.Length, pc.Count);
             for (int i = 0; i < count; i++)
             {
-                ((IDbDataParameter)pc[i]).Value = getters[i](entity) ?? DBNull.Value;
+                (pc[i] as IDbDataParameter)?.Value = getters[i](entity) ?? DBNull.Value;
             }
         };
     }
@@ -109,7 +108,7 @@ internal static class WriteParameterCache<T> where T : new()
             int count = Math.Min(getters.Length, pc.Count);
             for (int i = 0; i < count; i++)
             {
-                ((IDbDataParameter)pc[i]).Value = getters[i](entity) ?? DBNull.Value;
+                (pc[i] as IDbDataParameter)?.Value = getters[i](entity) ?? DBNull.Value;
             }
         };
     }

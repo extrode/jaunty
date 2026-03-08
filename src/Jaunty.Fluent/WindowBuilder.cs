@@ -76,14 +76,49 @@ public sealed class WindowBuilder<TFrom, TResult>
 /// </summary>
 public enum WindowFunctionType
 {
+    /// <summary>
+    /// ROW_NUMBER() - assigns a unique sequential number to each row.
+    /// </summary>
     RowNumber,
+
+    /// <summary>
+    /// RANK() - assigns rank with gaps for ties.
+    /// </summary>
     Rank,
+
+    /// <summary>
+    /// DENSE_RANK() - assigns rank without gaps for ties.
+    /// </summary>
     DenseRank,
+
+    /// <summary>
+    /// NTILE() - distributes rows into a specified number of buckets.
+    /// </summary>
     NTile,
+
+    /// <summary>
+    /// SUM() OVER - windowed sum aggregate.
+    /// </summary>
     Sum,
+
+    /// <summary>
+    /// AVG() OVER - windowed average aggregate.
+    /// </summary>
     Avg,
+
+    /// <summary>
+    /// COUNT() OVER - windowed count aggregate.
+    /// </summary>
     Count,
+
+    /// <summary>
+    /// MIN() OVER - windowed minimum aggregate.
+    /// </summary>
     Min,
+
+    /// <summary>
+    /// MAX() OVER - windowed maximum aggregate.
+    /// </summary>
     Max
 }
 

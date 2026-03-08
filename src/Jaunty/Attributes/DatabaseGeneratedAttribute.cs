@@ -10,7 +10,7 @@ namespace Jaunty.Attributes;
 /// </para>
 /// <para>
 /// This attribute is Jaunty's native database generation attribute. It also supports the standard 
-/// <see cref="System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute"/> for compatibility.
+/// <see cref="DatabaseGeneratedAttribute"/> for compatibility.
 /// </para>
 /// </remarks>
 /// <example>
