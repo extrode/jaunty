@@ -65,15 +65,15 @@ public sealed class MySqlSchemaReader : ISchemaReader
         SchemaReaderOptions options,
         CancellationToken cancellationToken = default)
     {
-        using var connection = CreateConnection(connectionString);
+        using DbConnection connection = CreateConnection(connectionString);
         await OpenConnectionAsync(connection, cancellationToken);
 
         var tables = new List<TableSchema>();
-        var tableNames = await GetTableNamesAsync(connection, options, cancellationToken);
+        List<string> tableNames = await GetTableNamesAsync(connection, options, cancellationToken);
 
         foreach (var tableName in tableNames)
         {
-            var tableSchema = await ReadTableSchemaAsync(connection, tableName, options, cancellationToken);
+            TableSchema tableSchema = await ReadTableSchemaAsync(connection, tableName, options, cancellationToken);
             tables.Add(tableSchema);
         }
 
@@ -115,10 +115,10 @@ public sealed class MySqlSchemaReader : ISchemaReader
     {
         var tables = new List<string>();
 
-        using var cmd = connection.CreateCommand();
+        using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = TablesSql;
 
-        using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
             var tableName = reader.GetString(1);
@@ -143,9 +143,9 @@ public sealed class MySqlSchemaReader : ISchemaReader
         SchemaReaderOptions options,
         CancellationToken cancellationToken)
     {
-        var columns = await ReadColumnsAsync(connection, tableName, cancellationToken);
-        var primaryKey = await ReadPrimaryKeyAsync(connection, tableName, cancellationToken);
-        var foreignKeys = options.IncludeForeignKeys
+        List<ColumnSchema> columns = await ReadColumnsAsync(connection, tableName, cancellationToken);
+        PrimaryKeyInfo? primaryKey = await ReadPrimaryKeyAsync(connection, tableName, cancellationToken);
+        List<ForeignKeyInfo> foreignKeys = options.IncludeForeignKeys
             ? await ReadForeignKeysAsync(connection, tableName, cancellationToken)
             : [];
 
@@ -153,7 +153,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
         {
             for (int i = 0; i < columns.Count; i++)
             {
-                var col = columns[i];
+                ColumnSchema col = columns[i];
                 if (primaryKey.Columns.Contains(col.ColumnName, StringComparer.OrdinalIgnoreCase))
                 {
                     columns[i] = new ColumnSchema
@@ -191,15 +191,15 @@ public sealed class MySqlSchemaReader : ISchemaReader
     {
         var columns = new List<ColumnSchema>();
 
-        using var cmd = connection.CreateCommand();
+        using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = ColumnsSql;
 
-        var tableParam = cmd.CreateParameter();
+        DbParameter tableParam = cmd.CreateParameter();
         tableParam.ParameterName = "@TableName";
         tableParam.Value = tableName;
         cmd.Parameters.Add(tableParam);
 
-        using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
             columns.Add(new ColumnSchema
@@ -225,10 +225,10 @@ public sealed class MySqlSchemaReader : ISchemaReader
         string tableName,
         CancellationToken cancellationToken)
     {
-        using var cmd = connection.CreateCommand();
+        using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = PrimaryKeysSql;
 
-        var tableParam = cmd.CreateParameter();
+        DbParameter tableParam = cmd.CreateParameter();
         tableParam.ParameterName = "@TableName";
         tableParam.Value = tableName;
         cmd.Parameters.Add(tableParam);
@@ -236,7 +236,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
         string? constraintName = null;
         var columns = new List<string>();
 
-        using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
             constraintName ??= reader.GetString(0);
@@ -260,15 +260,15 @@ public sealed class MySqlSchemaReader : ISchemaReader
     {
         var foreignKeys = new List<ForeignKeyInfo>();
 
-        using var cmd = connection.CreateCommand();
+        using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = ForeignKeysSql;
 
-        var tableParam = cmd.CreateParameter();
+        DbParameter tableParam = cmd.CreateParameter();
         tableParam.ParameterName = "@TableName";
         tableParam.Value = tableName;
         cmd.Parameters.Add(tableParam);
 
-        using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
             foreignKeys.Add(new ForeignKeyInfo

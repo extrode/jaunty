@@ -44,10 +44,10 @@ internal static class WriteParameterCache<T> where T : new()
 
     private static Action<IDataParameterCollection, T>? CreateInsertValueSetter()
     {
-        var metadata = ResolveMetadata();
+        EntityMetadata? metadata = ResolveMetadata();
         if (metadata == null) return null;
 
-        var columns = metadata.InsertColumns;
+        IReadOnlyList<ColumnMetadata> columns = metadata.InsertColumns;
         var getters = new Func<T, object?>[columns.Count];
         for (int i = 0; i < columns.Count; i++)
         {
@@ -66,11 +66,11 @@ internal static class WriteParameterCache<T> where T : new()
 
     private static Action<IDataParameterCollection, T>? CreateUpdateValueSetter()
     {
-        var metadata = ResolveMetadata();
+        EntityMetadata? metadata = ResolveMetadata();
         if (metadata == null) return null;
 
-        var updateColumns = metadata.UpdateColumns;
-        var primaryKeys = metadata.PrimaryKeys;
+        IReadOnlyList<ColumnMetadata> updateColumns = metadata.UpdateColumns;
+        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
         var getters = new Func<T, object?>[updateColumns.Count + primaryKeys.Count];
 
         for (int i = 0; i < updateColumns.Count; i++)
@@ -94,10 +94,10 @@ internal static class WriteParameterCache<T> where T : new()
 
     private static Action<IDataParameterCollection, T>? CreateDeleteValueSetter()
     {
-        var metadata = ResolveMetadata();
+        EntityMetadata? metadata = ResolveMetadata();
         if (metadata == null) return null;
 
-        var deleteColumns = metadata.DeleteColumns;
+        IReadOnlyList<ColumnMetadata> deleteColumns = metadata.DeleteColumns;
         var getters = new Func<T, object?>[deleteColumns.Count];
         for (int i = 0; i < deleteColumns.Count; i++)
         {
@@ -120,9 +120,9 @@ internal static class WriteParameterCache<T> where T : new()
     /// </summary>
     private static Func<T, object?> CreateTypedGetter(PropertyInfo prop)
     {
-        var param = Expression.Parameter(typeof(T), "e");
-        var access = Expression.Property(param, prop);
-        var box = Expression.Convert(access, typeof(object));
+        ParameterExpression param = Expression.Parameter(typeof(T), "e");
+        MemberExpression access = Expression.Property(param, prop);
+        UnaryExpression box = Expression.Convert(access, typeof(object));
         return Expression.Lambda<Func<T, object?>>(box, param).Compile();
     }
 
@@ -138,7 +138,8 @@ internal static class WriteParameterCache<T> where T : new()
 #endif
     private static Action<IDbCommand, T>? TryGetGeneratedBinder(string methodName)
     {
-        var method = typeof(T).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static, null, [typeof(IDbCommand), typeof(T)], null);
+
+        MethodInfo? method = typeof(T).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static, null, [typeof(IDbCommand), typeof(T)], null);
         return (Action<IDbCommand, T>?)method?.CreateDelegate(typeof(Action<IDbCommand, T>));
     }
 

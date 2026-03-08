@@ -12,7 +12,6 @@ using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.FlatFiles.DuckDB.Internals.Import;
 using Jaunty.FlatFiles.Import;
 using Jaunty.FlatFiles.Interfaces;
-using Jaunty.FlatFiles.WriteBack;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -66,7 +65,7 @@ public sealed partial class DuckDb : IFlatFile
         _options = options;
         _dialect = DuckDbDialect.Instance;
 
-        var connectionString = options.DatabasePath == ":memory:"
+        string connectionString = options.DatabasePath == ":memory:"
             ? "DataSource=:memory:"
             : $"DataSource={options.DatabasePath}";
 
@@ -82,7 +81,7 @@ public sealed partial class DuckDb : IFlatFile
             _connection.Open();
         }
 
-        foreach (var source in options.Sources)
+        foreach (IFileSource source in options.Sources)
         {
             if (options.PreloadIntoMemory && !source.IsPreloaded)
             {
@@ -97,9 +96,9 @@ public sealed partial class DuckDb : IFlatFile
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        var sql = GenerateRegistrationSql(source);
+        string sql = GenerateRegistrationSql(source);
 
-        using var cmd = _connection.CreateCommand();
+        using DuckDBCommand cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
         cmd.ExecuteNonQuery();
 
@@ -116,9 +115,9 @@ public sealed partial class DuckDb : IFlatFile
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        var sql = GenerateRegistrationSql(source);
+        string sql = GenerateRegistrationSql(source);
 
-        await using var cmd = _connection.CreateCommand();
+        await using DuckDBCommand cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
         await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
@@ -133,13 +132,13 @@ public sealed partial class DuckDb : IFlatFile
     /// <inheritdoc />
     public IFileSource? GetSource<T>() where T : class, new()
     {
-        return _sources.TryGetValue(typeof(T), out var source) ? source : null;
+        return _sources.TryGetValue(typeof(T), out IFileSource? source) ? source : null;
     }
 
     /// <inheritdoc />
     public bool IsModified<T>() where T : class, new()
     {
-        return _modified.TryGetValue(typeof(T), out var modified) && modified;
+        return _modified.TryGetValue(typeof(T), out bool modified) && modified;
     }
 
     /// <summary>
@@ -149,20 +148,18 @@ public sealed partial class DuckDb : IFlatFile
 
     private IFileSource GetSourceOrThrow<T>() where T : class, new()
     {
-        if (!_sources.TryGetValue(typeof(T), out var source))
-        {
-            throw new InvalidOperationException(
+        return !_sources.TryGetValue(typeof(T), out IFileSource? source)
+            ? throw new InvalidOperationException(
                 $"No file source registered for entity type '{typeof(T).Name}'. " +
-                $"Register it via AddCsv<{typeof(T).Name}>(), AddParquet<{typeof(T).Name}>(), etc.");
-        }
-        return source;
+                $"Register it via AddCsv<{typeof(T).Name}>(), AddParquet<{typeof(T).Name}>(), etc.")
+            : source;
     }
 
     private string GenerateRegistrationSql(IFileSource source)
     {
         if (source.EntityType != typeof(object))
         {
-            var mappings = ColumnMappingCache.Get(source.EntityType);
+            IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(source.EntityType);
             if (HasDateTimeColumns(mappings))
             {
                 return GenerateViewSqlWithDateTimeCasts(source, mappings);
@@ -176,7 +173,7 @@ public sealed partial class DuckDb : IFlatFile
 
     private static bool HasDateTimeColumns(IReadOnlyDictionary<string, ColumnMapping> mappings)
     {
-        foreach (var mapping in mappings.Values)
+        foreach (ColumnMapping mapping in mappings.Values)
         {
             if (mapping.IsDateTime)
                 return true;
@@ -186,14 +183,14 @@ public sealed partial class DuckDb : IFlatFile
 
     private string GenerateViewSqlWithDateTimeCasts(IFileSource source, IReadOnlyDictionary<string, ColumnMapping> mappings)
     {
-        var readFunction = DuckDbDialect.GenerateReadFunction(source);
-        var dateTimeColumns = GetDateTimeColumnNamesFromMappings(mappings);
+        string readFunction = DuckDbDialect.GenerateReadFunction(source);
+        HashSet<string> dateTimeColumns = GetDateTimeColumnNamesFromMappings(mappings);
 
         List<string> fileColumns;
-        using (var cmd = _connection.CreateCommand())
+        using (DuckDBCommand cmd = _connection.CreateCommand())
         {
             cmd.CommandText = $"SELECT * FROM {readFunction} LIMIT 0";
-            using var reader = cmd.ExecuteReader();
+            using DuckDBDataReader reader = cmd.ExecuteReader();
             fileColumns = new List<string>(reader.FieldCount);
             for (int i = 0; i < reader.FieldCount; i++)
             {
@@ -206,7 +203,7 @@ public sealed partial class DuckDb : IFlatFile
         {
             if (i > 0) sb.Append(", ");
 
-            var col = fileColumns[i];
+            string col = fileColumns[i];
             if (dateTimeColumns.Contains(col))
             {
                 sb.Append($"CAST(\"{col}\" AS TIMESTAMP) AS \"{col}\"");
@@ -217,14 +214,14 @@ public sealed partial class DuckDb : IFlatFile
             }
         }
 
-        var keyword = source.IsPreloaded ? "TABLE" : "VIEW";
+        string keyword = source.IsPreloaded ? "TABLE" : "VIEW";
         return $"CREATE OR REPLACE {keyword} \"{source.TableName}\" AS SELECT {sb} FROM {readFunction}";
     }
 
     private static HashSet<string> GetDateTimeColumnNamesFromMappings(IReadOnlyDictionary<string, ColumnMapping> mappings)
     {
         var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var mapping in mappings.Values)
+        foreach (ColumnMapping mapping in mappings.Values)
         {
             if (mapping.IsDateTime)
                 result.Add(mapping.ColumnName);
@@ -234,19 +231,19 @@ public sealed partial class DuckDb : IFlatFile
 
     private void ValidateSchema(IFileSource source)
     {
-        using var cmd = _connection.CreateCommand();
+        using DuckDBCommand cmd = _connection.CreateCommand();
         cmd.CommandText = $"DESCRIBE \"{source.TableName}\"";
-        using var reader = cmd.ExecuteReader();
+        using DuckDBDataReader reader = cmd.ExecuteReader();
 
         var fileColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         while (reader.Read())
         {
-            var colName = reader.GetString(0);
-            var colType = reader.GetString(1);
+            string colName = reader.GetString(0);
+            string colType = reader.GetString(1);
             fileColumns[colName] = colType;
         }
 
-        foreach (var mapping in ColumnMappingCache.Get(source.EntityType).Values)
+        foreach (ColumnMapping mapping in ColumnMappingCache.Get(source.EntityType).Values)
         {
             if (!fileColumns.ContainsKey(mapping.ColumnName))
             {
@@ -263,11 +260,12 @@ public sealed partial class DuckDb : IFlatFile
     {
         ArgumentNullException.ThrowIfNull(targetConnection);
 
-        var source = GetSourceOrThrow<T>();
+        IFileSource source = GetSourceOrThrow<T>();
 
         return await ImportExecutor.ExecuteAsync<T>(_connection, source, targetConnection, options, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         if (_disposed) return;

@@ -380,7 +380,7 @@ public sealed class SpParameters
         {
             if (string.Equals(_parameters[i].Name, name, StringComparison.OrdinalIgnoreCase))
             {
-                var param = _parameters[i];
+                SpParameter param = _parameters[i];
                 object? value = param.DbParameter?.Value ?? param.Value;
                 return value is not null && value != DBNull.Value;
             }

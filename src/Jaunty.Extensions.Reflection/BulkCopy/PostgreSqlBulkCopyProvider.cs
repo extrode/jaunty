@@ -76,7 +76,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
                     else
                     {
                         // Use Write<T> with the actual runtime type to avoid boxing/type issues
-                        var writeMethod = WriteGenericMethod?.MakeGenericMethod(value.GetType());
+                        MethodInfo? writeMethod = WriteGenericMethod?.MakeGenericMethod(value.GetType());
                         writeMethod?.Invoke(importer, new[] { value });
                     }
                 }
@@ -119,7 +119,8 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         await importerTask.ConfigureAwait(false);
 
         // Get the result from the completed Task<T>
-        var resultProperty = importerTask.GetType().GetProperty("Result");
+
+        PropertyInfo? resultProperty = importerTask.GetType().GetProperty("Result");
         var importer = resultProperty?.GetValue(importerTask);
 
         if (importer == null)
@@ -146,7 +147,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
                     else
                     {
                         // Use Write<T> with the actual runtime type
-                        var writeMethod = WriteGenericMethod?.MakeGenericMethod(value.GetType());
+                        MethodInfo? writeMethod = WriteGenericMethod?.MakeGenericMethod(value.GetType());
                         writeMethod?.Invoke(importer, new[] { value });
                     }
                 }
@@ -203,11 +204,12 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         if (NpgsqlBinaryImporterType == null) return null;
 
         // Look for Write<T>(T value) — a generic method with exactly one parameter
-        foreach (var method in NpgsqlBinaryImporterType.GetMethods())
+
+        foreach (MethodInfo? method in NpgsqlBinaryImporterType.GetMethods())
         {
             if (method.Name == "Write" && method.IsGenericMethodDefinition)
             {
-                var parameters = method.GetParameters();
+                ParameterInfo[] parameters = method.GetParameters();
                 if (parameters.Length == 1)
                     return method;
             }

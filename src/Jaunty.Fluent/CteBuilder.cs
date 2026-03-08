@@ -41,7 +41,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
     public ICteQueryClause<T> As(Func<IFromClause<T>, IWhereClause<T>> queryBuilder)
     {
         var innerQuery = new QueryBuilder<T>(_connection, null);
-        var result = queryBuilder(innerQuery);
+        IWhereClause<T> result = queryBuilder(innerQuery);
 
         // Get the SQL from the inner query (without executing)
         _cteDefinitionSql = ((IWhereClause<T>)result).ToSql();
@@ -49,8 +49,8 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         // Copy parameters from inner query
         if (result is QueryBuilder<T> qb)
         {
-            var innerParams = qb.GetParameters();
-            foreach (var param in innerParams.GetAll())
+            ParameterCollection innerParams = qb.GetParameters();
+            foreach ((string Name, object? Value) param in innerParams.GetAll())
             {
                 _parameters.Add(param.Name, param.Value);
             }
@@ -66,8 +66,8 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         // Copy parameters from the query
         if (query is QueryBuilder<T> qb)
         {
-            var innerParams = qb.GetParameters();
-            foreach (var param in innerParams.GetAll())
+            ParameterCollection innerParams = qb.GetParameters();
+            foreach ((string Name, object? Value) param in innerParams.GetAll())
             {
                 _parameters.Add(param.Name, param.Value);
             }
@@ -83,8 +83,8 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
     public ICteQueryClause<T> Where(Expression<Func<T, bool>> predicate)
     {
         var visitor = new WhereExpressionVisitor<T>(_dialect);
-        var (sql, parameters) = visitor.Translate(predicate);
-        var op = _whereConditions.Count == 0 ? LogicalOperator.None : LogicalOperator.And;
+        (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
+        LogicalOperator op = _whereConditions.Count == 0 ? LogicalOperator.None : LogicalOperator.And;
         _whereConditions.Add(WhereCondition.Expression(sql, op));
         _parameters.AddRange(parameters);
         return this;
@@ -95,7 +95,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         var paramName = $"@cte_p{_parameters.Count}";
         _parameters.Add(paramName, value);
         var sql = $"{_dialect.EscapeColumnName(column)} = {paramName}";
-        var op = _whereConditions.Count == 0 ? LogicalOperator.None : LogicalOperator.And;
+        LogicalOperator op = _whereConditions.Count == 0 ? LogicalOperator.None : LogicalOperator.And;
         _whereConditions.Add(WhereCondition.Column(sql, op));
         return this;
     }
@@ -103,7 +103,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
     public ICteQueryClause<T> And(Expression<Func<T, bool>> predicate)
     {
         var visitor = new WhereExpressionVisitor<T>(_dialect);
-        var (sql, parameters) = visitor.Translate(predicate);
+        (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _whereConditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
         _parameters.AddRange(parameters);
         return this;
@@ -112,7 +112,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
     public ICteQueryClause<T> Or(Expression<Func<T, bool>> predicate)
     {
         var visitor = new WhereExpressionVisitor<T>(_dialect);
-        var (sql, parameters) = visitor.Translate(predicate);
+        (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _whereConditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
         _parameters.AddRange(parameters);
         return this;

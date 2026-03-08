@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Reflection;
 using System.Text;
 
 using Jaunty.FlatFiles.Import;
@@ -18,12 +19,12 @@ internal static class ImportExecutor
     /// </summary>
     public static async ValueTask<long> ExecuteAsync<T>(IDbConnection sourceConnection, IFileSource source, DbConnection targetConnection, ImportOptions options, CancellationToken cancellationToken) where T : class, new()
     {
-        var entityType = typeof(T);
+        Type entityType = typeof(T);
         IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(entityType);
         string tableName = source.TableName;
 
         // Resolve the import dialect (explicit > custom registry > auto-detect)
-        var dialect = ImportDialectResolver.Resolve(targetConnection, options.Dialect);
+        IImportDialect dialect = ImportDialectResolver.Resolve(targetConnection, options.Dialect);
 
         // Ensure target connection is open
         if (targetConnection.State != ConnectionState.Open)
@@ -33,7 +34,7 @@ internal static class ImportExecutor
         if (options.CreateTableIfMissing)
         {
             var ddl = TargetDdlGenerator.GenerateCreateTableSql(entityType, tableName, dialect);
-            await using var ddlCmd = targetConnection.CreateCommand();
+            await using DbCommand ddlCmd = targetConnection.CreateCommand();
             ddlCmd.CommandText = ddl;
             await ddlCmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -42,17 +43,17 @@ internal static class ImportExecutor
         ValidateTargetSchema(targetConnection, tableName, mappings, options.CreateTableIfMissing);
 
         // Read all rows from DuckDB source
-        var sourceCmd = (sourceConnection as DbConnection)!.CreateCommand();
+        DbCommand sourceCmd = (sourceConnection as DbConnection)!.CreateCommand();
         await using (sourceCmd.ConfigureAwait(false))
         {
             sourceCmd.CommandText = $"SELECT * FROM \"{tableName}\"";
-            var reader = await sourceCmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            DbDataReader reader = await sourceCmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             await using (reader.ConfigureAwait(false))
             {
                 // Build the insert SQL template using the dialect
                 // Avoid LINQ allocations by using pre-sized lists
                 var columnNames = new List<string>(mappings.Count);
-                foreach (var mapping in mappings.Values)
+                foreach (ColumnMapping mapping in mappings.Values)
                     columnNames.Add(mapping.ColumnName);
 
                 var parameterNames = new List<string>(mappings.Count);
@@ -100,10 +101,10 @@ internal static class ImportExecutor
             }
         }
 
-        var transaction = await targetConnection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        DbTransaction transaction = await targetConnection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using (transaction.ConfigureAwait(false))
         {
-            var cmd = targetConnection.CreateCommand();
+            DbCommand cmd = targetConnection.CreateCommand();
             await using (cmd.ConfigureAwait(false))
             {
                 cmd.CommandText = insertSql;
@@ -113,7 +114,7 @@ internal static class ImportExecutor
                 var paramArray = new DbParameter[mappings.Count];
                 for (int i = 0; i < mappings.Count; i++)
                 {
-                    var param = cmd.CreateParameter();
+                    DbParameter param = cmd.CreateParameter();
                     param.ParameterName = $"@p{i}";
                     cmd.Parameters.Add(param);
                     paramArray[i] = param;
@@ -171,16 +172,16 @@ internal static class ImportExecutor
     {
         if (value is null or DBNull) return DBNull.Value;
 
-        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+        Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
         // Handle DuckDB-specific types
-        var valueType = value.GetType();
+        Type valueType = value.GetType();
         var valueTypeName = valueType.FullName ?? valueType.Name;
 
         // DuckDB returns DuckDBDateOnly for DATE columns
         if (valueTypeName.Contains("DuckDBDateOnly") && underlyingType == typeof(DateTime))
         {
-            var daysProp = s_duckDbDatePropCache.GetOrAdd(valueType, t => t.GetProperty("DaysSinceEpoch"));
+            PropertyInfo? daysProp = s_duckDbDatePropCache.GetOrAdd(valueType, t => t.GetProperty("DaysSinceEpoch"));
             if (daysProp is null)
             {
                 throw new InvalidOperationException(
@@ -194,7 +195,7 @@ internal static class ImportExecutor
         // DuckDB returns DuckDBTimeOnly for TIME columns
         if (valueTypeName.Contains("DuckDBTimeOnly") && underlyingType == typeof(TimeSpan))
         {
-            var ticksProp = s_duckDbTimePropCache.GetOrAdd(valueType, t => t.GetProperty("Ticks"));
+            PropertyInfo? ticksProp = s_duckDbTimePropCache.GetOrAdd(valueType, t => t.GetProperty("Ticks"));
             if (ticksProp is null)
             {
                 throw new InvalidOperationException(
@@ -230,9 +231,9 @@ internal static class ImportExecutor
         // "table not found" errors specifically, while letting non-database errors propagate.
         try
         {
-            using var cmd = targetConnection.CreateCommand();
+            using DbCommand cmd = targetConnection.CreateCommand();
             cmd.CommandText = $"SELECT * FROM \"{tableName}\" WHERE 0=1";
-            using var reader = cmd.ExecuteReader();
+            using DbDataReader reader = cmd.ExecuteReader();
 
             // Table exists — validate columns
             var targetColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -241,7 +242,7 @@ internal static class ImportExecutor
                 targetColumns.Add(reader.GetName(i));
             }
 
-            foreach (var mapping in mappings.Values)
+            foreach (ColumnMapping mapping in mappings.Values)
             {
                 if (!targetColumns.Contains(mapping.ColumnName))
                 {

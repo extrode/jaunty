@@ -317,7 +317,7 @@ public sealed class DuckDbDialect : IFlatFileDialect
         if (source.FilePaths.Count > 1)
         {
             // Multiple files: ['path1', 'path2', ...]
-            var escaped = source.FilePaths.Select(p => $"'{p.Replace("'", "''")}'");
+            IEnumerable<string> escaped = source.FilePaths.Select(p => $"'{p.Replace("'", "''")}'");
             pathExpression = $"[{string.Join(", ", escaped)}]";
         }
         else

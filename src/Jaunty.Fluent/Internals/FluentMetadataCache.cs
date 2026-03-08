@@ -28,14 +28,14 @@ internal static class FluentMetadataCache
 
     public static CachedDialectMetadata GetForDialect<T>(ISqlDialect dialect) where T : new()
     {
-        var key = (typeof(T), dialect.GetType());
+        (Type, Type) key = (typeof(T), dialect.GetType());
         return _dialectCache.GetOrAdd(key, _ =>
         {
-            var meta = GetMetadata<T>();
+            EntityMetadata meta = GetMetadata<T>();
             var escapedTable = dialect.EscapeTableName(meta.SchemaName, meta.TableName);
             var escapedCols = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var col in meta.Columns)
+            foreach (ColumnMetadata col in meta.Columns)
             {
                 escapedCols[col.Property.Name] = dialect.EscapeColumnName(col.ColumnName);
             }

@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 using Jaunty.Dialects;
@@ -36,10 +37,10 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
     public IValuesClause<T> Values(T entity)
     {
         // Get all insertable columns (non-identity, non-computed)
-        var columns = _metadata.NonIdentityColumns;
+        IReadOnlyList<ColumnMetadata> columns = _metadata.NonIdentityColumns;
         for (int i = 0; i < columns.Count; i++)
         {
-            var col = columns[i];
+            ColumnMetadata col = columns[i];
             if (!col.IsComputed)
             {
                 var value = col.Property.GetValue(entity);
@@ -53,12 +54,13 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
 
     public IValuesClause<T> Values(object values)
     {
-        foreach (var prop in values.GetType().GetProperties())
+
+        foreach (PropertyInfo? prop in values.GetType().GetProperties())
         {
             string columnName = GetColumnNameFromProperty(prop.Name);
 
             // Skip identity and computed columns
-            var colMeta = GetColumnMetadata(prop.Name);
+            ColumnMetadata? colMeta = GetColumnMetadata(prop.Name);
             if (colMeta?.IsIdentity == true || colMeta?.IsComputed == true)
                 continue;
 
@@ -159,7 +161,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
             if (wasClosed)
                 _connection.Open();
 
-            using var command = _connection.CreateCommand();
+            using IDbCommand command = _connection.CreateCommand();
             command.CommandText = sql;
             _parameters.BindTo(command);
 
@@ -194,7 +196,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
             if (wasClosed)
                 await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            using var command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
             command.CommandText = sql;
             _parameters.BindTo(command);
 
@@ -220,7 +222,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
 
     private bool HasIdentityColumn()
     {
-        var primaryKeys = _metadata.PrimaryKeys;
+        IReadOnlyList<ColumnMetadata> primaryKeys = _metadata.PrimaryKeys;
         return primaryKeys.Count == 1 && primaryKeys[0].IsIdentity;
     }
 
@@ -228,7 +230,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
 
     private ColumnMetadata? GetColumnMetadata(string propertyName)
     {
-        var columns = _metadata.Columns;
+        IReadOnlyList<ColumnMetadata> columns = _metadata.Columns;
         for (int i = 0; i < columns.Count; i++)
         {
             if (columns[i].Property.Name == propertyName)

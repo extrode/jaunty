@@ -29,8 +29,8 @@ internal sealed class ParameterCollection
     {
         for (int i = 0; i < _parameters.Count; i++)
         {
-            var (name, value) = _parameters[i];
-            var param = command.CreateParameter();
+            (string? name, object? value) = _parameters[i];
+            IDbDataParameter param = command.CreateParameter();
             param.ParameterName = name;
             param.Value = value ?? DBNull.Value;
             command.Parameters.Add(param);
@@ -51,7 +51,7 @@ internal sealed class ParameterCollection
 
         for (int i = 0; i < _parameters.Count; i++)
         {
-            var (name, value) = _parameters[i];
+            (string? name, object? value) = _parameters[i];
             // Strip parameter prefix (@ or $) if present
             var key = name.Length > 0 && name[0] is '@' or '$' ? name.Substring(1) : name;
             dict[key] = value;

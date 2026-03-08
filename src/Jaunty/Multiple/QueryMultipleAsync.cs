@@ -235,7 +235,7 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
+        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
         reader(gridReader);
     }
 
@@ -278,7 +278,7 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
+        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
         await reader(gridReader);
     }
 
@@ -323,7 +323,7 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
+        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
         return reader(gridReader);
     }
 
@@ -368,7 +368,7 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using var gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
+        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
         return await reader(gridReader);
     }
 }

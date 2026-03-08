@@ -54,9 +54,9 @@ public static partial class Jaunty
                 Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
 #if NET8_0_OR_GREATER
-                await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #else
-                using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
                 return await handler(reader, cancellationToken).ConfigureAwait(false);
             }
@@ -66,7 +66,7 @@ public static partial class Jaunty
                 if (wasClosed)
                     await Task.Run(() => connection.Open(), cancellationToken).ConfigureAwait(false);
 
-                using var command = connection.CreateCommand();
+                using IDbCommand command = connection.CreateCommand();
                 command.CommandText = sql;
 
                 // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
@@ -85,7 +85,7 @@ public static partial class Jaunty
 
                 Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-                using var reader = command.ExecuteReader();
+                using IDataReader reader = command.ExecuteReader();
                 return await handler(reader, cancellationToken).ConfigureAwait(false);
             }
         }

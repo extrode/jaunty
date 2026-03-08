@@ -61,9 +61,9 @@ public static class MetadataCache<T>
         if (fieldCount == 0) return Array.Empty<PropertySetter<T>>();
 
         var signature = new ReaderSignature(reader, mode);
-        if (SettersCache.TryGetValue(signature, out var cached)) return cached;
+        if (SettersCache.TryGetValue(signature, out PropertySetter<T>[]? cached)) return cached;
 
-        var setters = BuildSetters(reader, mode);
+        PropertySetter<T>[] setters = BuildSetters(reader, mode);
         SettersCache.TryAdd(signature, setters);
         return setters;
     }
@@ -112,7 +112,7 @@ public static class MetadataCache<T>
         // Build a resolver-aware index if ColumnNameResolver is configured.
         // This maps resolver(propertyName) -> property index so that
         // snake_case columns can match PascalCase properties at query time.
-        var resolverIndex = BuildResolverIndex();
+        Dictionary<string, int>? resolverIndex = BuildResolverIndex();
 
         for (int i = 0; i < fieldCount; i++)
         {
@@ -154,7 +154,7 @@ public static class MetadataCache<T>
         ParameterExpression target = Expression.Parameter(typeof(T), "target");
         ParameterExpression record = Expression.Parameter(typeof(IDataRecord), "record");
         ParameterExpression index = Expression.Parameter(typeof(int), "index");
-        var getValue = Expression.Call(record, typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!, index);
+        MethodCallExpression getValue = Expression.Call(record, typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!, index);
 
         Type propertyType = property.PropertyType;
         Type conversionType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
