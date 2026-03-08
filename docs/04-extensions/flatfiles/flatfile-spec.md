@@ -1,6 +1,6 @@
 # FlatFileSpec.md — Jaunty.FlatFiles Implementation Guide
 
-> This document is the entry point for any AI coding agent implementing Jaunty.FlatFiles.
+> This document is the entry point for anyone implementing Jaunty.FlatFiles.
 > Read this FIRST, then the the spec templates documents in order.
 
 ---
