@@ -40,7 +40,7 @@ internal static class ImportDialectResolver
         var typeName = connection.GetType().FullName ?? "";
 
         // Check custom registrations first
-        foreach (var (key, dialect) in _registry)
+        foreach ((string? key, IImportDialect? dialect) in _registry)
         {
             if (typeName.Contains(key, StringComparison.OrdinalIgnoreCase))
                 return dialect;

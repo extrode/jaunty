@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Data;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 using Jaunty.Dialects;
@@ -23,17 +24,17 @@ internal static class MultiRowInsertCache
     /// </summary>
     public static Func<T, object?>[] GetOrBuildGetters<T>(EntityMetadata metadata)
     {
-        if (_getterCache.TryGetValue(typeof(T), out var cached))
+        if (_getterCache.TryGetValue(typeof(T), out Delegate[]? cached))
             return (Func<T, object?>[])cached;
 
-        var columns = ColumnMetadataHelper.GetInsertableColumns(metadata);
+        IReadOnlyList<ColumnMetadata> columns = ColumnMetadataHelper.GetInsertableColumns(metadata);
         var getters = new Func<T, object?>[columns.Count];
         for (int c = 0; c < columns.Count; c++)
         {
-            var prop = columns[c].Property;
-            var param = Expression.Parameter(typeof(T), "e");
-            var access = Expression.Property(param, prop);
-            var box = Expression.Convert(access, typeof(object));
+            PropertyInfo prop = columns[c].Property;
+            ParameterExpression param = Expression.Parameter(typeof(T), "e");
+            MemberExpression access = Expression.Property(param, prop);
+            UnaryExpression box = Expression.Convert(access, typeof(object));
             getters[c] = Expression.Lambda<Func<T, object?>>(box, param).Compile();
         }
 
@@ -51,7 +52,7 @@ internal static class MultiRowInsertCache
         EntityMetadata metadata,
         ISqlDialect dialect)
     {
-        var key = (entityType, connectionType, batchSize);
+        (Type entityType, Type connectionType, int batchSize) key = (entityType, connectionType, batchSize);
 
         if (_cache.TryGetValue(key, out string? cached))
             return cached;
@@ -70,7 +71,7 @@ internal static class MultiRowInsertCache
         string escapedTableName = dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
 
         // Get insertable columns (non-identity, non-computed)
-        var insertableColumns = ColumnMetadataHelper.GetInsertableColumns(metadata);
+        IReadOnlyList<ColumnMetadata> insertableColumns = ColumnMetadataHelper.GetInsertableColumns(metadata);
         int colCount = insertableColumns.Count;
 
         // Estimate capacity: table + columns + per-row params

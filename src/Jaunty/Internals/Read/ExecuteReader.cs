@@ -31,7 +31,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
             // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
@@ -50,7 +50,7 @@ public static partial class Jaunty
 
             Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-            using var reader = command.ExecuteReader();
+            using IDataReader reader = command.ExecuteReader();
             return handler(reader);
         }
         finally
@@ -78,7 +78,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using DbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
@@ -95,7 +95,7 @@ public static partial class Jaunty
 
             Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-            using var reader = command.ExecuteReader();
+            using DbDataReader reader = command.ExecuteReader();
             return handler(reader);
         }
         finally
@@ -123,7 +123,7 @@ public static partial class Jaunty
         {
             if (wasClosed) connection.Open();
 
-            using var command = connection.CreateCommand();
+            using DbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
@@ -140,7 +140,7 @@ public static partial class Jaunty
 
             Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-            using var reader = command.ExecuteReader();
+            using DbDataReader reader = command.ExecuteReader();
             return handler(reader);
         }
         finally

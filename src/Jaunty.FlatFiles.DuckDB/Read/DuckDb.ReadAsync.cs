@@ -1,3 +1,7 @@
+using System.Data.Common;
+
+using DuckDB.NET.Data;
+
 using Jaunty.FlatFiles.DuckDB.Internals;
 
 namespace Jaunty.FlatFiles.DuckDB;
@@ -18,23 +22,23 @@ public sealed partial class DuckDb
 
     private async ValueTask<List<T>> QueryInternalAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CancellationToken cancellationToken) where T : class, new()
     {
-        await using var cmd = _connection.CreateCommand();
+        await using DuckDBCommand cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
 
-        foreach (var (_, value) in parameters)
+        foreach ((string _, object? value) in parameters)
         {
-            var param = cmd.CreateParameter();
+            DbParameter param = cmd.CreateParameter();
             param.Value = value ?? DBNull.Value;
             cmd.Parameters.Add(param);
         }
 
-        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        await using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 
         var columnOrdinals = new Dictionary<string, int>(reader.FieldCount, StringComparer.OrdinalIgnoreCase);
         for (int i = 0; i < reader.FieldCount; i++)
             columnOrdinals[reader.GetName(i)] = i;
 
-        var mappings = ColumnMappingCache.Get(typeof(T));
+        IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(typeof(T));
         var mappingList = mappings.Values.ToList();
         var ordinalMap = new int[mappingList.Count];
         for (int i = 0; i < mappingList.Count; i++)
@@ -50,7 +54,7 @@ public sealed partial class DuckDb
                 if (ordinal >= 0 && !reader.IsDBNull(ordinal))
                 {
                     var value = reader.GetValue(ordinal);
-                    var targetType = mappingList[i].PropertyType;
+                    Type targetType = mappingList[i].PropertyType;
                     if (value != null && value.GetType() != targetType)
                     {
                         try

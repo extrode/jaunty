@@ -71,15 +71,15 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         SchemaReaderOptions options,
         CancellationToken cancellationToken = default)
     {
-        using var connection = CreateConnection(connectionString);
+        using DbConnection connection = CreateConnection(connectionString);
         await OpenConnectionAsync(connection, cancellationToken);
 
         var tables = new List<TableSchema>();
-        var tableInfos = await GetTableInfosAsync(connection, options, cancellationToken);
+        List<(string SchemaName, string TableName)> tableInfos = await GetTableInfosAsync(connection, options, cancellationToken);
 
-        foreach (var (schemaName, tableName) in tableInfos)
+        foreach ((string? schemaName, string? tableName) in tableInfos)
         {
-            var tableSchema = await ReadTableSchemaAsync(connection, schemaName, tableName, options, cancellationToken);
+            TableSchema tableSchema = await ReadTableSchemaAsync(connection, schemaName, tableName, options, cancellationToken);
             tables.Add(tableSchema);
         }
 
@@ -125,10 +125,10 @@ public sealed class SqlServerSchemaReader : ISchemaReader
     {
         var tables = new List<(string, string)>();
 
-        using var cmd = connection.CreateCommand();
+        using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = TablesSql;
 
-        using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
             var schemaName = reader.GetString(0);
@@ -161,16 +161,16 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         SchemaReaderOptions options,
         CancellationToken cancellationToken)
     {
-        var columns = await ReadColumnsAsync(connection, schemaName, tableName, cancellationToken);
-        var primaryKey = await ReadPrimaryKeyAsync(connection, schemaName, tableName, cancellationToken);
-        var foreignKeys = options.IncludeForeignKeys
+        List<ColumnSchema> columns = await ReadColumnsAsync(connection, schemaName, tableName, cancellationToken);
+        PrimaryKeyInfo? primaryKey = await ReadPrimaryKeyAsync(connection, schemaName, tableName, cancellationToken);
+        List<ForeignKeyInfo> foreignKeys = options.IncludeForeignKeys
             ? await ReadForeignKeysAsync(connection, schemaName, tableName, cancellationToken)
             : [];
 
         // Mark primary key columns
         if (primaryKey != null)
         {
-            foreach (var col in columns)
+            foreach (ColumnSchema col in columns)
             {
                 if (primaryKey.Columns.Contains(col.ColumnName, StringComparer.OrdinalIgnoreCase))
                 {
@@ -212,20 +212,20 @@ public sealed class SqlServerSchemaReader : ISchemaReader
     {
         var columns = new List<ColumnSchema>();
 
-        using var cmd = connection.CreateCommand();
+        using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = ColumnsSql;
 
-        var schemaParam = cmd.CreateParameter();
+        DbParameter schemaParam = cmd.CreateParameter();
         schemaParam.ParameterName = "@SchemaName";
         schemaParam.Value = schemaName;
         cmd.Parameters.Add(schemaParam);
 
-        var tableParam = cmd.CreateParameter();
+        DbParameter tableParam = cmd.CreateParameter();
         tableParam.ParameterName = "@TableName";
         tableParam.Value = tableName;
         cmd.Parameters.Add(tableParam);
 
-        using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
             columns.Add(new ColumnSchema
@@ -252,15 +252,15 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         string tableName,
         CancellationToken cancellationToken)
     {
-        using var cmd = connection.CreateCommand();
+        using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = PrimaryKeysSql;
 
-        var schemaParam = cmd.CreateParameter();
+        DbParameter schemaParam = cmd.CreateParameter();
         schemaParam.ParameterName = "@SchemaName";
         schemaParam.Value = schemaName;
         cmd.Parameters.Add(schemaParam);
 
-        var tableParam = cmd.CreateParameter();
+        DbParameter tableParam = cmd.CreateParameter();
         tableParam.ParameterName = "@TableName";
         tableParam.Value = tableName;
         cmd.Parameters.Add(tableParam);
@@ -268,7 +268,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         string? constraintName = null;
         var columns = new List<string>();
 
-        using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
             constraintName ??= reader.GetString(0);
@@ -293,20 +293,20 @@ public sealed class SqlServerSchemaReader : ISchemaReader
     {
         var foreignKeys = new List<ForeignKeyInfo>();
 
-        using var cmd = connection.CreateCommand();
+        using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = ForeignKeysSql;
 
-        var schemaParam = cmd.CreateParameter();
+        DbParameter schemaParam = cmd.CreateParameter();
         schemaParam.ParameterName = "@SchemaName";
         schemaParam.Value = schemaName;
         cmd.Parameters.Add(schemaParam);
 
-        var tableParam = cmd.CreateParameter();
+        DbParameter tableParam = cmd.CreateParameter();
         tableParam.ParameterName = "@TableName";
         tableParam.Value = tableName;
         cmd.Parameters.Add(tableParam);
 
-        using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
             foreignKeys.Add(new ForeignKeyInfo

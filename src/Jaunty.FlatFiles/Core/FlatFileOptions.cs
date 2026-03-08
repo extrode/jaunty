@@ -174,7 +174,7 @@ public sealed class FlatFileOptions
         where TSource : IFileSource
     {
         var tableName = TableNameResolver.Resolve<T>();
-        var source = factory(tableName, filePath, typeof(T));
+        TSource source = factory(tableName, filePath, typeof(T));
         configure?.Invoke(source);
         Sources.Add(source);
         return this;

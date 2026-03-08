@@ -139,7 +139,7 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         }
 
         string columnName = propertyName;
-        var columns = metadata.Columns;
+        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
         for (int i = 0; i < columns.Count; i++)
         {
             if (columns[i].Property.Name == propertyName)
@@ -181,8 +181,8 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         if (expression is ConstantExpression constant)
             return constant.Value;
 
-        var lambda = Expression.Lambda(expression);
-        var compiled = lambda.Compile();
+        LambdaExpression lambda = Expression.Lambda(expression);
+        Delegate compiled = lambda.Compile();
         return compiled.DynamicInvoke();
     }
 

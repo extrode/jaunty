@@ -19,13 +19,13 @@ public static partial class Jaunty
             var list = new List<T>(JauntyConfig.QueryResultCapacity);
             if (reader is DbDataReader dbReader)
             {
-                var map = DrDispatcher.Resolve(dbReader, options, mode);
+                Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
                 while (await dbReader.ReadAsync(ct).ConfigureAwait(false))
                     list.Add(map(dbReader));
             }
             else
             {
-                var map = DrDispatcher.Resolve(reader, options, mode);
+                Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
                 while (reader.Read())
                 {
                     ct.ThrowIfCancellationRequested();
@@ -44,13 +44,13 @@ public static partial class Jaunty
             {
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
                     throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-                var map = DrDispatcher.Resolve(dbReader, options, mode);
+                Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
                 return map(dbReader);
             }
 
             if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
             ct.ThrowIfCancellationRequested();
-            var mapFallback = DrDispatcher.Resolve(reader, options, mode);
+            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
             return mapFallback(reader);
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -63,13 +63,13 @@ public static partial class Jaunty
             {
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
                     return default;
-                var map = DrDispatcher.Resolve(dbReader, options, mode);
+                Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
                 return map(dbReader);
             }
 
             if (!reader.Read()) return default;
             ct.ThrowIfCancellationRequested();
-            var mapFallback = DrDispatcher.Resolve(reader, options, mode);
+            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
             return mapFallback(reader);
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -83,7 +83,7 @@ public static partial class Jaunty
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
                     throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
 
-                var map = DrDispatcher.Resolve(dbReader, options, mode);
+                Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
                 T? entity = map(dbReader);
                 return await dbReader.ReadAsync(ct).ConfigureAwait(false)
                     ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
@@ -92,7 +92,7 @@ public static partial class Jaunty
 
             if (!reader.Read()) throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
             ct.ThrowIfCancellationRequested();
-            var mapFallback = DrDispatcher.Resolve(reader, options, mode);
+            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
             T? entityFallback = mapFallback(reader);
             ct.ThrowIfCancellationRequested();
             return reader.Read()
@@ -110,7 +110,7 @@ public static partial class Jaunty
                 if (!await dbReader.ReadAsync(ct).ConfigureAwait(false))
                     return default;
 
-                var map = DrDispatcher.Resolve(dbReader, options, mode);
+                Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
                 T? entity = map(dbReader);
                 return await dbReader.ReadAsync(ct).ConfigureAwait(false)
                     ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
@@ -119,7 +119,7 @@ public static partial class Jaunty
 
             if (!reader.Read()) return default;
             ct.ThrowIfCancellationRequested();
-            var mapFallback = DrDispatcher.Resolve(reader, options, mode);
+            Func<IDataReader, T> mapFallback = DrDispatcher.Resolve(reader, options, mode);
             T? entityFallback = mapFallback(reader);
             ct.ThrowIfCancellationRequested();
             return reader.Read()
@@ -147,9 +147,9 @@ public static partial class Jaunty
                 await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using var command = dbConnection.CreateCommand();
+            await using DbCommand command = dbConnection.CreateCommand();
 #else
-            using var command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
             command.CommandText = sql;
 
@@ -216,11 +216,11 @@ public static partial class Jaunty
                 ParameterBinder.Bind(command, parameters);
 
 #if NET8_0_OR_GREATER
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #else
-            using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
-            var map = DrDispatcher.Resolve(reader, options, mode);
+            Func<DbDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -338,7 +338,7 @@ public static partial class Jaunty
 
     private static async ValueTask<(T1, T2)> QueryFirstMultiEntityCoreAsync<T1, T2>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
-        var result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        (T1, T2)? result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : result.Value;
     }
 
@@ -380,7 +380,7 @@ public static partial class Jaunty
 
     private static async ValueTask<(T1, T2)> QuerySingleMultiEntityCoreAsync<T1, T2>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
-        var result = await QuerySingleOrDefaultMultiEntityCoreAsync(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
+        (T1, T2)? result = await QuerySingleOrDefaultMultiEntityCoreAsync(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : result.Value;
     }
 
@@ -437,7 +437,7 @@ public static partial class Jaunty
         {
             if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            using var command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
             command.CommandText = sql;
 
             if (options.Transaction is DbTransaction dbTransaction)
@@ -449,7 +449,7 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
-            using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 yield break;

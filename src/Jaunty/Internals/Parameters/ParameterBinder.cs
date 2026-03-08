@@ -43,11 +43,11 @@ internal static class ParameterBinder
         }
 
         var sql = command.CommandText;
-        var type = parameters.GetType();
-        var commandType = command.GetType();
+        Type type = parameters.GetType();
+        Type commandType = command.GetType();
 
         // Try get cached template
-        if (TemplateCache.TryGetValue((sql, type, commandType), out var template))
+        if (TemplateCache.TryGetValue((sql, type, commandType), out CommandTemplate? template))
         {
             template.Bind(command, parameters);
             return;
@@ -55,7 +55,7 @@ internal static class ParameterBinder
 
         // Slow path: parse and bind, then cache if no collection expansion happened
         string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(sql);
-        var meta = ParameterCache.Get(type);
+        ParameterMetadata[] meta = ParameterCache.Get(type);
 
         // Build lookup from property names
         var propertyLookup = new Dictionary<string, ParameterMetadata>(meta.Length, CommonConstants.OrdinalIgnoreCase);
@@ -65,7 +65,7 @@ internal static class ParameterBinder
         }
 
         // Check for collection parameters and expand SQL if needed
-        var (expandedSql, expandedParams, expandedOriginalNames) = ExpandCollectionParameters(sql, sqlParamNames, propertyLookup, parameters);
+        (string? expandedSql, Dictionary<string, object?>? expandedParams, HashSet<string>? expandedOriginalNames) = ExpandCollectionParameters(sql, sqlParamNames, propertyLookup, parameters);
 
         if (expandedSql is not null)
         {
@@ -91,7 +91,7 @@ internal static class ParameterBinder
             string sqlName = sqlParamNames[i];
             if (!boundNames.Add(sqlName)) continue;
 
-            if (propertyLookup.TryGetValue(sqlName, out var m))
+            if (propertyLookup.TryGetValue(sqlName, out ParameterMetadata m))
             {
                 items.Add(new TemplateItem(sqlName, m.Getter));
             }
@@ -119,7 +119,7 @@ internal static class ParameterBinder
 
     private static void BindDynamic(IDbCommand command, object parameters, string expandedSql, Dictionary<string, object?>? expandedParams, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] meta, HashSet<string>? expandedOriginalNames)
     {
-        var type = parameters.GetType();
+        Type type = parameters.GetType();
         var sqlParamNames = SqlParameterParser.ExtractParameterNames(expandedSql);
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
@@ -130,14 +130,14 @@ internal static class ParameterBinder
 
             if (expandedParams is not null && expandedParams.TryGetValue(sqlName, out var expandedValue))
             {
-                var p = command.CreateParameter();
+                IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = sqlName;
                 p.Value = expandedValue ?? DBNull.Value;
                 command.Parameters.Add(p);
             }
-            else if (propertyLookup.TryGetValue(sqlName, out var m))
+            else if (propertyLookup.TryGetValue(sqlName, out ParameterMetadata m))
             {
-                var p = command.CreateParameter();
+                IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = sqlName;
                 p.Value = m.Getter(parameters) ?? DBNull.Value;
                 command.Parameters.Add(p);
@@ -164,15 +164,15 @@ internal static class ParameterBinder
             // Uses command type comparison (no allocation) instead of CreateParameter().GetType().
             bool sameProvider = command.GetType() == _templateCommandType;
 
-            var pCollection = command.Parameters;
+            IDataParameterCollection pCollection = command.Parameters;
             for (int i = 0; i < items.Length; i++)
             {
-                ref readonly var item = ref items[i];
-                var template = _templates[i];
+                ref readonly TemplateItem item = ref items[i];
+                IDbDataParameter template = _templates[i];
 
                 // Clone the template to avoid thread safety issues
                 // and to prevent parameters from being bound to multiple commands
-                var p = sameProvider ? CloneParameter(command, template) : CreateParameter(command, template);
+                IDbDataParameter p = sameProvider ? CloneParameter(command, template) : CreateParameter(command, template);
                 p.Value = item.Getter(parameters) ?? DBNull.Value;
                 pCollection.Add(p);
             }
@@ -184,7 +184,7 @@ internal static class ParameterBinder
             var templates = new IDbDataParameter[items.Length];
             for (int i = 0; i < items.Length; i++)
             {
-                var p = command.CreateParameter();
+                IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = items[i].Name;
                 templates[i] = p;
             }
@@ -204,7 +204,7 @@ internal static class ParameterBinder
 
         private static IDbDataParameter CreateParameter(IDbCommand command, IDbDataParameter template)
         {
-            var p = command.CreateParameter();
+            IDbDataParameter p = command.CreateParameter();
             p.ParameterName = template.ParameterName;
             // Intentionally do not copy DbType across providers; let provider infer from value.
             p.Direction = template.Direction;
@@ -234,14 +234,14 @@ internal static class ParameterBinder
             if (!seen.Add(sqlName))
                 continue; // Already processed
 
-            if (!propertyLookup.TryGetValue(sqlName, out var meta))
+            if (!propertyLookup.TryGetValue(sqlName, out ParameterMetadata meta))
                 continue;
 
             var value = meta.Getter(parameters);
             if (value is null)
                 continue;
 
-            if (IsCollection(value, out var items, out var count))
+            if (IsCollection(value, out IEnumerable? items, out var count))
             {
                 expansions ??= new List<CollectionExpansion>(2);
                 expansions.Add(new CollectionExpansion(sqlName, items, count));
@@ -258,7 +258,7 @@ internal static class ParameterBinder
         var expandedOriginalNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         var result = sql;
 
-        foreach (var expansion in expansions)
+        foreach (CollectionExpansion expansion in expansions)
         {
             expandedOriginalNames.Add(expansion.Name);
 
@@ -376,7 +376,7 @@ internal static class ParameterBinder
 
     private static bool IsScalarType(Type type)
     {
-        var underlying = Nullable.GetUnderlyingType(type) ?? type;
+        Type underlying = Nullable.GetUnderlyingType(type) ?? type;
         return underlying.IsPrimitive
             || underlying.IsEnum
             || underlying == typeof(string)
@@ -398,7 +398,7 @@ internal static class ParameterBinder
             string sqlName = sqlParamNames[i];
             if (!bound.Add(sqlName)) continue;
 
-            var p = command.CreateParameter();
+            IDbDataParameter p = command.CreateParameter();
             p.ParameterName = sqlName;
             p.Value = value ?? DBNull.Value;
             command.Parameters.Add(p);
@@ -417,7 +417,7 @@ internal static class ParameterBinder
 
             if (dictParams.TryGetValue(sqlName, out var value))
             {
-                var p = command.CreateParameter();
+                IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = sqlName;
                 p.Value = value ?? DBNull.Value;
                 command.Parameters.Add(p);
@@ -431,7 +431,7 @@ internal static class ParameterBinder
 
     private static void BindAllFromObject(IDbCommand command, object parameters)
     {
-        var meta = ParameterCache.Get(parameters.GetType());
+        ParameterMetadata[] meta = ParameterCache.Get(parameters.GetType());
         for (int i = 0; i < meta.Length; i++)
         {
             IDbDataParameter parameter = command.CreateParameter();
@@ -443,7 +443,7 @@ internal static class ParameterBinder
 
     private static void BindAllFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)
     {
-        foreach (var kvp in dictParams)
+        foreach (KeyValuePair<string, object?> kvp in dictParams)
         {
             IDbDataParameter parameter = command.CreateParameter();
             parameter.ParameterName = kvp.Key;

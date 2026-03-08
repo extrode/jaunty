@@ -25,14 +25,16 @@ internal static class MappedCache<T> where T : new()
         if (typeof(IMapped<T>).IsAssignableFrom(typeof(T)))
         {
             // On .NET 8+, source gen produces a static ReadEntity method.
-            var method = typeof(T).GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Static, null, [typeof(IDataReader)], null);
+
+            MethodInfo? method = typeof(T).GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Static, null, [typeof(IDataReader)], null);
             if (method != null)
             {
                 return (Func<IDataReader, T>)method.CreateDelegate(typeof(Func<IDataReader, T>));
             }
 
             // Fallback for non-static ReadEntity
-            var instanceMethod = typeof(T).GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Instance, null, [typeof(IDataReader)], null);
+
+            MethodInfo? instanceMethod = typeof(T).GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Instance, null, [typeof(IDataReader)], null);
             if (instanceMethod != null)
             {
                 return (IDataReader r) =>

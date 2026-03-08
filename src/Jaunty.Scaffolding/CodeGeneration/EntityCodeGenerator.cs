@@ -52,7 +52,7 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         // Properties
         string propIndent = options.UseFileScopedNamespace ? "    " : "        ";
         bool isFirst = true;
-        foreach (var column in table.Columns)
+        foreach (ColumnSchema column in table.Columns)
         {
             if (!isFirst)
                 sb.AppendLine();
@@ -86,9 +86,9 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         }
 
         // Check if any columns need additional usings
-        foreach (var column in table.Columns)
+        foreach (ColumnSchema column in table.Columns)
         {
-            var typeInfo = _typeMapper.MapToCSharpType(column);
+            CSharpTypeInfo typeInfo = _typeMapper.MapToCSharpType(column);
             if (!string.IsNullOrEmpty(typeInfo.RequiredUsing))
                 usings.Add(typeInfo.RequiredUsing);
         }
@@ -119,7 +119,7 @@ public sealed class EntityCodeGenerator : ICodeGenerator
 
     private void AppendProperty(StringBuilder sb, ColumnSchema column, CodeGeneratorOptions options, string indent)
     {
-        var typeInfo = _typeMapper.MapToCSharpType(column);
+        CSharpTypeInfo typeInfo = _typeMapper.MapToCSharpType(column);
         var propertyName = GetPropertyName(column.ColumnName);
         var attrs = new List<string>();
 

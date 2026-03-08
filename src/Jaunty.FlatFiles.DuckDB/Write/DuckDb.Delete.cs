@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 
 using Jaunty.Core;
 using Jaunty.FlatFiles.DuckDB.Internals;
+using Jaunty.FlatFiles.Interfaces;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -12,10 +13,10 @@ public sealed partial class DuckDb
     {
         ArgumentNullException.ThrowIfNull(predicate);
 
-        var source = GetSourceOrThrow<T>();
+        IFileSource source = GetSourceOrThrow<T>();
         TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
 
-        var (whereSql, whereParams) = ExpressionTranslator.Translate<T>(predicate);
+        (string? whereSql, List<global::DuckDB.NET.Data.DuckDBParameter>? whereParams) = ExpressionTranslator.Translate<T>(predicate);
 
         var sql = $"DELETE FROM \"{source.TableName}\" WHERE {whereSql}";
         var result = NonQueryExecutor.Execute(_connection, sql, whereParams);
