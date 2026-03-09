@@ -399,7 +399,7 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
             .SelectPartialFirstOrDefault("p.product_name, c.category_name");
 
         Assert.NotNull(result);
-        string productName = result!.product_name;
+        string productName = result!["product_name"] as string;
         Assert.NotEmpty(productName);
     }
 
@@ -424,7 +424,7 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
             .SelectPartialFirst("p.product_name, c.category_name");
 
         Assert.NotNull(result);
-        string productName = result.product_name;
+        string productName = result["product_name"] as string;
         Assert.NotEmpty(productName);
     }
 
@@ -502,7 +502,7 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
             .SelectPartialSingle("p.product_name, c.category_name");
 
         Assert.NotNull(result);
-        string productName = result.product_name;
+        string productName = result["product_name"] as string;
         Assert.NotEmpty(productName);
     }
 

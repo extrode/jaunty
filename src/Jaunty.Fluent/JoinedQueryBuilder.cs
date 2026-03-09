@@ -1,6 +1,5 @@
 using System.Data;
 using System.Data.Common;
-using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -8,7 +7,6 @@ using System.Text;
 using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
-using Jaunty.Internals;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 using Jaunty.Internals.Read;
@@ -76,7 +74,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             _fromAlias,
             _joins[0].Alias);
 
-        var sql = visitor.Translate(predicate);
+        string sql = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
         return this;
     }
@@ -89,7 +87,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public IJoinedQuery<TFrom, TJoin> Where(string column, object value)
     {
-        var paramName = $"{_dialect.ParameterPrefix}{column.Replace(".", "_")}";
+        string paramName = $"{_dialect.ParameterPrefix}{column.Replace(".", "_")}";
         _conditions.Add(WhereCondition.Column($"{column} = {paramName}", LogicalOperator.None));
         _parameters.Add(paramName, value);
         return this;
@@ -97,24 +95,16 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public IJoinedQuery<TFrom, TJoin> And(Expression<Func<TFrom, TJoin, bool>> predicate)
     {
-        var visitor = new JoinExpressionVisitor<TFrom, TJoin>(
-            _dialect,
-            _fromAlias,
-            _joins[0].Alias);
-
-        var sql = visitor.Translate(predicate);
+        var visitor = new JoinExpressionVisitor<TFrom, TJoin>(_dialect, _fromAlias, _joins[0].Alias);
+        string sql = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
         return this;
     }
 
     public IJoinedQuery<TFrom, TJoin> Or(Expression<Func<TFrom, TJoin, bool>> predicate)
     {
-        var visitor = new JoinExpressionVisitor<TFrom, TJoin>(
-            _dialect,
-            _fromAlias,
-            _joins[0].Alias);
-
-        var sql = visitor.Translate(predicate);
+        var visitor = new JoinExpressionVisitor<TFrom, TJoin>(_dialect, _fromAlias, _joins[0].Alias);
+        string sql = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
         return this;
     }
@@ -125,64 +115,64 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public IJoinedQuery<TFrom, TJoin> OrderBy<TKey>(Expression<Func<TFrom, TKey>> keySelector)
     {
-        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        var columnName = GetColumnName(_fromMetadata, propertyName, _fromAlias);
+        string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        string columnName = GetColumnName(_fromMetadata, propertyName, _fromAlias);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: false));
         return this;
     }
 
     public IJoinedQuery<TFrom, TJoin> OrderByJoined<TKey>(Expression<Func<TJoin, TKey>> keySelector)
     {
-        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        var columnName = GetColumnName(_joinMetadata, propertyName, _joins[0].Alias);
+        string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        string columnName = GetColumnName(_joinMetadata, propertyName, _joins[0].Alias);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: false));
         return this;
     }
 
     public IJoinedQuery<TFrom, TJoin> OrderByDescending<TKey>(Expression<Func<TFrom, TKey>> keySelector)
     {
-        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        var columnName = GetColumnName(_fromMetadata, propertyName, _fromAlias);
+        string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        string columnName = GetColumnName(_fromMetadata, propertyName, _fromAlias);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: true));
         return this;
     }
 
     public IJoinedQuery<TFrom, TJoin> OrderByJoinedDescending<TKey>(Expression<Func<TJoin, TKey>> keySelector)
     {
-        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        var columnName = GetColumnName(_joinMetadata, propertyName, _joins[0].Alias);
+        string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        string columnName = GetColumnName(_joinMetadata, propertyName, _joins[0].Alias);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: true));
         return this;
     }
 
     public IJoinedQuery<TFrom, TJoin> ThenBy<TKey>(Expression<Func<TFrom, TKey>> keySelector)
     {
-        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        var columnName = GetColumnName(_fromMetadata, propertyName, _fromAlias);
+        string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        string columnName = GetColumnName(_fromMetadata, propertyName, _fromAlias);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: false));
         return this;
     }
 
     public IJoinedQuery<TFrom, TJoin> ThenByJoined<TKey>(Expression<Func<TJoin, TKey>> keySelector)
     {
-        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        var columnName = GetColumnName(_joinMetadata, propertyName, _joins[0].Alias);
+        string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        string columnName = GetColumnName(_joinMetadata, propertyName, _joins[0].Alias);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: false));
         return this;
     }
 
     public IJoinedQuery<TFrom, TJoin> ThenByDescending<TKey>(Expression<Func<TFrom, TKey>> keySelector)
     {
-        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        var columnName = GetColumnName(_fromMetadata, propertyName, _fromAlias);
+        string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        string columnName = GetColumnName(_fromMetadata, propertyName, _fromAlias);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: true));
         return this;
     }
 
     public IJoinedQuery<TFrom, TJoin> ThenByJoinedDescending<TKey>(Expression<Func<TJoin, TKey>> keySelector)
     {
-        var propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
-        var columnName = GetColumnName(_joinMetadata, propertyName, _joins[0].Alias);
+        string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
+        string columnName = GetColumnName(_joinMetadata, propertyName, _joins[0].Alias);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: true));
         return this;
     }
@@ -197,7 +187,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     public List<TFrom> Select()
     {
         var columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        var sql = BuildSelectSql(columns);
+        string sql = BuildSelectSql(columns);
         return _connection.QueryPartial<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
@@ -260,14 +250,14 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     public TFrom SelectFirst()
     {
         var columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        var sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = BuildSelectSql(columns) + " LIMIT 1";
         return _connection.QueryPartialFirst<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
     public TFrom? SelectFirstOrDefault()
     {
         var columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        var sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = BuildSelectSql(columns) + " LIMIT 1";
         return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
@@ -360,7 +350,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         for (int i = 0; i < columns.Count; i++)
         {
             ColumnMetadata col = columns[i];
-            var aliasName = $"{prefix}{col.ColumnName}";
+            string aliasName = $"{prefix}{col.ColumnName}";
 
             try
             {
@@ -453,12 +443,12 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     {
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
         var result = new string[columns.Count];
-        var prefix = tableAlias ?? metadata.TableName;
+        string prefix = tableAlias ?? metadata.TableName;
 
         for (int i = 0; i < columns.Count; i++)
         {
-            var colName = columns[i].ColumnName;
-            var escaped = _dialect.EscapeColumnName(colName);
+            string colName = columns[i].ColumnName;
+            string escaped = _dialect.EscapeColumnName(colName);
             result[i] = $"{prefix}.{escaped} AS {columnPrefix}{colName}";
         }
 
@@ -468,21 +458,21 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     private List<TJoin> SelectJoinedInternal()
     {
         var columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
-        var sql = BuildSelectSql(columns);
+        string sql = BuildSelectSql(columns);
         return _connection.QueryPartial<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
     private TJoin SelectFirstJoinedInternal()
     {
         var columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
-        var sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = BuildSelectSql(columns) + " LIMIT 1";
         return _connection.QueryPartialFirst<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
     private TJoin? SelectFirstOrDefaultJoinedInternal()
     {
         var columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
-        var sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = BuildSelectSql(columns) + " LIMIT 1";
         return _connection.QueryPartialFirstOrDefault<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
@@ -492,7 +482,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         var joinColumns = GetPrefixedColumnsWithAlias(_joinMetadata, _joins[0].Alias, "j_");
         var allColumns = fromColumns.Concat(joinColumns).ToArray();
 
-        var sql = BuildSelectSql(allColumns);
+        string sql = BuildSelectSql(allColumns);
         var results = new List<(TFrom, TJoin)>();
 
         using IDbCommand command = _connection.CreateCommand();
@@ -521,7 +511,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     private List<T> SelectWithMapping<T>(MappingMode mode, int? limit = null) where T : new()
     {
-        var sql = BuildSelectAllColumnsSql();
+        string sql = BuildSelectAllColumnsSql();
         if (limit.HasValue)
             sql += $" LIMIT {limit.Value}";
 
@@ -552,7 +542,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     private List<T> SelectWithMapper<T>(Func<IDataReader, T> mapper, int? limit = null)
     {
-        var sql = BuildSelectAllColumnsSql();
+        string sql = BuildSelectAllColumnsSql();
         if (limit.HasValue)
             sql += $" LIMIT {limit.Value}";
 
@@ -642,11 +632,11 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     {
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
         var result = new string[columns.Count];
-        var prefix = alias ?? metadata.TableName;
+        string prefix = alias ?? metadata.TableName;
 
         for (int i = 0; i < columns.Count; i++)
         {
-            var escaped = _dialect.EscapeColumnName(columns[i].ColumnName);
+            string escaped = _dialect.EscapeColumnName(columns[i].ColumnName);
             result[i] = $"{prefix}.{escaped}";
         }
 
@@ -659,13 +649,13 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public int Count()
     {
-        var sql = BuildCountSql();
+        string sql = BuildCountSql();
         return _connection.QueryScalar<int>(sql, _parameters.ToParameterObject()!);
     }
 
     public long LongCount()
     {
-        var sql = BuildCountSql();
+        string sql = BuildCountSql();
         return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!);
     }
 
@@ -686,7 +676,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
     public async Task<List<TFrom>> SelectAsync(CancellationToken cancellationToken = default)
     {
         var columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        var sql = BuildSelectSql(columns);
+        string sql = BuildSelectSql(columns);
         if (_connection is DbConnection dbConn)
             return await dbConn.QueryPartialAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
         return Select();
@@ -783,24 +773,23 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     #region SELECT PARTIAL
 
-    public List<dynamic> SelectPartial(string columns)
+    public List<IDictionary<string, object?>> SelectPartial(string columns)
     {
-        var sql = BuildPartialSelectSql(columns);
-        var results = new List<dynamic>();
+        string sql = BuildPartialSelectSql(columns);
+        var results = new List<IDictionary<string, object?>>();
 
         using IDbCommand command = _connection.CreateCommand();
         command.CommandText = sql;
         BindParameters(command);
 
-        var wasClosed = _connection.State == ConnectionState.Closed;
+        bool wasClosed = _connection.State == ConnectionState.Closed;
         if (wasClosed) _connection.Open();
+
         try
         {
             using IDataReader reader = command.ExecuteReader();
             while (reader.Read())
-            {
-                results.Add(MapToDynamic(reader));
-            }
+                results.Add(MapToDictionary(reader));
         }
         finally
         {
@@ -812,7 +801,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public List<T> SelectPartial<T>(string columns, Func<IDataReader, T> mapper)
     {
-        var sql = BuildPartialSelectSql(columns);
+        string sql = BuildPartialSelectSql(columns);
         var results = new List<T>();
 
         using IDbCommand command = _connection.CreateCommand();
@@ -837,40 +826,33 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return results;
     }
 
-    public dynamic SelectPartialFirst(string columns)
+    public IDictionary<string, object?> SelectPartialFirst(string columns)
     {
-        dynamic? result = SelectPartialFirstOrDefault(columns);
-        if (result is null)
-            throw new InvalidOperationException("Sequence contains no elements of type 'dynamic'.");
-        return result;
+        IDictionary<string, object?>? result = SelectPartialFirstOrDefault(columns);
+        return result is null ? throw new InvalidOperationException("Sequence contains no elements.") : result;
     }
 
     public T SelectPartialFirst<T>(string columns, Func<IDataReader, T> mapper)
     {
         T? result = SelectPartialFirstOrDefault(columns, mapper);
-        if (result is null)
-            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-        return result;
+        return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.") : result;
     }
 
-    public dynamic? SelectPartialFirstOrDefault(string columns)
+    public IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns)
     {
-        var sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
 
         using IDbCommand command = _connection.CreateCommand();
         command.CommandText = sql;
         BindParameters(command);
 
-        var wasClosed = _connection.State == ConnectionState.Closed;
+        bool wasClosed = _connection.State == ConnectionState.Closed;
         if (wasClosed) _connection.Open();
+
         try
         {
             using IDataReader reader = command.ExecuteReader();
-            if (reader.Read())
-            {
-                return MapToDynamic(reader);
-            }
-            return null;
+            return reader.Read() ? MapToDictionary(reader) : null;
         }
         finally
         {
@@ -880,22 +862,19 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public T? SelectPartialFirstOrDefault<T>(string columns, Func<IDataReader, T> mapper)
     {
-        var sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
 
         using IDbCommand command = _connection.CreateCommand();
         command.CommandText = sql;
         BindParameters(command);
 
-        var wasClosed = _connection.State == ConnectionState.Closed;
+        bool wasClosed = _connection.State == ConnectionState.Closed;
         if (wasClosed) _connection.Open();
+
         try
         {
             using IDataReader reader = command.ExecuteReader();
-            if (reader.Read())
-            {
-                return mapper(reader);
-            }
-            return default;
+            return reader.Read() ? mapper(reader) : default;
         }
         finally
         {
@@ -903,43 +882,41 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         }
     }
 
-    public dynamic SelectPartialSingle(string columns)
+    public IDictionary<string, object?> SelectPartialSingle(string columns)
     {
-        dynamic? result = SelectPartialSingleOrDefault(columns);
-        if (result is null)
-            throw new InvalidOperationException("Sequence contains no elements of type 'dynamic'.");
-        return result;
+        IDictionary<string, object?>? result = SelectPartialSingleOrDefault(columns);
+        return result is null ? throw new InvalidOperationException("Sequence contains no elements.") : result;
     }
 
     public T SelectPartialSingle<T>(string columns, Func<IDataReader, T> mapper)
     {
-        T? result = SelectPartialSingleOrDefault(columns, mapper);
-        if (result is null)
-            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+        T? result = SelectPartialSingleOrDefault(columns, mapper) ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
         return result;
     }
 
-    public dynamic? SelectPartialSingleOrDefault(string columns)
+    public IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns)
     {
-        var sql = BuildPartialSelectSql(columns) + " LIMIT 2";
-        dynamic? result = null;
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        IDictionary<string, object?>? result = null;
         int count = 0;
 
         using IDbCommand command = _connection.CreateCommand();
         command.CommandText = sql;
         BindParameters(command);
 
-        var wasClosed = _connection.State == ConnectionState.Closed;
+        bool wasClosed = _connection.State == ConnectionState.Closed;
         if (wasClosed) _connection.Open();
+
         try
         {
             using IDataReader reader = command.ExecuteReader();
+
             while (reader.Read())
             {
                 count++;
                 if (count > 1)
-                    throw new InvalidOperationException("Sequence contains more than one element of type 'dynamic'.");
-                result = MapToDynamic(reader);
+                    throw new InvalidOperationException("Sequence contains more than one element.");
+                result = MapToDictionary(reader);
             }
         }
         finally
@@ -952,7 +929,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     public T? SelectPartialSingleOrDefault<T>(string columns, Func<IDataReader, T> mapper)
     {
-        var sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
         T? result = default;
         int count = 0;
 
@@ -960,8 +937,9 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         command.CommandText = sql;
         BindParameters(command);
 
-        var wasClosed = _connection.State == ConnectionState.Closed;
+        bool wasClosed = _connection.State == ConnectionState.Closed;
         if (wasClosed) _connection.Open();
+
         try
         {
             using IDataReader reader = command.ExecuteReader();
@@ -983,7 +961,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
     // Async variants
 
-    public async Task<List<dynamic>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default)
+    public async Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default)
     {
         return await Task.Run(() => SelectPartial(columns), cancellationToken).ConfigureAwait(false);
     }
@@ -993,7 +971,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return await Task.Run(() => SelectPartial(columns, mapper), cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<dynamic> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default)
+    public async Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default)
     {
         return await Task.Run(() => SelectPartialFirst(columns), cancellationToken).ConfigureAwait(false);
     }
@@ -1003,7 +981,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return await Task.Run(() => SelectPartialFirst(columns, mapper), cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<dynamic?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
+    public async Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
     {
         return await Task.Run(() => SelectPartialFirstOrDefault(columns), cancellationToken).ConfigureAwait(false);
     }
@@ -1013,7 +991,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return await Task.Run(() => SelectPartialFirstOrDefault(columns, mapper), cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<dynamic> SelectPartialSingleAsync(string columns, CancellationToken cancellationToken = default)
+    public async Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CancellationToken cancellationToken = default)
     {
         return await Task.Run(() => SelectPartialSingle(columns), cancellationToken).ConfigureAwait(false);
     }
@@ -1023,7 +1001,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return await Task.Run(() => SelectPartialSingle(columns, mapper), cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<dynamic?> SelectPartialSingleOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
+    public async Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
     {
         return await Task.Run(() => SelectPartialSingleOrDefault(columns), cancellationToken).ConfigureAwait(false);
     }
@@ -1054,6 +1032,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
         sb.Append(" FROM ");
         sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
+
         if (_fromAlias is not null)
         {
             sb.Append(' ');
@@ -1066,11 +1045,13 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             sb.Append(join.JoinKeyword);
             sb.Append(' ');
             sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
+
             if (join.Alias is not null)
             {
                 sb.Append(' ');
                 sb.Append(join.Alias);
             }
+
             sb.Append(" ON ");
             sb.Append(join.OnCondition);
         }
@@ -1078,13 +1059,12 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
+
             for (int i = 0; i < _conditions.Count; i++)
             {
                 WhereCondition condition = _conditions[i];
                 if (i > 0)
-                {
                     sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
                 sb.Append(condition.Sql);
             }
         }
@@ -1092,6 +1072,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         if (_orderByColumns.Count > 0)
         {
             sb.Append(" ORDER BY ");
+
             for (int i = 0; i < _orderByColumns.Count; i++)
             {
                 if (i > 0) sb.Append(", ");
@@ -1105,19 +1086,19 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         return sb.ToString();
     }
 
-#pragma warning disable IL2026 // Using dynamic/ExpandoObject is not trimming-compatible but intentional
-    private static dynamic MapToDynamic(IDataReader reader)
+    private static IDictionary<string, object?> MapToDictionary(IDataReader reader)
     {
-        var expando = new ExpandoObject() as IDictionary<string, object?>;
+        var dictionary = new Dictionary<string, object?>(reader.FieldCount);
+
         for (int i = 0; i < reader.FieldCount; i++)
         {
-            var name = reader.GetName(i);
-            var value = reader.IsDBNull(i) ? null : reader.GetValue(i);
-            expando[name] = value;
+            string name = reader.GetName(i);
+            object? value = reader.IsDBNull(i) ? null : reader.GetValue(i);
+            dictionary[name] = value;
         }
-        return (ExpandoObject)expando;
+
+        return dictionary;
     }
-#pragma warning restore IL2026
 
     private string BuildCountSql()
     {
@@ -1126,6 +1107,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
 
         sb.Append(" FROM ");
         sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
+
         if (_fromAlias is not null)
         {
             sb.Append(' ');
@@ -1138,11 +1120,13 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             sb.Append(join.JoinKeyword);
             sb.Append(' ');
             sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
+
             if (join.Alias is not null)
             {
                 sb.Append(' ');
                 sb.Append(join.Alias);
             }
+
             sb.Append(" ON ");
             sb.Append(join.OnCondition);
         }
@@ -1150,6 +1134,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
+
             for (int i = 0; i < _conditions.Count; i++)
             {
                 WhereCondition condition = _conditions[i];
@@ -1157,6 +1142,7 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
                 {
                     sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
                 }
+
                 sb.Append(condition.Sql);
             }
         }
@@ -1177,8 +1163,8 @@ internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJo
             }
         }
 
-        var escaped = _dialect.EscapeColumnName(columnName);
-        var prefix = alias ?? metadata.TableName;
+        string escaped = _dialect.EscapeColumnName(columnName);
+        string prefix = alias ?? metadata.TableName;
         return $"{prefix}.{escaped}";
     }
 
@@ -1208,31 +1194,31 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
 
     public IJoinedQuery3<T1, T2, T3> On<TLeftKey, TRightKey>(Expression<Func<T1, TLeftKey>> leftKey, Expression<Func<T3, TRightKey>> rightKey)
     {
-        var leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
-        var rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
+        string leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
+        string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
-        var leftColumn = GetColumnName(FluentMetadataCache.GetMetadata<T1>(), leftProp, _parent.FromAlias);
-        var rightColumn = GetColumnName(_metadata, rightProp, _alias);
+        string leftColumn = GetColumnName(FluentMetadataCache.GetMetadata<T1>(), leftProp, _parent.FromAlias);
+        string rightColumn = GetColumnName(_metadata, rightProp, _alias);
 
-        var condition = $"{leftColumn} = {rightColumn}";
+        string condition = $"{leftColumn} = {rightColumn}";
         return CreateJoinedQuery3(condition);
     }
 
     public IJoinedQuery3<T1, T2, T3> OnFromSecond<TLeftKey, TRightKey>(Expression<Func<T2, TLeftKey>> leftKey, Expression<Func<T3, TRightKey>> rightKey)
     {
-        var leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
-        var rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
+        string leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
+        string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
-        var leftColumn = GetColumnName(FluentMetadataCache.GetMetadata<T2>(), leftProp, _parent.Joins[0].Alias);
-        var rightColumn = GetColumnName(_metadata, rightProp, _alias);
+        string leftColumn = GetColumnName(FluentMetadataCache.GetMetadata<T2>(), leftProp, _parent.Joins[0].Alias);
+        string rightColumn = GetColumnName(_metadata, rightProp, _alias);
 
-        var condition = $"{leftColumn} = {rightColumn}";
+        string condition = $"{leftColumn} = {rightColumn}";
         return CreateJoinedQuery3(condition);
     }
 
     public IJoinedQuery3<T1, T2, T3> On(string leftColumn, string rightColumn)
     {
-        var condition = $"{leftColumn} = {rightColumn}";
+        string condition = $"{leftColumn} = {rightColumn}";
         return CreateJoinedQuery3(condition);
     }
 
@@ -1258,6 +1244,7 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
     {
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
         string columnName = propertyName;
+
         for (int i = 0; i < columns.Count; i++)
         {
             if (columns[i].Property.Name == propertyName)
@@ -1267,8 +1254,8 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
             }
         }
 
-        var escaped = _parent.Dialect.EscapeColumnName(columnName);
-        var prefix = alias ?? metadata.TableName;
+        string escaped = _parent.Dialect.EscapeColumnName(columnName);
+        string prefix = alias ?? metadata.TableName;
         return $"{prefix}.{escaped}";
     }
 }
@@ -1296,7 +1283,7 @@ internal sealed class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1, T2, T3
             _parent.Joins[0].Alias,
             _parent.Joins[1].Alias);
 
-        var sql = visitor.Translate(predicate);
+        string sql = visitor.Translate(predicate);
         _parent.AddWhereCondition(WhereCondition.Expression(sql, LogicalOperator.None));
         return this;
     }
@@ -1318,32 +1305,34 @@ internal sealed class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1, T2, T3
         EntityMetadata t2Metadata = FluentMetadataCache.GetMetadata<T2>();
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
 
-        var t1Columns = _parent.GetPrefixedColumnsWithAlias(t1Metadata, _parent.FromAlias, "t1_");
-        var t2Columns = _parent.GetPrefixedColumnsWithAlias(t2Metadata, _parent.Joins[0].Alias, "t2_");
+        string[] t1Columns = _parent.GetPrefixedColumnsWithAlias(t1Metadata, _parent.FromAlias, "t1_");
+        string[] t2Columns = _parent.GetPrefixedColumnsWithAlias(t2Metadata, _parent.Joins[0].Alias, "t2_");
 
         // Find the second join (for T3)
         // JoinClause3Builder.CreateJoinedQuery3 adds the join to _parent.Joins
-        var t3Columns = _parent.GetPrefixedColumnsWithAlias(t3Metadata, _parent.Joins[1].Alias, "t3_");
-        var allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).ToArray();
+        string[] t3Columns = _parent.GetPrefixedColumnsWithAlias(t3Metadata, _parent.Joins[1].Alias, "t3_");
+        string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).ToArray();
 
-        var sql = _parent.BuildSelectSql(allColumns);
+        string sql = _parent.BuildSelectSql(allColumns);
         var results = new List<(T1, T2, T3)>();
 
         using IDbCommand command = _parent.Connection.CreateCommand();
         command.CommandText = sql;
         _parent.BindParameters(command);
 
-        var wasClosed = _parent.Connection.State == ConnectionState.Closed;
+        bool wasClosed = _parent.Connection.State == ConnectionState.Closed;
         if (wasClosed) _parent.Connection.Open();
+
         try
         {
             using IDataReader reader = command.ExecuteReader();
+
             while (reader.Read())
             {
-                T1? t1Obj = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_");
-                T2? t2Obj = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_");
-                T3? t3Obj = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_");
-                results.Add((t1Obj, t2Obj, t3Obj));
+                T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_");
+                T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_");
+                T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_");
+                results.Add((t1, t2, t3));
             }
         }
         finally
