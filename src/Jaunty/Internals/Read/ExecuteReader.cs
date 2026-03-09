@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 
+using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Parameters;
 
@@ -11,9 +12,7 @@ public static partial class Jaunty
     private static TResult ExecuteReader<TResult>(IDbConnection connection, string sql, object? parameters, CommandOptions options, Func<IDataReader, TResult> handler)
     {
         if (connection is DbConnection dbConnection)
-        {
             return ExecuteReaderDirect(dbConnection, sql, parameters, options, handler);
-        }
 
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -25,7 +24,7 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
-        var wasClosed = connection.State == ConnectionState.Closed;
+        bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
         {
@@ -48,7 +47,7 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
-            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using IDataReader reader = command.ExecuteReader();
             return handler(reader);
@@ -93,7 +92,7 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
-            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using DbDataReader reader = command.ExecuteReader();
             return handler(reader);
@@ -138,7 +137,7 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
-            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using DbDataReader reader = command.ExecuteReader();
             return handler(reader);
