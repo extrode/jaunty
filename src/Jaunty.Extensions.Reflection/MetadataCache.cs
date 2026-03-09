@@ -222,53 +222,83 @@ public static class MetadataCache<T>
 /// Represents metadata context for a property during entity mapping.
 /// </summary>
 /// <typeparam name="T">The entity type containing the property.</typeparam>
-#pragma warning disable CS9113 // Parameter is unread (fastSetter reserved for future use)
-public readonly struct PropertyContext<T>(PropertyInfo property, Action<T, IDataRecord, int> setter, Action<T, DbDataReader, int> fastSetter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
-#pragma warning restore CS9113
+public readonly struct PropertyContext<T>
 {
     /// <summary>
     /// Gets the property information.
     /// </summary>
-    public PropertyInfo Property { get; } = property;
+    public PropertyInfo Property { get; }
 
     /// <summary>
     /// Gets the setter action for standard data readers.
     /// </summary>
-    public Action<T, IDataRecord, int> Setter { get; } = setter;
+    public Action<T, IDataRecord, int> Setter { get; }
 
     /// <summary>
     /// Gets the getter function for retrieving property values.
     /// </summary>
-    public Func<T, object?> Getter { get; } = getter;
+    public Func<T, object?> Getter { get; }
 
     /// <summary>
     /// Gets the name of the property.
     /// </summary>
-    public string PropertyName { get; } = propertyName;
+    public string PropertyName { get; }
 
     /// <summary>
     /// Gets the name of the corresponding database column.
     /// </summary>
-    public string ColumnName { get; } = columnName;
+    public string ColumnName { get; }
 
     /// <summary>
     /// Gets a value indicating whether the property is a non-nullable value type.
     /// </summary>
-    public bool IsNonNullable { get; } = isNonNullable;
+    public bool IsNonNullable { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the  class.
+    /// </summary>
+    /// The  for the property this context describes.
+    /// A delegate that sets the property value from an  using a column ordinal.
+    /// A delegate that sets the property value from a  using a column ordinal (optimized path).
+    /// A delegate that gets the property value from the target instance.
+    /// The CLR property name.
+    /// The database column name mapped to the property.
+    /// True if the property is non-nullable; false if the property accepts nulls.
+    public PropertyContext(PropertyInfo property, Action<T, IDataRecord, int> setter, Action<T, DbDataReader, int> fastSetter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
+    {
+        Property = property;
+        Setter = setter;
+        Getter = getter;
+        PropertyName = propertyName;
+        ColumnName = columnName;
+        IsNonNullable = isNonNullable;
+    }
 }
 
 /// <summary>
 /// Represents a property setter with its associated column ordinal for entity mapping.
 /// </summary>
 /// <typeparam name="T">The entity type containing the property.</typeparam>
-public readonly struct PropertySetter<T>(PropertyContext<T> context, int ordinal)
+public readonly struct PropertySetter<T>
 {
-#pragma warning disable CS9124 // Parameter is captured and also used to initialize property
+    /// 
+    /// Initializes a new instance of the  struct.
+    /// 
+    public PropertySetter(PropertyContext<T> context, int ordinal)
+    {
+        Context = context;
+        Ordinal = ordinal;
+    }
+
+    /// <summary>
+    /// Gets the <see cref="PropertyContext{T}"/> containing metadata and the setter delegate for the property.
+    /// </summary>
+    public PropertyContext<T> Context { get; }
+
     /// <summary>
     /// Gets the zero-based ordinal position of the column in the data reader.
     /// </summary>
-    public int Ordinal { get; } = ordinal;
-#pragma warning restore CS9124
+    public int Ordinal { get; }
 
     /// <summary>
     /// Sets the property value on the target entity from the data record.
@@ -280,9 +310,9 @@ public readonly struct PropertySetter<T>(PropertyContext<T> context, int ordinal
     /// </exception>
     public void Set(T target, IDataRecord record)
     {
-        if (!record.IsDBNull(ordinal))
-            context.Setter(target, record, ordinal);
-        else if (context.IsNonNullable)
-            throw new InvalidOperationException($"Cannot assign NULL to non-nullable property '{context.PropertyName}'.");
+        if (!record.IsDBNull(Ordinal))
+            Context.Setter(target, record, Ordinal);
+        else if (Context.IsNonNullable)
+            throw new InvalidOperationException($"Cannot assign NULL to non-nullable property '{Context.PropertyName}'.");
     }
 }

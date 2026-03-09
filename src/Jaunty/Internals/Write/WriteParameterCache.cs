@@ -147,10 +147,6 @@ internal static class WriteParameterCache<T> where T : new()
 
     private static Action<T, long>? CreateIdSetter()
     {
-        if (typeof(IEntity).IsAssignableFrom(typeof(T)))
-        {
-            return static (target, value) => ((IEntity)target!).Id = value;
-        }
-        return null;
+        return typeof(IEntity).IsAssignableFrom(typeof(T)) ? (static (target, value) => ((IEntity)target!).Id = value) : null;
     }
 }

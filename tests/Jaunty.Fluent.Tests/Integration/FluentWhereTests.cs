@@ -90,7 +90,7 @@ public class FluentWhereTests : IClassFixture<FluentDatabaseFixture>
             .Select();
 
         Assert.NotEmpty(products);
-        Assert.All(products, p => Assert.True(p.ProductName.Contains("Chef")));
+        Assert.All(products, p => Assert.Matches(".*Chef.*", p.ProductName));
     }
 
     [Fact]

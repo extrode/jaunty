@@ -41,8 +41,8 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
 
         // PostgreSQL folds column names to lowercase, so use case-insensitive comparison
         var keys = row.Keys.ToList();
-        Assert.True(keys.Any(k => k.Equals("CategoryId", StringComparison.OrdinalIgnoreCase)));
-        Assert.True(keys.Any(k => k.Equals("CategoryName", StringComparison.OrdinalIgnoreCase)));
+        Assert.Contains(keys, k => k.Equals("CategoryId", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(keys, k => k.Equals("CategoryName", StringComparison.OrdinalIgnoreCase));
     }
 
     [Theory]

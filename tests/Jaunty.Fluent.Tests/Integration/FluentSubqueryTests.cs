@@ -116,7 +116,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
             .Select(c => c.CategoryId)
             .ToHashSet();
 
-        Assert.All(products, p => Assert.True(validCategoryIds.Contains(p.CategoryId!.Value)));
+        Assert.All(products, p => Assert.Contains(p.CategoryId!.Value, validCategoryIds));
     }
 
     [Fact]
@@ -209,7 +209,10 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
             .ToHashSet();
 
         Assert.All(products, p =>
-            Assert.True(p.Discontinued == false && validCategoryIds.Contains(p.CategoryId!.Value)));
+        {
+            Assert.Contains(p.CategoryId!.Value, validCategoryIds);
+            Assert.False(p.Discontinued);
+        });
     }
 
     [Fact]
@@ -445,7 +448,10 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
             .ToHashSet();
 
         Assert.All(products, p =>
-            Assert.True(validCategoryIds.Contains(p.CategoryId!.Value) && p.Discontinued == false));
+        {
+            Assert.Contains(p.CategoryId!.Value, validCategoryIds);
+            Assert.False(p.Discontinued);
+        });
     }
 
     [Fact]
