@@ -50,6 +50,128 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal ISqlDialect Dialect => _dialect;
     internal IDbConnection Connection => _connection;
     internal List<JoinInfo> Joins => _joins;
+    internal List<OrderByColumn> GetOrderByColumns() => _orderByColumns;
+    internal ParameterCollection GetParameters() => _parameters;
+
+    internal void AddOrderByColumn(string columnName, string direction, bool isFirst)
+    {
+        _orderByColumns.Add(new OrderByColumn(columnName, direction == "DESC"));
+    }
+
+    internal string BuildCountSql()
+    {
+        var sb = new StringBuilder(128);
+        sb.Append("SELECT COUNT(*) FROM ");
+        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
+
+        if (_fromAlias is not null)
+        {
+            sb.Append(' ');
+            sb.Append(_fromAlias);
+        }
+
+        foreach (JoinInfo join in _joins)
+        {
+            sb.Append(' ');
+            sb.Append(join.JoinKeyword);
+            sb.Append(' ');
+            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
+
+            if (join.Alias is not null)
+            {
+                sb.Append(' ');
+                sb.Append(join.Alias);
+            }
+
+            sb.Append(" ON ");
+            sb.Append(join.OnCondition);
+        }
+
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+
+            for (var i = 0; i < _conditions.Count; i++)
+            {
+                WhereCondition condition = _conditions[i];
+                if (i > 0)
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                sb.Append(condition.Sql);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    internal string BuildSelectPartialSql(string columns)
+    {
+        var sb = new StringBuilder(256);
+        sb.Append("SELECT ");
+        sb.Append(columns);
+        sb.Append(" FROM ");
+        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
+
+        if (_fromAlias is not null)
+        {
+            sb.Append(' ');
+            sb.Append(_fromAlias);
+        }
+
+        foreach (JoinInfo join in _joins)
+        {
+            sb.Append(' ');
+            sb.Append(join.JoinKeyword);
+            sb.Append(' ');
+            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
+
+            if (join.Alias is not null)
+            {
+                sb.Append(' ');
+                sb.Append(join.Alias);
+            }
+
+            sb.Append(" ON ");
+            sb.Append(join.OnCondition);
+        }
+
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+
+            for (var i = 0; i < _conditions.Count; i++)
+            {
+                WhereCondition condition = _conditions[i];
+                if (i > 0)
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                sb.Append(condition.Sql);
+            }
+        }
+
+        if (_orderByColumns.Count > 0)
+        {
+            sb.Append(" ORDER BY ");
+
+            for (var i = 0; i < _orderByColumns.Count; i++)
+            {
+                if (i > 0)
+                    sb.Append(", ");
+
+                OrderByColumn orderBy = _orderByColumns[i];
+                sb.Append(orderBy.ColumnName);
+
+                if (orderBy.Descending)
+                    sb.Append(" DESC");
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    internal string[] GetSelectColumns<T>() where T : new()
+    {
+        var metadata = FluentMetadataCache.GetMetadata<T>();
+        return GetPrefixedColumns(metadata, _fromAlias);
+    }
 
     public IJoinClause<TFrom, TJoin, T3> InnerJoin<T3>(string? alias = null) where T3 : new()
         => new JoinClause3Builder<TFrom, TJoin, T3>(this, JoinType.Inner, alias);

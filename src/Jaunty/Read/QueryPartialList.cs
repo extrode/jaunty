@@ -1,0 +1,67 @@
+using System.Data;
+
+namespace Jaunty;
+
+public static partial class Jaunty
+{
+    /// <summary>
+    /// Executes a SQL query and returns all results as dictionaries with column names as keys.
+    /// </summary>
+    /// <param name="connection">The database connection to execute the query against.</param>
+    /// <param name="sql">The SQL query to execute.</param>
+    /// <returns>A list of dictionaries, each representing a row with column names as keys.</returns>
+    public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql)
+    {
+        return QueryCoreList(connection, sql, null);
+    }
+
+    /// <summary>
+    /// Executes a SQL query with parameters and returns all results as dictionaries with column names as keys.
+    /// </summary>
+    /// <param name="connection">The database connection to execute the query against.</param>
+    /// <param name="sql">The SQL query to execute.</param>
+    /// <param name="parameters">
+    /// An anonymous object or dictionary containing parameter values.
+    /// </param>
+    /// <returns>A list of dictionaries, each representing a row with column names as keys.</returns>
+    public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql, object parameters)
+    {
+        return QueryCoreList(connection, sql, parameters);
+    }
+
+    private static List<IDictionary<string, object?>> QueryCoreList(IDbConnection connection, string sql, object? parameters)
+    {
+        bool wasClosed = connection.State == ConnectionState.Closed;
+        if (wasClosed)
+            connection.Open();
+
+        try
+        {
+            using IDbCommand command = connection.CreateCommand();
+            command.CommandText = sql;
+            command.BindParameters(parameters);
+
+            var results = new List<IDictionary<string, object?>>();
+
+            using IDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var row = new Dictionary<string, object?>();
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    string columnName = reader.GetName(i);
+                    object? value = reader.GetValue(i);
+                    row[columnName] = value == DBNull.Value ? null : value;
+                }
+                results.Add(row);
+            }
+
+            return results;
+        }
+        finally
+        {
+            if (wasClosed)
+                connection.Close();
+        }
+    }
+}
