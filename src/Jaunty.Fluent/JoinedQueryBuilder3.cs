@@ -104,7 +104,7 @@ internal sealed class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1, T2, T3
     where T2 : new()
     where T3 : new()
 {
-    private readonly JoinedQueryBuilder<T1, T2> _parent;
+    internal readonly JoinedQueryBuilder<T1, T2> _parent;
 
     public JoinedQuery3Builder(JoinedQueryBuilder<T1, T2> parent) =>
         _parent = parent;
