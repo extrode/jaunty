@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 
+using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Parameters;
 
@@ -42,7 +43,7 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
-            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             return command.ExecuteNonQuery();
         }
@@ -94,7 +95,7 @@ public static partial class Jaunty
                 if (parameters is not null)
                     ParameterBinder.Bind(command, parameters);
 
-                Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+                JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
                 return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -120,7 +121,7 @@ public static partial class Jaunty
                 if (parameters is not null)
                     ParameterBinder.Bind(command, parameters);
 
-                Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+                JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
                 return command.ExecuteNonQuery();
             }
