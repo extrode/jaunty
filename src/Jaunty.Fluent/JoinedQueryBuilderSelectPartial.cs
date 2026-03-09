@@ -278,7 +278,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         var dictionary = new Dictionary<string, object?>(reader.FieldCount);
 
-        for (var i = 0; i < reader.FieldCount; i++)
+        for (int i = 0; i < reader.FieldCount; i++)
         {
             string name = reader.GetName(i);
             object? value = reader.IsDBNull(i) ? null : reader.GetValue(i);
