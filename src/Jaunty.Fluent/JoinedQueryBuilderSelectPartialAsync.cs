@@ -18,7 +18,11 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         if (_connection is not DbConnection dbConn)
             throw new NotSupportedException("Async operations require DbConnection.");
 
+#if NET8_0_OR_GREATER
         await using DbCommand command = dbConn.CreateCommand();
+#else
+        using DbCommand command = dbConn.CreateCommand();
+#endif
         command.CommandText = sql;
         BindParameters(command);
 
@@ -28,7 +32,11 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         try
         {
+#if NET8_0_OR_GREATER
             await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 results.Add(MapToDictionary(reader));
@@ -36,7 +44,13 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         finally
         {
             if (wasClosed)
+            {
+#if NET8_0_OR_GREATER
                 await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                dbConn.Close();
+#endif
+            }
         }
 
         return results;
@@ -53,7 +67,11 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         if (_connection is not DbConnection dbConn)
             throw new NotSupportedException("Async operations require DbConnection.");
 
+#if NET8_0_OR_GREATER
         await using DbCommand command = dbConn.CreateCommand();
+#else
+        using DbCommand command = dbConn.CreateCommand();
+#endif
         command.CommandText = sql;
         BindParameters(command);
 
@@ -63,7 +81,11 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         try
         {
+#if NET8_0_OR_GREATER
             await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 results.Add(mapper(reader));
@@ -71,7 +93,13 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         finally
         {
             if (wasClosed)
+            {
+#if NET8_0_OR_GREATER
                 await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                dbConn.Close();
+#endif
+            }
         }
 
         return results;
@@ -83,27 +111,41 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
 
-        if (_connection is DbConnection dbConn)
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
+#if NET8_0_OR_GREATER
+        await using DbCommand command = dbConn.CreateCommand();
+#else
+        using DbCommand command = dbConn.CreateCommand();
+#endif
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = dbConn.State == ConnectionState.Closed;
+        if (wasClosed)
+            await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        try
         {
-            await using DbCommand command = dbConn.CreateCommand();
-            command.CommandText = sql;
-            BindParameters(command);
+#if NET8_0_OR_GREATER
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
-            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                return MapToDictionary(reader);
+        }
+        finally
+        {
             if (wasClosed)
-                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-            try
             {
-                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-
-                if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                    return MapToDictionary(reader);
-            }
-            finally
-            {
-                if (wasClosed)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+                await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                dbConn.Close();
+#endif
             }
         }
 
@@ -117,27 +159,41 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
 
-        if (_connection is DbConnection dbConn)
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
+#if NET8_0_OR_GREATER
+        await using DbCommand command = dbConn.CreateCommand();
+#else
+        using DbCommand command = dbConn.CreateCommand();
+#endif
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = dbConn.State == ConnectionState.Closed;
+        if (wasClosed)
+            await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        try
         {
-            await using DbCommand command = dbConn.CreateCommand();
-            command.CommandText = sql;
-            BindParameters(command);
+#if NET8_0_OR_GREATER
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
-            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                return mapper(reader);
+        }
+        finally
+        {
             if (wasClosed)
-                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-            try
             {
-                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-
-                if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                    return mapper(reader);
-            }
-            finally
-            {
-                if (wasClosed)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+                await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                dbConn.Close();
+#endif
             }
         }
 
@@ -150,27 +206,41 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
 
-        if (_connection is DbConnection dbConn)
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
+#if NET8_0_OR_GREATER
+        await using DbCommand command = dbConn.CreateCommand();
+#else
+        using DbCommand command = dbConn.CreateCommand();
+#endif
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = dbConn.State == ConnectionState.Closed;
+        if (wasClosed)
+            await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        try
         {
-            await using DbCommand command = dbConn.CreateCommand();
-            command.CommandText = sql;
-            BindParameters(command);
+#if NET8_0_OR_GREATER
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
-            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                return MapToDictionary(reader);
+        }
+        finally
+        {
             if (wasClosed)
-                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-            try
             {
-                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-
-                if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                    return MapToDictionary(reader);
-            }
-            finally
-            {
-                if (wasClosed)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+                await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                dbConn.Close();
+#endif
             }
         }
 
@@ -184,27 +254,41 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
 
-        if (_connection is DbConnection dbConn)
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
+#if NET8_0_OR_GREATER
+        await using DbCommand command = dbConn.CreateCommand();
+#else
+        using DbCommand command = dbConn.CreateCommand();
+#endif
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = dbConn.State == ConnectionState.Closed;
+        if (wasClosed)
+            await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        try
         {
-            await using DbCommand command = dbConn.CreateCommand();
-            command.CommandText = sql;
-            BindParameters(command);
+#if NET8_0_OR_GREATER
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
-            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                return mapper(reader);
+        }
+        finally
+        {
             if (wasClosed)
-                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-            try
             {
-                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-
-                if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                    return mapper(reader);
-            }
-            finally
-            {
-                if (wasClosed)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+                await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                dbConn.Close();
+#endif
             }
         }
 
@@ -219,32 +303,46 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         IDictionary<string, object?>? result = null;
         int count = 0;
 
-        if (_connection is DbConnection dbConn)
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
+#if NET8_0_OR_GREATER
+        await using DbCommand command = dbConn.CreateCommand();
+#else
+        using DbCommand command = dbConn.CreateCommand();
+#endif
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = dbConn.State == ConnectionState.Closed;
+        if (wasClosed)
+            await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        try
         {
-            await using DbCommand command = dbConn.CreateCommand();
-            command.CommandText = sql;
-            BindParameters(command);
+#if NET8_0_OR_GREATER
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
-            bool wasClosed = dbConn.State == ConnectionState.Closed;
-            if (wasClosed)
-                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-            try
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-
-                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                {
-                    count++;
-                    if (count > 1)
-                        throw new InvalidOperationException("Sequence contains more than one element.");
-                    result = MapToDictionary(reader);
-                }
+                count++;
+                if (count > 1)
+                    throw new InvalidOperationException("Sequence contains more than one element.");
+                result = MapToDictionary(reader);
             }
-            finally
+        }
+        finally
+        {
+            if (wasClosed)
             {
-                if (wasClosed)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+                await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                dbConn.Close();
+#endif
             }
         }
 
@@ -260,32 +358,46 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         T? result = default;
         int count = 0;
 
-        if (_connection is DbConnection dbConn)
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
+#if NET8_0_OR_GREATER
+        await using DbCommand command = dbConn.CreateCommand();
+#else
+        using DbCommand command = dbConn.CreateCommand();
+#endif
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = dbConn.State == ConnectionState.Closed;
+        if (wasClosed)
+            await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        try
         {
-            await using DbCommand command = dbConn.CreateCommand();
-            command.CommandText = sql;
-            BindParameters(command);
+#if NET8_0_OR_GREATER
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
-            bool wasClosed = dbConn.State == ConnectionState.Closed;
-            if (wasClosed)
-                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-            try
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-
-                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                {
-                    count++;
-                    if (count > 1)
-                        throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.");
-                    result = mapper(reader);
-                }
+                count++;
+                if (count > 1)
+                    throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.");
+                result = mapper(reader);
             }
-            finally
+        }
+        finally
+        {
+            if (wasClosed)
             {
-                if (wasClosed)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+                await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                dbConn.Close();
+#endif
             }
         }
 
@@ -300,32 +412,46 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         IDictionary<string, object?>? result = null;
         int count = 0;
 
-        if (_connection is DbConnection dbConn)
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
+#if NET8_0_OR_GREATER
+        await using DbCommand command = dbConn.CreateCommand();
+#else
+        using DbCommand command = dbConn.CreateCommand();
+#endif
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = dbConn.State == ConnectionState.Closed;
+        if (wasClosed)
+            await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        try
         {
-            await using DbCommand command = dbConn.CreateCommand();
-            command.CommandText = sql;
-            BindParameters(command);
+#if NET8_0_OR_GREATER
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
-            bool wasClosed = dbConn.State == ConnectionState.Closed;
-            if (wasClosed)
-                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-            try
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-
-                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                {
-                    count++;
-                    if (count > 1)
-                        throw new InvalidOperationException("Sequence contains more than one element.");
-                    result = MapToDictionary(reader);
-                }
+                count++;
+                if (count > 1)
+                    throw new InvalidOperationException("Sequence contains more than one element.");
+                result = MapToDictionary(reader);
             }
-            finally
+        }
+        finally
+        {
+            if (wasClosed)
             {
-                if (wasClosed)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+                await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                dbConn.Close();
+#endif
             }
         }
 
@@ -341,32 +467,46 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         T? result = default;
         int count = 0;
 
-        if (_connection is DbConnection dbConn)
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
+#if NET8_0_OR_GREATER
+        await using DbCommand command = dbConn.CreateCommand();
+#else
+        using DbCommand command = dbConn.CreateCommand();
+#endif
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = dbConn.State == ConnectionState.Closed;
+        if (wasClosed)
+            await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        try
         {
-            await using DbCommand command = dbConn.CreateCommand();
-            command.CommandText = sql;
-            BindParameters(command);
+#if NET8_0_OR_GREATER
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
-            bool wasClosed = dbConn.State == ConnectionState.Closed;
-            if (wasClosed)
-                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-            try
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-
-                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                {
-                    count++;
-                    if (count > 1)
-                        throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.");
-                    result = mapper(reader);
-                }
+                count++;
+                if (count > 1)
+                    throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.");
+                result = mapper(reader);
             }
-            finally
+        }
+        finally
+        {
+            if (wasClosed)
             {
-                if (wasClosed)
-                    await dbConn.CloseAsync().ConfigureAwait(false);
+#if NET8_0_OR_GREATER
+                await dbConn.CloseAsync().ConfigureAwait(false);
+#else
+                dbConn.Close();
+#endif
             }
         }
 
