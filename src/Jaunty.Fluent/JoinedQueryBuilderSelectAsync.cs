@@ -239,7 +239,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 #if NET8_0_OR_GREATER
                 await dbConn.CloseAsync().ConfigureAwait(false);
 #else
-                dbConn.Close();
+                await Task.Run(() => dbConn.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
@@ -286,7 +286,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 #if NET8_0_OR_GREATER
                 await dbConn.CloseAsync().ConfigureAwait(false);
 #else
-                dbConn.Close();
+                await Task.Run(() => dbConn.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
@@ -332,7 +332,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 #if NET8_0_OR_GREATER
                 await dbConn.CloseAsync().ConfigureAwait(false);
 #else
-                dbConn.Close();
+                await Task.Run(() => dbConn.Close(), cancellationToken).ConfigureAwait(false);
 #endif
             }
         }
