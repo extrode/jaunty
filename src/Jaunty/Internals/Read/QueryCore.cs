@@ -135,9 +135,9 @@ public static partial class Jaunty
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
 
-            Configuration.JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-            var result = command.ExecuteScalar();
+            object? result = command.ExecuteScalar();
 
             if (result is null or DBNull)
                 return default!;
