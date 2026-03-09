@@ -26,13 +26,13 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
 
     public IJoinedQuery<TFrom, TJoin> On<TLeftKey, TRightKey>(Expression<Func<TFrom, TLeftKey>> leftKey, Expression<Func<TJoin, TRightKey>> rightKey)
     {
-        var leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
-        var rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
+        string leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
+        string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
 
-        var leftColumn = GetColumnName<TFrom>(leftProp, _fromBuilder.Alias);
-        var rightColumn = GetColumnName<TJoin>(rightProp, _joinAlias);
+        string leftColumn = GetColumnName<TFrom>(leftProp, _fromBuilder.Alias);
+        string rightColumn = GetColumnName<TJoin>(rightProp, _joinAlias);
 
-        var condition = $"{leftColumn} = {rightColumn}";
+        string condition = $"{leftColumn} = {rightColumn}";
         return CreateJoinedQuery(condition);
     }
 
@@ -43,13 +43,13 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
             _fromBuilder.Alias,
             _joinAlias);
 
-        var condition = visitor.Translate(predicate);
+        string condition = visitor.Translate(predicate);
         return CreateJoinedQuery(condition);
     }
 
     public IJoinedQuery<TFrom, TJoin> On(string leftColumn, string rightColumn)
     {
-        var condition = $"{leftColumn} = {rightColumn}";
+        string condition = $"{leftColumn} = {rightColumn}";
         return CreateJoinedQuery(condition);
     }
 
