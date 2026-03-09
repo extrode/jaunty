@@ -84,7 +84,7 @@ public static class JauntyConfig
     /// <summary>
     /// Gets or sets a global diagnostic logger for SQL commands.
     /// </summary>
-    public static Action<string, object?>? Logger
+    public static Action<string, object>? Logger
     {
         get => _logger;
         set => _logger = value;
@@ -145,7 +145,7 @@ public static class JauntyConfig
     /// Typically provided by Jaunty.Extensions.Reflection.SpecialTypeMappers.Register().
     /// Returns a Func&lt;IDataReader, object&gt; that creates the special type instance.
     /// </summary>
-    public static Func<Type, IDataReader, object?>? SpecialTypeMapperResolver
+    public static Func<Type, IDataReader, object>? SpecialTypeMapperResolver
     {
         get => _specialTypeMapperResolver;
         set => _specialTypeMapperResolver = value;
