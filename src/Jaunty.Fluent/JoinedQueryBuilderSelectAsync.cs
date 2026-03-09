@@ -17,10 +17,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         string sql = BuildSelectSql(columns);
 
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialAsync<TFrom>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false);
-
-        throw new NotSupportedException("Async operations require DbConnection.");
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialAsync<TFrom>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
     public async Task<List<T>> SelectAsync<T>(CancellationToken cancellationToken = default)
@@ -41,9 +40,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return await SelectWithMappingAsync<T>(MappingMode.Strict, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<List<T>> SelectAsync<T>(
-        Func<IDataReader, T> mapper,
-        CancellationToken cancellationToken = default)
+    public async Task<List<T>> SelectAsync<T>(Func<IDataReader, T> mapper, CancellationToken cancellationToken = default)
     {
         return await SelectWithMapperAsync(mapper, cancellationToken).ConfigureAwait(false);
     }
@@ -67,10 +64,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         string sql = BuildSelectSql(columns) + " LIMIT 1";
 
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialFirstAsync<TFrom>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false);
-
-        throw new NotSupportedException("Async operations require DbConnection.");
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialFirstAsync<TFrom>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
     public async Task<TFrom?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
@@ -78,10 +74,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         string sql = BuildSelectSql(columns) + " LIMIT 1";
 
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialFirstOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false);
-
-        throw new NotSupportedException("Async operations require DbConnection.");
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialFirstOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
     public async Task<T> SelectFirstAsync<T>(CancellationToken cancellationToken = default)
@@ -100,10 +95,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         }
 
         List<T> results = await SelectWithMappingAsync<T>(MappingMode.Strict, cancellationToken).ConfigureAwait(false);
-        if (results.Count == 0)
-            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-
-        return results[0];
+        return results.Count == 0
+            ? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.")
+            : results[0];
     }
 
     public async Task<T> SelectFirstAsync<T>(
@@ -111,10 +105,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         CancellationToken cancellationToken = default)
     {
         List<T> results = await SelectWithMapperAsync(mapper, cancellationToken).ConfigureAwait(false);
-        if (results.Count == 0)
-            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-
-        return results[0];
+        return results.Count == 0
+            ? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.")
+            : results[0];
     }
 
     public async Task<T?> SelectFirstOrDefaultAsync<T>(CancellationToken cancellationToken = default)
@@ -147,30 +140,27 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     public async Task<(TFrom From, TJoin Joined)> SelectFirstBothAsync(CancellationToken cancellationToken = default)
     {
         List<(TFrom From, TJoin Joined)> result = await SelectBothInternalAsync(cancellationToken).ConfigureAwait(false);
-        if (result.Count == 0)
-            throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(TFrom).Name}, {typeof(TJoin).Name})'.");
-
-        return result[0];
+        return result.Count == 0
+            ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(TFrom).Name}, {typeof(TJoin).Name})'.")
+            : result[0];
     }
 
     public async Task<int> CountAsync(CancellationToken cancellationToken = default)
     {
         string sql = BuildCountSql();
 
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryScalarAsync<int>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false);
-
-        throw new NotSupportedException("Async operations require DbConnection.");
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryScalarAsync<int>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
     public async Task<long> LongCountAsync(CancellationToken cancellationToken = default)
     {
         string sql = BuildCountSql();
 
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false);
-
-        throw new NotSupportedException("Async operations require DbConnection.");
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
     private async Task<List<TJoin>> SelectJoinedAsync(CancellationToken cancellationToken = default)
@@ -178,10 +168,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
         string sql = BuildSelectSql(columns);
 
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialAsync<TJoin>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false);
-
-        throw new NotSupportedException("Async operations require DbConnection.");
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialAsync<TJoin>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
     private async Task<TJoin> SelectFirstJoinedAsync(CancellationToken cancellationToken = default)
@@ -189,10 +178,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
         string sql = BuildSelectSql(columns) + " LIMIT 1";
 
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialFirstAsync<TJoin>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false);
-
-        throw new NotSupportedException("Async operations require DbConnection.");
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialFirstAsync<TJoin>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
     private async Task<TJoin?> SelectFirstOrDefaultJoinedAsync(CancellationToken cancellationToken = default)
@@ -200,10 +188,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
         string sql = BuildSelectSql(columns) + " LIMIT 1";
 
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialFirstOrDefaultAsync<TJoin>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false);
-
-        throw new NotSupportedException("Async operations require DbConnection.");
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialFirstOrDefaultAsync<TJoin>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
     private async Task<List<(TFrom From, TJoin Joined)>> SelectBothInternalAsync(CancellationToken cancellationToken = default)
@@ -260,8 +247,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return results;
     }
 
-    private async Task<List<T>> SelectWithMappingAsync<T>(MappingMode mode, CancellationToken cancellationToken = default)
-        where T : new()
+    private async Task<List<T>> SelectWithMappingAsync<T>(MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
         string sql = BuildSelectAllColumnsSql();
         var results = new List<T>();
