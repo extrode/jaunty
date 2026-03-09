@@ -34,7 +34,7 @@ public static class SpecialTypeMappers
         JauntyConfig.SpecialTypeMapperResolver ??= ResolveSpecialTypeMapper;
     }
 
-    private static object? ResolveSpecialTypeMapper(Type type, IDataReader reader)
+    private static object ResolveSpecialTypeMapper(Type type, IDataReader reader)
     {
         // Dictionary<string, object> or Dictionary<string, TValue>
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
@@ -67,7 +67,7 @@ public static class SpecialTypeMappers
         }
 
         // dynamic (object at compile time) - return ExpandoObject
-        return type == typeof(object) ? CreateExpandoMapper(reader) : null;
+        return type == typeof(object) ? CreateExpandoMapper(reader) : null!;
     }
 
     private static object CreateKeyValuePairMapper(Type type, IDataReader reader, Type[] typeArgs)
@@ -77,29 +77,28 @@ public static class SpecialTypeMappers
 
         return new Func<IDataReader, object>(r =>
         {
-            var key = r.IsDBNull(0) ? GetDefault(keyType) : ConvertValue(r.GetValue(0), keyType);
-            var value = r.IsDBNull(1) ? GetDefault(valueType) : ConvertValue(r.GetValue(1), valueType);
-
+            object? key = r.IsDBNull(0) ? GetDefault(keyType) : ConvertValue(r.GetValue(0), keyType);
+            object? value = r.IsDBNull(1) ? GetDefault(valueType) : ConvertValue(r.GetValue(1), valueType);
             // Create KeyValuePair using reflection (it's a struct)
-            var kvp = Activator.CreateInstance(type, key, value);
+            object? kvp = Activator.CreateInstance(type, key, value);
+
             return kvp!;
         });
     }
 
     private static object CreateValueTupleMapper(Type type, IDataReader reader, Type[] typeArgs)
     {
-        var itemCount = typeArgs.Length;
+        int itemCount = typeArgs.Length;
 
         return new Func<IDataReader, object>(r =>
         {
-            var values = new object?[itemCount];
+            object?[] values = new object?[itemCount];
+
             for (int i = 0; i < itemCount; i++)
-            {
                 values[i] = r.IsDBNull(i) ? GetDefault(typeArgs[i]) : ConvertValue(r.GetValue(i), typeArgs[i]);
-            }
 
             // Create ValueTuple using Activator
-            var tuple = Activator.CreateInstance(type, values);
+            object? tuple = Activator.CreateInstance(type, values);
             return tuple!;
         });
     }
@@ -119,7 +118,7 @@ public static class SpecialTypeMappers
             return value;
 
         // Handle nullable types
-        Type underlyingType = System.Nullable.GetUnderlyingType(targetType) ?? targetType;
+        Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
         return Convert.ChangeType(value, underlyingType);
     }
@@ -127,28 +126,31 @@ public static class SpecialTypeMappers
     private static object CreateExpandoMapper(IDataReader reader)
     {
         // Cache column names
-        var fieldCount = reader.FieldCount;
-        var columnNames = new string[fieldCount];
+        int fieldCount = reader.FieldCount;
+        string[] columnNames = new string[fieldCount];
+
         for (int i = 0; i < fieldCount; i++)
             columnNames[i] = reader.GetName(i);
 
         return new Func<IDataReader, object>(r =>
         {
             IDictionary<string, object?> expando = new ExpandoObject();
+
             for (int i = 0; i < fieldCount; i++)
             {
-                var value = r.IsDBNull(i) ? null : r.GetValue(i);
+                object? value = r.IsDBNull(i) ? null : r.GetValue(i);
                 expando[columnNames[i]] = value;
             }
-            return (object)expando;
+
+            return expando;
         });
     }
 
     private static object CreateDictionaryMapper(Type type, IDataReader reader, Type valueType)
     {
-        // Cache column names
-        var fieldCount = reader.FieldCount;
-        var columnNames = new string[fieldCount];
+        int fieldCount = reader.FieldCount;
+        string[] columnNames = new string[fieldCount];
+
         for (int i = 0; i < fieldCount; i++)
             columnNames[i] = reader.GetName(i);
 
@@ -160,10 +162,10 @@ public static class SpecialTypeMappers
                 var dict = new Dictionary<string, object?>(fieldCount, StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < fieldCount; i++)
                 {
-                    var value = r.IsDBNull(i) ? null : r.GetValue(i);
+                    object? value = r.IsDBNull(i) ? null : r.GetValue(i);
                     dict[columnNames[i]] = value;
                 }
-                return (object)dict;
+                return dict;
             });
         }
         else
@@ -175,26 +177,23 @@ public static class SpecialTypeMappers
             return new Func<IDataReader, object>(r =>
             {
                 // Create Dictionary<string, TValue> with case-insensitive comparer
-                var dict = (IDictionary)Activator.CreateInstance(
-                    dictType,
-                    fieldCount,
-                    StringComparer.OrdinalIgnoreCase)!;
+                var dict = (IDictionary)Activator.CreateInstance(dictType, fieldCount, StringComparer.OrdinalIgnoreCase)!;
 
                 for (int i = 0; i < fieldCount; i++)
                 {
                     object? value;
+
                     if (r.IsDBNull(i))
-                    {
                         value = valueType.IsValueType ? Activator.CreateInstance(valueType) : null;
-                    }
                     else
                     {
-                        var raw = r.GetValue(i);
+                        object raw = r.GetValue(i);
                         value = ConvertValue(raw, valueType);
                     }
                     dict[columnNames[i]] = value;
                 }
-                return (object)dict;
+
+                return dict;
             });
         }
     }
