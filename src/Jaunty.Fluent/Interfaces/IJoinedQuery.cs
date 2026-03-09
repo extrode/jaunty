@@ -438,6 +438,47 @@ public interface IJoinClause<T1, T2, T3> where T1 : new() where T2 : new() where
 }
 
 /// <summary>
+/// Builder for the fourth JOIN clause in a 4-table join.
+/// </summary>
+public interface IJoinClause<T1, T2, T3, T4>
+    where T1 : new()
+    where T2 : new()
+    where T3 : new()
+    where T4 : new()
+{
+    /// <summary>
+    /// Specifies the join condition using key expressions from T1.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> On<TLeftKey, TRightKey>(
+        Expression<Func<T1, TLeftKey>> leftKey,
+        Expression<Func<T4, TRightKey>> rightKey);
+
+    /// <summary>
+    /// Specifies the join condition using key expressions from T2.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> OnFromSecond<TLeftKey, TRightKey>(
+        Expression<Func<T2, TLeftKey>> leftKey,
+        Expression<Func<T4, TRightKey>> rightKey);
+
+    /// <summary>
+    /// Specifies the join condition using key expressions from T3.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> OnFromThird<TLeftKey, TRightKey>(
+        Expression<Func<T3, TLeftKey>> leftKey,
+        Expression<Func<T4, TRightKey>> rightKey);
+
+    /// <summary>
+    /// Specifies the join condition using column names.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> On(string leftColumn, string rightColumn);
+
+    /// <summary>
+    /// Specifies the join condition using raw SQL.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> On(string condition);
+}
+
+/// <summary>
 /// Represents a query with three joined tables.
 /// </summary>
 public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() where T3 : new()
@@ -463,6 +504,43 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     /// Executes the query and returns all three entities as tuples.
     /// </summary>
     List<(T1, T2, T3)> SelectAll();
+
+    /// <summary>
+    /// Returns the generated SQL for debugging purposes.
+    /// </summary>
+    string ToSql();
+}
+
+/// <summary>
+/// Represents a query with four joined tables.
+/// </summary>
+public interface IJoinedQuery4<T1, T2, T3, T4>
+    where T1 : new()
+    where T2 : new()
+    where T3 : new()
+    where T4 : new()
+{
+    /// <summary>
+    /// Adds a WHERE clause using a predicate expression.
+    /// </summary>
+    /// <param name="predicate">Expression predicate for the WHERE condition.</param>
+    IJoinedQuery4<T1, T2, T3, T4> Where(Expression<Func<T1, T2, T3, T4, bool>> predicate);
+
+    /// <summary>
+    /// Adds a WHERE clause using a raw SQL condition.
+    /// </summary>
+    /// <param name="condition">The raw SQL condition.</param>
+    IJoinedQuery4<T1, T2, T3, T4> Where(string condition);
+
+    /// <summary>
+    /// Executes the query and returns the primary (first) entity.
+    /// </summary>
+    List<T1> Select();
+
+    /// <summary>
+    /// Executes the query and returns all four entities as tuples.
+    /// </summary>
+    List<(T1, T2, T3, T4)> SelectAll();
 
     /// <summary>
     /// Returns the generated SQL for debugging purposes.
