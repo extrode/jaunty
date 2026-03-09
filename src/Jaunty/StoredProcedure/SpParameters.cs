@@ -99,11 +99,9 @@ public sealed class SpParameter
 /// int returnValue = parameters.GetReturnValue();
 /// </code>
 /// </example>
-/// <seealso cref="SpParameter"/>
-/// <seealso cref="Jaunty.ExecuteStoredProcedure{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
 public sealed class SpParameters
 {
-    private readonly List<SpParameter> _parameters = new();
+    private readonly List<SpParameter> _parameters = [];
 
     /// <summary>
     /// Gets all parameters in this collection.
@@ -286,10 +284,7 @@ public sealed class SpParameters
         // After execution, the DbParameter will have the output value
         object? value = param.DbParameter?.Value ?? param.Value;
 
-        if (value is null || value == DBNull.Value)
-            return default;
-
-        return (T)Convert.ChangeType(value, typeof(T));
+        return value is null || value == DBNull.Value ? default : (T)Convert.ChangeType(value, typeof(T));
     }
 
     /// <summary>
@@ -342,10 +337,7 @@ public sealed class SpParameters
 
         object? value = param.DbParameter?.Value ?? param.Value;
 
-        if (value is null || value == DBNull.Value)
-            return 0;
-
-        return Convert.ToInt32(value);
+        return value is null || value == DBNull.Value ? 0 : Convert.ToInt32(value);
     }
 
     /// <summary>

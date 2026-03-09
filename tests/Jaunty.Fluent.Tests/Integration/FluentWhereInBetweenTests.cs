@@ -23,7 +23,7 @@ public class FluentWhereInBetweenTests : IClassFixture<FluentDatabaseFixture>
             .Select();
 
         Assert.NotEmpty(products);
-        Assert.All(products, p => Assert.True(categoryIds.Contains(p.CategoryId)));
+        Assert.All(products, p => Assert.Contains(p.CategoryId, categoryIds));
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class FluentWhereInBetweenTests : IClassFixture<FluentDatabaseFixture>
             .Select();
 
         Assert.NotEmpty(products);
-        Assert.All(products, p => Assert.True(productIds.Contains(p.ProductId)));
+        Assert.All(products, p => Assert.Contains(p.ProductId, productIds));
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class FluentWhereInBetweenTests : IClassFixture<FluentDatabaseFixture>
             .Select();
 
         Assert.NotEmpty(products);
-        Assert.All(products, p => Assert.True(!excludedCategories.Contains(p.CategoryId)));
+        Assert.All(products, p => Assert.DoesNotContain(p.CategoryId, excludedCategories));
     }
 
     [Fact]
@@ -352,8 +352,10 @@ public class FluentWhereInBetweenTests : IClassFixture<FluentDatabaseFixture>
 
         Assert.NotEmpty(products);
         Assert.All(products, p =>
-            Assert.True(categoryIds.Contains(p.CategoryId) &&
-            p.UnitPrice >= 10m && p.UnitPrice <= 50m));
+        {
+            Assert.Contains(p.CategoryId, categoryIds);
+            Assert.True(p.UnitPrice >= 10m && p.UnitPrice <= 50m);
+        });
     }
 
     [Fact]
@@ -368,8 +370,10 @@ public class FluentWhereInBetweenTests : IClassFixture<FluentDatabaseFixture>
 
         Assert.NotEmpty(products);
         Assert.All(products, p =>
-            Assert.True(categoryIds.Contains(p.CategoryId) &&
-            p.UnitPrice >= 10m && p.UnitPrice <= 50m));
+        {
+            Assert.Contains(p.CategoryId, categoryIds);
+            Assert.True(p.UnitPrice >= 10m && p.UnitPrice <= 50m);
+        });
     }
 
     [Fact]
@@ -470,7 +474,7 @@ public class FluentWhereInBetweenTests : IClassFixture<FluentDatabaseFixture>
             .SelectAsync();
 
         Assert.NotEmpty(products);
-        Assert.All(products, p => Assert.True(categoryIds.Contains(p.CategoryId)));
+        Assert.All(products, p => Assert.Contains(p.CategoryId, categoryIds));
     }
 
     [Fact]
@@ -522,7 +526,7 @@ public class FluentWhereInBetweenTests : IClassFixture<FluentDatabaseFixture>
             .Select(g => new { Category = g.Key, Count = g.Count() });
 
         Assert.NotEmpty(grouped);
-        Assert.All(grouped, g => Assert.True(categoryIds.Contains(g.Category)));
+        Assert.All(grouped, g => Assert.Contains(g.Category, categoryIds));
     }
 
     [Fact]

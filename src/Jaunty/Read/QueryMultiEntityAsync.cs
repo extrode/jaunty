@@ -3,7 +3,6 @@ using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Internals.Enums;
-using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Read;
 
 namespace Jaunty;
@@ -1150,10 +1149,9 @@ public static partial class Jaunty
             mapping.ApplyT1(t1, reader);
             mapping.ApplyT2(t2, reader);
 
-            if (await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
-                throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
-
-            return (t1, t2);
+            return await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false)
+                ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
+                : ((T1, T2))(t1, t2);
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -1436,10 +1434,9 @@ public static partial class Jaunty
             mapping.ApplyT1(t1, reader);
             mapping.ApplyT2(t2, reader);
 
-            if (await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false))
-                throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
-
-            return (t1, t2);
+            return await ((DbDataReader)reader).ReadAsync(ct).ConfigureAwait(false)
+                ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
+                : ((T1, T2)?)(t1, t2);
         }, cancellationToken).ConfigureAwait(false);
     }
 
