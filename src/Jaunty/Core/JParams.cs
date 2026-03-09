@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace Jaunty.Core;
 
-namespace Jaunty.Core;
-
-internal class JParams
+public struct JParams
 {
+    public JParams(params object[] parameters)
+    {
+
+    }
 }

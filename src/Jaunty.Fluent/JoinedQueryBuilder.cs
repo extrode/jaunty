@@ -1,10 +1,15 @@
 using System.Data;
 using System.Data.Common;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using Jaunty.Dialects;
+using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Enums;
+using Jaunty.Internals.Read;
 
 namespace Jaunty.Fluent;
 
@@ -63,6 +68,9 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal void AddJoin(JoinInfo join) => _joins.Add(join);
 
     internal void AddWhereCondition(WhereCondition condition) => _conditions.Add(condition);
+
+    internal void AddParameter<TValue>(string name, TValue value) =>
+        _parameters.Add(name, value);
 
     internal void BindParameters(IDbCommand command) =>
         _parameters.BindTo(command);
