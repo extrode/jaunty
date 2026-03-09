@@ -4,7 +4,6 @@ using System.Linq.Expressions;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
-using Jaunty.Internals.Enums;
 
 namespace Jaunty.Fluent;
 
@@ -75,8 +74,7 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
     public IJoinedQuery4<T1, T2, T3, T4> On(string leftColumn, string rightColumn) =>
         CreateJoinedQuery4($"{leftColumn} = {rightColumn}");
 
-    public IJoinedQuery4<T1, T2, T3, T4> On(string condition) =>
-        CreateJoinedQuery4(condition);
+    public IJoinedQuery4<T1, T2, T3, T4> On(string condition) => CreateJoinedQuery4(condition);
 
     private JoinedQuery4Builder<T1, T2, T3, T4> CreateJoinedQuery4(string onCondition)
     {
@@ -96,7 +94,7 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
         string columnName = propertyName;
 
-        for (var i = 0; i < columns.Count; i++)
+        for (int i = 0; i < columns.Count; i++)
         {
             if (columns[i].Property.Name == propertyName)
             {
@@ -122,8 +120,7 @@ internal sealed class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery4<T1, T2
 {
     private readonly JoinedQuery3Builder<T1, T2, T3> _parent;
 
-    public JoinedQuery4Builder(JoinedQuery3Builder<T1, T2, T3> parent) =>
-        _parent = parent;
+    public JoinedQuery4Builder(JoinedQuery3Builder<T1, T2, T3> parent) => _parent = parent;
 
     public IJoinedQuery4<T1, T2, T3, T4> Where(Expression<Func<T1, T2, T3, T4, bool>> predicate)
     {
@@ -145,8 +142,7 @@ internal sealed class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery4<T1, T2
         return this;
     }
 
-    public List<T1> Select() =>
-        _parent._parent.Select();
+    public List<T1> Select() => _parent._parent.Select();
 
     public List<(T1, T2, T3, T4)> SelectAll()
     {
@@ -194,6 +190,5 @@ internal sealed class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery4<T1, T2
         return results;
     }
 
-    public string ToSql() =>
-        _parent._parent.ToSql();
+    public string ToSql() => _parent._parent.ToSql();
 }

@@ -80,7 +80,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
         string columnName = propertyName;
 
-        for (var i = 0; i < columns.Count; i++)
+        for (int i = 0; i < columns.Count; i++)
         {
             if (columns[i].Property.Name == propertyName)
             {

@@ -4,7 +4,6 @@ using System.Linq.Expressions;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
-using Jaunty.Internals.Enums;
 
 namespace Jaunty.Fluent;
 
@@ -29,9 +28,7 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         _metadata = FluentMetadataCache.GetMetadata<T3>();
     }
 
-    public IJoinedQuery3<T1, T2, T3> On<TLeftKey, TRightKey>(
-        Expression<Func<T1, TLeftKey>> leftKey,
-        Expression<Func<T3, TRightKey>> rightKey)
+    public IJoinedQuery3<T1, T2, T3> On<TLeftKey, TRightKey>(Expression<Func<T1, TLeftKey>> leftKey, Expression<Func<T3, TRightKey>> rightKey)
     {
         string leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
         string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
@@ -43,9 +40,7 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         return CreateJoinedQuery3(condition);
     }
 
-    public IJoinedQuery3<T1, T2, T3> OnFromSecond<TLeftKey, TRightKey>(
-        Expression<Func<T2, TLeftKey>> leftKey,
-        Expression<Func<T3, TRightKey>> rightKey)
+    public IJoinedQuery3<T1, T2, T3> OnFromSecond<TLeftKey, TRightKey>(Expression<Func<T2, TLeftKey>> leftKey, Expression<Func<T3, TRightKey>> rightKey)
     {
         string leftProp = PropertyExtractor.ExtractPropertyName(leftKey);
         string rightProp = PropertyExtractor.ExtractPropertyName(rightKey);
@@ -57,11 +52,11 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         return CreateJoinedQuery3(condition);
     }
 
-    public IJoinedQuery3<T1, T2, T3> On(string leftColumn, string rightColumn) =>
-        CreateJoinedQuery3($"{leftColumn} = {rightColumn}");
+    public IJoinedQuery3<T1, T2, T3> On(string leftColumn, string rightColumn)
+        => CreateJoinedQuery3($"{leftColumn} = {rightColumn}");
 
-    public IJoinedQuery3<T1, T2, T3> On(string condition) =>
-        CreateJoinedQuery3(condition);
+    public IJoinedQuery3<T1, T2, T3> On(string condition)
+        => CreateJoinedQuery3(condition);
 
     private JoinedQuery3Builder<T1, T2, T3> CreateJoinedQuery3(string onCondition)
     {
@@ -81,7 +76,7 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
         string columnName = propertyName;
 
-        for (var i = 0; i < columns.Count; i++)
+        for (int i = 0; i < columns.Count; i++)
         {
             if (columns[i].Property.Name == propertyName)
             {
@@ -106,8 +101,7 @@ internal sealed class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1, T2, T3
 {
     internal readonly JoinedQueryBuilder<T1, T2> _parent;
 
-    public JoinedQuery3Builder(JoinedQueryBuilder<T1, T2> parent) =>
-        _parent = parent;
+    public JoinedQuery3Builder(JoinedQueryBuilder<T1, T2> parent) => _parent = parent;
 
     public IJoinedQuery3<T1, T2, T3> Where(Expression<Func<T1, T2, T3, bool>> predicate)
     {
@@ -128,8 +122,7 @@ internal sealed class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1, T2, T3
         return this;
     }
 
-    public List<T1> Select() =>
-        _parent.Select();
+    public List<T1> Select() => _parent.Select();
 
     public List<(T1, T2, T3)> SelectAll()
     {
@@ -174,6 +167,5 @@ internal sealed class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1, T2, T3
         return results;
     }
 
-    public string ToSql() =>
-        _parent.ToSql();
+    public string ToSql() => _parent.ToSql();
 }
