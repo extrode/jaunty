@@ -483,20 +483,94 @@ public interface IJoinClause<T1, T2, T3, T4>
 /// </summary>
 public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() where T3 : new()
 {
+    // --- WHERE Clauses ---
+
     /// <summary>
     /// Adds a WHERE clause using a predicate expression.
     /// </summary>
-    /// <param name="predicate">Expression predicate for the WHERE condition.</param>
     IJoinedQuery3<T1, T2, T3> Where(Expression<Func<T1, T2, T3, bool>> predicate);
 
     /// <summary>
     /// Adds a WHERE clause using a raw SQL condition.
     /// </summary>
-    /// <param name="condition">The raw SQL condition.</param>
     IJoinedQuery3<T1, T2, T3> Where(string condition);
 
     /// <summary>
-    /// Executes the query and returns the primary (first) entity.
+    /// Adds an AND condition using a predicate expression.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> And(Expression<Func<T1, T2, T3, bool>> predicate);
+
+    /// <summary>
+    /// Adds an OR condition using a predicate expression.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> Or(Expression<Func<T1, T2, T3, bool>> predicate);
+
+    // --- ORDER BY ---
+
+    /// <summary>
+    /// Adds an ORDER BY clause (ascending) for the primary entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> OrderBy<TKey>(Expression<Func<T1, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (descending) for the primary entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> OrderByDescending<TKey>(Expression<Func<T1, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (ascending) for the second entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> OrderByJoined<TKey>(Expression<Func<T2, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (descending) for the second entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> OrderByJoinedDescending<TKey>(Expression<Func<T2, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (ascending) for the third entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> OrderByJoined<TKey>(Expression<Func<T3, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (descending) for the third entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> OrderByJoinedDescending<TKey>(Expression<Func<T3, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (ascending) for the primary entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> ThenBy<TKey>(Expression<Func<T1, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (descending) for the primary entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> ThenByDescending<TKey>(Expression<Func<T1, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (ascending) for the second entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> ThenByJoined<TKey>(Expression<Func<T2, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (descending) for the second entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> ThenByJoinedDescending<TKey>(Expression<Func<T2, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (ascending) for the third entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> ThenByJoined<TKey>(Expression<Func<T3, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (descending) for the third entity.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> ThenByJoinedDescending<TKey>(Expression<Func<T3, TKey>> keySelector);
+
+    // --- SELECT Operations ---
+
+    /// <summary>
+    /// Executes the query and returns the primary entity.
     /// </summary>
     List<T1> Select();
 
@@ -506,9 +580,115 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     List<(T1, T2, T3)> SelectAll();
 
     /// <summary>
+    /// Returns the first result or throws if empty.
+    /// </summary>
+    T1 SelectFirst();
+
+    /// <summary>
+    /// Returns the first result, or default if empty.
+    /// </summary>
+    T1? SelectFirstOrDefault();
+
+    /// <summary>
+    /// Returns the single result or throws if not exactly one.
+    /// </summary>
+    T1 SelectSingle();
+
+    /// <summary>
+    /// Returns the single result, or default if empty. Throws if more than one.
+    /// </summary>
+    T1? SelectSingleOrDefault();
+
+    /// <summary>
+    /// Returns the count of rows.
+    /// </summary>
+    int Count();
+
+    /// <summary>
+    /// Returns the count of rows as long.
+    /// </summary>
+    long LongCount();
+
+    /// <summary>
     /// Returns the generated SQL for debugging purposes.
     /// </summary>
     string ToSql();
+
+    // --- SELECT PARTIAL Operations ---
+
+    /// <summary>
+    /// Executes the query selecting only the specified columns.
+    /// </summary>
+    List<IDictionary<string, object?>> SelectPartial(string columns);
+
+    /// <summary>
+    /// Returns the first partial result or throws if empty.
+    /// </summary>
+    IDictionary<string, object?> SelectPartialFirst(string columns);
+
+    /// <summary>
+    /// Returns the first partial result, or null if empty.
+    /// </summary>
+    IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns);
+
+    /// <summary>
+    /// Returns the single partial result or throws if not exactly one.
+    /// </summary>
+    IDictionary<string, object?> SelectPartialSingle(string columns);
+
+    /// <summary>
+    /// Returns the single partial result, or null if empty. Throws if more than one.
+    /// </summary>
+    IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns);
+
+    // --- Async Operations ---
+
+    /// <summary>
+    /// Executes the query asynchronously and returns the primary entity.
+    /// </summary>
+    Task<List<T1>> SelectAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the query asynchronously and returns all three entities as tuples.
+    /// </summary>
+    Task<List<(T1, T2, T3)>> SelectAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result asynchronously or throws if empty.
+    /// </summary>
+    Task<T1> SelectFirstAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result asynchronously, or default if empty.
+    /// </summary>
+    Task<T1?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the count of rows asynchronously.
+    /// </summary>
+    Task<int> CountAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the count of rows as long asynchronously.
+    /// </summary>
+    Task<long> LongCountAsync(CancellationToken cancellationToken = default);
+
+    // --- SELECT PARTIAL Async Operations ---
+
+    /// <summary>
+    /// Executes the query asynchronously selecting only the specified columns.
+    /// </summary>
+    Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first partial result asynchronously or throws if empty.
+    /// </summary>
+    Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first partial result asynchronously, or null if empty.
+    /// </summary>
+    Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -520,20 +700,114 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     where T3 : new()
     where T4 : new()
 {
+    // --- WHERE Clauses ---
+
     /// <summary>
     /// Adds a WHERE clause using a predicate expression.
     /// </summary>
-    /// <param name="predicate">Expression predicate for the WHERE condition.</param>
     IJoinedQuery4<T1, T2, T3, T4> Where(Expression<Func<T1, T2, T3, T4, bool>> predicate);
 
     /// <summary>
     /// Adds a WHERE clause using a raw SQL condition.
     /// </summary>
-    /// <param name="condition">The raw SQL condition.</param>
     IJoinedQuery4<T1, T2, T3, T4> Where(string condition);
 
     /// <summary>
-    /// Executes the query and returns the primary (first) entity.
+    /// Adds an AND condition using a predicate expression.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> And(Expression<Func<T1, T2, T3, T4, bool>> predicate);
+
+    /// <summary>
+    /// Adds an OR condition using a predicate expression.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> Or(Expression<Func<T1, T2, T3, T4, bool>> predicate);
+
+    // --- ORDER BY ---
+
+    /// <summary>
+    /// Adds an ORDER BY clause (ascending) for the primary entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> OrderBy<TKey>(Expression<Func<T1, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (descending) for the primary entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> OrderByDescending<TKey>(Expression<Func<T1, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (ascending) for the second entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> OrderByJoined<TKey>(Expression<Func<T2, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (descending) for the second entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> OrderByJoinedDescending<TKey>(Expression<Func<T2, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (ascending) for the third entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> OrderByJoined<TKey>(Expression<Func<T3, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (descending) for the third entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> OrderByJoinedDescending<TKey>(Expression<Func<T3, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (ascending) for the fourth entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> OrderByJoined<TKey>(Expression<Func<T4, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an ORDER BY clause (descending) for the fourth entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> OrderByJoinedDescending<TKey>(Expression<Func<T4, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (ascending) for the primary entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> ThenBy<TKey>(Expression<Func<T1, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (descending) for the primary entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> ThenByDescending<TKey>(Expression<Func<T1, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (ascending) for the second entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> ThenByJoined<TKey>(Expression<Func<T2, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (descending) for the second entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> ThenByJoinedDescending<TKey>(Expression<Func<T2, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (ascending) for the third entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> ThenByJoined<TKey>(Expression<Func<T3, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (descending) for the third entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> ThenByJoinedDescending<TKey>(Expression<Func<T3, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (ascending) for the fourth entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> ThenByJoined<TKey>(Expression<Func<T4, TKey>> keySelector);
+
+    /// <summary>
+    /// Adds an additional ORDER BY column (descending) for the fourth entity.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> ThenByJoinedDescending<TKey>(Expression<Func<T4, TKey>> keySelector);
+
+    // --- SELECT Operations ---
+
+    /// <summary>
+    /// Executes the query and returns the primary entity.
     /// </summary>
     List<T1> Select();
 
@@ -543,7 +817,113 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     List<(T1, T2, T3, T4)> SelectAll();
 
     /// <summary>
+    /// Returns the first result or throws if empty.
+    /// </summary>
+    T1 SelectFirst();
+
+    /// <summary>
+    /// Returns the first result, or default if empty.
+    /// </summary>
+    T1? SelectFirstOrDefault();
+
+    /// <summary>
+    /// Returns the single result or throws if not exactly one.
+    /// </summary>
+    T1 SelectSingle();
+
+    /// <summary>
+    /// Returns the single result, or default if empty. Throws if more than one.
+    /// </summary>
+    T1? SelectSingleOrDefault();
+
+    /// <summary>
+    /// Returns the count of rows.
+    /// </summary>
+    int Count();
+
+    /// <summary>
+    /// Returns the count of rows as long.
+    /// </summary>
+    long LongCount();
+
+    /// <summary>
     /// Returns the generated SQL for debugging purposes.
     /// </summary>
     string ToSql();
+
+    // --- SELECT PARTIAL Operations ---
+
+    /// <summary>
+    /// Executes the query selecting only the specified columns.
+    /// </summary>
+    List<IDictionary<string, object?>> SelectPartial(string columns);
+
+    /// <summary>
+    /// Returns the first partial result or throws if empty.
+    /// </summary>
+    IDictionary<string, object?> SelectPartialFirst(string columns);
+
+    /// <summary>
+    /// Returns the first partial result, or null if empty.
+    /// </summary>
+    IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns);
+
+    /// <summary>
+    /// Returns the single partial result or throws if not exactly one.
+    /// </summary>
+    IDictionary<string, object?> SelectPartialSingle(string columns);
+
+    /// <summary>
+    /// Returns the single partial result, or null if empty. Throws if more than one.
+    /// </summary>
+    IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns);
+
+    // --- Async Operations ---
+
+    /// <summary>
+    /// Executes the query asynchronously and returns the primary entity.
+    /// </summary>
+    Task<List<T1>> SelectAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the query asynchronously and returns all four entities as tuples.
+    /// </summary>
+    Task<List<(T1, T2, T3, T4)>> SelectAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result asynchronously or throws if empty.
+    /// </summary>
+    Task<T1> SelectFirstAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result asynchronously, or default if empty.
+    /// </summary>
+    Task<T1?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the count of rows asynchronously.
+    /// </summary>
+    Task<int> CountAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the count of rows as long asynchronously.
+    /// </summary>
+    Task<long> LongCountAsync(CancellationToken cancellationToken = default);
+
+    // --- SELECT PARTIAL Async Operations ---
+
+    /// <summary>
+    /// Executes the query asynchronously selecting only the specified columns.
+    /// </summary>
+    Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first partial result asynchronously or throws if empty.
+    /// </summary>
+    Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first partial result asynchronously, or null if empty.
+    /// </summary>
+    Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
 }

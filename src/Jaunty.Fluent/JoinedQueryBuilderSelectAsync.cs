@@ -18,7 +18,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string sql = BuildSelectSql(columns);
 
         return _connection is DbConnection dbConn
-            ? await dbConn.QueryPartialAsync<TFrom>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            ? await dbConn.QueryPartialAsync<TFrom>(sql, _parameters?.ToParameterObject(), cancellationToken).ConfigureAwait(false)
             : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
@@ -65,7 +65,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string sql = BuildSelectSql(columns) + " LIMIT 1";
 
         return _connection is DbConnection dbConn
-            ? await dbConn.QueryPartialFirstAsync<TFrom>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            ? await dbConn.QueryPartialFirstAsync<TFrom>(sql, _parameters?.ToParameterObject(), cancellationToken).ConfigureAwait(false)
             : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
