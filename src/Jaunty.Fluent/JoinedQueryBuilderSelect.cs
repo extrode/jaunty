@@ -1,5 +1,7 @@
 using System.Data;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
