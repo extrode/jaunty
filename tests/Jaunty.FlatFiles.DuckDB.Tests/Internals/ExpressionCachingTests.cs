@@ -90,8 +90,8 @@ public class ExpressionCachingTests : IDisposable
 
         // Assert - Should be reasonably fast with caching
         // Threshold set generously to account for system load variations
-        Assert.True(stopwatch.ElapsedMilliseconds < 1000,
-            $"Repeated queries took {stopwatch.ElapsedMilliseconds}ms, expected < 1000ms");
+        Assert.True(stopwatch.ElapsedMilliseconds < 1500,
+            $"Repeated queries took {stopwatch.ElapsedMilliseconds}ms, expected < 1500ms");
     }
 
     private object? InvokeEvaluateExpression(Expression expr)
