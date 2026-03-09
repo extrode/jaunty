@@ -35,7 +35,7 @@ public partial class Linq2DbProduct
 public class BenchmarkDb : DataConnection
 {
     public BenchmarkDb(DbConnection connection, DatabaseProvider provider)
-        : base(GetDataProvider(provider, connection), connection, disposeConnection: false)
+        : base(new DataOptions().UseConnection(GetDataProvider(provider, connection), connection, disposeConnection: false))
     {
     }
 
