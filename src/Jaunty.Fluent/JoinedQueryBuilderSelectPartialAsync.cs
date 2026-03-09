@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 
 namespace Jaunty.Fluent;
 
@@ -11,7 +12,34 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string columns,
         CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() => SelectPartial(columns), cancellationToken).ConfigureAwait(false);
+        string sql = BuildPartialSelectSql(columns);
+        var results = new List<IDictionary<string, object?>>();
+
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
+        await using DbCommand command = dbConn.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = dbConn.State == ConnectionState.Closed;
+        if (wasClosed)
+            await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                results.Add(MapToDictionary(reader));
+        }
+        finally
+        {
+            if (wasClosed)
+                await dbConn.CloseAsync().ConfigureAwait(false);
+        }
+
+        return results;
     }
 
     public async Task<List<T>> SelectPartialAsync<T>(
@@ -19,14 +47,67 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() => SelectPartial(columns, mapper), cancellationToken).ConfigureAwait(false);
+        string sql = BuildPartialSelectSql(columns);
+        var results = new List<T>();
+
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
+        await using DbCommand command = dbConn.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = dbConn.State == ConnectionState.Closed;
+        if (wasClosed)
+            await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                results.Add(mapper(reader));
+        }
+        finally
+        {
+            if (wasClosed)
+                await dbConn.CloseAsync().ConfigureAwait(false);
+        }
+
+        return results;
     }
 
     public async Task<IDictionary<string, object?>> SelectPartialFirstAsync(
         string columns,
         CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() => SelectPartialFirst(columns), cancellationToken).ConfigureAwait(false);
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+
+        if (_connection is DbConnection dbConn)
+        {
+            await using DbCommand command = dbConn.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (wasClosed)
+                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+                if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    return MapToDictionary(reader);
+            }
+            finally
+            {
+                if (wasClosed)
+                    await dbConn.CloseAsync().ConfigureAwait(false);
+            }
+        }
+
+        return null;
     }
 
     public async Task<T> SelectPartialFirstAsync<T>(
@@ -34,14 +115,66 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() => SelectPartialFirst(columns, mapper), cancellationToken).ConfigureAwait(false);
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+
+        if (_connection is DbConnection dbConn)
+        {
+            await using DbCommand command = dbConn.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (wasClosed)
+                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+                if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    return mapper(reader);
+            }
+            finally
+            {
+                if (wasClosed)
+                    await dbConn.CloseAsync().ConfigureAwait(false);
+            }
+        }
+
+        throw new InvalidOperationException("Sequence contains no elements.");
     }
 
     public async Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(
         string columns,
         CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() => SelectPartialFirstOrDefault(columns), cancellationToken).ConfigureAwait(false);
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+
+        if (_connection is DbConnection dbConn)
+        {
+            await using DbCommand command = dbConn.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (wasClosed)
+                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+                if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    return MapToDictionary(reader);
+            }
+            finally
+            {
+                if (wasClosed)
+                    await dbConn.CloseAsync().ConfigureAwait(false);
+            }
+        }
+
+        return null;
     }
 
     public async Task<T?> SelectPartialFirstOrDefaultAsync<T>(
@@ -49,14 +182,73 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() => SelectPartialFirstOrDefault(columns, mapper), cancellationToken).ConfigureAwait(false);
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+
+        if (_connection is DbConnection dbConn)
+        {
+            await using DbCommand command = dbConn.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (wasClosed)
+                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+                if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    return mapper(reader);
+            }
+            finally
+            {
+                if (wasClosed)
+                    await dbConn.CloseAsync().ConfigureAwait(false);
+            }
+        }
+
+        return default;
     }
 
     public async Task<IDictionary<string, object?>> SelectPartialSingleAsync(
         string columns,
         CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() => SelectPartialSingle(columns), cancellationToken).ConfigureAwait(false);
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        IDictionary<string, object?>? result = null;
+        int count = 0;
+
+        if (_connection is DbConnection dbConn)
+        {
+            await using DbCommand command = dbConn.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (wasClosed)
+                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    count++;
+                    if (count > 1)
+                        throw new InvalidOperationException("Sequence contains more than one element.");
+                    result = MapToDictionary(reader);
+                }
+            }
+            finally
+            {
+                if (wasClosed)
+                    await dbConn.CloseAsync().ConfigureAwait(false);
+            }
+        }
+
+        return result ?? throw new InvalidOperationException("Sequence contains no elements.");
     }
 
     public async Task<T> SelectPartialSingleAsync<T>(
@@ -64,14 +256,80 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() => SelectPartialSingle(columns, mapper), cancellationToken).ConfigureAwait(false);
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        T? result = default;
+        int count = 0;
+
+        if (_connection is DbConnection dbConn)
+        {
+            await using DbCommand command = dbConn.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (wasClosed)
+                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    count++;
+                    if (count > 1)
+                        throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.");
+                    result = mapper(reader);
+                }
+            }
+            finally
+            {
+                if (wasClosed)
+                    await dbConn.CloseAsync().ConfigureAwait(false);
+            }
+        }
+
+        return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
     }
 
     public async Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(
         string columns,
         CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() => SelectPartialSingleOrDefault(columns), cancellationToken).ConfigureAwait(false);
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        IDictionary<string, object?>? result = null;
+        int count = 0;
+
+        if (_connection is DbConnection dbConn)
+        {
+            await using DbCommand command = dbConn.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (wasClosed)
+                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    count++;
+                    if (count > 1)
+                        throw new InvalidOperationException("Sequence contains more than one element.");
+                    result = MapToDictionary(reader);
+                }
+            }
+            finally
+            {
+                if (wasClosed)
+                    await dbConn.CloseAsync().ConfigureAwait(false);
+            }
+        }
+
+        return result;
     }
 
     public async Task<T?> SelectPartialSingleOrDefaultAsync<T>(
@@ -79,6 +337,39 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() => SelectPartialSingleOrDefault(columns, mapper), cancellationToken).ConfigureAwait(false);
+        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        T? result = default;
+        int count = 0;
+
+        if (_connection is DbConnection dbConn)
+        {
+            await using DbCommand command = dbConn.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            bool wasClosed = dbConn.State == ConnectionState.Closed;
+            if (wasClosed)
+                await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    count++;
+                    if (count > 1)
+                        throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.");
+                    result = mapper(reader);
+                }
+            }
+            finally
+            {
+                if (wasClosed)
+                    await dbConn.CloseAsync().ConfigureAwait(false);
+            }
+        }
+
+        return result;
     }
 }
