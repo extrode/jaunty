@@ -16,7 +16,7 @@ namespace Jaunty.Fluent;
 /// <summary>
 /// Query builder for joined queries. Implements IJoinedQuery.
 /// </summary>
-internal sealed class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : new()
+internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : new()
 {
     private readonly IDbConnection _connection;
     private readonly ISqlDialect _dialect;
