@@ -1,15 +1,9 @@
 using System.Data;
-using System.Data.Common;
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 using Jaunty.Dialects;
-using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
-using Jaunty.Internals.Enums;
-using Jaunty.Internals.Read;
 
 namespace Jaunty.Fluent;
 
@@ -57,13 +51,11 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal IDbConnection Connection => _connection;
     internal List<JoinInfo> Joins => _joins;
 
-    public IJoinClause<TFrom, TJoin, T3> InnerJoin<T3>(string? alias = null)
-        where T3 : new() =>
-        new JoinClause3Builder<TFrom, TJoin, T3>(this, JoinType.Inner, alias);
+    public IJoinClause<TFrom, TJoin, T3> InnerJoin<T3>(string? alias = null) where T3 : new()
+        => new JoinClause3Builder<TFrom, TJoin, T3>(this, JoinType.Inner, alias);
 
-    public IJoinClause<TFrom, TJoin, T3> LeftJoin<T3>(string? alias = null)
-        where T3 : new() =>
-        new JoinClause3Builder<TFrom, TJoin, T3>(this, JoinType.Left, alias);
+    public IJoinClause<TFrom, TJoin, T3> LeftJoin<T3>(string? alias = null) where T3 : new()
+        => new JoinClause3Builder<TFrom, TJoin, T3>(this, JoinType.Left, alias);
 
     internal void AddJoin(JoinInfo join) => _joins.Add(join);
 
@@ -81,7 +73,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         var result = new string[columns.Count];
         string prefix = alias ?? metadata.TableName;
 
-        for (var i = 0; i < columns.Count; i++)
+        for (int i = 0; i < columns.Count; i++)
         {
             string escaped = _dialect.EscapeColumnName(columns[i].ColumnName);
             result[i] = $"{prefix}.{escaped}";
@@ -96,7 +88,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         var result = new string[columns.Count];
         string prefix = tableAlias ?? metadata.TableName;
 
-        for (var i = 0; i < columns.Count; i++)
+        for (int i = 0; i < columns.Count; i++)
         {
             string colName = columns[i].ColumnName;
             string escaped = _dialect.EscapeColumnName(colName);
@@ -183,7 +175,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         var entity = new TEntity();
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
 
-        for (var i = 0; i < columns.Count; i++)
+        for (int i = 0; i < columns.Count; i++)
         {
             ColumnMetadata col = columns[i];
             string aliasName = $"{prefix}{col.ColumnName}";

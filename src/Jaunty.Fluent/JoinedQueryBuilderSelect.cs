@@ -1,11 +1,8 @@
 using System.Data;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
-using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
 using Jaunty.Internals.Read;
 
@@ -40,11 +37,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return SelectWithMapping<T>(MappingMode.Strict);
     }
 
-    public List<T> Select<T>(Func<IDataReader, T> mapper) =>
-        SelectWithMapper(mapper);
+    public List<T> Select<T>(Func<IDataReader, T> mapper) => SelectWithMapper(mapper);
 
-    public List<(TFrom From, TJoin Joined)> SelectBoth() =>
-        SelectBothInternal();
+    public List<(TFrom From, TJoin Joined)> SelectBoth() => SelectBothInternal();
 
     public List<(T1, T2)> Select<T1, T2>()
         where T1 : new()
