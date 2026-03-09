@@ -1,0 +1,390 @@
+using System.Data;
+using System.Linq.Expressions;
+
+using Jaunty.Fluent.Expressions;
+using Jaunty.Fluent.Internals;
+using Jaunty.Internals.Entity;
+using Jaunty.Internals.Enums;
+using Jaunty.Internals.Read;
+
+namespace Jaunty.Fluent;
+
+/// <summary>
+/// Select operations for 2-table joins.
+/// </summary>
+internal partial class JoinedQueryBuilder<TFrom, TJoin>
+{
+    public List<TFrom> Select()
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+        return _connection.QueryPartial<TFrom>(sql, _parameters.ToParameterObject());
+    }
+
+    public List<T> Select<T>() where T : new()
+    {
+        if (typeof(T) == typeof(TFrom))
+        {
+            List<TFrom> result = Select();
+            return Unsafe.As<List<TFrom>, List<T>>(ref result);
+        }
+
+        if (typeof(T) == typeof(TJoin))
+        {
+            List<TJoin> result = SelectJoined();
+            return Unsafe.As<List<TJoin>, List<T>>(ref result);
+        }
+
+        return SelectWithMapping<T>(MappingMode.Strict);
+    }
+
+    public List<T> Select<T>(Func<IDataReader, T> mapper) =>
+        SelectWithMapper(mapper);
+
+    public List<(TFrom From, TJoin Joined)> SelectBoth() =>
+        SelectBothInternal();
+
+    public List<(T1, T2)> Select<T1, T2>()
+        where T1 : new()
+        where T2 : new()
+    {
+        if (typeof(T1) != typeof(TFrom))
+            throw new ArgumentException($"T1 must be {typeof(TFrom).Name}, got {typeof(T1).Name}", nameof(T1));
+
+        if (typeof(T2) != typeof(TJoin))
+            throw new ArgumentException($"T2 must be {typeof(TJoin).Name}, got {typeof(T2).Name}", nameof(T2));
+
+        List<(TFrom From, TJoin Joined)> result = SelectBothInternal();
+        return Unsafe.As<List<(TFrom, TJoin)>, List<(T1, T2)>>(ref result);
+    }
+
+    public TFrom SelectFirst()
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        return _connection.QueryPartialFirst<TFrom>(sql, _parameters.ToParameterObject());
+    }
+
+    public TFrom? SelectFirstOrDefault()
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject());
+    }
+
+    public T SelectFirst<T>() where T : new()
+    {
+        if (typeof(T) == typeof(TFrom))
+        {
+            TFrom? result = SelectFirst();
+            return Unsafe.As<TFrom, T>(ref result);
+        }
+
+        if (typeof(T) == typeof(TJoin))
+        {
+            TJoin? result = SelectFirstJoined();
+            return Unsafe.As<TJoin, T>(ref result);
+        }
+
+        List<T> results = SelectWithMapping<T>(MappingMode.Strict, limit: 1);
+        if (results.Count == 0)
+            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+
+        return results[0];
+    }
+
+    public T SelectFirst<T>(Func<IDataReader, T> mapper)
+    {
+        List<T> results = SelectWithMapper(mapper, limit: 1);
+        if (results.Count == 0)
+            throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+
+        return results[0];
+    }
+
+    public T? SelectFirstOrDefault<T>() where T : new()
+    {
+        if (typeof(T) == typeof(TFrom))
+        {
+            TFrom? result = SelectFirstOrDefault();
+            return Unsafe.As<TFrom?, T?>(ref result);
+        }
+
+        if (typeof(T) == typeof(TJoin))
+        {
+            TJoin? result = SelectFirstOrDefaultJoined();
+            return Unsafe.As<TJoin?, T?>(ref result);
+        }
+
+        List<T> results = SelectWithMapping<T>(MappingMode.Strict, limit: 1);
+        return results.Count > 0 ? results[0] : default;
+    }
+
+    public T? SelectFirstOrDefault<T>(Func<IDataReader, T> mapper)
+    {
+        List<T> results = SelectWithMapper(mapper, limit: 1);
+        return results.Count > 0 ? results[0] : default;
+    }
+
+    public (TFrom From, TJoin Joined) SelectFirstBoth()
+    {
+        List<(TFrom From, TJoin Joined)> result = SelectBothInternal();
+        if (result.Count == 0)
+            throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(TFrom).Name}, {typeof(TJoin).Name})'.");
+
+        return result[0];
+    }
+
+    public int Count()
+    {
+        string sql = BuildCountSql();
+        return _connection.QueryScalar<int>(sql, _parameters.ToParameterObject());
+    }
+
+    public long LongCount()
+    {
+        string sql = BuildCountSql();
+        return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject());
+    }
+
+    public string ToSql()
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        return BuildSelectSql(columns);
+    }
+
+    private List<TJoin> SelectJoined()
+    {
+        string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        string sql = BuildSelectSql(columns);
+        return _connection.QueryPartial<TJoin>(sql, _parameters.ToParameterObject());
+    }
+
+    private TJoin SelectFirstJoined()
+    {
+        string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        return _connection.QueryPartialFirst<TJoin>(sql, _parameters.ToParameterObject());
+    }
+
+    private TJoin? SelectFirstOrDefaultJoined()
+    {
+        string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
+        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        return _connection.QueryPartialFirstOrDefault<TJoin>(sql, _parameters.ToParameterObject());
+    }
+
+    private List<(TFrom From, TJoin Joined)> SelectBothInternal()
+    {
+        string[] fromColumns = GetPrefixedColumnsWithAlias(_fromMetadata, _fromAlias, "f_");
+        string[] joinColumns = GetPrefixedColumnsWithAlias(_joinMetadata, _joins[0].Alias, "j_");
+        string[] allColumns = fromColumns.Concat(joinColumns).ToArray();
+
+        string sql = BuildSelectSql(allColumns);
+        var results = new List<(TFrom, TJoin)>();
+
+        using IDbCommand command = _connection.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = _connection.State == ConnectionState.Closed;
+        if (wasClosed)
+            _connection.Open();
+
+        try
+        {
+            using IDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
+            {
+                TFrom? fromObj = MapEntity<TFrom>(_fromMetadata, reader, "f_");
+                TJoin? joinObj = MapEntity<TJoin>(_joinMetadata, reader, "j_");
+                results.Add((fromObj, joinObj));
+            }
+        }
+        finally
+        {
+            if (wasClosed)
+                _connection.Close();
+        }
+
+        return results;
+    }
+
+    private List<T> SelectWithMapping<T>(MappingMode mode, int? limit = null)
+        where T : new()
+    {
+        string sql = BuildSelectAllColumnsSql();
+        if (limit.HasValue)
+            sql += $" LIMIT {limit.Value}";
+
+        var results = new List<T>();
+
+        using IDbCommand command = _connection.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = _connection.State == ConnectionState.Closed;
+        if (wasClosed)
+            _connection.Open();
+
+        try
+        {
+            using IDataReader reader = command.ExecuteReader();
+            Func<IDataReader, T> mapper = DrDispatcher.Resolve<T>(reader, default, mode);
+
+            while (reader.Read())
+                results.Add(mapper(reader));
+        }
+        finally
+        {
+            if (wasClosed)
+                _connection.Close();
+        }
+
+        return results;
+    }
+
+    private List<T> SelectWithMapper<T>(Func<IDataReader, T> mapper, int? limit = null)
+    {
+        string sql = BuildSelectAllColumnsSql();
+        if (limit.HasValue)
+            sql += $" LIMIT {limit.Value}";
+
+        var results = new List<T>();
+
+        using IDbCommand command = _connection.CreateCommand();
+        command.CommandText = sql;
+        BindParameters(command);
+
+        bool wasClosed = _connection.State == ConnectionState.Closed;
+        if (wasClosed)
+            _connection.Open();
+
+        try
+        {
+            using IDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
+                results.Add(mapper(reader));
+        }
+        finally
+        {
+            if (wasClosed)
+                _connection.Close();
+        }
+
+        return results;
+    }
+
+    private string BuildSelectAllColumnsSql()
+    {
+        var sb = new StringBuilder(256);
+        sb.Append("SELECT *");
+
+        sb.Append(" FROM ");
+        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
+
+        if (_fromAlias is not null)
+        {
+            sb.Append(' ');
+            sb.Append(_fromAlias);
+        }
+
+        foreach (JoinInfo join in _joins)
+        {
+            sb.Append(' ');
+            sb.Append(join.JoinKeyword);
+            sb.Append(' ');
+            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
+
+            if (join.Alias is not null)
+            {
+                sb.Append(' ');
+                sb.Append(join.Alias);
+            }
+
+            sb.Append(" ON ");
+            sb.Append(join.OnCondition);
+        }
+
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+
+            for (var i = 0; i < _conditions.Count; i++)
+            {
+                WhereCondition condition = _conditions[i];
+                if (i > 0)
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                sb.Append(condition.Sql);
+            }
+        }
+
+        if (_orderByColumns.Count > 0)
+        {
+            sb.Append(" ORDER BY ");
+
+            for (var i = 0; i < _orderByColumns.Count; i++)
+            {
+                if (i > 0)
+                    sb.Append(", ");
+
+                OrderByColumn orderBy = _orderByColumns[i];
+                sb.Append(orderBy.ColumnName);
+
+                if (orderBy.Descending)
+                    sb.Append(" DESC");
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private string BuildCountSql()
+    {
+        var sb = new StringBuilder(128);
+        sb.Append("SELECT COUNT(*)");
+
+        sb.Append(" FROM ");
+        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
+
+        if (_fromAlias is not null)
+        {
+            sb.Append(' ');
+            sb.Append(_fromAlias);
+        }
+
+        foreach (JoinInfo join in _joins)
+        {
+            sb.Append(' ');
+            sb.Append(join.JoinKeyword);
+            sb.Append(' ');
+            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
+
+            if (join.Alias is not null)
+            {
+                sb.Append(' ');
+                sb.Append(join.Alias);
+            }
+
+            sb.Append(" ON ");
+            sb.Append(join.OnCondition);
+        }
+
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+
+            for (var i = 0; i < _conditions.Count; i++)
+            {
+                WhereCondition condition = _conditions[i];
+                if (i > 0)
+                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
+                sb.Append(condition.Sql);
+            }
+        }
+
+        return sb.ToString();
+    }
+}
