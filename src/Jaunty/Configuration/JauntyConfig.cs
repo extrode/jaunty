@@ -1,7 +1,9 @@
-namespace Jaunty.Configuration;
 
 using System.Data;
-using System.Data.Common;
+
+using Jaunty.Internals.Enums;
+
+namespace Jaunty.Configuration;
 
 /// <summary>
 /// Provides global configuration options for Jaunty's entity-to-database mapping behavior.
@@ -11,8 +13,8 @@ public static class JauntyConfig
     private static Func<Type, string>? _schemaNameResolver;
     private static Func<Type, string>? _tableNameResolver;
     private static Func<string, string>? _columnNameResolver;
-    private static Action<string, object?>? _logger;
-    private static Func<Type, global::Jaunty.Internals.Enums.MappingMode, object>? _reflectionMapperResolver;
+    private static Action<string, object>? _logger;
+    private static Func<Type, MappingMode, object>? _reflectionMapperResolver;
     private static Func<Type, IDataReader, object>? _specialTypeMapperResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionInsertBinderResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionUpdateBinderResolver;
@@ -93,7 +95,7 @@ public static class JauntyConfig
     /// Typically provided by Jaunty.Extensions.Reflection.
     /// Returns a Func&lt;IDataReader, T&gt; or Func&lt;DbDataReader, T&gt; cast to object.
     /// </summary>
-    public static Func<Type, global::Jaunty.Internals.Enums.MappingMode, object>? ReflectionMapperResolver
+    public static Func<Type, MappingMode, object>? ReflectionMapperResolver
     {
         get => _reflectionMapperResolver;
         set => _reflectionMapperResolver = value;
@@ -143,7 +145,7 @@ public static class JauntyConfig
     /// Typically provided by Jaunty.Extensions.Reflection.SpecialTypeMappers.Register().
     /// Returns a Func&lt;IDataReader, object&gt; that creates the special type instance.
     /// </summary>
-    public static Func<Type, IDataReader, object>? SpecialTypeMapperResolver
+    public static Func<Type, IDataReader, object?>? SpecialTypeMapperResolver
     {
         get => _specialTypeMapperResolver;
         set => _specialTypeMapperResolver = value;

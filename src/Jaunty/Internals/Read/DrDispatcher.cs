@@ -39,9 +39,9 @@ internal static class DrDispatcher
 
     private static Func<IDataReader, T>? TryResolveSpecialTypeFromExtension<T>(IDataReader reader) where T : new()
     {
-        if (JauntyConfig.SpecialTypeMapperResolver?.Invoke(typeof(T), reader) is Func<IDataReader, object> extensionMapper)
+        if (JauntyConfig.SpecialTypeMapperResolver?.Invoke(typeof(T), reader) is Func<IDataReader, object?> extensionMapper)
         {
-            return reader => (T)extensionMapper(reader);
+            return reader => (T)(extensionMapper(reader) ?? throw new InvalidOperationException("SpecialTypeMapperResolver returned null"));
         }
         return null;
     }
