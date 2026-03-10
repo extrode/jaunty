@@ -10,6 +10,7 @@ namespace Jaunty.Tests.Integration.Write;
 public class InsertTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
+    private const string TableName = "bulk_test_insert";
 
     public InsertTests(DialectFixture fixture)
     {
@@ -19,7 +20,7 @@ public class InsertTests : IClassFixture<DialectFixture>
     private static int GetRowCount(System.Data.IDbConnection connection)
     {
         using var cmd = connection.CreateCommand();
-        cmd.CommandText = "SELECT COUNT(*) FROM bulk_test";
+        cmd.CommandText = $"SELECT COUNT(*) FROM {TableName}";
         return Convert.ToInt32(cmd.ExecuteScalar());
     }
 
@@ -31,7 +32,7 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void Insert_SingleEntity_ReturnsIdentity(DialectInfo dialect)
     {
-        using var ctx = _fixture.GetWriteContext(dialect);
+        using var ctx = _fixture.GetWriteContext(dialect, TableName);
         var entity = new BulkTestEntity { Name = "Test1", Value = 100 };
 
         long id = ctx.Connection.Insert(entity);
@@ -48,7 +49,7 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void Insert_MultipleEntities_ReturnsIncrementingIds(DialectInfo dialect)
     {
-        using var ctx = _fixture.GetWriteContext(dialect);
+        using var ctx = _fixture.GetWriteContext(dialect, TableName);
         var entity1 = new BulkTestEntity { Name = "Test1", Value = 100 };
         var entity2 = new BulkTestEntity { Name = "Test2", Value = 200 };
 
@@ -68,7 +69,7 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void Insert_WithCommandOptions_Works(DialectInfo dialect)
     {
-        using var ctx = _fixture.GetWriteContext(dialect);
+        using var ctx = _fixture.GetWriteContext(dialect, TableName);
         using var transaction = ctx.Connection.BeginTransaction();
         var entity = new BulkTestEntity { Name = "Test1", Value = 100 };
 
@@ -87,7 +88,7 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void Insert_WithTransaction_RollbackDiscardsData(DialectInfo dialect)
     {
-        using var ctx = _fixture.GetWriteContext(dialect);
+        using var ctx = _fixture.GetWriteContext(dialect, TableName);
         using var transaction = ctx.Connection.BeginTransaction();
         var entity = new BulkTestEntity { Name = "Test1", Value = 100 };
 
@@ -105,7 +106,7 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void Insert_IEntityNonGeneric_SetsIdAfterInsert(DialectInfo dialect)
     {
-        using var ctx = _fixture.GetWriteContext(dialect);
+        using var ctx = _fixture.GetWriteContext(dialect, TableName);
         var entity = new IEntityTestEntity { Name = "TestIEntity", Value = 42 };
 
         long id = ctx.Connection.Insert(entity);
@@ -122,7 +123,7 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void Insert_ExplicitlyProvidedId_IsIgnored(DialectInfo dialect)
     {
-        using var ctx = _fixture.GetWriteContext(dialect);
+        using var ctx = _fixture.GetWriteContext(dialect, TableName);
         var entity = new BulkTestEntity { Id = 999, Name = "ProvidedIdTest", Value = 123 };
 
         long id = ctx.Connection.Insert(entity);
@@ -134,7 +135,7 @@ public class InsertTests : IClassFixture<DialectFixture>
 
         // Verify the inserted entity has the generated ID
         var insertedEntity = ctx.Connection.QueryFirst<BulkTestEntity>(
-            "SELECT id AS Id, name AS Name, value AS Value FROM bulk_test WHERE id = @Id",
+            $"SELECT id AS Id, name AS Name, value AS Value FROM {TableName} WHERE id = @Id",
             new { Id = id });
 
         Assert.Equal(id, insertedEntity.Id);
@@ -149,7 +150,7 @@ public class InsertTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void Insert_NullEntity_ThrowsArgumentNullException(DialectInfo dialect)
     {
-        using var ctx = _fixture.GetWriteContext(dialect);
+        using var ctx = _fixture.GetWriteContext(dialect, TableName);
         Assert.Throws<ArgumentNullException>(() => ctx.Connection.Insert<BulkTestEntity>(null));
     }
 }
