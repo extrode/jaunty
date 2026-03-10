@@ -7,6 +7,7 @@ namespace Jaunty.Tests.Integration.Write;
 /// <summary>
 /// Tests for transaction rollback behavior.
 /// </summary>
+[Collection("Write Operations")]
 public class TransactionRollbackTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;

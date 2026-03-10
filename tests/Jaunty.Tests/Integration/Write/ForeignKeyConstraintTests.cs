@@ -8,6 +8,7 @@ namespace Jaunty.Tests.Integration.Write;
 /// <summary>
 /// Tests for foreign key constraint handling and BulkInsertIgnoreConstraints.
 /// </summary>
+[Collection("Write Operations")]
 public class ForeignKeyConstraintTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;

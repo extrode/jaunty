@@ -5,6 +5,7 @@ using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
+[Collection("Write Operations")]
 public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;

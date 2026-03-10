@@ -6,6 +6,7 @@ namespace Jaunty.Tests.Integration.Write;
 /// <summary>
 /// Tests for empty collection handling in bulk operations.
 /// </summary>
+[Collection("Write Operations")]
 public class BulkEmptyCollectionTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
