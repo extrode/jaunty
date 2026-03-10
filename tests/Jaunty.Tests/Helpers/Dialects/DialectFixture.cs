@@ -16,35 +16,8 @@ namespace Jaunty.Tests.Helpers.Dialects;
 
 public sealed class DialectFixture : IDisposable
 {
-    // Global lock to serialize write operations across all test classes
-    internal static readonly SemaphoreSlim _writeLock = new(1, 1);
     private static readonly object SqlServerCompatLock = new();
     private static bool _sqlServerCompatInitialized;
-
-    /// <summary>
-    /// Disposable wrapper that holds the write lock for the duration of a test.
-    /// </summary>
-    public sealed class WriteLockContext : IDisposable
-    {
-        public WriteLockContext()
-        {
-            _writeLock.Wait();
-        }
-
-        public void Dispose()
-        {
-            _writeLock.Release();
-        }
-    }
-
-    /// <summary>
-    /// Acquires the global write lock for the duration of the returned context.
-    /// Use in a 'using' statement to serialize test execution.
-    /// </summary>
-    public static WriteLockContext AcquireWriteLock()
-    {
-        return new WriteLockContext();
-    }
 
     public IDbConnection GetClosedConnection(DialectInfo dialect)
     {
@@ -214,89 +187,77 @@ END;
 
     #region Write Context Support
 
-    public WriteDialectContext GetWriteContext(DialectInfo dialect, string? tableName = null)
+    public WriteDialectContext GetWriteContext(DialectInfo dialect)
     {
-        _writeLock.Wait();
-        try
+        return dialect.Provider switch
         {
-            return dialect.Provider switch
-            {
-                DialectProvider.SystemSqlite => CreateSystemSqliteContext(tableName),
+            DialectProvider.SystemSqlite => CreateSystemSqliteContext(),
 #if NET8_0_OR_GREATER
-                DialectProvider.MicrosoftSqlite => CreateMicrosoftSqliteContext(tableName),
+            DialectProvider.MicrosoftSqlite => CreateMicrosoftSqliteContext(),
 #else
-                DialectProvider.MicrosoftSqlite => throw new NotSupportedException("Microsoft.Data.Sqlite is not available on .NET Framework."),
+            DialectProvider.MicrosoftSqlite => throw new NotSupportedException("Microsoft.Data.Sqlite is not available on .NET Framework."),
 #endif
-                DialectProvider.SqlServer => CreateServerContext(new SqlConnection(TestConfiguration.SqlServerConnectionString), DialectProvider.SqlServer, tableName),
-                DialectProvider.Postgres => CreateServerContext(new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString), DialectProvider.Postgres, tableName),
-                DialectProvider.MariaDb => CreateServerContext(new MySqlConnection(TestConfiguration.MariaDbConnectionString), DialectProvider.MariaDb, tableName),
-                _ => throw new InvalidOperationException($"Unsupported dialect provider: {dialect.Provider}")
-            };
-        }
-        catch
-        {
-            _writeLock.Release();
-            throw;
-        }
+            DialectProvider.SqlServer => CreateServerContext(new SqlConnection(TestConfiguration.SqlServerConnectionString), DialectProvider.SqlServer),
+            DialectProvider.Postgres => CreateServerContext(new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString), DialectProvider.Postgres),
+            DialectProvider.MariaDb => CreateServerContext(new MySqlConnection(TestConfiguration.MariaDbConnectionString), DialectProvider.MariaDb),
+            _ => throw new InvalidOperationException($"Unsupported dialect provider: {dialect.Provider}")
+        };
     }
 
-    private static WriteDialectContext CreateSystemSqliteContext(string? tableName = null)
+    private static WriteDialectContext CreateSystemSqliteContext()
     {
         var connection = new SQLiteConnection("Data Source=:memory:");
         connection.Open();
-        InitializeBulkSchema(connection, DialectProvider.SystemSqlite, tableName);
-        return new WriteDialectContext(connection, transaction: null, DialectProvider.SystemSqlite, tableName);
+        InitializeBulkSchema(connection, DialectProvider.SystemSqlite);
+        return new WriteDialectContext(connection, transaction: null);
     }
 
 #if NET8_0_OR_GREATER
-    private static WriteDialectContext CreateMicrosoftSqliteContext(string? tableName = null)
+    private static WriteDialectContext CreateMicrosoftSqliteContext()
     {
         var connection = new SqliteConnection("Data Source=:memory:");
         connection.Open();
-        InitializeBulkSchema(connection, DialectProvider.MicrosoftSqlite, tableName);
-        return new WriteDialectContext(connection, transaction: null, DialectProvider.MicrosoftSqlite, tableName);
+        InitializeBulkSchema(connection, DialectProvider.MicrosoftSqlite);
+        return new WriteDialectContext(connection, transaction: null);
     }
 #endif
 
-    private static WriteDialectContext CreateServerContext(DbConnection connection, DialectProvider provider, string? tableName = null)
+    private static WriteDialectContext CreateServerContext(DbConnection connection, DialectProvider provider)
     {
         connection.Open();
-        InitializeBulkSchema(connection, provider, tableName);
-        return new WriteDialectContext(connection, transaction: null, provider, tableName);
+        InitializeBulkSchema(connection, provider);
+        return new WriteDialectContext(connection, transaction: null);
     }
 
-    private static void InitializeBulkSchema(IDbConnection connection, DialectProvider provider, string? tableName = null)
+    private static void InitializeBulkSchema(IDbConnection connection, DialectProvider provider)
     {
-        tableName ??= "bulk_test";
-        var escapedTableName = EscapeTableName(tableName, provider);
-        
         using var cmd = connection.CreateCommand();
         cmd.CommandText = provider switch
         {
-            DialectProvider.SqlServer => $@"
-            IF OBJECT_ID('{escapedTableName}', 'U') IS NOT NULL DROP TABLE {escapedTableName};
-            CREATE TABLE {escapedTableName} (
+            DialectProvider.SqlServer => @"
+            IF OBJECT_ID('dbo.bulk_test', 'U') IS NOT NULL DROP TABLE dbo.bulk_test;
+            CREATE TABLE dbo.bulk_test (
                 id BIGINT IDENTITY(1,1) PRIMARY KEY,
                 name NVARCHAR(255) NOT NULL,
                 value INT NOT NULL
             );",
-            DialectProvider.Postgres => $@"
-            DROP TABLE IF EXISTS {escapedTableName};
-            CREATE TABLE {escapedTableName} (
+            DialectProvider.Postgres => @"
+            DROP TABLE IF EXISTS bulk_test;
+            CREATE TABLE bulk_test (
                 id BIGSERIAL PRIMARY KEY,
                 name TEXT NOT NULL,
                 value INTEGER NOT NULL
             );",
-            DialectProvider.MariaDb => $@"
-            DROP TABLE IF EXISTS {escapedTableName};
-            CREATE TABLE {escapedTableName} (
+            DialectProvider.MariaDb => @"
+            DROP TABLE IF EXISTS bulk_test;
+            CREATE TABLE bulk_test (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 value INT NOT NULL
             );",
-            _ => $@"
-            DROP TABLE IF EXISTS {escapedTableName};
-            CREATE TABLE {escapedTableName} (
+            _ => @"
+            DROP TABLE IF EXISTS bulk_test;
+            CREATE TABLE bulk_test (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 value INTEGER NOT NULL
@@ -305,37 +266,22 @@ END;
         cmd.ExecuteNonQuery();
     }
 
-    private static string EscapeTableName(string tableName, DialectProvider provider)
-    {
-        return provider switch
-        {
-            DialectProvider.SqlServer => $"dbo.{tableName}",
-            DialectProvider.Postgres => $"\"{tableName}\"",
-            DialectProvider.MariaDb => $"`{tableName}`",
-            _ => $"\"{tableName}\""
-        };
-    }
-
     #endregion
 }
 
 public sealed class WriteDialectContext : IDisposable
 {
     private readonly IDbTransaction? _transaction;
-    private readonly DialectProvider? _provider;
-    private readonly string? _tableName;
     private bool _disposed;
 
     public IDbConnection Connection { get; }
 
     public CommandOptions CommandOptions { get; }
 
-    public WriteDialectContext(IDbConnection connection, IDbTransaction? transaction, DialectProvider? provider = null, string? tableName = null)
+    public WriteDialectContext(IDbConnection connection, IDbTransaction? transaction)
     {
         Connection = connection;
         _transaction = transaction;
-        _provider = provider;
-        _tableName = tableName;
         CommandOptions = transaction is null ? default : CommandOptions.WithTransaction(transaction);
     }
 
@@ -355,43 +301,9 @@ public sealed class WriteDialectContext : IDisposable
             // Ignore rollback failures during cleanup.
         }
 
-        // Drop the test table if using a unique table name
-        if (_provider.HasValue && !string.IsNullOrEmpty(_tableName) && _tableName != "bulk_test")
-        {
-            try
-            {
-                using var cmd = Connection.CreateCommand();
-                var escapedTable = EscapeTableName(_tableName!, _provider.Value);
-                cmd.CommandText = _provider.Value switch
-                {
-                    DialectProvider.SqlServer => $"IF OBJECT_ID('{escapedTable}', 'U') IS NOT NULL DROP TABLE {escapedTable};",
-                    DialectProvider.Postgres => $"DROP TABLE IF EXISTS {escapedTable};",
-                    DialectProvider.MariaDb => $"DROP TABLE IF EXISTS {escapedTable};",
-                    _ => $"DROP TABLE IF EXISTS {escapedTable};"
-                };
-                cmd.ExecuteNonQuery();
-            }
-            catch
-            {
-                // Ignore cleanup failures
-            }
-        }
-
         _transaction?.Dispose();
         Connection.Dispose();
         _disposed = true;
-        DialectFixture._writeLock.Release();
         GC.SuppressFinalize(this);
-    }
-
-    private static string EscapeTableName(string tableName, DialectProvider provider)
-    {
-        return provider switch
-        {
-            DialectProvider.SqlServer => $"dbo.{tableName}",
-            DialectProvider.Postgres => $"\"{tableName}\"",
-            DialectProvider.MariaDb => $"`{tableName}`",
-            _ => $"\"{tableName}\""
-        };
     }
 }
