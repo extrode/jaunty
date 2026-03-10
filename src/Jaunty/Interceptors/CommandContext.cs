@@ -21,13 +21,7 @@ public sealed class CommandContext
     /// <param name="commandType">The type of command being executed.</param>
     /// <param name="elapsed">The elapsed time for command execution, or <see cref="TimeSpan.Zero"/> if not yet executed.</param>
     /// <param name="exception">The exception that occurred, or null if execution was successful.</param>
-    public CommandContext(
-        string commandText,
-        object? parameters,
-        IDbConnection connection,
-        CommandType commandType,
-        TimeSpan elapsed = default,
-        Exception? exception = null)
+    public CommandContext(string commandText, object? parameters, IDbConnection connection, CommandType commandType, TimeSpan elapsed = default, Exception? exception = null)
     {
         CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
         Parameters = parameters;
@@ -47,7 +41,7 @@ public sealed class CommandContext
     /// </summary>
     /// <remarks>
     /// The actual parameter values are not exposed for security reasons.
-    /// Use <see cref="GetParameterNames"/> to inspect parameter names.
+    /// For parameter names, inspect the Parameters object directly (e.g., cast to IDictionary).
     /// </remarks>
     public object? Parameters { get; }
 

@@ -333,6 +333,191 @@ var items = connection.QueryPartial<OrderItem>(
 
 ---
 
+## Logging and Diagnostics
+
+Jaunty provides built-in command interception for logging, auditing, and custom diagnostics.
+
+### LoggingInterceptor
+
+Log SQL execution with configurable log levels, slow query detection, and parameter masking.
+
+```csharp
+using Microsoft.Extensions.Logging;
+using Jaunty.Interceptors;
+using Jaunty.Configuration;
+
+// Create logger factory
+var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+
+// Configure logging
+var loggingConfig = new LoggingConfiguration
+{
+    MinimumLogLevel = LogLevel.Information,
+    SlowQueryThreshold = TimeSpan.FromSeconds(1),
+    LogSql = true,
+    LogParameters = true,
+    SensitiveParameterNames = new HashSet<string> { "Password", "SSN", "CreditCard" }
+};
+
+// Create interceptor
+var loggingInterceptor = new LoggingInterceptor(
+    loggerFactory.CreateLogger<LoggingInterceptor>(),
+    loggingConfig);
+
+// Register with Jaunty
+JauntyConfig.InterceptorPipeline = new InterceptorPipeline(new[] { loggingInterceptor });
+```
+
+**Configuration Options**:
+- `MinimumLogLevel` - Minimum log level (default: `LogLevel.Information`)
+- `SlowQueryThreshold` - Threshold for slow query warnings (default: `TimeSpan.Zero` = disabled)
+- `LogSql` - Whether to log SQL command text (default: `true`)
+- `LogParameters` - Whether to log parameter values (default: `true`)
+- `SensitiveParameterNames` - Parameter names to mask in logs (default: empty)
+
+### AuditInterceptor
+
+Track command execution for compliance and troubleshooting without logging sensitive data.
+
+```csharp
+using Jaunty.Diagnostics;
+
+var auditInterceptor = new AuditInterceptor(maxRecords: 1000);
+JauntyConfig.InterceptorPipeline = new InterceptorPipeline(new[] { auditInterceptor });
+
+// Get recent audit records
+var recentCommands = auditInterceptor.GetRecentRecords(50);
+foreach (var record in recentCommands)
+{
+    Console.WriteLine($"{record.Timestamp}: {record.Phase} - {record.CommandText}");
+}
+
+// Clear audit log
+auditInterceptor.Clear();
+```
+
+**AuditRecord Properties**:
+- `Timestamp` - UTC timestamp
+- `Phase` - Executing, Executed, or Failed
+- `CommandText` - SQL command text
+- `CommandType` - Text, StoredProcedure, or TableDirect
+- `Database` - Database name
+- `ElapsedMilliseconds` - Execution duration
+- `Success` - Whether execution succeeded
+- `ExceptionType` / `ExceptionMessage` - Exception details on failure
+
+### DiagnosticSource Integration
+
+Jaunty emits events via `DiagnosticSource` for integration with OpenTelemetry, Application Insights, and other telemetry systems.
+
+```csharp
+using System.Diagnostics;
+using Jaunty.Diagnostics;
+
+// Subscribe to Jaunty events
+var listener = new DiagnosticListener("Jaunty");
+using var subscription = listener.Subscribe(new DiagnosticObserver());
+
+// Or use the singleton instance
+JauntyDiagnosticListener.Instance.Subscribe(new DiagnosticObserver());
+```
+
+**Event Names**:
+- `Jaunty.Database.Command.Executing` - Before command execution
+- `Jaunty.Database.Command.Executed` - After successful execution
+- `Jaunty.Database.Command.Failed` - When execution fails
+
+**Example Observer**:
+```csharp
+public class DiagnosticObserver : IObserver<KeyValuePair<string, object?>>
+{
+    public void OnNext(KeyValuePair<string, object?> evt)
+    {
+        switch (evt.Key)
+        {
+            case JauntyDiagnosticListener.CommandExecutingEventName:
+                var executing = (CommandExecutingPayload)evt.Value!;
+                Console.WriteLine($"Executing: {executing.CommandText}");
+                break;
+
+            case JauntyDiagnosticListener.CommandExecutedEventName:
+                var executed = (CommandExecutedPayload)evt.Value!;
+                Console.WriteLine($"Completed in {executed.ElapsedMilliseconds:F2}ms");
+                break;
+
+            case JauntyDiagnosticListener.CommandFailedEventName:
+                var failed = (CommandFailedPayload)evt.Value!;
+                Console.WriteLine($"Failed: {failed.ExceptionMessage}");
+                break;
+        }
+    }
+
+    public void OnError(Exception error) { }
+    public void OnCompleted() { }
+}
+```
+
+### Custom Interceptors
+
+Implement `ICommandInterceptor` for custom cross-cutting concerns.
+
+```csharp
+using Jaunty.Interceptors;
+
+public class TimingInterceptor : ICommandInterceptor
+{
+    public ValueTask OnCommandExecutingAsync(CommandContext context, CancellationToken ct)
+    {
+        // Record start time, add custom headers, etc.
+        return new ValueTask();
+    }
+
+    public ValueTask OnCommandExecutedAsync(CommandContext context, CancellationToken ct)
+    {
+        Console.WriteLine($"Query took {context.Elapsed.TotalMilliseconds:F2}ms");
+        return new ValueTask();
+    }
+
+    public ValueTask OnCommandFailedAsync(CommandContext context, Exception ex, CancellationToken ct)
+    {
+        Console.WriteLine($"Query failed: {ex.Message}");
+        return new ValueTask();
+    }
+}
+```
+
+**Interceptor Lifecycle**:
+1. `OnCommandExecutingAsync` - Called before command execution
+2. `OnCommandExecutedAsync` - Called after successful execution
+3. `OnCommandFailedAsync` - Called when execution fails
+
+### Dependency Injection
+
+Register interceptors with `IServiceCollection`:
+
+```csharp
+using Jaunty;
+
+var services = new ServiceCollection();
+
+// Add logging
+services.AddJauntyLogging(options =>
+{
+    options.MinimumLogLevel = LogLevel.Information;
+    options.SlowQueryThreshold = TimeSpan.FromSeconds(1);
+});
+
+// Add custom interceptors
+services.AddSingleton<TimingInterceptor>();
+services.AddSingleton<ICommandInterceptor>(sp => sp.GetRequiredService<TimingInterceptor>());
+
+// Apply interceptors after building the service provider
+var serviceProvider = services.BuildServiceProvider();
+serviceProvider.ApplyJauntyInterceptors();
+```
+
+---
+
 ## Global Configuration
 
 Configure naming conventions once at application startup. Resolution is cached per-type for performance.
