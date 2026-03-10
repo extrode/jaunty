@@ -1,0 +1,183 @@
+using System.Data;
+using System.Text;
+using Microsoft.Extensions.Logging;
+
+using Jaunty.Configuration;
+
+namespace Jaunty.Interceptors;
+
+/// <summary>
+/// An <see cref="ICommandInterceptor"/> that logs command execution using <see cref="ILogger"/>.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This interceptor provides comprehensive logging for Jaunty command execution including:
+/// </para>
+/// <list type="bullet">
+/// <item><description>SQL command text (configurable)</description></item>
+/// <item><description>Parameter values (with sensitive data masking)</description></item>
+/// <item><description>Execution duration</description></item>
+/// <item><description>Slow query detection and warning</description></item>
+/// <item><description>Exception details on failure</description></item>
+/// </list>
+/// <para>
+/// Sensitive parameter names are automatically masked based on <see cref="LoggingConfiguration.SensitiveParameterNames"/>.
+/// </para>
+/// </remarks>
+public sealed class LoggingInterceptor : ICommandInterceptor
+{
+    private readonly ILogger<LoggingInterceptor> _logger;
+    private readonly LoggingConfiguration _config;
+    private readonly bool _hasSlowQueryThreshold;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LoggingInterceptor"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance.</param>
+    /// <param name="config">Logging configuration options.</param>
+    public LoggingInterceptor(ILogger<LoggingInterceptor> logger, LoggingConfiguration? config = null)
+    {
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _config = config ?? new LoggingConfiguration();
+        _hasSlowQueryThreshold = _config.SlowQueryThreshold > TimeSpan.Zero;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LoggingInterceptor"/> class with default configuration.
+    /// </summary>
+    /// <param name="logger">The logger instance.</param>
+    public LoggingInterceptor(ILogger<LoggingInterceptor> logger)
+        : this(logger, null)
+    {
+    }
+
+    /// <inheritdoc/>
+    public ValueTask OnCommandExecutingAsync(CommandContext context, CancellationToken cancellationToken)
+    {
+        if (!_logger.IsEnabled(_config.MinimumLogLevel))
+            return new ValueTask();
+
+        if (_config.LogSql)
+        {
+            var parametersMessage = _config.LogParameters && context.Parameters is not null
+                ? FormatParameters(context.Parameters)
+                : string.Empty;
+
+            _logger.Log(
+                _config.MinimumLogLevel,
+                "Executing {CommandType}: {CommandText}{Parameters}",
+                GetCommandTypeDescription(context.CommandType),
+                context.CommandText,
+                string.IsNullOrEmpty(parametersMessage) ? string.Empty : " Parameters: " + parametersMessage);
+        }
+
+        return new ValueTask();
+    }
+
+    /// <inheritdoc/>
+    public ValueTask OnCommandExecutedAsync(CommandContext context, CancellationToken cancellationToken)
+    {
+        if (!_logger.IsEnabled(_config.MinimumLogLevel))
+            return new ValueTask();
+
+        var isSlow = _hasSlowQueryThreshold && context.Elapsed > _config.SlowQueryThreshold;
+        var level = isSlow ? LogLevel.Warning : _config.MinimumLogLevel;
+
+        if (!IsEnabledAtLevel(level))
+            return new ValueTask();
+
+        var message = new StringBuilder();
+        message.Append("Completed ");
+        message.Append(GetCommandTypeDescription(context.CommandType));
+        message.Append(" in ");
+        message.Append(context.Elapsed.TotalMilliseconds.ToString("F2"));
+        message.Append("ms");
+
+        if (isSlow)
+        {
+            message.Append(" (SLOW - exceeded ");
+            message.Append(_config.SlowQueryThreshold.TotalMilliseconds);
+            message.Append("ms threshold)");
+        }
+
+        _logger.Log(
+            level,
+            "Completed {CommandType} in {ElapsedMilliseconds:F2}ms{SlowQueryIndicator}",
+            GetCommandTypeDescription(context.CommandType),
+            context.Elapsed.TotalMilliseconds,
+            isSlow ? $" (SLOW - exceeded {_config.SlowQueryThreshold.TotalMilliseconds}ms threshold)" : "");
+
+        return new ValueTask();
+    }
+
+    /// <inheritdoc/>
+    public ValueTask OnCommandFailedAsync(CommandContext context, Exception exception, CancellationToken cancellationToken)
+    {
+        if (!IsEnabledAtLevel(LogLevel.Error))
+            return new ValueTask();
+
+        _logger.LogError(
+            exception,
+            "Failed executing {CommandType} after {ElapsedMilliseconds:F2}ms: {ErrorMessage}",
+            GetCommandTypeDescription(context.CommandType),
+            context.Elapsed.TotalMilliseconds,
+            exception.Message);
+
+        return new ValueTask();
+    }
+
+    private bool IsEnabledAtLevel(LogLevel level) => _logger.IsEnabled(level);
+
+    private static string GetCommandTypeDescription(CommandType commandType) => commandType switch
+    {
+        CommandType.Text => "SQL Text",
+        CommandType.StoredProcedure => "Stored Procedure",
+        CommandType.TableDirect => "Table Direct",
+        _ => commandType.ToString()
+    };
+
+    private string FormatParameters(object parameters)
+    {
+        var sb = new StringBuilder();
+
+        if (parameters is System.Collections.IDictionary dict)
+        {
+            var first = true;
+            foreach (System.Collections.DictionaryEntry entry in dict)
+            {
+                if (!first) sb.Append(", ");
+                first = false;
+
+                var name = entry.Key?.ToString() ?? "(unknown)";
+                var value = FormatParameterValue(name, entry.Value);
+                sb.Append(name).Append("=").Append(value);
+            }
+        }
+        else
+        {
+            // For non-IDictionary parameters without reflection, use ToString() as fallback
+            // To get property-level logging, use a dictionary or implement ToString() on your parameter type
+            sb.Append(parameters.ToString() ?? "(null)");
+        }
+
+        return sb.ToString();
+    }
+
+    private string FormatParameterValue(string paramName, object? value)
+    {
+        if (value is null || value == DBNull.Value)
+            return "NULL";
+
+        if (_config.SensitiveParameterNames.Contains(paramName))
+            return _config.MaskedValueFormat;
+
+        return value switch
+        {
+            string s => $"\"{s}\"",
+            DateTime dt => dt.ToString("O"),
+            DateTimeOffset dto => dto.ToString("O"),
+            bool b => b.ToString().ToLowerInvariant(),
+            _ => value.ToString() ?? "NULL"
+        };
+    }
+}
