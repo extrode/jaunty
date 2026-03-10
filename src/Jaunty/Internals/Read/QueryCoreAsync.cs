@@ -7,6 +7,7 @@ using Jaunty.Core;
 using Jaunty.Internals.Enums;
 using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Read;
+using Jaunty.Interceptors;
 
 namespace Jaunty;
 
@@ -139,6 +140,72 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
+
+        // Use InterceptorPipeline if registered, otherwise execute directly
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            T result = default!;
+            await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                sql,
+                parameters,
+                dbConnection,
+                options.CommandType,
+                async () =>
+                {
+                    var wasClosed = dbConnection.State == ConnectionState.Closed;
+
+                    try
+                    {
+                        if (wasClosed)
+                            await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NET8_0_OR_GREATER
+                        await using DbCommand command = dbConnection.CreateCommand();
+#else
+                        using DbCommand command = dbConnection.CreateCommand();
+#endif
+                        command.CommandText = sql;
+
+                        if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                            command.CommandType = options.CommandType;
+
+                        if (options.Transaction is DbTransaction dbTransaction)
+                            command.Transaction = dbTransaction;
+
+                        if (options.CommandTimeout.HasValue)
+                            command.CommandTimeout = options.CommandTimeout.Value;
+
+                        if (parameters is not null)
+                            ParameterBinder.Bind(command, parameters);
+
+                        object? commandResult = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+
+                        if (commandResult is null or DBNull)
+                            result = default!;
+                        else if (commandResult is T direct)
+                            result = direct;
+                        else
+                            result = ScalarConverter<T>.Convert(commandResult);
+
+                        return result;
+                    }
+                    finally
+                    {
+                        if (wasClosed && dbConnection.State != ConnectionState.Closed)
+                        {
+#if NET8_0_OR_GREATER
+                            await dbConnection.CloseAsync().ConfigureAwait(false);
+#else
+                            await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+#endif
+                        }
+                    }
+                },
+                cancellationToken).ConfigureAwait(false);
+            return result;
+        }
+
+        // Fast path: no interceptors, direct execution
         var wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try

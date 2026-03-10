@@ -4,6 +4,7 @@ using System.Data.Common;
 using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Parameters;
+using Jaunty.Interceptors;
 
 namespace Jaunty;
 
@@ -20,6 +21,53 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
 
+        // Use InterceptorPipeline if registered, otherwise execute directly
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            int result = 0;
+            JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                sql,
+                parameters,
+                connection,
+                commandType,
+                () =>
+                {
+                    bool wasClosed = connection.State == ConnectionState.Closed;
+
+                    try
+                    {
+                        if (wasClosed) connection.Open();
+
+                        using IDbCommand command = connection.CreateCommand();
+                        command.CommandText = sql;
+
+                        // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
+                        if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                            command.CommandType = commandType;
+
+                        if (options.Transaction is not null)
+                            command.Transaction = options.Transaction;
+
+                        if (options.CommandTimeout.HasValue)
+                            command.CommandTimeout = options.CommandTimeout.Value;
+
+                        if (parameters is not null)
+                            ParameterBinder.Bind(command, parameters);
+
+                        result = command.ExecuteNonQuery();
+                        return new ValueTask<int>(result);
+                    }
+                    finally
+                    {
+                        if (wasClosed && connection.State != ConnectionState.Closed)
+                            connection.Close();
+                    }
+                },
+                CancellationToken.None).GetAwaiter().GetResult();
+            return result;
+        }
+
+        // Fast path: no interceptors, direct execution
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -65,8 +113,97 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
         var dbConnection = connection as DbConnection;
+
+        // Use InterceptorPipeline if registered, otherwise execute directly
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            int result = 0;
+            await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                sql,
+                parameters,
+                connection,
+                commandType,
+                async () =>
+                {
+                    bool wasClosed = connection.State == ConnectionState.Closed;
+
+                    try
+                    {
+                        if (dbConnection is not null)
+                        {
+                            if (wasClosed)
+                                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NET8_0_OR_GREATER
+                            await using DbCommand command = dbConnection.CreateCommand();
+#else
+                            using DbCommand command = dbConnection.CreateCommand();
+#endif
+                            command.CommandText = sql;
+
+                            // Only set CommandType if not default (Text) - SQLite doesn't support setting CommandType
+                            if (commandType != CommandType.Text)
+                                command.CommandType = commandType;
+
+                            if (options.Transaction is DbTransaction dbTransaction)
+                                command.Transaction = dbTransaction;
+
+                            if (options.CommandTimeout.HasValue)
+                                command.CommandTimeout = options.CommandTimeout.Value;
+
+                            if (parameters is not null)
+                                ParameterBinder.Bind(command, parameters);
+
+                            result = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // Fallback for non-DbConnection - use sync methods
+                            if (wasClosed)
+                                await Task.Run(() => connection.Open(), cancellationToken).ConfigureAwait(false);
+
+                            using IDbCommand command = connection.CreateCommand();
+                            command.CommandText = sql;
+
+                            // Only set CommandType if not default (Text) - SQLite doesn't support setting CommandType
+                            if (commandType != CommandType.Text)
+                                command.CommandType = commandType;
+
+                            if (options.Transaction is not null)
+                                command.Transaction = options.Transaction;
+
+                            if (options.CommandTimeout.HasValue)
+                                command.CommandTimeout = options.CommandTimeout.Value;
+
+                            if (parameters is not null)
+                                ParameterBinder.Bind(command, parameters);
+
+                            result = command.ExecuteNonQuery();
+                        }
+                        return result;
+                    }
+                    finally
+                    {
+                        if (wasClosed && connection.State != ConnectionState.Closed)
+                        {
+#if NET8_0_OR_GREATER
+                            if (dbConnection is not null)
+                                await dbConnection.CloseAsync().ConfigureAwait(false);
+                            else
+                                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+#else
+                            await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+#endif
+                        }
+                    }
+                },
+                cancellationToken).ConfigureAwait(false);
+            return result;
+        }
+
+        // Fast path: no interceptors, direct execution
+        bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
         {
