@@ -9,6 +9,7 @@ namespace Jaunty.Tests.Integration.Write;
 /// Integration tests for native bulk copy functionality.
 /// Tests the automatic native bulk copy activation for large datasets.
 /// </summary>
+[Collection("Write Operations")]
 public class BulkCopyIntegrationTests : IClassFixture<DialectFixture>, IDisposable
 {
     private readonly DialectFixture _fixture;

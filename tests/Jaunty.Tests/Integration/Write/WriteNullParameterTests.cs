@@ -6,6 +6,7 @@ namespace Jaunty.Tests.Integration.Write;
 /// <summary>
 /// Tests for null parameter validation across Write public APIs.
 /// </summary>
+[Collection("Write Operations")]
 public class WriteNullParameterTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
