@@ -1,12 +1,11 @@
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
-using System.Threading; // Added for CancellationToken
-using System; // Added for ArgumentNullException
+using System.Threading;
+using System;
 
 namespace Jaunty.Tests.Integration.Write;
 
-[Collection("Write Operations")]
 public class InsertTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
@@ -127,12 +126,10 @@ public class InsertTests : IClassFixture<DialectFixture>
 
         long id = ctx.Connection.Insert(entity);
 
-        // Assert that the returned ID is NOT the provided ID (database should generate its own)
         Assert.NotEqual(999, id);
-        Assert.True(id > 0); // And it should be a valid, generated ID
+        Assert.True(id > 0);
         Assert.Equal(1, GetRowCount(ctx.Connection));
 
-        // Verify the inserted entity has the generated ID
         var insertedEntity = ctx.Connection.QueryFirst<BulkTestEntity>(
             "SELECT id AS Id, name AS Name, value AS Value FROM bulk_test WHERE id = @Id",
             new { Id = id });
