@@ -4,6 +4,7 @@ using System.Data.Common;
 using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Parameters;
+using Jaunty.Interceptors;
 
 namespace Jaunty;
 
@@ -24,6 +25,54 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
+
+        // Use InterceptorPipeline if registered, otherwise execute directly
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            TResult result = default!;
+            JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                sql,
+                parameters,
+                connection,
+                options.CommandType,
+                () =>
+                {
+                    bool wasClosed = connection.State == ConnectionState.Closed;
+
+                    try
+                    {
+                        if (wasClosed) connection.Open();
+
+                        using IDbCommand command = connection.CreateCommand();
+                        command.CommandText = sql;
+
+                        if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                            command.CommandType = options.CommandType;
+
+                        if (options.Transaction is not null)
+                            command.Transaction = options.Transaction;
+
+                        if (options.CommandTimeout.HasValue)
+                            command.CommandTimeout = options.CommandTimeout.Value;
+
+                        if (parameters is not null)
+                            ParameterBinder.Bind(command, parameters);
+
+                        using IDataReader reader = command.ExecuteReader();
+                        result = handler(reader);
+                        return new ValueTask<TResult>(result);
+                    }
+                    finally
+                    {
+                        if (wasClosed && connection.State != ConnectionState.Closed)
+                            connection.Close();
+                    }
+                },
+                CancellationToken.None).GetAwaiter().GetResult();
+            return result;
+        }
+
+        // Fast path: no interceptors, direct execution
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -71,6 +120,54 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
+
+        // Use InterceptorPipeline if registered, otherwise execute directly
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            TResult result = default!;
+            JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                sql,
+                parameters,
+                connection,
+                options.CommandType,
+                () =>
+                {
+                    var wasClosed = connection.State == ConnectionState.Closed;
+
+                    try
+                    {
+                        if (wasClosed) connection.Open();
+
+                        using DbCommand command = connection.CreateCommand();
+                        command.CommandText = sql;
+
+                        if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                            command.CommandType = options.CommandType;
+
+                        if (options.Transaction is not null)
+                            ((IDbCommand)command).Transaction = options.Transaction;
+
+                        if (options.CommandTimeout.HasValue)
+                            command.CommandTimeout = options.CommandTimeout.Value;
+
+                        if (parameters is not null)
+                            ParameterBinder.Bind(command, parameters);
+
+                        using DbDataReader reader = command.ExecuteReader();
+                        result = handler(reader);
+                        return new ValueTask<TResult>(result);
+                    }
+                    finally
+                    {
+                        if (wasClosed && connection.State != ConnectionState.Closed)
+                            connection.Close();
+                    }
+                },
+                CancellationToken.None).GetAwaiter().GetResult();
+            return result;
+        }
+
+        // Fast path: no interceptors, direct execution
         var wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -116,6 +213,54 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
+
+        // Use InterceptorPipeline if registered, otherwise execute directly
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            TResult result = default!;
+            JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                sql,
+                parameters,
+                connection,
+                options.CommandType,
+                () =>
+                {
+                    var wasClosed = connection.State == ConnectionState.Closed;
+
+                    try
+                    {
+                        if (wasClosed) connection.Open();
+
+                        using DbCommand command = connection.CreateCommand();
+                        command.CommandText = sql;
+
+                        if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                            command.CommandType = options.CommandType;
+
+                        if (options.Transaction is not null)
+                            ((IDbCommand)command).Transaction = options.Transaction;
+
+                        if (options.CommandTimeout.HasValue)
+                            command.CommandTimeout = options.CommandTimeout.Value;
+
+                        if (parameters is not null)
+                            ParameterBinder.Bind(command, parameters);
+
+                        using DbDataReader reader = command.ExecuteReader();
+                        result = handler(reader);
+                        return new ValueTask<TResult>(result);
+                    }
+                    finally
+                    {
+                        if (wasClosed && connection.State != ConnectionState.Closed)
+                            connection.Close();
+                    }
+                },
+                CancellationToken.None).GetAwaiter().GetResult();
+            return result;
+        }
+
+        // Fast path: no interceptors, direct execution
         var wasClosed = connection.State == ConnectionState.Closed;
 
         try
