@@ -119,9 +119,10 @@ public class LoggingInterceptorTests
         var logger = CreateLogger(provider);
         var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
         var interceptor = new LoggingInterceptor(logger, config);
+        var parameters = new System.Collections.Generic.Dictionary<string, object> { { "id", 42 } };
         var context = new CommandContext(
             "SELECT * FROM Users WHERE Id = @id",
-            new { id = 42 },
+            parameters,
             CreateMockConnection(),
             CommandType.Text);
 
@@ -143,9 +144,14 @@ public class LoggingInterceptorTests
         var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
         config.SensitiveParameterNames.Add("Password");
         var interceptor = new LoggingInterceptor(logger, config);
+        var parameters = new System.Collections.Generic.Dictionary<string, object>
+        {
+            { "name", "John" },
+            { "password", "secret123" }
+        };
         var context = new CommandContext(
             "INSERT INTO Users (Name, Password) VALUES (@name, @password)",
-            new { name = "John", password = "secret123" },
+            parameters,
             CreateMockConnection(),
             CommandType.Text);
 
@@ -400,9 +406,13 @@ public class LoggingInterceptorTests
         var logger = CreateLogger(provider);
         var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
         var interceptor = new LoggingInterceptor(logger, config);
+        var parameters = new System.Collections.Generic.Dictionary<string, object>
+        {
+            { "name", "John Doe" }
+        };
         var context = new CommandContext(
             "SELECT * FROM Users WHERE Name = @name",
-            new { name = "John Doe" },
+            parameters,
             CreateMockConnection(),
             CommandType.Text);
 
@@ -423,9 +433,13 @@ public class LoggingInterceptorTests
         var logger = CreateLogger(provider);
         var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
         var interceptor = new LoggingInterceptor(logger, config);
+        var parameters = new System.Collections.Generic.Dictionary<string, object?>
+        {
+            { "name", null }
+        };
         var context = new CommandContext(
             "SELECT * FROM Users WHERE Name = @name",
-            new { name = (string?)null },
+            parameters,
             CreateMockConnection(),
             CommandType.Text);
 
@@ -446,9 +460,13 @@ public class LoggingInterceptorTests
         var logger = CreateLogger(provider);
         var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
         var interceptor = new LoggingInterceptor(logger, config);
+        var parameters = new System.Collections.Generic.Dictionary<string, object>
+        {
+            { "active", true }
+        };
         var context = new CommandContext(
             "SELECT * FROM Users WHERE Active = @active",
-            new { active = true },
+            parameters,
             CreateMockConnection(),
             CommandType.Text);
 
@@ -470,9 +488,13 @@ public class LoggingInterceptorTests
         var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
         var interceptor = new LoggingInterceptor(logger, config);
         var testDate = new DateTime(2024, 1, 15, 10, 30, 0);
+        var parameters = new System.Collections.Generic.Dictionary<string, object>
+        {
+            { "date", testDate }
+        };
         var context = new CommandContext(
             "SELECT * FROM Users WHERE CreatedAt = @date",
-            new { date = testDate },
+            parameters,
             CreateMockConnection(),
             CommandType.Text);
 
@@ -539,7 +561,7 @@ public class LoggingInterceptorTests
 
         public void Dispose() { }
 
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public IDisposable? BeginScope<TState>(TState state) => null;
 
         public bool IsEnabled(LogLevel logLevel) => logLevel >= _minimumLevel;
 
