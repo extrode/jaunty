@@ -19,6 +19,8 @@ namespace Jaunty.Fluent;
 internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderByClause<T>, IDistinctClause<T>, ISetClause<T>, IUpdateWhereClause<T>
     where T : new()
 {
+    private static readonly SqlCache _sqlCache = new();
+    
     private readonly IDbConnection _connection;
     private readonly ISqlDialect _dialect;
     private readonly EntityMetadata _metadata;
@@ -555,7 +557,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     public List<T> Select()
     {
-        var sql = BuildSelectSql(GetAllColumnNames());
+        var cacheKey = BuildCacheKey(GetAllColumnNames());
+        var sql = _sqlCache.GetOrAdd(cacheKey, () => BuildSelectSql(GetAllColumnNames()));
         return _connection.Query<T>(sql, _parameters.ToParameterObject()!);
     }
 
@@ -563,7 +566,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var original = _take;
         _take = 1;
-        var sql = BuildSelectSql(GetAllColumnNames());
+        var cacheKey = BuildCacheKey(GetAllColumnNames());
+        var sql = _sqlCache.GetOrAdd(cacheKey, () => BuildSelectSql(GetAllColumnNames()));
         _take = original;
         return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!);
     }
@@ -572,7 +576,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var original = _take;
         _take = 1;
-        var sql = BuildSelectSql(GetAllColumnNames());
+        var cacheKey = BuildCacheKey(GetAllColumnNames());
+        var sql = _sqlCache.GetOrAdd(cacheKey, () => BuildSelectSql(GetAllColumnNames()));
         _take = original;
         return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
@@ -1085,6 +1090,34 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     #endregion
 
     #region Private helpers
+
+    private CacheKey BuildCacheKey(string[] columns)
+    {
+        return new CacheKey(
+            typeof(T),
+            columns,
+            BuildWhereSignature(),
+            BuildOrderBySignature(),
+            _distinct,
+            _skip.HasValue,
+            _take.HasValue);
+    }
+
+    private string BuildWhereSignature()
+    {
+        if (_conditions.Count == 0) return string.Empty;
+        
+        return string.Join(":", _conditions.Select(c => 
+            $"{c.Sql.Split(' ').FirstOrDefault()}:{c.Operator}"));
+    }
+
+    private string BuildOrderBySignature()
+    {
+        if (_orderByColumns.Count == 0) return string.Empty;
+        
+        return string.Join(":", _orderByColumns.Select(o => 
+            $"{o.ColumnName}:{(o.Descending ? "DESC" : "ASC")}"));
+    }
 
     private string BuildSelectSql(string[] columns)
     {
