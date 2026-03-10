@@ -17,9 +17,34 @@ namespace Jaunty.Tests.Helpers.Dialects;
 public sealed class DialectFixture : IDisposable
 {
     // Global lock to serialize write operations across all test classes
-    private static readonly SemaphoreSlim _writeLock = new(1, 1);
+    internal static readonly SemaphoreSlim _writeLock = new(1, 1);
     private static readonly object SqlServerCompatLock = new();
     private static bool _sqlServerCompatInitialized;
+
+    /// <summary>
+    /// Disposable wrapper that holds the write lock for the duration of a test.
+    /// </summary>
+    public sealed class WriteLockContext : IDisposable
+    {
+        public WriteLockContext()
+        {
+            _writeLock.Wait();
+        }
+
+        public void Dispose()
+        {
+            _writeLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Acquires the global write lock for the duration of the returned context.
+    /// Use in a 'using' statement to serialize test execution.
+    /// </summary>
+    public static WriteLockContext AcquireWriteLock()
+    {
+        return new WriteLockContext();
+    }
 
     public IDbConnection GetClosedConnection(DialectInfo dialect)
     {
@@ -189,31 +214,6 @@ END;
 
     #region Write Context Support
 
-    public async Task<WriteDialectContext> GetWriteContextAsync(DialectInfo dialect, string? tableName = null)
-    {
-        await _writeLock.WaitAsync();
-        try
-        {
-            return dialect.Provider switch
-            {
-                DialectProvider.SystemSqlite => CreateSystemSqliteContext(tableName),
-#if NET8_0_OR_GREATER
-                DialectProvider.MicrosoftSqlite => CreateMicrosoftSqliteContext(tableName),
-#else
-                DialectProvider.MicrosoftSqlite => throw new NotSupportedException("Microsoft.Data.Sqlite is not available on .NET Framework."),
-#endif
-                DialectProvider.SqlServer => CreateServerContext(new SqlConnection(TestConfiguration.SqlServerConnectionString), DialectProvider.SqlServer, tableName),
-                DialectProvider.Postgres => CreateServerContext(new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString), DialectProvider.Postgres, tableName),
-                DialectProvider.MariaDb => CreateServerContext(new MySqlConnection(TestConfiguration.MariaDbConnectionString), DialectProvider.MariaDb, tableName),
-                _ => throw new InvalidOperationException($"Unsupported dialect provider: {dialect.Provider}")
-            };
-        }
-        finally
-        {
-            _writeLock.Release();
-        }
-    }
-
     public WriteDialectContext GetWriteContext(DialectInfo dialect, string? tableName = null)
     {
         _writeLock.Wait();
@@ -233,9 +233,10 @@ END;
                 _ => throw new InvalidOperationException($"Unsupported dialect provider: {dialect.Provider}")
             };
         }
-        finally
+        catch
         {
             _writeLock.Release();
+            throw;
         }
     }
 
@@ -379,6 +380,7 @@ public sealed class WriteDialectContext : IDisposable
         _transaction?.Dispose();
         Connection.Dispose();
         _disposed = true;
+        DialectFixture._writeLock.Release();
         GC.SuppressFinalize(this);
     }
 
