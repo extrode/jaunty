@@ -6,6 +6,7 @@ using Jaunty.Core;
 using Jaunty.Internals.Enums;
 using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Read;
+using Jaunty.Interceptors;
 
 namespace Jaunty;
 
@@ -114,7 +115,61 @@ public static partial class Jaunty
 
     private static T QueryScalarCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options)
     {
-        var wasClosed = connection.State == ConnectionState.Closed;
+        // Use InterceptorPipeline if registered, otherwise execute directly
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            T result = default!;
+            JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                sql,
+                parameters,
+                connection,
+                options.CommandType,
+                () =>
+                {
+                    bool wasClosed = connection.State == ConnectionState.Closed;
+
+                    try
+                    {
+                        if (wasClosed) connection.Open();
+
+                        using IDbCommand command = connection.CreateCommand();
+                        command.CommandText = sql;
+
+                        if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                            command.CommandType = options.CommandType;
+
+                        if (options.Transaction is not null)
+                            command.Transaction = options.Transaction;
+
+                        if (options.CommandTimeout.HasValue)
+                            command.CommandTimeout = options.CommandTimeout.Value;
+
+                        if (parameters is not null)
+                            ParameterBinder.Bind(command, parameters);
+
+                        object? commandResult = command.ExecuteScalar();
+
+                        if (commandResult is null or DBNull)
+                            result = default!;
+                        else if (commandResult is T direct)
+                            result = direct;
+                        else
+                            result = ScalarConverter<T>.Convert(commandResult);
+
+                        return new ValueTask<T>(result);
+                    }
+                    finally
+                    {
+                        if (wasClosed && connection.State != ConnectionState.Closed)
+                            connection.Close();
+                    }
+                },
+                CancellationToken.None).GetAwaiter().GetResult();
+            return result;
+        }
+
+        // Fast path: no interceptors, direct execution
+        bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
         {
