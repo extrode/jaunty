@@ -1,6 +1,7 @@
 
 using System.Data;
 
+using Jaunty.Interceptors;
 using Jaunty.Internals.Enums;
 
 namespace Jaunty.Configuration;
@@ -19,6 +20,7 @@ public static class JauntyConfig
     private static Func<Type, Action<IDbCommand, object>>? _reflectionInsertBinderResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionUpdateBinderResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionDeleteBinderResolver;
+    private static InterceptorPipeline? _interceptorPipeline;
 
     private static int _parameterParsingCapacity = 8;
     private static int _queryResultCapacity = 64;
@@ -152,6 +154,58 @@ public static class JauntyConfig
     }
 
     /// <summary>
+    /// Gets the interceptor pipeline for command execution hooks.
+    /// </summary>
+    /// <remarks>
+    /// Use <see cref="AddInterceptor(ICommandInterceptor)"/> or <see cref="AddInterceptors(IEnumerable{ICommandInterceptor})"/> to register interceptors.
+    /// </remarks>
+    public static InterceptorPipeline? InterceptorPipeline
+    {
+        get => _interceptorPipeline;
+        private set => _interceptorPipeline = value;
+    }
+
+    /// <summary>
+    /// Adds a single interceptor to the pipeline.
+    /// </summary>
+    /// <param name="interceptor">The interceptor to add.</param>
+    /// <remarks>
+    /// Interceptors are executed in registration order during command execution.
+    /// </remarks>
+    public static void AddInterceptor(ICommandInterceptor interceptor)
+    {
+        if (interceptor is null)
+            throw new ArgumentNullException(nameof(interceptor));
+
+        var existingInterceptors = _interceptorPipeline?.GetInterceptors() ?? Enumerable.Empty<ICommandInterceptor>();
+        _interceptorPipeline = new InterceptorPipeline(existingInterceptors.Concat(new[] { interceptor }));
+    }
+
+    /// <summary>
+    /// Adds multiple interceptors to the pipeline.
+    /// </summary>
+    /// <param name="interceptors">The interceptors to add.</param>
+    /// <remarks>
+    /// Interceptors are executed in registration order during command execution.
+    /// </remarks>
+    public static void AddInterceptors(IEnumerable<ICommandInterceptor> interceptors)
+    {
+        if (interceptors is null)
+            throw new ArgumentNullException(nameof(interceptors));
+
+        var existingInterceptors = _interceptorPipeline?.GetInterceptors() ?? Enumerable.Empty<ICommandInterceptor>();
+        _interceptorPipeline = new InterceptorPipeline(existingInterceptors.Concat(interceptors));
+    }
+
+    /// <summary>
+    /// Clears all registered interceptors.
+    /// </summary>
+    public static void ClearInterceptors()
+    {
+        _interceptorPipeline = null;
+    }
+
+    /// <summary>
     /// Resets all configuration options to their default values.
     /// </summary>
     public static void Reset()
@@ -167,6 +221,7 @@ public static class JauntyConfig
         _reflectionDeleteBinderResolver = null;
         ReflectionTableMetadataResolver = null;
         ReflectionMultiMapperResolver = null;
+        _interceptorPipeline = null;
         _parameterParsingCapacity = 8;
         _queryResultCapacity = 64;
         _csvFieldCapacity = 16;

@@ -24,6 +24,21 @@
 		</When>
 	</Choose>
 
+	<!-- Logging and Diagnostics - only needed for netstandard2.0 (net8.0 has these built-in) -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" />
+	</ItemGroup>
+
+	<!-- For net8.0, these are built-in but we need to include the package for compatibility -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+	</ItemGroup>
+
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>

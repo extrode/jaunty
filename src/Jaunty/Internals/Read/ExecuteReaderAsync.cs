@@ -4,6 +4,7 @@ using System.Data.Common;
 using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Parameters;
+using Jaunty.Interceptors;
 
 namespace Jaunty;
 
@@ -22,8 +23,100 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
-        var wasClosed = connection.State == ConnectionState.Closed;
         var dbConnection = connection as DbConnection;
+
+        // Use InterceptorPipeline if registered, otherwise execute directly
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            TResult result = default!;
+            await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                sql,
+                parameters,
+                connection,
+                options.CommandType,
+                async () =>
+                {
+                    var wasClosed = connection.State == ConnectionState.Closed;
+
+                    try
+                    {
+                        if (dbConnection is not null)
+                        {
+                            if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NET8_0_OR_GREATER
+                            await using DbCommand command = dbConnection.CreateCommand();
+#else
+                            using DbCommand command = dbConnection.CreateCommand();
+#endif
+                            command.CommandText = sql;
+
+                            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                                command.CommandType = options.CommandType;
+
+                            if (options.Transaction is DbTransaction dbTransaction)
+                                command.Transaction = dbTransaction;
+
+                            if (options.CommandTimeout.HasValue)
+                                command.CommandTimeout = options.CommandTimeout.Value;
+
+                            if (parameters is not null)
+                                ParameterBinder.Bind(command, parameters);
+
+#if NET8_0_OR_GREATER
+                            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#else
+                            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
+                            result = await handler(reader, cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // Fallback for non-DbConnection - use sync methods wrapped in Task.Run
+                            if (wasClosed)
+                                await Task.Run(() => connection.Open(), cancellationToken).ConfigureAwait(false);
+
+                            using IDbCommand command = connection.CreateCommand();
+                            command.CommandText = sql;
+
+                            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                                command.CommandType = options.CommandType;
+
+                            if (options.Transaction is not null)
+                                command.Transaction = options.Transaction;
+
+                            if (options.CommandTimeout.HasValue)
+                                command.CommandTimeout = options.CommandTimeout.Value;
+
+                            if (parameters is not null)
+                                ParameterBinder.Bind(command, parameters);
+
+                            using IDataReader reader = command.ExecuteReader();
+                            result = await handler(reader, cancellationToken).ConfigureAwait(false);
+                        }
+                        return result;
+                    }
+                    finally
+                    {
+                        if (wasClosed && connection.State != ConnectionState.Closed)
+                        {
+#if NET8_0_OR_GREATER
+                            if (dbConnection is not null)
+                                await dbConnection.CloseAsync().ConfigureAwait(false);
+                            else
+                                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+#else
+                            await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+#endif
+                        }
+                    }
+                },
+                cancellationToken).ConfigureAwait(false);
+            return result;
+        }
+
+        // Fast path: no interceptors, direct execution
+        var wasClosed = connection.State == ConnectionState.Closed;
 
         try
         {
