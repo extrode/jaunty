@@ -81,7 +81,7 @@ public sealed class CommandContext
     /// <summary>
     /// Gets the database provider name (e.g., "System.Data.SqlClient", "Npgsql").
     /// </summary>
-    public string ProviderName => Connection.GetType().FullName ?? "Unknown";
+    public string ProviderName => Connection.GetType().Name;
 
     /// <summary>
     /// Gets the database name if available, or "(unknown)" if not.

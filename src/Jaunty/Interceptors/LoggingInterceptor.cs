@@ -155,19 +155,9 @@ public sealed class LoggingInterceptor : ICommandInterceptor
         }
         else
         {
-            // For anonymous types and POCOs, reflect to get property values
-            var type = parameters.GetType();
-            var properties = type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            var first = true;
-
-            foreach (var prop in properties)
-            {
-                if (!first) sb.Append(", ");
-                first = false;
-
-                var value = FormatParameterValue(prop.Name, prop.GetValue(parameters));
-                sb.Append(prop.Name).Append("=").Append(value);
-            }
+            // For non-IDictionary parameters without reflection, use ToString() as fallback
+            // To get property-level logging, use a dictionary or implement ToString() on your parameter type
+            sb.Append(parameters.ToString() ?? "(null)");
         }
 
         return sb.ToString();
