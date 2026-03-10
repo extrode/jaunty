@@ -327,13 +327,13 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public int Count()
     {
         string sql = _parent.BuildCountSql();
-        return _parent.Connection.QuerySingle<int>(sql, _parent.GetParameters());
+        return _parent.Connection.QueryScalar<int>(sql);
     }
 
     public long LongCount()
     {
         string sql = _parent.BuildCountSql();
-        return _parent.Connection.QuerySingle<long>(sql, _parent.GetParameters());
+        return _parent.Connection.QueryScalar<long>(sql);
     }
 
     public string ToSql() => _parent.ToSql();
@@ -343,7 +343,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public List<IDictionary<string, object?>> SelectPartial(string columns)
     {
         string sql = _parent.BuildSelectPartialSql(columns);
-        return _parent.Connection.QueryPartialList(sql, _parent.GetParameters());
+        return _parent.Connection.QueryPartialList(sql);
     }
 
     public IDictionary<string, object?> SelectPartialFirst(string columns)
@@ -377,7 +377,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public async Task<List<T1>> SelectAsync(CancellationToken cancellationToken = default)
     {
         string sql = _parent.BuildSelectSql(_parent.GetSelectColumns<T1>());
-        return await _parent.Connection.QueryPartialAsync<T1>(sql, _parent.GetParameters(), cancellationToken);
+        return await _parent.Connection.QueryPartialAsync<T1>(sql, cancellationToken);
     }
 
     public async Task<List<(T1, T2, T3)>> SelectAllAsync(CancellationToken cancellationToken = default)
@@ -441,19 +441,19 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public async Task<int> CountAsync(CancellationToken cancellationToken = default)
     {
         string sql = _parent.BuildCountSql();
-        return await _parent.Connection.QuerySingleAsync<int>(sql, _parent.GetParameters(), cancellationToken);
+        return await _parent.Connection.QueryScalarAsync<int>(sql, cancellationToken);
     }
 
     public async Task<long> LongCountAsync(CancellationToken cancellationToken = default)
     {
         string sql = _parent.BuildCountSql();
-        return await _parent.Connection.QuerySingleAsync<long>(sql, _parent.GetParameters(), cancellationToken);
+        return await _parent.Connection.QueryScalarAsync<long>(sql, cancellationToken);
     }
 
     public async Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default)
     {
         string sql = _parent.BuildSelectPartialSql(columns);
-        return await _parent.Connection.QueryPartialListAsync(sql, _parent.GetParameters(), cancellationToken);
+        return await _parent.Connection.QueryPartialListAsync(sql, cancellationToken);
     }
 
     public async Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default)
