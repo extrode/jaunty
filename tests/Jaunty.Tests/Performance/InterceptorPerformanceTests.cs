@@ -8,7 +8,10 @@ namespace Jaunty.Tests.Performance;
 /// </summary>
 /// <remarks>
 /// These tests verify that the interceptor pipeline adds minimal overhead
-/// to command execution. Target: < 5μs per no-op interceptor.
+/// to command execution. Target: less than 5 microseconds per no-op interceptor.
+///
+/// Note: ValueTask completes synchronously for no-op interceptors, so we can
+/// measure overhead without async/await contamination.
 /// </remarks>
 public class InterceptorPerformanceTests
 {
@@ -23,22 +26,20 @@ public class InterceptorPerformanceTests
     {
         // Arrange
         var noOpInterceptor = new NoOpInterceptor();
-        var pipeline = new InterceptorPipeline(new[] { noOpInterceptor });
+        var pipeline = new InterceptorPipeline([noOpInterceptor]);
         var connection = new TestDbConnection();
 
         // Warmup
         for (int i = 0; i < WarmupIterations; i++)
         {
-            pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None)
-                .AsTask().Wait();
+            _ = pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None);
         }
 
         // Act - measure overhead
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         for (int i = 0; i < TestIterations; i++)
         {
-            pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None)
-                .AsTask().Wait();
+            _ = pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None);
         }
         stopwatch.Stop();
 
@@ -52,7 +53,7 @@ public class InterceptorPerformanceTests
     }
 
     [Fact]
-    public void InterceptorPipeline_WithMultipleNoOpInterceptors_HasAcceptableOverhead()
+    public async Task InterceptorPipeline_WithMultipleNoOpInterceptors_HasAcceptableOverhead()
     {
         // Arrange - 5 no-op interceptors
         var interceptors = new List<ICommandInterceptor>
@@ -69,16 +70,14 @@ public class InterceptorPerformanceTests
         // Warmup
         for (int i = 0; i < WarmupIterations; i++)
         {
-            pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None)
-                .AsTask().Wait();
+            await pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None);
         }
 
         // Act - measure overhead
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         for (int i = 0; i < TestIterations; i++)
         {
-            pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None)
-                .AsTask().Wait();
+            await pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None);
         }
         stopwatch.Stop();
 
@@ -97,7 +96,7 @@ public class InterceptorPerformanceTests
     #region AuditInterceptor Tests
 
     [Fact]
-    public void AuditInterceptor_Overhead_IsAcceptable()
+    public async Task AuditInterceptor_Overhead_IsAcceptable()
     {
         // Arrange
         var auditInterceptor = new AuditInterceptor();
@@ -107,16 +106,14 @@ public class InterceptorPerformanceTests
         // Warmup
         for (int i = 0; i < WarmupIterations; i++)
         {
-            pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None)
-                .AsTask().Wait();
+            await pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None);
         }
 
         // Act - measure overhead
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         for (int i = 0; i < TestIterations; i++)
         {
-            pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None)
-                .AsTask().Wait();
+            await pipeline.InvokeExecutingAsync("SELECT 1", null, connection, CommandType.Text, CancellationToken.None);
         }
         stopwatch.Stop();
 
