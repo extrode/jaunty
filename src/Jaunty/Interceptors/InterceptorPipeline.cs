@@ -1,6 +1,8 @@
 using System.Data;
 using System.Diagnostics;
 
+using Jaunty.Diagnostics;
+
 namespace Jaunty.Interceptors;
 
 /// <summary>
@@ -20,18 +22,34 @@ namespace Jaunty.Interceptors;
 /// If any interceptor throws during <see cref="InvokeExecutingAsync"/>, the command is not executed
 /// and remaining interceptors' <see cref="ICommandInterceptor.OnCommandFailedAsync"/> methods are called.
 /// </para>
+/// <para>
+/// This pipeline also emits diagnostic events via <see cref="JauntyDiagnosticListener"/>
+/// for integration with OpenTelemetry, Application Insights, and other telemetry systems.
+/// </para>
 /// </remarks>
 public sealed class InterceptorPipeline
 {
     private readonly ICommandInterceptor[] _interceptors;
+    private readonly JauntyDiagnosticListener? _diagnosticListener;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="InterceptorPipeline"/> class.
     /// </summary>
     /// <param name="interceptors">The interceptors to invoke in order.</param>
     public InterceptorPipeline(IEnumerable<ICommandInterceptor> interceptors)
+        : this(interceptors, JauntyDiagnosticListener.Instance)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InterceptorPipeline"/> class.
+    /// </summary>
+    /// <param name="interceptors">The interceptors to invoke in order.</param>
+    /// <param name="diagnosticListener">Optional diagnostic listener for event emission.</param>
+    internal InterceptorPipeline(IEnumerable<ICommandInterceptor> interceptors, JauntyDiagnosticListener? diagnosticListener)
     {
         _interceptors = interceptors?.ToArray() ?? Array.Empty<ICommandInterceptor>();
+        _diagnosticListener = diagnosticListener;
     }
 
     /// <summary>
@@ -67,6 +85,9 @@ public sealed class InterceptorPipeline
 
         var context = new CommandContext(commandText, parameters, connection, commandType);
 
+        // Emit diagnostic event
+        _diagnosticListener?.WriteCommandExecuting(context);
+
         for (int i = 0; i < _interceptors.Length; i++)
         {
             await _interceptors[i].OnCommandExecutingAsync(context, cancellationToken).ConfigureAwait(false);
@@ -98,6 +119,9 @@ public sealed class InterceptorPipeline
             return;
 
         var context = new CommandContext(commandText, parameters, connection, commandType, elapsed);
+
+        // Emit diagnostic event
+        _diagnosticListener?.WriteCommandExecuted(context);
 
         for (int i = 0; i < _interceptors.Length; i++)
         {
@@ -137,6 +161,9 @@ public sealed class InterceptorPipeline
             return;
 
         var context = new CommandContext(commandText, parameters, connection, commandType, elapsed, exception);
+
+        // Emit diagnostic event
+        _diagnosticListener?.WriteCommandFailed(context, exception);
 
         for (int i = 0; i < _interceptors.Length; i++)
         {
