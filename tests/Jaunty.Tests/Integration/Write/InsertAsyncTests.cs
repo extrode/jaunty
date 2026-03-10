@@ -8,7 +8,6 @@ using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
 
-[Collection("Write Operations")]
 public class InsertAsyncTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
@@ -18,7 +17,7 @@ public class InsertAsyncTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 
-    private static int GetRowCount(System.Data.IDbConnection connection)
+    private static int GetRowCount(IDbConnection connection)
     {
         using var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT COUNT(*) FROM bulk_test";
@@ -98,12 +97,10 @@ public class InsertAsyncTests : IClassFixture<DialectFixture>
 
         long id = await connection.InsertAsync(entity);
 
-        // Assert that the returned ID is NOT the provided ID (database should generate its own)
         Assert.NotEqual(999, id);
-        Assert.True(id > 0); // And it should be a valid, generated ID
+        Assert.True(id > 0);
         Assert.Equal(1, GetRowCount(ctx.Connection));
 
-        // Verify the inserted entity has the generated ID
         var insertedEntity = connection.QueryFirst<BulkTestEntity>(
             "SELECT id AS Id, name AS Name, value AS Value FROM bulk_test WHERE id = @Id",
             new { Id = id });
@@ -138,7 +135,6 @@ public class InsertAsyncTests : IClassFixture<DialectFixture>
         var connection = (DbConnection)ctx.Connection;
         var entity = new BulkTestEntity { Name = "TestTimeout", Value = 500 };
 
-        // Using a short timeout that should normally pass quickly
         long id = await connection.InsertAsync(entity, CommandOptions<BulkTestEntity>.WithTimeout(10));
 
         Assert.True(id > 0);
