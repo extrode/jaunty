@@ -73,6 +73,6 @@ public class Product : IEntity<int>, IMapped<Product>
             _cache = [];
         }
 
-        public int this[string columnName] => _cache.TryGetValue(columnName, out var ordinal) ? ordinal : _cache[columnName] = _reader.GetOrdinal(columnName);
+        public int this[string columnName] => _cache.TryGetValue(columnName, out int ordinal) ? ordinal : _cache[columnName] = _reader.GetOrdinal(columnName);
     }
 }
