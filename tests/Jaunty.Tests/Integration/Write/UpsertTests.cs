@@ -6,6 +6,7 @@ namespace Jaunty.Tests.Integration.Write;
 /// <summary>
 /// Tests Upsert and UpsertAsync against a dedicated non-identity test table.
 /// </summary>
+[Collection("Write Operations")]
 public class UpsertTests : IClassFixture<DialectFixture>
 {
     private readonly DialectFixture _fixture;
