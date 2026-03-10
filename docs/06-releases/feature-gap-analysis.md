@@ -1,6 +1,6 @@
 # Jaunty ORM: Feature Gap Analysis & Roadmap
 
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-03-11
 **Status:** Draft - For Discussion
 
 ---
@@ -114,7 +114,19 @@
 | CSV options | `src/Jaunty/Import/CsvImportOptions.cs` | Complete | Delimiter, headers, encoding |
 | NULL value mapping | `src/Jaunty/Import/CsvImportOptions.cs` | Complete | Custom NULL string |
 
-### 1.11 Extensions (Separate Packages)
+### 1.11 Logging and Diagnostics
+
+| Feature | Location | Status | Notes |
+|---------|----------|--------|-------|
+| `LoggingInterceptor` | `src/Jaunty/Interceptors/LoggingInterceptor.cs` | Complete | ILogger integration with slow query detection |
+| `AuditInterceptor` | `src/Jaunty/Diagnostics/AuditInterceptor.cs` | Complete | In-memory audit trail |
+| `ICommandInterceptor` | `src/Jaunty/Interceptors/ICommandInterceptor.cs` | Complete | Interceptor interface |
+| `InterceptorPipeline` | `src/Jaunty/Interceptors/InterceptorPipeline.cs` | Complete | Multi-interceptor orchestration |
+| `DiagnosticSource` events | `src/Jaunty/Diagnostics/JauntyDiagnosticListener.cs` | Complete | OpenTelemetry/App Insights integration |
+| `LoggingConfiguration` | `src/Jaunty/Configuration/LoggingConfiguration.cs` | Complete | Log levels, sensitivity, thresholds |
+| DI registration | `src/Jaunty/JauntyLoggingExtensions.cs` | Complete | `IServiceCollection` extensions |
+
+### 1.12 Extensions (Separate Packages)
 
 | Extension | Package | Status | Notes |
 |-----------|---------|--------|-------|
@@ -131,47 +143,11 @@
 
 ### Priority P0: Critical for Production Adoption
 
-#### 2.1.1 ILogger Integration & Command Interception
+#### 2.1.1 Dependency Injection Integration
 
-**Problem:** Current logging is a simple `Action<string, object>`. No structured logging, timing, or interception.
+**Status:** Partially Complete - `AddJauntyLogging()` and `ApplyJauntyInterceptors()` extensions available
 
-**Proposed Solutions:**
-
-| Option | Description | Pros | Cons |
-|--------|-------------|------|------|
-| **A: Microsoft.Extensions.Logging** | Add `ILoggerFactory` integration | Standard, familiar API | Adds dependency |
-| **B: Interceptor Pipeline** | `ICommandInterceptor` with before/after hooks | Flexible, composable | More complex |
-| **C: DiagnosticSource** | Use `DiagnosticSource` for events | Built-in .NET observability | Less intuitive |
-| **D: Hybrid** | Support both ILogger and simple logger | Best of both | More maintenance |
-
-**Decision Required:**
-- [ ] Which approach to take?
-- [ ] Should interception be async-capable?
-- [ ] What events should be exposed? (CommandExecuting, CommandExecuted, QueryFailed, etc.)
-- [ ] Should we include execution timing by default?
-
-**Proposed API (Option A+B):**
-```csharp
-// Registration
-services.AddJaunty(config => {
-    config.UseLoggerFactory(loggerFactory);
-    config.AddInterceptor<TimingInterceptor>();
-    config.AddInterceptor<AuditInterceptor>();
-});
-
-// Interceptor
-public class AuditInterceptor : IDbCommandInterceptor
-{
-    ValueTask OnExecutingAsync(CommandContext ctx, CancellationToken ct);
-    ValueTask OnExecutedAsync(CommandContext ctx, CancellationToken ct);
-}
-```
-
----
-
-#### 2.1.2 Dependency Injection Integration
-
-**Problem:** No `IServiceCollection` extensions. Manual registration required.
+**Problem:** Limited DI integration. Manual interceptor registration required.
 
 **Proposed Solutions:**
 
@@ -204,7 +180,7 @@ services.AddScoped<IDbConnectionFactory, MyConnectionFactory>();
 
 ---
 
-#### 2.1.3 Query Result Caching
+#### 2.1.2 Query Result Caching
 
 **Problem:** No second-level cache. Every query hits the database.
 
