@@ -334,3 +334,4 @@ MigrationBackup/
 !appsettings.example.json
 !.editorconfig
 !.gitattributes
+packout/
