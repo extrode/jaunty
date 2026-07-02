@@ -166,7 +166,7 @@ public class JauntyGenerator : IIncrementalGenerator
             // DbDataReader path - use GetFieldValue<T>
             if (needsNullCheck)
             {
-                sb.AppendLine($"                entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default : dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
+                sb.AppendLine($"                entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default! : dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
             }
             else
             {

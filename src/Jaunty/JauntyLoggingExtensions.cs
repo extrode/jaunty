@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 using Jaunty.Configuration;
@@ -78,7 +79,11 @@ public static class JauntyLoggingExtensions
     /// Use this method when you have a custom <see cref="ICommandInterceptor"/> implementation
     /// that you want to register with dependency injection.
     /// </remarks>
-    public static IServiceCollection AddJauntyInterceptor<TInterceptor>(
+    public static IServiceCollection AddJauntyInterceptor<
+#if NET8_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        TInterceptor>(
         this IServiceCollection services)
         where TInterceptor : class, ICommandInterceptor
     {

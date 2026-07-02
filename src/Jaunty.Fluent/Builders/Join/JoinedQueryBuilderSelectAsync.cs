@@ -18,7 +18,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string sql = BuildSelectSql(columns);
 
         return _connection is DbConnection dbConn
-            ? await dbConn.QueryPartialAsync<TFrom>(sql, _parameters?.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            ? await dbConn.QueryPartialAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
             : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
@@ -65,7 +65,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string sql = BuildSelectSql(columns) + " LIMIT 1";
 
         return _connection is DbConnection dbConn
-            ? await dbConn.QueryPartialFirstAsync<TFrom>(sql, _parameters?.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            ? await dbConn.QueryPartialFirstAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
             : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
@@ -75,7 +75,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string sql = BuildSelectSql(columns) + " LIMIT 1";
 
         return _connection is DbConnection dbConn
-            ? await dbConn.QueryPartialFirstOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            ? await dbConn.QueryPartialFirstOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
             : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
@@ -150,7 +150,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string sql = BuildCountSql();
 
         return _connection is DbConnection dbConn
-            ? await dbConn.QueryScalarAsync<int>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            ? await dbConn.QueryScalarAsync<int>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
             : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
@@ -159,7 +159,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string sql = BuildCountSql();
 
         return _connection is DbConnection dbConn
-            ? await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            ? await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
             : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
@@ -169,7 +169,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string sql = BuildSelectSql(columns);
 
         return _connection is DbConnection dbConn
-            ? await dbConn.QueryPartialAsync<TJoin>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            ? await dbConn.QueryPartialAsync<TJoin>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
             : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
@@ -179,7 +179,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string sql = BuildSelectSql(columns) + " LIMIT 1";
 
         return _connection is DbConnection dbConn
-            ? await dbConn.QueryPartialFirstAsync<TJoin>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            ? await dbConn.QueryPartialFirstAsync<TJoin>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
             : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
@@ -189,7 +189,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string sql = BuildSelectSql(columns) + " LIMIT 1";
 
         return _connection is DbConnection dbConn
-            ? await dbConn.QueryPartialFirstOrDefaultAsync<TJoin>(sql, _parameters.ToParameterObject(), cancellationToken).ConfigureAwait(false)
+            ? await dbConn.QueryPartialFirstOrDefaultAsync<TJoin>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
             : throw new NotSupportedException("Async operations require DbConnection.");
     }
 
