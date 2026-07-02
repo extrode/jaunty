@@ -166,8 +166,8 @@ public class FluentJoinTests : IClassFixture<FluentDatabaseFixture>
             .SelectPartial("p.product_name, c.category_name");
 
         Assert.NotEmpty(results);
-        string productName = results.First()["product_name"] as string;
-        string categoryName = results.First()["category_name"] as string;
+        string? productName = results.First()["product_name"] as string;
+        string? categoryName = results.First()["category_name"] as string;
         Assert.NotEmpty(productName);
         Assert.NotEmpty(categoryName);
     }

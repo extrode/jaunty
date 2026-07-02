@@ -14,7 +14,7 @@ public static class JauntyConfig
     private static Func<Type, string>? _schemaNameResolver;
     private static Func<Type, string>? _tableNameResolver;
     private static Func<string, string>? _columnNameResolver;
-    private static Action<string, object>? _logger;
+    private static Action<string, object?>? _logger;
     private static Func<Type, MappingMode, object>? _reflectionMapperResolver;
     private static Func<Type, IDataReader, object>? _specialTypeMapperResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionInsertBinderResolver;
@@ -86,7 +86,7 @@ public static class JauntyConfig
     /// <summary>
     /// Gets or sets a global diagnostic logger for SQL commands.
     /// </summary>
-    public static Action<string, object>? Logger
+    public static Action<string, object?>? Logger
     {
         get => _logger;
         set => _logger = value;
