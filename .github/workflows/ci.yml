@@ -2,18 +2,41 @@ name: CI
 
 on:
   push:
-    branches: [dev]
+    branches: [dev, main]
   pull_request:
-    branches: [dev]
+    branches: [dev, main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# The SQL Server service uses a throwaway credential for the ephemeral CI
+# container only. Override with the CI_MSSQL_SA_PASSWORD repository variable
+# if desired.
 jobs:
   build-and-test:
     name: Build & Test
     runs-on: ubuntu-latest
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: ${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }}
+        ports:
+          - 1433:1433
+        volumes:
+          # Mirror the workspace path: BULK INSERT runs server-side and the
+          # CSV import tests pass host paths to the server.
+          - ${{ github.workspace }}:${{ github.workspace }}
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 20s
+    env:
+      CI_SA_CRED: ${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,20 +56,56 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}-
 
+      - name: Bootstrap SQL Server Northwind
+        run: |
+          docker cp data/sqlserver/create-northwind.sql ${{ job.services.mssql.id }}:/tmp/nw.sql
+          docker cp data/sqlserver/create-stored-procedures.sql ${{ job.services.mssql.id }}:/tmp/sp.sql
+          docker exec ${{ job.services.mssql.id }} /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$CI_SA_CRED" -C -i /tmp/nw.sql
+          docker exec ${{ job.services.mssql.id }} /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$CI_SA_CRED" -C -d Northwind -i /tmp/sp.sql
+
       - name: Restore
         run: dotnet restore Jaunty.slnx
 
       - name: Build
         run: dotnet build Jaunty.slnx -c Release --no-restore
 
-      - name: Test - Core (SQLite)
+      - name: Test - Core (SQLite + SQL Server)
+        env:
+          JAUNTY_TEST_SQLSERVER: Server=localhost,1433;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
         run: >-
-          dotnet test Jaunty.slnx
+          dotnet test tests/Jaunty.Tests
           -c Release
           --no-build
           --framework net8.0
-          --filter "FullyQualifiedName~Sqlite"
+          --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-core.trx"
+
+      - name: Test - Source Generator (shape safety)
+        run: >-
+          dotnet test tests/Jaunty.SourceGenerator.Tests
+          -c Release
+          --no-build
+          --framework net8.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-sourcegen.trx"
+
+      - name: Test - Fluent
+        run: >-
+          dotnet test tests/Jaunty.Fluent.Tests
+          -c Release
+          --no-build
+          --framework net8.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-fluent.trx"
+
+      - name: Test - Scaffolding
+        run: >-
+          dotnet test tests/Jaunty.Scaffolding.Tests
+          -c Release
+          --no-build
+          --framework net8.0
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results-scaffolding.trx"
 
       - name: Test - FlatFiles (DuckDB)
         run: >-
@@ -55,6 +114,7 @@ jobs:
           --no-build
           --framework net8.0
           --filter "FullyQualifiedName~Jaunty.FlatFiles"
+          --collect:"XPlat Code Coverage"
           --logger "trx;LogFileName=test-results-flatfiles.trx"
 
       - name: Upload test results
@@ -63,6 +123,14 @@ jobs:
         with:
           name: test-results
           path: "**/test-results-*.trx"
+          retention-days: 7
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: "**/coverage.cobertura.xml"
           retention-days: 7
 
   verify-aot:
