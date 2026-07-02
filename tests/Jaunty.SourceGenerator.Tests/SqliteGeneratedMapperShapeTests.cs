@@ -1,0 +1,153 @@
+using System.Data;
+
+using Jaunty;
+using Jaunty.SourceGenerator.Tests.Entities;
+
+using Microsoft.Data.Sqlite;
+
+namespace Jaunty.SourceGenerator.Tests;
+
+/// <summary>
+/// Runtime validation for PRD-001: the source-generated ordinal cache must never
+/// serve stale ordinals when the result shape (column order, subset, or width)
+/// changes between readers or between result sets on the same reader.
+/// Unlike OrdinalMapCacheEntryTests in Jaunty.Tests, these tests exercise the
+/// actual generator output compiled into this project, end-to-end through a real
+/// ADO.NET provider.
+/// </summary>
+public sealed class SqliteGeneratedMapperShapeTests : IDisposable
+{
+    private readonly SqliteConnection _connection;
+
+    public SqliteGeneratedMapperShapeTests()
+    {
+        _connection = new SqliteConnection("Data Source=:memory:");
+        _connection.Open();
+
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = """
+            CREATE TABLE gen_products (
+                product_id INTEGER PRIMARY KEY,
+                product_name TEXT NOT NULL,
+                unit_price NUMERIC NULL,
+                discontinued INTEGER NOT NULL
+            );
+            INSERT INTO gen_products VALUES (1, 'Chai', 18.0, 0);
+            INSERT INTO gen_products VALUES (2, 'Chang', 19.0, 1);
+            INSERT INTO gen_products VALUES (3, 'Aniseed Syrup', NULL, 0);
+            """;
+        cmd.ExecuteNonQuery();
+    }
+
+    public void Dispose() => _connection.Dispose();
+
+    [Fact]
+    public void Query_DifferentColumnOrder_AcrossQueries_MapsCorrectly()
+    {
+        List<GenProduct> natural = _connection.Query<GenProduct>(
+            "SELECT product_id, product_name, unit_price, discontinued FROM gen_products ORDER BY product_id");
+
+        List<GenProduct> reversed = _connection.Query<GenProduct>(
+            "SELECT discontinued, unit_price, product_name, product_id FROM gen_products ORDER BY product_id");
+
+        Assert.Equal(3, natural.Count);
+        Assert.Equal(3, reversed.Count);
+        for (int i = 0; i < natural.Count; i++)
+        {
+            Assert.Equal(natural[i].ProductId, reversed[i].ProductId);
+            Assert.Equal(natural[i].ProductName, reversed[i].ProductName);
+            Assert.Equal(natural[i].UnitPrice, reversed[i].UnitPrice);
+            Assert.Equal(natural[i].Discontinued, reversed[i].Discontinued);
+        }
+
+        Assert.Equal("Chai", natural[0].ProductName);
+        Assert.Equal(18.0m, natural[0].UnitPrice);
+        Assert.True(natural[1].Discontinued);
+        Assert.Null(natural[2].UnitPrice);
+    }
+
+    [Fact]
+    public void Query_ExtraAndReorderedColumns_MapsCorrectly()
+    {
+        List<GenProduct> rows = _connection.Query<GenProduct>(
+            "SELECT 42 AS noise_a, unit_price, 'x' AS noise_b, product_name, discontinued, product_id FROM gen_products WHERE product_id = 2");
+
+        GenProduct row = Assert.Single(rows);
+        Assert.Equal(2, row.ProductId);
+        Assert.Equal("Chang", row.ProductName);
+        Assert.Equal(19.0m, row.UnitPrice);
+        Assert.True(row.Discontinued);
+    }
+
+    [Fact]
+    public void ReadEntity_SameReader_NextResult_DifferentColumnOrder_MapsCorrectly()
+    {
+        using SqliteCommand cmd = _connection.CreateCommand();
+        cmd.CommandText = """
+            SELECT product_id, product_name, unit_price, discontinued FROM gen_products WHERE product_id = 1;
+            SELECT discontinued, unit_price, product_name, product_id FROM gen_products WHERE product_id = 2;
+            """;
+
+        using SqliteDataReader reader = cmd.ExecuteReader();
+
+        Assert.True(reader.Read());
+        GenProduct first = GenProduct.ReadEntity(reader);
+        Assert.Equal(1, first.ProductId);
+        Assert.Equal("Chai", first.ProductName);
+        Assert.Equal(18.0m, first.UnitPrice);
+        Assert.False(first.Discontinued);
+
+        Assert.True(reader.NextResult());
+        Assert.True(reader.Read());
+        GenProduct second = GenProduct.ReadEntity(reader);
+        Assert.Equal(2, second.ProductId);
+        Assert.Equal("Chang", second.ProductName);
+        Assert.Equal(19.0m, second.UnitPrice);
+        Assert.True(second.Discontinued);
+    }
+
+    [Fact]
+    public void ReadEntity_SameReader_NextResult_MissingColumn_ThrowsInsteadOfStaleMapping()
+    {
+        using SqliteCommand cmd = _connection.CreateCommand();
+        cmd.CommandText = """
+            SELECT product_id, product_name, unit_price, discontinued FROM gen_products WHERE product_id = 1;
+            SELECT product_id, product_name FROM gen_products WHERE product_id = 2;
+            """;
+
+        using SqliteDataReader reader = cmd.ExecuteReader();
+
+        Assert.True(reader.Read());
+        GenProduct first = GenProduct.ReadEntity(reader);
+        Assert.Equal(1, first.ProductId);
+
+        Assert.True(reader.NextResult());
+        Assert.True(reader.Read());
+        // The cached ordinals from the first result set no longer match; strict
+        // generated mapping must fail loudly on the narrower shape, not reuse them.
+        Assert.ThrowsAny<Exception>(() => GenProduct.ReadEntity(reader));
+    }
+
+    [Fact]
+    public void ReadEntity_InterleavedReaders_DoNotCrossContaminate()
+    {
+        using SqliteCommand cmdA = _connection.CreateCommand();
+        cmdA.CommandText = "SELECT product_id, product_name, unit_price, discontinued FROM gen_products WHERE product_id = 1";
+        using SqliteCommand cmdB = _connection.CreateCommand();
+        cmdB.CommandText = "SELECT discontinued, unit_price, product_name, product_id FROM gen_products WHERE product_id = 2";
+
+        using SqliteDataReader readerA = cmdA.ExecuteReader();
+        Assert.True(readerA.Read());
+        GenProduct a = GenProduct.ReadEntity(readerA);
+        readerA.Close();
+
+        using SqliteDataReader readerB = cmdB.ExecuteReader();
+        Assert.True(readerB.Read());
+        GenProduct b = GenProduct.ReadEntity(readerB);
+
+        Assert.Equal(1, a.ProductId);
+        Assert.Equal("Chai", a.ProductName);
+        Assert.Equal(2, b.ProductId);
+        Assert.Equal("Chang", b.ProductName);
+    }
+}
