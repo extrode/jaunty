@@ -21,9 +21,11 @@ CREATE PROCEDURE dbo.GetAllProducts
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT product_id, product_name, supplier_id, category_id,
-           quantity_per_unit, unit_price, units_in_stock, units_on_order,
-           reorder_level, discontinued
+    SELECT product_id AS ProductId, product_name AS ProductName,
+           supplier_id AS SupplierId, category_id AS CategoryId,
+           quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice,
+           units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder,
+           reorder_level AS ReorderLevel, discontinued AS Discontinued
     FROM products;
 END;
 GO
@@ -41,9 +43,11 @@ CREATE PROCEDURE dbo.GetProductsByCategory
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT product_id, product_name, supplier_id, category_id,
-           quantity_per_unit, unit_price, units_in_stock, units_on_order,
-           reorder_level, discontinued
+    SELECT product_id AS ProductId, product_name AS ProductName,
+           supplier_id AS SupplierId, category_id AS CategoryId,
+           quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice,
+           units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder,
+           reorder_level AS ReorderLevel, discontinued AS Discontinued
     FROM products
     WHERE category_id = @CategoryId;
 END;
@@ -62,9 +66,11 @@ CREATE PROCEDURE dbo.GetProductById
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT product_id, product_name, supplier_id, category_id,
-           quantity_per_unit, unit_price, units_in_stock, units_on_order,
-           reorder_level, discontinued
+    SELECT product_id AS ProductId, product_name AS ProductName,
+           supplier_id AS SupplierId, category_id AS CategoryId,
+           quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice,
+           units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder,
+           reorder_level AS ReorderLevel, discontinued AS Discontinued
     FROM products
     WHERE product_id = @ProductId;
 END;
@@ -118,7 +124,9 @@ CREATE PROCEDURE dbo.UpdateProductPrice
 AS
 BEGIN
     SET NOCOUNT ON;
-    UPDATE products SET unit_price = @NewPrice WHERE product_id = @ProductId;
+    -- Write the real column: unit_price is a computed bridge column on the
+    -- PascalCase schema (see data/sqlserver/create-northwind.sql).
+    UPDATE products SET UnitPrice = @NewPrice WHERE product_id = @ProductId;
 END;
 GO
 
@@ -152,9 +160,11 @@ CREATE PROCEDURE dbo.GetNoResults
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT product_id, product_name, supplier_id, category_id,
-           quantity_per_unit, unit_price, units_in_stock, units_on_order,
-           reorder_level, discontinued
+    SELECT product_id AS ProductId, product_name AS ProductName,
+           supplier_id AS SupplierId, category_id AS CategoryId,
+           quantity_per_unit AS QuantityPerUnit, unit_price AS UnitPrice,
+           units_in_stock AS UnitsInStock, units_on_order AS UnitsOnOrder,
+           reorder_level AS ReorderLevel, discontinued AS Discontinued
     FROM products
     WHERE 1 = 0;
 END;
