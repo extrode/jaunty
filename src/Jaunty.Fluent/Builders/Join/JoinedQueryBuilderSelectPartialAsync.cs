@@ -149,7 +149,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             }
         }
 
-        return null;
+        throw new InvalidOperationException("Sequence contains no elements.");
     }
 
     public async Task<T> SelectPartialFirstAsync<T>(
