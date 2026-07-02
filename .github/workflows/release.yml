@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Pack & Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Derive version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore
+        run: dotnet restore Jaunty.slnx
+
+      - name: Build
+        run: >-
+          dotnet build Jaunty.slnx
+          -c Release
+          --no-restore
+          -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Test (SQLite core + all local suites)
+        run: >-
+          dotnet test Jaunty.slnx
+          -c Release
+          --no-build
+          --framework net8.0
+          --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
+
+      - name: Pack
+        run: >-
+          dotnet pack Jaunty.slnx
+          -c Release
+          --no-build
+          -p:Version=${{ steps.version.outputs.version }}
+          -o packout
+
+      - name: Push to NuGet
+        if: ${{ secrets.NUGET_API_KEY != '' }}
+        run: >-
+          dotnet nuget push "packout/*.nupkg"
+          --api-key "${{ secrets.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            packout/*.nupkg
+            packout/*.snupkg
+          generate_release_notes: true
+          body: |
+            See [CHANGELOG.md](https://github.com/beparey/jaunty/blob/main/CHANGELOG.md) for details.
