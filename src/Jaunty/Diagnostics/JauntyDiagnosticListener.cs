@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Data;
 
 namespace Jaunty.Diagnostics;
@@ -16,7 +17,7 @@ namespace Jaunty.Diagnostics;
 /// <item><description><see cref="CommandFailedEventName"/> - When execution fails</description></item>
 /// </list>
 /// <para>
-/// Subscribe using <see cref="DiagnosticListener.Subscribe"/> to receive events
+/// Subscribe using <see cref="DiagnosticListener.Subscribe(System.IObserver{System.Collections.Generic.KeyValuePair{string, object?}})"/> to receive events
 /// for integration with OpenTelemetry, Application Insights, or custom telemetry.
 /// </para>
 /// </remarks>
@@ -75,6 +76,11 @@ public sealed class JauntyDiagnosticListener : DiagnosticListener, IDisposable
     /// <item><description>Timestamp - UTC timestamp of the event</description></item>
     /// </list>
     /// </remarks>
+#if NET8_0_OR_GREATER
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CommandExecutingPayload))]
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "Payload type public properties are preserved via DynamicDependency.")]
+#endif
     public void WriteCommandExecuting(Interceptors.CommandContext context)
     {
         if (IsEnabled() && !_disposed)
@@ -94,6 +100,11 @@ public sealed class JauntyDiagnosticListener : DiagnosticListener, IDisposable
     /// <item><description>Success - Always true for this event</description></item>
     /// </list>
     /// </remarks>
+#if NET8_0_OR_GREATER
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CommandExecutedPayload))]
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "Payload type public properties are preserved via DynamicDependency.")]
+#endif
     public void WriteCommandExecuted(Interceptors.CommandContext context)
     {
         if (IsEnabled() && !_disposed)
@@ -115,6 +126,11 @@ public sealed class JauntyDiagnosticListener : DiagnosticListener, IDisposable
     /// <item><description>Success - Always false for this event</description></item>
     /// </list>
     /// </remarks>
+#if NET8_0_OR_GREATER
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CommandFailedPayload))]
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "Payload type public properties are preserved via DynamicDependency.")]
+#endif
     public void WriteCommandFailed(Interceptors.CommandContext context, Exception exception)
     {
         if (IsEnabled() && !_disposed)

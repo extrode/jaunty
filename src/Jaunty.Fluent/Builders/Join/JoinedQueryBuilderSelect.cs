@@ -17,7 +17,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         string sql = BuildSelectSql(columns);
-        return _connection.QueryPartial<TFrom>(sql, _parameters.ToParameterObject());
+        return _connection.QueryPartial<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
     public List<T> Select<T>() where T : new()
@@ -59,14 +59,14 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         string sql = BuildSelectSql(columns) + " LIMIT 1";
-        return _connection.QueryPartialFirst<TFrom>(sql, _parameters.ToParameterObject());
+        return _connection.QueryPartialFirst<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
     public TFrom? SelectFirstOrDefault()
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         string sql = BuildSelectSql(columns) + " LIMIT 1";
-        return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject());
+        return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
     public T SelectFirst<T>() where T : new()
@@ -135,13 +135,13 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     public int Count()
     {
         string sql = BuildCountSql();
-        return _connection.QueryScalar<int>(sql, _parameters.ToParameterObject());
+        return _connection.QueryScalar<int>(sql, _parameters.ToParameterObject()!);
     }
 
     public long LongCount()
     {
         string sql = BuildCountSql();
-        return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject());
+        return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!);
     }
 
     public string ToSql()
@@ -154,21 +154,21 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
         string sql = BuildSelectSql(columns);
-        return _connection.QueryPartial<TJoin>(sql, _parameters.ToParameterObject());
+        return _connection.QueryPartial<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
     private TJoin SelectFirstJoined()
     {
         string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
         string sql = BuildSelectSql(columns) + " LIMIT 1";
-        return _connection.QueryPartialFirst<TJoin>(sql, _parameters.ToParameterObject());
+        return _connection.QueryPartialFirst<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
     private TJoin? SelectFirstOrDefaultJoined()
     {
         string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
         string sql = BuildSelectSql(columns) + " LIMIT 1";
-        return _connection.QueryPartialFirstOrDefault<TJoin>(sql, _parameters.ToParameterObject());
+        return _connection.QueryPartialFirstOrDefault<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
     private List<(TFrom From, TJoin Joined)> SelectBothInternal()
