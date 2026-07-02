@@ -138,7 +138,7 @@ BEGIN
     IF COL_LENGTH('dbo.Orders', 'ship_address') IS NULL ALTER TABLE dbo.Orders ADD ship_address AS (ShipAddress);
     IF COL_LENGTH('dbo.Orders', 'ship_city') IS NULL ALTER TABLE dbo.Orders ADD ship_city AS (ShipCity);
     IF COL_LENGTH('dbo.Orders', 'ship_region') IS NULL ALTER TABLE dbo.Orders ADD ship_region AS (ShipRegion);
-    IF COL_LENGTH('dbo.Orders', 'ship_postal_code') IS NULL ALTER TABLE dbo.Orders ADD ship_postal_code AS (PostalCode);
+    IF COL_LENGTH('dbo.Orders', 'ship_postal_code') IS NULL ALTER TABLE dbo.Orders ADD ship_postal_code AS (ShipPostalCode);
     IF COL_LENGTH('dbo.Orders', 'ship_country') IS NULL ALTER TABLE dbo.Orders ADD ship_country AS (ShipCountry);
 END;
 
