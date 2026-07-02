@@ -50,10 +50,17 @@
     <ProjectReference Include="..\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
-                      BuildReference="false"
                       Private="false"
                       SetTargetFramework="TargetFramework=netstandard2.0"
                       SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
+  <!-- Ship the source generator inside the package so consumers get IMapped mappers -->
+  <ItemGroup>
+    <None Include="../Jaunty.SourceGenerator/bin/$(Configuration)/netstandard2.0/Jaunty.SourceGenerator.dll"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs"
+          Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
