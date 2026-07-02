@@ -1,35 +1,80 @@
 # Production Readiness Tasklist
 
-Last updated: 2026-03-03
+Last updated: 2026-07-02
 
 This is the active execution plan. Priorities are ordered by production risk.
+Assessment basis: [PRODUCTION-READINESS-2026-07-02.md](../../05-quality/reports/PRODUCTION-READINESS-2026-07-02.md) (full local build + test validation).
 
-## P0 - Correctness and Trust
+## P0 - Broken Build and Correctness
+
+### PRD-012: Fix Release solution build (CI is red)
+- Priority: `P0`
+- Status: `Open`
+- Scope:
+  - `dotnet build Jaunty.slnx -c Release` fails with 3x CS0535 in `benchmarks/Jaunty.Benchmarks/Entities/` (`JauntyProduct`, `TpcLineItem`, `TpcOrder` missing generated `ReadEntity`).
+  - Root cause: `Jaunty.slnx` sets `<Build Solution="Release|*" Project="false" />` on `Jaunty.SourceGenerator`, so the analyzer assembly is never built in Release solution builds and source generation does not run.
+  - Fix the slnx exclusion (or make the analyzer project reference build-independent) and verify `ci.yml` Build & Test passes on a fresh checkout.
+- Acceptance criteria:
+  - `dotnet build Jaunty.slnx -c Release` succeeds from a clean clone.
+  - CI Build & Test job green on `dev`.
+- Estimate: 0.5 day
 
 ### PRD-001: Make generated ordinal caching schema-safe
 - Priority: `P0`
 - Status: `In Progress (implementation + regression tests added; runtime validation pending)`
 - Scope:
-  - Update source generator to avoid stale ordinal reuse across different result shapes.
+  - Update source generator to avoid stale ordinal reuse across different result shapes (current `CacheEntry` uses an `_initialized` flag, not shape validation).
   - Add regression coverage for shape/order changes.
 - Acceptance criteria:
   - Same entity queried with different column orders maps correctly.
   - Same entity queried with different column subsets fails/passes according to strict/partial rules, not stale cache.
   - No mapping corruption in multi-result-set flows.
-- Estimate: 2-4 days
+- Estimate: 2-4 days (remaining: runtime validation)
 
-### PRD-002: Benchmark result hygiene
-- Priority: `P0`
-- Status: `Planned`
+## P1 - Release Engineering (net-new; nothing publishable exists today)
+
+### PRD-013: NuGet package metadata completeness
+- Priority: `P1`
+- Status: `Open`
+- Scope (all 7 packable projects; consider a shared `Directory.Build.props`):
+  - `PackageLicenseFile` packing `LICENSE.md` (custom proprietary license — cannot use an SPDX expression); evaluate `PackageRequireLicenseAcceptance`.
+  - `PackageReadmeFile`, `PackageIcon`, `PackageTags` (only FlatFiles projects have tags today).
+  - `GenerateDocumentationFile` so the merged XML docs ship in the packages.
+  - SourceLink: `PublishRepositoryUrl`, `EmbedUntrackedSources`, `ContinuousIntegrationBuild`, `IncludeSymbols` + `SymbolPackageFormat=snupkg`, deterministic build.
+- Acceptance criteria: `dotnet pack` output passes NuGet package validation (`dotnet-validate` / NuGet.org checks); IntelliSense works from the package.
+- Estimate: 1-2 days
+
+### PRD-014: Release pipeline and versioning
+- Priority: `P1`
+- Status: `Open`
 - Scope:
-  - Standardize benchmark matrix and annotate unsupported scenarios.
-  - Remove ambiguous summary claims not backed by current artifacts.
-- Acceptance criteria:
-  - Reproducible benchmark command set.
-  - Report tables with explicit supported/unsupported markers.
+  - Create `main` branch (remote currently has only `origin/dev`) and align with the documented release flow (`/release-cut`, `/release-ship`).
+  - Add a tag-triggered publish workflow (pack, validate, push to NuGet feed, create GitHub Release).
+  - Decide and document a versioning strategy; current `2026.01.01` is six months stale across all packages.
+  - Add `CHANGELOG.md` and keep it per release.
+- Acceptance criteria: a tagged release produces published, versioned packages with release notes, reproducibly.
 - Estimate: 2-3 days
 
-## P1 - API Consistency and AOT Integrity
+### PRD-015: CI test coverage hardening
+- Priority: `P1`
+- Status: `Open`
+- Scope:
+  - CI currently runs only 97 of 3,589 core tests (SQLite filter) plus FlatFiles/DuckDB; Fluent (787) and Scaffolding (177) suites are not run at all.
+  - Add SQL Server service container (or Testcontainers) to run the ~658 SQL Server tests in CI.
+  - Run Fluent and Scaffolding suites in CI.
+  - Add code-coverage collection + report artifact (coverage docs are manual, dated Jan 2026).
+  - Stretch: PostgreSQL/MySQL job to back the README's cross-provider bulk copy claims.
+- Acceptance criteria: CI runs the full suite (minus providers explicitly marked unsupported in CI) and publishes coverage.
+- Estimate: 2-4 days
+
+### PRD-016: Zero-warning build policy
+- Priority: `P1`
+- Status: `Open`
+- Scope: fix nullable-reference warnings (`CS8603` `JoinedQueryBuilderSelect.cs:164`, `CS8604` `DeleteCore.cs:84`, and any others surfaced by a clean build), then enable `TreatWarningsAsErrors` in `src/` projects.
+- Acceptance criteria: clean Release build with warnings-as-errors on.
+- Estimate: 1 day
+
+## P1 - API Consistency and AOT Integrity (carried over from 2026-03-03)
 
 ### PRD-003: Async API consistency pass
 - Priority: `P1`
@@ -59,7 +104,25 @@ This is the active execution plan. Priorities are ordered by production risk.
 - Acceptance criteria: lower allocations/CPU in upsert microbenchmarks.
 - Estimate: 2-4 days
 
-## P2 - Feature Completeness
+## P2 - Trust, Docs, and Feature Completeness
+
+### PRD-002: Benchmark result hygiene
+- Priority: `P2` (was P0; blocked by PRD-012 — benchmarks do not currently compile in Release)
+- Status: `Planned`
+- Scope:
+  - Standardize benchmark matrix and annotate unsupported scenarios.
+  - Remove ambiguous summary claims not backed by current artifacts.
+- Acceptance criteria: reproducible benchmark command set; report tables with explicit supported/unsupported markers.
+- Estimate: 2-3 days
+
+### PRD-017: Documentation consolidation and security policy
+- Priority: `P2`
+- Status: `Open`
+- Scope:
+  - Consolidate/archive conflicting status reports (coverage docs dated Jan 2026, multiple assessments); one authoritative readiness report + this tasklist.
+  - Add `SECURITY.md` with a vulnerability-reporting policy.
+  - Refresh README claims that lack automated backing (cross-provider bulk copy gains) or mark them as measured-on-date.
+- Estimate: 1-2 days
 
 ### PRD-007: Fluent 3-way join parity
 - Priority: `P2`
@@ -81,20 +144,21 @@ This is the active execution plan. Priorities are ordered by production risk.
 
 ## P3 - Production Ecosystem
 
-### PRD-010: Interception and observability hooks
-- Priority: `P3`
-- Status: `Planned`
-- Scope: command lifecycle hooks + diagnostic integration.
-- Estimate: 5-8 days
-
 ### PRD-011: Retry/resilience abstraction
 - Priority: `P3`
 - Status: `Planned`
 - Scope: optional transient retry policy integration.
 - Estimate: 3-5 days
 
+## Done
+
+### PRD-010: Interception and observability hooks
+- Status: `Done (2026-03, merge a5f9254)`
+- Delivered: `ICommandInterceptor`, `InterceptorPipeline`, `LoggingInterceptor`, `AuditInterceptor`, `LoggingConfiguration` with sensitive-parameter redaction, plus unit tests.
+
 ## Work Log
 
 - 2026-03-03: Created readiness report and active prioritized tasklist.
 - 2026-03-03: Started `PRD-001` implementation (schema-safe generated ordinal cache).
 - 2026-03-03: Added source-generator regression tests for reordered columns across reader instances and result sets.
+- 2026-07-02: Full local build+test validation. Found Release solution build broken (PRD-012). Added release-engineering items PRD-013..017. Marked PRD-010 done (logging/interception merged). Demoted PRD-002 to P2 (blocked by PRD-012). New report: PRODUCTION-READINESS-2026-07-02.md.
