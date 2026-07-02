@@ -11,8 +11,21 @@
     <PackageTags>orm;micro-orm;sql;database;dapper-alternative;aot;nativeaot;source-generator</PackageTags>
     <PackageProjectUrl>https://github.com/beparey/jaunty</PackageProjectUrl>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <!-- Proprietary source-viewable license; consumers must accept it explicitly. -->
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Copyright>Copyright (c) 2026 Syed Beparey</Copyright>
+    <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <!-- SourceLink and symbols (GitHub SourceLink ships with the .NET 8 SDK) -->
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <!-- Pack README.md and LICENSE.md into NuGet packages -->
