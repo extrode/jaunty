@@ -15,6 +15,7 @@
     <Project Path="tests/Jaunty.Tests/Jaunty.Tests.csproj" />
     <Project Path="tests/Jaunty.FlatFiles.Tests/Jaunty.FlatFiles.Tests.csproj" />
     <Project Path="tests/Jaunty.FlatFiles.DuckDB.Tests/Jaunty.FlatFiles.DuckDB.Tests.csproj" />
+    <Project Path="tests/Jaunty.SourceGenerator.Tests/Jaunty.SourceGenerator.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Jaunty.Benchmarks/Jaunty.Benchmarks.csproj" />
