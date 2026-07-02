@@ -166,7 +166,10 @@ public class JauntyGenerator : IIncrementalGenerator
             // DbDataReader path - use GetFieldValue<T>
             if (needsNullCheck)
             {
-                sb.AppendLine($"                entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default! : dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
+                // default must be typed to the property, not the getter: an untyped default in
+                // the ternary binds to the getter type, so DBNull would map to 0/false for
+                // nullable value types instead of null.
+                sb.AppendLine($"                entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default({p.TypeName})! : dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
             }
             else
             {
