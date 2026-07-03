@@ -266,6 +266,59 @@ END;
         cmd.ExecuteNonQuery();
     }
 
+
+    public WriteDialectContext GetWriteContextForTable(DialectInfo dialect, string tableName)
+    {
+        return dialect.Provider switch
+        {
+            DialectProvider.SystemSqlite => CreateSqliteContextForTable(new SQLiteConnection("Data Source=:memory:"), tableName, DialectProvider.SystemSqlite),
+#if NET8_0_OR_GREATER
+            DialectProvider.MicrosoftSqlite => CreateSqliteContextForTable(new SqliteConnection("Data Source=:memory:"), tableName, DialectProvider.MicrosoftSqlite),
+#else
+            DialectProvider.MicrosoftSqlite => throw new NotSupportedException("Microsoft.Data.Sqlite is not available on .NET Framework."),
+#endif
+            DialectProvider.SqlServer => CreateServerContextForTable(new SqlConnection(TestConfiguration.SqlServerConnectionString), DialectProvider.SqlServer, tableName),
+            DialectProvider.Postgres => CreateServerContextForTable(new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString), DialectProvider.Postgres, tableName),
+            DialectProvider.MariaDb => CreateServerContextForTable(new MySqlConnection(TestConfiguration.MariaDbConnectionString), DialectProvider.MariaDb, tableName),
+            _ => throw new InvalidOperationException($"Unsupported dialect provider: {dialect.Provider}")
+        };
+    }
+
+    private static WriteDialectContext CreateSqliteContextForTable(DbConnection connection, string tableName, DialectProvider provider)
+    {
+        connection.Open();
+        InitializeTableSchema(connection, provider, tableName);
+        return new WriteDialectContext(connection, transaction: null);
+    }
+
+    private static WriteDialectContext CreateServerContextForTable(DbConnection connection, DialectProvider provider, string tableName)
+    {
+        connection.Open();
+        InitializeTableSchema(connection, provider, tableName);
+        return new WriteDialectContext(connection, transaction: null);
+    }
+
+    private static void InitializeTableSchema(IDbConnection connection, DialectProvider provider, string tableName)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = provider switch
+        {
+            DialectProvider.SqlServer =>
+                $"IF OBJECT_ID('dbo.{tableName}', 'U') IS NOT NULL DROP TABLE dbo.{tableName}; " +
+                $"CREATE TABLE dbo.{tableName} (id BIGINT IDENTITY(1,1) PRIMARY KEY, name NVARCHAR(255) NOT NULL, value INT NOT NULL);",
+            DialectProvider.Postgres =>
+                $"DROP TABLE IF EXISTS {tableName}; " +
+                $"CREATE TABLE {tableName} (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, value INTEGER NOT NULL);",
+            DialectProvider.MariaDb =>
+                $"DROP TABLE IF EXISTS {tableName}; " +
+                $"CREATE TABLE {tableName} (id BIGINT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, value INT NOT NULL);",
+            _ =>
+                $"DROP TABLE IF EXISTS {tableName}; " +
+                $"CREATE TABLE {tableName} (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, value INTEGER NOT NULL);"
+        };
+        cmd.ExecuteNonQuery();
+    }
+
     #endregion
 }
 
