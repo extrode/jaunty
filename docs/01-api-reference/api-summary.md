@@ -119,6 +119,27 @@ Upsert return values are provider-specific "rows affected" semantics:
 
 For cross-provider code, treat any value `> 0` as success instead of asserting an exact constant.
 
+## Get, GetAll, and Execute Methods
+
+See [Get and Execute Operations](get-and-execute-operations.md) for full details.
+
+- `T? Get<T>(object id)` / `Get<T, TId>(TId id)` - Retrieve entity by primary key
+- `T GetRequired<T>(object id)` / `GetRequired<T, TId>(TId id)` - Retrieve entity by primary key, throwing if not found
+- `List<T> GetAll<T>()` - Retrieve all rows for a mapped table
+- `IEnumerable<T> GetAllStream<T>()` - Lazily stream all rows
+- `GetAsync`, `GetRequiredAsync`, `GetAllAsync`, `GetAllStreamAsync` - Async equivalents (require `DbConnection`)
+- `int Execute(string sql, ...)` - Execute a non-query SQL command
+- `int ExecuteBatch(string sql, IEnumerable<object> parameterSets, ...)` - Execute the same SQL once per parameter set
+- `ExecuteAsync`, `ExecuteBatchAsync` - Async equivalents
+
+## Multi-Entity Mapping Methods
+
+See [Multi-Entity Mapping](multi-entity-mapping.md) for full details.
+
+- `List<(T1,...,TN)> Query<T1,...,TN>(string sql, ...)` for N = 2..7 - Map joined query rows into N entity types via left-to-right ordinal claiming
+- `QueryFirst<T1,...,TN>`, `QueryFirstOrDefault<T1,...,TN>`, `QuerySingle<T1,...,TN>`, `QuerySingleOrDefault<T1,...,TN>`, `QueryStream<T1,...,TN>` - Same arities, single-result and streaming variants
+- `MultiEntityCommandOptions<T1,...,TN>` - Per-position custom mapper delegates (`mapper1..mapperN`) to opt individual positions out of ordinal claiming
+
 ## Stored Procedure Methods
 
 ### Basic Stored Procedure Execution
@@ -184,6 +205,9 @@ For cross-provider code, treat any value `> 0` as success instead of asserting a
 - `SchemaNameResolver` - Global schema name resolver
 - `TableNameResolver` - Global table name resolver
 - `ColumnNameResolver` - Global column name resolver
+- `DefaultEnumStorage` - Global default enum storage strategy (numeric or string)
+- `RegisterTypeHandler<T>(fromDb, toDb)` / `RegisterTypeHandler<T>(TypeHandler<T>)` - Register a custom type handler
+- `RemoveTypeHandler<T>()` - Remove a registered type handler
 - `Reset()` - Reset all configuration to defaults
 
 ### CommandOptions Struct
@@ -199,6 +223,7 @@ For cross-provider code, treat any value `> 0` as success instead of asserting a
 - `[Ignore]` - Exclude property from mapping
 - `[Key]` - Mark property as primary key
 - `[DatabaseGenerated(DatabaseGeneratedOption option)]` - Specify database generation behavior
+- `[EnumStorage(EnumStorage storage)]` - Override enum storage strategy for a single property
 
 ## GridReader Methods
 
