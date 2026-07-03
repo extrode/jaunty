@@ -50,16 +50,24 @@ public sealed class DuckDbDialect : IFlatFileDialect
     public bool IsKeyword(string identifier) => identifier is not null && Keywords.Contains(identifier);
 
     /// <inheritdoc />
+    /// <summary>
+    /// Quotes an identifier for DuckDB, doubling any embedded double quotes so the
+    /// identifier cannot break out of the quoted context (e.g. names derived from
+    /// filenames or [Table]/[Column] attributes).
+    /// </summary>
+    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
+
+    /// <inheritdoc />
     public string EscapeTableName(string? schemaName, string tableName)
     {
         // DuckDB uses double-quote escaping like PostgreSQL
         // Always quote identifiers for safety with flat file column names
-        var escapedTable = $"\"{tableName}\"";
+        var escapedTable = QuoteIdentifier(tableName);
 
         if (string.IsNullOrWhiteSpace(schemaName))
             return escapedTable;
 
-        return $"\"{schemaName}\".{escapedTable}";
+        return $"{QuoteIdentifier(schemaName)}.{escapedTable}";
     }
 
     /// <inheritdoc />
@@ -71,7 +79,7 @@ public sealed class DuckDbDialect : IFlatFileDialect
         if (columnName.Length >= 2 && columnName[0] == '"' && columnName[^1] == '"')
             return columnName;
 
-        return $"\"{columnName}\"";
+        return QuoteIdentifier(columnName);
     }
 
     /// <inheritdoc />
@@ -290,23 +298,26 @@ public sealed class DuckDbDialect : IFlatFileDialect
     public string GenerateCreateViewSql(IFileSource source)
     {
         var readFunction = GenerateReadFunction(source);
-        return $"CREATE OR REPLACE VIEW \"{source.TableName}\" AS SELECT * FROM {readFunction}";
+        return $"CREATE OR REPLACE VIEW {QuoteIdentifier(source.TableName)} AS SELECT * FROM {readFunction}";
     }
 
     /// <inheritdoc />
     public string GenerateCreateTableAsSql(IFileSource source)
     {
         var readFunction = GenerateReadFunction(source);
-        return $"CREATE OR REPLACE TABLE \"{source.TableName}\" AS SELECT * FROM {readFunction}";
+        return $"CREATE OR REPLACE TABLE {QuoteIdentifier(source.TableName)} AS SELECT * FROM {readFunction}";
     }
 
     /// <inheritdoc />
     public string GeneratePromoteToTableSql(IFileSource source)
     {
+        var tmpTable = QuoteIdentifier(source.TableName + "_tmp");
+        var table = QuoteIdentifier(source.TableName);
+
         var sb = new StringBuilder();
-        sb.Append($"CREATE TABLE \"{source.TableName}_tmp\" AS SELECT * FROM \"{source.TableName}\"; ");
-        sb.Append($"DROP VIEW \"{source.TableName}\"; ");
-        sb.Append($"ALTER TABLE \"{source.TableName}_tmp\" RENAME TO \"{source.TableName}\";");
+        sb.Append($"CREATE TABLE {tmpTable} AS SELECT * FROM {table}; ");
+        sb.Append($"DROP VIEW {table}; ");
+        sb.Append($"ALTER TABLE {tmpTable} RENAME TO {table};");
         return sb.ToString();
     }
 
@@ -329,7 +340,7 @@ public sealed class DuckDbDialect : IFlatFileDialect
         };
 
         var sb = new StringBuilder();
-        sb.Append($"COPY \"{tableName}\" TO '{escapedPath}' (FORMAT {duckDbFormat}");
+        sb.Append($"COPY {QuoteIdentifier(tableName)} TO '{escapedPath}' (FORMAT {duckDbFormat}");
 
         if (string.Equals(format, FileFormats.Tsv, StringComparison.OrdinalIgnoreCase))
             sb.Append(", DELIMITER '\t'");
@@ -349,7 +360,7 @@ public sealed class DuckDbDialect : IFlatFileDialect
         var escapedPath = outputPath.Replace("'", "''");
 
         var sb = new StringBuilder();
-        sb.Append($"COPY \"{tableName}\" TO '{escapedPath}' (FORMAT {source.DuckDbFormatName}");
+        sb.Append($"COPY {QuoteIdentifier(tableName)} TO '{escapedPath}' (FORMAT {source.DuckDbFormatName}");
 
         var extraOptions = source.GenerateCopyToOptions();
         if (!string.IsNullOrEmpty(extraOptions))
