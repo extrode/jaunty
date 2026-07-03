@@ -84,6 +84,12 @@ public static Task<long> InsertAsync<T>(this DbConnection connection, T entity, 
 **Returns:**
 - `Task<long>`: A task that resolves to the generated identity value, or 1 for non-identity inserts
 
+**Example:**
+```csharp
+var product = new Product { ProductName = "New Product", CategoryId = 1, Price = 10.99m };
+var productId = await connection.InsertAsync(product, cancellationToken);
+```
+
 ### InsertAsync&lt;T&gt;(T entity, CommandOptions options, CancellationToken cancellationToken = default)
 
 Asynchronously inserts an entity into the database with command options and returns the generated identity value for identity columns, or 1 for non-identity inserts.
@@ -162,6 +168,12 @@ public static Task<int> UpdateAsync<T>(this DbConnection connection, T entity, C
 
 **Returns:**
 - `Task<int>`: A task that resolves to the number of rows affected by the update
+
+**Example:**
+```csharp
+product.Price = 15.99m;
+var rowsAffected = await connection.UpdateAsync(product, cancellationToken);
+```
 
 ### UpdateAsync&lt;T&gt;(T entity, CommandOptions options, CancellationToken cancellationToken = default)
 
@@ -281,6 +293,11 @@ public static Task<int> DeleteAsync<T>(this DbConnection connection, T entity, C
 **Returns:**
 - `Task<int>`: A task that resolves to the number of rows affected by the delete
 
+**Example:**
+```csharp
+var rowsAffected = await connection.DeleteAsync(product, cancellationToken);
+```
+
 ### DeleteAsync&lt;T&gt;(T entity, CommandOptions options, CancellationToken cancellationToken = default)
 
 Asynchronously deletes an entity from the database with command options using the primary key(s) to identify the row to delete.
@@ -333,6 +350,31 @@ public static Task<int> DeleteAsync<T>(this DbConnection connection, object id, 
 
 **Returns:**
 - `Task<int>`: A task that resolves to the number of rows affected by the delete
+
+## Real-World Example: Transactional CRUD
+
+```csharp
+using var transaction = connection.BeginTransaction();
+try
+{
+    var options = CommandOptions.WithTransaction(transaction);
+
+    var newProduct = new Product { ProductName = "Widget Pro", CategoryId = 1, Price = 24.99m };
+    var newId = connection.Insert(newProduct, options);
+
+    newProduct.Price = 19.99m;
+    connection.Update(newProduct, options);
+
+    connection.Delete<Product>(discontinuedProductId, options);
+
+    transaction.Commit();
+}
+catch
+{
+    transaction.Rollback();
+    throw;
+}
+```
 
 ## Entity Mapping Conventions
 

@@ -293,6 +293,11 @@ Asynchronously executes a query and returns the single entity from the result se
 public static Task<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
+**Example:**
+```csharp
+var product = await connection.QueryFirstOrDefaultAsync<Product>("SELECT * FROM products WHERE id = 1");
+```
+
 ## Async Variants with Parameters
 
 ### QueryFirstAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)
@@ -329,6 +334,14 @@ Asynchronously executes a parameterized query and returns the single entity from
 **Signature:**
 ```csharp
 public static Task<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
+```
+
+**Example:**
+```csharp
+var product = await connection.QueryFirstOrDefaultAsync<Product>(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    cancellationToken);
 ```
 
 ## Async Variants with Command Options
@@ -369,6 +382,14 @@ Asynchronously executes a query with command options and returns the single enti
 public static Task<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
+**Example:**
+```csharp
+var product = await connection.QueryFirstAsync<Product>(
+    "SELECT * FROM products",
+    CommandOptions<Product>.WithTimeout(30),
+    cancellationToken);
+```
+
 ## Async Variants with Parameters and Command Options
 
 ### QueryFirstAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -405,6 +426,15 @@ Asynchronously executes a parameterized query with command options and returns t
 **Signature:**
 ```csharp
 public static Task<T?> QuerySingleOrDefaultAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+```
+
+**Example:**
+```csharp
+var product = await connection.QueryFirstAsync<Product>(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    CommandOptions<Product>.WithTimeout(30),
+    cancellationToken);
 ```
 
 ## Partial Mapping Variants
@@ -445,6 +475,12 @@ Executes a query and returns the single entity from the result set or the defaul
 public static T? QueryPartialSingleOrDefault<T>(this IDbConnection connection, string sql) where T : new()
 ```
 
+**Example:**
+```csharp
+// Only selects a subset of columns - fine under partial mapping
+var product = connection.QueryPartialFirst<Product>("SELECT product_id, product_name FROM products");
+```
+
 ## Async Partial Mapping Variants
 
 ### QueryPartialFirstAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
@@ -481,4 +517,10 @@ Asynchronously executes a query and returns the single entity from the result se
 **Signature:**
 ```csharp
 public static Task<T?> QueryPartialSingleOrDefaultAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+```
+
+**Example:**
+```csharp
+var product = await connection.QueryPartialFirstAsync<Product>(
+    "SELECT product_id, product_name FROM products", cancellationToken);
 ```
