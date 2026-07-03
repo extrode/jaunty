@@ -52,6 +52,8 @@ internal static class CrudSqlCache
         string updateSql = BuildUpdateSql(metadata, dialect, escapedTableName);
         string deleteSql = BuildDeleteSql(metadata, dialect, escapedTableName);
         string deleteByIdSql = BuildDeleteByIdSql(metadata, dialect, escapedTableName);
+        string selectByIdSql = BuildSelectByIdSql(metadata, dialect, escapedTableName);
+        string selectAllSql = BuildSelectAllSql(metadata, dialect, escapedTableName);
         string upsertSql = dialect.SupportsUpsert ? BuildUpsertSql(metadata, dialect, escapedTableName) : string.Empty;
 
         // Extract identity column names without LINQ (zero allocation)
@@ -70,7 +72,7 @@ internal static class CrudSqlCache
             lastInsertIdSql = dialect.GetLastInsertIdSql(trimmed);
         }
 
-        return new CachedCrudSql(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, metadata, dialect.SupportsUpsert);
+        return new CachedCrudSql(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, selectByIdSql, selectAllSql, metadata, dialect.SupportsUpsert);
     }
 
     private static EntityMetadata? TryResolveMetadata<T>() where T : new()
@@ -239,4 +241,51 @@ internal static class CrudSqlCache
             sb.Append(usePropertyNames ? keys[i].ColumnName : "Id");
         }
     }
+
+    private static string BuildSelectByIdSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)
+    {
+        IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
+        if (primaryKeys.Count != 1)
+            return string.Empty;
+
+        var sb = new StringBuilder(256);
+        sb.Append("SELECT ");
+        
+        // List all columns
+        for (int i = 0; i < metadata.Columns.Count; i++)
+        {
+            if (i > 0)
+                sb.Append(", ");
+            sb.Append(dialect.EscapeColumnName(metadata.Columns[i].ColumnName));
+        }
+
+        sb.Append(" FROM ");
+        sb.Append(escapedTableName);
+        sb.Append(" WHERE ");
+        sb.Append(dialect.EscapeColumnName(primaryKeys[0].ColumnName));
+        sb.Append(" = @");
+        sb.Append(primaryKeys[0].ColumnName);
+
+        return sb.ToString();
+    }
+
+    private static string BuildSelectAllSql(EntityMetadata metadata, ISqlDialect dialect, string escapedTableName)
+    {
+        var sb = new StringBuilder(256);
+        sb.Append("SELECT ");
+        
+        // List all columns
+        for (int i = 0; i < metadata.Columns.Count; i++)
+        {
+            if (i > 0)
+                sb.Append(", ");
+            sb.Append(dialect.EscapeColumnName(metadata.Columns[i].ColumnName));
+        }
+
+        sb.Append(" FROM ");
+        sb.Append(escapedTableName);
+
+        return sb.ToString();
+    }
+
 }
