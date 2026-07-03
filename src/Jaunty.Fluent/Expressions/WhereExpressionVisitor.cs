@@ -88,7 +88,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         }
 
         _sql.Append(escapedColumn);
-        _sql.Append(GetOperator(node.NodeType));
+        _sql.Append(GetOperator(isLeftColumn ? node.NodeType : MirrorOperator(node.NodeType)));
         var paramName = GetParameterName(columnName);
         _sql.Append(paramName);
         _parameters.Add((paramName, value));
@@ -445,7 +445,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             {
                 var escapedColumn = _dialect.EscapeColumnName(columnName);
                 _sql.Append(escapedColumn);
-                _sql.Append(GetOperator(binary.NodeType));
+                _sql.Append(GetOperator(isLeftColumn ? binary.NodeType : MirrorOperator(binary.NodeType)));
                 var paramName = GetParameterName(columnName);
                 _sql.Append(paramName);
                 _parameters.Add((paramName, value));
@@ -677,6 +677,15 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         ExpressionType.GreaterThan => " > ",
         ExpressionType.GreaterThanOrEqual => " >= ",
         _ => throw new NotSupportedException($"Operator {nodeType} is not supported in WHERE expressions.")
+    };
+
+    private static ExpressionType MirrorOperator(ExpressionType nodeType) => nodeType switch
+    {
+        ExpressionType.LessThan => ExpressionType.GreaterThan,
+        ExpressionType.LessThanOrEqual => ExpressionType.GreaterThanOrEqual,
+        ExpressionType.GreaterThan => ExpressionType.LessThan,
+        ExpressionType.GreaterThanOrEqual => ExpressionType.LessThanOrEqual,
+        _ => nodeType
     };
 
     private Expression HandleStringEquals(MethodCallExpression node, string escapedColumn, string columnName, object? value)

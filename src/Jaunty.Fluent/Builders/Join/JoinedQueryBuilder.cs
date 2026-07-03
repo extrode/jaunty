@@ -1,5 +1,6 @@
 using System.Data;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using Jaunty.Dialects;
 using Jaunty.Fluent.Internals;
@@ -23,6 +24,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     private readonly List<WhereCondition> _conditions = [];
     private readonly List<OrderByColumn> _orderByColumns = [];
     private readonly ParameterCollection _parameters = new();
+    private int _paramSeq;
     private readonly EntityMetadata _fromMetadata;
     private readonly EntityMetadata _joinMetadata;
 
@@ -90,14 +92,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
-
-            for (var i = 0; i < _conditions.Count; i++)
-            {
-                WhereCondition condition = _conditions[i];
-                if (i > 0)
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_conditions));
         }
 
         return sb.ToString();
@@ -137,14 +132,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
-
-            for (var i = 0; i < _conditions.Count; i++)
-            {
-                WhereCondition condition = _conditions[i];
-                if (i > 0)
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_conditions));
         }
 
         if (_orderByColumns.Count > 0)
@@ -182,6 +170,51 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal void AddJoin(JoinInfo join) => _joins.Add(join);
 
     internal void AddWhereCondition(WhereCondition condition) => _conditions.Add(condition);
+
+    /// <summary>
+    /// Adds a WHERE condition produced by a join-predicate expression visitor, renumbering
+    /// its positional parameter names (e.g. "jp0", "jp1") against a running counter shared by
+    /// the whole query. Each Where/And/Or call uses a fresh visitor whose parameter index resets
+    /// to 0, so without renumbering, separately-translated conditions on the same query can
+    /// collide on identical parameter names (e.g. two conditions each producing "@jp0"), silently
+    /// dropping/overwriting one of the bound values.
+    /// </summary>
+    internal void AddWhereExpression(string sql, List<(string Name, object? Value)> parameters, LogicalOperator op)
+    {
+        string finalSql = sql;
+
+        for (int i = 0; i < parameters.Count; i++)
+        {
+            (string oldName, object? value) = parameters[i];
+            string newName = $"{_dialect.ParameterPrefix}jp{_paramSeq++}";
+
+            if (newName != oldName)
+                finalSql = Regex.Replace(finalSql, Regex.Escape(oldName) + @"(?!\w)", m => newName);
+
+            _parameters.Add(newName, value);
+        }
+
+        _conditions.Add(WhereCondition.Expression(finalSql, op));
+    }
+
+    /// <summary>
+    /// Folds WHERE conditions left-to-right, wrapping each step in parentheses so the
+    /// generated SQL evaluates in the same order the fluent Where/And/Or chain was built,
+    /// instead of relying on SQL's AND-before-OR operator precedence.
+    /// </summary>
+    private static string BuildWhereExpression(List<WhereCondition> conditions)
+    {
+        var expr = conditions[0].Sql;
+
+        for (var i = 1; i < conditions.Count; i++)
+        {
+            var condition = conditions[i];
+            var op = condition.Operator == LogicalOperator.Or ? "OR" : "AND";
+            expr = $"({expr} {op} {condition.Sql})";
+        }
+
+        return expr;
+    }
 
     internal void AddParameter<TValue>(string name, TValue value) =>
         _parameters.Add(name, value);
@@ -261,14 +294,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
-
-            for (var i = 0; i < _conditions.Count; i++)
-            {
-                WhereCondition condition = _conditions[i];
-                if (i > 0)
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_conditions));
         }
 
         if (_orderByColumns.Count > 0)

@@ -153,6 +153,22 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         return sb.ToString();
     }
 
+    private string BuildInsertWithIdentitySql(string insertSql)
+    {
+        // The identity-retrieval SQL must run in the same batch/round-trip as the INSERT.
+        // Two dialect shapes are supported:
+        //   - A RETURNING clause (e.g. PostgreSQL "RETURNING id;") appended directly to
+        //     the INSERT VALUES clause before the terminating semicolon.
+        //   - A standalone SELECT statement (e.g. SQL Server, MySQL, SQLite) appended as
+        //     a second statement in the same command batch after a semicolon.
+        string identitySql = _dialect.GetLastInsertIdSql();
+
+        if (identitySql.TrimStart().StartsWith("RETURNING", StringComparison.OrdinalIgnoreCase))
+            return $"{insertSql} {identitySql}";
+
+        return $"{insertSql}; {identitySql}";
+    }
+
     private long ExecuteInsert(string sql)
     {
         var wasClosed = _connection.State == ConnectionState.Closed;
@@ -162,20 +178,19 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
                 _connection.Open();
 
             using IDbCommand command = _connection.CreateCommand();
-            command.CommandText = sql;
             _parameters.BindTo(command);
 
-            command.ExecuteNonQuery();
-
-            // If there's an identity column, get the last inserted ID
+            // If there's an identity column, append the identity-retrieval SQL to the
+            // same command so it executes in the same batch/round-trip as the INSERT.
             if (HasIdentityColumn())
             {
-                command.CommandText = _dialect.GetLastInsertIdSql();
-                command.Parameters.Clear();
+                command.CommandText = BuildInsertWithIdentitySql(sql);
                 var result = command.ExecuteScalar();
                 return Convert.ToInt64(result);
             }
 
+            command.CommandText = sql;
+            command.ExecuteNonQuery();
             return 1; // 1 row affected
         }
         finally
@@ -197,20 +212,19 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
                 await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
             using DbCommand command = dbConnection.CreateCommand();
-            command.CommandText = sql;
             _parameters.BindTo(command);
 
-            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-
-            // If there's an identity column, get the last inserted ID
+            // If there's an identity column, append the identity-retrieval SQL to the
+            // same command so it executes in the same batch/round-trip as the INSERT.
             if (HasIdentityColumn())
             {
-                command.CommandText = _dialect.GetLastInsertIdSql();
-                command.Parameters.Clear();
+                command.CommandText = BuildInsertWithIdentitySql(sql);
                 var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
                 return Convert.ToInt64(result);
             }
 
+            command.CommandText = sql;
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
             return 1; // 1 row affected
         }
         finally
