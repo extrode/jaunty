@@ -146,6 +146,15 @@ public static class JauntyConfig
     public static Func<Type, Type, object>? ReflectionMultiMapperResolver { get; set; }
 
     /// <summary>
+    /// Optional fallback multi-mapper resolver for arity-3+ multi-entity queries.
+    /// Key: array of N Type objects (one per entity type position).
+    /// Value: array of N Action&lt;object, IDataRecord&gt; delegates (one per type position).
+    /// Registered by Jaunty.Extensions.Reflection via UseReflectionMapping().
+    /// </summary>
+    public static Func<Type[], IDataReader, Action<object, IDataRecord>[]>? ReflectionMultiMapperResolverN { get; set; }
+
+
+    /// <summary>
     /// Optional resolver for special types (Dictionary, KeyValuePair, ValueTuple, ExpandoObject).
     /// Typically provided by Jaunty.Extensions.Reflection.SpecialTypeMappers.Register().
     /// Returns a Func&lt;IDataReader, object&gt; that creates the special type instance.
@@ -258,6 +267,7 @@ public static class JauntyConfig
         _reflectionDeleteBinderResolver = null;
         ReflectionTableMetadataResolver = null;
         ReflectionMultiMapperResolver = null;
+        ReflectionMultiMapperResolverN = null;
         _interceptorPipeline = null;
         _defaultEnumStorage = EnumStorage.Numeric;
         _parameterParsingCapacity = 8;
