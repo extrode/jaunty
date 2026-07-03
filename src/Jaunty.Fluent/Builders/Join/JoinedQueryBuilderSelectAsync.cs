@@ -62,7 +62,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     public async Task<TFrom> SelectFirstAsync(CancellationToken cancellationToken = default)
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialFirstAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
@@ -72,7 +72,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     public async Task<TFrom?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialFirstOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
@@ -176,7 +176,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     private async Task<TJoin> SelectFirstJoinedAsync(CancellationToken cancellationToken = default)
     {
         string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
-        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialFirstAsync<TJoin>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
@@ -186,7 +186,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     private async Task<TJoin?> SelectFirstOrDefaultJoinedAsync(CancellationToken cancellationToken = default)
     {
         string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
-        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialFirstOrDefaultAsync<TJoin>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)

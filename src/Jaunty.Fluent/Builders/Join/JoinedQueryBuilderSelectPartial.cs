@@ -81,7 +81,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 1);
 
         using IDbCommand command = _connection.CreateCommand();
         command.CommandText = sql;
@@ -105,7 +105,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public T? SelectPartialFirstOrDefault<T>(string columns, Func<IDataReader, T> mapper)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 1);
 
         using IDbCommand command = _connection.CreateCommand();
         command.CommandText = sql;
@@ -141,7 +141,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 2);
         IDictionary<string, object?>? result = null;
         int count = 0;
 
@@ -176,7 +176,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public T? SelectPartialSingleOrDefault<T>(string columns, Func<IDataReader, T> mapper)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 2);
         T? result = default;
         int count = 0;
 

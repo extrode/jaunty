@@ -109,7 +109,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string columns,
         CancellationToken cancellationToken = default)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 1);
 
         if (_connection is not DbConnection dbConn)
             throw new NotSupportedException("Async operations require DbConnection.");
@@ -157,7 +157,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 1);
 
         if (_connection is not DbConnection dbConn)
             throw new NotSupportedException("Async operations require DbConnection.");
@@ -204,7 +204,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string columns,
         CancellationToken cancellationToken = default)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 1);
 
         if (_connection is not DbConnection dbConn)
             throw new NotSupportedException("Async operations require DbConnection.");
@@ -252,7 +252,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 1);
 
         if (_connection is not DbConnection dbConn)
             throw new NotSupportedException("Async operations require DbConnection.");
@@ -299,7 +299,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string columns,
         CancellationToken cancellationToken = default)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 2);
         IDictionary<string, object?>? result = null;
         int count = 0;
 
@@ -354,7 +354,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 2);
         T? result = default;
         int count = 0;
 
@@ -408,7 +408,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string columns,
         CancellationToken cancellationToken = default)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 2);
         IDictionary<string, object?>? result = null;
         int count = 0;
 
@@ -463,7 +463,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        string sql = BuildPartialSelectSql(columns) + " LIMIT 2";
+        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 2);
         T? result = default;
         int count = 0;
 

@@ -115,9 +115,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
             _parent.Joins[1].Alias);
 
         (string sql, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
-        foreach ((string name, object? value) in parameters)
-            _parent.AddParameter(name, value);
-        _parent.AddWhereCondition(WhereCondition.Expression(sql, LogicalOperator.None));
+        _parent.AddWhereExpression(sql, parameters, LogicalOperator.None);
         return this;
     }
 
@@ -136,9 +134,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
             _parent.Joins[1].Alias);
 
         (string sql, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
-        foreach ((string name, object? value) in parameters)
-            _parent.AddParameter(name, value);
-        _parent.AddWhereCondition(WhereCondition.Expression(sql, LogicalOperator.And));
+        _parent.AddWhereExpression(sql, parameters, LogicalOperator.And);
         return this;
     }
 
@@ -151,9 +147,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
             _parent.Joins[1].Alias);
 
         (string sql, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
-        foreach ((string name, object? value) in parameters)
-            _parent.AddParameter(name, value);
-        _parent.AddWhereCondition(WhereCondition.Expression(sql, LogicalOperator.Or));
+        _parent.AddWhereExpression(sql, parameters, LogicalOperator.Or);
         return this;
     }
 
