@@ -21,6 +21,8 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
     private readonly EntityMetadata _metadata1;
     private readonly EntityMetadata _metadata2;
     private readonly StringBuilder _sql = new();
+    private readonly List<(string Name, object? Value)> _parameters = new();
+    private int _parameterIndex;
     private ParameterExpression? _param1;
     private ParameterExpression? _param2;
 
@@ -33,15 +35,22 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         _metadata2 = FluentMetadataCache.GetMetadata<T2>();
     }
 
-    public string Translate(Expression<Func<T1, T2, bool>> predicate)
+    public (string Sql, List<(string Name, object? Value)> Parameters) Translate(Expression<Func<T1, T2, bool>> predicate)
     {
         _sql.Clear();
+        _parameters.Clear();
+        _parameterIndex = 0;
         _param1 = predicate.Parameters[0];
         _param2 = predicate.Parameters[1];
 
         Visit(predicate.Body);
 
-        return _sql.ToString();
+        return (_sql.ToString(), _parameters);
+    }
+
+    private string GetParameterName()
+    {
+        return $"{_dialect.ParameterPrefix}jp{_parameterIndex++}";
     }
 
     protected override Expression VisitBinary(BinaryExpression node)
@@ -59,6 +68,26 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
 
         var leftColumn = TryGetColumnExpression(node.Left);
         var rightColumn = TryGetColumnExpression(node.Right);
+
+        // Handle null comparisons: emit IS NULL / IS NOT NULL instead of = NULL / <> NULL.
+        if ((node.NodeType is ExpressionType.Equal or ExpressionType.NotEqual))
+        {
+            if (leftColumn is not null && rightColumn is null && IsNullValue(node.Right))
+            {
+                _sql.Append(leftColumn);
+                _sql.Append(node.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
+                _sql.Append(')');
+                return node;
+            }
+
+            if (rightColumn is not null && leftColumn is null && IsNullValue(node.Left))
+            {
+                _sql.Append(rightColumn);
+                _sql.Append(node.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
+                _sql.Append(')');
+                return node;
+            }
+        }
 
         if (leftColumn is not null)
         {
@@ -82,6 +111,40 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
 
         _sql.Append(')');
         return node;
+    }
+
+    protected override Expression VisitUnary(UnaryExpression node)
+    {
+        if (node.NodeType == ExpressionType.Not)
+        {
+            _sql.Append("NOT (");
+            Visit(node.Operand);
+            _sql.Append(')');
+            return node;
+        }
+
+        if (node.NodeType == ExpressionType.Convert)
+        {
+            Visit(node.Operand);
+            return node;
+        }
+
+        return base.VisitUnary(node);
+    }
+
+    private static bool IsNullValue(Expression expression)
+    {
+        if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            expression = unary.Operand;
+
+        if (expression is ConstantExpression constant)
+            return constant.Value is null;
+
+        // Only evaluate side-effect-free member/constant accesses to detect captured nulls.
+        if (expression is MemberExpression)
+            return EvaluateExpression(expression) is null;
+
+        return false;
     }
 
     protected override Expression VisitMember(MemberExpression node)
@@ -159,21 +222,12 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         if (value is null)
         {
             _sql.Append("NULL");
+            return;
         }
-        else if (value is string s)
-        {
-            _sql.Append('\'');
-            _sql.Append(s.Replace("'", "''"));
-            _sql.Append('\'');
-        }
-        else if (value is bool b)
-        {
-            _sql.Append(b ? "1" : "0");
-        }
-        else
-        {
-            _sql.Append(value);
-        }
+
+        var paramName = GetParameterName();
+        _sql.Append(paramName);
+        _parameters.Add((paramName, value));
     }
 
     private static object? EvaluateExpression(Expression expression)
