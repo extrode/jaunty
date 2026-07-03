@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using Jaunty.Configuration;
 using Jaunty.Dialects;
@@ -44,7 +45,11 @@ public static class CsvImportExtensions
         if (!File.Exists(filePath))
             throw new FileNotFoundException($"CSV file not found: {filePath}", filePath);
 
+        ValidateIdentifier(tableName, nameof(tableName));
+
         options ??= new CsvImportOptions();
+
+        ValidateDelimiter(options.Delimiter);
 
         ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
         return dialect switch
@@ -75,7 +80,11 @@ public static class CsvImportExtensions
         if (!File.Exists(filePath))
             throw new FileNotFoundException($"CSV file not found: {filePath}", filePath);
 
+        ValidateIdentifier(tableName, nameof(tableName));
+
         options ??= new CsvImportOptions();
+
+        ValidateDelimiter(options.Delimiter);
 
         ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
         return dialect switch
@@ -115,6 +124,13 @@ public static class CsvImportExtensions
 
     private static long ImportViaSqliteCli(string dbPath, string tableName, string filePath, CsvImportOptions options)
     {
+        // tableName is already validated by ValidateIdentifier in the public entry point.
+        // filePath comes from the caller and is embedded verbatim in the sqlite3 CLI's dot-command
+        // script (piped over stdin); a quote or newline would let it break out of the quoted argument
+        // and inject arbitrary dot-commands (e.g. ".system") into the sqlite3 CLI process.
+        if (filePath.IndexOfAny(SqliteCliUnsafeChars) >= 0)
+            throw new ArgumentException($"File path contains characters that are not supported by the sqlite3 CLI import command: {filePath}", nameof(filePath));
+
         // Build sqlite3 commands
         var commands = new StringBuilder();
         commands.AppendLine(".mode csv");
@@ -168,6 +184,9 @@ public static class CsvImportExtensions
             headers = ParseCsvLine(headerLine, options.Delimiter, options.Quote);
         }
 
+        foreach (string header in headers)
+            ValidateIdentifier(header, nameof(headers));
+
         // Build INSERT statement
         var sb = new StringBuilder();
         sb.Append($"INSERT INTO {tableName} (");
@@ -218,8 +237,16 @@ public static class CsvImportExtensions
 
                 string[] values = ParseCsvLine(line, options.Delimiter, options.Quote);
 
-                for (int i = 0; i < parameters.Length && i < values.Length; i++)
+                for (int i = 0; i < parameters.Length; i++)
                 {
+                    if (i >= values.Length)
+                    {
+                        // Row has fewer fields than the header; without this, a parameter would keep
+                        // whatever value the previous row left in it instead of representing a missing field.
+                        parameters[i].Value = DBNull.Value;
+                        continue;
+                    }
+
                     string val = values[i];
                     if (options.NullValue != null && val == options.NullValue)
                         parameters[i].Value = DBNull.Value;
@@ -457,6 +484,26 @@ public static class CsvImportExtensions
     // =============================================
     // Helpers
     // =============================================
+    // Only letters, digits, and underscore, optionally schema-qualified (schema.table). This is
+    // intentionally strict: tableName and CSV header column names are interpolated directly into
+    // raw SQL (COPY/LOAD DATA/BULK INSERT/INSERT) or into the sqlite3 CLI's dot-command script, and
+    // none of those contexts support parameterizing identifiers.
+    private static readonly Regex ValidIdentifierPattern =
+        new(@"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?$", RegexOptions.Compiled);
+
+    private static readonly char[] SqliteCliUnsafeChars = { '"', '\r', '\n' };
+
+    private static void ValidateIdentifier(string identifier, string paramName)
+    {
+        if (string.IsNullOrWhiteSpace(identifier) || !ValidIdentifierPattern.IsMatch(identifier))
+            throw new ArgumentException($"'{identifier}' is not a valid SQL identifier.", paramName);
+    }
+
+    private static void ValidateDelimiter(char delimiter)
+    {
+        if (delimiter is '\'' or '"' or '\\' or '\r' or '\n')
+            throw new ArgumentException($"Delimiter '{delimiter}' is not supported; it conflicts with SQL/CLI quoting.", nameof(delimiter));
+    }
 
     private static string? ExtractSqliteDbPath(string connectionString)
     {
