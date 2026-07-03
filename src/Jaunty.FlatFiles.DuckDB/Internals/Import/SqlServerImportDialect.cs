@@ -15,6 +15,13 @@ internal sealed class SqlServerImportDialect : IImportDialect
     /// </summary>
     public static SqlServerImportDialect Instance { get; } = new();
 
+    /// <summary>
+    /// Quotes an identifier for SQL Server, doubling any embedded double quotes so the
+    /// identifier cannot break out of the quoted context (e.g. names derived from
+    /// filenames or [Table]/[Column] attributes).
+    /// </summary>
+    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
+
     /// <inheritdoc />
     public string MapClrTypeToSqlType(Type clrType) => clrType switch
     {
@@ -49,13 +56,13 @@ internal sealed class SqlServerImportDialect : IImportDialect
         }
 
         var sb = new StringBuilder();
-        sb.Append($"INSERT INTO \"{tableName}\"");
+        sb.Append($"INSERT INTO {QuoteIdentifier(tableName)}");
 
         sb.Append(" (");
         for (int i = 0; i < columnNames.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            sb.Append($"\"{columnNames[i]}\"");
+            sb.Append(QuoteIdentifier(columnNames[i]));
         }
         sb.Append(") VALUES (");
         for (int i = 0; i < parameterNames.Count; i++)
@@ -76,15 +83,15 @@ internal sealed class SqlServerImportDialect : IImportDialect
         string keyColumnName)
     {
         var sb = new StringBuilder();
-        sb.Append($"MERGE \"{tableName}\" AS target USING (SELECT ");
+        sb.Append($"MERGE {QuoteIdentifier(tableName)} AS target USING (SELECT ");
 
         for (int i = 0; i < parameterNames.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            sb.Append($"{parameterNames[i]} AS \"{columnNames[i]}\"");
+            sb.Append($"{parameterNames[i]} AS {QuoteIdentifier(columnNames[i])}");
         }
 
-        sb.Append($") AS source ON target.\"{keyColumnName}\" = source.\"{keyColumnName}\"");
+        sb.Append($") AS source ON target.{QuoteIdentifier(keyColumnName)} = source.{QuoteIdentifier(keyColumnName)}");
 
         if (conflictStrategy == ConflictStrategy.Upsert)
         {
@@ -94,7 +101,7 @@ internal sealed class SqlServerImportDialect : IImportDialect
             {
                 if (colName == keyColumnName) continue;
                 if (!first) sb.Append(", ");
-                sb.Append($"target.\"{colName}\" = source.\"{colName}\"");
+                sb.Append($"target.{QuoteIdentifier(colName)} = source.{QuoteIdentifier(colName)}");
                 first = false;
             }
         }
@@ -103,13 +110,13 @@ internal sealed class SqlServerImportDialect : IImportDialect
         for (int i = 0; i < columnNames.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            sb.Append($"\"{columnNames[i]}\"");
+            sb.Append(QuoteIdentifier(columnNames[i]));
         }
         sb.Append(") VALUES (");
         for (int i = 0; i < columnNames.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            sb.Append($"source.\"{columnNames[i]}\"");
+            sb.Append($"source.{QuoteIdentifier(columnNames[i])}");
         }
         sb.Append(");");
 
@@ -122,14 +129,14 @@ internal sealed class SqlServerImportDialect : IImportDialect
         IReadOnlyList<(string Name, Type ClrType, bool IsPrimaryKey, bool IsNullable)> columns)
     {
         var sb = new StringBuilder();
-        sb.Append($"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '{tableName}') ");
-        sb.Append($"CREATE TABLE \"{tableName}\" (");
+        sb.Append($"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '{tableName.Replace("'", "''")}') ");
+        sb.Append($"CREATE TABLE {QuoteIdentifier(tableName)} (");
 
         for (int i = 0; i < columns.Count; i++)
         {
             if (i > 0) sb.Append(", ");
             (string? name, Type? clrType, bool isPrimaryKey, bool isNullable) = columns[i];
-            sb.Append($"\"{name}\" {MapClrTypeToSqlType(clrType)}");
+            sb.Append($"{QuoteIdentifier(name)} {MapClrTypeToSqlType(clrType)}");
             if (isPrimaryKey) sb.Append(" PRIMARY KEY");
             if (!isNullable && !isPrimaryKey) sb.Append(" NOT NULL");
         }
