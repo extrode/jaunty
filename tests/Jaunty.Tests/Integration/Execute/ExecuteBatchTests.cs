@@ -21,14 +21,6 @@ public class ExecuteBatchTests : IClassFixture<DialectFixture>
         return Convert.ToInt32(cmd.ExecuteScalar());
     }
 
-    private static void ClearTestTable(System.Data.IDbConnection connection)
-    {
-        using var cmd = connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM bulk_test";
-        cmd.ExecuteNonQuery();
-    }
-
-
     [Theory]
     [SqlServer]
     [Postgres]
@@ -38,7 +30,6 @@ public class ExecuteBatchTests : IClassFixture<DialectFixture>
     public void ExecuteBatch_MultipleInserts_ReturnsCumulativeRows(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
-        ClearTestTable(ctx.Connection);
         var paramSets = new object[]
         {
             new { Name = "Test1", Value = 100 },
@@ -63,7 +54,6 @@ public class ExecuteBatchTests : IClassFixture<DialectFixture>
     public void ExecuteBatch_WithEmptyList_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
-        ClearTestTable(ctx.Connection);
         var paramSets = new object[] { };
 
         var totalRows = ctx.Connection.ExecuteBatch(
@@ -82,7 +72,6 @@ public class ExecuteBatchTests : IClassFixture<DialectFixture>
     public void ExecuteBatch_WithTransaction_RollbackUndoesAll(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
-        ClearTestTable(ctx.Connection);
         using var tx = ctx.Connection.BeginTransaction();
         var paramSets = new object[]
         {
