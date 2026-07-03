@@ -37,6 +37,7 @@ public static class JauntyReflectionExtensions
         JauntyConfig.ReflectionDeleteBinderResolver = ResolveDeleteBinder;
         JauntyConfig.ReflectionTableMetadataResolver = ResolveTableMetadata;
         JauntyConfig.ReflectionMultiMapperResolver = ResolveMultiMapper;
+        JauntyConfig.ReflectionMultiMapperResolverN = ResolveMultiMapperN;
     }
 
     /// <summary>
@@ -117,6 +118,90 @@ public static class JauntyReflectionExtensions
         MethodInfo method = typeof(JauntyReflectionExtensions).GetMethod(nameof(GetTypedMultiMapper), BindingFlags.NonPublic | BindingFlags.Static)!;
         MethodInfo generic = method.MakeGenericMethod(t1, t2);
         return generic.Invoke(null, null)!;
+    }
+
+    private static Action<object, IDataRecord>[] ResolveMultiMapperN(Type[] types, IDataReader reader)
+    {
+        int arity = types.Length;
+        MethodInfo? method = typeof(JauntyReflectionExtensions).GetMethod(
+            "BuildMultiMapperNDelegates" + arity,
+            BindingFlags.NonPublic | BindingFlags.Static);
+
+        if (method is null)
+            throw new InvalidOperationException($"No N-ary multi-mapper helper found for arity {arity}. Supported: 3-7.");
+
+        MethodInfo generic = method.MakeGenericMethod(types);
+        return (Action<object, IDataRecord>[])generic.Invoke(null, new object[] { reader })!;
+    }
+
+    private static Action<object, IDataRecord>[] BuildMultiMapperNDelegates3<T1, T2, T3>(IDataReader reader)
+        where T1 : new() where T2 : new() where T3 : new()
+    {
+        var m = MultiEntityMapper<T1, T2, T3>.Build(reader);
+        return new Action<object, IDataRecord>[]
+        {
+            (obj, r) => m.ApplyT1((T1)obj, r),
+            (obj, r) => m.ApplyT2((T2)obj, r),
+            (obj, r) => m.ApplyT3((T3)obj, r),
+        };
+    }
+
+    private static Action<object, IDataRecord>[] BuildMultiMapperNDelegates4<T1, T2, T3, T4>(IDataReader reader)
+        where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        var m = MultiEntityMapper<T1, T2, T3, T4>.Build(reader);
+        return new Action<object, IDataRecord>[]
+        {
+            (obj, r) => m.ApplyT1((T1)obj, r),
+            (obj, r) => m.ApplyT2((T2)obj, r),
+            (obj, r) => m.ApplyT3((T3)obj, r),
+            (obj, r) => m.ApplyT4((T4)obj, r),
+        };
+    }
+
+    private static Action<object, IDataRecord>[] BuildMultiMapperNDelegates5<T1, T2, T3, T4, T5>(IDataReader reader)
+        where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        var m = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(reader);
+        return new Action<object, IDataRecord>[]
+        {
+            (obj, r) => m.ApplyT1((T1)obj, r),
+            (obj, r) => m.ApplyT2((T2)obj, r),
+            (obj, r) => m.ApplyT3((T3)obj, r),
+            (obj, r) => m.ApplyT4((T4)obj, r),
+            (obj, r) => m.ApplyT5((T5)obj, r),
+        };
+    }
+
+    private static Action<object, IDataRecord>[] BuildMultiMapperNDelegates6<T1, T2, T3, T4, T5, T6>(IDataReader reader)
+        where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        var m = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(reader);
+        return new Action<object, IDataRecord>[]
+        {
+            (obj, r) => m.ApplyT1((T1)obj, r),
+            (obj, r) => m.ApplyT2((T2)obj, r),
+            (obj, r) => m.ApplyT3((T3)obj, r),
+            (obj, r) => m.ApplyT4((T4)obj, r),
+            (obj, r) => m.ApplyT5((T5)obj, r),
+            (obj, r) => m.ApplyT6((T6)obj, r),
+        };
+    }
+
+    private static Action<object, IDataRecord>[] BuildMultiMapperNDelegates7<T1, T2, T3, T4, T5, T6, T7>(IDataReader reader)
+        where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        var m = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(reader);
+        return new Action<object, IDataRecord>[]
+        {
+            (obj, r) => m.ApplyT1((T1)obj, r),
+            (obj, r) => m.ApplyT2((T2)obj, r),
+            (obj, r) => m.ApplyT3((T3)obj, r),
+            (obj, r) => m.ApplyT4((T4)obj, r),
+            (obj, r) => m.ApplyT5((T5)obj, r),
+            (obj, r) => m.ApplyT6((T6)obj, r),
+            (obj, r) => m.ApplyT7((T7)obj, r),
+        };
     }
 
     private static Func<MappingMode, Func<IDataReader, object>> GetTypedMapper<T>() where T : new()
