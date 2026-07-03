@@ -5,6 +5,7 @@ using System.Text;
 
 using Jaunty.Configuration;
 using Jaunty.TypeHandlers;
+using Jaunty.Attributes;
 
 namespace Jaunty.Internals.Parameters;
 
@@ -455,11 +456,13 @@ internal static class ParameterBinder
 
     private static object? ApplyTypeHandlerIfNeeded(object? value)
     {
-        if (value is null || !TypeHandlerRegistry.HasHandlers)
+        if (value is null)
             return value;
 
         Type valueType = value.GetType();
-        if (TypeHandlerRegistry.TryGetHandler(valueType, out ITypeHandler? handler) && handler is not null)
+
+        // Check if there's a registered type handler first
+        if (TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(valueType, out ITypeHandler? handler) && handler is not null)
         {
             try
             {
@@ -468,7 +471,29 @@ internal static class ParameterBinder
             catch
             {
                 // If handler fails, fall through to default binding
-                return value;
+            }
+        }
+
+        // Handle enums based on storage strategy
+        if (valueType.IsEnum)
+        {
+            EnumStorage storage = JauntyConfig.DefaultEnumStorage;
+            if (storage == EnumStorage.String)
+            {
+                return value.ToString();
+            }
+        }
+        else if (valueType.IsGenericType)
+        {
+            Type? underlyingType = Nullable.GetUnderlyingType(valueType);
+            if (underlyingType?.IsEnum == true)
+            {
+                // Handle nullable enums
+                EnumStorage storage = JauntyConfig.DefaultEnumStorage;
+                if (storage == EnumStorage.String && value != null)
+                {
+                    return value.ToString();
+                }
             }
         }
 

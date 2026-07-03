@@ -10,6 +10,8 @@ using System.Reflection;
 using Jaunty.Configuration;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
+using Jaunty.Attributes;
+using Jaunty.TypeHandlers;
 
 namespace Jaunty.Extensions.Reflection;
 
@@ -163,14 +165,75 @@ public static class MetadataCache<T>
         return result;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("IL", "IL2072:")]
     private static Action<T, IDataRecord, int> CreateSetter(PropertyInfo property)
     {
+        // Check if this is an enum with string storage
+        Type propertyType = property.PropertyType;
+        Type underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+
+        if (underlyingType.IsEnum)
+        {
+            EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
+            EnumStorage storage = enumAttr?.Storage ?? JauntyConfig.DefaultEnumStorage;
+
+            if (storage == EnumStorage.String)
+            {
+                // Use a compiled delegate that calls Enum.Parse
+                return (target, record, index) =>
+                {
+                    object dbValue = record.GetValue(index);
+                    object? convertedValue;
+
+                    if (dbValue is null or DBNull)
+                    {
+                        convertedValue = Nullable.GetUnderlyingType(propertyType) != null ? null : Activator.CreateInstance(underlyingType);
+                    }
+                    else
+                    {
+                        string strValue = dbValue.ToString() ?? string.Empty;
+                        try
+                        {
+                            // Try Enum.Parse case-insensitive
+                            convertedValue = Enum.Parse(underlyingType, strValue, ignoreCase: true);
+                        }
+                        catch
+                        {
+                            // If it's already numeric, try parsing as that
+                            try
+                            {
+                                var numValue = Convert.ChangeType(dbValue, Enum.GetUnderlyingType(underlyingType));
+                                convertedValue = Enum.ToObject(underlyingType, numValue);
+                            }
+                            catch
+                            {
+                                convertedValue = Activator.CreateInstance(underlyingType);
+                            }
+                        }
+                    }
+
+                    // Convert to the property type (handles nullable enums)
+                    if (propertyType != underlyingType)
+                    {
+                        if (convertedValue is null)
+                            property.SetValue(target, null);
+                        else
+                            property.SetValue(target, Convert.ChangeType(convertedValue, propertyType));
+                    }
+                    else
+                    {
+                        property.SetValue(target, convertedValue);
+                    }
+                };
+            }
+        }
+
+        // Default: use Convert.ChangeType via Expression trees
         ParameterExpression target = Expression.Parameter(typeof(T), "target");
         ParameterExpression record = Expression.Parameter(typeof(IDataRecord), "record");
         ParameterExpression index = Expression.Parameter(typeof(int), "index");
         MethodCallExpression getValue = Expression.Call(record, typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!, index);
 
-        Type propertyType = property.PropertyType;
         Type conversionType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
 
         Expression valueExpression = Expression.Convert(
