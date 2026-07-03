@@ -1,5 +1,5 @@
+using System.Data;
 using Jaunty.Core;
-using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Execute;
@@ -7,6 +7,7 @@ namespace Jaunty.Tests.Integration.Execute;
 [Collection("Execute Operations")]
 public class ExecuteBatchTests : IClassFixture<DialectFixture>
 {
+    private const string TableName = "execute_test";
     private readonly DialectFixture _fixture;
 
     public ExecuteBatchTests(DialectFixture fixture)
@@ -17,7 +18,7 @@ public class ExecuteBatchTests : IClassFixture<DialectFixture>
     private static int GetRowCount(System.Data.IDbConnection connection)
     {
         using var cmd = connection.CreateCommand();
-        cmd.CommandText = "SELECT COUNT(*) FROM bulk_test";
+        cmd.CommandText = $"SELECT COUNT(*) FROM {TableName}";
         return Convert.ToInt32(cmd.ExecuteScalar());
     }
 
@@ -29,7 +30,7 @@ public class ExecuteBatchTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void ExecuteBatch_MultipleInserts_ReturnsCumulativeRows(DialectInfo dialect)
     {
-        using var ctx = _fixture.GetWriteContext(dialect);
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
         var paramSets = new object[]
         {
             new { Name = "Test1", Value = 100 },
@@ -38,7 +39,7 @@ public class ExecuteBatchTests : IClassFixture<DialectFixture>
         };
 
         var totalRows = ctx.Connection.ExecuteBatch(
-            "INSERT INTO bulk_test (name, value) VALUES (@Name, @Value)",
+            $"INSERT INTO {TableName} (name, value) VALUES (@Name, @Value)",
             paramSets);
 
         Assert.Equal(3, totalRows);
@@ -53,11 +54,11 @@ public class ExecuteBatchTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void ExecuteBatch_WithEmptyList_ReturnsZero(DialectInfo dialect)
     {
-        using var ctx = _fixture.GetWriteContext(dialect);
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
         var paramSets = new object[] { };
 
         var totalRows = ctx.Connection.ExecuteBatch(
-            "INSERT INTO bulk_test (name, value) VALUES (@Name, @Value)",
+            $"INSERT INTO {TableName} (name, value) VALUES (@Name, @Value)",
             paramSets);
 
         Assert.Equal(0, totalRows);
@@ -71,7 +72,7 @@ public class ExecuteBatchTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void ExecuteBatch_WithTransaction_RollbackUndoesAll(DialectInfo dialect)
     {
-        using var ctx = _fixture.GetWriteContext(dialect);
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
         using var tx = ctx.Connection.BeginTransaction();
         var paramSets = new object[]
         {
@@ -80,13 +81,13 @@ public class ExecuteBatchTests : IClassFixture<DialectFixture>
         };
 
         var totalRows = ctx.Connection.ExecuteBatch(
-            "INSERT INTO bulk_test (name, value) VALUES (@Name, @Value)",
+            $"INSERT INTO {TableName} (name, value) VALUES (@Name, @Value)",
             paramSets,
             CommandOptions.WithTransaction(tx));
 
         Assert.Equal(2, totalRows);
         tx.Rollback();
-        
+
         Assert.Equal(0, GetRowCount(ctx.Connection));
     }
 }
