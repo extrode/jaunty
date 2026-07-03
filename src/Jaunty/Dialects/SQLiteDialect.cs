@@ -36,11 +36,13 @@ internal sealed class SQLiteDialect : ISqlDialect
 
     public string EscapeTableName(string? schemaName, string tableName)
     {
+        SqlIdentifierValidator.Validate(tableName, nameof(tableName));
         return IsKeyword(tableName) ? $"\"{tableName}\"" : tableName;
     }
 
     public string EscapeColumnName(string columnName)
     {
+        SqlIdentifierValidator.Validate(columnName, nameof(columnName));
         return IsKeyword(columnName) ? $"\"{columnName}\"" : columnName;
     }
 
