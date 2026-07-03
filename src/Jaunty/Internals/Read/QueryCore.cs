@@ -551,4 +551,37 @@ public static partial class Jaunty
 
     #endregion
 
+    #region N-ary Multi-Entity Core Methods
+
+    private static List<(T1, T2, T3)> QueryMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            var results = new List<(T1, T2, T3)>(JauntyConfig.QueryResultCapacity);
+
+            if (!reader.Read())
+                return results;
+
+            var mapping = MultiEntityMapper<T1, T2, T3>.Build(reader);
+
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+
+                results.Add((t1, t2, t3));
+            }
+            while (reader.Read());
+
+            return results;
+        });
+    }
+
+    #endregion
+
 }
