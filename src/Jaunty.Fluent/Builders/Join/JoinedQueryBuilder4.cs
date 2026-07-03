@@ -135,9 +135,7 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
             _parent._parent.Joins[2].Alias);
 
         (string sql, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
-        foreach ((string name, object? value) in parameters)
-            _parent._parent.AddParameter(name, value);
-        _parent._parent.AddWhereCondition(WhereCondition.Expression(sql, LogicalOperator.None));
+        _parent._parent.AddWhereExpression(sql, parameters, LogicalOperator.None);
         return this;
     }
 
@@ -157,9 +155,7 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
             _parent._parent.Joins[2].Alias);
 
         (string sql, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
-        foreach ((string name, object? value) in parameters)
-            _parent._parent.AddParameter(name, value);
-        _parent._parent.AddWhereCondition(WhereCondition.Expression(sql, LogicalOperator.And));
+        _parent._parent.AddWhereExpression(sql, parameters, LogicalOperator.And);
         return this;
     }
 
@@ -173,9 +169,7 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
             _parent._parent.Joins[2].Alias);
 
         (string sql, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
-        foreach ((string name, object? value) in parameters)
-            _parent._parent.AddParameter(name, value);
-        _parent._parent.AddWhereCondition(WhereCondition.Expression(sql, LogicalOperator.Or));
+        _parent._parent.AddWhereExpression(sql, parameters, LogicalOperator.Or);
         return this;
     }
 
