@@ -65,21 +65,68 @@ internal static class MultiEntityMapperCore
         HashSet<int> alreadyClaimed)
         where T : new()
     {
+        // MetadataCache<T>.GetSetters binds each property to the FIRST column in the
+        // reader whose name matches, regardless of what other types have claimed.
+        // When that first-bound ordinal was already claimed by an earlier type, we
+        // must not simply drop the property — we must rebind it to the next
+        // still-unclaimed column with the same name (the documented left-to-right
+        // ordinal-claiming behavior), so duplicate column names (e.g. "id" appearing
+        // once per joined table) are still claimed correctly by later types.
         PropertySetter<T>[] allSetters = MetadataCache<T>.GetSetters(reader, MappingMode.Projection);
 
-        var filtered = new List<PropertySetter<T>>(allSetters.Length);
-        var ordinals = new List<int>(allSetters.Length);
+        var result = new List<PropertySetter<T>>(allSetters.Length);
+        var claimedByThisType = new HashSet<int>();
 
         for (int i = 0; i < allSetters.Length; i++)
         {
-            int ord = allSetters[i].Ordinal;
-            if (!alreadyClaimed.Contains(ord))
+            PropertySetter<T> setter = allSetters[i];
+            int ord = setter.Ordinal;
+
+            if (!alreadyClaimed.Contains(ord) && !claimedByThisType.Contains(ord))
             {
-                filtered.Add(allSetters[i]);
-                ordinals.Add(ord);
+                result.Add(setter);
+                claimedByThisType.Add(ord);
+                continue;
             }
+
+            int replacement = FindNextUnclaimedOrdinal(reader, setter.Context.ColumnName, alreadyClaimed, claimedByThisType);
+            if (replacement >= 0)
+            {
+                result.Add(new PropertySetter<T>(setter.Context, replacement));
+                claimedByThisType.Add(replacement);
+            }
+            // Otherwise there is no remaining unclaimed column with this name; the
+            // property is left unmapped, consistent with MappingMode.Projection.
         }
 
-        return (filtered.ToArray(), ordinals.ToArray());
+        var ordinals = new int[result.Count];
+        for (int i = 0; i < result.Count; i++)
+            ordinals[i] = result[i].Ordinal;
+
+        return (result.ToArray(), ordinals);
+    }
+
+    /// <summary>
+    /// Finds the leftmost reader column ordinal whose name matches <paramref name="columnName"/>
+    /// (case-insensitive) that has not already been claimed by an earlier type or by this
+    /// same type earlier in its own property list.
+    /// </summary>
+    private static int FindNextUnclaimedOrdinal(
+        IDataReader reader,
+        string columnName,
+        HashSet<int> alreadyClaimed,
+        HashSet<int> claimedByThisType)
+    {
+        for (int ord = 0; ord < reader.FieldCount; ord++)
+        {
+            if (alreadyClaimed.Contains(ord) || claimedByThisType.Contains(ord))
+                continue;
+
+            string? candidateName = reader.GetName(ord);
+            if (candidateName is not null && candidateName.Equals(columnName, StringComparison.OrdinalIgnoreCase))
+                return ord;
+        }
+
+        return -1;
     }
 }
