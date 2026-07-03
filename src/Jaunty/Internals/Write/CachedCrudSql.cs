@@ -13,6 +13,8 @@ internal sealed class CachedCrudSql
     public string DeleteByIdSql { get; }
     public string UpsertSql { get; }
     public string LastInsertIdSql { get; }
+    public string SelectByIdSql { get; }
+    public string SelectAllSql { get; }
     public EntityMetadata Metadata { get; }
 
     public bool HasIdentityKey { get; }
@@ -26,6 +28,11 @@ internal sealed class CachedCrudSql
     public string InsertCommandText { get; }
 
     public CachedCrudSql(string insertSql, string updateSql, string deleteSql, string deleteByIdSql, string upsertSql, string lastInsertIdSql, EntityMetadata metadata, bool supportsUpsert)
+        : this(insertSql, updateSql, deleteSql, deleteByIdSql, upsertSql, lastInsertIdSql, string.Empty, string.Empty, metadata, supportsUpsert)
+    {
+    }
+
+    public CachedCrudSql(string insertSql, string updateSql, string deleteSql, string deleteByIdSql, string upsertSql, string lastInsertIdSql, string selectByIdSql, string selectAllSql, EntityMetadata metadata, bool supportsUpsert)
     {
         InsertSql = insertSql;
         UpdateSql = updateSql;
@@ -33,6 +40,8 @@ internal sealed class CachedCrudSql
         DeleteByIdSql = deleteByIdSql;
         UpsertSql = upsertSql;
         LastInsertIdSql = lastInsertIdSql;
+        SelectByIdSql = selectByIdSql;
+        SelectAllSql = selectAllSql;
         Metadata = metadata;
         SupportsUpsert = supportsUpsert;
 
