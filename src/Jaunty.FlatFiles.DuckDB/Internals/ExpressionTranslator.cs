@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -30,12 +29,6 @@ namespace Jaunty.FlatFiles.DuckDB.Internals;
 /// </remarks>
 internal static class ExpressionTranslator
 {
-    /// <summary>
-    /// Cache for compiled expression delegates to avoid repeated compilation.
-    /// Uses Expression string representation as key since Expression doesn't override GetHashCode.
-    /// </summary>
-    private static readonly ConcurrentDictionary<string, Func<object?>> _expressionCache = new();
-
     /// <summary>
     /// Translates a predicate expression into a DuckDB WHERE clause with positional parameters.
     /// </summary>
@@ -264,11 +257,10 @@ internal static class ExpressionTranslator
         if (expression is UnaryExpression { NodeType: ExpressionType.Convert } unary)
             return EvaluateExpression(unary.Operand);
 
-        var cacheKey = expression.ToString() ?? throw new InvalidOperationException("Expression ToString() returned null");
-        return _expressionCache.GetOrAdd(cacheKey, _ =>
-        {
-            var lambda = System.Linq.Expressions.Expression.Lambda<Func<object?>>(System.Linq.Expressions.Expression.Convert(expression, typeof(object)));
-            return lambda.Compile();
-        })();
+        // Not cached by expression.ToString(): closure-captured variables (e.g. `x => x.Age > someLocalVar`)
+        // produce a new Expression instance per call but stringify identically across calls, so a
+        // string-keyed cache would return a stale compiled delegate bound to an earlier call's captured value.
+        var lambda = System.Linq.Expressions.Expression.Lambda<Func<object?>>(System.Linq.Expressions.Expression.Convert(expression, typeof(object)));
+        return lambda.Compile()();
     }
 }
