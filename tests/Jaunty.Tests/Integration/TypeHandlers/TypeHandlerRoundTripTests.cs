@@ -20,7 +20,11 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
 
     public void Dispose()
     {
-        JauntyConfig.Reset();
+        // Only remove the specific handlers and state this class may have registered.
+        // Do NOT call JauntyConfig.Reset() -- it wipes ReflectionMapperResolver,
+        // causing cross-test mapper failures when running in parallel.
+        JauntyConfig.RemoveTypeHandler<string>();
+        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
     }
 
     private static void CreateTableForTest(IDbConnection connection, DialectProvider provider, string tableName)

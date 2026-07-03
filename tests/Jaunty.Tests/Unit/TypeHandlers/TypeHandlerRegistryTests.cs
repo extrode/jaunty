@@ -1,5 +1,6 @@
 using Jaunty.Attributes;
 using Jaunty.Configuration;
+using Jaunty.Extensions.Reflection;
 using Jaunty.TypeHandlers;
 
 namespace Jaunty.Tests.TypeHandlers;
@@ -9,16 +10,15 @@ namespace Jaunty.Tests.TypeHandlers;
 /// </summary>
 public class TypeHandlerRegistryTests : IDisposable
 {
-    public TypeHandlerRegistryTests()
-    {
-        // Ensure clean state before each test
-        JauntyConfig.Reset();
-    }
-
     public void Dispose()
     {
-        // Clean up after each test
-        JauntyConfig.Reset();
+        // Only remove the specific handlers this test class may have registered.
+        // Do NOT call JauntyConfig.Reset() — it wipes ReflectionMapperResolver,
+        // causing cross-test mapper failures when running in parallel.
+        JauntyConfig.RemoveTypeHandler<int>();
+        JauntyConfig.RemoveTypeHandler<string>();
+        JauntyConfig.RemoveTypeHandler<Guid>();
+        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
     }
 
     #region Delegate-based Registration
@@ -139,8 +139,10 @@ public class TypeHandlerRegistryTests : IDisposable
         JauntyConfig.RegisterTypeHandler<string>(fromDb: x => "", toDb: x => null);
         JauntyConfig.RegisterTypeHandler<Guid>(fromDb: x => Guid.Empty, toDb: x => null);
 
-        // Act
+        // Act — Reset() is the API under test; restore reflection mapping afterwards
+        // so other concurrently-running test collections are not affected.
         JauntyConfig.Reset();
+        JauntyReflectionExtensions.UseReflectionMapping();
 
         // Assert - verify removal works after reset (i.e., nothing is registered)
         Assert.False(JauntyConfig.RemoveTypeHandler<int>());
@@ -175,8 +177,10 @@ public class TypeHandlerRegistryTests : IDisposable
         // Arrange
         JauntyConfig.DefaultEnumStorage = EnumStorage.String;
 
-        // Act
+        // Act — Reset() is the API under test; restore reflection mapping afterwards
+        // so other concurrently-running test collections are not affected.
         JauntyConfig.Reset();
+        JauntyReflectionExtensions.UseReflectionMapping();
 
         // Assert
         Assert.Equal(EnumStorage.Numeric, JauntyConfig.DefaultEnumStorage);

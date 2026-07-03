@@ -1,5 +1,6 @@
 using Jaunty.Attributes;
 using Jaunty.Configuration;
+using Jaunty.Extensions.Reflection;
 
 namespace Jaunty.Tests.TypeHandlers;
 
@@ -8,14 +9,12 @@ namespace Jaunty.Tests.TypeHandlers;
 /// </summary>
 public class EnumStorageTests : IDisposable
 {
-    public EnumStorageTests()
-    {
-        JauntyConfig.Reset();
-    }
-
     public void Dispose()
     {
-        JauntyConfig.Reset();
+        // Only restore the specific state this test class mutates.
+        // Do NOT call JauntyConfig.Reset() — it wipes ReflectionMapperResolver,
+        // causing cross-test mapper failures when running in parallel.
+        JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
     }
 
     #region Attribute Tests
@@ -87,8 +86,10 @@ public class EnumStorageTests : IDisposable
         // Arrange
         JauntyConfig.DefaultEnumStorage = EnumStorage.String;
 
-        // Act
+        // Act — Reset() is the API under test here; restore reflection mapping afterwards
+        // so other concurrently-running test collections are not affected.
         JauntyConfig.Reset();
+        JauntyReflectionExtensions.UseReflectionMapping();
 
         // Assert
         Assert.Equal(EnumStorage.Numeric, JauntyConfig.DefaultEnumStorage);
