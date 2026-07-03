@@ -94,6 +94,14 @@ Asynchronously executes a parameterized command with options that returns multip
 public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
 ```
 
+**Example:**
+```csharp
+await using var grid = await connection.QueryMultipleAsync(
+    "SELECT * FROM categories; SELECT * FROM products");
+var categories = await grid.ReadAsync<Category>();
+var products = await grid.ReadAsync<Product>();
+```
+
 ## GridReader Methods
 
 The `GridReader` class provides methods to read from each result set in sequence.
@@ -229,6 +237,13 @@ public T? ReadScalar<T>(CommandOptions options = default)
 
 **Returns:**
 - `T?`: The scalar value of type T from the current result set
+
+**Example:**
+```csharp
+using var grid = connection.QueryMultiple("SELECT * FROM products; SELECT COUNT(*) FROM products");
+var products = grid.Read<Product>().ToList();
+var total = grid.ReadScalar<int>();
+```
 
 ## Async GridReader Methods
 
@@ -367,6 +382,16 @@ Asynchronously returns an async enumerable stream of entities from the current r
 **Signature:**
 ```csharp
 public IAsyncEnumerable<T> ReadPartialStreamAsync<T>(CommandOptions<T> options = default, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+```
+
+**Example:**
+```csharp
+using var grid = connection.QueryMultiple("SELECT * FROM categories; SELECT * FROM products");
+var categories = grid.Read<Category>().ToList();
+foreach (var p in grid.ReadStream<Product>())
+{
+    Console.WriteLine(p.ProductName);
+}
 ```
 
 ## Important Notes

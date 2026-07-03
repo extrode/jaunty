@@ -155,6 +155,14 @@ Asynchronously executes a parameterized query with command options and returns t
 public static Task<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
+**Example:**
+```csharp
+var products = await connection.QueryAsync<Product>(
+    "SELECT * FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    cancellationToken);
+```
+
 ## Partial Mapping Variants
 
 ### QueryPartial&lt;T&gt;(string sql)
@@ -193,6 +201,12 @@ Executes a parameterized query with command options and returns the results as a
 public static List<T> QueryPartial<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options) where T : new()
 ```
 
+**Example:**
+```csharp
+// Only product_id and product_name are selected; partial mapping tolerates the missing columns
+var products = connection.QueryPartial<Product>("SELECT product_id, product_name FROM products");
+```
+
 ## Async Partial Mapping Variants
 
 ### QueryPartialAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
@@ -229,4 +243,12 @@ Asynchronously executes a parameterized query with command options and returns t
 **Signature:**
 ```csharp
 public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+```
+
+**Example:**
+```csharp
+var products = await connection.QueryPartialAsync<Product>(
+    "SELECT product_id, product_name FROM products WHERE category_id = @CategoryId",
+    new { CategoryId = 1 },
+    cancellationToken);
 ```

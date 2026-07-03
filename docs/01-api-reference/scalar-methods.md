@@ -68,6 +68,13 @@ public static T QueryScalar<T>(this IDbConnection connection, string sql, Comman
 **Returns:**
 - `T`: The scalar value of type T
 
+**Example:**
+```csharp
+var count = connection.QueryScalar<long>(
+    "SELECT COUNT(*) FROM products",
+    CommandOptions.WithTimeout(30));
+```
+
 ### QueryScalar&lt;T&gt;(string sql, object parameters, CommandOptions options)
 
 Executes a parameterized query with command options and returns the first column of the first row as a scalar value.
@@ -126,6 +133,11 @@ public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string 
 
 **Returns:**
 - `Task<T>`: A task that resolves to the scalar value of type T
+
+**Example:**
+```csharp
+var count = await connection.QueryScalarAsync<long>("SELECT COUNT(*) FROM products");
+```
 
 ### QueryScalarAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)
 

@@ -151,6 +151,15 @@ Executes a parameterized query with command options and returns an enumerable se
 public static IEnumerable<T> QueryPartialStream<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options) where T : new()
 ```
 
+**Example:**
+```csharp
+// Only product_id and product_name are selected; partial mapping tolerates the missing columns
+foreach (var product in connection.QueryPartialStream<Product>("SELECT product_id, product_name FROM products"))
+{
+    ProcessProduct(product);
+}
+```
+
 ## Async Partial Mapping Streaming Methods
 
 ### QueryPartialStreamAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
@@ -187,6 +196,15 @@ Asynchronously executes a parameterized query with command options and returns a
 **Signature:**
 ```csharp
 public static IAsyncEnumerable<T> QueryPartialStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+```
+
+**Example:**
+```csharp
+// Only product_id and product_name are selected; partial mapping tolerates the missing columns
+await foreach (var product in connection.QueryPartialStreamAsync<Product>("SELECT product_id, product_name FROM products"))
+{
+    await ProcessProductAsync(product);
+}
 ```
 
 ## Notes
