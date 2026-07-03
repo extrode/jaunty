@@ -58,14 +58,14 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     public TFrom SelectFirst()
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirst<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
     public TFrom? SelectFirstOrDefault()
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
@@ -160,14 +160,14 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     private TJoin SelectFirstJoined()
     {
         string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
-        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirst<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
     private TJoin? SelectFirstOrDefaultJoined()
     {
         string[] columns = GetPrefixedColumns(_joinMetadata, _joins[0].Alias);
-        string sql = BuildSelectSql(columns) + " LIMIT 1";
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirstOrDefault<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
@@ -213,7 +213,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = BuildSelectAllColumnsSql();
         if (limit.HasValue)
-            sql += $" LIMIT {limit.Value}";
+            sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
         var results = new List<T>();
 
@@ -246,7 +246,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = BuildSelectAllColumnsSql();
         if (limit.HasValue)
-            sql += $" LIMIT {limit.Value}";
+            sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
         var results = new List<T>();
 
