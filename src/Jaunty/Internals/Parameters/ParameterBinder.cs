@@ -4,6 +4,7 @@ using System.Data;
 using System.Text;
 
 using Jaunty.Configuration;
+using Jaunty.TypeHandlers;
 
 namespace Jaunty.Internals.Parameters;
 
@@ -132,14 +133,14 @@ internal static class ParameterBinder
             {
                 IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = sqlName;
-                p.Value = expandedValue ?? DBNull.Value;
+                p.Value = ApplyTypeHandlerIfNeeded(expandedValue) ?? DBNull.Value;
                 command.Parameters.Add(p);
             }
             else if (propertyLookup.TryGetValue(sqlName, out ParameterMetadata m))
             {
                 IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = sqlName;
-                p.Value = m.Getter(parameters) ?? DBNull.Value;
+                p.Value = ApplyTypeHandlerIfNeeded(m.Getter(parameters)) ?? DBNull.Value;
                 command.Parameters.Add(p);
             }
             else
@@ -173,7 +174,7 @@ internal static class ParameterBinder
                 // Clone the template to avoid thread safety issues
                 // and to prevent parameters from being bound to multiple commands
                 IDbDataParameter p = sameProvider ? CloneParameter(command, template) : CreateParameter(command, template);
-                p.Value = item.Getter(parameters) ?? DBNull.Value;
+                p.Value = ApplyTypeHandlerIfNeeded(item.Getter(parameters)) ?? DBNull.Value;
                 pCollection.Add(p);
             }
         }
@@ -400,7 +401,7 @@ internal static class ParameterBinder
 
             IDbDataParameter p = command.CreateParameter();
             p.ParameterName = sqlName;
-            p.Value = value ?? DBNull.Value;
+            p.Value = ApplyTypeHandlerIfNeeded(value) ?? DBNull.Value;
             command.Parameters.Add(p);
         }
     }
@@ -419,7 +420,7 @@ internal static class ParameterBinder
             {
                 IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = sqlName;
-                p.Value = value ?? DBNull.Value;
+                p.Value = ApplyTypeHandlerIfNeeded(value) ?? DBNull.Value;
                 command.Parameters.Add(p);
             }
             else
@@ -451,4 +452,27 @@ internal static class ParameterBinder
             command.Parameters.Add(parameter);
         }
     }
+
+    private static object? ApplyTypeHandlerIfNeeded(object? value)
+    {
+        if (value is null || !TypeHandlerRegistry.HasHandlers)
+            return value;
+
+        Type valueType = value.GetType();
+        if (TypeHandlerRegistry.TryGetHandler(valueType, out ITypeHandler? handler) && handler is not null)
+        {
+            try
+            {
+                return handler.ToDbValue(value);
+            }
+            catch
+            {
+                // If handler fails, fall through to default binding
+                return value;
+            }
+        }
+
+        return value;
+    }
+
 }
