@@ -129,18 +129,26 @@ internal abstract class QueryBuilderBase
             return;
 
         sb.Append(" WHERE ");
+        sb.Append(BuildWhereExpression(_conditions));
+    }
 
-        for (var i = 0; i < _conditions.Count; i++)
+    /// <summary>
+    /// Folds WHERE conditions left-to-right, wrapping each step in parentheses so the
+    /// generated SQL evaluates in the same order the fluent Where/And/Or chain was built,
+    /// instead of relying on SQL's AND-before-OR operator precedence.
+    /// </summary>
+    protected static string BuildWhereExpression(List<WhereCondition> conditions)
+    {
+        var expr = conditions[0].Sql;
+
+        for (var i = 1; i < conditions.Count; i++)
         {
-            var condition = _conditions[i];
-
-            if (i > 0)
-            {
-                sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-            }
-
-            sb.Append(condition.Sql);
+            var condition = conditions[i];
+            var op = condition.Operator == LogicalOperator.Or ? "OR" : "AND";
+            expr = $"({expr} {op} {condition.Sql})";
         }
+
+        return expr;
     }
 
     /// <summary>
