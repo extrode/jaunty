@@ -19,6 +19,25 @@ namespace Jaunty.Fluent;
 internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderByClause<T>, IDistinctClause<T>, ISetClause<T>, IUpdateWhereClause<T>
     where T : new()
 {
+    /// <summary>
+    /// Folds WHERE conditions left-to-right, wrapping each step in parentheses so the
+    /// generated SQL evaluates in the same order the fluent Where/And/Or chain was built,
+    /// instead of relying on SQL's AND-before-OR operator precedence.
+    /// </summary>
+    private static string BuildWhereExpression(List<WhereCondition> conditions)
+    {
+        var expr = conditions[0].Sql;
+
+        for (var i = 1; i < conditions.Count; i++)
+        {
+            var condition = conditions[i];
+            var op = condition.Operator == LogicalOperator.Or ? "OR" : "AND";
+            expr = $"({expr} {op} {condition.Sql})";
+        }
+
+        return expr;
+    }
+
     private readonly IDbConnection _connection;
     private readonly ISqlDialect _dialect;
     private readonly EntityMetadata _metadata;
@@ -1109,15 +1128,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
-            for (int i = 0; i < _conditions.Count; i++)
-            {
-                WhereCondition condition = _conditions[i];
-                if (i > 0)
-                {
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_conditions));
         }
 
         // ORDER BY
@@ -1175,15 +1186,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
-            for (int i = 0; i < _conditions.Count; i++)
-            {
-                WhereCondition condition = _conditions[i];
-                if (i > 0)
-                {
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_conditions));
         }
 
         // ORDER BY
@@ -1223,15 +1226,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
-            for (int i = 0; i < _conditions.Count; i++)
-            {
-                WhereCondition condition = _conditions[i];
-                if (i > 0)
-                {
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_conditions));
         }
 
         return sb.ToString();
@@ -1254,15 +1249,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
-            for (int i = 0; i < _conditions.Count; i++)
-            {
-                WhereCondition condition = _conditions[i];
-                if (i > 0)
-                {
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_conditions));
         }
 
         return sb.ToString();
@@ -1505,15 +1492,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
-            for (int i = 0; i < _conditions.Count; i++)
-            {
-                WhereCondition condition = _conditions[i];
-                if (i > 0)
-                {
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_conditions));
         }
 
         return sb.ToString();
@@ -1909,15 +1888,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
-            for (int i = 0; i < _conditions.Count; i++)
-            {
-                WhereCondition condition = _conditions[i];
-                if (i > 0)
-                {
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_conditions));
         }
 
         return sb.ToString();
