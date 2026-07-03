@@ -2,8 +2,11 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Text;
+using System.Reflection;
 
 using Jaunty.Configuration;
+using Jaunty.TypeHandlers;
+using Jaunty.Attributes;
 
 namespace Jaunty.Internals.Parameters;
 
@@ -93,7 +96,7 @@ internal static class ParameterBinder
 
             if (propertyLookup.TryGetValue(sqlName, out ParameterMetadata m))
             {
-                items.Add(new TemplateItem(sqlName, m.Getter));
+                items.Add(new TemplateItem(sqlName, m.Getter, m.Property));
             }
             else
             {
@@ -132,14 +135,14 @@ internal static class ParameterBinder
             {
                 IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = sqlName;
-                p.Value = expandedValue ?? DBNull.Value;
+                p.Value = ApplyTypeHandlerIfNeeded(expandedValue, propertyInfo: null) ?? DBNull.Value;
                 command.Parameters.Add(p);
             }
             else if (propertyLookup.TryGetValue(sqlName, out ParameterMetadata m))
             {
                 IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = sqlName;
-                p.Value = m.Getter(parameters) ?? DBNull.Value;
+                p.Value = ApplyTypeHandlerIfNeeded(m.Getter(parameters), m.Property) ?? DBNull.Value;
                 command.Parameters.Add(p);
             }
             else
@@ -173,7 +176,7 @@ internal static class ParameterBinder
                 // Clone the template to avoid thread safety issues
                 // and to prevent parameters from being bound to multiple commands
                 IDbDataParameter p = sameProvider ? CloneParameter(command, template) : CreateParameter(command, template);
-                p.Value = item.Getter(parameters) ?? DBNull.Value;
+                p.Value = ApplyTypeHandlerIfNeeded(item.Getter(parameters), item.Property) ?? DBNull.Value;
                 pCollection.Add(p);
             }
         }
@@ -212,10 +215,11 @@ internal static class ParameterBinder
         }
     }
 
-    private readonly struct TemplateItem(string name, Func<object, object?> getter)
+    private readonly struct TemplateItem(string name, Func<object, object?> getter, PropertyInfo? property)
     {
         public readonly string Name = name;
         public readonly Func<object, object?> Getter = getter;
+        public readonly PropertyInfo? Property = property;
     }
 
     private static (string? expandedSql, Dictionary<string, object?>? expandedParams, HashSet<string>? expandedOriginalNames)
@@ -400,7 +404,7 @@ internal static class ParameterBinder
 
             IDbDataParameter p = command.CreateParameter();
             p.ParameterName = sqlName;
-            p.Value = value ?? DBNull.Value;
+            p.Value = ApplyTypeHandlerIfNeeded(value, propertyInfo: null) ?? DBNull.Value;
             command.Parameters.Add(p);
         }
     }
@@ -419,7 +423,7 @@ internal static class ParameterBinder
             {
                 IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = sqlName;
-                p.Value = value ?? DBNull.Value;
+                p.Value = ApplyTypeHandlerIfNeeded(value, propertyInfo: null) ?? DBNull.Value;
                 command.Parameters.Add(p);
             }
             else
@@ -436,7 +440,7 @@ internal static class ParameterBinder
         {
             IDbDataParameter parameter = command.CreateParameter();
             parameter.ParameterName = meta[i].Name;
-            parameter.Value = meta[i].Getter(parameters) ?? DBNull.Value;
+            parameter.Value = ApplyTypeHandlerIfNeeded(meta[i].Getter(parameters), meta[i].Property) ?? DBNull.Value;
             command.Parameters.Add(parameter);
         }
     }
@@ -447,8 +451,68 @@ internal static class ParameterBinder
         {
             IDbDataParameter parameter = command.CreateParameter();
             parameter.ParameterName = kvp.Key;
-            parameter.Value = kvp.Value ?? DBNull.Value;
+            parameter.Value = ApplyTypeHandlerIfNeeded(kvp.Value, propertyInfo: null) ?? DBNull.Value;
             command.Parameters.Add(parameter);
         }
     }
+
+    private static object? ApplyTypeHandlerIfNeeded(object? value, PropertyInfo? propertyInfo)
+    {
+        if (value is null)
+            return value;
+
+        Type valueType = value.GetType();
+
+        // Check if there's a registered type handler first
+        if (TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(valueType, out ITypeHandler? handler) && handler is not null)
+        {
+            try
+            {
+                return handler.ToDbValue(value);
+            }
+            catch
+            {
+                // If handler fails, fall through to default binding
+            }
+        }
+
+        // Handle enums based on storage strategy
+        if (valueType.IsEnum)
+        {
+            EnumStorage storage = GetEnumStorage(propertyInfo);
+            if (storage == EnumStorage.String)
+            {
+                return value.ToString();
+            }
+        }
+        else if (valueType.IsGenericType)
+        {
+            Type? underlyingType = Nullable.GetUnderlyingType(valueType);
+            if (underlyingType?.IsEnum == true)
+            {
+                // Handle nullable enums
+                EnumStorage storage = GetEnumStorage(propertyInfo);
+                if (storage == EnumStorage.String && value != null)
+                {
+                    return value.ToString();
+                }
+            }
+        }
+
+        return value;
+    }
+
+    private static EnumStorage GetEnumStorage(PropertyInfo? property)
+    {
+        if (property is not null)
+        {
+            EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
+            if (enumAttr is not null)
+            {
+                return enumAttr.Storage;
+            }
+        }
+        return JauntyConfig.DefaultEnumStorage;
+    }
+
 }

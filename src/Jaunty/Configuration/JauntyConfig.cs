@@ -1,8 +1,10 @@
 
 using System.Data;
 
+using Jaunty.Attributes;
 using Jaunty.Interceptors;
 using Jaunty.Internals.Enums;
+using Jaunty.TypeHandlers;
 
 namespace Jaunty.Configuration;
 
@@ -21,6 +23,7 @@ public static class JauntyConfig
     private static Func<Type, Action<IDbCommand, object>>? _reflectionUpdateBinderResolver;
     private static Func<Type, Action<IDbCommand, object>>? _reflectionDeleteBinderResolver;
     private static InterceptorPipeline? _interceptorPipeline;
+    private static EnumStorage _defaultEnumStorage = EnumStorage.Numeric;
 
     private static int _parameterParsingCapacity = 8;
     private static int _queryResultCapacity = 64;
@@ -154,6 +157,40 @@ public static class JauntyConfig
     }
 
     /// <summary>
+    /// Gets or sets the global default enum storage strategy.
+    /// Default: EnumStorage.Numeric.
+    /// </summary>
+    public static EnumStorage DefaultEnumStorage
+    {
+        get => _defaultEnumStorage;
+        set => _defaultEnumStorage = value;
+    }
+
+    /// <summary>
+    /// Registers a type handler using delegate-based conversion functions.
+    /// </summary>
+    public static void RegisterTypeHandler<T>(Func<object?, T> fromDb, Func<T?, object?> toDb)
+    {
+        if (fromDb is null) throw new ArgumentNullException(nameof(fromDb));
+        if (toDb is null) throw new ArgumentNullException(nameof(toDb));
+        TypeHandlerRegistry.Register<T>(new DelegateTypeHandler<T>(fromDb, toDb));
+    }
+
+    /// <summary>
+    /// Registers a type handler using a TypeHandler instance.
+    /// </summary>
+    public static void RegisterTypeHandler<T>(TypeHandler<T> handler)
+    {
+        if (handler is null) throw new ArgumentNullException(nameof(handler));
+        TypeHandlerRegistry.Register<T>(new AdaptedTypeHandler<T>(handler));
+    }
+
+    /// <summary>
+    /// Removes the registered type handler for the specified type.
+    /// </summary>
+    public static bool RemoveTypeHandler<T>() => TypeHandlerRegistry.Remove<T>();
+
+        /// <summary>
     /// Gets the interceptor pipeline for command execution hooks.
     /// </summary>
     /// <remarks>
@@ -222,8 +259,30 @@ public static class JauntyConfig
         ReflectionTableMetadataResolver = null;
         ReflectionMultiMapperResolver = null;
         _interceptorPipeline = null;
+        _defaultEnumStorage = EnumStorage.Numeric;
         _parameterParsingCapacity = 8;
         _queryResultCapacity = 64;
         _csvFieldCapacity = 16;
+        TypeHandlerRegistry.Clear();
+    }
+    private sealed class AdaptedTypeHandler<T> : ITypeHandler
+    {
+        private readonly TypeHandler<T> _handler;
+        internal AdaptedTypeHandler(TypeHandler<T> handler) => _handler = handler;
+        object? ITypeHandler.Parse(object? dbValue) => _handler.Parse(dbValue);
+        object? ITypeHandler.ToDbValue(object? value) => _handler.ToDbValue((T?)value);
+    }
+
+    private sealed class DelegateTypeHandler<T> : ITypeHandler
+    {
+        private readonly Func<object?, T> _fromDb;
+        private readonly Func<T?, object?> _toDb;
+        internal DelegateTypeHandler(Func<object?, T> fromDb, Func<T?, object?> toDb)
+        {
+            _fromDb = fromDb;
+            _toDb = toDb;
+        }
+        object? ITypeHandler.Parse(object? dbValue) => _fromDb(dbValue);
+        object? ITypeHandler.ToDbValue(object? value) => _toDb((T?)value);
     }
 }
