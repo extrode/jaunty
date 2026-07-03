@@ -168,10 +168,56 @@ public static class MetadataCache<T>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("IL", "IL2072:")]
     private static Action<T, IDataRecord, int> CreateSetter(PropertyInfo property)
     {
-        // Check if this is an enum with string storage
+        // Check if there's a registered type handler for this property type
         Type propertyType = property.PropertyType;
         Type underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
 
+        // Check registered type handlers first (before enum handling)
+        if (TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(underlyingType, out ITypeHandler? handler) && handler is not null)
+        {
+            // Use the type handler's Parse/FromDb conversion
+            return (target, record, index) =>
+            {
+                object dbValue = record.GetValue(index);
+
+                if (dbValue is null or DBNull)
+                {
+                    // For nullable types, set to null; for non-nullable, use default
+                    if (Nullable.GetUnderlyingType(propertyType) != null || !propertyType.IsValueType)
+                    {
+                        property.SetValue(target, null);
+                    }
+                    else
+                    {
+                        property.SetValue(target, Activator.CreateInstance(propertyType));
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        object? convertedValue = handler.Parse(dbValue);
+
+                        // Convert to the property type (handles nullable)
+                        if (propertyType != underlyingType && convertedValue is not null)
+                        {
+                            property.SetValue(target, Convert.ChangeType(convertedValue, propertyType));
+                        }
+                        else
+                        {
+                            property.SetValue(target, convertedValue);
+                        }
+                    }
+                    catch
+                    {
+                        // If handler fails, try default conversion or leave property unset
+                        property.SetValue(target, dbValue);
+                    }
+                }
+            };
+        }
+
+        // Check if this is an enum with string storage
         if (underlyingType.IsEnum)
         {
             EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
