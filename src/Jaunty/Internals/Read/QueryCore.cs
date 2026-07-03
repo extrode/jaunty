@@ -582,6 +582,705 @@ public static partial class Jaunty
         });
     }
 
+    private static (T1, T2, T3) QueryFirstMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException("Sequence contains no elements.");
+            var mapping = MultiEntityMapper<T1, T2, T3>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            mapping.ApplyT1(t1, reader);
+            mapping.ApplyT2(t2, reader);
+            mapping.ApplyT3(t3, reader);
+            return (t1, t2, t3);
+        });
+    }
+
+    private static (T1, T2, T3)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return (((T1, T2, T3)?)null);
+            var mapping = MultiEntityMapper<T1, T2, T3>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            mapping.ApplyT1(t1, reader);
+            mapping.ApplyT2(t2, reader);
+            mapping.ApplyT3(t3, reader);
+            return (t1, t2, t3);
+        });
+    }
+
+    private static (T1, T2, T3) QuerySingleMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException("Sequence contains no elements.");
+            var mapping = MultiEntityMapper<T1, T2, T3>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            mapping.ApplyT1(t1, reader);
+            mapping.ApplyT2(t2, reader);
+            mapping.ApplyT3(t3, reader);
+            var result = (t1, t2, t3);
+            if (reader.Read())
+                throw new InvalidOperationException("Sequence contains more than one element.");
+            return result;
+        });
+    }
+
+    private static (T1, T2, T3)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return (((T1, T2, T3)?)null);
+            var mapping = MultiEntityMapper<T1, T2, T3>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            mapping.ApplyT1(t1, reader);
+            mapping.ApplyT2(t2, reader);
+            mapping.ApplyT3(t3, reader);
+            var result = (t1, t2, t3);
+            if (reader.Read())
+                throw new InvalidOperationException("Sequence contains more than one element.");
+            return result;
+        });
+    }
+
+    private static IEnumerable<(T1, T2, T3)> QueryStreamMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            var results = new List<(T1, T2, T3)>(JauntyConfig.QueryResultCapacity);
+            if (!reader.Read())
+                return results;
+            var mapping = MultiEntityMapper<T1, T2, T3>.Build(reader);
+            do
+            {
+                var t1 = new T1();
+                var t2 = new T2();
+                var t3 = new T3();
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                results.Add((t1, t2, t3));
+            }
+            while (reader.Read());
+            return results;
+        });
+    }
+
+
+
+    private static List<(T1, T2, T3, T4)> QueryMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            var results = new List<(T1, T2, T3, T4)>(JauntyConfig.QueryResultCapacity);
+            if (!reader.Read())
+                return results;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4>.Build(reader);
+            do
+            {
+                var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                results.Add((t1, t2, t3, t4));
+            }
+            while (reader.Read());
+            return results;
+        });
+    }
+
+    private static (T1, T2, T3, T4) QueryFirstMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException("Sequence contains no elements.");
+            var mapping = MultiEntityMapper<T1, T2, T3, T4>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+            return (t1, t2, t3, t4);
+        });
+    }
+
+    private static (T1, T2, T3, T4)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return ((T1,T2,T3,T4)?)null;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+            return (t1, t2, t3, t4);
+        });
+    }
+
+    private static (T1, T2, T3, T4) QuerySingleMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException("Sequence contains no elements.");
+            var mapping = MultiEntityMapper<T1, T2, T3, T4>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+            var result = (t1, t2, t3, t4);
+            if (reader.Read())
+                throw new InvalidOperationException("Sequence contains more than one element.");
+            return result;
+        });
+    }
+
+    private static (T1, T2, T3, T4)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return (((T1, T2, T3, T4)?)null);
+            var mapping = MultiEntityMapper<T1, T2, T3, T4>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+            var result = (t1, t2, t3, t4);
+            if (reader.Read())
+                throw new InvalidOperationException("Sequence contains more than one element.");
+            return result;
+        });
+    }
+
+    private static IEnumerable<(T1, T2, T3, T4)> QueryStreamMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            var results = new List<(T1, T2, T3, T4)>(JauntyConfig.QueryResultCapacity);
+            if (!reader.Read())
+                return results;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4>.Build(reader);
+            do
+            {
+                var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                results.Add((t1, t2, t3, t4));
+            }
+            while (reader.Read());
+            return results;
+        });
+    }
+
+    private static List<(T1, T2, T3, T4, T5)> QueryMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            var results = new List<(T1, T2, T3, T4, T5)>(JauntyConfig.QueryResultCapacity);
+            if (!reader.Read())
+                return results;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(reader);
+            do
+            {
+                var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                results.Add((t1, t2, t3, t4, t5));
+            }
+            while (reader.Read());
+            return results;
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5) QueryFirstMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException("Sequence contains no elements.");
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+            return (t1, t2, t3, t4, t5);
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return ((T1,T2,T3,T4,T5)?)null;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+            return (t1, t2, t3, t4, t5);
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5) QuerySingleMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException("Sequence contains no elements.");
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+            var result = (t1, t2, t3, t4, t5);
+            if (reader.Read())
+                throw new InvalidOperationException("Sequence contains more than one element.");
+            return result;
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return (((T1, T2, T3, T4, T5)?)null);
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+            var result = (t1, t2, t3, t4, t5);
+            if (reader.Read())
+                throw new InvalidOperationException("Sequence contains more than one element.");
+            return result;
+        });
+    }
+
+    private static IEnumerable<(T1, T2, T3, T4, T5)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            var results = new List<(T1, T2, T3, T4, T5)>(JauntyConfig.QueryResultCapacity);
+            if (!reader.Read())
+                return results;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(reader);
+            do
+            {
+                var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                results.Add((t1, t2, t3, t4, t5));
+            }
+            while (reader.Read());
+            return results;
+        });
+    }
+
+    private static List<(T1, T2, T3, T4, T5, T6)> QueryMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            var results = new List<(T1, T2, T3, T4, T5, T6)>(JauntyConfig.QueryResultCapacity);
+            if (!reader.Read())
+                return results;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(reader);
+            do
+            {
+                var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+                results.Add((t1, t2, t3, t4, t5, t6));
+            }
+            while (reader.Read());
+            return results;
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5, T6) QueryFirstMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException("Sequence contains no elements.");
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+            return (t1, t2, t3, t4, t5, t6);
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5, T6)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return ((T1,T2,T3,T4,T5,T6)?)null;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+            return (t1, t2, t3, t4, t5, t6);
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5, T6) QuerySingleMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException("Sequence contains no elements.");
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+            var result = (t1, t2, t3, t4, t5, t6);
+            if (reader.Read())
+                throw new InvalidOperationException("Sequence contains more than one element.");
+            return result;
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5, T6)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return (((T1, T2, T3, T4, T5, T6)?)null);
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+            var result = (t1, t2, t3, t4, t5, t6);
+            if (reader.Read())
+                throw new InvalidOperationException("Sequence contains more than one element.");
+            return result;
+        });
+    }
+
+    private static IEnumerable<(T1, T2, T3, T4, T5, T6)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            var results = new List<(T1, T2, T3, T4, T5, T6)>(JauntyConfig.QueryResultCapacity);
+            if (!reader.Read())
+                return results;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(reader);
+            do
+            {
+                var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+                results.Add((t1, t2, t3, t4, t5, t6));
+            }
+            while (reader.Read());
+            return results;
+        });
+    }
+
+    private static List<(T1, T2, T3, T4, T5, T6, T7)> QueryMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            var results = new List<(T1, T2, T3, T4, T5, T6, T7)>(JauntyConfig.QueryResultCapacity);
+            if (!reader.Read())
+                return results;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(reader);
+            do
+            {
+                var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            var t7 = new T7();
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+                mapping.ApplyT7(t7, reader);
+                results.Add((t1, t2, t3, t4, t5, t6, t7));
+            }
+            while (reader.Read());
+            return results;
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5, T6, T7) QueryFirstMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException("Sequence contains no elements.");
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            var t7 = new T7();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+                mapping.ApplyT7(t7, reader);
+            return (t1, t2, t3, t4, t5, t6, t7);
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5, T6, T7)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return ((T1,T2,T3,T4,T5,T6,T7)?)null;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            var t7 = new T7();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+                mapping.ApplyT7(t7, reader);
+            return (t1, t2, t3, t4, t5, t6, t7);
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5, T6, T7) QuerySingleMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException("Sequence contains no elements.");
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            var t7 = new T7();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+                mapping.ApplyT7(t7, reader);
+            var result = (t1, t2, t3, t4, t5, t6, t7);
+            if (reader.Read())
+                throw new InvalidOperationException("Sequence contains more than one element.");
+            return result;
+        });
+    }
+
+    private static (T1, T2, T3, T4, T5, T6, T7)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            if (!reader.Read())
+                return (((T1, T2, T3, T4, T5, T6, T7)?)null);
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(reader);
+            var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            var t7 = new T7();
+            mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+                mapping.ApplyT7(t7, reader);
+            var result = (t1, t2, t3, t4, t5, t6, t7);
+            if (reader.Read())
+                throw new InvalidOperationException("Sequence contains more than one element.");
+            return result;
+        });
+    }
+
+    private static IEnumerable<(T1, T2, T3, T4, T5, T6, T7)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    {
+        return ExecuteReader(connection, sql, parameters, options, reader =>
+        {
+            var results = new List<(T1, T2, T3, T4, T5, T6, T7)>(JauntyConfig.QueryResultCapacity);
+            if (!reader.Read())
+                return results;
+            var mapping = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(reader);
+            do
+            {
+                var t1 = new T1();
+            var t2 = new T2();
+            var t3 = new T3();
+            var t4 = new T4();
+            var t5 = new T5();
+            var t6 = new T6();
+            var t7 = new T7();
+                mapping.ApplyT1(t1, reader);
+                mapping.ApplyT2(t2, reader);
+                mapping.ApplyT3(t3, reader);
+                mapping.ApplyT4(t4, reader);
+                mapping.ApplyT5(t5, reader);
+                mapping.ApplyT6(t6, reader);
+                mapping.ApplyT7(t7, reader);
+                results.Add((t1, t2, t3, t4, t5, t6, t7));
+            }
+            while (reader.Read());
+            return results;
+        });
+    }
+
     #endregion
 
 }
