@@ -2,6 +2,7 @@ using System.Data;
 using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Core;
+using Jaunty.TypeHandlers;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
@@ -183,4 +184,56 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
         Assert.NotNull(rawValue);
         Assert.Equal("TestValue", rawValue.ToString());
     }
+
+    [Theory]
+    [SystemSqlite]
+    public void ClassBasedTypeHandler_SubclassRoundTrip_HandlerInvoked(DialectInfo dialect)
+    {
+        var handler = new PrefixTypeHandler();
+        JauntyConfig.RegisterTypeHandler<string>(handler);
+
+        string tableName = "typehandler_test_class";
+        using var ctx = _fixture.GetWriteContext(dialect);
+        CreateTableForTest(ctx.Connection, dialect.Provider, tableName);
+
+        var entity = new TypeHandlerTestEntity
+        {
+            Name = "ClassHandlerTest"
+        };
+
+        using var cmd = ctx.Connection.CreateCommand();
+        cmd.CommandText = $"INSERT INTO {tableName} (name) VALUES (@name)";
+        var p1 = cmd.CreateParameter(); p1.ParameterName = "@name"; p1.Value = entity.Name; cmd.Parameters.Add(p1);
+        cmd.ExecuteNonQuery();
+
+        using var getCmd = ctx.Connection.CreateCommand();
+        getCmd.CommandText = $"SELECT name FROM {tableName} WHERE name LIKE @prefix";
+        var p2 = getCmd.CreateParameter(); p2.ParameterName = "@prefix"; p2.Value = "%ClassHandlerTest%"; getCmd.Parameters.Add(p2);
+        var rawValue = getCmd.ExecuteScalar();
+        Assert.NotNull(rawValue);
+        Assert.Equal("ClassHandlerTest", rawValue.ToString());
+    }
+
+    private class PrefixTypeHandler : TypeHandler<string>
+    {
+        private const string Prefix = "CLASSHANDLED:";
+
+        public override string Parse(object? dbValue)
+        {
+            if (dbValue is null || dbValue == DBNull.Value)
+                return string.Empty;
+            string str = dbValue.ToString();
+            return Prefix + str;
+        }
+
+        public override object? ToDbValue(string? value)
+        {
+            if (value is null)
+                return null;
+            if (value.StartsWith(Prefix))
+                return value.Substring(Prefix.Length);
+            return value;
+        }
+    }
+
 }
