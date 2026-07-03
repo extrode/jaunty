@@ -74,7 +74,7 @@ public static class FlatFile
 
             resolvedPath = filePath;
             extension = Path.GetExtension(GetFileNameFromUri(filePath)).ToLowerInvariant();
-            tableName = Path.GetFileNameWithoutExtension(GetFileNameFromUri(filePath)).ToLowerInvariant();
+            tableName = SanitizeTableName(Path.GetFileNameWithoutExtension(GetFileNameFromUri(filePath)));
         }
         else if (IsGlobPattern(filePath))
         {
@@ -91,7 +91,7 @@ public static class FlatFile
                 throw new FileNotFoundException($"Flat file not found: {resolvedPath}", resolvedPath);
 
             extension = Path.GetExtension(resolvedPath).ToLowerInvariant();
-            tableName = Path.GetFileNameWithoutExtension(resolvedPath).ToLowerInvariant();
+            tableName = SanitizeTableName(Path.GetFileNameWithoutExtension(resolvedPath));
         }
 
         var options = new FlatFileOptions();
@@ -170,8 +170,20 @@ public static class FlatFile
 
     private static string SanitizeTableName(string name)
     {
-        // Remove glob characters and normalize for use as a SQL table name
-        var sanitized = name.Replace("*", "").Replace("?", "").Trim('.', '_', '-');
-        return string.IsNullOrEmpty(sanitized) ? "data" : sanitized.ToLowerInvariant();
+        // Replace anything that isn't a plain identifier character so a filename
+        // (which may contain quotes, glob characters, or other SQL metacharacters)
+        // can never break out of the generated SQL identifier when interpolated downstream.
+        var sb = new System.Text.StringBuilder(name.Length);
+        foreach (char c in name)
+        {
+            sb.Append(char.IsLetterOrDigit(c) || c == '_' ? c : '_');
+        }
+
+        var sanitized = sb.ToString().Trim('_');
+        if (string.IsNullOrEmpty(sanitized))
+            return "data";
+
+        sanitized = sanitized.ToLowerInvariant();
+        return char.IsDigit(sanitized[0]) ? "_" + sanitized : sanitized;
     }
 }
