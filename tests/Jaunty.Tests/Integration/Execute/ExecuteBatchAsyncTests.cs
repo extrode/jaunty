@@ -22,6 +22,14 @@ public class ExecuteBatchAsyncTests : IClassFixture<DialectFixture>
         return Convert.ToInt32(cmd.ExecuteScalar());
     }
 
+    private static void ClearTestTable(System.Data.IDbConnection connection)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM bulk_test";
+        cmd.ExecuteNonQuery();
+    }
+
+
     [Theory]
     [SqlServer]
     [Postgres]
@@ -31,6 +39,7 @@ public class ExecuteBatchAsyncTests : IClassFixture<DialectFixture>
     public async Task ExecuteBatchAsync_MultipleInserts_ReturnsCumulativeRows(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
+        ClearTestTable(ctx.Connection);
         var connection = (DbConnection)ctx.Connection;
         var paramSets = new object[]
         {
@@ -56,6 +65,7 @@ public class ExecuteBatchAsyncTests : IClassFixture<DialectFixture>
     public async Task ExecuteBatchAsync_WithEmptyList_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
+        ClearTestTable(ctx.Connection);
         var connection = (DbConnection)ctx.Connection;
         var paramSets = new object[] { };
 
