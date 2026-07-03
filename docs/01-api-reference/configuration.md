@@ -77,6 +77,75 @@ public static void Reset()
 JauntyConfig.Reset();
 ```
 
+### DefaultEnumStorage
+
+Gets or sets the global default strategy for storing enum-typed properties. Defaults to `EnumStorage.Numeric`.
+
+**Property:**
+```csharp
+public static EnumStorage DefaultEnumStorage { get; set; }
+```
+
+**Example:**
+```csharp
+// Store all enums as their string name instead of the numeric value
+JauntyConfig.DefaultEnumStorage = EnumStorage.String;
+```
+
+Use the `[EnumStorage(...)]` attribute (see [Attributes](attributes.md)) to override this global default on individual properties.
+
+### RegisterTypeHandler
+
+Registers a custom type handler for a CLR type, so Jaunty knows how to convert it to and from a database value. Jaunty is delegate-first: the simplest way to register a handler is with two conversion functions, but a `TypeHandler<T>` subclass can be used instead when the conversion needs shared state or more structure.
+
+**Delegate-based registration:**
+```csharp
+public static void RegisterTypeHandler<T>(Func<object?, T> fromDb, Func<T?, object?> toDb)
+```
+
+**Example:**
+```csharp
+// Store Guid values as strings
+JauntyConfig.RegisterTypeHandler<Guid>(
+    fromDb: dbValue => dbValue is string s ? Guid.Parse(s) : Guid.Empty,
+    toDb: value => value == Guid.Empty ? null : value.Value.ToString("D"));
+```
+
+**Class-based registration:**
+```csharp
+public static void RegisterTypeHandler<T>(TypeHandler<T> handler)
+```
+
+**Example:**
+```csharp
+public class GuidAsStringHandler : TypeHandler<Guid>
+{
+    public override Guid Parse(object? dbValue) =>
+        dbValue is string s ? Guid.Parse(s) : Guid.Empty;
+
+    public override object? ToDbValue(Guid? value) =>
+        value is null || value == Guid.Empty ? null : value.Value.ToString("D");
+}
+
+JauntyConfig.RegisterTypeHandler(new GuidAsStringHandler());
+```
+
+### RemoveTypeHandler&lt;T&gt;()
+
+Removes the registered type handler for a type, if one exists.
+
+**Method:**
+```csharp
+public static bool RemoveTypeHandler<T>()
+```
+
+**Returns:** `true` if a handler was registered and removed; `false` if no handler was registered for `T`.
+
+**Example:**
+```csharp
+JauntyConfig.RemoveTypeHandler<Guid>();
+```
+
 ## NamingConvention Class
 
 The `NamingConvention` class provides built-in naming convention helpers:
