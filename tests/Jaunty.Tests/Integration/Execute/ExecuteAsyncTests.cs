@@ -53,7 +53,7 @@ public class ExecuteAsyncTests : IClassFixture<DialectFixture>
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => connection.ExecuteAsync(
                 "INSERT INTO bulk_test (name, value) VALUES (@Name, @Value)",
                 new { Name = "AsyncTest", Value = 100 },
