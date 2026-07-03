@@ -166,6 +166,72 @@ public class LoggingInterceptorTests
     }
 
     [Fact]
+    public async Task OnCommandExecutingAsync_MasksSensitiveParameters_ForAnonymousTypeParameters()
+    {
+        // Arrange
+        var provider = CreateTestProvider();
+        var logger = CreateLogger(provider);
+        var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
+        config.SensitiveParameterNames.Add("Password");
+        var interceptor = new LoggingInterceptor(logger, config);
+        var parameters = new { Name = "John", Password = "secret123" };
+        var context = new CommandContext(
+            "INSERT INTO Users (Name, Password) VALUES (@Name, @Password)",
+            parameters,
+            CreateMockConnection(),
+            CommandType.Text);
+
+        // Act
+        await interceptor.OnCommandExecutingAsync(context, CancellationToken.None);
+
+        // Assert
+        var logs = provider.Logs;
+        Assert.Single(logs);
+        Assert.Contains("***MASKED***", logs[0].Message);
+        Assert.DoesNotContain("secret123", logs[0].Message);
+        Assert.Contains("John", logs[0].Message);
+    }
+
+    private sealed class UserParameters
+    {
+        public UserParameters(string name, string password)
+        {
+            Name = name;
+            Password = password;
+        }
+
+        public string Name { get; }
+        public string Password { get; }
+    }
+
+    [Fact]
+    public async Task OnCommandExecutingAsync_MasksSensitiveParameters_ForRecordParameters()
+    {
+        // Arrange
+        var provider = CreateTestProvider();
+        var logger = CreateLogger(provider);
+        var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
+        config.SensitiveParameterNames.Add("Password");
+        var interceptor = new LoggingInterceptor(logger, config);
+        var parameters = new UserParameters("John", "secret123");
+        var context = new CommandContext(
+            "INSERT INTO Users (Name, Password) VALUES (@Name, @Password)",
+            parameters,
+            CreateMockConnection(),
+            CommandType.Text);
+
+        // Act
+        await interceptor.OnCommandExecutingAsync(context, CancellationToken.None);
+
+        // Assert
+        var logs = provider.Logs;
+        Assert.Single(logs);
+        Assert.Contains("***MASKED***", logs[0].Message);
+        Assert.DoesNotContain("secret123", logs[0].Message);
+        Assert.Contains("John", logs[0].Message);
+    }
+
+    [Fact]
     public async Task OnCommandExecutingAsync_RespectsMinimumLogLevel()
     {
         // Arrange
