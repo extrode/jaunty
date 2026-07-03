@@ -91,7 +91,7 @@ public sealed class ExcelFileSource : IFileSource
             sb.Append($", header = {(HasHeader.Value ? "true" : "false")}");
 
         if (Range is not null)
-            sb.Append($", range = '{Range}'");
+            sb.Append($", range = '{Range.Replace("'", "''")}'");
 
         sb.Append(')');
         return sb.ToString();
