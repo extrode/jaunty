@@ -56,7 +56,7 @@ internal static class ParameterCache
         for (int i = 0; i < props.Length; i++)
         {
             PropertyInfo p = props[i];
-            result[i] = new ParameterMetadata(p.Name, CreateGetter(p));
+            result[i] = new ParameterMetadata(p.Name, CreateGetter(p), property: p);
         }
 
         return result;
