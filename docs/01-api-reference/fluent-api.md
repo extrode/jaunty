@@ -130,6 +130,15 @@ Adds an OR condition using a strongly-typed expression.
 IWhereClause<T> Or(Expression<Func<T, bool>> predicate)
 ```
 
+**Example:**
+```csharp
+var products = connection.From<Product>()
+    .Where(p => p.CategoryId == 1)
+    .And(p => p.Price > 50m)
+    .Or(p => p.CategoryId == 2)
+    .Select();
+```
+
 ### Collection-Based Filtering
 
 #### WhereIn&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, IEnumerable&lt;TValue&gt; values)
@@ -200,6 +209,13 @@ Filters results where the selected property value is NOT between the specified r
 **Signature:**
 ```csharp
 IWhereClause<T> WhereNotBetween<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to)
+```
+
+**Example:**
+```csharp
+var products = connection.From<Product>()
+    .WhereNotBetween(p => p.Price, 10m, 100m)
+    .Select();
 ```
 
 ### ORDER BY Clauses
@@ -284,6 +300,14 @@ Adds a RIGHT JOIN to another table.
 IJoinClause<T, TJoin> RightJoin<TJoin>(string? alias = null) where TJoin : new()
 ```
 
+**Example:**
+```csharp
+var products = connection.From<Product>()
+    .RightJoin<Category>()
+    .On((p, c) => p.CategoryId == c.Id)
+    .Select();
+```
+
 ### JOIN Conditions
 
 #### On&lt;TLeftKey, TRightKey&gt;(Expression&lt;Func&lt;T, TLeftKey&gt;&gt; leftKey, Expression&lt;Func&lt;TJoin, TRightKey&gt;&gt; rightKey)
@@ -320,6 +344,14 @@ Specifies the join condition using raw SQL.
 **Signature:**
 ```csharp
 IJoinedQuery<T, TJoin> OnRaw(string condition)
+```
+
+**Example:**
+```csharp
+var products = connection.From<Product>("p")
+    .InnerJoin<Category>("c")
+    .OnColumns("category_id", "id")
+    .Select();
 ```
 
 ### DISTINCT
@@ -516,6 +548,14 @@ Returns the maximum value of the specified property.
 TResult Max<TResult>(Expression<Func<T, TResult>> selector)
 ```
 
+**Example:**
+```csharp
+var query = connection.From<Product>().Where(p => p.CategoryId == 1);
+var totalValue = query.Sum(p => p.Price);
+var averagePrice = query.Avg(p => p.Price);
+var mostExpensive = query.Max(p => p.Price);
+```
+
 ## Terminal Operations (Async)
 
 ### SelectAsync Methods
@@ -650,6 +690,13 @@ Asynchronously returns the maximum value of the specified property.
 Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
 ```
 
+**Example:**
+```csharp
+var query = connection.From<Product>().Where(p => p.CategoryId == 1);
+var totalValue = await query.SumAsync(p => p.Price, cancellationToken);
+var mostExpensive = await query.MaxAsync(p => p.Price, cancellationToken);
+```
+
 ## SQL Generation Methods
 
 #### ToSql()
@@ -706,6 +753,23 @@ IGroupedQuery<T, TKey> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector)
 var groupedProducts = connection.From<Product>()
     .GroupBy(p => p.CategoryId)
     .Select(g => new { g.Key, Count = g.Count(), AveragePrice = g.Average(p => p.Price) });
+```
+
+## Kitchen Sink Example
+
+A single query combining a join, multi-condition filtering, ordering, and pagination:
+
+```csharp
+var products = connection.From<Product>("p")
+    .InnerJoin<Category>("c")
+    .On((p, c) => p.CategoryId == c.Id)
+    .WhereIn(p => p.CategoryId, new[] { 1, 2, 3 })
+    .And(p => p.Price >= 10m)
+    .WhereBetween(p => p.Price, 10m, 250m)
+    .OrderBy(p => p.ProductName)
+    .Skip(20)
+    .Take(10)
+    .Select();
 ```
 
 ## Important Notes

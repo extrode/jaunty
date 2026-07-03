@@ -4,6 +4,26 @@
 
 Jaunty is a high-performance micro-ORM for .NET that executes SQL and maps results to objects with strict mapping by default. This documentation provides comprehensive reference for all public APIs.
 
+## Quick Start
+
+```csharp
+using var connection = new SqlConnection(connectionString);
+
+// Query
+var products = connection.Query<Product>(
+    "SELECT * FROM products WHERE category_id = @CategoryId", new { CategoryId = 1 });
+
+// Insert
+var newId = connection.Insert(new Product { ProductName = "Widget Pro", CategoryId = 1, Price = 24.99m });
+
+// Fluent, LINQ-like query building
+var cheapWidgets = connection.From<Product>()
+    .Where(p => p.CategoryId == 1)
+    .WhereBetween(p => p.Price, 0m, 25m)
+    .OrderBy(p => p.ProductName)
+    .Select();
+```
+
 ## Core Concepts
 
 ### Extension Methods

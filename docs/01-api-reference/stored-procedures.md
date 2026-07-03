@@ -111,6 +111,11 @@ Executes a parameterized stored procedure with command options and returns the f
 public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options) where T : new()
 ```
 
+**Example:**
+```csharp
+var product = connection.ExecuteStoredProcedureFirst<Product>("GetTopProduct", new { CategoryId = 1 });
+```
+
 ## First or Default Stored Procedure Methods
 
 ### ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(string procedureName)
@@ -147,6 +152,11 @@ Executes a parameterized stored procedure with command options and returns the f
 public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options) where T : new()
 ```
 
+**Example:**
+```csharp
+var product = connection.ExecuteStoredProcedureFirstOrDefault<Product>("GetTopProduct", new { CategoryId = 1 });
+```
+
 ## Scalar Stored Procedure Methods
 
 ### ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName)
@@ -180,6 +190,11 @@ Executes a parameterized stored procedure and returns a scalar value.
 **Signature:**
 ```csharp
 public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, object? parameters)
+```
+
+**Example:**
+```csharp
+var count = connection.ExecuteStoredProcedureScalar<int>("GetProductCountByCategory", new { CategoryId = 1 });
 ```
 
 ### ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, object? parameters, CommandOptions options)
@@ -259,6 +274,12 @@ Asynchronously executes a parameterized stored procedure with command options an
 **Signature:**
 ```csharp
 public static Task<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+```
+
+**Example:**
+```csharp
+var products = await connection.ExecuteStoredProcedureAsync<Product>(
+    "GetProductsByCategory", new { CategoryId = 1 }, cancellationToken);
 ```
 
 ### ExecuteStoredProcedureFirstAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)
