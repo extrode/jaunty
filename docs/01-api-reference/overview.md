@@ -31,8 +31,12 @@ Common options for controlling command execution:
 ### Multiple Result Sets
 - [Multiple Result Sets](multiple-result-sets.md) - Operations for handling multiple result sets with GridReader
 
+### Multi-Entity Mapping
+- [Multi-Entity Mapping](multi-entity-mapping.md) - Mapping joined query results to two or more entity types (`Query<T1,...,T7>`), ordinal claiming, and custom per-position mappers
+
 ### Data Modification
 - [CRUD Operations](crud-operations.md) - Insert, Update, Delete operations
+- [Get and Execute Operations](get-and-execute-operations.md) - Key-based Get/GetAll retrieval, raw Execute, and ExecuteBatch
 - [Stored Procedures](stored-procedures.md) - Stored procedure execution with input, output, and return parameters
 
 ### Query Building
