@@ -53,22 +53,18 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
         // Using Projection mode to allow columns to be missing if they match the other type.
         PropertySetter<T1>[] t1Setters = MetadataCache<T1>.GetSetters(reader, MappingMode.Projection);
 
-        // T1 has priority: exclude from T2 any ordinals already claimed by T1.
+        // T1 has priority: exclude from T2 any ordinals already claimed by T1, and rebind
+        // any T2 property whose column name is shared with T1 to the next unclaimed
+        // occurrence of that column name (left-to-right ordinal claiming), via the same
+        // shared algorithm used by the arity 3-7 mappers.
         var t1Ordinals = new HashSet<int>();
 
         for (int i = 0; i < t1Setters.Length; i++)
             t1Ordinals.Add(t1Setters[i].Ordinal);
 
-        PropertySetter<T2>[] allT2Setters = MetadataCache<T2>.GetSetters(reader, MappingMode.Projection);
-        var filteredT2 = new List<PropertySetter<T2>>(allT2Setters.Length);
+        (PropertySetter<T2>[] t2Setters, _) = MultiEntityMapperCore.GetSettersExcluding<T2>(reader, t1Ordinals);
 
-        for (int i = 0; i < allT2Setters.Length; i++)
-        {
-            if (!t1Ordinals.Contains(allT2Setters[i].Ordinal))
-                filteredT2.Add(allT2Setters[i]);
-        }
-
-        return new MultiEntityMapper<T1, T2>(t1Setters, filteredT2.ToArray());
+        return new MultiEntityMapper<T1, T2>(t1Setters, t2Setters);
     }
 
     public void Map(T1? t1, T2? t2, IDataRecord record)
