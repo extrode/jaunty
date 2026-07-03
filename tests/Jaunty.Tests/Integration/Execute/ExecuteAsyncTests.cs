@@ -22,14 +22,6 @@ public class ExecuteAsyncTests : IClassFixture<DialectFixture>
         return Convert.ToInt32(cmd.ExecuteScalar());
     }
 
-    private static void ClearTestTable(System.Data.IDbConnection connection)
-    {
-        using var cmd = connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM bulk_test";
-        cmd.ExecuteNonQuery();
-    }
-
-
     [Theory]
     [SqlServer]
     [Postgres]
@@ -39,7 +31,6 @@ public class ExecuteAsyncTests : IClassFixture<DialectFixture>
     public async Task ExecuteAsync_Insert_ReturnsRowsAffected(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
-        ClearTestTable(ctx.Connection);
         var connection = (DbConnection)ctx.Connection;
         var rows = await connection.ExecuteAsync(
             "INSERT INTO bulk_test (name, value) VALUES (@Name, @Value)",
@@ -58,7 +49,6 @@ public class ExecuteAsyncTests : IClassFixture<DialectFixture>
     public async Task ExecuteAsync_WithCancellation_ThrowsOperationCanceledException(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
-        ClearTestTable(ctx.Connection);
         var connection = (DbConnection)ctx.Connection;
         using var cts = new CancellationTokenSource();
         cts.Cancel();
