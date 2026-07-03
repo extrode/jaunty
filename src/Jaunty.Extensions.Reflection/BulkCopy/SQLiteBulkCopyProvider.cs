@@ -26,37 +26,39 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
         IDbTransaction? transaction = options.Transaction;
         bool ownTransaction = transaction is null;
 
+        // Save current PRAGMA values so we can restore them after the bulk insert.
+        // SQLite cannot change journal_mode/synchronous while a transaction is active,
+        // so these pragmas only run when we own the transaction and run before it begins.
+        string? originalJournalMode = null;
+        string? originalSynchronous = null;
+
         try
         {
             if (wasClosed)
                 connection.Open();
 
             if (ownTransaction)
-                transaction = connection.BeginTransaction();
-
-            // Save current PRAGMA values so we can restore them after the bulk insert
-            string? originalJournalMode = null;
-            string? originalSynchronous = null;
-
-            using (IDbCommand readCmd = connection.CreateCommand())
             {
-                readCmd.Transaction = transaction;
+                using (IDbCommand readCmd = connection.CreateCommand())
+                {
+                    readCmd.CommandText = "PRAGMA journal_mode";
+                    originalJournalMode = readCmd.ExecuteScalar()?.ToString();
 
-                readCmd.CommandText = "PRAGMA journal_mode";
-                originalJournalMode = readCmd.ExecuteScalar()?.ToString();
+                    readCmd.CommandText = "PRAGMA synchronous";
+                    originalSynchronous = readCmd.ExecuteScalar()?.ToString();
+                }
 
-                readCmd.CommandText = "PRAGMA synchronous";
-                originalSynchronous = readCmd.ExecuteScalar()?.ToString();
+                using (IDbCommand pragmaCmd = connection.CreateCommand())
+                {
+                    pragmaCmd.CommandText = "PRAGMA journal_mode=WAL";
+                    pragmaCmd.ExecuteNonQuery();
+
+                    pragmaCmd.CommandText = "PRAGMA synchronous=NORMAL";
+                    pragmaCmd.ExecuteNonQuery();
+                }
+
+                transaction = connection.BeginTransaction();
             }
-
-            using IDbCommand pragmaCmd = connection.CreateCommand();
-            pragmaCmd.Transaction = transaction;
-
-            pragmaCmd.CommandText = "PRAGMA journal_mode=WAL";
-            pragmaCmd.ExecuteNonQuery();
-
-            pragmaCmd.CommandText = "PRAGMA synchronous=NORMAL";
-            pragmaCmd.ExecuteNonQuery();
 
             // Build INSERT command
             int columnCount = data.FieldCount;
@@ -100,27 +102,28 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
                 rowCount++;
             }
 
-            // Restore original PRAGMA values
-            try
-            {
-                using IDbCommand restoreCmd = connection.CreateCommand();
-                restoreCmd.Transaction = transaction;
-
-                if (originalJournalMode != null)
-                {
-                    restoreCmd.CommandText = $"PRAGMA journal_mode={originalJournalMode}";
-                    restoreCmd.ExecuteNonQuery();
-                }
-                if (originalSynchronous != null)
-                {
-                    restoreCmd.CommandText = $"PRAGMA synchronous={originalSynchronous}";
-                    restoreCmd.ExecuteNonQuery();
-                }
-            }
-            catch { /* Best effort PRAGMA restore */ }
-
             if (ownTransaction)
+            {
                 transaction!.Commit();
+
+                // Restore original PRAGMA values now that the transaction is closed
+                try
+                {
+                    using IDbCommand restoreCmd = connection.CreateCommand();
+
+                    if (originalJournalMode != null)
+                    {
+                        restoreCmd.CommandText = $"PRAGMA journal_mode={originalJournalMode}";
+                        restoreCmd.ExecuteNonQuery();
+                    }
+                    if (originalSynchronous != null)
+                    {
+                        restoreCmd.CommandText = $"PRAGMA synchronous={originalSynchronous}";
+                        restoreCmd.ExecuteNonQuery();
+                    }
+                }
+                catch { /* Best effort PRAGMA restore */ }
+            }
 
             return rowCount;
         }
@@ -157,16 +160,21 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
     /// </summary>
     private static string BuildInsertSql(string tableName, string[] columnNames)
     {
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+
         var sb = new System.Text.StringBuilder(256);
 
-        sb.Append("INSERT INTO ");
+        sb.Append("INSERT INTO \"");
         sb.Append(tableName);
-        sb.Append(" (");
+        sb.Append("\" (");
 
         for (int i = 0; i < columnNames.Length; i++)
         {
+            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(columnNames[i], nameof(columnNames));
             if (i > 0) sb.Append(", ");
+            sb.Append('"');
             sb.Append(columnNames[i]);
+            sb.Append('"');
         }
 
         sb.Append(") VALUES (");

@@ -211,7 +211,12 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
             return;
         }
 
-        var str = value.ToString();
+        var str = FormatValue(value);
+        if (str != null)
+        {
+            str = str.Replace("\\", "\\\\");
+        }
+
         if (str != null && (str.Contains(",") || str.Contains("\"") || str.Contains("\n")))
         {
             writer.Write('"');
@@ -222,6 +227,19 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
         {
             writer.Write(str);
         }
+    }
+
+    /// <summary>
+    /// Formats a value using invariant culture so decimals/dates round-trip correctly
+    /// regardless of the process's current culture.
+    /// </summary>
+    private static string? FormatValue(object value)
+    {
+        return value switch
+        {
+            IFormattable formattable => formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture),
+            _ => value.ToString()
+        };
     }
 
     /// <summary>
@@ -242,7 +260,12 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
             return;
         }
 
-        var str = value.ToString();
+        var str = FormatValue(value);
+        if (str != null)
+        {
+            str = str.Replace("\\", "\\\\");
+        }
+
         if (str != null && (str.Contains(",") || str.Contains("\"") || str.Contains("\n")))
         {
             await writer.WriteAsync("\"");
