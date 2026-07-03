@@ -142,6 +142,42 @@ public class Product
 - Identity values are returned by Insert operations and can be automatically populated
 - Computed columns are typically read-only in insert/update operations
 
+## EnumStorage Attribute
+
+### [EnumStorage(EnumStorage storage)]
+
+Overrides how a single enum-typed property is stored in the database, taking precedence over the global `JauntyConfig.DefaultEnumStorage` setting (see [Configuration](configuration.md)).
+
+**Usage:**
+```csharp
+public class Order
+{
+    [Key]
+    public int Id { get; set; }
+
+    // Uses the global default (JauntyConfig.DefaultEnumStorage), numeric unless changed
+    public OrderStatus Status { get; set; }
+
+    // Stored as the string name, overriding the global default
+    [EnumStorage(EnumStorage.String)]
+    public OrderPriority Priority { get; set; }
+}
+
+public enum OrderStatus { Pending = 0, Completed = 1 }
+public enum OrderPriority { Low = 0, High = 1 }
+```
+
+**Constructor Parameters:**
+- `storage`: The enum storage strategy (`EnumStorage.Numeric` or `EnumStorage.String`)
+
+**Properties:**
+- `Storage`: Gets the configured enum storage strategy
+
+**Notes:**
+- Only applicable to enum-typed properties; has no effect otherwise
+- Takes precedence over `JauntyConfig.DefaultEnumStorage`
+- Applies to both the read path (mapping a database value into the enum) and the write path (parameter binding for insert/update)
+
 ## Attribute Priority
 
 Jaunty uses the following priority order for mapping configuration:
