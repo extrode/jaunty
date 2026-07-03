@@ -1,4 +1,7 @@
+using System.Collections.Concurrent;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text;
 using Microsoft.Extensions.Logging;
 
@@ -136,6 +139,8 @@ public sealed class LoggingInterceptor : ICommandInterceptor
         _ => commandType.ToString()
     };
 
+    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new();
+
     private string FormatParameters(object parameters)
     {
         var sb = new StringBuilder();
@@ -155,12 +160,35 @@ public sealed class LoggingInterceptor : ICommandInterceptor
         }
         else
         {
-            // For non-IDictionary parameters without reflection, use ToString() as fallback
-            // To get property-level logging, use a dictionary or implement ToString() on your parameter type
-            sb.Append(parameters.ToString() ?? "(null)");
+            var properties = _propertyCache.GetOrAdd(parameters.GetType(), GetPublicProperties);
+
+            var first = true;
+            foreach (var property in properties)
+            {
+                if (property.GetIndexParameters().Length > 0)
+                    continue;
+
+                if (!first) sb.Append(", ");
+                first = false;
+
+                var value = FormatParameterValue(property.Name, property.GetValue(parameters));
+                sb.Append(property.Name).Append("=").Append(value);
+            }
         }
 
         return sb.ToString();
+    }
+
+#if NET5_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Used for anonymous types and records whose properties are always preserved by the compiler.")]
+#endif
+    private static PropertyInfo[] GetPublicProperties(
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+#endif
+        Type type)
+    {
+        return type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
     }
 
     private string FormatParameterValue(string paramName, object? value)
