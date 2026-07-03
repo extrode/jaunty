@@ -18,8 +18,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             _fromAlias,
             _joins[0].Alias);
 
-        string sql = visitor.Translate(predicate);
+        (string sql, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
+        _parameters.AddRange(parameters);
         return this;
     }
 
@@ -40,16 +41,18 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     public IJoinedQuery<TFrom, TJoin> And(Expression<Func<TFrom, TJoin, bool>> predicate)
     {
         var visitor = new JoinExpressionVisitor<TFrom, TJoin>(_dialect, _fromAlias, _joins[0].Alias);
-        string sql = visitor.Translate(predicate);
+        (string sql, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
+        _parameters.AddRange(parameters);
         return this;
     }
 
     public IJoinedQuery<TFrom, TJoin> Or(Expression<Func<TFrom, TJoin, bool>> predicate)
     {
         var visitor = new JoinExpressionVisitor<TFrom, TJoin>(_dialect, _fromAlias, _joins[0].Alias);
-        string sql = visitor.Translate(predicate);
+        (string sql, List<(string Name, object? Value)> parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
+        _parameters.AddRange(parameters);
         return this;
     }
 }
