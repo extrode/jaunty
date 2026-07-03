@@ -8,6 +8,8 @@ using Jaunty.Dialects;
 using Jaunty.Extensions.Reflection.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Enums;
+using Jaunty.Attributes;
+using Jaunty.TypeHandlers;
 
 namespace Jaunty.Extensions.Reflection;
 
@@ -131,6 +133,56 @@ public static class JauntyReflectionExtensions
         };
     }
 
+
+    private static object? ApplyHandlersAndEnumStorage(PropertyInfo property, object? value)
+    {
+        if (value is null)
+            return value;
+
+        Type valueType = value.GetType();
+
+        // Check if there's a registered type handler
+        if (TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(valueType, out ITypeHandler? handler) && handler is not null)
+        {
+            try
+            {
+                return handler.ToDbValue(value);
+            }
+            catch
+            {
+                // Fall through to enum handling
+            }
+        }
+
+        // Handle enums based on storage strategy
+        if (valueType.IsEnum)
+        {
+            EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
+            EnumStorage storage = enumAttr?.Storage ?? JauntyConfig.DefaultEnumStorage;
+            
+            if (storage == EnumStorage.String)
+            {
+                return value.ToString();
+            }
+        }
+        else if (valueType.IsGenericType)
+        {
+            Type? underlyingType = Nullable.GetUnderlyingType(valueType);
+            if (underlyingType?.IsEnum == true)
+            {
+                EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
+                EnumStorage storage = enumAttr?.Storage ?? JauntyConfig.DefaultEnumStorage;
+                
+                if (storage == EnumStorage.String)
+                {
+                    return value.ToString();
+                }
+            }
+        }
+
+        return value;
+    }
+
     private static Action<IDbCommand, object> GetTypedInsertBinder<T>() where T : new()
     {
         return (cmd, entityObj) =>
@@ -142,7 +194,8 @@ public static class JauntyReflectionExtensions
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;
-                p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+                object? propValue = col.Property.GetValue(entity);
+                p.Value = ApplyHandlersAndEnumStorage(col.Property, propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
         };
@@ -159,7 +212,7 @@ public static class JauntyReflectionExtensions
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;
-                p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+                object? propValue = col.Property.GetValue(entity); p.Value = ApplyHandlersAndEnumStorage(col.Property, propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
 
@@ -167,7 +220,7 @@ public static class JauntyReflectionExtensions
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;
-                p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+                object? propValue = col.Property.GetValue(entity); p.Value = ApplyHandlersAndEnumStorage(col.Property, propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
         };
