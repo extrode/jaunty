@@ -27,7 +27,6 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static readonly PropertyInfo? DestinationTableNameProperty = SqlBulkCopyType?.GetProperty("DestinationTableName");
     private static readonly MethodInfo? WriteToServerMethod = SqlBulkCopyType?.GetMethod("WriteToServer", [typeof(IDataReader)]);
     private static readonly MethodInfo? WriteToServerAsyncMethod = SqlBulkCopyType?.GetMethod("WriteToServerAsync", [typeof(IDataReader), typeof(CancellationToken)]);
-    private static readonly MethodInfo? DisposeMethod = SqlBulkCopyType?.GetMethod("Dispose");
 
     /// <inheritdoc/>
     public bool IsSupported => SqlBulkCopyType != null;
@@ -58,7 +57,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         }
         finally
         {
-            DisposeMethod?.Invoke(bulkCopy, null);
+            (bulkCopy as IDisposable)?.Dispose();
         }
     }
 
@@ -88,7 +87,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         }
         finally
         {
-            DisposeMethod?.Invoke(bulkCopy, null);
+            (bulkCopy as IDisposable)?.Dispose();
         }
     }
 

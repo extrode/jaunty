@@ -186,14 +186,18 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
     /// </summary>
     private static string BuildCopyCommand(string tableName, IDataReader data)
     {
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+
         var columnNames = new List<string>();
         for (int i = 0; i < data.FieldCount; i++)
         {
-            columnNames.Add($"\"{data.GetName(i)}\"");
+            string columnName = data.GetName(i);
+            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(columnName, nameof(data));
+            columnNames.Add($"\"{columnName}\"");
         }
 
         var columns = string.Join(", ", columnNames);
-        return $"COPY {tableName} ({columns}) FROM STDIN BINARY";
+        return $"COPY \"{tableName}\" ({columns}) FROM STDIN BINARY";
     }
 
     /// <summary>
