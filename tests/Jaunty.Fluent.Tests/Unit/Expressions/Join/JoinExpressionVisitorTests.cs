@@ -21,7 +21,7 @@ public class JoinExpressionVisitorTests
     {
         Expression<Func<Product, Category, bool>> expr = (p, c) => p.CategoryId == c.CategoryId;
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
-        var sql = visitor.Translate(expr);
+        var (sql, _) = visitor.Translate(expr);
 
         Assert.Contains("[category_id]", sql);
         Assert.Contains("=", sql);
@@ -32,11 +32,11 @@ public class JoinExpressionVisitorTests
     {
         Expression<Func<Product, Category, bool>> expr = (p, c) => p.CategoryId == c.CategoryId && c.CategoryName == "Beverages";
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
-        var sql = visitor.Translate(expr);
+        var (sql, parameters) = visitor.Translate(expr);
 
         Assert.Contains("AND", sql);
         Assert.Contains("p.[category_id] = c.[category_id]", sql);
-        Assert.Contains("c.[category_name] = 'Beverages'", sql);
+        Assert.Contains(parameters, p => Equals(p.Value, "Beverages"));
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class JoinExpressionVisitorTests
     {
         Expression<Func<Product, Category, bool>> expr = (p, c) => p.CategoryId == c.CategoryId || p.ProductId == c.CategoryId;
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
-        var sql = visitor.Translate(expr);
+        var (sql, _) = visitor.Translate(expr);
 
         Assert.Contains("OR", sql);
     }
@@ -58,7 +58,7 @@ public class JoinExpressionVisitorTests
     {
         Expression<Func<Product, Category, bool>> expr = (p, c) => p.ProductId == c.CategoryId;
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "prod", "cat");
-        var sql = visitor.Translate(expr);
+        var (sql, _) = visitor.Translate(expr);
 
         Assert.Contains("[product_id]", sql);
         Assert.Contains("[category_id]", sql);
@@ -75,7 +75,7 @@ public class JoinExpressionVisitorTests
             p.CategoryId == c.CategoryId &&
             p.Discontinued == false;
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
-        var sql = visitor.Translate(expr);
+        var (sql, _) = visitor.Translate(expr);
 
         Assert.Contains("AND", sql);
         Assert.Contains("[category_id]", sql);
@@ -90,7 +90,7 @@ public class JoinExpressionVisitorTests
     {
         Expression<Func<Product, Category, bool>> expr = (p, c) => p.ProductId != c.CategoryId;
         var visitor = new JoinExpressionVisitor<Product, Category>(_dialect, "p", "c");
-        var sql = visitor.Translate(expr);
+        var (sql, _) = visitor.Translate(expr);
 
         Assert.Contains("<>", sql);
     }

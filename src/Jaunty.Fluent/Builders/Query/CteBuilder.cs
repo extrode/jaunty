@@ -29,6 +29,10 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     internal CteBuilder(IDbConnection connection, string cteName)
     {
+        // Validate the CTE name is a safe plain identifier before it is ever
+        // interpolated into generated SQL (prevents SQL injection via the name).
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(cteName, nameof(cteName));
+
         _connection = connection;
         _dialect = SqlDialectFactory.GetDialect(connection);
         _metadata = FluentMetadataCache.GetMetadata<T>();
@@ -185,7 +189,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
         var sb = new StringBuilder(512);
 
-        // WITH clause - CTE name doesn't need escaping as it's user-defined
+        // WITH clause - CTE name is validated as a plain identifier in the constructor.
         sb.Append("WITH ");
         sb.Append(_cteName);
         sb.Append(" AS (");
