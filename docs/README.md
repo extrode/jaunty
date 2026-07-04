@@ -70,8 +70,8 @@ Documentation for Jaunty extension packages:
 Quality assurance and testing documentation:
 
 - **[05-quality/](05-quality/README.md)**
-  - [Production Readiness Report](05-quality/reports/production-readiness-2026-03-03.md)
-  - [Code Coverage](05-quality/code-coverage/) - _Coming soon_
+  - [Production Readiness Report](05-quality/reports/PRODUCTION-READINESS-2026-07-02.md)
+  - [Coverage Gap Inventory](05-quality/reports/COVERAGE-GAPS-2026-07-04.md)
 
 ### 6. Releases & Planning
 
