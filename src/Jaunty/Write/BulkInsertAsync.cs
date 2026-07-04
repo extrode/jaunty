@@ -122,7 +122,7 @@ public static partial class Jaunty
         }
 
         bool wasClosed = connection.State == ConnectionState.Closed;
-        DbTransaction? transaction = options.Transaction as DbTransaction;
+        DbTransaction? transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
         bool ownTransaction = transaction is null;
 
         try
@@ -379,7 +379,7 @@ public static partial class Jaunty
         CancellationToken cancellationToken) where T : new()
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
-        DbTransaction? transaction = options.Transaction as DbTransaction;
+        DbTransaction? transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
         bool ownTransaction = transaction is null;
 
         try
