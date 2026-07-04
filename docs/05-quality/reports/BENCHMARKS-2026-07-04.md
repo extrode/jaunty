@@ -104,3 +104,34 @@ hand-coded ADO.NET baseline (3,623 us).
 
 The PRD-005 "large SQLite read gap" flagged in the first section of this
 report is closed.
+
+## Update 3 — bulk-copy suites measured (PRD-002 remainder)
+
+Full-config `BulkCopyBenchmarks` run (SQLite in-proc; local PostgreSQL and
+MariaDB servers; SQL Server unreachable - container credentials mismatch, rows NA).
+Warm results, 10,000 rows:
+
+| Provider | ADO.NET loop (txn) | Jaunty BulkInsert | linq2db BulkCopy | Dapper loop |
+|---|---|---|---|---|
+| PostgreSQL | 368.7 ms | **53.6 ms (6.9x faster)** | 72.6 ms | 1,596 ms |
+| PostgreSQL 1k | 48.6 ms | **6.4 ms (7.6x faster)** | 7.6 ms | 187.9 ms |
+| SQLite | 20.6 ms | **334 ms — 16x SLOWER (defect)** | 16.2 ms | 97.3 ms |
+| MariaDB | 480.1 ms | **NA — errored (defect/config)** | 64.4 ms | 20,231 ms |
+
+Findings:
+
+1. **PostgreSQL native bulk (NpgsqlBinaryImporter) verified**: 6.9-7.6x vs a
+   transactional ADO.NET loop, and faster than linq2db's COPY path. This
+   replaces the README's unverified "15-25x" with a measured number.
+2. **SQLite bulk path is a real defect (PROD-120, open)**: 16x slower than a
+   plain transactional loop. `SQLiteBulkCopyProvider` code looks correct
+   (single txn, prepared, reused params) but has 0% coverage and
+   `SQLiteDialect.CreateBulkCopyProvider()` in core returns null - suspicion:
+   the "native" path never engages and something upstream (dialect
+   resolution, per-row binder, or the WAL pragma churn per call) burns
+   ~33us/row. Needs a profiling session.
+3. **MariaDB native bulk errors (NA)** while linq2db succeeds on the same
+   server - likely `MySqlBulkLoader`'s local-infile requirement
+   (`AllowLoadLocalInfile=true` absent from the connection string); the
+   provider should surface a clear error either way. Part of PROD-120.
+4. SQL Server: pending correct container credentials (JAUNTY_TEST_SQLSERVER).
