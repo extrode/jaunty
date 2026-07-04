@@ -151,3 +151,11 @@ candidates land in "Needs decision").
 ## Work log
 
 - 2026-07-04: Pass started. Recon + verified state recorded. Workstreams defined.
+- 2026-07-04: PROD-101..107 executed and merged to dev (--no-ff each):
+  ConfigureAwait sweep + CA2007 gate; version centralization + package validation
+  + IsPackable hygiene (release would have published sample apps to nuget.org);
+  CVE remediation (SQLitePCLRaw 2.1.x, Regex 4.3.0) + EOL ME.* 6.0.0 bumps;
+  dependabot; coverlet + COVERAGE-GAPS-2026-07-04.md; docs consolidation;
+  System.CommandLine beta4 -> 2.0.9. Final gate: Release build 0 errors,
+  4369 passed / 0 failed / 714 env-skips, 7 packages pack clean,
+  vulnerable+deprecated scans clean (xunit v2 'legacy' notice excepted).
