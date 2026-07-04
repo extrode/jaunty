@@ -16,6 +16,9 @@ internal static class DrDispatcher
 
         // 2. IMapped<T> implementation (Source Generated - Zero Reflection)
         // Only safe for strict/full-shape mapping. Projection/partial queries may omit columns.
+        // Prefer the per-result-set factory: shape validated once here instead of per row.
+        if (mode == MappingMode.Strict && MappedCache<T>.MapperFactory is not null)
+            return MappedCache<T>.MapperFactory(reader);
         if (mode == MappingMode.Strict && MappedCache<T>.Mapper is not null)
             return MappedCache<T>.Mapper;
 
@@ -53,6 +56,12 @@ internal static class DrDispatcher
 
         // 2. IMapped<T> implementation (Source Generated)
         // Only safe for strict/full-shape mapping. Projection/partial queries may omit columns.
+        // Prefer the per-result-set factory: shape validated once here instead of per row.
+        if (mode == MappingMode.Strict && MappedCache<T>.MapperFactory is not null)
+        {
+            Func<IDataReader, T> rowMapper = MappedCache<T>.MapperFactory(reader);
+            return dbReader => rowMapper(dbReader);
+        }
         if (mode == MappingMode.Strict && MappedCache<T>.Mapper is not null)
             return dbReader => MappedCache<T>.Mapper(dbReader);
 
