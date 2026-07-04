@@ -18,18 +18,14 @@ if ($IsLinux) {
 Write-Host "--- Attempting NativeAOT Publish for Jaunty.Scaffolding.Cli ---" -ForegroundColor Cyan
 Write-Host "Runtime: $Runtime" -ForegroundColor Gray
 
-# Publish with AOT enabled
-# -p:PublishAot=true : Enables NativeAOT
-# -p:IsTrimmable=true : Tells the compiler the project is intended to be trimmable
+# Publish with AOT enabled. PublishAot comes from the Cli csproj: passing
+# it as -p: makes it a GLOBAL property that flows into referenced projects,
+# and the netstandard2.0 source generator fails NETSDK1207 under it.
 # --self-contained : Required for AOT
 dotnet publish $Project `
     -c Release `
     -r $Runtime `
-    -f net8.0 `
     --self-contained `
-    -p:PublishAot=true `
-    -p:IsTrimmable=true `
-    -p:TargetFrameworks=net8.0 `
     -o "./publish-aot"
 
 $BinaryPath = Join-Path "./publish-aot" $BinaryName

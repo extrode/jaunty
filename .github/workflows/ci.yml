@@ -169,17 +169,17 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}-
 
+      # PublishAot lives in the Cli csproj. Passing it as -p: makes it a
+      # GLOBAL property that flows into referenced projects, and the
+      # netstandard2.0 source generator then fails with NETSDK1207
+      # (AOT unsupported for that target framework).
       - name: Publish NativeAOT
         run: >-
           dotnet publish
           src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj
           -c Release
           -r linux-x64
-          -f net8.0
           --self-contained
-          -p:PublishAot=true
-          -p:IsTrimmable=true
-          -p:TargetFrameworks=net8.0
           -o ./publish-aot
 
       - name: Verify AOT binary
