@@ -266,4 +266,168 @@ public sealed class InterceptorPipeline
             throw;
         }
     }
+
+    /// <summary>
+    /// Invokes the executing hooks on the synchronous execution path.
+    /// <see cref="ISyncCommandInterceptor"/> implementations are called synchronously;
+    /// async-only interceptors are invoked by blocking on their completed hook.
+    /// </summary>
+    /// <param name="commandText">The SQL command text.</param>
+    /// <param name="parameters">The command parameters.</param>
+    /// <param name="connection">The database connection.</param>
+    /// <param name="commandType">The command type.</param>
+    public void InvokeExecuting(
+        string commandText,
+        object? parameters,
+        IDbConnection connection,
+        CommandType commandType)
+    {
+        if (!HasInterceptors)
+            return;
+
+        var context = new CommandContext(commandText, parameters, connection, commandType);
+
+        // Emit diagnostic event
+        _diagnosticListener?.WriteCommandExecuting(context);
+
+        for (int i = 0; i < _interceptors.Length; i++)
+        {
+            if (_interceptors[i] is ISyncCommandInterceptor sync)
+                sync.OnCommandExecuting(context);
+            else
+                _interceptors[i].OnCommandExecutingAsync(context, CancellationToken.None).GetAwaiter().GetResult();
+        }
+    }
+
+    /// <summary>
+    /// Invokes the executed hooks on the synchronous execution path after successful execution.
+    /// </summary>
+    /// <param name="commandText">The SQL command text.</param>
+    /// <param name="parameters">The command parameters.</param>
+    /// <param name="connection">The database connection.</param>
+    /// <param name="commandType">The command type.</param>
+    /// <param name="elapsed">The elapsed time for command execution.</param>
+    /// <remarks>
+    /// Exceptions from interceptors are swallowed to avoid masking the successful command result.
+    /// </remarks>
+    public void InvokeExecuted(
+        string commandText,
+        object? parameters,
+        IDbConnection connection,
+        CommandType commandType,
+        TimeSpan elapsed)
+    {
+        if (!HasInterceptors)
+            return;
+
+        var context = new CommandContext(commandText, parameters, connection, commandType, elapsed);
+
+        // Emit diagnostic event
+        _diagnosticListener?.WriteCommandExecuted(context);
+
+        for (int i = 0; i < _interceptors.Length; i++)
+        {
+            try
+            {
+                if (_interceptors[i] is ISyncCommandInterceptor sync)
+                    sync.OnCommandExecuted(context);
+                else
+                    _interceptors[i].OnCommandExecutedAsync(context, CancellationToken.None).GetAwaiter().GetResult();
+            }
+            catch
+            {
+                // Swallow exceptions from interceptors during executed phase
+                // to avoid masking the successful command result
+            }
+        }
+    }
+
+    /// <summary>
+    /// Invokes the failed hooks on the synchronous execution path when execution fails.
+    /// </summary>
+    /// <param name="commandText">The SQL command text.</param>
+    /// <param name="parameters">The command parameters.</param>
+    /// <param name="connection">The database connection.</param>
+    /// <param name="commandType">The command type.</param>
+    /// <param name="elapsed">The elapsed time before the failure.</param>
+    /// <param name="exception">The exception that occurred during execution.</param>
+    /// <remarks>
+    /// Exceptions from interceptors are swallowed to avoid masking the original exception.
+    /// </remarks>
+    public void InvokeFailed(
+        string commandText,
+        object? parameters,
+        IDbConnection connection,
+        CommandType commandType,
+        TimeSpan elapsed,
+        Exception exception)
+    {
+        if (!HasInterceptors)
+            return;
+
+        var context = new CommandContext(commandText, parameters, connection, commandType, elapsed, exception);
+
+        // Emit diagnostic event
+        _diagnosticListener?.WriteCommandFailed(context, exception);
+
+        for (int i = 0; i < _interceptors.Length; i++)
+        {
+            try
+            {
+                if (_interceptors[i] is ISyncCommandInterceptor sync)
+                    sync.OnCommandFailed(context, exception);
+                else
+                    _interceptors[i].OnCommandFailedAsync(context, exception, CancellationToken.None).GetAwaiter().GetResult();
+            }
+            catch
+            {
+                // Swallow exceptions from interceptors during failure handling
+                // to avoid masking the original exception
+            }
+        }
+    }
+
+    /// <summary>
+    /// Executes a command with full interceptor lifecycle support on the synchronous path.
+    /// The thread is never blocked on asynchronous machinery for interceptors that
+    /// implement <see cref="ISyncCommandInterceptor"/>.
+    /// </summary>
+    /// <typeparam name="T">The return type of the command execution.</typeparam>
+    /// <param name="commandText">The SQL command text.</param>
+    /// <param name="parameters">The command parameters.</param>
+    /// <param name="connection">The database connection.</param>
+    /// <param name="commandType">The command type.</param>
+    /// <param name="executeFunc">The function to execute the command.</param>
+    /// <returns>The result of the command execution.</returns>
+    public T ExecuteWithInterception<T>(
+        string commandText,
+        object? parameters,
+        IDbConnection connection,
+        CommandType commandType,
+        Func<T> executeFunc)
+    {
+        if (!HasInterceptors)
+            return executeFunc();
+
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            // Before execution
+            InvokeExecuting(commandText, parameters, connection, commandType);
+
+            var result = executeFunc();
+            stopwatch.Stop();
+
+            // After successful execution
+            InvokeExecuted(commandText, parameters, connection, commandType, stopwatch.Elapsed);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            InvokeFailed(commandText, parameters, connection, commandType, stopwatch.Elapsed, ex);
+            throw;
+        }
+    }
 }
