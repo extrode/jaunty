@@ -211,15 +211,27 @@ public sealed class MySqlSchemaReader : ISchemaReader
                 IsNullable = reader.GetBoolean(2),
                 IsIdentity = reader.GetBoolean(3),
                 IsComputed = reader.GetBoolean(4),
-                MaxLength = reader.IsDBNull(5) ? null : Convert.ToInt32(reader.GetValue(5)),
-                Precision = reader.IsDBNull(6) ? null : Convert.ToInt32(reader.GetValue(6)),
-                Scale = reader.IsDBNull(7) ? null : Convert.ToInt32(reader.GetValue(7)),
+                MaxLength = reader.IsDBNull(5) ? null : ToClampedInt32(reader.GetValue(5)),
+                Precision = reader.IsDBNull(6) ? null : ToClampedInt32(reader.GetValue(6)),
+                Scale = reader.IsDBNull(7) ? null : ToClampedInt32(reader.GetValue(7)),
                 DefaultValue = reader.IsDBNull(8) ? null : reader.GetString(8),
-                OrdinalPosition = Convert.ToInt32(reader.GetValue(9))
+                OrdinalPosition = ToClampedInt32(reader.GetValue(9))
             });
         }
 
         return columns;
+    }
+
+    /// <summary>
+    /// Converts a numeric schema-metadata value (e.g. MySQL's unsigned BIGINT
+    /// CHARACTER_MAXIMUM_LENGTH, which is 4294967295 for LONGTEXT/LONGBLOB) to an
+    /// <see cref="int"/>, clamping to <see cref="int.MaxValue"/> instead of throwing
+    /// <see cref="OverflowException"/> when the underlying value exceeds Int32 range.
+    /// </summary>
+    private static int ToClampedInt32(object value)
+    {
+        var decimalValue = Convert.ToDecimal(value);
+        return decimalValue > int.MaxValue ? int.MaxValue : Convert.ToInt32(decimalValue);
     }
 
     private static async Task<PrimaryKeyInfo?> ReadPrimaryKeyAsync(
