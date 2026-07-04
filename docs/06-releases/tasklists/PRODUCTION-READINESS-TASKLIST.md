@@ -46,7 +46,7 @@ Assessment basis: [PRODUCTION-READINESS-2026-07-02.md](../../05-quality/reports/
 
 ### PRD-014: Release pipeline and versioning
 - Priority: `P1`
-- Status: `Mostly done (2026-07-03, branch fixes/release-pipeline-prd014)` - CHANGELOG.md added (CalVer documented); release.yml packs/tests/publishes on v* tags and creates a GitHub Release. REMAINING MANUAL: create main branch on the remote; configure NUGET_API_KEY secret. 2026-07-04: version centralized in src/Directory.Build.props (was hardcoded per-csproj); GeneratePackageOnBuild removed.
+- Status: `Mostly done (2026-07-03, branch fixes/release-pipeline-prd014)` - CHANGELOG.md added (CalVer documented); release.yml packs/tests/publishes on v* tags and creates a GitHub Release. REMAINING MANUAL: create main branch on the remote. (NUGET_API_KEY no longer needed - 2026-07-04: release.yml publishes to GitHub Packages with the built-in GITHUB_TOKEN.) 2026-07-04: version centralized in src/Directory.Build.props (was hardcoded per-csproj); GeneratePackageOnBuild removed.
 - Scope:
   - Create `main` branch (remote currently has only `origin/dev`) and align with the documented release flow (`/release-cut`, `/release-ship`).
   - Add a tag-triggered publish workflow (pack, validate, push to NuGet feed, create GitHub Release).

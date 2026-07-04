@@ -684,12 +684,12 @@ Bulk operations use optimized paths for batch inserts/updates/deletes. They're f
 
 For large datasets (100+ rows), Jaunty automatically uses native bulk copy APIs when `Jaunty.Extensions.Reflection` is loaded:
 
-| Database | Native API | Typical native-API advantage* |
+| Database | Native API | Advantage vs transactional loop |
 |----------|-----------|------------------|
-| SQL Server | `SqlBulkCopy` | 10-100x |
-| PostgreSQL | `NpgsqlBinaryImporter` (COPY) | 15-25x |
-| MySQL | `MySqlBulkLoader` (LOAD DATA) | 8-15x |
-| SQLite | Optimized INSERT with WAL | 2-3x |
+| SQL Server | `SqlBulkCopy` | 10-100x (vendor-reported, unverified*) |
+| PostgreSQL | `NpgsqlBinaryImporter` (COPY) | **6.9-7.6x (measured 2026-07-04)** |
+| MySQL | `MySqlBulkLoader` (LOAD DATA) | 8-15x (vendor-reported, unverified*) |
+| SQLite | Optimized INSERT with WAL | under investigation* |
 
 \* Ranges describe the underlying native APIs' typical advantage over
 row-by-row INSERTs as reported by their vendors; Jaunty-specific bulk
