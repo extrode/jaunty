@@ -100,33 +100,6 @@ public static class JauntyLoggingExtensions
     /// <summary>
     /// Applies all registered interceptors to the Jaunty configuration.
     /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection for chaining.</returns>
-    /// <remarks>
-    /// Call this method after registering all interceptors to apply them to Jaunty.
-    /// Typically called at application startup after building the service provider.
-    /// </remarks>
-    public static IServiceCollection ApplyJauntyInterceptors(this IServiceCollection services)
-    {
-        if (services is null)
-            throw new ArgumentNullException(nameof(services));
-
-        // Add a post-configuration action to apply interceptors
-        var serviceProvider = services.BuildServiceProvider();
-        var registrations = serviceProvider.GetServices<IInterceptorRegistration>();
-
-        foreach (var registration in registrations)
-        {
-            var interceptor = registration.Resolve(serviceProvider);
-            JauntyConfig.AddInterceptor(interceptor);
-        }
-
-        return services;
-    }
-
-    /// <summary>
-    /// Applies all registered interceptors to the Jaunty configuration.
-    /// </summary>
     /// <param name="serviceProvider">The service provider.</param>
     /// <remarks>
     /// Call this method after building the service provider to apply interceptors to Jaunty.
