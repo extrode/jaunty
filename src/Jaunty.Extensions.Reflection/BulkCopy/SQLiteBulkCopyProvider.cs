@@ -152,7 +152,7 @@ internal sealed class SQLiteBulkCopyProvider : IBulkCopyProvider
         CancellationToken cancellationToken)
     {
         // SQLite doesn't have true async I/O, but we can run on background thread
-        return await Task.Run(() => CopyToServer(connection, tableName, data, options), cancellationToken);
+        return await Task.Run(() => CopyToServer(connection, tableName, data, options), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

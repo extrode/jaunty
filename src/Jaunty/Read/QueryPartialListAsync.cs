@@ -28,7 +28,7 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        return await QueryCoreListAsync(dbConnection, sql, null, cancellationToken);
+        return await QueryCoreListAsync(dbConnection, sql, null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -57,14 +57,14 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        return await QueryCoreListAsync(dbConnection, sql, parameters, cancellationToken);
+        return await QueryCoreListAsync(dbConnection, sql, parameters, cancellationToken).ConfigureAwait(false);
     }
 
     private static async ValueTask<List<IDictionary<string, object?>>> QueryCoreListAsync(DbConnection connection, string sql, object? parameters, CancellationToken cancellationToken)
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
         if (wasClosed)
-            await connection.OpenAsync(cancellationToken);
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -74,8 +74,8 @@ public static partial class Jaunty
 
             var results = new List<IDictionary<string, object?>>();
 
-            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
-            while (await reader.ReadAsync(cancellationToken))
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
                 var row = new Dictionary<string, object?>();
                 for (int i = 0; i < reader.FieldCount; i++)

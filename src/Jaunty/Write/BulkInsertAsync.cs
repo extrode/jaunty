@@ -142,7 +142,8 @@ public static partial class Jaunty
             if (ignoreConstraints)
             {
 #if NET8_0_OR_GREATER
-                await using DbCommand fkOffCmd = connection.CreateCommand();
+                DbCommand fkOffCmd = connection.CreateCommand();
+                await using var fkOffCmdDisposer = fkOffCmd.ConfigureAwait(false);
 #else
                 using DbCommand fkOffCmd = connection.CreateCommand();
 #endif
@@ -173,7 +174,8 @@ public static partial class Jaunty
                 if (ignoreConstraints)
                 {
 #if NET8_0_OR_GREATER
-                    await using DbCommand fkOnCmd = connection.CreateCommand();
+                    DbCommand fkOnCmd = connection.CreateCommand();
+                    await using var fkOnCmdDisposer = fkOnCmd.ConfigureAwait(false);
 #else
                     using DbCommand fkOnCmd = connection.CreateCommand();
 #endif
@@ -200,7 +202,8 @@ public static partial class Jaunty
                     try
                     {
 #if NET8_0_OR_GREATER
-                        await using DbCommand fkOnCmd = connection.CreateCommand();
+                        DbCommand fkOnCmd = connection.CreateCommand();
+                        await using var fkOnCmdDisposer = fkOnCmd.ConfigureAwait(false);
 #else
                         using DbCommand fkOnCmd = connection.CreateCommand();
 #endif
@@ -289,7 +292,8 @@ public static partial class Jaunty
                 typeof(T), connection.GetType(), batchSize, cached.Metadata, dialect);
 
 #if NET8_0_OR_GREATER
-            await using DbCommand command = connection.CreateCommand();
+            DbCommand command = connection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
 #else
             using DbCommand command = connection.CreateCommand();
 #endif
@@ -334,7 +338,8 @@ public static partial class Jaunty
         CancellationToken cancellationToken) where T : new()
     {
 #if NET8_0_OR_GREATER
-        await using DbCommand command = connection.CreateCommand();
+        DbCommand command = connection.CreateCommand();
+        await using var commandDisposer = command.ConfigureAwait(false);
 #else
         using DbCommand command = connection.CreateCommand();
 #endif

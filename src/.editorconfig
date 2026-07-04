@@ -1,0 +1,4 @@
+# Analyzer rules for shipping library code only (tests/samples/benchmarks excluded).
+# Library code must not capture the caller's SynchronizationContext.
+[*.cs]
+dotnet_diagnostic.CA2007.severity = error

@@ -20,14 +20,14 @@ public sealed class SQLiteSchemaReader : ISchemaReader
     {
         // Create connection using reflection to avoid compile-time dependency
         using DbConnection connection = CreateConnection(connectionString);
-        await OpenConnectionAsync(connection, cancellationToken);
+        await OpenConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
 
         var tables = new List<TableSchema>();
-        List<string> tableNames = await GetTableNamesAsync(connection, options, cancellationToken);
+        List<string> tableNames = await GetTableNamesAsync(connection, options, cancellationToken).ConfigureAwait(false);
 
         foreach (var tableName in tableNames)
         {
-            TableSchema tableSchema = await ReadTableSchemaAsync(connection, tableName, options, cancellationToken);
+            TableSchema tableSchema = await ReadTableSchemaAsync(connection, tableName, options, cancellationToken).ConfigureAwait(false);
             tables.Add(tableSchema);
         }
 
@@ -67,7 +67,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
     private static async Task OpenConnectionAsync(DbConnection connection, CancellationToken cancellationToken)
     {
         if (connection.State != ConnectionState.Open)
-            await connection.OpenAsync(cancellationToken);
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<List<string>> GetTableNamesAsync(
@@ -87,8 +87,8 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = sql;
 
-        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             var tableName = reader.GetString(0);
 
@@ -113,10 +113,10 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         SchemaReaderOptions options,
         CancellationToken cancellationToken)
     {
-        List<ColumnSchema> columns = await ReadColumnsAsync(connection, tableName, cancellationToken);
+        List<ColumnSchema> columns = await ReadColumnsAsync(connection, tableName, cancellationToken).ConfigureAwait(false);
         PrimaryKeyInfo? primaryKey = GetPrimaryKeyFromColumns(tableName, columns);
         List<ForeignKeyInfo> foreignKeys = options.IncludeForeignKeys
-            ? await ReadForeignKeysAsync(connection, tableName, cancellationToken)
+            ? await ReadForeignKeysAsync(connection, tableName, cancellationToken).ConfigureAwait(false)
             : [];
 
         return new TableSchema
@@ -137,7 +137,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         var columns = new List<ColumnSchema>();
 
         // Get the CREATE TABLE statement to check for AUTOINCREMENT
-        var createSql = await GetCreateTableSqlAsync(connection, tableName, cancellationToken);
+        var createSql = await GetCreateTableSqlAsync(connection, tableName, cancellationToken).ConfigureAwait(false);
         var hasAutoIncrement = createSql != null &&
             createSql.Contains("AUTOINCREMENT", StringComparison.OrdinalIgnoreCase);
 
@@ -145,8 +145,8 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = $"PRAGMA table_info('{tableName.Replace("'", "''")}')";
 
-        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             // PRAGMA table_info returns: cid, name, type, notnull, dflt_value, pk
             var columnName = reader.GetString(1);
@@ -184,7 +184,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = $"SELECT sql FROM sqlite_master WHERE type = 'table' AND name = '{tableName.Replace("'", "''")}'";
 
-        var result = await cmd.ExecuteScalarAsync(cancellationToken);
+        var result = await cmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
         return result as string;
     }
 
@@ -212,8 +212,8 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = $"PRAGMA foreign_key_list('{tableName.Replace("'", "''")}')";
 
-        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             // PRAGMA foreign_key_list returns: id, seq, table, from, to, on_update, on_delete, match
             var referencedTable = reader.GetString(2);

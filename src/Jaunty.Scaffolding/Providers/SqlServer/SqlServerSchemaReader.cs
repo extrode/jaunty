@@ -72,14 +72,14 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         CancellationToken cancellationToken = default)
     {
         using DbConnection connection = CreateConnection(connectionString);
-        await OpenConnectionAsync(connection, cancellationToken);
+        await OpenConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
 
         var tables = new List<TableSchema>();
-        List<(string SchemaName, string TableName)> tableInfos = await GetTableInfosAsync(connection, options, cancellationToken);
+        List<(string SchemaName, string TableName)> tableInfos = await GetTableInfosAsync(connection, options, cancellationToken).ConfigureAwait(false);
 
         foreach ((string? schemaName, string? tableName) in tableInfos)
         {
-            TableSchema tableSchema = await ReadTableSchemaAsync(connection, schemaName, tableName, options, cancellationToken);
+            TableSchema tableSchema = await ReadTableSchemaAsync(connection, schemaName, tableName, options, cancellationToken).ConfigureAwait(false);
             tables.Add(tableSchema);
         }
 
@@ -117,7 +117,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
     private static async Task OpenConnectionAsync(DbConnection connection, CancellationToken cancellationToken)
     {
         if (connection.State != ConnectionState.Open)
-            await connection.OpenAsync(cancellationToken);
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<List<(string SchemaName, string TableName)>> GetTableInfosAsync(
@@ -130,8 +130,8 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = TablesSql;
 
-        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             var schemaName = reader.GetString(0);
             var tableName = reader.GetString(1);
@@ -163,10 +163,10 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         SchemaReaderOptions options,
         CancellationToken cancellationToken)
     {
-        List<ColumnSchema> columns = await ReadColumnsAsync(connection, schemaName, tableName, cancellationToken);
-        PrimaryKeyInfo? primaryKey = await ReadPrimaryKeyAsync(connection, schemaName, tableName, cancellationToken);
+        List<ColumnSchema> columns = await ReadColumnsAsync(connection, schemaName, tableName, cancellationToken).ConfigureAwait(false);
+        PrimaryKeyInfo? primaryKey = await ReadPrimaryKeyAsync(connection, schemaName, tableName, cancellationToken).ConfigureAwait(false);
         List<ForeignKeyInfo> foreignKeys = options.IncludeForeignKeys
-            ? await ReadForeignKeysAsync(connection, schemaName, tableName, cancellationToken)
+            ? await ReadForeignKeysAsync(connection, schemaName, tableName, cancellationToken).ConfigureAwait(false)
             : [];
 
         // Mark primary key columns
@@ -227,8 +227,8 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         tableParam.Value = tableName;
         cmd.Parameters.Add(tableParam);
 
-        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             columns.Add(new ColumnSchema
             {
@@ -270,8 +270,8 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         string? constraintName = null;
         var columns = new List<string>();
 
-        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             constraintName ??= reader.GetString(0);
             columns.Add(reader.GetString(1));
@@ -308,8 +308,8 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         tableParam.Value = tableName;
         cmd.Parameters.Add(tableParam);
 
-        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             foreignKeys.Add(new ForeignKeyInfo
             {
