@@ -60,6 +60,15 @@ public static partial class Jaunty
     /// <seealso cref="QueryFirst{T}(IDbConnection, string)"/>
     public static ValueTask<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryFirstCoreAsync<T>(dbConnection, sql, null, default, MappingMode.Strict, cancellationToken);
@@ -105,6 +114,15 @@ public static partial class Jaunty
     /// <seealso cref="QueryFirstOrDefaultAsync{T}(IDbConnection, string, object, CancellationToken)"/>
     public static ValueTask<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryFirstCoreAsync<T>(dbConnection, sql, parameters, default, MappingMode.Strict, cancellationToken);
@@ -147,6 +165,15 @@ public static partial class Jaunty
     /// <seealso cref="QueryFirstAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryFirstCoreAsync<T>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
@@ -197,6 +224,15 @@ public static partial class Jaunty
     /// <seealso cref="CommandOptions{T}"/>
     public static ValueTask<T> QueryFirstAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : QueryFirstCoreAsync<T>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
