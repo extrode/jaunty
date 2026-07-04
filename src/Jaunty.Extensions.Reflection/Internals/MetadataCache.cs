@@ -9,7 +9,6 @@ using System.Reflection;
 
 using Jaunty.Configuration;
 using Jaunty.Internals.Entity;
-using Jaunty.Internals.Enums;
 using Jaunty.Attributes;
 using Jaunty.TypeHandlers;
 
@@ -22,7 +21,7 @@ namespace Jaunty.Extensions.Reflection;
 /// This cache uses runtime reflection and is not compatible with NativeAOT.
 /// For NativeAOT scenarios, use the source generator instead.
 /// </remarks>
-public static class MetadataCache<T>
+internal static class MetadataCache<T>
 {
     /// <summary>
     /// The cached entity metadata for type <typeparamref name="T"/>.

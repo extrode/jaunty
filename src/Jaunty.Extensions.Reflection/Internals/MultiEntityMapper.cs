@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 
-using Jaunty.Internals.Enums;
+using Jaunty.Configuration;
 
 namespace Jaunty.Extensions.Reflection;
 

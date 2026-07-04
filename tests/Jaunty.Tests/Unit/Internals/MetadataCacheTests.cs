@@ -5,7 +5,7 @@ using Jaunty;
 using Jaunty.Attributes;
 using Jaunty.Extensions.Reflection;
 using Jaunty.Internals.Entity;
-using Jaunty.Internals.Enums;
+using Jaunty.Configuration;
 
 namespace Jaunty.Tests.Unit.Internals;
 

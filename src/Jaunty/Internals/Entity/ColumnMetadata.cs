@@ -7,7 +7,7 @@ namespace Jaunty.Internals.Entity;
 /// <summary>
 /// Metadata for a property-to-column mapping.
 /// </summary>
-public sealed class ColumnMetadata
+internal sealed class ColumnMetadata
 {
     /// <summary>
     /// Gets the property info for the column.

@@ -3,7 +3,7 @@ using System.Data.Common;
 
 using Jaunty.Configuration;
 
-namespace Jaunty.Internals.BulkCopy;
+namespace Jaunty.Configuration;
 
 /// <summary>
 /// Provides bulk copy functionality for a specific database provider.

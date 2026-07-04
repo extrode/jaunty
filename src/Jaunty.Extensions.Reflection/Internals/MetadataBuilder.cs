@@ -15,7 +15,7 @@ namespace Jaunty.Extensions.Reflection;
 /// This extension uses runtime reflection and is not compatible with NativeAOT.
 /// For NativeAOT scenarios, use the source generator instead.
 /// </remarks>
-public static class MetadataBuilder
+internal static class MetadataBuilder
 {
     // Fully qualified type names for System.ComponentModel.DataAnnotations attributes
     private const string TableAttributeTypeName = "System.ComponentModel.DataAnnotations.Schema.TableAttribute";

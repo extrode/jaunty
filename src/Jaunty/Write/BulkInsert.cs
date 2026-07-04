@@ -1,9 +1,9 @@
 using System.Data;
 
 using Jaunty.Configuration;
+using Jaunty.Internals.BulkCopy;
 using Jaunty.Core;
 using Jaunty.Dialects;
-using Jaunty.Internals.BulkCopy;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
 

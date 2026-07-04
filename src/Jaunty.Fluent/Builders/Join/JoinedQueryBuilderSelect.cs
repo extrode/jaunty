@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using Jaunty.Fluent.Internals;
-using Jaunty.Internals.Enums;
+using Jaunty.Configuration;
 using Jaunty.Internals.Read;
 
 namespace Jaunty.Fluent;
