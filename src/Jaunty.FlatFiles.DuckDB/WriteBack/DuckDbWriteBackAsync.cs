@@ -30,6 +30,14 @@ public sealed partial class DuckDb
                 "WriteBackMode.NewFile requires an output path. Use the SaveAsync<T>(string outputPath) overload instead.");
         }
 
+        if (source.FilePaths.Count > 1)
+        {
+            throw new InvalidOperationException(
+                $"In-place WriteBack (WriteBackMode) is not supported for multi-file sources " +
+                $"(source '{source.TableName}' spans {source.FilePaths.Count} files). " +
+                "Use the overload that accepts an explicit output path instead.");
+        }
+
         var originalPath = source.FilePath;
         var directory = Path.GetDirectoryName(originalPath) ?? ".";
         var tempPath = Path.Combine(directory, $".{Path.GetFileNameWithoutExtension(originalPath)}.tmp{Path.GetExtension(originalPath)}");
@@ -39,8 +47,7 @@ public sealed partial class DuckDb
             var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(tempPath), source);
             await NonQueryExecutor.ExecuteAsync(_connection, sql, [], cancellationToken).ConfigureAwait(false);
 
-            File.Delete(originalPath);
-            File.Move(tempPath, originalPath);
+            File.Move(tempPath, originalPath, overwrite: true);
         }
         catch
         {
