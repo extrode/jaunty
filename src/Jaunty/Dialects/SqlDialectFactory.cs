@@ -88,6 +88,7 @@ public static class SqlDialectFactory
             if (factoryType == null)
                 return dialect;
 
+            // AOT-SAFE: optional-extension probe; when trimming removes the type or method this returns null and the base dialect is used unchanged
             MethodInfo? getDialectMethod = factoryType.GetMethod("GetDialect", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
             if (getDialectMethod == null)
                 return dialect;

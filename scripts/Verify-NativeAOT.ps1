@@ -80,6 +80,18 @@ foreach ($file in $files) {
             $isAllowed = $false
             $allowedReason = ""
             $requiresDocumentation = $false
+
+            # Inline suppression: a reviewed call site carries an AOT-SAFE
+            # comment on its own line or the line above, stating WHY it is
+            # safe (graceful fallback, DynamicallyAccessedMembers, etc.).
+            $lines = $content -split "`n"
+            $matchLine = if ($lineNum -le $lines.Count) { $lines[$lineNum - 1] } else { "" }
+            $prevLine = if ($lineNum -ge 2) { $lines[$lineNum - 2] } else { "" }
+            if ($matchLine -match 'AOT-SAFE:' -or $prevLine -match 'AOT-SAFE:') {
+                $requiresDocumentation = $true
+                $reasonLine = if ($matchLine -match 'AOT-SAFE:') { $matchLine } else { $prevLine }
+                $allowedReason = ($reasonLine -replace '.*AOT-SAFE:\s*', '').Trim()
+            }
             
             foreach ($keepPattern in $KeepPatterns) {
                 if ($content -match $keepPattern.Pattern) {
