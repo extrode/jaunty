@@ -26,6 +26,14 @@ default lives in `src/Directory.Build.props`.
   (SQLitePCLRaw native sqlite GHSA-2m69-gcr7-jv3q, Regex GHSA-cmhx-cq75-c4mj).
 - Package validation (`EnablePackageValidation`) enabled; benchmarks/samples/
   source generator excluded from packing.
+- **BREAKING (netstandard2.0 only):** streaming APIs unified across TFMs.
+  `QueryStreamAsync`, `QueryPartialStreamAsync`, `QueryPartialUnbufferedAsync`,
+  and `GetAllStreamAsync` now return `IAsyncEnumerable<T>` on netstandard2.0
+  (via `Microsoft.Bcl.AsyncInterfaces`) exactly as on net8.0; the
+  `ValueTask<IEnumerable<T>>` variants were removed. `EntityMetadata.ParameterMap`
+  is now `IReadOnlyDictionary<string, ColumnMetadata>` on both TFMs. The
+  ApiCompat suppression baseline is gone - the public API is identical across
+  TFMs and validation now fails on any new divergence.
 
 ### Fixed
 
