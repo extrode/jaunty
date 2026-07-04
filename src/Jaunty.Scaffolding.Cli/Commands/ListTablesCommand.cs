@@ -8,30 +8,33 @@ internal sealed class ListTablesCommand : Command
 {
     public ListTablesCommand() : base("list-tables", "List tables in the database")
     {
-        var connectionOption = new Option<string>(
-            aliases: ["--connection", "-c"],
-            description: "Database connection string")
-        { IsRequired = true };
-
-        var providerOption = new Option<DatabaseProvider>(
-            aliases: ["--provider", "-p"],
-            description: "Database provider (SqlServer, PostgreSql, MySql, SQLite)",
-            getDefaultValue: () => DatabaseProvider.AutoDetect);
-
-        var schemasOption = new Option<string[]>(
-            "--schemas",
-            description: "Filter by schemas")
-        { AllowMultipleArgumentsPerToken = true };
-
-        AddOption(connectionOption);
-        AddOption(providerOption);
-        AddOption(schemasOption);
-
-        this.SetHandler(async (context) =>
+        var connectionOption = new Option<string>("--connection", "-c")
         {
-            var connection = context.ParseResult.GetValueForOption(connectionOption)!;
-            DatabaseProvider provider = context.ParseResult.GetValueForOption(providerOption);
-            var schemas = context.ParseResult.GetValueForOption(schemasOption) ?? [];
+            Description = "Database connection string",
+            Required = true
+        };
+
+        var providerOption = new Option<DatabaseProvider>("--provider", "-p")
+        {
+            Description = "Database provider (SqlServer, PostgreSql, MySql, SQLite)",
+            DefaultValueFactory = _ => DatabaseProvider.AutoDetect
+        };
+
+        var schemasOption = new Option<string[]>("--schemas")
+        {
+            Description = "Filter by schemas",
+            AllowMultipleArgumentsPerToken = true
+        };
+
+        Options.Add(connectionOption);
+        Options.Add(providerOption);
+        Options.Add(schemasOption);
+
+        SetAction(async (parseResult, cancellationToken) =>
+        {
+            var connection = parseResult.GetValue(connectionOption)!;
+            DatabaseProvider provider = parseResult.GetValue(providerOption);
+            var schemas = parseResult.GetValue(schemasOption) ?? [];
 
             try
             {
@@ -39,7 +42,7 @@ internal sealed class ListTablesCommand : Command
                 IReadOnlyList<(string Schema, string Table)> tables = await scaffolder.ListTablesAsync(
                     connection,
                     provider,
-                    context.GetCancellationToken()).ConfigureAwait(false);
+                    cancellationToken).ConfigureAwait(false);
 
                 // Filter by schemas if specified
                 if (schemas.Length > 0)
@@ -65,12 +68,12 @@ internal sealed class ListTablesCommand : Command
                     Console.WriteLine();
                 }
 
-                context.ExitCode = 0;
+                return 0;
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error: {ex.Message}");
-                context.ExitCode = 1;
+                return 1;
             }
         });
     }
