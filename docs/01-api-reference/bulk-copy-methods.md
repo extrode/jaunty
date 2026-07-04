@@ -227,30 +227,33 @@ catch
 
 **Requirements**: `Npgsql`
 
-### MySQL
+### MySQL / MariaDB
 
-**Technology**: `MySqlBulkLoader` (LOAD DATA LOCAL INFILE)
+**Technology**: Chunked multi-row parameterized INSERT (2,000-parameter
+budget per statement; no server-side `local_infile` requirement)
 
-**Performance**: 8-15x faster than INSERT for 10K+ rows
+**Performance**: 12.9-16.1x faster than a transactional loop (measured 2026-07-04)
 
 **Features**:
-- CSV-based bulk loading
-- Temporary file with automatic cleanup
+- No LOAD DATA / local_infile server configuration needed
+- Reused prepared command for full chunks
+- Own or caller-supplied transaction
 
 **Requirements**: `MySql.Data` or `MySqlConnector`
 
 ### SQLite
 
-**Technology**: Optimized INSERT with transactions
+**Technology**: Prepared-loop INSERT in a single transaction (BulkInsert
+routes SQLite here automatically; multi-row VALUES is quadratic in
+Microsoft.Data.Sqlite)
 
-**Performance**: 2-3x faster than standard INSERT
+**Performance**: parity with hand-coded ADO.NET (measured 2026-07-04)
 
 **Features**:
-- WAL mode optimization
 - Single transaction for all rows
 - Prepared statement reuse
 
-**Note**: SQLite has no native bulk copy API.
+**Note**: SQLite has no native bulk copy API; there is no separate provider.
 
 ## Performance Guidelines
 
