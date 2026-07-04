@@ -29,8 +29,8 @@ internal interface IBulkCopyProvider
 **Implementations**:
 - `SqlServerBulkCopyProvider` - Uses `SqlBulkCopy`
 - `PostgreSqlBulkCopyProvider` - Uses `NpgsqlBinaryImporter` (COPY BINARY)
-- `MySqlBulkCopyProvider` - Uses `MySqlBulkLoader` (LOAD DATA INFILE)
-- `SQLiteBulkCopyProvider` - Optimized INSERT with transactions
+- `MySqlBulkCopyProvider` - Chunked multi-row parameterized INSERT
+- SQLite - no provider: BulkInsert routes to the core prepared-loop path
 
 ### Entity Adapter
 
@@ -173,45 +173,37 @@ COPY table_name (col1, col2, ...) FROM STDIN BINARY
 
 **Performance**: 15-25x faster than INSERT for 10K+ rows
 
-### MySQL
+### MySQL / MariaDB
 
 **Provider**: `MySqlBulkCopyProvider`
 
-**Technology**: `MySqlBulkLoader` (LOAD DATA LOCAL INFILE)
+**Technology**: Chunked multi-row parameterized INSERT
+(2,000-parameter budget per statement, chunk size adapts to column count)
 
 **Features**:
-- CSV-based bulk loading
-- Temporary file approach
-- Automatic cleanup
+- No LOAD DATA / `local_infile` server or connection-string requirement
+- One reused command for full chunks, separate tail command
+- Sync and async paths; own or caller-supplied transaction
 
 **Process**:
-1. Create temporary CSV file
-2. Configure `MySqlBulkLoader` with file stream
-3. Execute `LOAD DATA LOCAL INFILE`
-4. Delete temporary file
+1. Buffer rows up to the per-statement parameter budget
+2. Bind and execute the reused full-chunk INSERT
+3. Execute a tail INSERT for the remainder
 
-**Performance**: 8-15x faster than INSERT for 10K+ rows
+**Performance**: 12.9-16.1x faster than a transactional loop (measured 2026-07-04)
 
 ### SQLite
 
-**Provider**: `SQLiteBulkCopyProvider`
+**Provider**: none (PROD-120: the former `SQLiteBulkCopyProvider` was removed)
 
-**Technology**: Optimized INSERT with transactions
+**Technology**: `BulkInsert` detects SQLite dialects (including the
+Extensions.Reflection wrapper) and routes to the core prepared-loop path:
+one prepared command, one transaction. Multi-row VALUES is avoided because
+parameter binding is quadratic in Microsoft.Data.Sqlite.
 
-**Features**:
-- WAL mode for better write performance
-- Single transaction for all rows
-- Prepared statement reuse
+**Note**: SQLite has no native bulk copy API.
 
-**Optimizations**:
-```sql
-PRAGMA journal_mode=WAL;
-PRAGMA synchronous=NORMAL;
-```
-
-**Note**: SQLite has no native bulk copy API. This provider offers the best possible performance using standard ADO.NET patterns.
-
-**Performance**: 2-3x faster than standard INSERT
+**Performance**: parity with hand-coded ADO.NET (measured 2026-07-04)
 
 ## Integration with BulkInsert
 
