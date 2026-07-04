@@ -51,6 +51,17 @@ candidates land in "Needs decision").
 - Add `EnablePackageValidation` to packable projects.
 - Acceptance: `dotnet pack -p:Version=X` produces consistently versioned packages;
   build green.
+- **Found during execution (fixed):** `dotnet pack Jaunty.slnx` packed
+  `Jaunty.Benchmarks` and the 3 `NativeAOT-*` samples — release.yml pushes
+  `packout/*.nupkg`, so a tagged release would have published sample apps to
+  nuget.org. Fixed with `IsPackable=false` (also on SourceGenerator, which ships
+  inside Beparey.Jaunty and errored NU5128 when packed standalone).
+- **Found during execution (baselined, see decision 7):** package validation
+  detected 15 public members present in netstandard2.0 but missing from net8.0
+  (`QueryStreamAsync`/`QueryPartialStreamAsync`/`QueryPartialUnbufferedAsync`/
+  `GetAllStreamAsync` ValueTask variants; `EntityMetadata.ParameterMap`).
+  Baselined in `src/Jaunty/CompatibilitySuppressions.xml` so validation still
+  catches *new* divergence.
 
 ### PROD-103 (P1): Dependency hygiene — `fix/prod-103-dependencies`
 - Run `dotnet list package --vulnerable --include-transitive` and `--deprecated`;
@@ -97,7 +108,15 @@ candidates land in "Needs decision").
    only" contract vs. freeze-after-first-use semantics (behavioral change).
 5. **PackageIcon**: absent; needs an actual icon asset from you.
 6. **CalVer `2026.01.01` vs SemVer**: CHANGELOG documents CalVer; NuGet ecosystem and
-   package validation tooling assume SemVer. Confirm CalVer is intentional.
+   package validation tooling assume SemVer. Confirm CalVer is intentional. Note NuGet
+   normalizes `2026.01.01` to `2026.1.1` in package filenames.
+7. **TFM public-API divergence (PRD-003 evidence)**: net8.0 exposes streaming as
+   `IAsyncEnumerable<T>` while netstandard2.0 exposes `ValueTask<IEnumerable<T>>`
+   members of the same names — same signature, different return type, so the two
+   cannot coexist on one TFM. Unifying is a breaking change on one side. 15 members
+   baselined in `CompatibilitySuppressions.xml`; decide the unification story before
+   v1 GA. Related: `Jaunty.Internals.Entity.EntityMetadata` is a public type in an
+   `Internals` namespace — consider making internal (breaking).
 
 ## Handoff tasklist — follow-up work (tests/comments/docs; per scope, not done here)
 
