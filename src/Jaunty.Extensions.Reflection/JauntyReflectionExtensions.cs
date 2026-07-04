@@ -322,7 +322,8 @@ public static class JauntyReflectionExtensions
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;
-                p.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+                object? propValue = col.Property.GetValue(entity);
+                p.Value = ApplyHandlersAndEnumStorage(col.Property, propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
         };
