@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   release:
@@ -53,12 +54,16 @@ jobs:
           -p:Version=${{ steps.version.outputs.version }}
           -o packout
 
-      - name: Push to NuGet
-        if: ${{ secrets.NUGET_API_KEY != '' }}
+      # Private distribution: GitHub Packages, authenticated with the built-in
+      # GITHUB_TOKEN (no external secret). Customers consume with read-only
+      # fine-grained PATs - see docs/06-releases/COMMERCIAL-DISTRIBUTION-FLOW.md.
+      # Note: GitHub Packages has no snupkg symbol server; symbol packages are
+      # attached to the GitHub Release below instead.
+      - name: Push to GitHub Packages
         run: >-
           dotnet nuget push "packout/*.nupkg"
-          --api-key "${{ secrets.NUGET_API_KEY }}"
-          --source https://api.nuget.org/v3/index.json
+          --api-key "${{ secrets.GITHUB_TOKEN }}"
+          --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
           --skip-duplicate
 
       - name: Create GitHub Release
