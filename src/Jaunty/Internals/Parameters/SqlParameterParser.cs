@@ -63,6 +63,15 @@ internal static class SqlParameterParser
                 continue;
             }
 
+            // Skip SQL Server global/system variable (@@IDENTITY, @@ROWCOUNT, ...)
+            if (c == '@' && i + 1 < len && sql[i + 1] == '@')
+            {
+                i += 2;
+                while (i < len && IsParameterChar(sql[i]))
+                    i++;
+                continue;
+            }
+
             // Found parameter (@ for SQL Server/SQLite, $ for DuckDB/PostgreSQL)
             if (c is '@' or '$')
             {
@@ -174,6 +183,14 @@ internal static class SqlParameterParser
             if (c == '[')
             {
                 i = SkipQuotedClassic(sql, i + 1, len, ']');
+                continue;
+            }
+
+            if (c == '@' && i + 1 < len && sql[i + 1] == '@')
+            {
+                i += 2;
+                while (i < len && IsParameterChar(sql[i]))
+                    i++;
                 continue;
             }
 
