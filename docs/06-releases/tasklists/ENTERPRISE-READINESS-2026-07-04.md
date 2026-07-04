@@ -202,3 +202,48 @@ Let's use #if / #else compiler directives to target both
   SqlServer ("Cannot insert explicit value for identity column") - EfProduct
   key not ValueGeneratedOnAdd for this provider. Competitor number missing;
   no Jaunty impact.
+
+- Residual resolved (PROD-122 task 2): EfProduct key lacked ValueGeneratedOnAdd()
+  and IterationSetup did not reset product_id to 0 between iterations. Both fixed.
+- TryEnhanceWithBulkCopy mystery resolved (PROD-122 task 3): TryEnhanceWithBulkCopy
+  in SqlDialectFactory reflection-calls BulkCopyDialectFactory.GetDialect, but that
+  method guards on BulkCopyDialectFactory._enabled (default false). The enabled flag
+  is only set by JauntyReflectionExtensions.UseNativeBulkCopy(), which benchmarks
+  call in GlobalSetup but tests never call. Result: in the test process the factory
+  type resolves successfully via Type.GetType, GetDialect is invoked, but _enabled
+  is false so it returns the base dialect unchanged — identical to the unenhanced
+  path. No exception is swallowed; no assembly load fails; no initialization defect.
+  The "silent failure" is correct by design: tests opt out of native bulk copy by not
+  calling UseNativeBulkCopy(), and SqliteBulkPathDiagnosticTests seeing a plain
+  SQLiteDialect is the expected result. No src change required.
+
+## PROD-122 (IN PROGRESS 2026-07-04): cleanup sprint
+
+- Task 1 (cross-TFM contention): Added `<TestTfmsInParallel>false</TestTfmsInParallel>`
+  to tests/Jaunty.Tests/Jaunty.Tests.csproj. `dotnet test` without -f now runs net8.0
+  then net472 sequentially, eliminating the ~7-30 MariaDB/Postgres Write test failures
+  caused by concurrent TFM runs hitting the same live databases.
+  Acceptance run pending (Task 1 commit: 3f7f03f).
+
+- Task 2 (EF Core SqlServer identity INSERT): Two fixes in benchmarks/Jaunty.Benchmarks.
+  (a) EfProduct.cs OnModelCreating: added ValueGeneratedOnAdd() on product_id so EF Core
+  metadata is correct for all four providers. (b) BulkCopyBenchmarks.cs IterationSetup:
+  reset product_id = 0 on each EfProduct before every iteration — after SaveChanges EF
+  Core writes back db-assigned IDs; subsequent iterations carried non-zero keys that
+  SqlServer rejected as explicit identity values. Smoke-checked --quick against SqlServer;
+  all three BatchSize runs completed without error (exit code 0, no NA).
+  Commit: f854427.
+
+- Task 3 (TryEnhanceWithBulkCopy silent failure): Not a defect. TryEnhanceWithBulkCopy
+  resolves BulkCopyDialectFactory via Type.GetType and successfully invokes GetDialect,
+  but BulkCopyDialectFactory._enabled defaults to false. UseNativeBulkCopy() sets it;
+  benchmarks call UseNativeBulkCopy() in GlobalSetup, tests do not. Tests opt out by
+  design; SqliteBulkPathDiagnosticTests seeing a plain SQLiteDialect is correct.
+  No exception swallowed, no load failure, no src change required. Documented in
+  PROD-121 residual section above. Commit: 4ac079b.
+
+- Task 4 (git housekeeping): Deleted 83 local branches fully merged into dev
+  (audit/*, chore/*, docs/*, feat/*, feature/*, features/*, fix/*, fixes/*,
+  organizations/*, refactors/*, specs/*). Remote prune completed. Working tree clean.
+
+- Task 5 (tasklist bookkeeping): This section.
