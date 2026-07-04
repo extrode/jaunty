@@ -49,10 +49,20 @@ public sealed class MicrosoftSqliteAttribute : DialectDataAttributeBase
 
     protected override DialectInfo Dialect => DialectInfo.MicrosoftSqlite;
 
-    public override System.Collections.Generic.IEnumerable<object[]> GetData(System.Reflection.MethodInfo testMethod)
+    public override ValueTask<System.Collections.Generic.IReadOnlyCollection<Xunit.ITheoryDataRow>> GetData(
+        System.Reflection.MethodInfo testMethod,
+        Xunit.Sdk.DisposalTracker disposalTracker)
     {
-        // Return no data on .NET Framework to exclude tests from discovery entirely
-        return System.Linq.Enumerable.Empty<object[]>();
+        // xunit.v3 fails a theory when a data attribute yields zero rows,
+        // so return a single skipped row on .NET Framework instead of none.
+        return new ValueTask<System.Collections.Generic.IReadOnlyCollection<Xunit.ITheoryDataRow>>(
+            new Xunit.ITheoryDataRow[]
+            {
+                new Xunit.TheoryDataRow<DialectInfo>(DialectInfo.MicrosoftSqlite)
+                {
+                    Skip = "Microsoft.Data.Sqlite is not exercised on .NET Framework."
+                }
+            });
     }
 }
 #endif
