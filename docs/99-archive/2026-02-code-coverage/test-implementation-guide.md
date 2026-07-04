@@ -1,6 +1,6 @@
 # Jaunty Test Implementation Guide
 
-**Purpose**: Guide for agents and developers writing tests for the Jaunty micro-ORM
+**Purpose**: Guide for developers writing tests for the Jaunty micro-ORM
 **Created**: 2026-02-19
 **Last Updated**: 2026-02-19
 
