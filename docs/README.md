@@ -78,9 +78,35 @@ Quality assurance and testing documentation:
 Release documentation and task lists:
 
 - **[06-releases/](06-releases/README.md)**
+  - [Release Runbook](06-releases/RELEASE-RUNBOOK.md) - Step-by-step release process
   - [Production Readiness Tasklist](06-releases/tasklists/production-readiness-tasklist.md)
   - [Commercial Tasklist](06-releases/tasklists/commercial-tasklist.md)
   - [Test Reorganization Plan](06-releases/tasklists/jaunty-reorganize-tests.md)
+
+### 7. Design
+
+Visual design source for the Jaunty docs site:
+
+- **[07-design/](07-design/README.md)**
+  - [`Jaunty Docs App.dc.html`](07-design/Jaunty%20Docs%20App.dc.html) - Primary design (authoritative layout target)
+  - [`Jaunty Docs.dc.html`](07-design/Jaunty%20Docs.dc.html) - Secondary design reference
+  - [`support.js`](07-design/support.js) - Design-tool runtime (view `.dc.html` files in browser)
+
+---
+
+## Building the Docs Site
+
+`tools/Jaunty.DocsGenerator` converts this markdown tree into a self-contained static HTML site matching the design in `07-design/`.
+
+```bash
+# From repo root — generate into dist/docs-site/ (gitignored)
+dotnet run --project tools/Jaunty.DocsGenerator -- docs/ dist/docs-site/
+
+# Open dist/docs-site/index.html in a browser to review
+```
+
+**Output** is written to `dist/docs-site/` which is gitignored. Do not commit generated output.  
+**Design tokens** and implementation details are documented in [`07-design/README.md`](07-design/README.md).
 
 ---
 
@@ -162,5 +188,5 @@ When moving documentation:
 
 ---
 
-**Last Updated**: March 2026  
+**Last Updated**: July 2026  
 **Maintained By**: Jaunty Contributors

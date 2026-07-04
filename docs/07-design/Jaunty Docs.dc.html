@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&amp;family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#edebe6;font-family:system-ui,sans-serif}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1" data-screen-label="Turn 1 — Docs directions">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Jaunty API docs — three monochrome directions</span></div>
+<div style="max-width:760px;margin:0 0 24px;font:12.5px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.6)">
+Assumptions: Jaunty is a Dapper/Dapper.Contrib-style micro-ORM (extension methods on IDbConnection — Insert, Update, Delete, Get, Query — with OUTPUT/RETURNING populating db-generated values). Each card shows the same reference page (Insert&lt;T&gt;) so type, density, and layout compare honestly. Working in all three: sidebar search filter, collapsible nav groups, copy-to-clipboard, expandable detail sections. A real dark/light toggle comes with the chosen direction.
+</div>
+<div class="dv-opts">
+
+<!-- ============ 1a : PLEX — light, compact, by-the-book ============ -->
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Plex — light, compact reference. IBM Plex, hairline structure, dark code panels.</div>
+<div class="dv-card" style="width:1200px;height:740px">
+<div style="display:grid;grid-template-columns:252px 1fr;height:100%;background:#fbfbf9;font-family:'IBM Plex Sans',sans-serif;color:#161412">
+
+  <!-- sidebar -->
+  <div style="display:flex;flex-direction:column;background:#f3f2ef;border-right:1px solid #e2e0db;min-height:0">
+    <div style="display:flex;align-items:center;gap:9px;padding:16px 16px 14px">
+      <div style="width:24px;height:24px;background:#161412;color:#fbfbf9;display:grid;place-items:center;font:600 12px 'IBM Plex Mono',monospace;border-radius:4px">J</div>
+      <div style="font-size:14px;font-weight:600;letter-spacing:-.01em">Jaunty</div>
+      <div style="font:400 10.5px 'IBM Plex Mono',monospace;color:#8a877f;padding:2px 5px;border:1px solid #dbd9d3;border-radius:3px;background:#fbfbf9">v2.3.0</div>
+    </div>
+    <div style="padding:0 12px 10px">
+      <input value="{{ qa }}" onChange="{{ onQa }}" placeholder="Filter docs…" style="width:100%;box-sizing:border-box;padding:6px 9px;font:400 12px 'IBM Plex Sans',sans-serif;color:#161412;background:#fbfbf9;border:1px solid #dbd9d3;border-radius:5px;outline:none" style-focus="border:1px solid #a09d94"></input>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:2px 8px 16px;min-height:0">
+      <sc-if value="{{ emptyA }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:14px 10px;font:400 12px 'IBM Plex Sans',sans-serif;color:#8a877f">No matches for “{{ qa }}”</div>
+      </sc-if>
+      <sc-for list="{{ groupsA }}" as="g" hint-placeholder-count="4">
+        <div style="margin:0 0 2px">
+          <div onClick="{{ g.toggle }}" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:7px 8px 5px;border-radius:4px" style-hover="background:#eceae5">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#75726a">{{ g.label }}</span>
+            <span style="font:400 10px 'IBM Plex Mono',monospace;color:#a3a098">{{ g.chev }}</span>
+          </div>
+          <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;padding:1px 0 6px">
+              <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+                <div style="cursor:pointer;padding:4px 8px 4px 14px;margin:0 0 1px;font-size:12.5px;font-weight:{{ it.fw }};color:{{ it.c }};background:{{ it.bg }};border-left:2px solid {{ it.bl }};border-radius:0 4px 4px 0" style-hover="background:#eceae5">{{ it.name }}</div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid #e2e0db;font:400 10.5px 'IBM Plex Mono',monospace;color:#8a877f">MIT · SQL Server · PostgreSQL</div>
+  </div>
+
+  <!-- content -->
+  <div style="overflow-y:auto;min-height:0">
+    <div style="max-width:720px;padding:36px 52px 64px">
+      <div style="font:400 11px 'IBM Plex Mono',monospace;color:#8a877f;margin:0 0 14px">API Reference <span style="color:#c4c1b9">/</span> Insert</div>
+      <h1 style="margin:0 0 8px;font:500 27px/1.15 'IBM Plex Mono',monospace;letter-spacing:-.02em">Insert&lt;T&gt;</h1>
+      <div style="display:flex;gap:6px;margin:0 0 18px">
+        <span style="font:400 10.5px 'IBM Plex Mono',monospace;color:#5c5a55;padding:2.5px 7px;border:1px solid #dbd9d3;border-radius:3px;background:#f3f2ef">extension method</span>
+        <span style="font:400 10.5px 'IBM Plex Mono',monospace;color:#5c5a55;padding:2.5px 7px;border:1px solid #dbd9d3;border-radius:3px;background:#f3f2ef">IDbConnection</span>
+        <span style="font:400 10.5px 'IBM Plex Mono',monospace;color:#5c5a55;padding:2.5px 7px;border:1px solid #dbd9d3;border-radius:3px;background:#f3f2ef">since 1.0</span>
+      </div>
+      <p style="margin:0 0 22px;font-size:14px;line-height:1.65;color:#3c3a35;text-wrap:pretty">Inserts <span style="font-family:'IBM Plex Mono',monospace;font-size:13px">entity</span> as a new row and returns the inserted entity with database-generated values populated. Jaunty emits an <span style="font-family:'IBM Plex Mono',monospace;font-size:13px">OUTPUT</span> (SQL Server) or <span style="font-family:'IBM Plex Mono',monospace;font-size:13px">RETURNING</span> (PostgreSQL) clause, so identity keys, defaults, and computed columns come back in a single round trip.</p>
+
+      <pre style="margin:0 0 26px;padding:16px 18px;background:#1b1916;border-radius:6px;overflow-x:auto;font:400 12.5px/1.7 'IBM Plex Mono',monospace;color:#ecebe6"><span style="color:#8f8d84;font-style:italic">public static</span> T <span style="color:#ffffff;font-weight:500">Insert</span>&lt;T&gt;(
+    <span style="color:#8f8d84;font-style:italic">this</span> <span style="color:#c9c7be">IDbConnection</span> connection,
+    T entity,
+    <span style="color:#c9c7be">IDbTransaction</span> transaction = <span style="color:#8f8d84;font-style:italic">null</span>,
+    <span style="color:#c9c7be">int?</span> <span>commandTimeout</span> = <span style="color:#8f8d84;font-style:italic">null</span>
+);</pre>
+
+      <h2 style="margin:0 0 12px;font:600 12px 'IBM Plex Sans',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#75726a">Parameters</h2>
+      <div style="border-top:1px solid #e2e0db;margin:0 0 26px">
+        <div style="display:grid;grid-template-columns:150px 130px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid #e9e7e2;font-size:12.5px;line-height:1.55">
+          <span style="font-family:'IBM Plex Mono',monospace">entity</span>
+          <span style="font-family:'IBM Plex Mono',monospace;color:#8a877f">T</span>
+          <span style="color:#3c3a35">The object to insert. Identity / db-generated members are ignored on write and populated on return.</span>
+        </div>
+        <div style="display:grid;grid-template-columns:150px 130px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid #e9e7e2;font-size:12.5px;line-height:1.55">
+          <span style="font-family:'IBM Plex Mono',monospace">transaction</span>
+          <span style="font-family:'IBM Plex Mono',monospace;color:#8a877f">IDbTransaction</span>
+          <span style="color:#3c3a35">Optional transaction to enlist in. Defaults to <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">null</span>.</span>
+        </div>
+        <div style="display:grid;grid-template-columns:150px 130px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid #e9e7e2;font-size:12.5px;line-height:1.55">
+          <span style="font-family:'IBM Plex Mono',monospace">commandTimeout</span>
+          <span style="font-family:'IBM Plex Mono',monospace;color:#8a877f">int?</span>
+          <span style="color:#3c3a35">Command timeout in seconds. Defaults to the provider's timeout.</span>
+        </div>
+      </div>
+
+      <h2 style="margin:0 0 12px;font:600 12px 'IBM Plex Sans',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#75726a">Returns</h2>
+      <p style="margin:0 0 26px;font-size:13.5px;line-height:1.65;color:#3c3a35"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">T</span> — a new instance materialized from the row the database actually wrote, including generated keys, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">DEFAULT</span> values, and timestamps.</p>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 8px">
+        <h2 style="margin:0;font:600 12px 'IBM Plex Sans',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#75726a">Example</h2>
+        <div onClick="{{ copyA }}" style="cursor:pointer;font:500 11px 'IBM Plex Mono',monospace;color:#5c5a55;padding:4px 9px;border:1px solid #dbd9d3;border-radius:4px;background:#f3f2ef" style-hover="background:#eceae5;color:#161412">{{ copyALabel }}</div>
+      </div>
+      <pre style="margin:0 0 26px;padding:16px 18px;background:#1b1916;border-radius:6px;overflow-x:auto;font:400 12.5px/1.7 'IBM Plex Mono',monospace;color:#ecebe6"><span style="color:#8f8d84;font-style:italic">using</span> Jaunty;
+
+<span style="color:#8f8d84;font-style:italic">using var</span> connection = <span style="color:#8f8d84;font-style:italic">new</span> <span style="color:#c9c7be">SqlConnection</span>(connectionString);
+
+<span style="color:#8f8d84;font-style:italic">var</span> order = <span style="color:#8f8d84;font-style:italic">new</span> <span style="color:#c9c7be">Order</span> {
+    CustomerId = <span style="color:#b5b3a8">42</span>,
+    Status     = OrderStatus.Pending
+};
+
+<span style="color:#6e6c63;font-style:italic">// INSERT … OUTPUT INSERTED.* — generated values</span>
+<span style="color:#6e6c63;font-style:italic">// come back populated on the returned object</span>
+<span style="color:#8f8d84;font-style:italic">var</span> created = connection.<span style="color:#ffffff;font-weight:500">Insert</span>(order);
+
+Console.WriteLine(created.Id);        <span style="color:#6e6c63;font-style:italic">// 1087</span>
+Console.WriteLine(created.CreatedAt); <span style="color:#6e6c63;font-style:italic">// 2026-07-04 09:14</span></pre>
+
+      <div style="border:1px solid #e2e0db;border-radius:6px;background:#f6f5f2;margin:0 0 8px">
+        <div onClick="{{ toggleExpA }}" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:11px 14px" style-hover="background:#f0efeb">
+          <span style="font-size:12.5px;font-weight:600;color:#3c3a35">Entity requirements</span>
+          <span style="font:400 11px 'IBM Plex Mono',monospace;color:#8a877f">{{ expAChev }}</span>
+        </div>
+        <sc-if value="{{ expA }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 14px 13px;font-size:12.5px;line-height:1.7;color:#3c3a35;border-top:1px solid #e9e7e2">
+            <div style="padding:7px 0 0">· One member marked <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">[Key]</span>, or a member named <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">Id</span> by convention.</div>
+            <div>· Table name = pluralized class name; override with <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">[Table("…")]</span>.</div>
+            <div>· Map columns with <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">[Column("…")]</span>; exclude with <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">[NotMapped]</span>.</div>
+            <div>· Target a different database (SQL Server) with <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">[Database("…")]</span>.</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ============ 1b : TERMINAL — dark, dense, mono-first ============ -->
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Terminal — dark throughout, JetBrains Mono, editor-like density, status bar.</div>
+<div class="dv-card" style="width:1200px;height:740px;border-color:rgba(0,0,0,.35)">
+<div style="display:grid;grid-template-rows:1fr 26px;height:100%;background:#0e0e10;font-family:'JetBrains Mono',monospace;color:#e6e6e2">
+<div style="display:grid;grid-template-columns:248px 1fr;min-height:0">
+
+  <!-- sidebar -->
+  <div style="display:flex;flex-direction:column;background:#0a0a0c;border-right:1px solid #1e1e23;min-height:0">
+    <div style="display:flex;align-items:baseline;gap:8px;padding:16px 16px 12px">
+      <span style="font-size:14px;font-weight:600;color:#fff">jaunty</span>
+      <span style="font-size:10.5px;color:#63636b">v2.3.0</span>
+    </div>
+    <div style="padding:0 12px 8px">
+      <div style="display:flex;align-items:center;gap:7px;padding:6px 9px;background:#121215;border:1px solid #232329;border-radius:4px">
+        <span style="font-size:11px;color:#63636b">/</span>
+        <input value="{{ qb }}" onChange="{{ onQb }}" placeholder="filter" style="flex:1;min-width:0;font:400 11.5px 'JetBrains Mono',monospace;color:#e6e6e2;background:transparent;border:none;outline:none;padding:0"></input>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:4px 8px 12px;min-height:0">
+      <sc-if value="{{ emptyB }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:12px 10px;font-size:11px;color:#63636b">no matches</div>
+      </sc-if>
+      <sc-for list="{{ groupsB }}" as="g" hint-placeholder-count="4">
+        <div style="margin:0 0 4px">
+          <div onClick="{{ g.toggle }}" style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:7px 8px 4px" style-hover="background:#121215">
+            <span style="font-size:10px;color:#63636b">{{ g.chev }}</span>
+            <span style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8d8d95">{{ g.label }}</span>
+            <span style="font-size:9.5px;color:#4a4a52;margin-left:auto">{{ g.count }}</span>
+          </div>
+          <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;padding:1px 0 4px">
+              <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+                <div style="cursor:pointer;display:flex;gap:8px;align-items:baseline;padding:3.5px 8px 3.5px 24px;font-size:12px;font-weight:{{ it.fw }};color:{{ it.c }};background:{{ it.bg }};border-left:2px solid {{ it.bl }}" style-hover="background:#121215;color:#e6e6e2">{{ it.name }}</div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- content -->
+  <div style="overflow-y:auto;min-height:0">
+    <div style="max-width:760px;padding:32px 48px 56px">
+      <div style="font-size:10.5px;color:#63636b;margin:0 0 16px">~/api-reference/insert</div>
+      <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 6px">
+        <h1 style="margin:0;font:600 24px/1.1 'JetBrains Mono',monospace;letter-spacing:-.02em;color:#fff">Insert&lt;T&gt;</h1>
+        <span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#0e0e10;background:#e6e6e2;padding:2.5px 7px;border-radius:3px;font-weight:600">method</span>
+      </div>
+      <div style="font-size:11px;color:#8d8d95;margin:0 0 20px">Jaunty.SqlClient · extension on IDbConnection · thread-safe</div>
+
+      <p style="margin:0 0 20px;font:400 13px/1.75 'JetBrains Mono',monospace;color:#b9b9bd;text-wrap:pretty">Inserts a row and returns the entity the database wrote — generated keys, defaults, and computed columns included — via a single <span style="color:#fff">OUTPUT</span> / <span style="color:#fff">RETURNING</span> round trip.</p>
+
+      <div style="border:1px solid #232329;border-radius:5px;margin:0 0 24px;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;background:#121215;border-bottom:1px solid #232329">
+          <span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#63636b">signature</span>
+          <span style="font-size:10px;color:#63636b">C#</span>
+        </div>
+        <pre style="margin:0;padding:14px 16px;background:#101013;overflow-x:auto;font:400 12px/1.75 'JetBrains Mono',monospace;color:#e6e6e2"><span style="color:#75757d;font-style:italic">public static</span> T <span style="color:#fff;font-weight:600">Insert</span>&lt;T&gt;(<span style="color:#75757d;font-style:italic">this</span> <span style="color:#b9b9bd">IDbConnection</span> cn, T entity,
+    <span style="color:#b9b9bd">IDbTransaction</span> tx = <span style="color:#75757d;font-style:italic">null</span>, <span style="color:#b9b9bd">int?</span> <span>commandTimeout</span> = <span style="color:#75757d;font-style:italic">null</span>);</pre>
+      </div>
+
+      <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#63636b;margin:0 0 10px">— parameters</div>
+      <div style="margin:0 0 24px;border-left:1px solid #232329">
+        <div style="padding:6px 0 6px 16px;font-size:12px;line-height:1.65"><span style="color:#fff">entity</span> <span style="color:#63636b">: T</span><br><span style="color:#8d8d95">object to insert; generated members ignored on write, populated on return</span></div>
+        <div style="padding:6px 0 6px 16px;font-size:12px;line-height:1.65"><span style="color:#fff">tx</span> <span style="color:#63636b">: IDbTransaction = null</span><br><span style="color:#8d8d95">optional enlisted transaction</span></div>
+        <div style="padding:6px 0 6px 16px;font-size:12px;line-height:1.65"><span style="color:#fff">commandTimeout</span> <span style="color:#63636b">: int? = null</span><br><span style="color:#8d8d95">seconds; provider default when null</span></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 10px">
+        <span style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#63636b">— example</span>
+        <div onClick="{{ copyB }}" style="cursor:pointer;font-size:10.5px;color:#8d8d95;padding:3px 9px;border:1px solid #232329;border-radius:3px;background:#121215" style-hover="color:#fff;border:1px solid #3a3a42">{{ copyBLabel }}</div>
+      </div>
+      <pre style="margin:0 0 24px;padding:14px 16px;background:#101013;border:1px solid #232329;border-radius:5px;overflow-x:auto;font:400 12px/1.75 'JetBrains Mono',monospace;color:#e6e6e2"><span style="color:#75757d;font-style:italic">var</span> order = <span style="color:#75757d;font-style:italic">new</span> <span style="color:#b9b9bd">Order</span> { CustomerId = <span style="color:#d8d8d2">42</span>, Status = OrderStatus.Pending };
+
+<span style="color:#55555d;font-style:italic">// one round trip: INSERT … OUTPUT INSERTED.*</span>
+<span style="color:#75757d;font-style:italic">var</span> created = cn.<span style="color:#fff;font-weight:600">Insert</span>(order);
+
+created.Id         <span style="color:#55555d;font-style:italic">// 1087   (identity)</span>
+created.CreatedAt  <span style="color:#55555d;font-style:italic">// 2026-07-04 09:14  (DEFAULT)</span></pre>
+
+      <div style="border:1px solid #232329;border-radius:5px;overflow:hidden">
+        <div onClick="{{ toggleExpB }}" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:9px 12px;background:#121215" style-hover="background:#16161a">
+          <span style="font-size:10px;color:#63636b">{{ expBChev }}</span>
+          <span style="font-size:11px;font-weight:600;color:#b9b9bd">returned schema — Order</span>
+          <span style="font-size:10px;color:#63636b;margin-left:auto">OUTPUT INSERTED.*</span>
+        </div>
+        <sc-if value="{{ expB }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:10px 16px 12px;background:#101013;border-top:1px solid #232329;font-size:11.5px;line-height:1.9">
+            <div><span style="color:#fff">Id</span> <span style="color:#63636b">int · identity · populated by database</span></div>
+            <div><span style="color:#fff">CustomerId</span> <span style="color:#63636b">int · from entity</span></div>
+            <div><span style="color:#fff">Status</span> <span style="color:#63636b">OrderStatus · from entity</span></div>
+            <div><span style="color:#fff">CreatedAt</span> <span style="color:#63636b">datetime2 · DEFAULT sysutcdatetime()</span></div>
+            <div><span style="color:#fff">RowVersion</span> <span style="color:#63636b">rowversion · computed · populated by database</span></div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- status bar -->
+<div style="display:flex;align-items:center;gap:18px;padding:0 14px;background:#0a0a0c;border-top:1px solid #1e1e23;font-size:10px;color:#63636b">
+  <span style="color:#8d8d95">● jaunty v2.3.0</span><span>providers: sqlclient · pgsql</span><span>11 methods</span><span style="margin-left:auto">MIT license</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ============ 1c : MANUAL — editorial, warm paper, serif headings ============ -->
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Manual — warm paper, Newsreader headings, numbered nav, top bar. Reads like a printed reference.</div>
+<div class="dv-card" style="width:1200px;height:760px">
+<div style="display:grid;grid-template-rows:52px 1fr;height:100%;background:#faf8f3;font-family:'IBM Plex Sans',sans-serif;color:#171310">
+
+  <!-- top bar -->
+  <div style="display:flex;align-items:center;gap:26px;padding:0 28px;border-bottom:1px solid #e5e1d6;background:#faf8f3">
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <span style="font:italic 500 19px 'Newsreader',serif;letter-spacing:-.01em">Jaunty</span>
+      <span style="font:400 10px 'IBM Plex Mono',monospace;color:#938d7f">THE FIELD MANUAL</span>
+    </div>
+    <div style="display:flex;gap:20px;font-size:12.5px;color:#6d675c">
+      <span style="color:#171310;font-weight:600;border-bottom:2px solid #171310;padding:16px 0 14px">Documentation</span>
+      <span style="padding:16px 0;cursor:pointer" style-hover="color:#171310">Changelog</span>
+      <span style="padding:16px 0;cursor:pointer" style-hover="color:#171310">GitHub</span>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <input value="{{ qc }}" onChange="{{ onQc }}" placeholder="Search the manual…" style="width:200px;box-sizing:border-box;padding:6px 11px;font:400 12px 'IBM Plex Sans',sans-serif;color:#171310;background:#f1eee5;border:1px solid #e0dbcd;border-radius:99px;outline:none" style-focus="border:1px solid #b3ac9a"></input>
+      <div style="width:28px;height:28px;border:1px solid #e0dbcd;border-radius:99px;display:grid;place-items:center;cursor:pointer;font-size:12px;color:#6d675c" style-hover="background:#f1eee5">◐</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:264px 1fr;min-height:0">
+    <!-- sidebar -->
+    <div style="overflow-y:auto;padding:26px 20px 30px 28px;border-right:1px solid #e5e1d6;min-height:0">
+      <sc-if value="{{ emptyC }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:12px;color:#938d7f">Nothing found for “{{ qc }}”</div>
+      </sc-if>
+      <sc-for list="{{ groupsC }}" as="g" hint-placeholder-count="4">
+        <div style="margin:0 0 22px">
+          <div onClick="{{ g.toggle }}" style="display:flex;align-items:baseline;gap:10px;cursor:pointer;margin:0 0 9px">
+            <span style="font:400 10.5px 'IBM Plex Mono',monospace;color:#b3ac9a">{{ g.num }}</span>
+            <span style="font-size:12px;font-weight:600;letter-spacing:.02em;color:#171310">{{ g.label }}</span>
+            <span style="font:400 9.5px 'IBM Plex Mono',monospace;color:#b3ac9a;margin-left:auto">{{ g.chev }}</span>
+          </div>
+          <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:1px;border-left:1px solid #e5e1d6;margin-left:4px">
+              <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+                <div style="cursor:pointer;padding:4px 8px 4px 17px;font-size:12.5px;font-weight:{{ it.fw }};color:{{ it.c }};margin-left:-1px;border-left:1px solid {{ it.bl }}" style-hover="color:#171310">{{ it.name }}</div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- content -->
+    <div style="overflow-y:auto;min-height:0">
+      <div style="max-width:680px;padding:44px 56px 72px">
+        <div style="font:400 10.5px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#938d7f;margin:0 0 16px">03 · API REFERENCE</div>
+        <h1 style="margin:0 0 14px;font:500 40px/1.05 'Newsreader',serif;letter-spacing:-.02em">Insert</h1>
+        <p style="margin:0 0 28px;font:400 16px/1.6 'Newsreader',serif;color:#4a443a;text-wrap:pretty">Write a row, get the truth back. <em>Insert</em> returns the entity exactly as the database stored it — identity keys, defaults, computed columns — in one round trip, courtesy of <span style="font:400 13.5px 'IBM Plex Mono',monospace">OUTPUT</span> and <span style="font:400 13.5px 'IBM Plex Mono',monospace">RETURNING</span>.</p>
+
+        <pre style="margin:0 0 30px;padding:18px 20px;background:#191510;border-radius:8px;overflow-x:auto;font:400 12.5px/1.75 'IBM Plex Mono',monospace;color:#ede9df"><span style="color:#948d7d;font-style:italic">public static</span> T <span style="color:#fffdf7;font-weight:500">Insert</span>&lt;T&gt;(<span style="color:#948d7d;font-style:italic">this</span> <span style="color:#cfc9ba">IDbConnection</span> connection, T entity,
+    <span style="color:#cfc9ba">IDbTransaction</span> transaction = <span style="color:#948d7d;font-style:italic">null</span>, <span style="color:#cfc9ba">int?</span> <span>commandTimeout</span> = <span style="color:#948d7d;font-style:italic">null</span>);</pre>
+
+        <h2 style="margin:0 0 4px;font:500 21px/1.2 'Newsreader',serif">Parameters</h2>
+        <div style="margin:0 0 30px">
+          <div style="display:grid;grid-template-columns:180px 1fr;gap:18px;padding:13px 0;border-bottom:1px solid #e5e1d6;font-size:13px;line-height:1.6">
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">entity</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#938d7f">T · required</div></div>
+            <div style="color:#4a443a">The object to insert. Members backed by generated columns are skipped on write and filled in on the returned copy.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:180px 1fr;gap:18px;padding:13px 0;border-bottom:1px solid #e5e1d6;font-size:13px;line-height:1.6">
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">transaction</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#938d7f">IDbTransaction · optional</div></div>
+            <div style="color:#4a443a">Transaction to enlist in, if any.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:180px 1fr;gap:18px;padding:13px 0;border-bottom:1px solid #e5e1d6;font-size:13px;line-height:1.6">
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">commandTimeout</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#938d7f">int? · optional</div></div>
+            <div style="color:#4a443a">Seconds before the command times out; provider default when omitted.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin:0 0 4px">
+          <h2 style="margin:0;font:500 21px/1.2 'Newsreader',serif">Worked example</h2>
+          <div onClick="{{ copyC }}" style="cursor:pointer;font:500 11px 'IBM Plex Mono',monospace;color:#6d675c;padding:4px 11px;border:1px solid #e0dbcd;border-radius:99px;background:#f1eee5" style-hover="color:#171310;background:#eae6d9">{{ copyCLabel }}</div>
+        </div>
+        <p style="margin:0 0 14px;font-size:13.5px;line-height:1.65;color:#4a443a">Install the provider for your database, then insert. The returned <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">created</span> object carries everything the database generated.</p>
+        <div style="display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:9px 14px;background:#f1eee5;border:1px solid #e0dbcd;border-radius:6px;font:400 12px 'IBM Plex Mono',monospace;color:#4a443a">
+          <span style="color:#b3ac9a">$</span> dotnet add package Jaunty.SqlClient
+          <div onClick="{{ copyIC }}" style="margin-left:auto;cursor:pointer;font-size:10.5px;color:#938d7f" style-hover="color:#171310">{{ copyICLabel }}</div>
+        </div>
+        <pre style="margin:0 0 30px;padding:18px 20px;background:#191510;border-radius:8px;overflow-x:auto;font:400 12.5px/1.75 'IBM Plex Mono',monospace;color:#ede9df"><span style="color:#948d7d;font-style:italic">using</span> Jaunty;
+
+<span style="color:#948d7d;font-style:italic">var</span> order = <span style="color:#948d7d;font-style:italic">new</span> <span style="color:#cfc9ba">Order</span> { CustomerId = <span style="color:#c4bfae">42</span>, Status = OrderStatus.Pending };
+<span style="color:#948d7d;font-style:italic">var</span> created = connection.<span style="color:#fffdf7;font-weight:500">Insert</span>(order);
+
+<span style="color:#6f695c;font-style:italic">// created.Id        → 1087</span>
+<span style="color:#6f695c;font-style:italic">// created.CreatedAt → 2026-07-04 09:14</span></pre>
+
+        <div style="padding:16px 20px;border:1px solid #e0dbcd;border-radius:8px;background:#f5f2e9">
+          <div style="font:italic 500 14px 'Newsreader',serif;margin:0 0 5px">A note on round trips</div>
+          <div style="font-size:12.5px;line-height:1.65;color:#4a443a">Because Jaunty leans on <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">OUTPUT</span>/<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">RETURNING</span>, there is no second <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">SELECT SCOPE_IDENTITY()</span> query — which is also why MySQL isn't supported.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "build out <a class="dv-oid" href="#1a">1a</a> as the full app with dark/light toggle" · "merge <a class="dv-oid" href="#1b">1b</a>'s density into <a class="dv-oid" href="#1c">1c</a>'s layout" · "show the Quickstart page in the winning direction"</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { qa: "", qb: "", qc: "", colA: {}, colB: {}, colC: {}, expA: false, expB: false, copied: {} };
+
+  nav() {
+    return [
+      { label: "Getting Started", items: ["Introduction", "Installation", "Quickstart"] },
+      { label: "Guides", items: ["Mapping & Attributes", "Providers", "Multiple Databases", "Returning Clauses", "Transactions"] },
+      { label: "API Reference", items: ["Insert", "InsertAsync", "Update", "UpdateAsync", "Delete", "DeleteAsync", "Get", "GetAll", "Query", "SetProperties"] },
+      { label: "Project", items: ["Changelog", "License"] },
+    ];
+  }
+
+  build(qKey, colKey, styler) {
+    const q = (this.state[qKey] || "").trim().toLowerCase();
+    const col = this.state[colKey];
+    const out = [];
+    this.nav().forEach((g, gi) => {
+      const items = g.items
+        .filter((n) => !q || n.toLowerCase().includes(q))
+        .map((n) => styler(n, n === "Insert"));
+      if (q && items.length === 0) return;
+      const open = q ? true : !col[g.label];
+      out.push({
+        label: g.label,
+        num: "0" + (gi + 1),
+        chev: open ? "▾" : "▸",
+        open: open,
+        count: items.length,
+        items: items,
+        toggle: () => this.setState((s) => ({ [colKey]: Object.assign({}, s[colKey], { [g.label]: !s[colKey][g.label] }) })),
+      });
+    });
+    return out;
+  }
+
+  exampleCode() {
+    return [
+      "using Jaunty;",
+      "",
+      "using var connection = new SqlConnection(connectionString);",
+      "",
+      "var order = new Order {",
+      "    CustomerId = 42,",
+      "    Status     = OrderStatus.Pending",
+      "};",
+      "",
+      "// INSERT … OUTPUT INSERTED.* — generated values",
+      "// come back populated on the returned object",
+      "var created = connection.Insert(order);",
+      "",
+      "Console.WriteLine(created.Id);        // 1087",
+      "Console.WriteLine(created.CreatedAt); // 2026-07-04 09:14",
+    ].join("\n");
+  }
+
+  copy(key, text) {
+    try { navigator.clipboard.writeText(text); } catch (e) {}
+    this.setState((s) => ({ copied: Object.assign({}, s.copied, { [key]: true }) }));
+    clearTimeout(this["_t" + key]);
+    this["_t" + key] = setTimeout(() => {
+      this.setState((s) => ({ copied: Object.assign({}, s.copied, { [key]: false }) }));
+    }, 1400);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const groupsA = this.build("qa", "colA", (n, act) => ({
+      name: n, fw: act ? 600 : 400,
+      c: act ? "#161412" : "#5c5a55",
+      bg: act ? "#e9e8e4" : "transparent",
+      bl: act ? "#161412" : "transparent",
+    }));
+    const groupsB = this.build("qb", "colB", (n, act) => ({
+      name: n, fw: act ? 600 : 400,
+      c: act ? "#f2f2f0" : "#84848c",
+      bg: act ? "#1d1d22" : "transparent",
+      bl: act ? "#e8e8e4" : "transparent",
+    }));
+    const groupsC = this.build("qc", "colC", (n, act) => ({
+      name: n, fw: act ? 600 : 400,
+      c: act ? "#171310" : "#6d675c",
+      bl: act ? "#171310" : "transparent",
+    }));
+
+    return {
+      qa: s.qa, qb: s.qb, qc: s.qc,
+      onQa: (e) => this.setState({ qa: e.target.value }),
+      onQb: (e) => this.setState({ qb: e.target.value }),
+      onQc: (e) => this.setState({ qc: e.target.value }),
+      groupsA, groupsB, groupsC,
+      emptyA: groupsA.length === 0,
+      emptyB: groupsB.length === 0,
+      emptyC: groupsC.length === 0,
+      expA: s.expA,
+      expAChev: s.expA ? "▾ collapse" : "▸ expand",
+      toggleExpA: () => this.setState((p) => ({ expA: !p.expA })),
+      expB: s.expB,
+      expBChev: s.expB ? "▾" : "▸",
+      toggleExpB: () => this.setState((p) => ({ expB: !p.expB })),
+      copyA: () => this.copy("a", this.exampleCode()),
+      copyALabel: s.copied.a ? "Copied " : "Copy",
+      copyB: () => this.copy("b", this.exampleCode()),
+      copyBLabel: s.copied.b ? "copied" : "copy",
+      copyC: () => this.copy("c", this.exampleCode()),
+      copyCLabel: s.copied.c ? "Copied " : "Copy",
+      copyIC: () => this.copy("ic", "dotnet add package Jaunty.SqlClient"),
+      copyICLabel: s.copied.ic ? "copied " : "copy",
+    };
+  }
+}
+</script>
+</body>
+</html>

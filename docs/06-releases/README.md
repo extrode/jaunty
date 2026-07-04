@@ -4,6 +4,10 @@ Release documentation, task lists, and planning documents for Jaunty.
 
 ---
 
+## Release Runbook
+
+- [`RELEASE-RUNBOOK.md`](RELEASE-RUNBOOK.md) - Step-by-step process for cutting and shipping a release
+
 ## Task Lists
 
 Prioritized task lists for Jaunty development:
