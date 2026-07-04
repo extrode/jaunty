@@ -24,6 +24,8 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static readonly PropertyInfo? BatchSizeProperty = SqlBulkCopyType?.GetProperty("BatchSize");
     private static readonly PropertyInfo? BulkCopyTimeoutProperty = SqlBulkCopyType?.GetProperty("BulkCopyTimeout");
     private static readonly PropertyInfo? DestinationTableNameProperty = SqlBulkCopyType?.GetProperty("DestinationTableName");
+    private static readonly PropertyInfo? ColumnMappingsProperty = SqlBulkCopyType?.GetProperty("ColumnMappings");
+    private static readonly MethodInfo? ColumnMappingsAddMethod = ColumnMappingsProperty?.PropertyType.GetMethod("Add", [typeof(string), typeof(string)]);
     private static readonly MethodInfo? WriteToServerMethod = SqlBulkCopyType?.GetMethod("WriteToServer", [typeof(IDataReader)]);
     private static readonly MethodInfo? WriteToServerAsyncMethod = SqlBulkCopyType?.GetMethod("WriteToServerAsync", [typeof(IDataReader), typeof(CancellationToken)]);
 
@@ -48,6 +50,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
             BatchSizeProperty?.SetValue(bulkCopy, options.BatchSize);
             BulkCopyTimeoutProperty?.SetValue(bulkCopy, options.Timeout);
             DestinationTableNameProperty?.SetValue(bulkCopy, tableName);
+            ApplyColumnMappings(bulkCopy, data);
 
             WriteToServerMethod?.Invoke(bulkCopy, new object[] { data });
 
@@ -75,6 +78,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
             BatchSizeProperty?.SetValue(bulkCopy, options.BatchSize);
             BulkCopyTimeoutProperty?.SetValue(bulkCopy, options.Timeout);
             DestinationTableNameProperty?.SetValue(bulkCopy, tableName);
+            ApplyColumnMappings(bulkCopy, data);
 
             if (WriteToServerAsyncMethod != null)
                 await ((Task)WriteToServerAsyncMethod.Invoke(bulkCopy, new object[] { data, cancellationToken })!).ConfigureAwait(false);
@@ -87,6 +91,27 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         finally
         {
             (bulkCopy as IDisposable)?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Maps each source column to the same-named destination column.
+    /// SqlBulkCopy maps by ordinal when no mappings are set, which breaks when the
+    /// destination table has columns absent from the source (e.g. an IDENTITY key).
+    /// </summary>
+    private static void ApplyColumnMappings(object bulkCopy, IDataReader data)
+    {
+        if (ColumnMappingsProperty == null || ColumnMappingsAddMethod == null)
+            return;
+
+        object? mappings = ColumnMappingsProperty.GetValue(bulkCopy);
+        if (mappings == null)
+            return;
+
+        for (int i = 0; i < data.FieldCount; i++)
+        {
+            string name = data.GetName(i);
+            ColumnMappingsAddMethod.Invoke(mappings, [name, name]);
         }
     }
 
@@ -124,7 +149,9 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
                 result |= (int)checkConstraintsValue;
         }
 
-        return result;
+        // A boxed Int32 does not bind to the SqlBulkCopyOptions constructor parameter
+        // (Activator throws MissingMethodException); box the actual enum value instead.
+        return Enum.ToObject(SqlBulkCopyOptionsType, result);
     }
 
 }
