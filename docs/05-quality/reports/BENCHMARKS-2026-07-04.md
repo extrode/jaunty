@@ -80,3 +80,27 @@ MariaDB (6,230 vs 7,130 us) and tied on PostgreSQL (5,510 vs 5,483 us;
 3,898 us with `WithExpectedRowCount` - well ahead). Remaining SQLite gap vs
 Dapper is `GetFieldValue<T>` vs provider-specific typed getters plus list
 growth - candidates for a future pass (PRD-005).
+
+## Update 2 — typed getters (PROD-118)
+
+The generated DbDataReader fast path used `GetFieldValue<T>` (generic
+dispatch inside the provider) for every column. The generator now emits
+direct typed getters (`GetInt32`, `GetString`, ...) for the 11 directly
+supported types, keeping `GetFieldValue<T>` only for the GetValue-fallback
+types (TimeSpan/DateTimeOffset/unknown).
+
+Re-run, same machine, 3-way SQLite suite (Warm):
+
+| Rows | original | after PROD-117 | after PROD-118 | Dapper (same run) |
+|---|---|---|---|---|
+| 100 | 1.47x | 1.31x | 1.17x (156.0 us) | 1.11x |
+| 1,000 | 1.99x | 1.33x | 1.37x (1,567 us) | 1.37x (exact tie) |
+| 10,000 | 1.80x | 1.46x | **1.03x (14,447 us)** | 1.00x |
+
+At 10k rows Jaunty is now at hand-coded ADO.NET / Dapper parity on SQLite.
+Multi-provider 10k (Warm): MariaDB Jaunty 4,479 us vs Dapper 6,797 us;
+PostgreSQL with `WithExpectedRowCount` 3,216 us - faster than the
+hand-coded ADO.NET baseline (3,623 us).
+
+The PRD-005 "large SQLite read gap" flagged in the first section of this
+report is closed.
