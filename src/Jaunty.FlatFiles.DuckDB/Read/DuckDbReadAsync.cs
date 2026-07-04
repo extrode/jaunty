@@ -22,7 +22,8 @@ public sealed partial class DuckDb
 
     private async ValueTask<List<T>> QueryInternalAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CancellationToken cancellationToken) where T : class, new()
     {
-        await using DuckDBCommand cmd = _connection.CreateCommand();
+        DuckDBCommand cmd = _connection.CreateCommand();
+        await using var cmdDisposer = cmd.ConfigureAwait(false);
         cmd.CommandText = sql;
 
         foreach ((string _, object? value) in parameters)
@@ -32,7 +33,8 @@ public sealed partial class DuckDb
             cmd.Parameters.Add(param);
         }
 
-        await using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        await using var readerDisposer = reader.ConfigureAwait(false);
 
         var columnOrdinals = new Dictionary<string, int>(reader.FieldCount, StringComparer.OrdinalIgnoreCase);
         for (int i = 0; i < reader.FieldCount; i++)

@@ -88,7 +88,8 @@ public static partial class Jaunty
                 await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using DbCommand command = dbConnection.CreateCommand();
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
 #else
             using DbCommand command = dbConnection.CreateCommand();
 #endif
@@ -214,7 +215,8 @@ public static partial class Jaunty
             if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using DbCommand command = dbConnection.CreateCommand();
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
 #else
             using DbCommand command = dbConnection.CreateCommand();
 #endif
@@ -229,7 +231,8 @@ public static partial class Jaunty
             JauntyConfig.Logger?.Invoke(command.CommandText, null);
 
 #if NET8_0_OR_GREATER
-            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
 #else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif

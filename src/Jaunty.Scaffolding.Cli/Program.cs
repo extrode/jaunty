@@ -7,4 +7,4 @@ var rootCommand = new RootCommand("Jaunty Scaffolding CLI - Generate C# entity c
 rootCommand.AddCommand(new ScaffoldCommand());
 rootCommand.AddCommand(new ListTablesCommand());
 
-return await rootCommand.InvokeAsync(args);
+return await rootCommand.InvokeAsync(args).ConfigureAwait(false);

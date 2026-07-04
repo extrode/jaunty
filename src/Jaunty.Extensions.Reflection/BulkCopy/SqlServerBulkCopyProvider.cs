@@ -78,7 +78,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
             DestinationTableNameProperty?.SetValue(bulkCopy, tableName);
 
             if (WriteToServerAsyncMethod != null)
-                await (Task)WriteToServerAsyncMethod.Invoke(bulkCopy, new object[] { data, cancellationToken })!;
+                await ((Task)WriteToServerAsyncMethod.Invoke(bulkCopy, new object[] { data, cancellationToken })!).ConfigureAwait(false);
             else
                 WriteToServerMethod?.Invoke(bulkCopy, [data]);
 

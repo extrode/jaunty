@@ -235,7 +235,7 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
+        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
         reader(gridReader);
     }
 
@@ -278,8 +278,8 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
-        await reader(gridReader);
+        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        await reader(gridReader).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -323,7 +323,7 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
+        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
         return reader(gridReader);
     }
 
@@ -368,7 +368,7 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken);
-        return await reader(gridReader);
+        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        return await reader(gridReader).ConfigureAwait(false);
     }
 }
