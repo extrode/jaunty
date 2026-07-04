@@ -23,8 +23,12 @@
     <!-- SourceGear.sqlite3 (via SQLitePCLRaw.bundle_e_sqlite3 3.x pin) rejects AnyCPU without a RID on .NET Framework -->
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <!-- Keep the pre-RID output path: tests locate data/*.db via relative paths -->
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <!-- Suppress all warnings in test projects -->
     <NoWarn>$(NoWarn);CS1591;CS8618;CS8632;CS8669;CS8767;xUnit1026;xUnit1051;xUnit2009;xUnit2010;xUnit2013;xUnit2017</NoWarn>
+    <!-- ns2.0 assembly now exposes the same IAsyncEnumerable streaming API - test it on net472 too -->
+    <DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
   </PropertyGroup>
 
   <!-- Async enumerable support (net8.0 Debug only) -->
