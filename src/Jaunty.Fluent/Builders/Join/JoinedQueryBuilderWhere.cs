@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
-using Jaunty.Internals.Enums;
+using Jaunty.Configuration;
 
 namespace Jaunty.Fluent;
 

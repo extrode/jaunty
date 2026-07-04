@@ -43,6 +43,13 @@ default lives in `src/Directory.Build.props`.
   `AuditInterceptor` do. Async-only interceptors still work on the sync path
   (invoked with a blocking wait, as before).
 
+- **BREAKING:** internals hygiene before GA. `EntityMetadata` and
+  `ColumnMetadata` are now `internal` (use `JauntyConfig` resolvers, which are
+  `object`-typed by design). `MappingMode` and `IBulkCopyProvider` moved from
+  `Jaunty.Internals.*` namespaces to `Jaunty.Configuration` (they are real
+  public contracts - config resolvers and custom dialects). No public type
+  remains under a `Jaunty.Internals` namespace.
+
 ### Fixed
 
 - **Generated mapper NULL handling (correctness):** the source-generated

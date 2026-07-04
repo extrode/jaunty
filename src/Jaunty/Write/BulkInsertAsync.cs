@@ -5,8 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 #endif
 
 using Jaunty.Configuration;
-using Jaunty.Core;
 using Jaunty.Internals.BulkCopy;
+using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Write;
