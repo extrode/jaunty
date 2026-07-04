@@ -61,7 +61,8 @@ internal static class TablePromoter
         DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using (transaction.ConfigureAwait(false))
         {
-            await using DuckDBCommand cmd = connection.CreateCommand();
+            DuckDBCommand cmd = connection.CreateCommand();
+            await using var cmdDisposer = cmd.ConfigureAwait(false);
             cmd.CommandText = sql;
             cmd.Transaction = transaction;
             await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);

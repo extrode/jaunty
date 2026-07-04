@@ -88,7 +88,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
         var tempFile = Path.GetTempFileName();
         try
         {
-            int rowCount = await WriteDataToCsvAsync(data, tempFile, cancellationToken);
+            int rowCount = await WriteDataToCsvAsync(data, tempFile, cancellationToken).ConfigureAwait(false);
 
             var bulkLoader = BulkLoaderCtor.Invoke(new object[] { connection });
             if (bulkLoader == null)
@@ -183,10 +183,10 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
             for (int i = 0; i < data.FieldCount; i++)
             {
-                if (i > 0) await writer.WriteAsync(",");
-                await WriteCsvValueAsync(writer, data.GetValue(i));
+                if (i > 0) await writer.WriteAsync(",").ConfigureAwait(false);
+                await WriteCsvValueAsync(writer, data.GetValue(i)).ConfigureAwait(false);
             }
-            await writer.WriteLineAsync();
+            await writer.WriteLineAsync().ConfigureAwait(false);
             rowCount++;
         }
 
@@ -249,14 +249,14 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
     {
         if (value is DBNull)
         {
-            await writer.WriteAsync("\\N");
+            await writer.WriteAsync("\\N").ConfigureAwait(false);
             return;
         }
 
         // MySQL expects 1/0 for boolean, not True/False
         if (value is bool boolVal)
         {
-            await writer.WriteAsync(boolVal ? "1" : "0");
+            await writer.WriteAsync(boolVal ? "1" : "0").ConfigureAwait(false);
             return;
         }
 
@@ -268,13 +268,13 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
         if (str != null && (str.Contains(",") || str.Contains("\"") || str.Contains("\n")))
         {
-            await writer.WriteAsync("\"");
-            await writer.WriteAsync(str.Replace("\"", "\"\""));
-            await writer.WriteAsync("\"");
+            await writer.WriteAsync("\"").ConfigureAwait(false);
+            await writer.WriteAsync(str.Replace("\"", "\"\"")).ConfigureAwait(false);
+            await writer.WriteAsync("\"").ConfigureAwait(false);
         }
         else
         {
-            await writer.WriteAsync(str);
+            await writer.WriteAsync(str).ConfigureAwait(false);
         }
     }
 }

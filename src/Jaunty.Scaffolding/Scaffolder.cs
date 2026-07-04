@@ -48,7 +48,7 @@ public sealed class Scaffolder
             DatabaseSchema schema = await schemaReader.ReadSchemaAsync(
                 options.ConnectionString,
                 readerOptions,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
 
             if (schema.Tables.Count == 0)
             {
@@ -81,7 +81,7 @@ public sealed class Scaffolder
                             $"File already exists: {filePath}. Use --force to overwrite.");
                     }
 
-                    await File.WriteAllTextAsync(filePath, code, cancellationToken);
+                    await File.WriteAllTextAsync(filePath, code, cancellationToken).ConfigureAwait(false);
                 }
 
                 generatedFiles.Add(filePath);
@@ -116,7 +116,7 @@ public sealed class Scaffolder
         DatabaseSchema schema = await schemaReader.ReadSchemaAsync(
             connectionString,
             new SchemaReaderOptions(),
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
 
         return schema.Tables
             .Select(t => (t.SchemaName, t.TableName))

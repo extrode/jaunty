@@ -39,7 +39,7 @@ internal sealed class ListTablesCommand : Command
                 IReadOnlyList<(string Schema, string Table)> tables = await scaffolder.ListTablesAsync(
                     connection,
                     provider,
-                    context.GetCancellationToken());
+                    context.GetCancellationToken()).ConfigureAwait(false);
 
                 // Filter by schemas if specified
                 if (schemas.Length > 0)

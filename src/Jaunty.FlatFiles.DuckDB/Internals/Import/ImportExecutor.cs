@@ -34,7 +34,8 @@ internal static class ImportExecutor
         if (options.CreateTableIfMissing)
         {
             var ddl = TargetDdlGenerator.GenerateCreateTableSql(entityType, tableName, dialect);
-            await using DbCommand ddlCmd = targetConnection.CreateCommand();
+            DbCommand ddlCmd = targetConnection.CreateCommand();
+            await using var ddlCmdDisposer = ddlCmd.ConfigureAwait(false);
             ddlCmd.CommandText = ddl;
             await ddlCmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
