@@ -201,7 +201,7 @@ public static class MetadataCache<T>
                         // Convert to the property type (handles nullable)
                         if (propertyType != underlyingType && convertedValue is not null)
                         {
-                            property.SetValue(target, Convert.ChangeType(convertedValue, propertyType));
+                            property.SetValue(target, DbValueConverter.ChangeType(convertedValue, underlyingType));
                         }
                         else
                         {
@@ -258,18 +258,9 @@ public static class MetadataCache<T>
                         }
                     }
 
-                    // Convert to the property type (handles nullable enums)
-                    if (propertyType != underlyingType)
-                    {
-                        if (convertedValue is null)
-                            property.SetValue(target, null);
-                        else
-                            property.SetValue(target, Convert.ChangeType(convertedValue, propertyType));
-                    }
-                    else
-                    {
-                        property.SetValue(target, convertedValue);
-                    }
+                    // convertedValue is already boxed as underlyingType (the enum type); reflection's
+                    // SetValue handles boxing it into a Nullable<TEnum> property without further conversion.
+                    property.SetValue(target, convertedValue);
                 };
             }
         }
@@ -283,7 +274,7 @@ public static class MetadataCache<T>
         Type conversionType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
 
         Expression valueExpression = Expression.Convert(
-            Expression.Call(typeof(Convert).GetMethod(nameof(Convert.ChangeType), [typeof(object), typeof(Type)])!,
+            Expression.Call(typeof(DbValueConverter).GetMethod(nameof(DbValueConverter.ChangeType), [typeof(object), typeof(Type)])!,
             getValue, Expression.Constant(conversionType)), conversionType);
 
         if (propertyType != conversionType)
