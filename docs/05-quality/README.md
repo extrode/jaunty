@@ -6,11 +6,11 @@ Documentation for Jaunty quality assurance, testing strategies, and code coverag
 
 ## Reports
 
-- [`reports/production-readiness-2026-03-03.md`](reports/production-readiness-2026-03-03.md) - Production readiness assessment (March 2026)
+- [`reports/PRODUCTION-READINESS-2026-07-02.md`](reports/PRODUCTION-READINESS-2026-07-02.md) - Production readiness assessment (July 2026)
 
 ## Code Coverage
 
-- [`code-coverage/`](code-coverage/) - Code coverage analysis and targets
+- [`reports/COVERAGE-GAPS-2026-07-04.md`](reports/COVERAGE-GAPS-2026-07-04.md) - Coverage gap inventory (July 2026; older dotCover analysis archived under `../99-archive/2026-02-code-coverage/`)
 
 ## Test Organization
 

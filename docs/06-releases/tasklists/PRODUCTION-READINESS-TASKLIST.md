@@ -35,7 +35,7 @@ Assessment basis: [PRODUCTION-READINESS-2026-07-02.md](../../05-quality/reports/
 
 ### PRD-013: NuGet package metadata completeness
 - Priority: `P1`
-- Status: `Done (2026-07-03, branch fixes/nuget-metadata-prd013)` - src/Directory.Build.props already covered license/readme/docs/tags (2026-07-02 report missed it); added SourceLink, snupkg symbols, license acceptance, and CRITICALLY the analyzer dll now packs into analyzers/dotnet/cs (published packages previously shipped without the source generator). All 7 packages pack clean.
+- Status: `Done (2026-07-03, branch fixes/nuget-metadata-prd013)` - src/Directory.Build.props already covered license/readme/docs/tags (2026-07-02 report missed it); added SourceLink, snupkg symbols, license acceptance, and CRITICALLY the analyzer dll now packs into analyzers/dotnet/cs (published packages previously shipped without the source generator). All 7 packages pack clean. 2026-07-04: EnablePackageValidation on (15 pre-existing ns2.0/net8.0 API divergences baselined in CompatibilitySuppressions.xml); IsPackable=false added to benchmarks/samples/SourceGenerator so solution pack ships ONLY the 7 intended packages.
 - Scope (all 7 packable projects; consider a shared `Directory.Build.props`):
   - `PackageLicenseFile` packing `LICENSE.md` (custom proprietary license — cannot use an SPDX expression); evaluate `PackageRequireLicenseAcceptance`.
   - `PackageReadmeFile`, `PackageIcon`, `PackageTags` (only FlatFiles projects have tags today).
@@ -46,7 +46,7 @@ Assessment basis: [PRODUCTION-READINESS-2026-07-02.md](../../05-quality/reports/
 
 ### PRD-014: Release pipeline and versioning
 - Priority: `P1`
-- Status: `Mostly done (2026-07-03, branch fixes/release-pipeline-prd014)` - CHANGELOG.md added (CalVer documented); release.yml packs/tests/publishes on v* tags and creates a GitHub Release. REMAINING MANUAL: create main branch on the remote; configure NUGET_API_KEY secret.
+- Status: `Mostly done (2026-07-03, branch fixes/release-pipeline-prd014)` - CHANGELOG.md added (CalVer documented); release.yml packs/tests/publishes on v* tags and creates a GitHub Release. REMAINING MANUAL: create main branch on the remote; configure NUGET_API_KEY secret. 2026-07-04: version centralized in src/Directory.Build.props (was hardcoded per-csproj); GeneratePackageOnBuild removed.
 - Scope:
   - Create `main` branch (remote currently has only `origin/dev`) and align with the documented release flow (`/release-cut`, `/release-ship`).
   - Add a tag-triggered publish workflow (pack, validate, push to NuGet feed, create GitHub Release).
@@ -117,7 +117,7 @@ Assessment basis: [PRODUCTION-READINESS-2026-07-02.md](../../05-quality/reports/
 
 ### PRD-017: Documentation consolidation and security policy
 - Priority: `P2`
-- Status: `Partial (2026-07-03)` - SECURITY.md added; this tasklist updated. Remaining: consolidate stale coverage docs, refresh README cross-provider claims.
+- Status: `Mostly done (2026-07-04)` - SECURITY.md added; stale Feb-2026 dotCover docs and the March readiness report archived to 99-archive; doc indexes repointed to the July reports. Remaining: refresh README cross-provider perf claims after a benchmark re-run (PRD-002).
 - Scope:
   - Consolidate/archive conflicting status reports (coverage docs dated Jan 2026, multiple assessments); one authoritative readiness report + this tasklist.
   - Add `SECURITY.md` with a vulnerability-reporting policy.
@@ -162,4 +162,5 @@ Assessment basis: [PRODUCTION-READINESS-2026-07-02.md](../../05-quality/reports/
 - 2026-03-03: Started `PRD-001` implementation (schema-safe generated ordinal cache).
 - 2026-03-03: Added source-generator regression tests for reordered columns across reader instances and result sets.
 - 2026-07-02: Full local build+test validation. Found Release solution build broken (PRD-012). Added release-engineering items PRD-013..017. Marked PRD-010 done (logging/interception merged). Demoted PRD-002 to P2 (blocked by PRD-012). New report: PRODUCTION-READINESS-2026-07-02.md.
-- 2026-07-03: Executed PRD-012, PRD-001, PRD-016, PRD-013, PRD-014 (code side), PRD-015, PRD-017 (partial) in feature branches merged to dev with --no-ff. Found and fixed: NULL->0 generated-mapper bug (nullable value types), analyzer missing from published package, DialectFixture ship_postal_code bug, SP script snake/Pascal mismatches. Full core suite verified against SQL Server 2022 container: 3,587/3,589. Remaining manual steps: create main branch, set NUGET_API_KEY, push dev.
+- 2026-07-03: Executed PRD-012, PRD-001, PRD-016, PRD-013, PRD-014 (code side), PRD-015, PRD-017 (partial) in feature branches merged to dev with --no-ff.
+- 2026-07-04: Enterprise readiness pass (see ENTERPRISE-READINESS-2026-07-04.md): ConfigureAwait(false) sweep + CA2007 enforcement (PROD-101); version centralization, package validation, IsPackable hygiene - a tagged release would previously have published sample apps to nuget.org (PROD-102); High-severity transitive CVE remediation SQLitePCLRaw/Regex + EOL Microsoft.Extensions 6.0.0 bumps, vulnerable scan now clean (PROD-103); dependabot (PROD-104); coverlet + coverage gap inventory (PROD-105); docs consolidation (PROD-106). Found and fixed: NULL->0 generated-mapper bug (nullable value types), analyzer missing from published package, DialectFixture ship_postal_code bug, SP script snake/Pascal mismatches. Full core suite verified against SQL Server 2022 container: 3,587/3,589. Remaining manual steps: create main branch, set NUGET_API_KEY, push dev.
