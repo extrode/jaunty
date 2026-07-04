@@ -640,7 +640,7 @@ No surprises. No leaked connections.
 
 5. **Command Template Caching** — SQL parameter templates cached per query type.
 
-6. **Bulk Copy Optimization** — Native bulk copy APIs (SqlBulkCopy, NpgsqlBinaryImporter, MySqlBulkLoader) automatically used for 100+ rows via `Jaunty.Extensions.Reflection`. The gain depends on provider and batch size; measurement status is tracked in [BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md).
+6. **Bulk Copy Optimization** — Native bulk copy APIs (SqlBulkCopy, NpgsqlBinaryImporter, chunked multi-row INSERT on MySQL/MariaDB) automatically used for 100+ rows via `Jaunty.Extensions.Reflection`. The gain depends on provider and batch size; measurement status is tracked in [BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md).
 
 ### NULL Handling
 
@@ -686,14 +686,14 @@ For large datasets (100+ rows), Jaunty automatically uses native bulk copy APIs 
 
 | Database | Native API | Advantage vs transactional loop |
 |----------|-----------|------------------|
-| SQL Server | `SqlBulkCopy` | 10-100x (vendor-reported, unverified*) |
+| SQL Server | `SqlBulkCopy` | **3.5-36.6x (measured 2026-07-04)** |
 | PostgreSQL | `NpgsqlBinaryImporter` (COPY) | **6.9-7.6x (measured 2026-07-04)** |
 | MySQL/MariaDB | Chunked multi-row INSERT | **12.9-16.1x (measured 2026-07-04)** |
 | SQLite | Prepared-loop INSERT (no bulk API exists) | parity with hand-coded ADO.NET (measured) |
 
-\* Ranges describe the underlying native APIs' typical advantage over
-row-by-row INSERTs as reported by their vendors; Jaunty-specific bulk
-measurements are pending (PRD-002). Measured read-path comparisons
+All rows above are measured with the in-repo BulkCopyBenchmarks suite
+against a hand-coded transactional-loop baseline (100 to 10,000 rows;
+larger batches see the bigger gains). Measured read-path comparisons
 (vs ADO.NET, Dapper, EF Core, RepoDb, linq2db) are published in
 [BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md):
 Jaunty is the lowest-allocating of the compared ORMs and competitive with
