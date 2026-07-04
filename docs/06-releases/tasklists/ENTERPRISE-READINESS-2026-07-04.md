@@ -96,9 +96,10 @@ candidates land in "Needs decision").
    Abstractions) — heavyweight transitive for a micro-ORM. Removing = dependency
    removal (requires your explicit approval) and could break consumers relying on the
    transitive. Recommend: drop to Abstractions-only in next minor.
-2. **`System.CommandLine 2.0.0-beta4.22272.1`** in Jaunty.Scaffolding.Cli — shipping a
-   beta dependency to enterprise customers. Upgrade to a stable release (API changed
-   significantly between betas; nontrivial rework).
+2. ~~`System.CommandLine` beta in Jaunty.Scaffolding.Cli~~ **RESOLVED (PROD-107)**:
+   2.0.9 stable exists; CLI migrated to the GA API (`SetAction`/`ParseResult`),
+   smoke-tested against the Northwind SQLite reference db (list-tables, scaffold
+   --dry-run, required-option validation).
 3. **Sync-over-async** (`.GetAwaiter().GetResult()`) in 5 sync internals
    (`ExecuteReader.cs` ×3, `QueryCore.cs`, `ExecuteNonQueryCore.cs`). With PROD-101's
    ConfigureAwait(false) the deadlock risk is mitigated, but true sync ADO.NET calls

@@ -9,147 +9,168 @@ internal sealed class ScaffoldCommand : Command
     public ScaffoldCommand() : base("scaffold", "Generate entity classes from database schema")
     {
         // Required options
-        var connectionOption = new Option<string>(
-            aliases: ["--connection", "-c"],
-            description: "Database connection string")
-        { IsRequired = true };
+        var connectionOption = new Option<string>("--connection", "-c")
+        {
+            Description = "Database connection string",
+            Required = true
+        };
 
-        var providerOption = new Option<DatabaseProvider>(
-            aliases: ["--provider", "-p"],
-            description: "Database provider (SqlServer, PostgreSql, MySql, SQLite)",
-            getDefaultValue: () => DatabaseProvider.AutoDetect);
+        var providerOption = new Option<DatabaseProvider>("--provider", "-p")
+        {
+            Description = "Database provider (SqlServer, PostgreSql, MySql, SQLite)",
+            DefaultValueFactory = _ => DatabaseProvider.AutoDetect
+        };
 
-        var outputOption = new Option<string>(
-            aliases: ["--output", "-o"],
-            description: "Output directory for generated files",
-            getDefaultValue: () => "./Entities");
+        var outputOption = new Option<string>("--output", "-o")
+        {
+            Description = "Output directory for generated files",
+            DefaultValueFactory = _ => "./Entities"
+        };
 
-        var namespaceOption = new Option<string>(
-            aliases: ["--namespace", "-n"],
-            description: "Namespace for generated classes",
-            getDefaultValue: () => "Generated.Entities");
+        var namespaceOption = new Option<string>("--namespace", "-n")
+        {
+            Description = "Namespace for generated classes",
+            DefaultValueFactory = _ => "Generated.Entities"
+        };
 
         // Table filtering
-        var tablesOption = new Option<string[]>(
-            "--tables",
-            description: "Only scaffold these tables (comma-separated)")
-        { AllowMultipleArgumentsPerToken = true };
+        var tablesOption = new Option<string[]>("--tables")
+        {
+            Description = "Only scaffold these tables (comma-separated)",
+            AllowMultipleArgumentsPerToken = true
+        };
 
-        var excludeTablesOption = new Option<string[]>(
-            "--exclude-tables",
-            description: "Exclude these tables from scaffolding")
-        { AllowMultipleArgumentsPerToken = true };
+        var excludeTablesOption = new Option<string[]>("--exclude-tables")
+        {
+            Description = "Exclude these tables from scaffolding",
+            AllowMultipleArgumentsPerToken = true
+        };
 
-        var schemasOption = new Option<string[]>(
-            "--schemas",
-            description: "Only scaffold tables in these schemas")
-        { AllowMultipleArgumentsPerToken = true };
+        var schemasOption = new Option<string[]>("--schemas")
+        {
+            Description = "Only scaffold tables in these schemas",
+            AllowMultipleArgumentsPerToken = true
+        };
 
         // Attribute options
-        var noTableAttrOption = new Option<bool>(
-            "--no-table-attribute",
-            description: "Don't generate [Table] attributes");
+        var noTableAttrOption = new Option<bool>("--no-table-attribute")
+        {
+            Description = "Don't generate [Table] attributes"
+        };
 
-        var noColumnAttrOption = new Option<bool>(
-            "--no-column-attribute",
-            description: "Don't generate [Column] attributes");
+        var noColumnAttrOption = new Option<bool>("--no-column-attribute")
+        {
+            Description = "Don't generate [Column] attributes"
+        };
 
-        var noKeyAttrOption = new Option<bool>(
-            "--no-key-attribute",
-            description: "Don't generate [Key] attributes");
+        var noKeyAttrOption = new Option<bool>("--no-key-attribute")
+        {
+            Description = "Don't generate [Key] attributes"
+        };
 
-        var noDbGenAttrOption = new Option<bool>(
-            "--no-database-generated",
-            description: "Don't generate [DatabaseGenerated] attributes");
+        var noDbGenAttrOption = new Option<bool>("--no-database-generated")
+        {
+            Description = "Don't generate [DatabaseGenerated] attributes"
+        };
 
         // Nullability and style options
-        var noNullableOption = new Option<bool>(
-            "--no-nullable",
-            description: "Don't use nullable reference types");
+        var noNullableOption = new Option<bool>("--no-nullable")
+        {
+            Description = "Don't use nullable reference types"
+        };
 
-        var partialOption = new Option<bool>(
-            "--partial",
-            description: "Generate partial classes");
+        var partialOption = new Option<bool>("--partial")
+        {
+            Description = "Generate partial classes"
+        };
 
-        var noSingularizeOption = new Option<bool>(
-            "--no-singularize",
-            description: "Don't singularize table names for class names");
+        var noSingularizeOption = new Option<bool>("--no-singularize")
+        {
+            Description = "Don't singularize table names for class names"
+        };
 
-        var classPrefixOption = new Option<string?>(
-            "--class-prefix",
-            description: "Prefix to add to class names");
+        var classPrefixOption = new Option<string?>("--class-prefix")
+        {
+            Description = "Prefix to add to class names"
+        };
 
-        var classSuffixOption = new Option<string?>(
-            "--class-suffix",
-            description: "Suffix to add to class names");
+        var classSuffixOption = new Option<string?>("--class-suffix")
+        {
+            Description = "Suffix to add to class names"
+        };
 
-        var dataAnnotationsOption = new Option<bool>(
-            "--data-annotations",
-            description: "Include System.ComponentModel.DataAnnotations attributes");
+        var dataAnnotationsOption = new Option<bool>("--data-annotations")
+        {
+            Description = "Include System.ComponentModel.DataAnnotations attributes"
+        };
 
-        var blockNamespaceOption = new Option<bool>(
-            "--block-namespace",
-            description: "Use block-scoped namespaces instead of file-scoped");
+        var blockNamespaceOption = new Option<bool>("--block-namespace")
+        {
+            Description = "Use block-scoped namespaces instead of file-scoped"
+        };
 
         // Advanced options
-        var forceOption = new Option<bool>(
-            "--force",
-            description: "Overwrite existing files without prompting");
+        var forceOption = new Option<bool>("--force")
+        {
+            Description = "Overwrite existing files without prompting"
+        };
 
-        var dryRunOption = new Option<bool>(
-            "--dry-run",
-            description: "Show what would be generated without writing files");
+        var dryRunOption = new Option<bool>("--dry-run")
+        {
+            Description = "Show what would be generated without writing files"
+        };
 
-        var verboseOption = new Option<bool>(
-            "--verbose",
-            description: "Show detailed output");
+        var verboseOption = new Option<bool>("--verbose")
+        {
+            Description = "Show detailed output"
+        };
 
         // Add all options
-        AddOption(connectionOption);
-        AddOption(providerOption);
-        AddOption(outputOption);
-        AddOption(namespaceOption);
-        AddOption(tablesOption);
-        AddOption(excludeTablesOption);
-        AddOption(schemasOption);
-        AddOption(noTableAttrOption);
-        AddOption(noColumnAttrOption);
-        AddOption(noKeyAttrOption);
-        AddOption(noDbGenAttrOption);
-        AddOption(noNullableOption);
-        AddOption(partialOption);
-        AddOption(noSingularizeOption);
-        AddOption(classPrefixOption);
-        AddOption(classSuffixOption);
-        AddOption(dataAnnotationsOption);
-        AddOption(blockNamespaceOption);
-        AddOption(forceOption);
-        AddOption(dryRunOption);
-        AddOption(verboseOption);
+        Options.Add(connectionOption);
+        Options.Add(providerOption);
+        Options.Add(outputOption);
+        Options.Add(namespaceOption);
+        Options.Add(tablesOption);
+        Options.Add(excludeTablesOption);
+        Options.Add(schemasOption);
+        Options.Add(noTableAttrOption);
+        Options.Add(noColumnAttrOption);
+        Options.Add(noKeyAttrOption);
+        Options.Add(noDbGenAttrOption);
+        Options.Add(noNullableOption);
+        Options.Add(partialOption);
+        Options.Add(noSingularizeOption);
+        Options.Add(classPrefixOption);
+        Options.Add(classSuffixOption);
+        Options.Add(dataAnnotationsOption);
+        Options.Add(blockNamespaceOption);
+        Options.Add(forceOption);
+        Options.Add(dryRunOption);
+        Options.Add(verboseOption);
 
-        this.SetHandler(async (context) =>
+        SetAction(async (parseResult, cancellationToken) =>
         {
-            var connection = context.ParseResult.GetValueForOption(connectionOption)!;
-            DatabaseProvider provider = context.ParseResult.GetValueForOption(providerOption);
-            var output = context.ParseResult.GetValueForOption(outputOption)!;
-            var ns = context.ParseResult.GetValueForOption(namespaceOption)!;
-            var tables = context.ParseResult.GetValueForOption(tablesOption) ?? [];
-            var excludeTables = context.ParseResult.GetValueForOption(excludeTablesOption) ?? [];
-            var schemas = context.ParseResult.GetValueForOption(schemasOption) ?? [];
-            var noTableAttr = context.ParseResult.GetValueForOption(noTableAttrOption);
-            var noColumnAttr = context.ParseResult.GetValueForOption(noColumnAttrOption);
-            var noKeyAttr = context.ParseResult.GetValueForOption(noKeyAttrOption);
-            var noDbGenAttr = context.ParseResult.GetValueForOption(noDbGenAttrOption);
-            var noNullable = context.ParseResult.GetValueForOption(noNullableOption);
-            var partial = context.ParseResult.GetValueForOption(partialOption);
-            var noSingularize = context.ParseResult.GetValueForOption(noSingularizeOption);
-            var classPrefix = context.ParseResult.GetValueForOption(classPrefixOption);
-            var classSuffix = context.ParseResult.GetValueForOption(classSuffixOption);
-            var dataAnnotations = context.ParseResult.GetValueForOption(dataAnnotationsOption);
-            var blockNamespace = context.ParseResult.GetValueForOption(blockNamespaceOption);
-            var force = context.ParseResult.GetValueForOption(forceOption);
-            var dryRun = context.ParseResult.GetValueForOption(dryRunOption);
-            var verbose = context.ParseResult.GetValueForOption(verboseOption);
+            var connection = parseResult.GetValue(connectionOption)!;
+            DatabaseProvider provider = parseResult.GetValue(providerOption);
+            var output = parseResult.GetValue(outputOption)!;
+            var ns = parseResult.GetValue(namespaceOption)!;
+            var tables = parseResult.GetValue(tablesOption) ?? [];
+            var excludeTables = parseResult.GetValue(excludeTablesOption) ?? [];
+            var schemas = parseResult.GetValue(schemasOption) ?? [];
+            var noTableAttr = parseResult.GetValue(noTableAttrOption);
+            var noColumnAttr = parseResult.GetValue(noColumnAttrOption);
+            var noKeyAttr = parseResult.GetValue(noKeyAttrOption);
+            var noDbGenAttr = parseResult.GetValue(noDbGenAttrOption);
+            var noNullable = parseResult.GetValue(noNullableOption);
+            var partial = parseResult.GetValue(partialOption);
+            var noSingularize = parseResult.GetValue(noSingularizeOption);
+            var classPrefix = parseResult.GetValue(classPrefixOption);
+            var classSuffix = parseResult.GetValue(classSuffixOption);
+            var dataAnnotations = parseResult.GetValue(dataAnnotationsOption);
+            var blockNamespace = parseResult.GetValue(blockNamespaceOption);
+            var force = parseResult.GetValue(forceOption);
+            var dryRun = parseResult.GetValue(dryRunOption);
+            var verbose = parseResult.GetValue(verboseOption);
 
             var options = new ScaffoldOptions
             {
@@ -186,7 +207,7 @@ internal sealed class ScaffoldCommand : Command
             }
 
             var scaffolder = new Scaffolder();
-            ScaffoldResult result = await scaffolder.ScaffoldAsync(options, context.GetCancellationToken()).ConfigureAwait(false);
+            ScaffoldResult result = await scaffolder.ScaffoldAsync(options, cancellationToken).ConfigureAwait(false);
 
             if (result.Success)
             {
@@ -196,12 +217,12 @@ internal sealed class ScaffoldCommand : Command
                 {
                     Console.WriteLine($"  {file}");
                 }
-                context.ExitCode = 0;
+                return 0;
             }
             else
             {
                 Console.Error.WriteLine($"Error: {result.Error}");
-                context.ExitCode = 1;
+                return 1;
             }
         });
     }
