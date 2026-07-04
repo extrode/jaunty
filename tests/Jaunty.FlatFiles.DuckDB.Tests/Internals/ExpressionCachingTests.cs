@@ -69,10 +69,15 @@ public class ExpressionCachingTests : IDisposable
         Assert.Equal(42, result2);
     }
 
-    //[Fact(Skip = "Performance test - timing dependent on system load")]
     [Fact]
     public void ExpressionCaching_ImprovesQueryPerformance()
     {
+        // Wall-clock threshold: a useful canary on a developer machine,
+        // pure noise on shared CI runners (observed 2358ms against the
+        // 1500ms budget on a loaded Actions runner).
+        if (Environment.GetEnvironmentVariable("CI") == "true")
+            Assert.Skip("Wall-clock performance thresholds are unreliable on shared CI runners.");
+
         // Warm up
         _db.Connection.From<SalesRecord>()
             .Where(x => x.Revenue > 1000m)
