@@ -56,6 +56,10 @@ public class BenchmarkDbContext : DbContext
         {
             entity.ToTable("benchmark_products");
             entity.HasKey(e => e.product_id);
+            // product_id is a database-generated identity/serial/autoincrement column.
+            // Without ValueGeneratedOnAdd, EF Core on SqlServer attempts to INSERT the
+            // key value explicitly, which fails when IDENTITY_INSERT is OFF.
+            entity.Property(e => e.product_id).ValueGeneratedOnAdd();
         });
     }
 }

@@ -111,6 +111,13 @@ public class BulkCopyBenchmarks
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "DELETE FROM benchmark_products";
         cmd.ExecuteNonQuery();
+
+        // Reset EfProduct keys to 0 so EF Core treats them as new (un-inserted) entities.
+        // After SaveChanges the provider writes back the db-generated IDs; subsequent
+        // iterations must not carry those non-zero values or SQL Server raises
+        // "Cannot insert explicit value for identity column … when IDENTITY_INSERT is OFF".
+        foreach (var p in _efProducts)
+            p.product_id = 0;
     }
 
     // --- ADO.NET (hand-coded baseline) ---
