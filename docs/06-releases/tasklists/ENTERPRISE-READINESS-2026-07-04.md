@@ -202,3 +202,17 @@ Let's use #if / #else compiler directives to target both
   SqlServer ("Cannot insert explicit value for identity column") - EfProduct
   key not ValueGeneratedOnAdd for this provider. Competitor number missing;
   no Jaunty impact.
+
+- Residual resolved (PROD-122 task 2): EfProduct key lacked ValueGeneratedOnAdd()
+  and IterationSetup did not reset product_id to 0 between iterations. Both fixed.
+- TryEnhanceWithBulkCopy mystery resolved (PROD-122 task 3): TryEnhanceWithBulkCopy
+  in SqlDialectFactory reflection-calls BulkCopyDialectFactory.GetDialect, but that
+  method guards on BulkCopyDialectFactory._enabled (default false). The enabled flag
+  is only set by JauntyReflectionExtensions.UseNativeBulkCopy(), which benchmarks
+  call in GlobalSetup but tests never call. Result: in the test process the factory
+  type resolves successfully via Type.GetType, GetDialect is invoked, but _enabled
+  is false so it returns the base dialect unchanged — identical to the unenhanced
+  path. No exception is swallowed; no assembly load fails; no initialization defect.
+  The "silent failure" is correct by design: tests opt out of native bulk copy by not
+  calling UseNativeBulkCopy(), and SqliteBulkPathDiagnosticTests seeing a plain
+  SQLiteDialect is the expected result. No src change required.
