@@ -14,7 +14,7 @@ Prioritized task lists for Jaunty development:
 
 ## Reports
 
-- [`../05-quality/reports/production-readiness-2026-03-03.md`](../05-quality/reports/production-readiness-2026-03-03.md) - Production readiness assessment
+- [`../05-quality/reports/PRODUCTION-READINESS-2026-07-02.md`](../05-quality/reports/PRODUCTION-READINESS-2026-07-02.md) - Production readiness assessment
 
 ---
 
