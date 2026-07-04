@@ -10,6 +10,10 @@
     <IsRoslynComponent>true</IsRoslynComponent>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IsTrimmable>false</IsTrimmable>
+    <!-- Analyzers are loaded by the compiler, never resolved via deps.json.
+         Skipping it also removes a GenerateDepsFile write race when several
+         consumers build this project concurrently (CI failure on Linux). -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
   </PropertyGroup>
 
   <ItemGroup>
