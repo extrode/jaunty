@@ -119,7 +119,7 @@ public static partial class Jaunty
         if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
         {
             T result = default!;
-            JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+            JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
                 sql,
                 parameters,
                 connection,
@@ -156,15 +156,14 @@ public static partial class Jaunty
                         else
                             result = ScalarConverter<T>.Convert(commandResult);
 
-                        return new ValueTask<T>(result);
+                        return result;
                     }
                     finally
                     {
                         if (wasClosed && connection.State != ConnectionState.Closed)
                             connection.Close();
                     }
-                },
-                CancellationToken.None).GetAwaiter().GetResult();
+                });
             return result;
         }
 

@@ -25,7 +25,7 @@ public static partial class Jaunty
         if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
         {
             int result = 0;
-            JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+            JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
                 sql,
                 parameters,
                 connection,
@@ -55,15 +55,14 @@ public static partial class Jaunty
                             ParameterBinder.Bind(command, parameters);
 
                         result = command.ExecuteNonQuery();
-                        return new ValueTask<int>(result);
+                        return result;
                     }
                     finally
                     {
                         if (wasClosed && connection.State != ConnectionState.Closed)
                             connection.Close();
                     }
-                },
-                CancellationToken.None).GetAwaiter().GetResult();
+                });
             return result;
         }
 
