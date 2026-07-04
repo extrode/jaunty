@@ -160,11 +160,15 @@ ehthumbs.db
 # Distribution artifacts
 /dist/
 
-# Test data (generated during test runs - includes Northwind.db, tpch.db)
+# Bulk/generated test data (tpch.db is 1 GB, TPC-H CSVs are hundreds of MB)
 /data/**/*.db
 /data/**/*.sqlite
 /data/**/*.csv
 !data/README.md
+# Canonical fixtures the test suite requires (CI checks these out; the
+# sqlite Northwind.db is the SOURCE the sqlserver script was generated from)
+!/data/sqlite/Northwind.db
+!/data/basic.csv
 
 # AOT installation (may contain sensitive workload info)
 /.dotnet
