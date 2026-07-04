@@ -13,7 +13,7 @@ namespace Jaunty.Internals.Read;
 /// <summary>Hook for arity-3 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : new() where T3 : new()
 {
-    private static readonly ConcurrentDictionary<(Type, Type, Type), MultiEntityMapper<T1, T2, T3>> _cache = new();
+    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3>> _cache = new(StringComparer.Ordinal);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -28,11 +28,20 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
 
     internal static MultiEntityMapper<T1, T2, T3> Build(IDataReader reader)
     {
-        (Type, Type, Type) key = (typeof(T1), typeof(T2), typeof(T3));
+        string key = BuildSchemaKey(reader);
         if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3>? cached)) return cached;
         MultiEntityMapper<T1, T2, T3> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
+    }
+
+    private static string BuildSchemaKey(IDataReader reader)
+    {
+        int fieldCount = reader.FieldCount;
+        var parts = new string[fieldCount + 1];
+        parts[0] = fieldCount.ToString();
+        for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3> CreateMapper(IDataReader reader)
@@ -64,7 +73,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
 /// <summary>Hook for arity-4 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T2 : new() where T3 : new() where T4 : new()
 {
-    private static readonly ConcurrentDictionary<(Type, Type, Type, Type), MultiEntityMapper<T1, T2, T3, T4>> _cache = new();
+    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4>> _cache = new(StringComparer.Ordinal);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -81,11 +90,20 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
 
     internal static MultiEntityMapper<T1, T2, T3, T4> Build(IDataReader reader)
     {
-        (Type, Type, Type, Type) key = (typeof(T1), typeof(T2), typeof(T3), typeof(T4));
+        string key = BuildSchemaKey(reader);
         if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4>? cached)) return cached;
         MultiEntityMapper<T1, T2, T3, T4> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
+    }
+
+    private static string BuildSchemaKey(IDataReader reader)
+    {
+        int fieldCount = reader.FieldCount;
+        var parts = new string[fieldCount + 1];
+        parts[0] = fieldCount.ToString();
+        for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4> CreateMapper(IDataReader reader)
@@ -120,7 +138,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
 /// <summary>Hook for arity-5 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
 {
-    private static readonly ConcurrentDictionary<(Type, Type, Type, Type, Type), MultiEntityMapper<T1, T2, T3, T4, T5>> _cache = new();
+    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5>> _cache = new(StringComparer.Ordinal);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -139,11 +157,20 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
 
     internal static MultiEntityMapper<T1, T2, T3, T4, T5> Build(IDataReader reader)
     {
-        (Type, Type, Type, Type, Type) key = (typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5));
+        string key = BuildSchemaKey(reader);
         if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4, T5>? cached)) return cached;
         MultiEntityMapper<T1, T2, T3, T4, T5> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
+    }
+
+    private static string BuildSchemaKey(IDataReader reader)
+    {
+        int fieldCount = reader.FieldCount;
+        var parts = new string[fieldCount + 1];
+        parts[0] = fieldCount.ToString();
+        for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5> CreateMapper(IDataReader reader)
@@ -181,7 +208,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
 /// <summary>Hook for arity-6 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
 {
-    private static readonly ConcurrentDictionary<(Type, Type, Type, Type, Type, Type), MultiEntityMapper<T1, T2, T3, T4, T5, T6>> _cache = new();
+    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6>> _cache = new(StringComparer.Ordinal);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -202,11 +229,20 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
 
     internal static MultiEntityMapper<T1, T2, T3, T4, T5, T6> Build(IDataReader reader)
     {
-        (Type, Type, Type, Type, Type, Type) key = (typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6));
+        string key = BuildSchemaKey(reader);
         if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4, T5, T6>? cached)) return cached;
         MultiEntityMapper<T1, T2, T3, T4, T5, T6> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
+    }
+
+    private static string BuildSchemaKey(IDataReader reader)
+    {
+        int fieldCount = reader.FieldCount;
+        var parts = new string[fieldCount + 1];
+        parts[0] = fieldCount.ToString();
+        for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6> CreateMapper(IDataReader reader)
@@ -247,7 +283,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
 /// <summary>Hook for arity-7 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
 {
-    private static readonly ConcurrentDictionary<(Type, Type, Type, Type, Type, Type, Type), MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>> _cache = new();
+    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>> _cache = new(StringComparer.Ordinal);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -270,11 +306,20 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : n
 
     internal static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> Build(IDataReader reader)
     {
-        (Type, Type, Type, Type, Type, Type, Type) key = (typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6), typeof(T7));
+        string key = BuildSchemaKey(reader);
         if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>? cached)) return cached;
         MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
+    }
+
+    private static string BuildSchemaKey(IDataReader reader)
+    {
+        int fieldCount = reader.FieldCount;
+        var parts = new string[fieldCount + 1];
+        parts[0] = fieldCount.ToString();
+        for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> CreateMapper(IDataReader reader)
