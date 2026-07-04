@@ -688,8 +688,8 @@ For large datasets (100+ rows), Jaunty automatically uses native bulk copy APIs 
 |----------|-----------|------------------|
 | SQL Server | `SqlBulkCopy` | 10-100x (vendor-reported, unverified*) |
 | PostgreSQL | `NpgsqlBinaryImporter` (COPY) | **6.9-7.6x (measured 2026-07-04)** |
-| MySQL | `MySqlBulkLoader` (LOAD DATA) | 8-15x (vendor-reported, unverified*) |
-| SQLite | Optimized INSERT with WAL | under investigation* |
+| MySQL/MariaDB | Chunked multi-row INSERT | **12.9-16.1x (measured 2026-07-04)** |
+| SQLite | Prepared-loop INSERT (no bulk API exists) | parity with hand-coded ADO.NET (measured) |
 
 \* Ranges describe the underlying native APIs' typical advantage over
 row-by-row INSERTs as reported by their vendors; Jaunty-specific bulk
