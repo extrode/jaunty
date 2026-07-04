@@ -30,7 +30,7 @@ public static partial class Jaunty
         if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
         {
             TResult result = default!;
-            JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+            JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
                 sql,
                 parameters,
                 connection,
@@ -60,15 +60,14 @@ public static partial class Jaunty
 
                         using IDataReader reader = command.ExecuteReader();
                         result = handler(reader);
-                        return new ValueTask<TResult>(result);
+                        return result;
                     }
                     finally
                     {
                         if (wasClosed && connection.State != ConnectionState.Closed)
                             connection.Close();
                     }
-                },
-                CancellationToken.None).GetAwaiter().GetResult();
+                });
             return result;
         }
 
@@ -125,7 +124,7 @@ public static partial class Jaunty
         if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
         {
             TResult result = default!;
-            JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+            JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
                 sql,
                 parameters,
                 connection,
@@ -155,15 +154,14 @@ public static partial class Jaunty
 
                         using DbDataReader reader = command.ExecuteReader();
                         result = handler(reader);
-                        return new ValueTask<TResult>(result);
+                        return result;
                     }
                     finally
                     {
                         if (wasClosed && connection.State != ConnectionState.Closed)
                             connection.Close();
                     }
-                },
-                CancellationToken.None).GetAwaiter().GetResult();
+                });
             return result;
         }
 
@@ -218,7 +216,7 @@ public static partial class Jaunty
         if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
         {
             TResult result = default!;
-            JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+            JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
                 sql,
                 parameters,
                 connection,
@@ -248,15 +246,14 @@ public static partial class Jaunty
 
                         using DbDataReader reader = command.ExecuteReader();
                         result = handler(reader);
-                        return new ValueTask<TResult>(result);
+                        return result;
                     }
                     finally
                     {
                         if (wasClosed && connection.State != ConnectionState.Closed)
                             connection.Close();
                     }
-                },
-                CancellationToken.None).GetAwaiter().GetResult();
+                });
             return result;
         }
 
