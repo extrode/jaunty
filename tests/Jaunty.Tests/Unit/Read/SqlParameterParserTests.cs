@@ -292,9 +292,20 @@ WHERE product_name = @Name";
 
         var names = SqlParameterParser.ExtractParameterNames(sql);
 
-        // @@Identity would extract as @Identity (the second @)
+        // @@Identity is a SQL Server global/system variable, not a bindable parameter,
+        // so the whole @@identifier token must be skipped rather than treated as @Identity.
+        Assert.Empty(names);
+    }
+
+    [Fact]
+    public void ExtractParameterNames_SystemVariableFollowedByRealParameter_ExtractsOnlyRealParameter()
+    {
+        var sql = "SELECT @@ROWCOUNT, * FROM products WHERE id = @Id";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
         Assert.Single(names);
-        Assert.Equal("Identity", names[0]);
+        Assert.Equal("Id", names[0]);
     }
 
     [Fact]
