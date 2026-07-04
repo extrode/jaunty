@@ -436,7 +436,7 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
     public async Task<List<T1>> SelectAsync(CancellationToken cancellationToken = default)
     {
         string sql = _parent._parent.BuildSelectSql(_parent._parent.GetSelectColumns<T1>());
-        return await _parent._parent.Connection.QueryPartialAsync<T1>(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken);
+        return await _parent._parent.Connection.QueryPartialAsync<T1>(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<List<(T1, T2, T3, T4)>> SelectAllAsync(CancellationToken cancellationToken = default)
@@ -464,13 +464,13 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
         bool wasClosed = _parent._parent.Connection.State == ConnectionState.Closed;
         if (wasClosed)
-            await dbConnection.OpenAsync(cancellationToken);
+            await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
-            using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 
-            while (await reader.ReadAsync(cancellationToken))
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
                 T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_");
                 T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_");
@@ -490,43 +490,43 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
     public async Task<T1> SelectFirstAsync(CancellationToken cancellationToken = default)
     {
-        var results = await SelectAsync(cancellationToken);
+        var results = await SelectAsync(cancellationToken).ConfigureAwait(false);
         return results.FirstOrDefault() ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
     public async Task<T1?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
-        var results = await SelectAsync(cancellationToken);
+        var results = await SelectAsync(cancellationToken).ConfigureAwait(false);
         return results.FirstOrDefault();
     }
 
     public async Task<int> CountAsync(CancellationToken cancellationToken = default)
     {
         string sql = _parent._parent.BuildCountSql();
-        return await _parent._parent.Connection.QueryScalarAsync<int>(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken);
+        return await _parent._parent.Connection.QueryScalarAsync<int>(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<long> LongCountAsync(CancellationToken cancellationToken = default)
     {
         string sql = _parent._parent.BuildCountSql();
-        return await _parent._parent.Connection.QueryScalarAsync<long>(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken);
+        return await _parent._parent.Connection.QueryScalarAsync<long>(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default)
     {
         string sql = _parent._parent.BuildSelectPartialSql(columns);
-        return await _parent._parent.Connection.QueryPartialListAsync(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken);
+        return await _parent._parent.Connection.QueryPartialListAsync(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default)
     {
-        var results = await SelectPartialAsync(columns, cancellationToken);
+        var results = await SelectPartialAsync(columns, cancellationToken).ConfigureAwait(false);
         return results.FirstOrDefault() ?? throw new InvalidOperationException("Sequence contains no elements");
     }
 
     public async Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
     {
-        var results = await SelectPartialAsync(columns, cancellationToken);
+        var results = await SelectPartialAsync(columns, cancellationToken).ConfigureAwait(false);
         return results.FirstOrDefault();
     }
 

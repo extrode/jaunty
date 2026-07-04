@@ -206,7 +206,8 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             throw new NotSupportedException("Async operations require DbConnection.");
 
 #if NET8_0_OR_GREATER
-        await using DbCommand command = dbConn.CreateCommand();
+        DbCommand command = dbConn.CreateCommand();
+        await using var commandDisposer = command.ConfigureAwait(false);
 #else
         using DbCommand command = dbConn.CreateCommand();
 #endif
@@ -220,7 +221,8 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         try
         {
 #if NET8_0_OR_GREATER
-            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
 #else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
@@ -256,7 +258,8 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             throw new NotSupportedException("Async operations require DbConnection.");
 
 #if NET8_0_OR_GREATER
-        await using DbCommand command = dbConn.CreateCommand();
+        DbCommand command = dbConn.CreateCommand();
+        await using var commandDisposer = command.ConfigureAwait(false);
 #else
         using DbCommand command = dbConn.CreateCommand();
 #endif
@@ -270,7 +273,8 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         try
         {
 #if NET8_0_OR_GREATER
-            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
 #else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
@@ -303,7 +307,8 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             throw new NotSupportedException("Async operations require DbConnection.");
 
 #if NET8_0_OR_GREATER
-        await using DbCommand command = dbConn.CreateCommand();
+        DbCommand command = dbConn.CreateCommand();
+        await using var commandDisposer = command.ConfigureAwait(false);
 #else
         using DbCommand command = dbConn.CreateCommand();
 #endif
@@ -317,7 +322,8 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         try
         {
 #if NET8_0_OR_GREATER
-            await using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
 #else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
