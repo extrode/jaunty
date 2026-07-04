@@ -89,7 +89,7 @@ var rows = connection.BulkInsert(products);   // Fast bulk insert
 var rows = connection.BulkUpdate(products);   // Fast bulk update
 var rows = connection.BulkDelete(products);   // Fast bulk delete
 
-// Native bulk copy (10-100x faster for 100+ rows)
+// Native bulk copy path engages automatically for 100+ rows
 // Automatically enabled when Jaunty.Extensions.Reflection is loaded
 JauntyReflectionExtensions.UseNativeBulkCopy();
 var rows = connection.BulkInsert(largeProductList);  // Uses SqlBulkCopy, NpgsqlBinaryImporter, etc.
@@ -640,7 +640,7 @@ No surprises. No leaked connections.
 
 5. **Command Template Caching** — SQL parameter templates cached per query type.
 
-6. **Bulk Copy Optimization** — Native bulk copy APIs (SqlBulkCopy, NpgsqlBinaryImporter, MySqlBulkLoader) automatically used for 100+ rows via `Jaunty.Extensions.Reflection`. Provides 10-100x performance improvement for large datasets.
+6. **Bulk Copy Optimization** — Native bulk copy APIs (SqlBulkCopy, NpgsqlBinaryImporter, MySqlBulkLoader) automatically used for 100+ rows via `Jaunty.Extensions.Reflection`. The gain depends on provider and batch size; measurement status is tracked in [BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md).
 
 ### NULL Handling
 
@@ -684,12 +684,20 @@ Bulk operations use optimized paths for batch inserts/updates/deletes. They're f
 
 For large datasets (100+ rows), Jaunty automatically uses native bulk copy APIs when `Jaunty.Extensions.Reflection` is loaded:
 
-| Database | Native API | Performance Gain |
+| Database | Native API | Typical native-API advantage* |
 |----------|-----------|------------------|
-| SQL Server | `SqlBulkCopy` | 10-100x faster |
-| PostgreSQL | `NpgsqlBinaryImporter` (COPY) | 15-25x faster |
-| MySQL | `MySqlBulkLoader` (LOAD DATA) | 8-15x faster |
-| SQLite | Optimized INSERT with WAL | 2-3x faster |
+| SQL Server | `SqlBulkCopy` | 10-100x |
+| PostgreSQL | `NpgsqlBinaryImporter` (COPY) | 15-25x |
+| MySQL | `MySqlBulkLoader` (LOAD DATA) | 8-15x |
+| SQLite | Optimized INSERT with WAL | 2-3x |
+
+\* Ranges describe the underlying native APIs' typical advantage over
+row-by-row INSERTs as reported by their vendors; Jaunty-specific bulk
+measurements are pending (PRD-002). Measured read-path comparisons
+(vs ADO.NET, Dapper, EF Core, RepoDb, linq2db) are published in
+[BENCHMARKS-2026-07-04.md](docs/05-quality/reports/BENCHMARKS-2026-07-04.md):
+Jaunty is the lowest-allocating of the compared ORMs and competitive with
+Dapper on throughput.
 
 **Configuration**:
 ```csharp
