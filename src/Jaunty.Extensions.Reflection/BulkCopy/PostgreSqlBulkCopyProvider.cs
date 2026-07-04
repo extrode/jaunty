@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Jaunty.Configuration;
-using Jaunty.Internals.BulkCopy;
 
 namespace Jaunty.Extensions.Reflection.BulkCopy;
 

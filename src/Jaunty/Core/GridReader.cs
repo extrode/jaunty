@@ -2,7 +2,7 @@ using System.Data;
 using System.Data.Common;
 using System.Runtime.CompilerServices;
 
-using Jaunty.Internals.Enums;
+using Jaunty.Configuration;
 using Jaunty.Internals.Read;
 
 namespace Jaunty.Core;
