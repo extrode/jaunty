@@ -153,3 +153,30 @@ Findings:
 - SQL Server local instance reachable this round for baselines; Jaunty's
   SqlServer native path (SqlBulkCopy) still returns NA in the harness -
   next investigation item (PROD-121).
+
+## Update 5 — PROD-121 resolved: SqlServer native bulk measured
+
+Root cause of the NA: `SqlServerBulkCopyProvider` had never successfully
+constructed a `SqlBulkCopy`. `MapBulkCopyOptions` returned a boxed `Int32`,
+which `Activator.CreateInstance` refuses to bind to the `SqlBulkCopyOptions`
+ctor parameter -> `MissingMethodException` on every call. Second latent
+defect fixed in the same pass: no `ColumnMappings` were set, so SqlBulkCopy's
+default ordinal mapping targeted the destination IDENTITY column. Live
+tests added (`SqlServerBulkCopyProviderTests`: identity destination, NULL
+round-trip, async, external txn rollback).
+
+BulkCopyBenchmarks, SqlServer (local instance), full config, Warm job:
+
+| Rows | ADO.NET loop | Jaunty native | linq2db BulkCopy | Jaunty vs loop |
+|------|-------------:|--------------:|-----------------:|---------------:|
+| 100  | 7.3 ms | 2.1 ms | 2.9 ms | **3.5x** |
+| 1k   | 69.9 ms | 4.0 ms | 6.0 ms | **17.6x** |
+| 10k  | 822.6 ms | 22.5 ms | 21.1 ms | **36.6x** |
+
+Jaunty allocates 6.6x less than the loop baseline @10k (1.19 MB vs 7.8 MB)
+and matches linq2db's SqlBulkCopy within noise. Dapper loop: 1,926 ms @10k.
+
+Harness note: the EF Core competitor benchmark itself fails on SqlServer
+("Cannot insert explicit value for identity column") - EfProduct's key is
+not marked ValueGeneratedOnAdd for this provider. Competitor-benchmark
+defect only; does not affect Jaunty results.

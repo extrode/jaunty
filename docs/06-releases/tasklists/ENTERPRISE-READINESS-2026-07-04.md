@@ -171,7 +171,7 @@ Let's use #if / #else compiler directives to target both
   4369 passed / 0 failed / 714 env-skips, 7 packages pack clean,
   vulnerable+deprecated scans clean (xunit v2 'legacy' notice excepted).
 
-## PROD-120 (open): bulk-path defects found by measurement (2026-07-04)
+## PROD-120 (RESOLVED 2026-07-04): bulk-path defects found by measurement
 
 - SQLite `BulkInsert` is 16x SLOWER than a plain transactional ADO.NET loop
   (334ms vs 20.6ms @ 10k rows). Provider code looks right but has 0% coverage;
@@ -183,3 +183,22 @@ Let's use #if / #else compiler directives to target both
 - SQL Server bulk unverified: needs correct JAUNTY_TEST_SQLSERVER credentials
   for the local container (or CI container job).
 - Evidence: docs/05-quality/reports/BENCHMARKS-2026-07-04.md Update 3.
+- Resolution (Updates 4-5): MySQL/MariaDB provider rewritten to chunked
+  multi-row INSERT (16.1x @10k, live-tested); SQLite routed to the prepared
+  loop via IsSqliteDialect() (1.005x parity, provider deleted).
+
+## PROD-121 (RESOLVED 2026-07-04): SqlServer native bulk was never functional
+
+- `SqlServerBulkCopyProvider` threw `MissingMethodException` on every call:
+  `MapBulkCopyOptions` passed a boxed `Int32` where the `SqlBulkCopy` ctor
+  takes the `SqlBulkCopyOptions` enum. Fixed with `Enum.ToObject`.
+- Second defect: no `ColumnMappings`, so ordinal mapping hit the destination
+  IDENTITY column. Fixed with by-name mappings from the source reader.
+- Measured (Warm): 3.5x @100, 17.6x @1k, **36.6x @10k** vs transactional
+  loop; matches linq2db's SqlBulkCopy within noise; 6.6x less allocation.
+- Live tests: tests/Jaunty.Tests/Unit/BulkCopy/SqlServerBulkCopyProviderTests.cs.
+- Evidence: BENCHMARKS-2026-07-04.md Update 5.
+- Residual (harness only, open): the EF Core competitor benchmark fails on
+  SqlServer ("Cannot insert explicit value for identity column") - EfProduct
+  key not ValueGeneratedOnAdd for this provider. Competitor number missing;
+  no Jaunty impact.
