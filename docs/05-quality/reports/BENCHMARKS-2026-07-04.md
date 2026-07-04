@@ -1,0 +1,58 @@
+# Benchmark Results — 2026-07-04 (PRD-002 partial)
+
+Measured with BenchmarkDotNet v0.14.0 on Windows 11, AMD Ryzen 7 7840HS
+(8C/16T laptop), .NET 8.0.26, `QueryBenchmarks` full config (Cold + Warm jobs).
+Command: `dotnet run -c Release -f net8.0 -- --filter "*QueryBenchmarks*"`
+from `benchmarks/Jaunty.Benchmarks`.
+
+**Scope and caveats**
+
+- Read path only (`Query<T>` materialization). Bulk-copy suites were NOT
+  properly measured in this pass (the `--quick` dry-job numbers were discarded
+  as statistically meaningless); the README's per-provider bulk-copy ranges
+  remain unverified against Jaunty and are tracked by PRD-002.
+- Laptop hardware; treat ratios, not absolute times, as the signal.
+- Warm-job rows below (steady-state); Cold rows in the raw artifacts.
+
+## SQLite (in-proc), Warm job
+
+| Method | Rows | Mean | Ratio vs ADO.NET | Allocated | Alloc ratio |
+|---|---|---|---|---|---|
+| ADO.NET (hand-coded) | 100 | 143.6 us | baseline | 44.93 KB | — |
+| Jaunty `Query<T>` | 100 | 211.6 us | 1.47x | 46.48 KB | 1.03x |
+| Dapper `Query<T>` | 100 | 199.3 us | 1.39x | 51.51 KB | 1.15x |
+| ADO.NET (hand-coded) | 1000 | 1,163.3 us | baseline | 425.89 KB | — |
+| Jaunty `Query<T>` | 1000 | 2,307.2 us | 1.99x (±0.34) | 427.44 KB | 1.00x |
+| Dapper `Query<T>` | 1000 | 1,705.4 us | 1.47x | 481.69 KB | 1.13x |
+| ADO.NET (hand-coded) | 10000 | 13,522 us | baseline | 4,357 KB | — |
+| Jaunty `Query<T>` | 10000 | 24,260 us | 1.80x | 4,359 KB | 1.00x |
+| Dapper `Query<T>` | 10000 | 17,613 us | 1.30x | 4,906 KB | 1.13x |
+
+## MariaDB (local), 10,000 rows, Warm job
+
+| Method | Mean | Ratio vs ADO.NET | Alloc ratio |
+|---|---|---|---|
+| ADO.NET (hand-coded) | 3,526 us | baseline | — |
+| Jaunty `Query<T>` | 6,085 us | 1.73x | 1.11x |
+| Jaunty `Query<T>` (WithExpectedRowCount) | 4,688 us | 1.33x | 1.00x |
+| Dapper `Query<T>` | 5,979 us | 1.70x | 1.40x |
+| linq2db | 5,283 us | 1.50x | 1.11x |
+| RepoDb | 6,239 us | 1.77x | 1.30x |
+| EF Core `ToList` | 16,767 us | 4.75x | 2.34x |
+
+## Honest takeaways
+
+- Jaunty is **allocation-leanest** of the compared ORMs (1.00-1.11x over
+  hand-coded ADO.NET vs Dapper's 1.13-1.40x) - the README's memory story holds.
+- On throughput Jaunty is **competitive with Dapper, not uniformly faster**:
+  ahead on the MariaDB path with `WithExpectedRowCount`, behind Dapper on
+  large SQLite reads (1.80x vs 1.30x at 10k rows). The SQLite large-read gap
+  is a real optimization target (relates to PRD-005 sync/async parity tuning).
+- EF Core trails all micro-ORMs by 2.5-3.5x on these read paths.
+
+## Remaining for PRD-002
+
+- Proper (non-dry) runs of BulkInsert/BulkCopy suites per provider, with
+  containers for SqlServer/Postgres/MySQL, to replace the README's
+  per-provider "Nx faster" bulk table with measured numbers.
+- Publish runs from a quiet CI box rather than a laptop.

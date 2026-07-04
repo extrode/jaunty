@@ -108,7 +108,7 @@ Assessment basis: [PRODUCTION-READINESS-2026-07-02.md](../../05-quality/reports/
 
 ### PRD-002: Benchmark result hygiene
 - Priority: `P2` (was P0; blocked by PRD-012 — benchmarks do not currently compile in Release)
-- Status: `Planned`
+- Status: `Partial (2026-07-04)` - QueryBenchmarks measured full-config (SQLite + MariaDB) and published in docs/05-quality/reports/BENCHMARKS-2026-07-04.md; README bulk-copy claims requalified as native-API ranges. Remaining: proper bulk-suite runs with provider containers.
 - Scope:
   - Standardize benchmark matrix and annotate unsupported scenarios.
   - Remove ambiguous summary claims not backed by current artifacts.
