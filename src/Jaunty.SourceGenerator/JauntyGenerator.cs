@@ -35,9 +35,19 @@ public class JauntyGenerator : IIncrementalGenerator
             static (spc, source) => Execute(source.Item1, source.Item2, spc));
     }
 
+    /// <summary>
+    /// Returns <see langword="true"/> when a syntax node is a class declaration with at least one attribute list.
+    /// This is a fast syntactic pre-filter applied before the more expensive semantic check.
+    /// </summary>
+    /// <param name="node">The syntax node to inspect.</param>
     static bool IsSyntaxTargetForGeneration(SyntaxNode node)
         => node is ClassDeclarationSyntax { AttributeLists.Count: > 0 };
 
+    /// <summary>
+    /// Returns the <see cref="ClassDeclarationSyntax"/> when the class carries a recognized
+    /// <c>[Table]</c> attribute (Jaunty or DataAnnotations), otherwise <see langword="null"/>.
+    /// </summary>
+    /// <param name="context">The generator syntax context supplying semantic information.</param>
     static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
     {
         var classDeclaration = (ClassDeclarationSyntax)context.Node;
@@ -57,6 +67,12 @@ public class JauntyGenerator : IIncrementalGenerator
         return null;
     }
 
+    /// <summary>
+    /// Iterates over discovered entity classes and emits a generated mapper source file for each.
+    /// </summary>
+    /// <param name="compilation">The current compilation.</param>
+    /// <param name="classes">The set of candidate class declarations collected by the syntax provider.</param>
+    /// <param name="context">The source production context used to add generated source files.</param>
     static void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> classes, SourceProductionContext context)
     {
         if (classes.IsDefaultOrEmpty)
@@ -73,6 +89,13 @@ public class JauntyGenerator : IIncrementalGenerator
         }
     }
 
+    /// <summary>
+    /// Generates the complete source text for a Jaunty entity mapper partial class,
+    /// including <c>ReadEntity</c>, <c>BindInsert</c>, <c>BindUpdate</c>, <c>BindDelete</c>,
+    /// an ordinal-caching <c>OrdinalMap</c>, and column-info static properties.
+    /// </summary>
+    /// <param name="classSymbol">The named type symbol for the entity class to generate a mapper for.</param>
+    /// <returns>The generated C# source code as a string.</returns>
     static string GenerateMapper(INamedTypeSymbol classSymbol)
     {
         var namespaceName = classSymbol.ContainingNamespace.ToDisplayString();
@@ -359,12 +382,31 @@ public class JauntyGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Returns <see langword="true"/> when the given symbol has an attribute whose class name
+    /// matches <paramref name="attributeName"/> (simple name comparison, no namespace).
+    /// </summary>
+    /// <param name="symbol">The symbol to inspect.</param>
+    /// <param name="attributeName">The simple attribute class name (e.g. <c>"KeyAttribute"</c>).</param>
     private static bool HasAttribute(ISymbol symbol, string attributeName)
         => symbol.GetAttributes().Any(a => a.AttributeClass?.Name == attributeName);
 
+    /// <summary>
+    /// Returns the first <see cref="AttributeData"/> on <paramref name="symbol"/> whose class name
+    /// matches <paramref name="attributeName"/>, or <see langword="null"/> if none is found.
+    /// </summary>
+    /// <param name="symbol">The symbol to inspect.</param>
+    /// <param name="attributeName">The simple attribute class name (e.g. <c>"ColumnAttribute"</c>).</param>
     private static AttributeData? GetAttribute(ISymbol symbol, string attributeName)
         => symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == attributeName);
 
+    /// <summary>
+    /// Maps a C# type name to reader accessor details used when generating <c>ReadEntity</c> body.
+    /// Returns the appropriate <c>IDataReader</c> getter method name, the type argument for
+    /// <c>GetFieldValue&lt;T&gt;</c>, and whether a DBNull check is required.
+    /// </summary>
+    /// <param name="typeName">The fully-qualified or short C# type name (e.g. <c>"int?"</c>, <c>"string"</c>).</param>
+    /// <returns>A <see cref="ReaderTypeInfo"/> describing the reader access pattern for the type.</returns>
     private static ReaderTypeInfo GetReaderTypeInfo(string typeName)
     {
         return typeName switch
@@ -405,6 +447,10 @@ public class JauntyGenerator : IIncrementalGenerator
         };
     }
 
+    /// <summary>
+    /// Captures the reader accessor method, the type argument for <c>GetFieldValue&lt;T&gt;</c>,
+    /// and whether a DBNull guard is required for a given C# property type.
+    /// </summary>
     private readonly struct ReaderTypeInfo(string getter, string typeForGetFieldValue, bool needsNullCheck)
     {
         public string Getter => getter;
@@ -412,6 +458,9 @@ public class JauntyGenerator : IIncrementalGenerator
         public bool NeedsNullCheck => needsNullCheck;
     }
 
+    /// <summary>
+    /// Holds the resolved mapping metadata for a single property of an entity class.
+    /// </summary>
     private struct PropertyMetadata(string propertyName, string columnName, bool isPrimaryKey, bool isIdentity, string typeName)
     {
         public string PropertyName = propertyName;
