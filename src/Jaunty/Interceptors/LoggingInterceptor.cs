@@ -188,6 +188,7 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
 #endif
         Type type)
     {
+        // AOT-SAFE: parameter annotated with DynamicallyAccessedMembers(PublicProperties); trimmer preserves the members it reflects over
         return type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
     }
 
