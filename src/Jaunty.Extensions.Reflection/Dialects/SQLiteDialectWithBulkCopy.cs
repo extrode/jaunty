@@ -1,5 +1,4 @@
 using Jaunty.Dialects;
-using Jaunty.Extensions.Reflection.BulkCopy;
 using Jaunty.Configuration;
 
 namespace Jaunty.Extensions.Reflection.Dialects;
@@ -16,7 +15,12 @@ internal sealed class SQLiteDialectWithBulkCopy : ISqlDialect
 
     public IBulkCopyProvider? CreateBulkCopyProvider()
     {
-        return new SQLiteBulkCopyProvider();
+        // PROD-120 (2026-07-04): intentionally null. SQLite has no native bulk
+        // API; the former SQLiteBulkCopyProvider measured ~16x SLOWER than the
+        // core BulkInsertLoop (single prepared command + one transaction), which
+        // benchmarks at ~1.06x of hand-coded ADO.NET. Returning null routes
+        // BulkInsert to that proven path.
+        return null;
     }
 
     // Delegate all other calls to the base dialect
