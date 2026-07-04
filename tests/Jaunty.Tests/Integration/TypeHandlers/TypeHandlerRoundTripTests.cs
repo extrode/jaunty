@@ -154,7 +154,7 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
             {
                 if (dbValue is null || dbValue == DBNull.Value)
                     return string.Empty;
-                string str = dbValue.ToString();
+                string str = dbValue.ToString()!;
                 return "HANDLED:" + str;
             },
             toDb: value =>
@@ -226,7 +226,7 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
         {
             if (dbValue is null || dbValue == DBNull.Value)
                 return string.Empty;
-            string str = dbValue.ToString();
+            string str = dbValue.ToString()!;
             return Prefix + str;
         }
 
