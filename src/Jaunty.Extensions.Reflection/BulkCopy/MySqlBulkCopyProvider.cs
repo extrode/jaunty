@@ -1,8 +1,6 @@
 using System;
 using System.Data;
 using System.Data.Common;
-using System.IO;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,268 +10,243 @@ using Jaunty.Configuration;
 namespace Jaunty.Extensions.Reflection.BulkCopy;
 
 /// <summary>
-/// MySQL bulk copy provider using MySqlBulkLoader via reflection.
-/// Uses reflection to avoid hard dependency on MySqlConnector or MySql.Data.
+/// MySQL/MariaDB bulk copy provider using chunked multi-row parameterized INSERT.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Rewritten 2026-07-04 (PROD-120). The previous implementation wrote a temp CSV and
+/// drove <c>MySqlBulkLoader</c> (<c>LOAD DATA LOCAL INFILE</c>) via reflection, which
+/// fails on any MySQL 8+/MariaDB server with the default <c>local_infile=0</c> and
+/// additionally requires <c>AllowLoadLocalInfile=true</c> in the connection string.
+/// </para>
+/// <para>
+/// Chunked multi-row INSERT needs no server or connection-string configuration, works
+/// with both MySqlConnector and MySql.Data (plain ADO.NET), and performs in the same
+/// class as LOAD DATA for the 100-10k row range this path targets.
+/// </para>
+/// </remarks>
 internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 {
-    private static readonly Type? MySqlConnectionType = Type.GetType("MySql.Data.MySqlClient.MySqlConnection, MySql.Data")
-        ?? Type.GetType("MySqlConnector.MySqlConnection, MySqlConnector");
-
-    private static readonly Type? MySqlBulkLoaderType = Type.GetType("MySql.Data.MySqlClient.MySqlBulkLoader, MySql.Data")
-        ?? Type.GetType("MySqlConnector.MySqlBulkLoader, MySqlConnector");
-
-    // MySqlBulkLoader constructor requires a MySqlConnection parameter
-    private static readonly ConstructorInfo? BulkLoaderCtor = MySqlBulkLoaderType?.GetConstructor(
-        MySqlConnectionType != null ? new[] { MySqlConnectionType } : Type.EmptyTypes);
-
-    private static readonly PropertyInfo? TableNameProperty = MySqlBulkLoaderType?.GetProperty("TableName");
-    private static readonly PropertyInfo? SourceStreamProperty = MySqlBulkLoaderType?.GetProperty("SourceStream");
-    private static readonly PropertyInfo? FieldTerminatorProperty = MySqlBulkLoaderType?.GetProperty("FieldTerminator");
-    private static readonly PropertyInfo? FieldQuotationCharacterProperty = MySqlBulkLoaderType?.GetProperty("FieldQuotationCharacter");
-    private static readonly PropertyInfo? FieldQuotationOptionalProperty = MySqlBulkLoaderType?.GetProperty("FieldQuotationOptional");
-    private static readonly PropertyInfo? LineTerminatorProperty = MySqlBulkLoaderType?.GetProperty("LineTerminator");
-    private static readonly MethodInfo? LoadMethod = MySqlBulkLoaderType?.GetMethod("Load");
-    private static readonly MethodInfo? LoadAsyncMethod = MySqlBulkLoaderType?.GetMethod("LoadAsync");
+    // Stay well under MySQL's practical placeholder limits and default
+    // max_allowed_packet regardless of column count.
+    private const int MaxParametersPerStatement = 2000;
 
     /// <inheritdoc/>
-    public bool IsSupported => MySqlBulkLoaderType != null && BulkLoaderCtor != null;
+    public bool IsSupported => true;
 
     /// <inheritdoc/>
     public int CopyToServer(IDbConnection connection, string tableName, IDataReader data, BulkCopyOptions options)
     {
-        if (MySqlBulkLoaderType == null || BulkLoaderCtor == null)
-            throw new InvalidOperationException("MySqlBulkLoader is not available. Ensure MySqlConnector or MySql.Data is installed.");
+        bool wasClosed = connection.State == ConnectionState.Closed;
+        IDbTransaction? transaction = options.Transaction;
+        bool ownTransaction = transaction is null;
 
-        var tempFile = Path.GetTempFileName();
         try
         {
-            int rowCount = WriteDataToCsv(data, tempFile);
+            if (wasClosed)
+                connection.Open();
 
-            // Create MySqlBulkLoader with connection parameter
-            var bulkLoader = BulkLoaderCtor.Invoke(new object[] { connection });
-            if (bulkLoader == null)
-                throw new InvalidOperationException("Failed to create MySqlBulkLoader instance.");
+            if (ownTransaction)
+                transaction = connection.BeginTransaction();
 
+            int columnCount = data.FieldCount;
+            var columnNames = new string[columnCount];
+            for (int i = 0; i < columnCount; i++)
+                columnNames[i] = data.GetName(i);
+
+            int rowsPerChunk = Math.Max(1, MaxParametersPerStatement / Math.Max(1, columnCount));
+
+            int total = 0;
+            var buffer = new object?[rowsPerChunk][];
+            int buffered = 0;
+
+            // Reused command for full chunks; the partial final chunk gets its own.
+            IDbCommand? fullChunkCommand = null;
             try
             {
-                ConfigureBulkLoader(bulkLoader, tableName, tempFile);
+                while (data.Read())
+                {
+                    var row = new object?[columnCount];
+                    for (int i = 0; i < columnCount; i++)
+                        row[i] = data.GetValue(i);
+                    buffer[buffered++] = row;
 
-                var result = LoadMethod?.Invoke(bulkLoader, null);
-                return result is int rows ? rows : rowCount;
+                    if (buffered == rowsPerChunk)
+                    {
+                        fullChunkCommand ??= BuildChunkCommand(connection, transaction, tableName, columnNames, rowsPerChunk, options);
+                        BindChunk(fullChunkCommand, buffer, buffered, columnCount);
+                        total += ExecuteAffectedRows(fullChunkCommand, buffered);
+                        buffered = 0;
+                    }
+                }
+
+                if (buffered > 0)
+                {
+                    using IDbCommand tail = BuildChunkCommand(connection, transaction, tableName, columnNames, buffered, options);
+                    BindChunk(tail, buffer, buffered, columnCount);
+                    total += ExecuteAffectedRows(tail, buffered);
+                }
             }
             finally
             {
-                (bulkLoader as IDisposable)?.Dispose();
+                fullChunkCommand?.Dispose();
             }
+
+            if (ownTransaction)
+                transaction!.Commit();
+
+            return total;
+        }
+        catch
+        {
+            if (ownTransaction)
+                transaction?.Rollback();
+            throw;
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            if (ownTransaction)
+                transaction?.Dispose();
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
         }
     }
 
     /// <inheritdoc/>
-    public async ValueTask<int> CopyToServerAsync(
-        DbConnection connection,
-        string tableName,
-        IDataReader data,
-        BulkCopyOptions options,
-        CancellationToken cancellationToken)
+    public async ValueTask<int> CopyToServerAsync(DbConnection connection, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
     {
-        if (MySqlBulkLoaderType == null || BulkLoaderCtor == null)
-            throw new InvalidOperationException("MySqlBulkLoader is not available. Ensure MySqlConnector or MySql.Data is installed.");
+        bool wasClosed = connection.State == ConnectionState.Closed;
+        DbTransaction? transaction = options.Transaction as DbTransaction;
+        bool ownTransaction = options.Transaction is null;
 
-        var tempFile = Path.GetTempFileName();
         try
         {
-            int rowCount = await WriteDataToCsvAsync(data, tempFile, cancellationToken).ConfigureAwait(false);
+            if (wasClosed)
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            var bulkLoader = BulkLoaderCtor.Invoke(new object[] { connection });
-            if (bulkLoader == null)
-                throw new InvalidOperationException("Failed to create MySqlBulkLoader instance.");
+            if (ownTransaction)
+                transaction = connection.BeginTransaction();
 
+            int columnCount = data.FieldCount;
+            var columnNames = new string[columnCount];
+            for (int i = 0; i < columnCount; i++)
+                columnNames[i] = data.GetName(i);
+
+            int rowsPerChunk = Math.Max(1, MaxParametersPerStatement / Math.Max(1, columnCount));
+
+            int total = 0;
+            var buffer = new object?[rowsPerChunk][];
+            int buffered = 0;
+
+            DbCommand? fullChunkCommand = null;
             try
             {
-                ConfigureBulkLoader(bulkLoader, tableName, tempFile);
-
-                // LoadAsync returns Task<int>
-                if (LoadAsyncMethod != null)
+                while (data.Read())
                 {
-                    var task = LoadAsyncMethod.Invoke(bulkLoader, new object[] { cancellationToken });
-                    if (task is Task<int> intTask)
+                    var row = new object?[columnCount];
+                    for (int i = 0; i < columnCount; i++)
+                        row[i] = data.GetValue(i);
+                    buffer[buffered++] = row;
+
+                    if (buffered == rowsPerChunk)
                     {
-                        return await intTask.ConfigureAwait(false);
-                    }
-                    if (task is Task plainTask)
-                    {
-                        await plainTask.ConfigureAwait(false);
-                        return rowCount;
+                        fullChunkCommand ??= (DbCommand)BuildChunkCommand(connection, transaction, tableName, columnNames, rowsPerChunk, options);
+                        BindChunk(fullChunkCommand, buffer, buffered, columnCount);
+                        int affected = await fullChunkCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                        total += affected < 0 ? buffered : affected;
+                        buffered = 0;
                     }
                 }
 
-                // Fallback to sync
-                var result = LoadMethod?.Invoke(bulkLoader, null);
-                return result is int rows ? rows : rowCount;
+                if (buffered > 0)
+                {
+                    using var tail = (DbCommand)BuildChunkCommand(connection, transaction, tableName, columnNames, buffered, options);
+                    BindChunk(tail, buffer, buffered, columnCount);
+                    int affected = await tail.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    total += affected < 0 ? buffered : affected;
+                }
             }
             finally
             {
-                (bulkLoader as IDisposable)?.Dispose();
+                fullChunkCommand?.Dispose();
             }
+
+            if (ownTransaction)
+                transaction!.Commit();
+
+            return total;
+        }
+        catch
+        {
+            if (ownTransaction)
+                transaction?.Rollback();
+            throw;
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            if (ownTransaction)
+                transaction?.Dispose();
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
         }
     }
 
-    /// <summary>
-    /// Configures the MySqlBulkLoader instance with table name, stream, and CSV format settings.
-    /// </summary>
-    private static void ConfigureBulkLoader(object bulkLoader, string tableName, string tempFile)
+    private static IDbCommand BuildChunkCommand(IDbConnection connection, IDbTransaction? transaction, string tableName, string[] columnNames, int rows, BulkCopyOptions options)
     {
-        TableNameProperty?.SetValue(bulkLoader, tableName);
+        IDbCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        if (options.Timeout > 0)
+            command.CommandTimeout = options.Timeout;
 
-        // Open stream and assign to SourceStream — MySqlBulkLoader takes ownership of the stream
-        FileStream fileStream = File.OpenRead(tempFile);
-        SourceStreamProperty?.SetValue(bulkLoader, fileStream);
-
-        FieldTerminatorProperty?.SetValue(bulkLoader, ",");
-        LineTerminatorProperty?.SetValue(bulkLoader, "\n");
-
-        // Configure quoting to match our CSV output
-        FieldQuotationCharacterProperty?.SetValue(bulkLoader, '"');
-        FieldQuotationOptionalProperty?.SetValue(bulkLoader, true);
-    }
-
-    /// <summary>
-    /// Writes data from IDataReader to a CSV file. Returns the number of rows written.
-    /// </summary>
-    private static int WriteDataToCsv(IDataReader data, string filePath)
-    {
-        using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
-
-        int rowCount = 0;
-        while (data.Read())
+        var sb = new StringBuilder(64 + rows * columnNames.Length * 8);
+        sb.Append("INSERT INTO ").Append(EscapeIdentifier(tableName)).Append(" (");
+        for (int c = 0; c < columnNames.Length; c++)
         {
-            for (int i = 0; i < data.FieldCount; i++)
+            if (c > 0) sb.Append(", ");
+            sb.Append(EscapeIdentifier(columnNames[c]));
+        }
+        sb.Append(") VALUES ");
+
+        for (int r = 0; r < rows; r++)
+        {
+            sb.Append(r > 0 ? ",(" : "(");
+            for (int c = 0; c < columnNames.Length; c++)
             {
-                if (i > 0) writer.Write(',');
-                WriteCsvValue(writer, data.GetValue(i));
+                if (c > 0) sb.Append(',');
+                sb.Append("@p").Append(r).Append('_').Append(c);
+
+                IDbDataParameter param = command.CreateParameter();
+                param.ParameterName = $"@p{r}_{c}";
+                command.Parameters.Add(param);
             }
-            writer.WriteLine();
-            rowCount++;
+            sb.Append(')');
         }
 
-        return rowCount;
+        command.CommandText = sb.ToString();
+        return command;
     }
 
-    /// <summary>
-    /// Writes data from IDataReader to a CSV file asynchronously. Returns the number of rows written.
-    /// </summary>
-    private static async Task<int> WriteDataToCsvAsync(IDataReader data, string filePath, CancellationToken cancellationToken)
+    private static void BindChunk(IDbCommand command, object?[][] buffer, int rows, int columnCount)
     {
-        using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
-
-        int rowCount = 0;
-        while (data.Read())
+        IDataParameterCollection parameters = command.Parameters;
+        int index = 0;
+        for (int r = 0; r < rows; r++)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            for (int i = 0; i < data.FieldCount; i++)
+            object?[] row = buffer[r];
+            for (int c = 0; c < columnCount; c++)
             {
-                if (i > 0) await writer.WriteAsync(",").ConfigureAwait(false);
-                await WriteCsvValueAsync(writer, data.GetValue(i)).ConfigureAwait(false);
+                ((IDbDataParameter)parameters[index++]!).Value = row[c] ?? DBNull.Value;
             }
-            await writer.WriteLineAsync().ConfigureAwait(false);
-            rowCount++;
         }
-
-        return rowCount;
     }
 
-    /// <summary>
-    /// Writes a single value in MySQL-compatible CSV format.
-    /// </summary>
-    private static void WriteCsvValue(StreamWriter writer, object value)
+    private static int ExecuteAffectedRows(IDbCommand command, int expectedRows)
     {
-        if (value is DBNull)
-        {
-            writer.Write("\\N");
-            return;
-        }
-
-        // MySQL expects 1/0 for boolean, not True/False
-        if (value is bool boolVal)
-        {
-            writer.Write(boolVal ? '1' : '0');
-            return;
-        }
-
-        var str = FormatValue(value);
-        if (str != null)
-        {
-            str = str.Replace("\\", "\\\\");
-        }
-
-        if (str != null && (str.Contains(",") || str.Contains("\"") || str.Contains("\n")))
-        {
-            writer.Write('"');
-            writer.Write(str.Replace("\"", "\"\""));
-            writer.Write('"');
-        }
-        else
-        {
-            writer.Write(str);
-        }
+        int affected = command.ExecuteNonQuery();
+        // Some providers report -1 for multi-row statements; trust the row count we sent.
+        return affected < 0 ? expectedRows : affected;
     }
 
-    /// <summary>
-    /// Formats a value using invariant culture so decimals/dates round-trip correctly
-    /// regardless of the process's current culture.
-    /// </summary>
-    private static string? FormatValue(object value)
-    {
-        return value switch
-        {
-            IFormattable formattable => formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture),
-            _ => value.ToString()
-        };
-    }
-
-    /// <summary>
-    /// Writes a single value in MySQL-compatible CSV format asynchronously.
-    /// </summary>
-    private static async Task WriteCsvValueAsync(StreamWriter writer, object value)
-    {
-        if (value is DBNull)
-        {
-            await writer.WriteAsync("\\N").ConfigureAwait(false);
-            return;
-        }
-
-        // MySQL expects 1/0 for boolean, not True/False
-        if (value is bool boolVal)
-        {
-            await writer.WriteAsync(boolVal ? "1" : "0").ConfigureAwait(false);
-            return;
-        }
-
-        var str = FormatValue(value);
-        if (str != null)
-        {
-            str = str.Replace("\\", "\\\\");
-        }
-
-        if (str != null && (str.Contains(",") || str.Contains("\"") || str.Contains("\n")))
-        {
-            await writer.WriteAsync("\"").ConfigureAwait(false);
-            await writer.WriteAsync(str.Replace("\"", "\"\"")).ConfigureAwait(false);
-            await writer.WriteAsync("\"").ConfigureAwait(false);
-        }
-        else
-        {
-            await writer.WriteAsync(str).ConfigureAwait(false);
-        }
-    }
+    private static string EscapeIdentifier(string identifier)
+        => "`" + identifier.Replace("`", "``") + "`";
 }
