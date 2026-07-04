@@ -119,7 +119,8 @@ public static partial class Jaunty
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-            await using DbCommand command = connection.CreateCommand();
+            DbCommand command = connection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
 #else
             using DbCommand command = connection.CreateCommand();
 #endif

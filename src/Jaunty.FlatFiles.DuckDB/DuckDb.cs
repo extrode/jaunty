@@ -108,7 +108,8 @@ public sealed partial class DuckDb : IFlatFile
         ArgumentNullException.ThrowIfNull(source);
         string sql = GenerateRegistrationSql(source);
 
-        await using DuckDBCommand cmd = _connection.CreateCommand();
+        DuckDBCommand cmd = _connection.CreateCommand();
+        await using var cmdDisposer = cmd.ConfigureAwait(false);
         cmd.CommandText = sql;
         await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 

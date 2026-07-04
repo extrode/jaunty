@@ -186,7 +186,7 @@ internal sealed class ScaffoldCommand : Command
             }
 
             var scaffolder = new Scaffolder();
-            ScaffoldResult result = await scaffolder.ScaffoldAsync(options, context.GetCancellationToken());
+            ScaffoldResult result = await scaffolder.ScaffoldAsync(options, context.GetCancellationToken()).ConfigureAwait(false);
 
             if (result.Success)
             {
