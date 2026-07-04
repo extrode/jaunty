@@ -61,3 +61,26 @@ INSERT INTO products (product_name, supplier_id, category_id, unit_price, units_
 INSERT INTO products (product_name, supplier_id, category_id, unit_price, units_in_stock) VALUES ('Expensive Product', 2, 2, 60.00, 10);
 INSERT INTO products (product_name, supplier_id, category_id, unit_price, units_in_stock) VALUES ('Another Mid Product', 3, 3, 35.00, 20);
 INSERT INTO products (product_name, supplier_id, category_id, unit_price, units_in_stock) VALUES ('Luxury Item', 1, 1, 120.00, 5);
+
+-- Orders table (for 4-entity join tests: Product + Category + Supplier + Order)
+CREATE TABLE orders (
+    order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT,
+    employee_id INTEGER,
+    order_date TEXT,
+    required_date TEXT,
+    shipped_date TEXT,
+    ship_via INTEGER,
+    freight REAL,
+    ship_name TEXT,
+    ship_address TEXT,
+    ship_city TEXT,
+    ship_region TEXT,
+    ship_postal_code TEXT,
+    ship_country TEXT
+);
+
+-- Insert sample orders
+INSERT INTO orders (customer_id, employee_id, order_date, ship_name, ship_country) VALUES ('ALFKI', 1, '2024-01-10', 'Alfreds Futterkiste', 'Germany');
+INSERT INTO orders (customer_id, employee_id, order_date, ship_name, ship_country) VALUES ('ANATR', 2, '2024-01-15', 'Ana Trujillo', 'Mexico');
+INSERT INTO orders (customer_id, employee_id, order_date, ship_name, ship_country) VALUES ('ALFKI', 1, '2024-02-01', 'Alfreds Futterkiste', 'Germany');
