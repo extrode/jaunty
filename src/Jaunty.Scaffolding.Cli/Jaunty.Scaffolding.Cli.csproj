@@ -15,7 +15,6 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotnet-jaunty</ToolCommandName>
     <PackageId>Beparey.Jaunty.Scaffolding.Cli</PackageId>
-    <Version>2026.01.01</Version>
     <Authors>Syed Beparey</Authors>
     <Description>CLI tool to scaffold entity classes from database schema for Jaunty.</Description>
     <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
