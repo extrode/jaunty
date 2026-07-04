@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>net8.0;net472</TargetFrameworks>
+    <!-- Run TFMs sequentially to avoid database contention on shared live MariaDB/Postgres instances -->
+    <TestTfmsInParallel>false</TestTfmsInParallel>
     <IsPackable>false</IsPackable>
     <OutputType>Exe</OutputType>
     <LangVersion>latest</LangVersion>
