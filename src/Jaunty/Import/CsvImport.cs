@@ -284,6 +284,7 @@ public static class CsvImportExtensions
 
             // Use reflection to call BeginTextImport on NpgsqlConnection
 
+            // AOT-SAFE: Npgsql feature probe on the runtime connection type; null (trimmed or non-Npgsql) falls back to server-side COPY FROM below
             MethodInfo? beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
             if (beginTextImport != null)
             {
@@ -320,6 +321,7 @@ public static class CsvImportExtensions
 
             string copyCommand = $"COPY {tableName} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
 
+            // AOT-SAFE: Npgsql feature probe on the runtime connection type; null (trimmed or non-Npgsql) falls back to server-side COPY FROM below
             MethodInfo? beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
             if (beginTextImport != null)
             {
