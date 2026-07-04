@@ -7,7 +7,7 @@ namespace Jaunty.Internals.Entity;
 /// <summary>
 /// Metadata for an entity type, including table name and column mappings.
 /// </summary>
-public sealed class EntityMetadata
+internal sealed class EntityMetadata
 {
     /// <summary>
     /// Gets the table name.

@@ -1,4 +1,4 @@
-using Jaunty.Internals.BulkCopy;
+using Jaunty.Configuration;
 
 namespace Jaunty.Dialects;
 

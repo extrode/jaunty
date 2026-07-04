@@ -128,7 +128,7 @@ public class MultiEntityMapperTests : IDisposable
         using var reader = cmd.ExecuteReader();
         reader.Read();
 
-        var mapper = MultiEntityMapper<OrderEntity, DetailEntity>.Build(reader);
+        var mapper = global::Jaunty.Internals.Read.MultiEntityMapper<OrderEntity, DetailEntity>.Build(reader);
 
         var order = new OrderEntity();
         var detail = new DetailEntity();
@@ -157,7 +157,7 @@ public class MultiEntityMapperTests : IDisposable
         using var reader = cmd.ExecuteReader();
         reader.Read();
 
-        var mapper = MultiEntityMapper<OrderEntity, DetailEntity>.Build(reader);
+        var mapper = global::Jaunty.Internals.Read.MultiEntityMapper<OrderEntity, DetailEntity>.Build(reader);
 
         var results = new List<(OrderEntity, DetailEntity)>();
 
@@ -191,7 +191,7 @@ public class MultiEntityMapperTests : IDisposable
         using var reader = cmd.ExecuteReader();
         reader.Read();
 
-        var mapper = MultiEntityMapper<OverlapT1, OverlapT2>.Build(reader);
+        var mapper = global::Jaunty.Internals.Read.MultiEntityMapper<OverlapT1, OverlapT2>.Build(reader);
 
         var t1 = new OverlapT1();
         var t2 = new OverlapT2();
@@ -217,7 +217,7 @@ public class MultiEntityMapperTests : IDisposable
         using var reader = cmd.ExecuteReader();
         reader.Read();
 
-        var mapper = MultiEntityMapper<EntityA, EntityB>.Build(reader);
+        var mapper = global::Jaunty.Internals.Read.MultiEntityMapper<EntityA, EntityB>.Build(reader);
 
         var a = new EntityA();
         var b = new EntityB();
@@ -242,7 +242,7 @@ public class MultiEntityMapperTests : IDisposable
         using var reader = cmd.ExecuteReader();
         reader.Read();
 
-        var mapper = MultiEntityMapper<ColumnMappedT1, EntityB>.Build(reader);
+        var mapper = global::Jaunty.Internals.Read.MultiEntityMapper<ColumnMappedT1, EntityB>.Build(reader);
 
         var t1 = new ColumnMappedT1();
         var t2 = new EntityB();
@@ -264,7 +264,7 @@ public class MultiEntityMapperTests : IDisposable
         using var reader = cmd.ExecuteReader();
         reader.Read();
 
-        var mapper = MultiEntityMapper<ColumnMappedT1, EntityB>.Build(reader);
+        var mapper = global::Jaunty.Internals.Read.MultiEntityMapper<ColumnMappedT1, EntityB>.Build(reader);
 
         var t1 = new ColumnMappedT1();
         var t2 = new EntityB();
@@ -287,7 +287,7 @@ public class MultiEntityMapperTests : IDisposable
         using var reader = cmd.ExecuteReader();
         reader.Read();
 
-        var mapper = MultiEntityMapper<OrderEntity, DetailEntity>.Build(reader);
+        var mapper = global::Jaunty.Internals.Read.MultiEntityMapper<OrderEntity, DetailEntity>.Build(reader);
 
         var order = new OrderEntity();
         var detail = new DetailEntity();
@@ -312,7 +312,7 @@ public class MultiEntityMapperTests : IDisposable
         using var reader = cmd.ExecuteReader();
         reader.Read();
 
-        var mapper = MultiEntityMapper<NullableT1, NullableT2>.Build(reader);
+        var mapper = global::Jaunty.Internals.Read.MultiEntityMapper<NullableT1, NullableT2>.Build(reader);
 
         var t1 = new NullableT1();
         var t2 = new NullableT2();
@@ -333,7 +333,7 @@ public class MultiEntityMapperTests : IDisposable
         using var reader = cmd.ExecuteReader();
         reader.Read();
 
-        var mapper = MultiEntityMapper<NullableT1, NullableT2>.Build(reader);
+        var mapper = global::Jaunty.Internals.Read.MultiEntityMapper<NullableT1, NullableT2>.Build(reader);
 
         var t1 = new NullableT1();
         var t2 = new NullableT2();
@@ -352,7 +352,7 @@ public class MultiEntityMapperTests : IDisposable
         using var reader = cmd.ExecuteReader();
         reader.Read();
 
-        var mapper = MultiEntityMapper<NullableT1, NonNullableT2>.Build(reader);
+        var mapper = global::Jaunty.Internals.Read.MultiEntityMapper<NullableT1, NonNullableT2>.Build(reader);
 
         var t1 = new NullableT1();
         var t2 = new NonNullableT2();
@@ -375,7 +375,7 @@ public class MultiEntityMapperTests : IDisposable
         using var reader = cmd.ExecuteReader();
         reader.Read();
 
-        var mapper = MultiEntityMapper<EntityA, EntityB>.Build(reader);
+        var mapper = global::Jaunty.Internals.Read.MultiEntityMapper<EntityA, EntityB>.Build(reader);
 
         // Should not throw — just no properties mapped
         var a = new EntityA();

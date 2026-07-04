@@ -1,4 +1,4 @@
-namespace Jaunty.Internals.Enums;
+namespace Jaunty.Configuration;
 
 /// <summary>
 /// Specifies the mapping mode for query result mapping.
