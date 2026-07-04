@@ -134,6 +134,7 @@ public class ImportDialectResolverTests
     /// </summary>
     private sealed class UnknownDbConnection : DbConnection
     {
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public override string ConnectionString { get; set; } = string.Empty;
         public override string Database => string.Empty;
         public override string DataSource => string.Empty;
@@ -156,6 +157,7 @@ public class ImportDialectResolverTests
     /// </summary>
     private sealed class FallbackDbConnection : DbConnection
     {
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public override string ConnectionString { get; set; } = string.Empty;
         public override string Database => string.Empty;
         public override string DataSource => string.Empty;
