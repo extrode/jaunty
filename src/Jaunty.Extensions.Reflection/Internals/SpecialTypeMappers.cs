@@ -120,7 +120,7 @@ public static class SpecialTypeMappers
         // Handle nullable types
         Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
-        return Convert.ChangeType(value, underlyingType);
+        return DbValueConverter.ChangeType(value, underlyingType);
     }
 
     private static object CreateExpandoMapper(IDataReader reader)
