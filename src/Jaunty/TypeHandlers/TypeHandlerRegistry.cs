@@ -9,7 +9,8 @@ namespace Jaunty.TypeHandlers;
 internal static class TypeHandlerRegistry
 {
     private static readonly ConcurrentDictionary<Type, ITypeHandler> Handlers = new();
-    private static int _handlerCount = 0;
+    private static readonly object MutationSync = new();
+    private static volatile int _handlerCount;
 
     /// <summary>
     /// Gets a value indicating whether any type handlers have been registered.
@@ -25,8 +26,11 @@ internal static class TypeHandlerRegistry
     internal static void Register<T>(ITypeHandler handler)
     {
         Type key = typeof(T);
-        Handlers.AddOrUpdate(key, handler, (_, __) => handler);
-        _handlerCount = Handlers.Count;
+        lock (MutationSync)
+        {
+            Handlers.AddOrUpdate(key, handler, (_, __) => handler);
+            _handlerCount = Handlers.Count;
+        }
     }
 
     /// <summary>
@@ -48,12 +52,15 @@ internal static class TypeHandlerRegistry
     internal static bool Remove<T>()
     {
         Type key = typeof(T);
-        bool removed = Handlers.TryRemove(key, out _);
-        if (removed)
+        lock (MutationSync)
         {
-            _handlerCount = Handlers.Count;
+            bool removed = Handlers.TryRemove(key, out _);
+            if (removed)
+            {
+                _handlerCount = Handlers.Count;
+            }
+            return removed;
         }
-        return removed;
     }
 
     /// <summary>
@@ -61,8 +68,11 @@ internal static class TypeHandlerRegistry
     /// </summary>
     internal static void Clear()
     {
-        Handlers.Clear();
-        _handlerCount = 0;
+        lock (MutationSync)
+        {
+            Handlers.Clear();
+            _handlerCount = 0;
+        }
     }
 
     /// <summary>

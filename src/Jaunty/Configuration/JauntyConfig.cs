@@ -11,23 +11,38 @@ namespace Jaunty.Configuration;
 /// <summary>
 /// Provides global configuration options for Jaunty's entity-to-database mapping behavior.
 /// </summary>
+/// <remarks>
+/// <para><b>Thread safety:</b> every setting is an atomic, immediately visible write
+/// (volatile fields), and the interceptor mutation methods
+/// (<see cref="AddInterceptor"/>, <see cref="AddInterceptors"/>, <see cref="ClearInterceptors"/>)
+/// are synchronized, so concurrent registration cannot lose interceptors. Commands that
+/// are already executing keep the configuration they observed at their start.</para>
+/// <para><see cref="Reset"/> is <b>not</b> atomic as a whole (each individual field reset
+/// is); it is intended for test cleanup, not for reconfiguring a live application.
+/// For deterministic behavior, configure Jaunty once at application startup.</para>
+/// </remarks>
 public static class JauntyConfig
 {
-    private static Func<Type, string>? _schemaNameResolver;
-    private static Func<Type, string>? _tableNameResolver;
-    private static Func<string, string>? _columnNameResolver;
-    private static Action<string, object?>? _logger;
-    private static Func<Type, MappingMode, object>? _reflectionMapperResolver;
-    private static Func<Type, IDataReader, object>? _specialTypeMapperResolver;
-    private static Func<Type, Action<IDbCommand, object>>? _reflectionInsertBinderResolver;
-    private static Func<Type, Action<IDbCommand, object>>? _reflectionUpdateBinderResolver;
-    private static Func<Type, Action<IDbCommand, object>>? _reflectionDeleteBinderResolver;
-    private static InterceptorPipeline? _interceptorPipeline;
-    private static EnumStorage _defaultEnumStorage = EnumStorage.Numeric;
+    private static readonly object InterceptorSync = new();
 
-    private static int _parameterParsingCapacity = 8;
-    private static int _queryResultCapacity = 64;
-    private static int _csvFieldCapacity = 16;
+    private static volatile Func<Type, string>? _schemaNameResolver;
+    private static volatile Func<Type, string>? _tableNameResolver;
+    private static volatile Func<string, string>? _columnNameResolver;
+    private static volatile Action<string, object?>? _logger;
+    private static volatile Func<Type, MappingMode, object>? _reflectionMapperResolver;
+    private static volatile Func<Type, IDataReader, object>? _specialTypeMapperResolver;
+    private static volatile Func<Type, Action<IDbCommand, object>>? _reflectionInsertBinderResolver;
+    private static volatile Func<Type, Action<IDbCommand, object>>? _reflectionUpdateBinderResolver;
+    private static volatile Func<Type, Action<IDbCommand, object>>? _reflectionDeleteBinderResolver;
+    private static volatile Func<Type, object>? _reflectionTableMetadataResolver;
+    private static volatile Func<Type, Type, object>? _reflectionMultiMapperResolver;
+    private static volatile Func<Type[], IDataReader, Action<object, IDataRecord>[]>? _reflectionMultiMapperResolverN;
+    private static volatile InterceptorPipeline? _interceptorPipeline;
+    private static volatile EnumStorage _defaultEnumStorage = EnumStorage.Numeric;
+
+    private static volatile int _parameterParsingCapacity = 8;
+    private static volatile int _queryResultCapacity = 64;
+    private static volatile int _csvFieldCapacity = 16;
 
     /// <summary>
     /// Gets or sets the initial capacity for parameter name lists when parsing SQL.
@@ -137,13 +152,21 @@ public static class JauntyConfig
     /// Optional fallback table metadata resolver for types that are not source-generated.
     /// Returns an EntityMetadata object.
     /// </summary>
-    public static Func<Type, object>? ReflectionTableMetadataResolver { get; set; }
+    public static Func<Type, object>? ReflectionTableMetadataResolver
+    {
+        get => _reflectionTableMetadataResolver;
+        set => _reflectionTableMetadataResolver = value;
+    }
 
     /// <summary>
     /// Optional fallback multi-mapper resolver for types that are not source-generated.
     /// Returns a MultiEntityMapper object.
     /// </summary>
-    public static Func<Type, Type, object>? ReflectionMultiMapperResolver { get; set; }
+    public static Func<Type, Type, object>? ReflectionMultiMapperResolver
+    {
+        get => _reflectionMultiMapperResolver;
+        set => _reflectionMultiMapperResolver = value;
+    }
 
     /// <summary>
     /// Optional fallback multi-mapper resolver for arity-3+ multi-entity queries.
@@ -151,7 +174,11 @@ public static class JauntyConfig
     /// Value: array of N Action&lt;object, IDataRecord&gt; delegates (one per type position).
     /// Registered by Jaunty.Extensions.Reflection via UseReflectionMapping().
     /// </summary>
-    public static Func<Type[], IDataReader, Action<object, IDataRecord>[]>? ReflectionMultiMapperResolverN { get; set; }
+    public static Func<Type[], IDataReader, Action<object, IDataRecord>[]>? ReflectionMultiMapperResolverN
+    {
+        get => _reflectionMultiMapperResolverN;
+        set => _reflectionMultiMapperResolverN = value;
+    }
 
 
     /// <summary>
@@ -223,8 +250,11 @@ public static class JauntyConfig
         if (interceptor is null)
             throw new ArgumentNullException(nameof(interceptor));
 
-        var existingInterceptors = _interceptorPipeline?.GetInterceptors() ?? Enumerable.Empty<ICommandInterceptor>();
-        _interceptorPipeline = new InterceptorPipeline(existingInterceptors.Concat(new[] { interceptor }));
+        lock (InterceptorSync)
+        {
+            var existingInterceptors = _interceptorPipeline?.GetInterceptors() ?? Enumerable.Empty<ICommandInterceptor>();
+            _interceptorPipeline = new InterceptorPipeline(existingInterceptors.Concat(new[] { interceptor }));
+        }
     }
 
     /// <summary>
@@ -239,8 +269,11 @@ public static class JauntyConfig
         if (interceptors is null)
             throw new ArgumentNullException(nameof(interceptors));
 
-        var existingInterceptors = _interceptorPipeline?.GetInterceptors() ?? Enumerable.Empty<ICommandInterceptor>();
-        _interceptorPipeline = new InterceptorPipeline(existingInterceptors.Concat(interceptors));
+        lock (InterceptorSync)
+        {
+            var existingInterceptors = _interceptorPipeline?.GetInterceptors() ?? Enumerable.Empty<ICommandInterceptor>();
+            _interceptorPipeline = new InterceptorPipeline(existingInterceptors.Concat(interceptors));
+        }
     }
 
     /// <summary>
@@ -248,7 +281,10 @@ public static class JauntyConfig
     /// </summary>
     public static void ClearInterceptors()
     {
-        _interceptorPipeline = null;
+        lock (InterceptorSync)
+        {
+            _interceptorPipeline = null;
+        }
     }
 
     /// <summary>
