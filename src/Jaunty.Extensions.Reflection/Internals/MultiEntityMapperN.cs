@@ -40,7 +40,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3>
         parts[2] = m2 is null ? "0" : "1";
         parts[3] = m3 is null ? "0" : "1";
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 4] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3> Create(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3)
@@ -101,7 +101,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4>
         parts[3] = m3 is null ? "0" : "1";
         parts[4] = m4 is null ? "0" : "1";
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 5] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4> Create(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4)
@@ -169,7 +169,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5>
         parts[4] = m4 is null ? "0" : "1";
         parts[5] = m5 is null ? "0" : "1";
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 6] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5> Create(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4, Func<IDataReader, T5>? m5)
@@ -244,7 +244,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6>
         parts[5] = m5 is null ? "0" : "1";
         parts[6] = m6 is null ? "0" : "1";
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 7] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6> Create(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4, Func<IDataReader, T5>? m5, Func<IDataReader, T6>? m6)
@@ -326,7 +326,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>
         parts[6] = m6 is null ? "0" : "1";
         parts[7] = m7 is null ? "0" : "1";
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 8] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> Create(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4, Func<IDataReader, T5>? m5, Func<IDataReader, T6>? m6, Func<IDataReader, T7>? m7)
