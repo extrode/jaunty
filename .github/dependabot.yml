@@ -1,0 +1,37 @@
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "dev"
+    open-pull-requests-limit: 10
+    groups:
+      microsoft-extensions:
+        patterns:
+          - "Microsoft.Extensions.*"
+          - "Microsoft.Bcl.*"
+      test-tooling:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
+          - "coverlet*"
+      db-providers:
+        patterns:
+          - "Microsoft.Data.*"
+          - "Npgsql*"
+          - "MySql*"
+          - "SQLitePCLRaw*"
+          - "SourceGear.sqlite3"
+          - "DuckDB.NET*"
+    ignore:
+      # Roslyn pins define the MINIMUM compiler the source generator supports;
+      # bumping them drops older SDK consumers. Bump deliberately, not via bot.
+      - dependency-name: "Microsoft.CodeAnalysis.CSharp"
+      - dependency-name: "Microsoft.CodeAnalysis.Analyzers"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "dev"
