@@ -50,6 +50,10 @@ default lives in `src/Directory.Build.props`.
   public contracts - config resolvers and custom dialects). No public type
   remains under a `Jaunty.Internals` namespace.
 
+- Test infrastructure: all test projects now on xunit.v3 3.2.2 (xunit 2.9.3 was
+  flagged deprecated/legacy). Custom dialect data attributes migrated to the v3
+  `DataAttribute` API; unavailable providers now surface as skipped rows.
+
 ### Fixed
 
 - **Generated mapper NULL handling (correctness):** the source-generated
