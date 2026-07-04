@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
     <!-- Single source of truth for the local/dev version. Release builds override
-         via -p:Version=<tag> in .github/workflows/release.yml (CalVer, see CHANGELOG.md). -->
-    <Version>2026.01.01</Version>
+         via -p:Version=<tag> in .github/workflows/release.yml (SemVer, see CHANGELOG.md). -->
+    <Version>1.0.0-rc.1</Version>
     <IsTrimmable Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsTrimmable>
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
