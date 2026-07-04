@@ -9,7 +9,7 @@ using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
-using Jaunty.Internals.Enums;
+using Jaunty.Configuration;
 
 namespace Jaunty.Fluent;
 

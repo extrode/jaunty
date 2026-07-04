@@ -7,7 +7,6 @@ using Jaunty.Configuration;
 using Jaunty.Dialects;
 using Jaunty.Extensions.Reflection.Dialects;
 using Jaunty.Internals.Entity;
-using Jaunty.Internals.Enums;
 using Jaunty.Attributes;
 using Jaunty.TypeHandlers;
 

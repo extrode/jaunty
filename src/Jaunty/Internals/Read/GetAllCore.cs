@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 
 using Jaunty.Configuration;
 using Jaunty.Core;
-using Jaunty.Internals.Enums;
 using Jaunty.Internals.Read;
 using Jaunty.Internals.Write;
 
