@@ -188,6 +188,92 @@ public class TypeHandlerRegistryTests : IDisposable
 
     #endregion
 
+    #region Replace path and TryGetHandler
+
+    [Fact]
+    public void RegisterTypeHandler_OverExisting_ReplacesHandler()
+    {
+        // Register first handler
+        JauntyConfig.RegisterTypeHandler<string>(
+            fromDb: v => "FIRST:" + v,
+            toDb: v => v);
+
+        // Register second handler for same type — should replace, not accumulate
+        JauntyConfig.RegisterTypeHandler<string>(
+            fromDb: v => "SECOND:" + v,
+            toDb: v => v);
+
+        // The new handler must be active
+        bool found = TypeHandlerRegistry.TryGetHandler(typeof(string), out var handler);
+        Assert.True(found);
+        Assert.NotNull(handler);
+
+        var result = handler!.Parse("x");
+        Assert.StartsWith("SECOND:", result?.ToString() ?? string.Empty);
+    }
+
+    [Fact]
+    public void RegisterTypeHandler_ClassBased_ThenReplaceWithDelegate_ReplacesHandler()
+    {
+        JauntyConfig.RegisterTypeHandler(new UpperCaseStringHandler());
+
+        JauntyConfig.RegisterTypeHandler<string>(
+            fromDb: v => "DELEGATE:" + v,
+            toDb: v => v);
+
+        bool found = TypeHandlerRegistry.TryGetHandler(typeof(string), out var handler);
+        Assert.True(found);
+        var result = handler!.Parse("z");
+        Assert.StartsWith("DELEGATE:", result?.ToString() ?? string.Empty);
+    }
+
+    [Fact]
+    public void TryGetHandler_AfterRegister_FindsHandler()
+    {
+        JauntyConfig.RegisterTypeHandler<string>(
+            fromDb: v => v?.ToString() ?? string.Empty,
+            toDb: v => v);
+
+        bool found = TypeHandlerRegistry.TryGetHandler(typeof(string), out var handler);
+
+        Assert.True(found);
+        Assert.NotNull(handler);
+    }
+
+    [Fact]
+    public void TryGetHandler_AfterRemove_DoesNotFindHandler()
+    {
+        JauntyConfig.RegisterTypeHandler<Guid>(
+            fromDb: v => Guid.Empty,
+            toDb: v => v.ToString());
+        JauntyConfig.RemoveTypeHandler<Guid>();
+
+        bool found = TypeHandlerRegistry.TryGetHandler(typeof(Guid), out var handler);
+
+        Assert.False(found);
+        Assert.Null(handler);
+    }
+
+    [Fact]
+    public void HasHandlers_AfterRegister_ReturnsTrue()
+    {
+        JauntyConfig.RegisterTypeHandler<string>(
+            fromDb: v => v?.ToString() ?? string.Empty,
+            toDb: v => v);
+
+        Assert.True(TypeHandlerRegistry.HasHandlers);
+    }
+
+    #endregion
+
+    private class UpperCaseStringHandler : TypeHandler<string>
+    {
+        public override string Parse(object? dbValue) =>
+            dbValue?.ToString()?.ToUpperInvariant() ?? string.Empty;
+
+        public override object? ToDbValue(string? value) => value?.ToLowerInvariant();
+    }
+
     // Helper for testing
     private class TestTypeHandler : TypeHandler<int>
     {
