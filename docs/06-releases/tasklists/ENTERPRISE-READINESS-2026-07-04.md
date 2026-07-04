@@ -170,3 +170,16 @@ Let's use #if / #else compiler directives to target both
   System.CommandLine beta4 -> 2.0.9. Final gate: Release build 0 errors,
   4369 passed / 0 failed / 714 env-skips, 7 packages pack clean,
   vulnerable+deprecated scans clean (xunit v2 'legacy' notice excepted).
+
+## PROD-120 (open): bulk-path defects found by measurement (2026-07-04)
+
+- SQLite `BulkInsert` is 16x SLOWER than a plain transactional ADO.NET loop
+  (334ms vs 20.6ms @ 10k rows). Provider code looks right but has 0% coverage;
+  core `SQLiteDialect.CreateBulkCopyProvider()` returns null - verify which path
+  actually executes (native provider vs BulkInsertLoop) and profile.
+- MariaDB native bulk errors outright (NA in benchmarks) while linq2db works on
+  the same server - suspect MySqlBulkLoader local-infile config; provider should
+  fail with an actionable message.
+- SQL Server bulk unverified: needs correct JAUNTY_TEST_SQLSERVER credentials
+  for the local container (or CI container job).
+- Evidence: docs/05-quality/reports/BENCHMARKS-2026-07-04.md Update 3.
