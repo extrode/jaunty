@@ -38,6 +38,13 @@ public static class JauntyReflectionExtensions
         JauntyConfig.ReflectionTableMetadataResolver = ResolveTableMetadata;
         JauntyConfig.ReflectionMultiMapperResolver = ResolveMultiMapper;
         JauntyConfig.ReflectionMultiMapperResolverN = ResolveMultiMapperN;
+
+        // Dictionary/KeyValuePair/ValueTuple/dynamic have no mappable properties, so
+        // DrDispatcher must resolve them via SpecialTypeMapperResolver before ever
+        // falling back to ReflectionMapperResolver's MetadataCache<T>-based mapper.
+        // Registering it here (idempotent via SpecialTypeMappers.Register's ??=)
+        // means callers don't need to know to call it separately.
+        SpecialTypeMappers.Register();
     }
 
     /// <summary>
