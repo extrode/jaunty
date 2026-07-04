@@ -2,11 +2,30 @@
 
 All notable changes to Jaunty are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-Versioning is calendar-based (`YYYY.M.D` of the release cut). Package versions
-are set at release time from the git tag (`vYYYY.M.D`).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and versioning follows [SemVer 2.0](https://semver.org). Package versions are
+set at release time from the git tag (`vMAJOR.MINOR.PATCH`); the local/dev
+default lives in `src/Directory.Build.props`.
 
 ## [Unreleased]
+
+### Changed (2026-07-04 enterprise readiness pass)
+
+- **Versioning switched from CalVer to SemVer.** Dev baseline is `1.0.0-rc.1`;
+  the first GA tag should be `v1.0.0`.
+- **BREAKING:** `Beparey.Jaunty` no longer depends on the full
+  `Microsoft.Extensions.DependencyInjection` container package - only
+  `.Abstractions`. `ApplyJauntyInterceptors(IServiceCollection)` was removed
+  (it built a throwaway provider - ASP0000); use
+  `ApplyJauntyInterceptors(IServiceProvider)` after `Build()`.
+- All library awaits now use `ConfigureAwait(false)` (CA2007 enforced as error
+  for `src/`).
+- Scaffolding CLI migrated from `System.CommandLine` 2.0.0-beta4 to 2.0.9 GA.
+- Microsoft.Extensions.* netstandard2.0 pins bumped from EOL 6.0.0 to 8.0.x;
+  High-severity transitive vulnerabilities remediated
+  (SQLitePCLRaw native sqlite GHSA-2m69-gcr7-jv3q, Regex GHSA-cmhx-cq75-c4mj).
+- Package validation (`EnablePackageValidation`) enabled; benchmarks/samples/
+  source generator excluded from packing.
 
 ### Fixed
 
