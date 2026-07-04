@@ -17,6 +17,7 @@
     <!-- Proprietary source-viewable license; consumers must accept it explicitly. -->
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
     <Copyright>Copyright (c) 2026 Syed Beparey</Copyright>
     <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -36,5 +37,6 @@
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" />
     <None Include="$(MSBuildThisFileDirectory)..\LICENSE.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)..\docs\_assets\icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>
