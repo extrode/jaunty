@@ -24,7 +24,7 @@ namespace Jaunty.Diagnostics;
 /// to avoid capturing sensitive data in audit logs.
 /// </para>
 /// </remarks>
-public sealed class AuditInterceptor : ICommandInterceptor
+public sealed class AuditInterceptor : ISyncCommandInterceptor
 {
     private readonly ConcurrentQueue<AuditRecord> _auditLog = new();
     private readonly int _maxRecords;
@@ -126,6 +126,18 @@ public sealed class AuditInterceptor : ICommandInterceptor
 
         return new ValueTask();
     }
+
+    /// <inheritdoc/>
+    public void OnCommandExecuting(CommandContext context)
+        => OnCommandExecutingAsync(context, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc/>
+    public void OnCommandExecuted(CommandContext context)
+        => OnCommandExecutedAsync(context, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc/>
+    public void OnCommandFailed(CommandContext context, Exception exception)
+        => OnCommandFailedAsync(context, exception, CancellationToken.None).GetAwaiter().GetResult();
 }
 
 /// <summary>
