@@ -258,7 +258,7 @@ public static partial class Jaunty
         // We fall back to standard parameterized DELETE statements.
 
         bool wasClosed = connection.State == ConnectionState.Closed;
-        DbTransaction? transaction = options.Transaction as DbTransaction;
+        DbTransaction? transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
         bool ownTransaction = transaction is null;
 
         try
