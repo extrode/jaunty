@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0e0e10}
+.jt{--bg:#0e0e10;--bg2:#0a0a0c;--panel:#141419;--border:#1e1e23;--border2:#26262c;--tx:#e6e6e2;--tx2:#b9b9bd;--mut:#8d8d95;--dim:#63636b;--faint:#4a4a52;--hi:#ffffff;--hov:#15151a;--code-bg:#101013;--code-hd:#121215;--code-bd:#232329;--code-tx:#d6d6d2}
+.jt[data-theme="light"]{--bg:#f6f6f4;--bg2:#efefec;--panel:#e8e8e3;--border:#e1e1da;--border2:#d5d5cd;--tx:#1a1a1d;--tx2:#3c3c42;--mut:#5e5e66;--dim:#8b8b91;--faint:#b0b0b6;--hi:#000000;--hov:#eaeae5;--code-bg:#15151a;--code-hd:#1b1b21;--code-bd:#28282f;--code-tx:#d6d6d2}
+.jt input::placeholder{color:var(--faint)}
+.jt *{scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+</style>
+</helmet>
+
+<div class="jt" data-theme="{{ theme }}" data-screen-label="Jaunty docs" style="display:grid;grid-template-rows:46px 1fr auto;height:100vh;background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace;overflow:hidden;transition:background .2s">
+
+  <!-- ============ header ============ -->
+  <div style="display:flex;align-items:center;gap:16px;padding:0 16px;background:var(--bg2);border-bottom:1px solid var(--border);position:relative;z-index:30">
+    <sc-if value="{{ showHamburger }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ toggleNav }}" style="cursor:pointer;width:40px;height:40px;margin-left:-8px;flex:none;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--tx)" style-hover="color:var(--hi)">{{ hamburgerIcon }}</div>
+    </sc-if>
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <span style="font-size:13.5px;font-weight:600;color:var(--hi)">jaunty</span>
+      <sc-if value="{{ showHeaderExtras }}" hint-placeholder-val="{{ true }}">
+        <span style="font-size:10.5px;color:var(--dim)">v2.4.0</span>
+      </sc-if>
+    </div>
+    <sc-if value="{{ showHeaderExtras }}" hint-placeholder-val="{{ true }}">
+      <span style="font-size:11px;color:var(--dim)">{{ crumb }}</span>
+    </sc-if>
+
+    <div style="{{ searchWrapStyle }}">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--panel);border:1px solid var(--border2);border-radius:5px">
+        <span style="font-size:11px;color:var(--faint)">›</span>
+        <input ref="{{ searchRef }}" value="{{ gq }}" onChange="{{ onGq }}" onFocus="{{ onSf }}" onBlur="{{ onSb }}" onKeyDown="{{ onSk }}" placeholder="search docs" style="flex:1;min-width:0;font:400 12px 'JetBrains Mono',monospace;color:var(--tx);background:transparent;border:none;outline:none;padding:0"></input>
+        <sc-if value="{{ showHeaderExtras }}" hint-placeholder-val="{{ true }}">
+          <span style="font-size:10px;color:var(--faint);border:1px solid var(--border2);border-radius:3px;padding:1px 6px">/</span>
+        </sc-if>
+      </div>
+      <sc-if value="{{ searchOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:36px;left:0;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;box-shadow:0 12px 32px rgba(0,0,0,.45);max-height:380px;overflow-y:auto;padding:4px">
+          <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:12px;font-size:11.5px;color:var(--dim)">no matches for “{{ gq }}”</div>
+          </sc-if>
+          <sc-for list="{{ results }}" as="r" hint-placeholder-count="3">
+            <div onMouseDown="{{ r.go }}" style="cursor:pointer;padding:8px 10px;border-radius:4px" style-hover="background:var(--hov)">
+              <div style="display:flex;align-items:baseline;gap:10px">
+                <span style="font-size:12px;font-weight:600;color:var(--tx)">{{ r.title }}</span>
+                <span style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-left:auto">{{ r.group }}</span>
+              </div>
+              <div style="font-size:11px;line-height:1.55;color:var(--mut);margin:3px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.snippet }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <div onClick="{{ toggleTheme }}" style="cursor:pointer;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--mut);padding:5px 11px;border:1px solid var(--border2);border-radius:5px;background:var(--panel)" style-hover="color:var(--hi)">
+      <span>◐</span>
+      <sc-if value="{{ showHeaderExtras }}" hint-placeholder-val="{{ true }}">
+        <span>{{ themeBtn }}</span>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- ============ body ============ -->
+  <div style="{{ bodyGridStyle }}">
+
+    <!-- sidebar -->
+    <sc-if value="{{ showBackdrop }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeNav }}" style="position:fixed;top:46px;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:35"></div>
+    </sc-if>
+    <div style="{{ sidebarStyle }}">
+      <div style="padding:12px 12px 6px">
+        <div style="display:flex;align-items:center;gap:7px;padding:5px 9px;background:var(--panel);border:1px solid var(--border2);border-radius:4px">
+          <span style="font-size:11px;color:var(--faint)">/</span>
+          <input value="{{ q }}" onChange="{{ onQ }}" placeholder="filter nav" style="flex:1;min-width:0;font:400 11.5px 'JetBrains Mono',monospace;color:var(--tx);background:transparent;border:none;outline:none;padding:0"></input>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:4px 8px 12px;min-height:0">
+        <sc-if value="{{ navEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:12px 10px;font-size:11px;color:var(--dim)">no matches</div>
+        </sc-if>
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+          <div style="margin:0 0 4px">
+            <div onClick="{{ g.toggle }}" style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:{{ g.groupPad }}" style-hover="background:var(--hov)">
+              <span style="font-size:10px;color:var(--dim)">{{ g.chev }}</span>
+              <span style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)">{{ g.label }}</span>
+              <span style="font-size:9.5px;color:var(--faint);margin-left:auto">{{ g.count }}</span>
+            </div>
+            <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;padding:1px 0 4px">
+                <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+                  <div onClick="{{ it.go }}" style="cursor:pointer;padding:{{ it.pad }};font-size:12px;font-weight:{{ it.fw }};color:{{ it.c }};background:{{ it.bg }};border-left:2px solid {{ it.bl }}" style-hover="background:var(--hov)">{{ it.name }}</div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- content -->
+    <div ref="{{ contentRef }}" style="overflow-y:auto;min-height:0;background:var(--bg)">
+      <div style="{{ contentPadStyle }}">
+        <div style="font-size:10.5px;color:var(--dim);margin:0 0 16px">{{ crumb }}</div>
+        <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 6px">
+          <h1 style="margin:0;font:600 25px/1.1 'JetBrains Mono',monospace;letter-spacing:-.02em;color:var(--hi)">{{ pageTitle }}</h1>
+          <span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--bg);background:var(--tx);padding:2.5px 8px;border-radius:3px;font-weight:600">{{ pageBadge }}</span>
+        </div>
+        <div style="font-size:11px;color:var(--mut);margin:0 0 22px">{{ pageSub }}</div>
+
+        <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="6">
+          <div>
+            <sc-if value="{{ b.bH }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:26px 0 12px">— {{ b.s }}</div>
+            </sc-if>
+
+            <sc-if value="{{ b.bP }}" hint-placeholder-val="{{ true }}">
+              <p style="margin:0 0 18px;font:400 13px/1.85 'JetBrains Mono',monospace;color:var(--tx2);text-wrap:pretty;max-width:74ch"><sc-for list="{{ b.seg }}" as="sg" hint-placeholder-count="1"><span style="color:{{ sg.c }};background:{{ sg.bg }};padding:{{ sg.pd }};border-radius:3px">{{ sg.s }}</span></sc-for></p>
+            </sc-if>
+
+            <sc-if value="{{ b.bList }}" hint-placeholder-val="{{ false }}">
+              <div style="margin:0 0 20px;display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ b.items }}" as="li" hint-placeholder-count="3">
+                  <div style="display:flex;gap:11px;font:400 12.5px/1.75 'JetBrains Mono',monospace;color:var(--tx2)"><span style="color:var(--faint)">·</span><span><sc-for list="{{ li.seg }}" as="sg" hint-placeholder-count="1"><span style="color:{{ sg.c }};background:{{ sg.bg }};padding:{{ sg.pd }};border-radius:3px">{{ sg.s }}</span></sc-for></span></div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ b.bCode }}" hint-placeholder-val="{{ false }}">
+              <div style="border:1px solid var(--code-bd);border-radius:6px;margin:0 0 22px;overflow:hidden">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;background:var(--code-hd);border-bottom:1px solid var(--code-bd)">
+                  <span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#63636b">{{ b.title }}</span>
+                  <div style="display:flex;gap:12px;align-items:center">
+                    <span style="font-size:10px;color:#63636b">{{ b.langLabel }}</span>
+                    <div onClick="{{ b.copy }}" style="cursor:pointer;font-size:10.5px;color:#8d8d95;padding:2px 9px;border:1px solid #2c2c34;border-radius:3px" style-hover="color:#ffffff;border:1px solid #3a3a42">{{ b.copyLabel }}</div>
+                  </div>
+                </div>
+                <pre style="margin:0;padding:14px 16px;background:var(--code-bg);overflow-x:auto;font:400 12.5px/1.8 'JetBrains Mono',monospace;color:var(--code-tx)"><sc-for list="{{ b.tokens }}" as="tk" hint-placeholder-count="1"><span style="color:{{ tk.c }};font-style:{{ tk.fs }};font-weight:{{ tk.w }}">{{ tk.s }}</span></sc-for></pre>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ b.bCmd }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:9px 14px;background:var(--panel);border:1px solid var(--border2);border-radius:5px;font-size:12px;color:var(--tx2)">
+                <span style="color:var(--faint)">$</span><span>{{ b.s }}</span>
+                <div onClick="{{ b.copy }}" style="margin-left:auto;cursor:pointer;font-size:10.5px;color:var(--dim)" style-hover="color:var(--hi)">{{ b.copyLabel }}</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ b.bParams }}" hint-placeholder-val="{{ false }}">
+              <div style="margin:0 0 22px;border-left:1px solid var(--border2)">
+                <sc-for list="{{ b.rows }}" as="r" hint-placeholder-count="3">
+                  <div style="padding:7px 0 8px 16px;font-size:12px;line-height:1.7">
+                    <span style="color:var(--hi);font-weight:500">{{ r.n }}</span> <span style="color:var(--dim)">{{ r.t }}</span><br>
+                    <span><sc-for list="{{ r.seg }}" as="sg" hint-placeholder-count="1"><span style="color:{{ sg.c }};background:{{ sg.bg }};padding:{{ sg.pd }};border-radius:3px">{{ sg.s }}</span></sc-for></span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ b.bCallout }}" hint-placeholder-val="{{ false }}">
+              <div style="margin:0 0 22px;padding:13px 16px;background:var(--panel);border:1px solid var(--border2);border-radius:6px">
+                <div style="font-size:11px;font-weight:600;color:var(--tx);margin:0 0 6px">{{ b.t }}</div>
+                <div style="font-size:12px;line-height:1.75;color:var(--mut)"><sc-for list="{{ b.seg }}" as="sg" hint-placeholder-count="1"><span style="color:{{ sg.c }};background:{{ sg.bg }};padding:{{ sg.pd }};border-radius:3px">{{ sg.s }}</span></sc-for></div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ b.bSchema }}" hint-placeholder-val="{{ false }}">
+              <div style="border:1px solid var(--border2);border-radius:6px;margin:0 0 22px;overflow:hidden">
+                <div onClick="{{ b.toggle }}" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:9px 12px;background:var(--panel)" style-hover="background:var(--hov)">
+                  <span style="font-size:10px;color:var(--dim)">{{ b.chev }}</span>
+                  <span style="font-size:11px;font-weight:600;color:var(--tx2)">{{ b.t }}</span>
+                  <span style="font-size:10px;color:var(--dim);margin-left:auto">{{ b.note }}</span>
+                </div>
+                <sc-if value="{{ b.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:10px 16px 12px;background:var(--bg);border-top:1px solid var(--border2);font-size:11.5px;line-height:2">
+                    <sc-for list="{{ b.rows }}" as="r" hint-placeholder-count="3">
+                      <div><span style="color:var(--hi)">{{ r.n }}</span> <span style="color:var(--dim)">{{ r.meta }}</span></div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ b.bLog }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <sc-for list="{{ b.entries }}" as="en" hint-placeholder-count="3">
+                  <div style="margin:0 0 28px">
+                    <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 10px">
+                      <span style="font-size:15px;font-weight:600;color:var(--hi)">{{ en.v }}</span>
+                      <span style="font-size:11px;color:var(--dim)">{{ en.date }}</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:7px;border-left:1px solid var(--border2)">
+                      <sc-for list="{{ en.items }}" as="ci" hint-placeholder-count="3">
+                        <div style="display:flex;gap:12px;align-items:baseline;padding:0 0 0 14px;font-size:12px;line-height:1.65">
+                          <span style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:{{ ci.tc }};min-width:58px;font-weight:600">{{ ci.tag }}</span>
+                          <span><sc-for list="{{ ci.seg }}" as="sg" hint-placeholder-count="1"><span style="color:{{ sg.c }};background:{{ sg.bg }};padding:{{ sg.pd }};border-radius:3px">{{ sg.s }}</span></sc-for></span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+
+        <!-- prev / next -->
+        <div style="display:flex;justify-content:space-between;gap:20px;margin:44px 0 0;padding:18px 0 0;border-top:1px solid var(--border)">
+          <div style="flex:1">
+            <sc-if value="{{ hasPrev }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ goPrev }}" style="cursor:pointer;display:inline-flex;flex-direction:column;gap:3px" style-hover="opacity:.75">
+                <span style="font-size:10px;color:var(--dim)">← prev</span>
+                <span style="font-size:12.5px;font-weight:600;color:var(--tx)">{{ prevTitle }}</span>
+              </div>
+            </sc-if>
+          </div>
+          <div style="flex:1;display:flex;justify-content:flex-end;text-align:right">
+            <sc-if value="{{ hasNext }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ goNext }}" style="cursor:pointer;display:inline-flex;flex-direction:column;gap:3px;align-items:flex-end" style-hover="opacity:.75">
+                <span style="font-size:10px;color:var(--dim)">next →</span>
+                <span style="font-size:12.5px;font-weight:600;color:var(--tx)">{{ nextTitle }}</span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ status bar ============ -->
+  <sc-if value="{{ showStatusBar }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:center;gap:18px;height:26px;padding:0 14px;background:var(--bg2);border-top:1px solid var(--border);font-size:10px;color:var(--dim)">
+      <span style="color:var(--mut)">● jaunty v2.4.0</span>
+      <sc-if value="{{ showHeaderExtras }}" hint-placeholder-val="{{ true }}">
+        <span>providers: sqlclient · pgsql</span>
+      </sc-if>
+      <span>{{ pagePos }}</span>
+      <span style="margin-left:auto">{{ statusRight }}</span>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;syntaxPalette&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;frost&quot;,&quot;ember&quot;,&quot;mono&quot;],&quot;default&quot;:&quot;frost&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;showStatusBar&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;}}">
+class Component extends DCLogic {
+  state = { page: "intro", q: "", gq: "", sf: false, col: {}, exp: {}, copied: {}, theme: null, navOpen: false, vw: (typeof window !== "undefined" ? window.innerWidth : 1280) };
+
+  constructor(props) {
+    super(props);
+    this.searchRef = React.createRef();
+    this.contentRef = React.createRef();
+  }
+
+  componentDidMount() {
+    this._kd = (e) => {
+      const tag = (e.target.tagName || "").toLowerCase();
+      if (e.key === "/" && tag !== "input" && tag !== "textarea") {
+        e.preventDefault();
+        if (this.searchRef.current) this.searchRef.current.focus();
+      }
+      if (e.key === "Escape") {
+        this.setState({ gq: "", sf: false });
+        if (this.searchRef.current) this.searchRef.current.blur();
+      }
+    };
+    document.addEventListener("keydown", this._kd);
+    this._rz = () => this.setState({ vw: window.innerWidth });
+    window.addEventListener("resize", this._rz);
+  }
+  componentWillUnmount() {
+    document.removeEventListener("keydown", this._kd);
+    window.removeEventListener("resize", this._rz);
+  }
+
+  // ---------- palettes ----------
+  pal() {
+    const p = this.props.syntaxPalette || "frost";
+    const P = {
+      frost: { kw: "#82a7f5", ty: "#5fd0bd", st: "#d9b26e", nu: "#de9e67", cm: "#5d6570", fn: "#eef0f4", at: "#b78ff0" },
+      ember: { kw: "#e8a15c", ty: "#d4c56a", st: "#9ec98a", nu: "#e07f5f", cm: "#6e6459", fn: "#f4efe6", at: "#dd8f8f" },
+      mono:  { kw: "#9a9aa4", ty: "#c8c8ce", st: "#b1b1aa", nu: "#d8d8d2", cm: "#5c5c64", fn: "#ffffff", at: "#c8c8ce" },
+    };
+    return P[p] || P.frost;
+  }
+
+  // ---------- tokenizer ----------
+  tok(src, lang) {
+    const key = (this.props.syntaxPalette || "frost") + "|" + (lang || "cs") + "|" + src;
+    this._tc = this._tc || {};
+    if (this._tc[key]) return this._tc[key];
+    const P = this.pal();
+    const KW = lang === "sql"
+      ? new Set(["INSERT", "INTO", "OUTPUT", "INSERTED", "VALUES", "RETURNING", "UPDATE", "SET", "WHERE", "DELETE", "FROM", "SELECT"])
+      : new Set("public static using var new this null async await return class namespace true false int string bool void get set decimal".split(" "));
+    const TY = new Set("IDbConnection IDbTransaction SqlConnection Order OrderStatus OrderLine ArchivedOrder Console Task IEnumerable Guid DateTime TransactionScope".split(" "));
+    const re = /(\/\/[^\n]*|--[^\n]*)|("(?:[^"\\\n]|\\.)*")|(\[(?:Table|Key|Column|NotMapped|Database|Computed)\b[^\]\n]*\])|(\d[\w.]*)|([A-Za-z_@][A-Za-z0-9_]*)|([\s\S])/g;
+    const out = [];
+    let buf = "", m;
+    const flush = () => { if (buf) { out.push({ s: buf, c: "var(--code-tx)", fs: "normal", w: 400 }); buf = ""; } };
+    const push = (s, c, fs, w) => { flush(); out.push({ s, c, fs: fs || "normal", w: w || 400 }); };
+    while ((m = re.exec(src))) {
+      if (m[1]) push(m[1], P.cm, "italic");
+      else if (m[2]) push(m[2], P.st);
+      else if (m[3]) push(m[3], P.at);
+      else if (m[4]) push(m[4], P.nu);
+      else if (m[5]) {
+        const id = m[5];
+        if (id[0] === "@") push(id, P.nu);
+        else if (KW.has(id)) push(id, P.kw, "italic");
+        else if (TY.has(id)) push(id, P.ty);
+        else if (/^[A-Z]/.test(id) && /^\s*[(<]/.test(src.slice(re.lastIndex))) push(id, P.fn, "normal", 600);
+        else buf += id;
+      }
+      else buf += m[6];
+    }
+    flush();
+    this._tc[key] = out;
+    return out;
+  }
+
+  // ---------- inline-code segments (`…` = chip) ----------
+  seg(text, base) {
+    return String(text).split("`").map((s, i) => i % 2
+      ? { s, c: "var(--tx)", bg: "var(--panel)", pd: "1px 5px" }
+      : { s, c: base, bg: "transparent", pd: "0" });
+  }
+
+  // ---------- nav / pages ----------
+  navData() {
+    return [
+      { label: "Getting Started", slug: "getting-started", ids: ["intro", "install", "quickstart"] },
+      { label: "Guides", slug: "guides", ids: ["mapping", "providers", "multidb", "returning", "transactions"] },
+      { label: "API Reference", slug: "api-reference", ids: ["insert", "insertAsync", "update", "updateAsync", "delete", "deleteAsync", "get", "getAll", "query", "setProps"] },
+      { label: "Project", slug: "project", ids: ["changelog", "license"] },
+    ];
+  }
+
+  pages() {
+    if (this._pages) return this._pages;
+    const M = "Jaunty 2.4 · extension on IDbConnection · thread-safe";
+    this._pages = {
+      intro: { nav: "Introduction", title: "Jaunty", badge: "docs", sub: "a CRUD layer on top of Dapper — writes handled, queries left alone", blocks: [
+        { k: "p", s: "Jaunty is a CRUD wrapper on top of Dapper for C# and .NET. It writes the `INSERT`, `UPDATE`, and `DELETE` statements you'd otherwise maintain by hand — and nothing else. Queries stay what they should be: SQL." },
+        { k: "list", items: [
+          "Extension methods on `IDbConnection` — no context class, no unit-of-work, no change tracking",
+          "`OUTPUT` / `RETURNING` on every write: database-generated values come back in one round trip",
+          "Modular providers: SQL Server (`Jaunty.SqlClient`) and PostgreSQL (`Jaunty.PgSql`)",
+          "Attribute-based mapping that follows C# conventions by default",
+        ] },
+        { k: "code", title: "thirty seconds of jaunty", src: "using Jaunty;\n\nusing var cn = new SqlConnection(connectionString);\n\nvar created = cn.Insert(new Order { CustomerId = 42 });\n// created.Id and created.CreatedAt are already populated" },
+        { k: "callout", t: "Philosophy", s: "Do one thing and do it well. Dapper stays popular because it never exceeds its scope; Jaunty applies the same restraint to writes." },
+      ] },
+
+      install: { nav: "Installation", title: "Installation", badge: "docs", sub: "one package per database engine", blocks: [
+        { k: "p", s: "Install the provider for your database. Each provider pulls in `Jaunty` core and `Dapper` as dependencies — there is nothing else to configure." },
+        { k: "cmd", s: "dotnet add package Jaunty.SqlClient" },
+        { k: "cmd", s: "dotnet add package Jaunty.PgSql" },
+        { k: "h", s: "providers" },
+        { k: "params", rows: [
+          { n: "Jaunty.SqlClient", t: ": SQL Server 2012+", d: "Uses `OUTPUT INSERTED.*`. Supports the `[Database]` attribute for cross-database tables." },
+          { n: "Jaunty.PgSql", t: ": PostgreSQL 12+", d: "Uses `RETURNING *`. Object names are quoted, so your C# casing is preserved." },
+        ] },
+        { k: "callout", t: "Why no MySQL?", s: "MySQL lacks `OUTPUT`/`RETURNING`, so every write would need a second query to read back generated values. Jaunty won't ship features that silently double your round trips." },
+      ] },
+
+      quickstart: { nav: "Quickstart", title: "Quickstart", badge: "docs", sub: "an entity, a connection, four verbs", blocks: [
+        { k: "p", s: "Define an entity, open a connection, and go. No configuration and no context class." },
+        { k: "code", title: "1 · define an entity", src: "public class Order\n{\n    [Key]\n    public int Id { get; set; }\n\n    public int CustomerId { get; set; }\n    public OrderStatus Status { get; set; }\n\n    [Computed]\n    public DateTime CreatedAt { get; set; }\n}" },
+        { k: "code", title: "2 · full crud", src: "using Jaunty;\n\nusing var cn = new SqlConnection(connectionString);\n\n// create — Id and CreatedAt come back populated\nvar order = cn.Insert(new Order { CustomerId = 42 });\n\n// read\nvar found = cn.Get<Order>(order.Id);\n\n// update — returns the row as stored\norder.Status = OrderStatus.Shipped;\nvar updated = cn.Update(order);\n\n// delete\ncn.Delete(updated);" },
+        { k: "p", s: "That's the whole surface you need on day one. When a query outgrows CRUD, drop to `Query` — it's Dapper underneath." },
+      ] },
+
+      mapping: { nav: "Mapping & Attributes", title: "Mapping & Attributes", badge: "guide", sub: "convention first, attributes when you must", blocks: [
+        { k: "p", s: "Jaunty maps by convention and gets out of the way: a class maps to a table of the same name, and every public property maps to a column. Attributes override the defaults." },
+        { k: "h", s: "attributes" },
+        { k: "params", rows: [
+          { n: "[Table(\"…\")]", t: ": class", d: "Sets the table name. Default is the class name." },
+          { n: "[Key]", t: ": property", d: "Marks the primary key. A property named `Id` is the key by convention." },
+          { n: "[Column(\"…\")]", t: ": property", d: "Maps to a differently named column." },
+          { n: "[NotMapped]", t: ": property", d: "Excluded from reads and writes." },
+          { n: "[Computed]", t: ": property", d: "Read on return, never written — for `DEFAULT` and computed columns." },
+          { n: "[Database(\"…\")]", t: ": class · SQL Server only", d: "Targets a table in another database on the same instance." },
+        ] },
+        { k: "code", title: "example", src: "[Table(\"tblOrders\")]\n[Database(\"Sales\")]\npublic class Order\n{\n    [Key]\n    public int Id { get; set; }\n\n    [Column(\"customer_ref\")]\n    public int CustomerId { get; set; }\n\n    [NotMapped]\n    public decimal RunningTotal { get; set; }\n}" },
+        { k: "callout", t: "PostgreSQL casing", s: "PostgreSQL lowercases unquoted identifiers. Jaunty quotes everything, so your C# casing survives — quote your names in migrations too, or map explicitly with `[Column]`." },
+      ] },
+
+      providers: { nav: "Providers", title: "Providers", badge: "guide", sub: "same methods, different SQL dialect", blocks: [
+        { k: "p", s: "Providers are thin adapters over the SQL dialect. The extension methods are identical; only the generated SQL differs." },
+        { k: "code", title: "generated sql", lang: "sql", src: "-- Jaunty.SqlClient\nINSERT INTO [Orders] ([CustomerId], [Status])\nOUTPUT INSERTED.*\nVALUES (@CustomerId, @Status);\n\n-- Jaunty.PgSql\nINSERT INTO \"Orders\" (\"CustomerId\", \"Status\")\nVALUES (@CustomerId, @Status)\nRETURNING *;" },
+        { k: "p", s: "Mixing providers in one application works — the extension methods bind per connection type — but each `IDbConnection` speaks exactly one dialect at a time." },
+      ] },
+
+      multidb: { nav: "Multiple Databases", title: "Multiple Databases", badge: "guide", sub: "one instance, many databases · SQL Server only", blocks: [
+        { k: "p", s: "On SQL Server, a table can live in another database on the same instance. Tag the class with `[Database]` and Jaunty qualifies every statement it generates." },
+        { k: "code", title: "example", src: "[Database(\"Archive\")]\n[Table(\"Orders\")]\npublic class ArchivedOrder\n{\n    [Key]\n    public int Id { get; set; }\n    public int CustomerId { get; set; }\n}\n\n// generates: [Archive]..[Orders]\nvar old = cn.Get<ArchivedOrder>(id);" },
+        { k: "callout", t: "PostgreSQL", s: "Not supported — cross-database references in PostgreSQL require foreign data wrappers, which are outside Jaunty's scope." },
+      ] },
+
+      returning: { nav: "Returning Clauses", title: "Returning Clauses", badge: "guide", sub: "why the row you get back is the row the database wrote", blocks: [
+        { k: "p", s: "Every write Jaunty issues carries an `OUTPUT` (SQL Server) or `RETURNING` (PostgreSQL) clause. The object you get back is materialized from that clause — not the object you passed in." },
+        { k: "list", items: [
+          "Identity and sequence keys — `IDENTITY`, `NEWSEQUENTIALID()`, `uuid_generate_v1()`",
+          "`DEFAULT` constraints — timestamps, status flags",
+          "Computed and generated columns",
+          "Values adjusted by the engine at write time",
+        ] },
+        { k: "code", title: "example", src: "var created = cn.Insert(order);   // one round trip\nReferenceEquals(order, created);  // false — new instance, database truth" },
+        { k: "callout", t: "One round trip, always", s: "There is no follow-up `SELECT SCOPE_IDENTITY()` query — which is also why MySQL isn't supported." },
+      ] },
+
+      transactions: { nav: "Transactions", title: "Transactions", badge: "guide", sub: "bring your own — jaunty never commits for you", blocks: [
+        { k: "p", s: "Every method accepts an optional `IDbTransaction`. Jaunty never opens, commits, or rolls back transactions on its own." },
+        { k: "code", title: "example", src: "using var cn = new SqlConnection(connectionString);\ncn.Open();\n\nusing var tx = cn.BeginTransaction();\n\nvar order = cn.Insert(new Order { CustomerId = 42 }, tx);\ncn.Insert(new OrderLine { OrderId = order.Id, Sku = \"JNT-100\" }, tx);\n\ntx.Commit();" },
+        { k: "p", s: "`TransactionScope` works too — Jaunty is plain ADO.NET underneath, so ambient transactions enlist as usual." },
+      ] },
+
+      insert: { nav: "Insert", title: "Insert<T>", badge: "method", sub: M, blocks: [
+        { k: "p", s: "Inserts a row and returns the entity the database wrote — generated keys, defaults, and computed columns included — via a single `OUTPUT` / `RETURNING` round trip." },
+        { k: "code", title: "signature", src: "public static T Insert<T>(this IDbConnection cn, T entity,\n    IDbTransaction tx = null, int? commandTimeout = null);" },
+        { k: "h", s: "parameters" },
+        { k: "params", rows: [
+          { n: "entity", t: ": T", d: "Object to insert. Generated members are ignored on write, populated on return." },
+          { n: "tx", t: ": IDbTransaction = null", d: "Optional enlisted transaction." },
+          { n: "commandTimeout", t: ": int? = null", d: "Seconds; provider default when null." },
+        ] },
+        { k: "h", s: "example" },
+        { k: "code", title: "example", src: "var order = new Order { CustomerId = 42, Status = OrderStatus.Pending };\n\n// one round trip: INSERT … OUTPUT INSERTED.*\nvar created = cn.Insert(order);\n\ncreated.Id         // 1087   (identity)\ncreated.CreatedAt  // 2026-07-04 09:14  (DEFAULT)" },
+        { k: "schema", t: "returned schema — Order", note: "OUTPUT INSERTED.*", rows: [
+          { n: "Id", meta: "int · identity · populated by database" },
+          { n: "CustomerId", meta: "int · from entity" },
+          { n: "Status", meta: "OrderStatus · from entity" },
+          { n: "CreatedAt", meta: "datetime2 · DEFAULT sysutcdatetime()" },
+          { n: "RowVersion", meta: "rowversion · computed · populated by database" },
+        ] },
+      ] },
+
+      insertAsync: { nav: "InsertAsync", title: "InsertAsync<T>", badge: "method", sub: M, blocks: [
+        { k: "p", s: "Awaitable `Insert` with identical semantics. Uses `ExecuteReaderAsync` under the hood." },
+        { k: "code", title: "signature", src: "public static Task<T> InsertAsync<T>(this IDbConnection cn, T entity,\n    IDbTransaction tx = null, int? commandTimeout = null);" },
+        { k: "h", s: "example" },
+        { k: "code", title: "example", src: "var created = await cn.InsertAsync(new Order { CustomerId = 42 });" },
+      ] },
+
+      update: { nav: "Update", title: "Update<T>", badge: "method", sub: M, blocks: [
+        { k: "p", s: "Updates the row matching the entity's key, writing every mapped column, and returns the row as the database stored it. For patch-style writes, pair with `SetProperties`." },
+        { k: "code", title: "signature", src: "public static T Update<T>(this IDbConnection cn, T entity,\n    IDbTransaction tx = null, int? commandTimeout = null);" },
+        { k: "h", s: "parameters" },
+        { k: "params", rows: [
+          { n: "entity", t: ": T", d: "Object to write. The `[Key]` member locates the row; `[Computed]` members are skipped." },
+          { n: "tx", t: ": IDbTransaction = null", d: "Optional enlisted transaction." },
+          { n: "commandTimeout", t: ": int? = null", d: "Seconds; provider default when null." },
+        ] },
+        { k: "h", s: "example" },
+        { k: "code", title: "example", src: "order.Status = OrderStatus.Shipped;\nvar updated = cn.Update(order);\n\n// patch-style: copy values from another object first\nvar patched = cn.Update(order.SetProperties(new { Status = OrderStatus.Delivered }));" },
+      ] },
+
+      updateAsync: { nav: "UpdateAsync", title: "UpdateAsync<T>", badge: "method", sub: M, blocks: [
+        { k: "p", s: "Awaitable `Update` with identical semantics." },
+        { k: "code", title: "signature", src: "public static Task<T> UpdateAsync<T>(this IDbConnection cn, T entity,\n    IDbTransaction tx = null, int? commandTimeout = null);" },
+        { k: "h", s: "example" },
+        { k: "code", title: "example", src: "order.Status = OrderStatus.Shipped;\nvar updated = await cn.UpdateAsync(order);" },
+      ] },
+
+      delete: { nav: "Delete", title: "Delete<T>", badge: "method", sub: M, blocks: [
+        { k: "p", s: "Deletes the row matching the entity's primary key. Returns `true` if a row was removed." },
+        { k: "code", title: "signature", src: "public static bool Delete<T>(this IDbConnection cn, T entity,\n    IDbTransaction tx = null, int? commandTimeout = null);" },
+        { k: "h", s: "example" },
+        { k: "code", title: "example", src: "var gone = cn.Delete(order);   // true\ngone = cn.Delete(order);       // false — already removed" },
+        { k: "callout", t: "Delete by key", s: "You can pass a bare key instead of a full entity: `cn.Delete<Order>(1087)`. Composite keys take an anonymous object." },
+      ] },
+
+      deleteAsync: { nav: "DeleteAsync", title: "DeleteAsync<T>", badge: "method", sub: M, blocks: [
+        { k: "p", s: "Awaitable `Delete` with identical semantics." },
+        { k: "code", title: "signature", src: "public static Task<bool> DeleteAsync<T>(this IDbConnection cn, T entity,\n    IDbTransaction tx = null, int? commandTimeout = null);" },
+        { k: "h", s: "example" },
+        { k: "code", title: "example", src: "await cn.DeleteAsync(order);" },
+      ] },
+
+      get: { nav: "Get", title: "Get<T>", badge: "method", sub: M, blocks: [
+        { k: "p", s: "Fetches a single row by primary key. Returns `null` when no row matches." },
+        { k: "code", title: "signature", src: "public static T Get<T>(this IDbConnection cn, object key,\n    IDbTransaction tx = null, int? commandTimeout = null);" },
+        { k: "h", s: "parameters" },
+        { k: "params", rows: [
+          { n: "key", t: ": object", d: "Key value, or an anonymous object for composite keys." },
+        ] },
+        { k: "h", s: "example" },
+        { k: "code", title: "example", src: "var order = cn.Get<Order>(1087);\n\n// composite key\nvar line = cn.Get<OrderLine>(new { OrderId = 1087, LineNo = 2 });" },
+      ] },
+
+      getAll: { nav: "GetAll", title: "GetAll<T>", badge: "method", sub: M, blocks: [
+        { k: "p", s: "Returns every row of the mapped table, buffered." },
+        { k: "code", title: "signature", src: "public static IEnumerable<T> GetAll<T>(this IDbConnection cn,\n    IDbTransaction tx = null, int? commandTimeout = null);" },
+        { k: "h", s: "example" },
+        { k: "code", title: "example", src: "var all = cn.GetAll<Order>();" },
+        { k: "callout", t: "Large tables", s: "`GetAll` buffers the whole result. For anything you wouldn't happily `SELECT *`, write a `Query` with a `WHERE` clause instead." },
+      ] },
+
+      query: { nav: "Query", title: "Query<T>", badge: "method", sub: "Jaunty 2.4 · re-exported from Dapper", blocks: [
+        { k: "p", s: "Dapper's `Query`, re-exported so `using Jaunty;` is the only import you need. Full Dapper behavior: parameters, buffering control, multi-mapping." },
+        { k: "code", title: "signature", src: "public static IEnumerable<T> Query<T>(this IDbConnection cn, string sql,\n    object param = null, IDbTransaction tx = null);" },
+        { k: "h", s: "example" },
+        { k: "code", title: "example", src: "var overdue = cn.Query<Order>(\n    \"SELECT * FROM Orders WHERE Status = @Status AND CreatedAt < @Cutoff\",\n    new { Status = OrderStatus.Pending, Cutoff = DateTime.UtcNow.AddDays(-30) });" },
+        { k: "p", s: "When CRUD stops fitting, this is the trapdoor. It's the same Dapper you already know — nothing is wrapped or intercepted." },
+      ] },
+
+      setProps: { nav: "SetProperties", title: "SetProperties<T>", badge: "method", sub: "Jaunty 2.4 · extension on T", blocks: [
+        { k: "p", s: "Returns a copy of `target` with matching property values copied from `source`. The original is not mutated. Pairs with `Update` for patch-style writes." },
+        { k: "code", title: "signature", src: "public static T SetProperties<T>(this T target, object source);" },
+        { k: "h", s: "example" },
+        { k: "code", title: "example", src: "// copy Status onto a clone of order, then persist\nvar updated = cn.Update(order.SetProperties(new { Status = OrderStatus.Delivered }));\n\norder.Status    // unchanged — SetProperties never mutates\nupdated.Status  // Delivered" },
+      ] },
+
+      changelog: { nav: "Changelog", title: "Changelog", badge: "project", sub: "notable changes, newest first", blocks: [
+        { k: "log", entries: [
+          { v: "v2.4.0", date: "2026-06-18", items: [
+            { tag: "added", s: "`GetAsync` and `GetAllAsync`" },
+            { tag: "added", s: "`[Computed]` attribute for read-only generated columns" },
+            { tag: "changed", s: "`Delete` returns `bool` (was affected-row count)" },
+          ] },
+          { v: "v2.3.0", date: "2026-02-02", items: [
+            { tag: "added", s: "PostgreSQL provider — `Jaunty.PgSql`" },
+            { tag: "added", s: "composite key support in `Get` and `Delete`" },
+            { tag: "fixed", s: "`rowversion` materialization under `OUTPUT INSERTED.*`" },
+          ] },
+          { v: "v2.2.1", date: "2025-11-14", items: [
+            { tag: "fixed", s: "quoting of schema-qualified `[Table]` names" },
+            { tag: "fixed", s: "`SetProperties` boxing of nullable value types" },
+          ] },
+          { v: "v2.0.0", date: "2025-08-30", items: [
+            { tag: "changed", s: "target framework is now .NET 8" },
+            { tag: "added", s: "`[Database]` attribute (SQL Server)" },
+            { tag: "removed", s: "sync-over-async fallbacks" },
+          ] },
+        ] },
+      ] },
+
+      license: { nav: "License", title: "License", badge: "project", sub: "MIT", blocks: [
+        { k: "p", s: "Jaunty is open source under the MIT license. Use it, fork it, ship it — attribution appreciated, warranty absent." },
+        { k: "p", s: "Dapper, which Jaunty depends on, is licensed under Apache 2.0 by its respective authors." },
+      ] },
+    };
+    return this._pages;
+  }
+
+  flatOrder() { return this.navData().reduce((a, g) => a.concat(g.ids), []); }
+
+  groupOf(id) { return this.navData().find((g) => g.ids.includes(id)); }
+
+  slugify(id) { return this.pages()[id].nav.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
+
+  go(id) {
+    this.setState({ page: id, gq: "", sf: false, navOpen: false });
+    if (this.contentRef.current) this.contentRef.current.scrollTop = 0;
+  }
+
+  // ---------- copy ----------
+  copyText(key, text) {
+    try { navigator.clipboard.writeText(text); } catch (e) {}
+    this.setState((s) => ({ copied: Object.assign({}, s.copied, { [key]: true }) }));
+    clearTimeout(this["_t" + key]);
+    this["_t" + key] = setTimeout(() => {
+      this.setState((s) => ({ copied: Object.assign({}, s.copied, { [key]: false }) }));
+    }, 1400);
+  }
+
+  // ---------- search ----------
+  pageText(id) {
+    this._pt = this._pt || {};
+    if (this._pt[id]) return this._pt[id];
+    const p = this.pages()[id];
+    const parts = [];
+    p.blocks.forEach((b) => {
+      if (b.s) parts.push(b.s);
+      if (b.t) parts.push(b.t);
+      if (b.src) parts.push(b.src);
+      if (b.items) b.items.forEach((it) => parts.push(typeof it === "string" ? it : it.s || ""));
+      if (b.rows) b.rows.forEach((r) => parts.push([r.n, r.t, r.d, r.meta].filter(Boolean).join(" ")));
+      if (b.entries) b.entries.forEach((en) => en.items.forEach((ci) => parts.push(ci.s)));
+    });
+    this._pt[id] = parts.join(" · ").replace(/`/g, "");
+    return this._pt[id];
+  }
+
+  searchResults(q) {
+    const ql = q.trim().toLowerCase();
+    if (ql.length < 2) return [];
+    const hits = [];
+    this.flatOrder().forEach((id) => {
+      const p = this.pages()[id];
+      const title = p.title.toLowerCase();
+      const text = this.pageText(id);
+      const ti = title.indexOf(ql);
+      const xi = text.toLowerCase().indexOf(ql);
+      if (ti < 0 && xi < 0) return;
+      let snippet = text.slice(0, 100);
+      if (xi >= 0) snippet = (xi > 30 ? "…" : "") + text.slice(Math.max(0, xi - 30), xi + 80);
+      hits.push({
+        rank: ti >= 0 ? 0 : 1,
+        title: p.title,
+        group: this.groupOf(id).label,
+        snippet,
+        go: () => this.go(id),
+      });
+    });
+    return hits.sort((a, b) => a.rank - b.rank).slice(0, 8);
+  }
+
+  // ---------- block decoration ----------
+  decorate(page, pageId) {
+    return page.blocks.map((b, i) => {
+      const key = pageId + ":" + i;
+      const d = { bH: b.k === "h", bP: b.k === "p", bList: b.k === "list", bCode: b.k === "code", bCmd: b.k === "cmd", bParams: b.k === "params", bCallout: b.k === "callout", bSchema: b.k === "schema", bLog: b.k === "log" };
+      d.s = b.s; d.t = b.t; d.title = b.title; d.note = b.note;
+      if (d.bP) d.seg = this.seg(b.s, "var(--tx2)");
+      if (d.bCallout) d.seg = this.seg(b.s, "var(--mut)");
+      if (d.bList) d.items = b.items.map((s) => ({ seg: this.seg(s, "var(--tx2)") }));
+      if (d.bParams) d.rows = b.rows.map((r) => ({ n: r.n, t: r.t, seg: this.seg(r.d, "var(--mut)") }));
+      if (d.bCode) {
+        d.tokens = this.tok(b.src, b.lang);
+        d.langLabel = b.lang === "sql" ? "SQL" : "C#";
+        d.copy = () => this.copyText(key, b.src);
+        d.copyLabel = this.state.copied[key] ? "copied " : "copy";
+      }
+      if (d.bCmd) {
+        d.copy = () => this.copyText(key, b.s);
+        d.copyLabel = this.state.copied[key] ? "copied " : "copy";
+      }
+      if (d.bSchema) {
+        d.rows = b.rows;
+        d.open = !!this.state.exp[key];
+        d.chev = d.open ? "▾" : "▸";
+        d.toggle = () => this.setState((s) => ({ exp: Object.assign({}, s.exp, { [key]: !s.exp[key] }) }));
+      }
+      if (d.bLog) {
+        const P = this.pal();
+        const TC = { added: P.ty, fixed: P.st, changed: P.kw, removed: P.nu };
+        d.entries = b.entries.map((en) => ({
+          v: en.v, date: en.date,
+          items: en.items.map((ci) => ({ tag: ci.tag, tc: TC[ci.tag] || "var(--dim)", seg: this.seg(ci.s, "var(--tx2)") })),
+        }));
+      }
+      return d;
+    });
+  }
+
+  // ---------- sidebar nav ----------
+  buildNav(isMobile) {
+    const q = this.state.q.trim().toLowerCase();
+    const itemPad = isMobile ? "12px 8px 12px 24px" : "3.5px 8px 3.5px 24px";
+    const groupPad = isMobile ? "13px 8px 11px" : "7px 8px 4px";
+    const out = [];
+    this.navData().forEach((g) => {
+      const items = g.ids
+        .filter((id) => !q || this.pages()[id].nav.toLowerCase().includes(q))
+        .map((id) => {
+          const act = id === this.state.page;
+          return {
+            name: this.pages()[id].nav,
+            fw: act ? 600 : 400,
+            c: act ? "var(--hi)" : "var(--mut)",
+            bg: act ? "var(--panel)" : "transparent",
+            bl: act ? "var(--hi)" : "transparent",
+            pad: itemPad,
+            go: () => this.go(id),
+          };
+        });
+      if (q && items.length === 0) return;
+      const open = q ? true : !this.state.col[g.label];
+      out.push({
+        label: g.label, chev: open ? "▾" : "▸", open, count: items.length, items, groupPad,
+        toggle: () => this.setState((s) => ({ col: Object.assign({}, s.col, { [g.label]: !s.col[g.label] }) })),
+      });
+    });
+    return out;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const theme = s.theme || this.props.defaultTheme || "dark";
+    const pageId = s.page;
+    const page = this.pages()[pageId];
+    const group = this.groupOf(pageId);
+    const order = this.flatOrder();
+    const idx = order.indexOf(pageId);
+    const prevId = idx > 0 ? order[idx - 1] : null;
+    const nextId = idx < order.length - 1 ? order[idx + 1] : null;
+    const results = this.searchResults(s.gq);
+    const isMobile = (s.vw || 1280) < 760;
+    const groups = this.buildNav(isMobile);
+    const themeNameStr = theme === "dark" ? "theme: dark" : "theme: light";
+
+    return {
+      theme,
+      themeBtn: theme === "dark" ? "light" : "dark",
+      themeName: themeNameStr,
+      toggleTheme: () => this.setState({ theme: theme === "dark" ? "light" : "dark" }),
+      showStatusBar: this.props.showStatusBar ?? true,
+      statusRight: isMobile ? themeNameStr : themeNameStr + " · MIT license",
+
+      searchRef: this.searchRef,
+      contentRef: this.contentRef,
+
+      showHeaderExtras: !isMobile,
+      showHamburger: isMobile,
+      hamburgerIcon: s.navOpen ? "" : "",
+      toggleNav: () => this.setState((p) => ({ navOpen: !p.navOpen })),
+      closeNav: () => this.setState({ navOpen: false }),
+      showBackdrop: isMobile && s.navOpen,
+      searchWrapStyle: isMobile
+        ? { marginLeft: 10, position: "relative", width: "auto", flex: "1 1 auto" }
+        : { marginLeft: "auto", position: "relative", width: 360, flex: "none" },
+      sidebarStyle: !isMobile
+        ? { display: "flex", flexDirection: "column", background: "var(--bg2)", borderRight: "1px solid var(--border)", minHeight: 0 }
+        : {
+            display: "flex", flexDirection: "column", background: "var(--bg2)", minHeight: 0,
+            position: "fixed", top: 46, left: 0, bottom: 0, width: "82vw", maxWidth: 320,
+            borderRight: "1px solid var(--border2)", zIndex: 40,
+            boxShadow: s.navOpen ? "10px 0 30px rgba(0,0,0,.4)" : "none",
+            transform: s.navOpen ? "translateX(0)" : "translateX(-100%)",
+            transition: "transform .25s ease",
+          },
+      bodyGridStyle: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "262px 1fr", minHeight: 0 },
+      contentPadStyle: { maxWidth: 800, padding: isMobile ? "22px 18px 48px" : "34px 52px 64px" },
+
+      q: s.q,
+      onQ: (e) => this.setState({ q: e.target.value }),
+      groups,
+      navEmpty: groups.length === 0,
+
+      gq: s.gq,
+      onGq: (e) => this.setState({ gq: e.target.value }),
+      onSf: () => this.setState({ sf: true }),
+      onSb: () => { this._bt = setTimeout(() => this.setState({ sf: false }), 150); },
+      onSk: (e) => { if (e.key === "Enter" && results.length) results[0].go(); },
+      searchOpen: s.sf && s.gq.trim().length >= 2,
+      results,
+      noResults: results.length === 0,
+
+      crumb: "~/" + group.slug + "/" + this.slugify(pageId),
+      pageTitle: page.title,
+      pageBadge: page.badge,
+      pageSub: page.sub,
+      blocks: this.decorate(page, pageId),
+
+      hasPrev: !!prevId,
+      hasNext: !!nextId,
+      prevTitle: prevId ? this.pages()[prevId].nav : "",
+      nextTitle: nextId ? this.pages()[nextId].nav : "",
+      goPrev: () => prevId && this.go(prevId),
+      goNext: () => nextId && this.go(nextId),
+
+      pagePos: "page " + (idx + 1) + "/" + order.length,
+    };
+  }
+}
+</script>
+</body>
+</html>

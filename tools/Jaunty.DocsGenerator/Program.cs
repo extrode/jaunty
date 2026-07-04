@@ -1,438 +1,1024 @@
+using System.CommandLine;
 using System.Text;
 using System.Text.RegularExpressions;
 
 using Markdig;
 
-string repoRoot = FindRepoRoot(AppContext.BaseDirectory);
-string sourceDir = Path.Combine(repoRoot, "docs", "01-api-reference");
-string outputDir = Path.Combine(repoRoot, "dist", "html-docs");
+// ---------------------------------------------------------------------------
+// CLI  (System.CommandLine 2.0.9 GA)
+// ---------------------------------------------------------------------------
+var inputArg  = new Argument<DirectoryInfo>("input-dir")  { Description = "Directory containing numbered markdown docs sections." };
+var outputArg = new Argument<DirectoryInfo>("output-dir") { Description = "Directory to write the generated static site into." };
 
-// (fileName without extension, nav label)
-(string File, string Label)[] pages =
-[
-    ("overview", "Overview"),
-    ("query-methods", "Query Methods"),
-    ("scalar-methods", "Scalar Methods"),
-    ("single-result-methods", "Single Result Methods"),
-    ("streaming-methods", "Streaming Methods"),
-    ("multiple-result-sets", "Multiple Result Sets"),
-    ("multi-entity-mapping", "Multi-Entity Mapping"),
-    ("crud-operations", "CRUD Operations"),
-    ("get-and-execute-operations", "Get and Execute Operations"),
-    ("stored-procedures", "Stored Procedures"),
-    ("fluent-api", "Fluent API"),
-    ("configuration", "Configuration"),
-    ("attributes", "Attributes"),
-    ("api-summary", "API Summary"),
-];
+var rootCmd = new RootCommand("Jaunty docs generator — converts a numbered markdown tree into a dark-theme static site.");
+rootCmd.Arguments.Add(inputArg);
+rootCmd.Arguments.Add(outputArg);
 
-var pipeline = new MarkdownPipelineBuilder()
-    .UseAdvancedExtensions()
-    .Build();
-
-string[] csharpKeywords =
-[
-    "public", "private", "protected", "internal", "static", "readonly", "const", "class", "struct",
-    "interface", "enum", "void", "new", "return", "using", "namespace", "var", "this", "base", "null",
-    "true", "false", "if", "else", "for", "foreach", "while", "do", "switch", "case", "break", "continue",
-    "try", "catch", "finally", "throw", "async", "await", "where", "get", "set", "override", "virtual",
-    "abstract", "sealed", "partial", "in", "out", "ref", "params", "typeof", "is", "as", "default", "yield",
-];
-
-string[] sqlKeywords =
-[
-    "SELECT", "FROM", "WHERE", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "JOIN", "INNER",
-    "LEFT", "RIGHT", "ON", "GROUP", "BY", "ORDER", "AS", "AND", "OR", "NOT", "NULL", "COUNT", "SUM", "AVG",
-    "MAX", "MIN", "DISTINCT", "LIMIT", "OFFSET", "CREATE", "TABLE", "PRIMARY", "KEY",
-];
-
-Directory.CreateDirectory(outputDir);
-
-var navLookup = pages.ToDictionary(p => p.File, p => p.Label);
-
-foreach (var page in pages)
+rootCmd.SetAction((ParseResult pr) =>
 {
-    string mdPath = Path.Combine(sourceDir, page.File + ".md");
-    if (!File.Exists(mdPath))
+    var inputDir  = pr.GetValue(inputArg)!;
+    var outputDir = pr.GetValue(outputArg)!;
+    if (!inputDir.Exists)
     {
-        Console.WriteLine($"WARNING: missing {mdPath}, skipping.");
-        continue;
+        Console.Error.WriteLine($"ERROR: input directory does not exist: {inputDir.FullName}");
+        return 1;
+    }
+    GenerateSite(inputDir.FullName, outputDir.FullName);
+    return 0;
+});
+
+return rootCmd.Parse(args).Invoke();
+
+// ---------------------------------------------------------------------------
+// Site generation
+// ---------------------------------------------------------------------------
+static void GenerateSite(string inputDir, string outputDir)
+{
+    Directory.CreateDirectory(outputDir);
+
+    var pipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .Build();
+
+    // Collect sections and pages from the numbered directory tree
+    var sections = CollectSections(inputDir);
+
+    // Flatten all pages for sidebar rendering (section -> page list)
+    int totalPages = 0;
+
+    foreach (var section in sections)
+    {
+        foreach (var page in section.Pages)
+        {
+            string markdown   = File.ReadAllText(page.SourcePath);
+            string title      = ExtractTitle(markdown) ?? page.Label;
+            string rewritten  = RewriteMarkdownLinks(markdown);
+            string bodyHtml   = Markdown.ToHtml(rewritten, pipeline);
+            bodyHtml          = PostProcessCodeBlocks(bodyHtml);
+            bodyHtml          = WrapCallouts(bodyHtml);
+
+            string html = RenderPage(title, page, sections);
+            string dest = Path.Combine(outputDir, page.OutputFile);
+            File.WriteAllText(dest, html, new UTF8Encoding(false));
+            totalPages++;
+        }
     }
 
-    string markdown = File.ReadAllText(mdPath);
-    string title = ExtractTitle(markdown) ?? page.Label;
-    string bodyHtml = Markdown.ToHtml(RewriteMarkdownLinks(markdown), pipeline);
-    bodyHtml = PostProcessCodeBlocks(bodyHtml);
-    bodyHtml = WrapCallouts(bodyHtml);
+    // index.html: prefer 00-quick-start/README or first page overall
+    string? indexSource = sections
+        .SelectMany(s => s.Pages)
+        .FirstOrDefault(p => p.OutputFile == "00-quick-start-README.html"
+                          || p.OutputFile == "00-quick-start-index.html")?
+        .OutputFile
+        ?? sections.SelectMany(s => s.Pages).FirstOrDefault()?.OutputFile;
 
-    string html = RenderPage(title, page.File, bodyHtml, pages);
-    File.WriteAllText(Path.Combine(outputDir, page.File + ".html"), html, new UTF8Encoding(false));
+    if (indexSource is not null)
+    {
+        string srcPath  = Path.Combine(outputDir, indexSource);
+        string destPath = Path.Combine(outputDir, "index.html");
+        // Re-render index.html with its own "active" state pointing at itself
+        var firstPage = sections.SelectMany(s => s.Pages).First(p => p.OutputFile == indexSource);
+        string markdown  = File.ReadAllText(firstPage.SourcePath);
+        string title     = ExtractTitle(markdown) ?? firstPage.Label;
+        string bodyHtml  = Markdown.ToHtml(RewriteMarkdownLinks(markdown), pipeline);
+        bodyHtml         = PostProcessCodeBlocks(bodyHtml);
+        bodyHtml         = WrapCallouts(bodyHtml);
+        // Make an "index" page entry that points at index.html
+        var indexPage = firstPage with { OutputFile = "index.html" };
+        string html = RenderPage(title, indexPage, sections);
+        File.WriteAllText(destPath, html, new UTF8Encoding(false));
+    }
+
+    // Shared CSS and JS
+    File.WriteAllText(Path.Combine(outputDir, "site.css"), SiteCss(), new UTF8Encoding(false));
+    File.WriteAllText(Path.Combine(outputDir, "nav.js"),   NavJs(),   new UTF8Encoding(false));
+
+    // Copy image assets
+    CopyAssets(inputDir, outputDir);
+
+    Console.WriteLine($"Generated {totalPages} pages -> {outputDir}");
 }
 
-// index.html mirrors overview.html as the site landing page
-string overviewHtmlPath = Path.Combine(outputDir, "overview.html");
-if (File.Exists(overviewHtmlPath))
-    File.Copy(overviewHtmlPath, Path.Combine(outputDir, "index.html"), overwrite: true);
+// ---------------------------------------------------------------------------
+// Directory walker
+// ---------------------------------------------------------------------------
+static List<SectionEntry> CollectSections(string root)
+{
+    var sections = new List<SectionEntry>();
 
-File.WriteAllText(Path.Combine(outputDir, "site.css"), SiteCss(), new UTF8Encoding(false));
+    // Top-level numbered dirs (00-*, 01-*, …)
+    var dirs = Directory.GetDirectories(root)
+        .Where(d => Regex.IsMatch(Path.GetFileName(d), @"^\d+[-_]"))
+        .OrderBy(d => d)
+        .ToArray();
 
-Console.WriteLine($"Generated {pages.Length} pages to {outputDir}");
+    // Also include loose .md files at root as a synthetic "root" section
+    var rootMd = Directory.GetFiles(root, "*.md")
+        .Where(f => Path.GetFileName(f) != "README.md")
+        .OrderBy(f => f)
+        .ToArray();
 
+    if (rootMd.Length > 0)
+    {
+        var rootPages = rootMd.Select(f => MakePage(f, "root", root)).ToArray();
+        sections.Add(new SectionEntry("root", "Overview", rootPages));
+    }
+
+    foreach (var dir in dirs)
+    {
+        string dirName   = Path.GetFileName(dir);
+        string sectionId = dirName;
+        string label     = StripNumberPrefix(dirName);
+
+        // Skip archive and assets folders in the main nav
+        if (Regex.IsMatch(dirName, @"^99|_assets", RegexOptions.IgnoreCase))
+            continue;
+
+        var mdFiles = Directory.GetFiles(dir, "*.md", SearchOption.TopDirectoryOnly)
+            .OrderBy(f => SortKey(Path.GetFileName(f)))
+            .ToArray();
+
+        if (mdFiles.Length == 0)
+            continue;
+
+        var pages = mdFiles.Select(f => MakePage(f, sectionId, root)).ToArray();
+        sections.Add(new SectionEntry(sectionId, label, pages));
+    }
+
+    return sections;
+}
+
+static PageEntry MakePage(string filePath, string sectionId, string root)
+{
+    string rel   = Path.GetRelativePath(root, filePath);    // e.g. 01-api-reference/query-methods.md
+    string fname = Path.GetFileNameWithoutExtension(filePath);
+    string label = StripNumberPrefix(fname)
+                    .Replace('-', ' ')
+                    .Replace('_', ' ');
+    label = char.ToUpperInvariant(label[0]) + label[1..];   // sentence-case first letter
+
+    // Build a flat output filename so all pages live in one directory
+    string relDir   = Path.GetDirectoryName(rel) ?? "";
+    string outName  = relDir == ""
+        ? fname + ".html"
+        : relDir.Replace(Path.DirectorySeparatorChar, '-').Replace(Path.AltDirectorySeparatorChar, '-')
+            + "-" + fname + ".html";
+
+    return new PageEntry(label, filePath, outName, sectionId);
+}
+
+static string StripNumberPrefix(string name)
+{
+    // Strip leading digits + separator: "01-api-reference" -> "api-reference"
+    var m = Regex.Match(name, @"^\d+[-_](.+)$");
+    return m.Success ? m.Groups[1].Value : name;
+}
+
+static string SortKey(string filename)
+{
+    // README sorts first within a dir
+    if (filename.Equals("README.md", StringComparison.OrdinalIgnoreCase)) return "000_" + filename;
+    var m = Regex.Match(filename, @"^(\d+)");
+    return m.Success ? m.Groups[1].Value.PadLeft(6, '0') + "_" + filename : filename;
+}
+
+// ---------------------------------------------------------------------------
+// Asset copying
+// ---------------------------------------------------------------------------
+static void CopyAssets(string inputDir, string outputDir)
+{
+    string[] imageExts = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico"];
+    var images = Directory.GetFiles(inputDir, "*", SearchOption.AllDirectories)
+        .Where(f => imageExts.Contains(Path.GetExtension(f).ToLowerInvariant()));
+
+    foreach (var img in images)
+    {
+        string rel  = Path.GetRelativePath(inputDir, img);
+        string dest = Path.Combine(outputDir, rel.Replace(Path.DirectorySeparatorChar, '_').Replace(Path.AltDirectorySeparatorChar, '_'));
+        Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+        File.Copy(img, dest, overwrite: true);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Markdown processing
+// ---------------------------------------------------------------------------
 static string? ExtractTitle(string markdown)
 {
-    var match = Regex.Match(markdown, @"^#\s+(.+)$", RegexOptions.Multiline);
-    return match.Success ? match.Groups[1].Value.Trim() : null;
+    var m = Regex.Match(markdown, @"^#\s+(.+)$", RegexOptions.Multiline);
+    return m.Success ? m.Groups[1].Value.Trim() : null;
 }
 
-// Markdown links like (configuration.md) are rewritten to (configuration.html) so
-// cross-page navigation works in the generated static site.
 static string RewriteMarkdownLinks(string markdown) =>
-    Regex.Replace(markdown, @"\]\(([a-zA-Z0-9\-]+)\.md\)", "]($1.html)");
-
-string PostProcessCodeBlocks(string html) =>
-    Regex.Replace(html, @"<pre><code class=""language-(\w+)"">([\s\S]*?)</code></pre>", match =>
+    Regex.Replace(markdown, @"\]\(([a-zA-Z0-9\-_]+)\.md([#?][^)]*)?\)", m =>
     {
-        string lang = match.Groups[1].Value;
-        string code = match.Groups[2].Value;
-        string highlighted = lang switch
-        {
-            "csharp" => HighlightTokens(code, csharpKeywords),
-            "sql" => HighlightTokens(code, sqlKeywords),
-            _ => code,
-        };
-        return $"<pre data-lang=\"{lang}\"><code class=\"language-{lang}\">{highlighted}</code></pre>";
+        string file    = m.Groups[1].Value;
+        string anchor  = m.Groups[2].Value;
+        return $"]({file}.html{anchor})";
     });
 
-// Single alternation-based scan so comments/strings/keywords/numbers never double-tag the same text.
+static string PostProcessCodeBlocks(string html)
+{
+    string[] csharpKw =
+    [
+        "public", "private", "protected", "internal", "static", "readonly", "const", "class", "struct",
+        "interface", "enum", "void", "new", "return", "using", "namespace", "var", "this", "base", "null",
+        "true", "false", "if", "else", "for", "foreach", "while", "do", "switch", "case", "break", "continue",
+        "try", "catch", "finally", "throw", "async", "await", "where", "get", "set", "override", "virtual",
+        "abstract", "sealed", "partial", "in", "out", "ref", "params", "typeof", "is", "as", "default", "yield",
+        "record", "init", "required", "with", "not", "and", "or", "when",
+    ];
+    string[] sqlKw =
+    [
+        "SELECT", "FROM", "WHERE", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "JOIN", "INNER",
+        "LEFT", "RIGHT", "ON", "GROUP", "BY", "ORDER", "AS", "AND", "OR", "NOT", "NULL", "COUNT", "SUM", "AVG",
+        "MAX", "MIN", "DISTINCT", "LIMIT", "OFFSET", "CREATE", "TABLE", "PRIMARY", "KEY", "WITH", "RETURNING",
+    ];
+    return Regex.Replace(html, @"<pre><code class=""language-(\w+)"">([\s\S]*?)</code></pre>", m =>
+    {
+        string lang        = m.Groups[1].Value;
+        string code        = m.Groups[2].Value;
+        string highlighted = lang.ToLowerInvariant() switch
+        {
+            "csharp" or "cs"  => HighlightTokens(code, csharpKw),
+            "sql"             => HighlightTokens(code, sqlKw),
+            _                 => code,
+        };
+        string langLabel = lang.ToLowerInvariant() switch
+        {
+            "csharp" or "cs" => "C#",
+            "sql"            => "SQL",
+            "bash" or "sh"   => "bash",
+            "json"           => "JSON",
+            "xml"            => "XML",
+            _                => lang,
+        };
+        return $"""
+            <div class="code-block">
+              <div class="code-header">
+                <span class="code-lang">{System.Net.WebUtility.HtmlEncode(langLabel)}</span>
+                <button class="copy-btn" onclick="copyCode(this)">copy</button>
+              </div>
+              <pre data-lang="{lang}"><code class="language-{lang}">{highlighted}</code></pre>
+            </div>
+            """;
+    });
+}
+
 static string HighlightTokens(string code, string[] keywords)
 {
-    string keywordPattern = string.Join("|", keywords.Select(Regex.Escape));
-    string pattern = $@"(?<comment>//[^\n]*|/\*[\s\S]*?\*/)|(?<string>@?\$?""(?:[^""\\]|\\.)*"")|(?<keyword>\b(?:{keywordPattern})\b)|(?<number>\b\d+(?:\.\d+)?[mMfFdDlLuU]?\b)";
+    string kwPat  = string.Join("|", keywords.Select(Regex.Escape));
+    string pattern = $@"(?<comment>//[^\n]*|/\*[\s\S]*?\*/)|(?<string>@?\$?""(?:[^""\\]|\\.)*""|'(?:[^'\\]|\\.)*')|(?<keyword>\b(?:{kwPat})\b)|(?<number>\b\d+(?:\.\d+)?[mMfFdDlLuU]?\b)";
 
     return Regex.Replace(code, pattern, m =>
     {
-        if (m.Groups["comment"].Success) return $"<span class=\"tok-com\">{m.Value}</span>";
-        if (m.Groups["string"].Success) return $"<span class=\"tok-str\">{m.Value}</span>";
-        if (m.Groups["keyword"].Success) return $"<span class=\"tok-kw\">{m.Value}</span>";
-        if (m.Groups["number"].Success) return $"<span class=\"tok-num\">{m.Value}</span>";
+        if (m.Groups["comment"].Success) return $"""<span class="tok-com">{m.Value}</span>""";
+        if (m.Groups["string"].Success)  return $"""<span class="tok-str">{m.Value}</span>""";
+        if (m.Groups["keyword"].Success) return $"""<span class="tok-kw">{m.Value}</span>""";
+        if (m.Groups["number"].Success)  return $"""<span class="tok-num">{m.Value}</span>""";
         return m.Value;
     });
 }
 
-// Wraps the <ul>/<ol> immediately following specific headings (Important Notes, Best Practices,
-// Notes, Pool Safety) in a styled callout div, so these sections read as call-outs instead of
-// blending into the rest of the page.
 static string WrapCallouts(string html) =>
     Regex.Replace(
         html,
-        @"(<h2[^>]*>(?:Important Notes|Best Practices|Notes|Pool Safety)</h2>\s*)(<[uo]l>[\s\S]*?</[uo]l>)",
+        @"(<h[23][^>]*>(?:Important Notes?|Best Practices?|Notes?|Pool Safety|Warning|Tip)</h[23]>\s*)(<[uo]l>[\s\S]*?</[uo]l>)",
         m =>
         {
             string heading = m.Groups[1].Value;
-            string list = m.Groups[2].Value;
-            string cssClass = heading.Contains("Important Notes") ? "callout callout-important" : "callout callout-tip";
-            return $"{heading}<div class=\"{cssClass}\">{list}</div>";
+            string list    = m.Groups[2].Value;
+            bool isWarn = Regex.IsMatch(heading, @"Important|Warning", RegexOptions.IgnoreCase);
+            string cls  = isWarn ? "callout callout-warn" : "callout callout-tip";
+            return $"{heading}<div class=\"{cls}\">{list}</div>";
         });
 
-static string RenderPage(string title, string currentFile, string bodyHtml, (string File, string Label)[] pages)
+// ---------------------------------------------------------------------------
+// HTML rendering
+// ---------------------------------------------------------------------------
+static string RenderPage(string title, PageEntry current, List<SectionEntry> sections)
 {
-    var nav = new StringBuilder();
-    nav.Append("<nav aria-label=\"API reference sections\">\n<ul>\n");
-    foreach (var p in pages)
-    {
-        string aria = p.File == currentFile ? " aria-current=\"page\"" : "";
-        string cssClass = p.File == currentFile ? " class=\"active\"" : "";
-        nav.Append($"<li><a href=\"{p.File}.html\"{cssClass}{aria}>{System.Net.WebUtility.HtmlEncode(p.Label)}</a></li>\n");
-    }
-    nav.Append("</ul>\n</nav>");
+    var sidebar = BuildSidebar(current, sections);
+    string enc  = System.Net.WebUtility.HtmlEncode(title);
 
     return $$"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{System.Net.WebUtility.HtmlEncode(title)}} - Jaunty API Documentation</title>
-    <link rel="stylesheet" href="site.css">
-    </head>
-    <body>
-    <header>
-    <div class="header-inner">
-    <h1><a href="index.html"><span class="logo-mark">J</span>Jaunty</a></h1>
-    <p>API Documentation <span class="header-badge">micro-ORM</span></p>
-    </div>
-    </header>
-    <div class="layout">
-    {{nav}}
-    <main>
-    <article>
-    {{bodyHtml}}
-    </article>
-    </main>
-    </div>
-    <footer>
-    <p>Jaunty &mdash; a high-performance .NET micro-ORM.</p>
-    </footer>
-    </body>
-    </html>
-    """;
+        <!DOCTYPE html>
+        <html lang="en" class="jt">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{enc}} — jaunty docs</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="site.css">
+        </head>
+        <body class="jt">
+        <div class="jt-shell">
+
+          <!-- ===== header ===== -->
+          <header class="jt-header">
+            <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+            <div class="header-brand">
+              <span class="brand-name">jaunty</span>
+              <span class="brand-crumb">{{enc}}</span>
+            </div>
+            <div class="header-spacer"></div>
+          </header>
+
+          <!-- ===== body ===== -->
+          <div class="jt-body">
+
+            <!-- sidebar backdrop (mobile) -->
+            <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+            <!-- sidebar -->
+            <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+              <div class="sidebar-filter">
+                <span class="filter-icon">/</span>
+                <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+              </div>
+              <div class="sidebar-scroll" id="sidebar-scroll">
+                {{sidebar}}
+              </div>
+            </nav>
+
+            <!-- content -->
+            <main class="jt-content" id="jt-content">
+              <div class="content-inner">
+                <nav class="breadcrumb" aria-label="Breadcrumb">{{enc}}</nav>
+                <article>
+        {{GetBodyHtml(current, sections)}}
+                </article>
+                <div class="page-nav" id="page-nav">
+                  {{BuildPageNav(current, sections)}}
+                </div>
+              </div>
+            </main>
+          </div>
+
+          <!-- ===== status bar ===== -->
+          <footer class="jt-statusbar">
+            <span class="status-dot">&#9679; jaunty docs</span>
+          </footer>
+        </div>
+        <script src="nav.js"></script>
+        </body>
+        </html>
+        """;
 }
 
-static string FindRepoRoot(string startDir)
+// Reads body HTML fresh for the given page (already written to disk); re-derive from source.
+// Actually we pass it through a static helper that re-processes inline.
+static string GetBodyHtml(PageEntry page, List<SectionEntry> sections)
 {
-    var dir = new DirectoryInfo(startDir);
-    while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Jaunty.slnx")))
-        dir = dir.Parent;
-
-    return dir?.FullName ?? throw new InvalidOperationException("Could not locate repository root (Jaunty.slnx not found).");
+    // We can't easily pass it through without re-processing; instead the caller in GenerateSite
+    // stores it, but RenderPage is called fresh for index.html. Re-process here.
+    var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+    string md    = File.ReadAllText(page.SourcePath);
+    string body  = Markdown.ToHtml(RewriteMarkdownLinks(md), pipeline);
+    body         = PostProcessCodeBlocks(body);
+    body         = WrapCallouts(body);
+    return body;
 }
 
+static string BuildSidebar(PageEntry current, List<SectionEntry> sections)
+{
+    var sb = new StringBuilder();
+    foreach (var section in sections)
+    {
+        bool sectionActive = section.Pages.Any(p => p.OutputFile == current.OutputFile);
+        string openAttr    = sectionActive ? " data-open=\"true\"" : "";
+        string chevron     = "›";
+
+        sb.Append($"""
+            <div class="nav-group" data-group{openAttr}>
+              <div class="nav-group-header" onclick="toggleGroup(this)">
+                <span class="nav-chev">{chevron}</span>
+                <span class="nav-group-label">{System.Net.WebUtility.HtmlEncode(section.Label)}</span>
+              </div>
+              <div class="nav-group-items">
+            """);
+
+        foreach (var page in section.Pages)
+        {
+            bool active = page.OutputFile == current.OutputFile;
+            string cls  = active ? " class=\"active\"" : "";
+            string aria = active ? " aria-current=\"page\"" : "";
+            sb.Append($"""
+                  <a href="{page.OutputFile}"{cls}{aria}>{System.Net.WebUtility.HtmlEncode(page.Label)}</a>
+                """);
+        }
+
+        sb.AppendLine("""
+              </div>
+            </div>
+            """);
+    }
+    return sb.ToString();
+}
+
+static string BuildPageNav(PageEntry current, List<SectionEntry> sections)
+{
+    var allPages = sections.SelectMany(s => s.Pages).ToList();
+    int idx      = allPages.FindIndex(p => p.OutputFile == current.OutputFile);
+    var sb       = new StringBuilder();
+
+    sb.Append("""<div class="prev-next">""");
+
+    if (idx > 0)
+    {
+        var prev = allPages[idx - 1];
+        sb.Append($"""
+            <a class="pn-prev" href="{prev.OutputFile}">
+              <span class="pn-label">&#8592; prev</span>
+              <span class="pn-title">{System.Net.WebUtility.HtmlEncode(prev.Label)}</span>
+            </a>
+            """);
+    }
+    else
+    {
+        sb.Append("""<span></span>""");
+    }
+
+    if (idx >= 0 && idx < allPages.Count - 1)
+    {
+        var next = allPages[idx + 1];
+        sb.Append($"""
+            <a class="pn-next" href="{next.OutputFile}">
+              <span class="pn-label">next &#8594;</span>
+              <span class="pn-title">{System.Net.WebUtility.HtmlEncode(next.Label)}</span>
+            </a>
+            """);
+    }
+    else
+    {
+        sb.Append("""<span></span>""");
+    }
+
+    sb.Append("</div>");
+    return sb.ToString();
+}
+
+// ---------------------------------------------------------------------------
+// CSS — dark-theme, JetBrains Mono, extracted from "Jaunty Docs App.dc.html"
+// ---------------------------------------------------------------------------
 static string SiteCss() => """
-:root {
-    --color-bg: #ffffff;
-    --color-bg-soft: #f8f7fd;
-    --color-text: #1c1e2b;
-    --color-muted: #656d82;
-    --color-accent: #7c3aed;
-    --color-accent-2: #0ea5a4;
-    --color-border: #e6e4f2;
-    --color-code-bg: #f6f4fc;
-    --color-code-border: #e3ddf7;
-    font-size: 16px;
-}
+    /* =========================================================
+       Jaunty Docs — site.css
+       Design tokens extracted from docs/07-design/Jaunty Docs App.dc.html
+       Dark theme by default; light theme via [data-theme="light"].
+    ========================================================= */
 
-* { box-sizing: border-box; }
+    /* ---------- design tokens ---------- */
+    .jt {
+      --bg:       #0e0e10;
+      --bg2:      #0a0a0c;
+      --panel:    #141419;
+      --border:   #1e1e23;
+      --border2:  #26262c;
+      --tx:       #e6e6e2;
+      --tx2:      #b9b9bd;
+      --mut:      #8d8d95;
+      --dim:      #63636b;
+      --faint:    #4a4a52;
+      --hi:       #ffffff;
+      --hov:      #15151a;
+      --code-bg:  #101013;
+      --code-hd:  #121215;
+      --code-bd:  #232329;
+      --code-tx:  #d6d6d2;
+    }
 
-body {
-    margin: 0;
-    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    color: var(--color-text);
-    background: var(--color-bg);
-    line-height: 1.65;
-}
+    .jt[data-theme="light"] {
+      --bg:       #f6f6f4;
+      --bg2:      #efefec;
+      --panel:    #e8e8e3;
+      --border:   #e1e1da;
+      --border2:  #d5d5cd;
+      --tx:       #1a1a1d;
+      --tx2:      #3c3c42;
+      --mut:      #5e5e66;
+      --dim:      #8b8b91;
+      --faint:    #b0b0b6;
+      --hi:       #000000;
+      --hov:      #eaeae5;
+      --code-bg:  #15151a;
+      --code-hd:  #1b1b21;
+      --code-bd:  #28282f;
+      --code-tx:  #d6d6d2;
+    }
 
-header {
-    padding: 1.5rem 2rem;
-    background: linear-gradient(120deg, var(--color-accent), var(--color-accent-2));
-    color: #fff;
-}
+    /* ---------- reset / base ---------- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-.header-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-}
+    html.jt {
+      font-size: 14px;
+      height: 100%;
+    }
 
-header h1 {
-    margin: 0;
-    font-size: 1.65rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
+    body.jt {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg);
+      color: var(--tx);
+      height: 100%;
+      overflow: hidden;
+    }
 
-header h1 a {
-    color: #fff;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
+    /* ---------- shell grid ---------- */
+    .jt-shell {
+      display: grid;
+      grid-template-rows: 46px 1fr 26px;
+      height: 100vh;
+      overflow: hidden;
+    }
 
-.logo-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.9rem;
-    height: 1.9rem;
-    background: rgba(255, 255, 255, 0.22);
-    border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: 800;
-}
+    /* ---------- header ---------- */
+    .jt-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 16px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      z-index: 30;
+      position: relative;
+    }
 
-header p {
-    margin: 0.4rem 0 0;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-}
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--tx);
+      font-size: 16px;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      flex: none;
+    }
+    .hamburger:hover { color: var(--hi); background: var(--hov); }
 
-.header-badge {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 0.1rem 0.55rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    letter-spacing: 0.02em;
-}
+    .header-brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
 
-.layout {
-    display: flex;
-    align-items: flex-start;
-    max-width: 1200px;
-    margin: 0 auto;
-}
+    .brand-name {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--hi);
+    }
 
-nav {
-    flex: 0 0 230px;
-    padding: 1.5rem 1rem;
-    position: sticky;
-    top: 0;
-    max-height: 100vh;
-    overflow-y: auto;
-}
+    .brand-crumb {
+      font-size: 11px;
+      color: var(--dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 320px;
+    }
 
-nav ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
+    .header-spacer { flex: 1; }
 
-nav a {
-    display: block;
-    padding: 0.4rem 0.75rem;
-    margin: 0.05rem 0;
-    color: var(--color-text);
-    text-decoration: none;
-    border-radius: 999px;
-    font-size: 0.92rem;
-    transition: background 0.12s ease, color 0.12s ease, padding-left 0.12s ease;
-}
+    /* ---------- body grid ---------- */
+    .jt-body {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      overflow: hidden;
+      min-height: 0;
+    }
 
-nav a:hover {
-    background: var(--color-bg-soft);
-    padding-left: 1rem;
-}
+    /* ---------- sidebar ---------- */
+    .nav-backdrop {
+      display: none;
+      position: fixed;
+      inset: 46px 0 26px 0;
+      background: rgba(0,0,0,.45);
+      z-index: 35;
+    }
 
-nav a.active {
-    color: #fff;
-    font-weight: 600;
-    background: linear-gradient(120deg, var(--color-accent), var(--color-accent-2));
-}
+    .jt-sidebar {
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 40;
+    }
 
-main {
-    flex: 1 1 auto;
-    padding: 1.5rem 2rem 4rem;
-    min-width: 0;
-}
+    .sidebar-filter {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 10px 10px 4px;
+      padding: 5px 9px;
+      background: var(--panel);
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+    }
 
-article h1:first-child {
-    margin-top: 0;
-    background: linear-gradient(120deg, var(--color-accent), var(--color-accent-2));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-}
+    .filter-icon {
+      font-size: 11px;
+      color: var(--faint);
+      flex: none;
+    }
 
-article h2 {
-    border-bottom: 2px solid var(--color-border);
-    padding-bottom: 0.35rem;
-    margin-top: 2.75rem;
-}
+    .sidebar-filter input {
+      flex: 1;
+      min-width: 0;
+      font: 400 11.5px/1 'JetBrains Mono', monospace;
+      color: var(--tx);
+      background: transparent;
+      border: none;
+      outline: none;
+    }
+    .sidebar-filter input::placeholder { color: var(--faint); }
 
-article h3 {
-    color: var(--color-accent);
-    margin-top: 2rem;
-}
+    .sidebar-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 8px 12px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
 
-article code {
-    background: var(--color-code-bg);
-    color: #5b21b6;
-    padding: 0.15em 0.4em;
-    border-radius: 4px;
-    font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
-    font-size: 0.9em;
-}
+    /* nav groups */
+    .nav-group { margin-bottom: 2px; }
 
-article pre {
-    position: relative;
-    background: var(--color-code-bg);
-    border: 1px solid var(--color-code-border);
-    border-radius: 10px;
-    padding: 1.1rem 1rem 1rem;
-    overflow-x: auto;
-    box-shadow: 0 1px 2px rgba(28, 30, 43, 0.04);
-}
+    .nav-group-header {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      padding: 5px 7px;
+      border-radius: 3px;
+    }
+    .nav-group-header:hover { background: var(--hov); }
 
-article pre[data-lang]::before {
-    content: attr(data-lang);
-    position: absolute;
-    top: 0.55rem;
-    right: 0.75rem;
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--color-accent-2);
-    background: rgba(14, 165, 164, 0.1);
-    padding: 0.1rem 0.5rem;
-    border-radius: 999px;
-}
+    .nav-chev {
+      font-size: 10px;
+      color: var(--dim);
+      transition: transform .15s ease;
+      display: inline-block;
+    }
+    .nav-group[data-open="true"] .nav-chev { transform: rotate(90deg); }
 
-article pre code {
-    background: none;
-    color: inherit;
-    padding: 0;
-}
+    .nav-group-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--mut);
+    }
 
-.tok-kw { color: #7c3aed; font-weight: 600; }
-.tok-str { color: #0f766e; }
-.tok-com { color: #8b8fa3; font-style: italic; }
-.tok-num { color: #b45309; }
+    .nav-group-items {
+      display: none;
+      flex-direction: column;
+      padding: 1px 0 4px;
+    }
+    .nav-group[data-open="true"] .nav-group-items { display: flex; }
 
-article table {
-    border-collapse: collapse;
-    width: 100%;
-}
+    .nav-group-items a {
+      display: block;
+      padding: 5px 9px 5px 18px;
+      font-size: 12px;
+      color: var(--tx2);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      border-radius: 0 3px 3px 0;
+    }
+    .nav-group-items a:hover {
+      background: var(--hov);
+      color: var(--tx);
+    }
+    .nav-group-items a.active {
+      color: var(--hi);
+      font-weight: 500;
+      border-left-color: var(--tx);
+      background: var(--hov);
+    }
 
-article th, article td {
-    border: 1px solid var(--color-border);
-    padding: 0.55rem 0.8rem;
-    text-align: left;
-}
+    /* filter hidden */
+    .nav-hidden { display: none !important; }
 
-article th {
-    background: var(--color-bg-soft);
-}
+    /* ---------- content ---------- */
+    .jt-content {
+      overflow-y: auto;
+      min-height: 0;
+      background: var(--bg);
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
 
-article a {
-    color: var(--color-accent);
-    text-decoration: underline;
-    text-decoration-color: rgba(124, 58, 237, 0.3);
-}
+    .content-inner {
+      max-width: 820px;
+      padding: 24px 36px 60px;
+      margin: 0 auto;
+    }
 
-article a:hover {
-    text-decoration-color: currentColor;
-}
+    /* breadcrumb */
+    .breadcrumb {
+      font-size: 10.5px;
+      color: var(--dim);
+      margin-bottom: 16px;
+    }
 
-.callout {
-    border-radius: 10px;
-    padding: 1rem 1.25rem;
-    margin: 0.75rem 0 1.5rem;
-    border-left: 4px solid var(--color-accent-2);
-    background: rgba(14, 165, 164, 0.06);
-}
+    /* ---------- article typography ---------- */
+    article h1 {
+      font: 600 25px/1.1 'JetBrains Mono', monospace;
+      letter-spacing: -.02em;
+      color: var(--hi);
+      margin: 0 0 6px;
+    }
 
-.callout ul, .callout ol {
-    margin: 0;
-    padding-left: 1.2rem;
-}
+    article h2 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--tx);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin: 32px 0 14px;
+    }
 
-.callout-important {
-    border-left-color: var(--color-accent);
-    background: rgba(124, 58, 237, 0.06);
-}
+    article h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tx2);
+      margin: 22px 0 10px;
+    }
 
-footer {
-    border-top: 1px solid var(--color-border);
-    padding: 1.5rem 2rem;
-    color: var(--color-muted);
-    font-size: 0.85rem;
-    text-align: center;
-}
+    article h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--mut);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin: 18px 0 8px;
+    }
 
-@media (max-width: 800px) {
-    .layout { flex-direction: column; }
-    nav { position: static; flex: 1 1 auto; width: 100%; max-height: none; }
-}
-""";
+    article p {
+      font: 400 13px/1.85 'JetBrains Mono', monospace;
+      color: var(--tx2);
+      margin: 0 0 18px;
+      max-width: 74ch;
+    }
+
+    article ul, article ol {
+      margin: 0 0 18px 1.2em;
+      padding: 0;
+    }
+
+    article li {
+      font: 400 12.5px/1.75 'JetBrains Mono', monospace;
+      color: var(--tx2);
+      margin-bottom: 4px;
+    }
+
+    article strong { color: var(--tx); font-weight: 600; }
+
+    article a {
+      color: var(--tx);
+      text-decoration: underline;
+      text-decoration-color: var(--border2);
+    }
+    article a:hover { text-decoration-color: var(--mut); }
+
+    article hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 24px 0;
+    }
+
+    /* ---------- inline code ---------- */
+    article code {
+      font: 400 12px/1 'JetBrains Mono', monospace;
+      color: var(--tx);
+      background: var(--panel);
+      border: 1px solid var(--border2);
+      border-radius: 3px;
+      padding: 1px 5px;
+    }
+
+    /* ---------- code blocks ---------- */
+    .code-block {
+      border: 1px solid var(--code-bd);
+      border-radius: 6px;
+      margin: 0 0 22px;
+      overflow: hidden;
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 12px;
+      background: var(--code-hd);
+      border-bottom: 1px solid var(--code-bd);
+    }
+
+    .code-lang {
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    .copy-btn {
+      font: 400 10.5px 'JetBrains Mono', monospace;
+      color: var(--mut);
+      background: none;
+      border: 1px solid var(--border2);
+      border-radius: 3px;
+      padding: 2px 9px;
+      cursor: pointer;
+    }
+    .copy-btn:hover { color: var(--hi); border-color: var(--faint); }
+
+    article pre {
+      margin: 0;
+      padding: 14px 16px;
+      background: var(--code-bg);
+      overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
+
+    article pre code {
+      font: 400 12.5px/1.8 'JetBrains Mono', monospace;
+      color: var(--code-tx);
+      background: none;
+      border: none;
+      padding: 0;
+    }
+
+    /* syntax tokens */
+    .tok-kw  { color: #8b8bdb; font-weight: 600; }
+    .tok-str { color: #87b47a; }
+    .tok-com { color: var(--faint); font-style: italic; }
+    .tok-num { color: #c19a6b; }
+
+    /* ---------- tables ---------- */
+    article table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 0 0 22px;
+      font-size: 12px;
+    }
+
+    article th, article td {
+      border: 1px solid var(--border2);
+      padding: 7px 10px;
+      text-align: left;
+      color: var(--tx2);
+    }
+
+    article th {
+      background: var(--panel);
+      color: var(--tx);
+      font-weight: 600;
+    }
+
+    article tr:nth-child(even) td { background: rgba(255,255,255,.015); }
+
+    /* ---------- callouts ---------- */
+    .callout {
+      margin: 0 0 22px;
+      padding: 13px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border2);
+      border-left: 3px solid var(--mut);
+      border-radius: 0 6px 6px 0;
+      font-size: 12px;
+      line-height: 1.75;
+      color: var(--mut);
+    }
+
+    .callout ul, .callout ol { margin: 0; padding-left: 1.2em; color: var(--mut); }
+
+    .callout-warn { border-left-color: #c19a6b; }
+    .callout-tip  { border-left-color: #7b9eaf; }
+
+    /* ---------- prev/next ---------- */
+    .page-nav { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--border); }
+
+    .prev-next {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .pn-prev, .pn-next {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 3px;
+      text-decoration: none;
+      opacity: .85;
+    }
+    .pn-next { align-items: flex-end; text-align: right; }
+    .pn-prev:hover, .pn-next:hover { opacity: 1; }
+
+    .pn-label { font-size: 10px; color: var(--dim); }
+    .pn-title { font-size: 12.5px; font-weight: 600; color: var(--tx); }
+
+    /* ---------- status bar ---------- */
+    .jt-statusbar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 0 14px;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      font-size: 10px;
+      color: var(--dim);
+    }
+
+    .status-dot { color: var(--mut); }
+
+    /* ---------- responsive ---------- */
+    @media (max-width: 760px) {
+      .hamburger { display: flex; }
+      .brand-crumb { display: none; }
+
+      .jt-body { grid-template-columns: 1fr; }
+
+      .jt-sidebar {
+        position: fixed;
+        inset: 46px auto 26px 0;
+        width: 260px;
+        transform: translateX(-100%);
+        transition: transform .2s ease;
+        border-right: 1px solid var(--border2);
+        box-shadow: 4px 0 24px rgba(0,0,0,.4);
+      }
+      .jt-sidebar.open { transform: translateX(0); }
+      .nav-backdrop.open { display: block; }
+    }
+    """;
+
+// ---------------------------------------------------------------------------
+// Nav JS — collapse/expand groups, filter, copy-code
+// ---------------------------------------------------------------------------
+static string NavJs() => """
+    (function () {
+      // ---- group toggle ----
+      window.toggleGroup = function (header) {
+        var group = header.closest('[data-group]');
+        var open  = group.dataset.open === 'true';
+        group.dataset.open = open ? 'false' : 'true';
+      };
+
+      // ---- sidebar nav (mobile) ----
+      window.toggleNav = function () {
+        var sidebar  = document.getElementById('jt-sidebar');
+        var backdrop = document.getElementById('nav-backdrop');
+        if (!sidebar) return;
+        var isOpen = sidebar.classList.contains('open');
+        sidebar.classList.toggle('open', !isOpen);
+        backdrop.classList.toggle('open', !isOpen);
+      };
+
+      // ---- nav filter ----
+      window.filterNav = function (q) {
+        q = q.toLowerCase().trim();
+        document.querySelectorAll('.nav-group').forEach(function (group) {
+          var items   = group.querySelectorAll('.nav-group-items a');
+          var anyVis  = false;
+          items.forEach(function (a) {
+            var match = !q || a.textContent.toLowerCase().includes(q);
+            a.classList.toggle('nav-hidden', !match);
+            if (match) anyVis = true;
+          });
+          group.classList.toggle('nav-hidden', !anyVis);
+          if (q && anyVis) group.dataset.open = 'true';
+        });
+      };
+
+      // ---- copy code ----
+      window.copyCode = function (btn) {
+        var pre = btn.closest('.code-block').querySelector('pre');
+        if (!pre) return;
+        var text = pre.innerText || pre.textContent;
+        try {
+          navigator.clipboard.writeText(text);
+          btn.textContent = 'copied!';
+          setTimeout(function () { btn.textContent = 'copy'; }, 1800);
+        } catch (e) {
+          btn.textContent = 'error';
+        }
+      };
+
+      // ---- scroll active item into view ----
+      var active = document.querySelector('.nav-group-items a.active');
+      if (active) active.scrollIntoView({ block: 'nearest' });
+    })();
+    """;
+
+// ---------------------------------------------------------------------------
+// Types (must follow all local functions in a top-level program)
+// ---------------------------------------------------------------------------
+record PageEntry(string Label, string SourcePath, string OutputFile, string SectionId);
+record SectionEntry(string Id, string Label, PageEntry[] Pages);
