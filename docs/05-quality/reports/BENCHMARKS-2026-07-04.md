@@ -135,3 +135,21 @@ Findings:
    (`AllowLoadLocalInfile=true` absent from the connection string); the
    provider should surface a clear error either way. Part of PROD-120.
 4. SQL Server: pending correct container credentials (JAUNTY_TEST_SQLSERVER).
+
+## Update 4 — PROD-120 fixes verified
+
+- **MySQL/MariaDB provider rewritten** (chunked multi-row INSERT, no
+  LOAD DATA LOCAL INFILE / local_infile dependency). Measured @10k rows:
+  48.4 ms vs 781 ms transactional loop = **16.1x faster**, ahead of
+  linq2db (65.9 ms). @1k: 7.6 ms = 12.9x. Live-tested against MariaDB
+  (chunk boundaries, NULLs, external txn rollback, async).
+- **SQLite routing fixed**: the real root cause was the multi-row exclusion
+  checking `dialect is not SQLiteDialect`, which missed the
+  Extensions.Reflection wrapper dialect - SQLite fell into multi-row VALUES
+  (quadratic parameter binding in Microsoft.Data.Sqlite) or the now-deleted
+  provider, both ~16x slower. BulkInsert now routes SQLite to the prepared
+  loop: measured @10k **21.4 ms vs 21.3 ms hand-coded = 1.005x parity**
+  (was 334 ms).
+- SQL Server local instance reachable this round for baselines; Jaunty's
+  SqlServer native path (SqlBulkCopy) still returns NA in the harness -
+  next investigation item (PROD-121).

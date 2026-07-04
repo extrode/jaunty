@@ -162,7 +162,7 @@ public static partial class Jaunty
 
                 // Multi-row INSERT reduces round-trips for network databases, but hurts
                 // in-process providers like SQLite where parameter object overhead exceeds savings.
-                if (dialect.SupportsMultiRowInsert && entityList.Count > 1 && dialect is not SQLiteDialect)
+                if (dialect.SupportsMultiRowInsert && entityList.Count > 1 && !IsSqliteDialect(dialect))
                 {
                     totalInserted = await BulkInsertMultiRowAsync(connection, entityList, cached, dialect, transaction, options, valueSetter, cancellationToken).ConfigureAwait(false);
                 }
