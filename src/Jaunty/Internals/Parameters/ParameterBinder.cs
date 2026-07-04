@@ -78,6 +78,17 @@ internal static class ParameterBinder
             return;
         }
 
+        // A collection-typed property may simply have been null on this call (nothing to expand),
+        // even though the same (sql, type, commandType) key could be called again later with a
+        // non-null collection requiring IN-clause expansion. Caching a plain scalar-binding
+        // template here would permanently defeat that expansion, so route this shape through the
+        // per-call dynamic binding path instead of caching.
+        if (HasCollectionTypedProperty(meta))
+        {
+            BindDynamic(command, parameters, sql, expandedParams: null, propertyLookup, meta, expandedOriginalNames: null);
+            return;
+        }
+
         // Standard query: build and cache template
         template = BuildTemplate(type, sql, sqlParamNames, propertyLookup, meta);
         TemplateCache.TryAdd((sql, type, commandType), template);
@@ -366,6 +377,28 @@ internal static class ParameterBinder
         }
 
         return false;
+    }
+
+    // Type-based collection check (mirrors IsCollection's string/byte[] exclusion), used to decide
+    // whether a (sql, type, commandType) shape can ever need IN-clause expansion, independent of
+    // whether this particular call's value happened to be null.
+    private static bool HasCollectionTypedProperty(ParameterMetadata[] meta)
+    {
+        for (int i = 0; i < meta.Length; i++)
+        {
+            if (meta[i].Property is PropertyInfo property && IsCollectionType(property.PropertyType))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsCollectionType(Type type)
+    {
+        if (type == typeof(string) || type == typeof(byte[]))
+            return false;
+
+        return typeof(IEnumerable).IsAssignableFrom(type);
     }
 
     private static bool IsParameterChar(char c) =>
