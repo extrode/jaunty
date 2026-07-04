@@ -56,3 +56,27 @@ from `benchmarks/Jaunty.Benchmarks`.
   containers for SqlServer/Postgres/MySQL, to replace the README's
   per-provider "Nx faster" bulk table with measured numbers.
 - Publish runs from a quiet CI box rather than a laptop.
+
+## Update — same day, after PROD-117 (per-result-set row mapper)
+
+Root cause of the gap found and fixed: the generated `ReadEntity` ran the
+PRD-001 shape-safety validation (`GetName` + case-insensitive compare per
+column) on **every row**. The generator now also emits `CreateRowMapper`,
+a per-result-set factory that validates once and returns a zero-validation
+closure; the dispatcher prefers it and a per-row `FieldCount` guard falls
+back to the fully-validating `ReadEntity` if a stale delegate ever meets a
+changed shape. All shape-safety regression tests pass unchanged.
+
+Re-run of the same suite, same machine (Warm, SQLite):
+
+| Rows | Jaunty before | Jaunty after | Dapper (same run) |
+|---|---|---|---|
+| 100 | 1.47x | 1.31x (177.3 us) | 1.07x |
+| 1,000 | 1.99x | 1.33x (1,494 us, -35% absolute) | 1.03x |
+| 10,000 | 1.80x | 1.46x (22,552 us) | 1.12x |
+
+Multi-provider, 10,000 rows (Warm): Jaunty is now FASTER than Dapper on
+MariaDB (6,230 vs 7,130 us) and tied on PostgreSQL (5,510 vs 5,483 us;
+3,898 us with `WithExpectedRowCount` - well ahead). Remaining SQLite gap vs
+Dapper is `GetFieldValue<T>` vs provider-specific typed getters plus list
+growth - candidates for a future pass (PRD-005).
