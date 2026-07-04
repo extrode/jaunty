@@ -1,7 +1,7 @@
 using System.Data;
 
 using Jaunty.Core;
-using Jaunty.Internals.Enums;
+using Jaunty.Configuration;
 using Jaunty.Internals.Read;
 using Jaunty.StoredProcedure;
 

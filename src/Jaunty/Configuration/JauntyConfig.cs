@@ -3,7 +3,7 @@ using System.Data;
 
 using Jaunty.Attributes;
 using Jaunty.Interceptors;
-using Jaunty.Internals.Enums;
+using Jaunty.Configuration;
 using Jaunty.TypeHandlers;
 
 namespace Jaunty.Configuration;

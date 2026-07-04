@@ -3,7 +3,7 @@ using System.Text;
 using Jaunty.Dialects;
 using Jaunty.FlatFiles.Core;
 using Jaunty.FlatFiles.Interfaces;
-using Jaunty.Internals.BulkCopy;
+using Jaunty.Configuration;
 
 namespace Jaunty.FlatFiles.DuckDB.Dialects;
 

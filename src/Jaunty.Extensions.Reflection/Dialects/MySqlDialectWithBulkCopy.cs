@@ -1,6 +1,6 @@
 using Jaunty.Dialects;
 using Jaunty.Extensions.Reflection.BulkCopy;
-using Jaunty.Internals.BulkCopy;
+using Jaunty.Configuration;
 
 namespace Jaunty.Extensions.Reflection.Dialects;
 
