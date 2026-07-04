@@ -35,6 +35,14 @@ default lives in `src/Directory.Build.props`.
   ApiCompat suppression baseline is gone - the public API is identical across
   TFMs and validation now fails on any new divergence.
 
+### Added
+
+- `ISyncCommandInterceptor`: synchronous interceptor hooks. The sync APIs
+  (`Query<T>`, `Execute`, ...) no longer block a thread on the async interceptor
+  pipeline when interceptors implement it; built-in `LoggingInterceptor` and
+  `AuditInterceptor` do. Async-only interceptors still work on the sync path
+  (invoked with a blocking wait, as before).
+
 ### Fixed
 
 - **Generated mapper NULL handling (correctness):** the source-generated
