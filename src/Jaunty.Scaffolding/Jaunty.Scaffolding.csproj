@@ -15,18 +15,16 @@
   <!--<Choose>
     <When Condition="$(DefineConstants.Contains('AsyncInterfaces'))">
       <ItemGroup>
-        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.3" />
       </ItemGroup>
     </When>
   </Choose>-->
 
   <PropertyGroup>
     <PackageId>Beparey.Jaunty.Scaffolding</PackageId>
-    <Version>2026.01.01</Version>
     <Authors>Syed Beparey</Authors>
     <Description>Database-first entity class scaffolding for Jaunty.</Description>
     <RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
