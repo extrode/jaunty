@@ -27,7 +27,7 @@ namespace Jaunty.Interceptors;
 /// Sensitive parameter names are automatically masked based on <see cref="LoggingConfiguration.SensitiveParameterNames"/>.
 /// </para>
 /// </remarks>
-public sealed class LoggingInterceptor : ICommandInterceptor
+public sealed class LoggingInterceptor : ISyncCommandInterceptor
 {
     private readonly ILogger<LoggingInterceptor> _logger;
     private readonly LoggingConfiguration _config;
@@ -208,4 +208,16 @@ public sealed class LoggingInterceptor : ICommandInterceptor
             _ => value.ToString() ?? "NULL"
         };
     }
+
+    /// <inheritdoc/>
+    public void OnCommandExecuting(CommandContext context)
+        => OnCommandExecutingAsync(context, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc/>
+    public void OnCommandExecuted(CommandContext context)
+        => OnCommandExecutedAsync(context, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <inheritdoc/>
+    public void OnCommandFailed(CommandContext context, Exception exception)
+        => OnCommandFailedAsync(context, exception, CancellationToken.None).GetAwaiter().GetResult();
 }
