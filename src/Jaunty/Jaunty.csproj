@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
@@ -11,7 +11,7 @@
 	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<LangVersion>latest</LangVersion>
 		<DefineConstants>AsyncInterfaces</DefineConstants>
-		<!--<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.1" />-->
+		<!--<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.3" />-->
 	</PropertyGroup>
 
 	<Choose>
@@ -93,11 +93,9 @@
 
   <PropertyGroup>
 		<PackageId>Beparey.Jaunty</PackageId>
-		<Version>2026.01.01</Version>
 		<Authors>Syed Beparey</Authors>
 		<Description>A strict, high-performance micro-ORM for .NET with source-generated mapping and NativeAOT support.</Description>
 		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Nullable>enable</Nullable>
 		<ErrorReport>none</ErrorReport>
 	</PropertyGroup>

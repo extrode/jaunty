@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
@@ -37,11 +37,9 @@
 
 	<PropertyGroup>
 		<PackageId>Beparey.Jaunty.Fluent</PackageId>
-		<Version>2026.01.01</Version>
 		<Authors>Syed Beparey</Authors>
 		<Description>Type-safe fluent SQL query builder for Jaunty.</Description>
 		<RepositoryUrl>https://github.com/beparey/jaunty</RepositoryUrl>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
