@@ -402,7 +402,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// </exception>
     public async Task<T> ReadFirstAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        T? result = await ReadFirstOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken);
+        T? result = await ReadFirstOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken).ConfigureAwait(false);
         return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
     }
 
@@ -418,7 +418,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// </summary>
     public async Task<T> ReadPartialFirstAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        T? result = await ReadFirstOrDefaultAsyncCore(options, MappingMode.Projection, cancellationToken);
+        T? result = await ReadFirstOrDefaultAsyncCore(options, MappingMode.Projection, cancellationToken).ConfigureAwait(false);
         return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
     }
 
@@ -436,7 +436,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// </exception>
     public async Task<T> ReadSingleAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        T? result = await ReadSingleOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken);
+        T? result = await ReadSingleOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken).ConfigureAwait(false);
         return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
     }
 
@@ -451,7 +451,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// </summary>
     public async Task<T> ReadPartialSingleAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        T? result = await ReadSingleOrDefaultAsyncCore(options, MappingMode.Projection, cancellationToken);
+        T? result = await ReadSingleOrDefaultAsyncCore(options, MappingMode.Projection, cancellationToken).ConfigureAwait(false);
         return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
     }
 
@@ -617,13 +617,13 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
             if (!hasNext)
             {
                 _consumed = true;
-                await DisposeAsync();
+                await DisposeAsync().ConfigureAwait(false);
             }
         }
         catch (NullReferenceException)
         {
             _consumed = true;
-            await DisposeAsync();
+            await DisposeAsync().ConfigureAwait(false);
         }
     }
 

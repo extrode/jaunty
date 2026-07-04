@@ -38,7 +38,8 @@ internal static class NonQueryExecutor
         List<DuckDBParameter> parameters,
         CancellationToken cancellationToken)
     {
-        await using DuckDBCommand cmd = connection.CreateCommand();
+        DuckDBCommand cmd = connection.CreateCommand();
+        await using var cmdDisposer = cmd.ConfigureAwait(false);
         cmd.CommandText = sql;
         foreach (DuckDBParameter param in parameters)
             cmd.Parameters.Add(param);
