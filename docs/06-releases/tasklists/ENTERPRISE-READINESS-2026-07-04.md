@@ -92,32 +92,43 @@ candidates land in "Needs decision").
 
 ## Needs decision (user) — not executed
 
-1. **Core lib depends on full `Microsoft.Extensions.DependencyInjection`** (not just
-   Abstractions) — heavyweight transitive for a micro-ORM. Removing = dependency
-   removal (requires your explicit approval) and could break consumers relying on the
-   transitive. Recommend: drop to Abstractions-only in next minor.
+1. ~~Full `Microsoft.Extensions.DependencyInjection` dependency~~ **RESOLVED
+   (PROD-108, 2026-07-04)**: Abstractions-only; the ASP0000-pattern
+   `ApplyJauntyInterceptors(IServiceCollection)` overload removed (breaking,
+   pre-first-publish).
 2. ~~`System.CommandLine` beta in Jaunty.Scaffolding.Cli~~ **RESOLVED (PROD-107)**:
    2.0.9 stable exists; CLI migrated to the GA API (`SetAction`/`ParseResult`),
    smoke-tested against the Northwind SQLite reference db (list-tables, scaffold
    --dry-run, required-option validation).
+
 3. **Sync-over-async** (`.GetAwaiter().GetResult()`) in 5 sync internals
    (`ExecuteReader.cs` ×3, `QueryCore.cs`, `ExecuteNonQueryCore.cs`). With PROD-101's
    ConfigureAwait(false) the deadlock risk is mitigated, but true sync ADO.NET calls
    would be cleaner. Fixing may change sync-path behavior — decide appetite.
-4. **`JauntyConfig` mutable global statics** (resolvers, logger, interceptor pipeline):
-   no thread-safety guarantees documented. Options: document "configure at startup
-   only" contract vs. freeze-after-first-use semantics (behavioral change).
-5. **PackageIcon**: absent; needs an actual icon asset from you.
-6. **CalVer `2026.01.01` vs SemVer**: CHANGELOG documents CalVer; NuGet ecosystem and
-   package validation tooling assume SemVer. Confirm CalVer is intentional. Note NuGet
-   normalizes `2026.01.01` to `2026.1.1` in package filenames.
-7. **TFM public-API divergence (PRD-003 evidence)**: net8.0 exposes streaming as
-   `IAsyncEnumerable<T>` while netstandard2.0 exposes `ValueTask<IEnumerable<T>>`
-   members of the same names — same signature, different return type, so the two
-   cannot coexist on one TFM. Unifying is a breaking change on one side. 15 members
-   baselined in `CompatibilitySuppressions.xml`; decide the unification story before
-   v1 GA. Related: `Jaunty.Internals.Entity.EntityMetadata` is a public type in an
-   `Internals` namespace — consider making internal (breaking).
+
+4. ~~`JauntyConfig` mutable global statics~~ **RESOLVED (PROD-111, 2026-07-04)**:
+   implemented - volatile fields, synchronized interceptor mutation, synchronized
+   TypeHandlerRegistry counts; contract documented on the class (Reset() is
+   test-only and not atomic as a whole).
+
+5. ~~PackageIcon~~ **RESOLVED (PROD-110, 2026-07-04)**: docs/_assets/jaunty.png
+   processed via ImageMagick (crop/smooth/128px, transparent corners) into
+   docs/_assets/icon.png; packed into all packages.
+
+I've dropped jaunty.png an image / logo under docs/_assets/, let's convert it to an appopriate icon but smooth out the edges first through one of the vision compatible models under openrouter or if you're able to then do it youself, or use imagemagick: C:\home\tools\ImageMagick
+
+6. ~~CalVer vs SemVer~~ **RESOLVED (PROD-109, 2026-07-04)**: SemVer; dev baseline
+   `1.0.0-rc.1`, release tags `vMAJOR.MINOR.PATCH`.
+
+7. ~~TFM public-API divergence~~ **RESOLVED (PROD-112, 2026-07-04)**:
+   ASYNC_ENUMERABLE_SUPPORT extended to netstandard2.0 (Bcl.AsyncInterfaces), so both
+   TFMs expose identical IAsyncEnumerable streaming; ValueTask variants removed
+   (breaking on ns2.0, pre-first-publish). EntityMetadata.ParameterMap unified to
+   IReadOnlyDictionary. CompatibilitySuppressions.xml deleted - validation now has a
+   zero baseline. net472 suite (ns2.0 assembly) green: 2522/0. Still open (folded
+   into decision 3's category): making `Jaunty.Internals.*` public types internal.
+
+Let's use #if / #else compiler directives to target both
 
 ## Handoff tasklist — follow-up work (tests/comments/docs; per scope, not done here)
 
