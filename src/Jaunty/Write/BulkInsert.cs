@@ -127,7 +127,10 @@ public static partial class Jaunty
 
                 // Multi-row INSERT reduces round-trips for network databases, but hurts
                 // in-process providers like SQLite where parameter object overhead exceeds savings.
-                if (dialect.SupportsMultiRowInsert && entityList.Count > 1 && dialect is not SQLiteDialect)
+                // SQLite (incl. the Extensions.Reflection wrapper dialect) must take the
+                // prepared-loop path: multi-row VALUES suffers from quadratic parameter
+                // binding in Microsoft.Data.Sqlite, measured ~16x slower (PROD-120).
+                if (dialect.SupportsMultiRowInsert && entityList.Count > 1 && !IsSqliteDialect(dialect))
                 {
                     totalInserted = BulkInsertMultiRow(connection, entityList, cached, dialect, transaction, options, valueSetter);
                 }
@@ -317,4 +320,6 @@ public static partial class Jaunty
 
         return totalInserted;
     }
+    private static bool IsSqliteDialect(ISqlDialect dialect)
+        => dialect is SQLiteDialect || dialect.GetType().Name.Contains("SQLite", StringComparison.OrdinalIgnoreCase);
 }
