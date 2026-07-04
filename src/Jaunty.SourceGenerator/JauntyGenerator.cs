@@ -186,17 +186,21 @@ public class JauntyGenerator : IIncrementalGenerator
             var typeForGetFieldValue = typeInfo.TypeForGetFieldValue;
             var needsNullCheck = typeInfo.NeedsNullCheck;
 
-            // DbDataReader path - use GetFieldValue<T>
+            // DbDataReader path: direct typed getters (no generic dispatch);
+            // GetFieldValue<T> only for GetValue-fallback types (TimeSpan/DateTimeOffset/unknown).
+            string dbAccess = typeInfo.Getter == "reader.GetValue"
+                ? $"dbReader.GetFieldValue<{typeForGetFieldValue}>"
+                : "dbReader." + typeInfo.Getter.Substring("reader.".Length);
             if (needsNullCheck)
             {
                 // default must be typed to the property, not the getter: an untyped default in
                 // the ternary binds to the getter type, so DBNull would map to 0/false for
                 // nullable value types instead of null.
-                sb.AppendLine($"                entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default({p.TypeName})! : dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
+                sb.AppendLine($"                entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default({p.TypeName})! : {dbAccess}(ord[{i}]);");
             }
             else
             {
-                sb.AppendLine($"                entity.{p.PropertyName} = dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
+                sb.AppendLine($"                entity.{p.PropertyName} = {dbAccess}(ord[{i}]);");
             }
         }
         sb.AppendLine("            }");
@@ -250,13 +254,16 @@ public class JauntyGenerator : IIncrementalGenerator
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var typeForGetFieldValue = typeInfo.TypeForGetFieldValue;
+            string dbAccess = typeInfo.Getter == "reader.GetValue"
+                ? $"dbReader.GetFieldValue<{typeForGetFieldValue}>"
+                : "dbReader." + typeInfo.Getter.Substring("reader.".Length);
             if (typeInfo.NeedsNullCheck)
             {
-                sb.AppendLine($"                    entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default({p.TypeName})! : dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
+                sb.AppendLine($"                    entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default({p.TypeName})! : {dbAccess}(ord[{i}]);");
             }
             else
             {
-                sb.AppendLine($"                    entity.{p.PropertyName} = dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
+                sb.AppendLine($"                    entity.{p.PropertyName} = {dbAccess}(ord[{i}]);");
             }
         }
         sb.AppendLine("                    return entity;");
