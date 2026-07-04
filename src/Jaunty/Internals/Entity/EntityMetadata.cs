@@ -59,17 +59,11 @@ public sealed class EntityMetadata
     /// </summary>
     public IReadOnlyList<ColumnMetadata> DeleteColumns { get; }
 
-#if NET8_0_OR_GREATER
     /// <summary>
-    /// Gets a frozen dictionary mapping column names to column metadata.
+    /// Gets a read-only dictionary mapping column names to column metadata.
+    /// Backed by a frozen dictionary on net8.0+ for O(1) case-insensitive lookups.
     /// </summary>
-    public FrozenDictionary<string, ColumnMetadata> ParameterMap { get; }
-#else
-    /// <summary>
-    /// Gets a dictionary mapping column names to column metadata.
-    /// </summary>
-    public Dictionary<string, ColumnMetadata> ParameterMap { get; }
-#endif
+    public IReadOnlyDictionary<string, ColumnMetadata> ParameterMap { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EntityMetadata"/> class.
@@ -122,11 +116,12 @@ public sealed class EntityMetadata
 #if NET8_0_OR_GREATER
         ParameterMap = colList.ToFrozenDictionary(c => c.ColumnName, CommonConstants.OrdinalIgnoreCase);
 #else
-        ParameterMap = new Dictionary<string, ColumnMetadata>(colList.Count, CommonConstants.OrdinalIgnoreCase);
+        var parameterMap = new Dictionary<string, ColumnMetadata>(colList.Count, CommonConstants.OrdinalIgnoreCase);
         for (int i = 0; i < colList.Count; i++)
         {
-            ParameterMap[colList[i].ColumnName] = colList[i];
+            parameterMap[colList[i].ColumnName] = colList[i];
         }
+        ParameterMap = parameterMap;
 #endif
     }
 }
