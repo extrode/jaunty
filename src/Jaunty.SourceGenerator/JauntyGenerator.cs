@@ -224,6 +224,73 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            return entity;");
         sb.AppendLine("        }");
 
+        // 1b. CreateRowMapper - per-result-set factory: validates shape ONCE via
+        // OrdinalMap.Resolve, then returns a closure that maps rows with zero
+        // per-row validation. A FieldCount guard falls back to the fully
+        // re-validating ReadEntity if the reader shape changes underneath a
+        // stale delegate (PRD-001 safety preserved; resolution happens per
+        // result set in DrDispatcher callers).
+        sb.AppendLine($"        public static Func<IDataReader, {className}> CreateRowMapper(IDataReader reader)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            var ord = OrdinalMap.Resolve(reader);");
+        sb.AppendLine("            int fieldCount = reader.FieldCount;");
+        sb.AppendLine("            if (reader is DbDataReader dbReader)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                return r =>");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    if (dbReader.FieldCount != fieldCount)");
+        sb.AppendLine("        #if NET8_0_OR_GREATER");
+        sb.AppendLine("                        return ReadEntity(r);");
+        sb.AppendLine("        #else");
+        sb.AppendLine($"                        return new {className}().ReadEntity(r);");
+        sb.AppendLine("        #endif");
+        sb.AppendLine($"                    var entity = new {className}();");
+        for (int i = 0; i < properties.Count; i++)
+        {
+            PropertyMetadata p = properties[i];
+            ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
+            var typeForGetFieldValue = typeInfo.TypeForGetFieldValue;
+            if (typeInfo.NeedsNullCheck)
+            {
+                sb.AppendLine($"                    entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default({p.TypeName})! : dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
+            }
+            else
+            {
+                sb.AppendLine($"                    entity.{p.PropertyName} = dbReader.GetFieldValue<{typeForGetFieldValue}>(ord[{i}]);");
+            }
+        }
+        sb.AppendLine("                    return entity;");
+        sb.AppendLine("                };");
+        sb.AppendLine("            }");
+        sb.AppendLine("            return r =>");
+        sb.AppendLine("            {");
+        sb.AppendLine("                if (reader.FieldCount != fieldCount)");
+        sb.AppendLine("        #if NET8_0_OR_GREATER");
+        sb.AppendLine("                    return ReadEntity(r);");
+        sb.AppendLine("        #else");
+        sb.AppendLine($"                    return new {className}().ReadEntity(r);");
+        sb.AppendLine("        #endif");
+        sb.AppendLine($"                var entity = new {className}();");
+        for (int i = 0; i < properties.Count; i++)
+        {
+            PropertyMetadata p = properties[i];
+            ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
+            var getter = typeInfo.Getter;
+            if (typeInfo.NeedsNullCheck)
+            {
+                sb.AppendLine($"                if (!reader.IsDBNull(ord[{i}]))");
+                sb.AppendLine($"                    entity.{p.PropertyName} = {getter}(ord[{i}]);");
+            }
+            else
+            {
+                sb.AppendLine($"                entity.{p.PropertyName} = {getter}(ord[{i}]);");
+            }
+        }
+        sb.AppendLine("                return entity;");
+        sb.AppendLine("            };");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+
         // 2. BindInsert
         sb.AppendLine($"        public static void BindInsert(IDbCommand command, {className} entity)");
         sb.AppendLine("        {");

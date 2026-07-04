@@ -16,6 +16,30 @@ internal static class MappedCache<T> where T : new()
 {
     internal static readonly Func<IDataReader, T>? Mapper = ResolveMapper();
 
+    /// <summary>
+    /// Optional per-result-set factory (source-generated <c>CreateRowMapper</c>):
+    /// validates the reader shape once and returns a closure with zero per-row
+    /// validation. Preferred over <see cref="Mapper"/> by the dispatcher.
+    /// </summary>
+    internal static readonly Func<IDataReader, Func<IDataReader, T>>? MapperFactory = ResolveMapperFactory();
+
+#if NET5_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "CreateRowMapper methods are source-generated and always preserved.")]
+#endif
+    private static Func<IDataReader, Func<IDataReader, T>>? ResolveMapperFactory()
+    {
+        if (!typeof(IMapped<T>).IsAssignableFrom(typeof(T)))
+            return null;
+
+        MethodInfo? method = typeof(T).GetMethod("CreateRowMapper", BindingFlags.Public | BindingFlags.Static, null, [typeof(IDataReader)], null);
+        if (method != null && method.ReturnType == typeof(Func<IDataReader, T>))
+        {
+            return (Func<IDataReader, Func<IDataReader, T>>)method.CreateDelegate(typeof(Func<IDataReader, Func<IDataReader, T>>));
+        }
+
+        return null;
+    }
+
 #if NET5_0_OR_GREATER
     [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "ReadEntity methods are source-generated and always preserved.")]
 #endif
