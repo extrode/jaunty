@@ -7,7 +7,7 @@ Guide to the Jaunty repository structure and organization.
 ## Root Directory Structure
 
 ```
-C:\home\extrode\code\jaunty.extrode.com\
+C:\home\Beparey\code\jaunty.beparey.com\
 │
 ├── Configuration Files
 │   ├── .editorconfig              # Editor configuration (formatting, naming)
