@@ -128,7 +128,7 @@ Also standard practice, three tiers — pick per deal size:
 
 ## 5. License enforcement spectrum
 
-- **Contract-only (recommended to start):** ISL-R license + order form per customer.
+- **Contract-only (recommended to start):** ISL-EULA + order form per customer (see order-form-template.md; source tiers additionally under ISL-R).
   Zero code, zero friction, standard for dev tooling at this scale.
 - **License key, warn-only:** `JauntyConfig.LicenseKey = "..."` validated offline
   (signed payload, public key embedded), logs a warning when missing/expired.
@@ -146,7 +146,7 @@ Also standard practice, three tiers — pick per deal size:
 3. Wire release.yml to GitHub Packages (`GITHUB_TOKEN`) — kills the NUGET_API_KEY
    manual step. Tag `v1.0.0` when the readiness list closes.
 4. Trials: 30-day fine-grained PAT, `packages:read` only.
-5. Sales: invoice + countersigned license (ISL-R + order form with seat count and
+5. Sales: invoice + countersigned license (ISL-EULA + order form with seat count and
    term) → issue feed token with expiry = term → optionally add source tier.
 6. Support: private per-customer GitHub Discussions/Issues in a
    `jaunty-support-<customer>` repo, or email with the SECURITY.md process for
@@ -160,5 +160,5 @@ Also standard practice, three tiers — pick per deal size:
   nuget.org + licensing. Everything in §6 assumes GitHub Packages; if public
   nuget.org wins later, §3 collapses to "publish and enforce via license" and
   trials become suffix packages.
-- Pricing/tiers, seat vs org licensing, and whether source access is a paid tier —
+- ~~Pricing/tiers, seat vs org licensing, source-access tiers~~ DECIDED 2026-07-05: see pricing.md (seat-based, 3 tiers, 20% launch discount to 2026-10-05), order-form-template.md, continuity-rider-template.md. Was:
   business calls, not wired into anything technical yet.

@@ -47,7 +47,7 @@ If you need these, Jaunty is the wrong tool, and that is by design:
 - **No change tracking, unit-of-work, or identity map.** Objects are plain data. You decide what to save and when.
 - **No lazy loading.** Every query is explicit. N+1 problems are visible in your code, not hidden in a proxy.
 - **No migrations engine.** Your schema lifecycle is your own (though the sibling product JauntyQ understands migration scripts at build time - see below).
-- **Not open source.** Jaunty ships under the Islamic Software License - Restricted (ISL-R), found in `LICENSE.md` at the repository root: source-available for inspection, free to use internally including commercially, but no modification or redistribution. If OSS licensing is a hard requirement, use Dapper - it is a fine library and this page will not pretend otherwise.
+- **Not open source.** Jaunty is a commercial product: binaries ship under the ISL-EULA (the license grant is tied to your order), and source access at higher tiers is governed by the ISL-R inspection license. See [pricing](../06-releases/pricing.md) - there is a 30-day full trial. If OSS licensing is a hard requirement, use Dapper - it is a fine library and this page will not pretend otherwise.
 
 There is a feature-by-feature comparison with Dapper and EF Core in the repository README.
 
