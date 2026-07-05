@@ -1,6 +1,6 @@
-# The Halal Software License (HSL) v1.0
+# Islamic Software License - Restricted (ISL-R), Version 1.0
 
-**Effective Date:** March 1, 2026
+**Effective Date:** July 2026
 
 **Copyright (c) 2026 Syed. All rights reserved.**
 
@@ -21,15 +21,19 @@ and societies. The Quran states:
 > *"And whoever kills a soul — it is as if he had slain all of mankind. And whoever saves
 > one — it is as if he had saved all of mankind."* — Quran 5:32
 
-This license grants the right to use the Software, subject to ethical restrictions that
-reflect these values. The Software may not be modified, distributed, sublicensed, or
-used to create derivative works. By using the Software, the Licensee agrees to abide by
-all terms and conditions set forth herein.
+This License grants the right to use the Software, including for internal commercial and
+non-commercial purposes, subject to the ethical restrictions in Sections 4 and 5. The
+Software may not be modified, distributed, sublicensed, or used to create derivative
+works. The source code is made available for transparency and inspection only. By using
+the Software, the Licensee agrees to abide by all terms and conditions set forth herein.
 
 **This is not an open-source license.** This is a proprietary, source-viewable, ethically
 restricted license. It does not meet the Open Source Definition maintained by the Open
-Source Initiative, and no claim to that effect is made. The source code is made available
-for transparency and inspection purposes only.
+Source Initiative (OSI) or the Free Software Definition maintained by the Free Software
+Foundation (FSF), and no claim of OSI approval, FSF endorsement, or "open source"
+certification is made or implied. This License is best described as a **source-available,
+ethically restricted software license**. The source code is made available for
+transparency and inspection purposes only.
 
 ---
 
@@ -43,15 +47,28 @@ files distributed under this License.
 **1.3 "Licensee"** means any individual, organization, company, government entity, or
 other legal person exercising rights under this License.
 
-**1.4 "Prohibited Activity"** means any activity described in Section 4 (Ethical Use
+**1.4 "Derivative Work"** means any work, in source or object form, that is based upon,
+derived from, incorporates, or is a modification, translation, or adaptation of the
+Software.
+
+**1.5 "Distribute"** means to make the Software or a Derivative Work available to any
+third party, in source or object form, by sale, lease, transfer, sublicense, or any other
+means of conveyance.
+
+**1.6 "Prohibited Activity"** means any activity described in Section 4 (Ethical Use
 Restrictions) or Section 5 (Genocide, Injustice, and State-Level Restrictions).
 
-**1.5 "Primary Business"** means the principal revenue-generating activity or core
-operational purpose of an entity. An entity's Primary Business is determined by the
-activity from which it derives the largest share of its revenue or to which it dedicates
-the largest share of its operational resources.
+**1.7 "Primary Business"** means the principal revenue-generating activity or core
+operational purpose of an entity. An entity's Primary Business is the single activity or
+line of business from which it derives the largest share of its consolidated annual
+revenue or to which it dedicates the largest share of its operational resources. Where an
+entity's revenue is genuinely diversified across multiple lines of business such that no
+single activity constitutes the largest share, each activity that independently accounts
+for 25% or more of consolidated annual revenue is treated as a Primary Business of that
+entity. Where reliable revenue data is unavailable, Primary Business is determined by the
+activity the entity holds itself out to the public as principally engaged in.
 
-**1.6 "Material Association"** means a relationship in which an entity:
+**1.8 "Material Association"** means a relationship in which an entity:
   - (a) derives 10% or more of its annual revenue from a Prohibited Activity or from
     entities engaged in a Prohibited Activity, including but not limited to revenue earned
     from advertising, sponsorship, affiliate arrangements, or promotional services for
@@ -64,7 +81,7 @@ the largest share of its operational resources.
     entity identified in Section 5 that directly supports or facilitates the Prohibited
     Activities described therein.
 
-**1.7 "Compliant Licensee"** means a Licensee that is not engaged in, and does not have a
+**1.9 "Compliant Licensee"** means a Licensee that is not engaged in, and does not have a
 Material Association with, any Prohibited Activity.
 
 ---
@@ -75,17 +92,21 @@ Subject to the terms and conditions of this License, and provided the Licensee i
 remains a Compliant Licensee, the Licensor hereby grants the Licensee a worldwide,
 non-exclusive, non-transferable, royalty-free right to:
 
-  - (a) **Use** the Software for any lawful purpose not prohibited by this License; and
-  - (b) **View** the source code of the Software for transparency and inspection purposes.
+  - (a) **Use** the Software for any lawful purpose not prohibited by this License,
+    including internal commercial use and non-commercial use; and
+  - (b) **View** the source code of the Software for transparency and inspection
+    purposes.
+
+Both commercial and non-commercial use of the Software are permitted under this License,
+subject in every case to the Ethical Use Restrictions in Sections 4 and 5.
 
 The following are expressly prohibited without prior written consent from the Licensor:
-
   - (a) **No Modification.** The Licensee may not modify, alter, adapt, translate, or
-    create any work derived from the Software.
-  - (b) **No Distribution.** The Licensee may not distribute, publish, sublicense, sell,
+    create any Derivative Work based on the Software.
+  - (b) **No Distribution.** The Licensee may not Distribute, publish, sublicense, sell,
     lease, rent, or otherwise transfer the Software or any copy thereof to any third
     party.
-  - (c) **No Derivative Works.** The Licensee may not create derivative works based on
+  - (c) **No Derivative Works.** The Licensee may not create Derivative Works based on
     the Software, in whole or in part.
   - (d) **No Reverse Engineering for Replication.** The Licensee may not reverse engineer,
     decompile, or disassemble the Software for the purpose of creating a competing or
@@ -96,23 +117,24 @@ The following are expressly prohibited without prior written consent from the Li
 ## 3. Conditions
 
 **3.1 Attribution.** Any use of the Software must preserve the copyright notice and a
-clear acknowledgment that the Software is licensed under the Halal Software License v1.0.
+clear acknowledgment that the Software is licensed under the Islamic Software License -
+Restricted (ISL-R), Version 1.0.
 
 **3.2 No Transfer.** The Licensee may not sublicense, assign, or transfer this License or
 any rights granted herein to any third party without prior written consent from the
-Licensor.
+Licensor. See Section 12 (Assignment) for the treatment of corporate reorganizations.
 
 **3.3 Compliance Certification.** The Licensor reserves the right to request, and the
 Licensee agrees to provide upon reasonable request, a written certification that the
 Licensee is in compliance with this License. Failure to provide such certification within
-thirty (30) days constitutes grounds for termination under Section 7.
+thirty (30) days of the request constitutes grounds for termination under Section 7.
 
 ---
 
 ## 4. Ethical Use Restrictions — Prohibited Industries and Activities
 
 The rights granted in Section 2 are expressly conditioned on the Licensee not being
-engaged in, and not having a Material Association with, any of the following:
+engaged in, and not having a Material Association with, any of the following.
 
 ### 4.1 Shirk (Polytheism and Idol Worship)
 
@@ -146,7 +168,7 @@ The Software may not be used by any entity whose Primary Business involves:
     interest-bearing instruments; or
   - (d) the creation, trading, or facilitation of interest-based financial derivatives,
     bonds, or securities.
-  
+
 ### 4.3 Pornography and Sexual Exploitation
 
 The Software may not be used by any entity whose Primary Business involves:
@@ -318,7 +340,7 @@ center on abortion as their Primary Business.
 ## 5. Genocide, Injustice, and State-Level Restrictions
 
 The rights granted in Section 2 are further conditioned on the Licensee not being
-engaged in, and not having a Material Association with, any of the following:
+engaged in, and not having a Material Association with, any of the following.
 
 ### 5.1 Genocide
 
@@ -404,9 +426,9 @@ violations of Sections 4 and 5 in good faith, with reference to publicly availab
 information, credible reporting, and the determinations of recognized international
 bodies.
 
-**6.2 Notice and Cure.** Before terminating a License under Section 7, the Licensor will
-provide written notice to the Licensee specifying the alleged violation. The Licensee
-shall have sixty (60) days from receipt of such notice to:
+**6.2 Notice and Cure.** Before treating this License as terminated under Section 7.1, the
+Licensor will provide written notice to the Licensee specifying the alleged violation. The
+Licensee shall have sixty (60) days from receipt of such notice to:
   - (a) demonstrate that it is not in violation; or
   - (b) cure the violation by ceasing the Prohibited Activity or severing the Material
     Association.
@@ -428,25 +450,28 @@ law principles.
 
 ## 7. Termination
 
-**7.1** This License and all rights granted herein terminate automatically and immediately
-if the Licensee:
-  - (a) fails to comply with any term or condition of this License;
-  - (b) becomes engaged in a Prohibited Activity;
-  - (c) acquires a Material Association with a Prohibited Activity; or
-  - (d) fails to respond to a Compliance Certification request within the period
-    specified in Section 3.4.
+**7.1 Termination for Ethical Violation.** If the Licensor determines, following the
+notice and cure process in Section 6.2, that the Licensee has failed to demonstrate it is
+not in violation of Section 4 or 5 and has not cured the violation within the sixty (60)
+day period, this License terminates automatically at the end of that period.
 
-**7.2** Upon termination, the Licensee must:
+**7.2 Termination for Other Breach.** If the Licensee breaches any other term of this
+License, including a failure to provide the Compliance Certification required by Section
+3.3 within the period specified therein, the Licensor will provide written notice, and
+the License terminates automatically if the breach is not cured within thirty (30) days
+of such notice, or immediately if the breach is incapable of cure.
+
+**7.3 Effect of Termination.** Upon termination, the Licensee must:
   - (a) immediately cease all use of the Software;
   - (b) destroy or delete all copies of the Software in its possession or control; and
   - (c) certify in writing to the Licensor that it has done so.
 
-**7.3** Termination does not relieve the Licensee of obligations arising from its use of
-the Software prior to termination.
+**7.4 Survival.** Termination does not relieve the Licensee of obligations arising from
+its use of the Software prior to termination.
 
-**7.4** The Licensor may, at its sole discretion, reinstate the License if the Licensee
-demonstrates that the violation has been cured and that it is once again a Compliant
-Licensee.
+**7.5 Reinstatement.** The Licensor may, at its sole discretion, reinstate the License if
+the Licensee demonstrates that the violation has been cured and that it is once again a
+Compliant Licensee.
 
 ---
 
@@ -481,17 +506,31 @@ effect.
 ## 11. No Endorsement
 
 Nothing in this License shall be construed as an endorsement by the Licensor of any
-Licensee, its products, or its services. The Licensee may not use the name, trademarks,
-or branding of the Licensor to imply endorsement without prior written consent.
+Licensee, its products, or its services. This License grants no trademark rights, and the
+Licensee may not use the name, trademarks, or branding of the Licensor to imply
+endorsement without prior written consent.
 
 ---
 
-## 12. Future Versions
+## 12. Assignment
+
+The Licensee may not assign or transfer this License, whether by operation of law,
+merger, or otherwise, without the prior written consent of the Licensor, except that a
+Licensee may assign this License without consent in connection with a merger,
+acquisition, reorganization, or sale of all or substantially all of its assets relating to
+the Software, provided the assignee is not engaged in a Prohibited Activity and agrees in
+writing to be bound by this License. The Licensor may freely assign or transfer its
+rights, title, and obligations under this License, including its copyright in the
+Software, to any successor in interest.
+
+---
+
+## 13. Future Versions
 
 The Licensor may publish revised versions of this License. Each version will be given a
-distinguishing version number. The Licensee may choose to follow the terms of the
-version under which it originally received the Software or any later version published
-by the Licensor.
+distinguishing version number. The Licensee may choose to follow the terms of the version
+under which it originally received the Software or any later version published by the
+Licensor.
 
 ---
 
@@ -500,27 +539,30 @@ by the Licensor.
 Include the following notice in your source files:
 
 ```
+SPDX-License-Identifier: LicenseRef-ISL-R-1.0
+
 Copyright (c) [Year] [Copyright Holder]
 
-Licensed under the Halal Software License v1.0 (the "License").
-You may not use this file except in compliance with the License.
-You may obtain a copy of the License at:
+Licensed under the Islamic Software License - Restricted (ISL-R), Version
+1.0 (the "License"). You may not use this file except in compliance with
+the License. You may obtain a copy of the License at:
 
   [URL to license]
 
-This Software is proprietary. No modification or distribution is
-permitted. Use of this Software is subject to ethical restrictions.
-See the License for details regarding prohibited industries,
-activities, and associations.
+This Software is proprietary. No modification, distribution, or
+sublicensing is permitted. Use (including internal commercial use) is
+permitted subject to ethical restrictions. See the License for details
+regarding prohibited industries, activities, and associations.
 ```
 
 ---
 
-*The Halal Software License v1.0 was drafted to align software usage with Islamic
-ethical principles and universal human rights. It is a proprietary, source-viewable
-license with ethical use restrictions. It is not certified by the Open Source Initiative
-and does not claim to be an open-source license. The source code is provided for
-transparency and inspection purposes only.*
+*The Islamic Software License - Restricted (ISL-R) v1.0 was drafted to align source-viewable
+software licensing with Islamic ethical principles and universal human rights. It is a
+proprietary, source-viewable license with ethical use restrictions. It is not certified by
+the Open Source Initiative or the Free Software Foundation and does not claim to be an
+open-source or free software license. The source code is provided for transparency and
+inspection purposes only.*
 
 *This license is provided as a legal template and should be reviewed by a qualified
 attorney before use in production. The Licensor assumes no liability for the legal

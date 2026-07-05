@@ -753,7 +753,9 @@ For more detailed documentation, see:
 
 ## License
 
-Private License
+Islamic Software License - Restricted (ISL-R), Version 1.0. See [LICENSE.md](LICENSE.md).
+
+Proprietary, source-available license: use is permitted (including internal commercial use) subject to the license's ethical restrictions; modification, redistribution, sublicensing, and derivative works are not. The source is available for transparency and inspection only. This is not an open-source license.
 
 ---
 
