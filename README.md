@@ -753,9 +753,12 @@ For more detailed documentation, see:
 
 ## License
 
-Islamic Software License - Restricted (ISL-R), Version 1.0. See [LICENSE.md](LICENSE.md).
+Jaunty is a commercial, source-available product. Two documents apply:
 
-Proprietary, source-available license: use is permitted (including internal commercial use) subject to the license's ethical restrictions; modification, redistribution, sublicensing, and derivative works are not. The source is available for transparency and inspection only. This is not an open-source license.
+- **Binaries** (NuGet packages) ship under the Islamic Software End User License Agreement (ISL-EULA), Version 1.0 - see [LICENSE-EULA.md](LICENSE-EULA.md). The license grant is conditioned on an Order (seats, term, fees); a 30-day evaluation Order is available.
+- **Source code** in this repository is covered by the Islamic Software License - Restricted (ISL-R), Version 1.0 - see [LICENSE.md](LICENSE.md): available for transparency and inspection only; no modification, redistribution, or derivative works.
+
+Neither is an open-source license. Pricing and tiers: [docs/06-releases/pricing.md](docs/06-releases/pricing.md).
 
 ---
 
