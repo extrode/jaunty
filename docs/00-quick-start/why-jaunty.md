@@ -53,7 +53,7 @@ There is a feature-by-feature comparison with Dapper and EF Core in the reposito
 
 ## Jaunty or JauntyQ?
 
-Jaunty has a sibling: [JauntyQ](https://jauntyq.extrode.com) moves the entire ORM to compile time. Your SQL lives in `.sql` files, is validated against a committed schema snapshot during the build, and becomes generated C# with typed ordinal getters - a renamed column is a build error, not a production incident.
+Jaunty has a sibling: [JauntyQ](https://jauntyq.beparey.com) moves the entire ORM to compile time. Your SQL lives in `.sql` files, is validated against a committed schema snapshot during the build, and becomes generated C# with typed ordinal getters - a renamed column is a build error, not a production incident.
 
 ```mermaid
 flowchart TD

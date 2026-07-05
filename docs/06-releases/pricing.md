@@ -28,4 +28,4 @@ Jaunty and JauntyQ are commercial, source-available products. A subscription buy
 - **Lapse:** if a subscription ends, you keep the versions you have (perpetual-use fallback) but lose updates, feed access, and support.
 - **Seat:** one named developer. CI/build agents do not consume seats.
 
-To start a trial or place an order, contact Extrode via <https://extrode.com>.
+To start a trial or place an order, contact Beparey via <https://beparey.com>.
