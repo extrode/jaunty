@@ -13,8 +13,9 @@
   <PropertyGroup>
     <PackageTags>orm;micro-orm;sql;database;dapper-alternative;aot;nativeaot;source-generator</PackageTags>
     <PackageProjectUrl>https://github.com/beparey/jaunty</PackageProjectUrl>
-    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-    <!-- Proprietary source-viewable license; consumers must accept it explicitly. -->
+    <!-- Binaries ship under the ISL-EULA (grant conditioned on an Order); the
+         repository's LICENSE.md (ISL-R) covers source inspection only. -->
+    <PackageLicenseFile>LICENSE-EULA.md</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
@@ -33,10 +34,10 @@
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
-  <!-- Pack README.md and LICENSE.md into NuGet packages -->
+  <!-- Pack README.md and the EULA into NuGet packages -->
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" />
-    <None Include="$(MSBuildThisFileDirectory)..\LICENSE.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE-EULA.md" Pack="true" PackagePath="\" />
     <None Include="$(MSBuildThisFileDirectory)..\docs\_assets\icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>
