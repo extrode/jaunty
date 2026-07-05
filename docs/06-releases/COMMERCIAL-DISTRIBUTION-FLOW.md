@@ -3,7 +3,7 @@
 Written 2026-07-04. Answers: how do I show the product off, how do I distribute it
 after a sale, and can I give customers my private feed / repo / source?
 Companion to [COMMERCIAL-ANALYSIS-REPORT.md](COMMERCIAL-ANALYSIS-REPORT.md).
-License context: Jaunty ships under the proprietary Halal Software License v1.0
+License context: Jaunty ships under the proprietary Islamic Software License - Restricted (ISL-R) v1.0
 (use permitted, modification/redistribution/sublicensing prohibited) — which is
 already the right shape for commercial licensing.
 
@@ -117,7 +117,7 @@ Also standard practice, three tiers — pick per deal size:
    private repo with Read permission, or — cleaner — maintain a `jaunty-source`
    mirror repo that receives only tagged release states (no work-in-progress
    branches, no issue history, no audit trail leakage). GitHub read access
-   technically allows cloning; the HSL license is what forbids redistribution and
+   technically allows cloning; the ISL-R license is what forbids redistribution and
    derivative works. That combination (technical read + legal restriction) is
    normal "source-available commercial" practice.
 3. **Source drop per release (escrow tier).** Attach a source tarball (or git
@@ -128,7 +128,7 @@ Also standard practice, three tiers — pick per deal size:
 
 ## 5. License enforcement spectrum
 
-- **Contract-only (recommended to start):** HSL license + order form per customer.
+- **Contract-only (recommended to start):** ISL-R license + order form per customer.
   Zero code, zero friction, standard for dev tooling at this scale.
 - **License key, warn-only:** `JauntyConfig.LicenseKey = "..."` validated offline
   (signed payload, public key embedded), logs a warning when missing/expired.
@@ -146,7 +146,7 @@ Also standard practice, three tiers — pick per deal size:
 3. Wire release.yml to GitHub Packages (`GITHUB_TOKEN`) — kills the NUGET_API_KEY
    manual step. Tag `v1.0.0` when the readiness list closes.
 4. Trials: 30-day fine-grained PAT, `packages:read` only.
-5. Sales: invoice + countersigned license (HSL + order form with seat count and
+5. Sales: invoice + countersigned license (ISL-R + order form with seat count and
    term) → issue feed token with expiry = term → optionally add source tier.
 6. Support: private per-customer GitHub Discussions/Issues in a
    `jaunty-support-<customer>` repo, or email with the SECURITY.md process for
