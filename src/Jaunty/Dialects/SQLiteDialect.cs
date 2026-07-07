@@ -167,7 +167,8 @@ internal sealed class SQLiteDialect : ISqlDialect
         string[] insertParams,
         string[] updateColumns,
         string[] updateParams,
-        string[] keyColumns)
+        string[] keyColumns,
+        string[] keyParams)
     {
         // SQLite: INSERT INTO table (...) VALUES (...) ON CONFLICT (key) DO UPDATE SET col = excluded.col
         var sb = new System.Text.StringBuilder(256);
