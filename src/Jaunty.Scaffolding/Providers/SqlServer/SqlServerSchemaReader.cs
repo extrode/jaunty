@@ -169,32 +169,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
             ? await ReadForeignKeysAsync(connection, schemaName, tableName, cancellationToken).ConfigureAwait(false)
             : [];
 
-        // Mark primary key columns
-        if (primaryKey != null)
-        {
-            foreach (ColumnSchema col in columns)
-            {
-                if (primaryKey.Columns.Contains(col.ColumnName, StringComparer.OrdinalIgnoreCase))
-                {
-                    // Re-create with IsPrimaryKey set (since ColumnSchema is init-only)
-                    var index = columns.IndexOf(col);
-                    columns[index] = new ColumnSchema
-                    {
-                        ColumnName = col.ColumnName,
-                        DataType = col.DataType,
-                        IsNullable = col.IsNullable,
-                        IsPrimaryKey = true,
-                        IsIdentity = col.IsIdentity,
-                        IsComputed = col.IsComputed,
-                        MaxLength = col.MaxLength,
-                        Precision = col.Precision,
-                        Scale = col.Scale,
-                        DefaultValue = col.DefaultValue,
-                        OrdinalPosition = col.OrdinalPosition
-                    };
-                }
-            }
-        }
+        MarkPrimaryKeyColumns(columns, primaryKey);
 
         return new TableSchema
         {
@@ -204,6 +179,35 @@ public sealed class SqlServerSchemaReader : ISchemaReader
             PrimaryKey = primaryKey,
             ForeignKeys = foreignKeys
         };
+    }
+
+    internal static void MarkPrimaryKeyColumns(List<ColumnSchema> columns, PrimaryKeyInfo? primaryKey)
+    {
+        if (primaryKey == null)
+            return;
+
+        for (var index = 0; index < columns.Count; index++)
+        {
+            ColumnSchema col = columns[index];
+            if (primaryKey.Columns.Contains(col.ColumnName, StringComparer.OrdinalIgnoreCase))
+            {
+                // Re-create with IsPrimaryKey set (since ColumnSchema is init-only)
+                columns[index] = new ColumnSchema
+                {
+                    ColumnName = col.ColumnName,
+                    DataType = col.DataType,
+                    IsNullable = col.IsNullable,
+                    IsPrimaryKey = true,
+                    IsIdentity = col.IsIdentity,
+                    IsComputed = col.IsComputed,
+                    MaxLength = col.MaxLength,
+                    Precision = col.Precision,
+                    Scale = col.Scale,
+                    DefaultValue = col.DefaultValue,
+                    OrdinalPosition = col.OrdinalPosition
+                };
+            }
+        }
     }
 
     private static async Task<List<ColumnSchema>> ReadColumnsAsync(
