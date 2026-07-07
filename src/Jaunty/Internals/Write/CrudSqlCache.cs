@@ -218,9 +218,11 @@ internal static class CrudSqlCache
         }
 
         var keyColumns = new string[primaryKeys.Count];
+        var keyParams = new string[primaryKeys.Count];
         for (int i = 0; i < primaryKeys.Count; i++)
         {
             keyColumns[i] = dialect.EscapeColumnName(primaryKeys[i].ColumnName);
+            keyParams[i] = "@" + primaryKeys[i].ColumnName;
         }
 
         return dialect.GenerateUpsertSql(
@@ -229,7 +231,8 @@ internal static class CrudSqlCache
             insertParams,
             updateColNames,
             updateParams,
-            keyColumns);
+            keyColumns,
+            keyParams);
     }
 
     private static void AppendWhereClause(StringBuilder sb, IReadOnlyList<ColumnMetadata> keys, ISqlDialect dialect, bool usePropertyNames)

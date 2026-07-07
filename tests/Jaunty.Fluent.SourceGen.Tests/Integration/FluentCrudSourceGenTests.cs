@@ -52,6 +52,7 @@ public sealed class FluentCrudSourceGenTests
 
         RunCrudRoundTrip(connection);
         RunUpsertRoundTrip(connection);
+        RunIdentityUpsertRoundTrip(connection);
     }
 
     [Fact]
@@ -86,6 +87,10 @@ public sealed class FluentCrudSourceGenTests
 
         RunCrudRoundTrip(connection);
         RunUpsertRoundTrip(connection);
+        // No RunIdentityUpsertRoundTrip here: Postgres' ON CONFLICT never actually detects a
+        // conflict on an identity/serial column, since that column is never part of the
+        // INSERT statement in the first place (see the gaps log for detail). Separate,
+        // pre-existing limitation, not something this fix (SQL Server-only) touches.
     }
 
     [Fact]
@@ -120,6 +125,10 @@ public sealed class FluentCrudSourceGenTests
 
         RunCrudRoundTrip(connection);
         RunUpsertRoundTrip(connection);
+        // No RunIdentityUpsertRoundTrip here: MySQL's ON DUPLICATE KEY UPDATE never actually
+        // detects a duplicate on an auto-increment column, since that column is never part
+        // of the INSERT statement in the first place (see the gaps log for detail).
+        // Separate, pre-existing limitation, not something this fix (SQL Server-only) touches.
     }
 
     [Fact]
@@ -154,6 +163,8 @@ public sealed class FluentCrudSourceGenTests
 
         RunCrudRoundTrip(connection);
         RunUpsertRoundTrip(connection);
+        // No RunIdentityUpsertRoundTrip here: same MySQL-protocol limitation as the MySQL
+        // test above (MariaDB shares the same ON DUPLICATE KEY UPDATE behavior).
     }
 
     private static void RunCrudRoundTrip(IDbConnection connection)
@@ -196,5 +207,31 @@ public sealed class FluentCrudSourceGenTests
         CrudSourceGenSetting? fetched = connection.Get<CrudSourceGenSetting>("theme");
         Assert.NotNull(fetched);
         Assert.Equal("light", fetched.SettingValue);
+    }
+
+    // Regression test for the SQL Server MERGE identity-PK bug: the MERGE's ON clause
+    // referenced source.<pk_column>, but identity columns are excluded from insertColumns
+    // (and therefore from the MERGE's USING/AS source column list), so Upsert against any
+    // identity-PK entity threw "Invalid column name" on SQL Server before this fix. Not
+    // reproducible on Postgres/MySQL/MariaDB (their ON CONFLICT/ON DUPLICATE KEY syntax
+    // never referenced a "source" derived table), but run here too for regression coverage.
+    private static void RunIdentityUpsertRoundTrip(IDbConnection connection)
+    {
+        var widget = new CrudSourceGenWidget { Name = "UpsertWidget", Price = 1.99m };
+        int insertRows = connection.Upsert(widget);
+        Assert.Equal(1, insertRows);
+
+        List<CrudSourceGenWidget> inserted = connection.Query<CrudSourceGenWidget>(
+            "SELECT * FROM crud_sourcegen_widgets WHERE name = @Name", new { Name = "UpsertWidget" });
+        Assert.Single(inserted);
+        widget.WidgetId = inserted[0].WidgetId;
+
+        widget.Price = 2.99m;
+        int updateRows = connection.Upsert(widget);
+        Assert.True(updateRows > 0);
+
+        CrudSourceGenWidget? updated = connection.Get<CrudSourceGenWidget>(widget.WidgetId);
+        Assert.NotNull(updated);
+        Assert.Equal(2.99m, updated.Price);
     }
 }

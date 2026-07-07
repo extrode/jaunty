@@ -232,6 +232,9 @@ public interface ISqlDialect
     /// <param name="updateColumns">Column names for UPDATE SET clause.</param>
     /// <param name="updateParams">Parameter names for UPDATE values.</param>
     /// <param name="keyColumns">Primary key column names for conflict detection.</param>
+    /// <param name="keyParams">Parameter names for the primary key values (needed even for
+    /// identity keys excluded from <paramref name="insertColumns"/>, since MERGE-based
+    /// dialects still need to match on them).</param>
     /// <returns>Dialect-specific upsert SQL statement.</returns>
     string GenerateUpsertSql(
         string tableName,
@@ -239,7 +242,8 @@ public interface ISqlDialect
         string[] insertParams,
         string[] updateColumns,
         string[] updateParams,
-        string[] keyColumns);
+        string[] keyColumns,
+        string[] keyParams);
 
     // ==========================================
     // Multi-Row Insert Support

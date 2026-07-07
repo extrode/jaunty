@@ -143,7 +143,8 @@ internal sealed class PostgreSqlDialect : ISqlDialect
         string[] insertParams,
         string[] updateColumns,
         string[] updateParams,
-        string[] keyColumns)
+        string[] keyColumns,
+        string[] keyParams)
     {
         // PostgreSQL: INSERT INTO table (...) VALUES (...) ON CONFLICT (key) DO UPDATE SET col = EXCLUDED.col
         var sb = new System.Text.StringBuilder(256);
