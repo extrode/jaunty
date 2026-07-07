@@ -58,9 +58,12 @@ Every observed difference traces to one of the two documented, non-Jaunty causes
 
 Four real findings while writing and running these queries, all in `docs/jaunty-torture-test-gaps-log.md`
 (entries #11–14):
-- **#11 (core candidate, significant):** `Jaunty.Fluent`'s query builder has no NativeAOT-safe
-  metadata path — it requires `Jaunty.Extensions.Reflection` for every single fluent query,
-  contradicting the constitution's "no runtime reflection in core" principle for its primary API.
+- **#11 (fixed 2026-07-08):** `Jaunty.Fluent`'s query builder had no NativeAOT-safe metadata
+  path — it required `Jaunty.Extensions.Reflection` for every single fluent query, contradicting
+  the constitution's "no runtime reflection in core" principle for its primary API. Closed via
+  `docs/specs/003-fluent-nativeaot-metadata/`; this sample's `Jaunty.Extensions.Reflection`
+  reference has since been removed entirely (see updated repro steps below) and all 15 queries
+  still pass against all 5 targets.
 - **#12 (fixed):** source generator produced uncompilable code for any `DateTime?`/`Guid?`
   property — a missing fully-qualified case in an existing type-name switch.
 - **#13 (core candidate):** `GroupBy` cannot be combined with joins in the fluent API at all —
