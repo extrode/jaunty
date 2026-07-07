@@ -243,7 +243,8 @@ public class DuckDbDialectTests
             new[] { "@p0", "@p1" },
             new[] { "name" },
             new[] { "@p1" },
-            new[] { "id" });
+            new[] { "id" },
+            new[] { "@p0" });
 
         Assert.Contains("INSERT INTO \"products\"", result);
         Assert.Contains("ON CONFLICT (id) DO UPDATE SET", result);

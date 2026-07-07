@@ -51,7 +51,7 @@ internal sealed class PostgreSqlDialectWithBulkCopy : ISqlDialect
     public string GenerateYear(string expression) => _inner.GenerateYear(expression);
     public string GenerateMonth(string expression) => _inner.GenerateMonth(expression);
     public string GenerateDay(string expression) => _inner.GenerateDay(expression);
-    public string GenerateUpsertSql(string tableName, string[] insertColumns, string[] insertParams, string[] updateColumns, string[] updateParams, string[] keyColumns) => _inner.GenerateUpsertSql(tableName, insertColumns, insertParams, updateColumns, updateParams, keyColumns);
+    public string GenerateUpsertSql(string tableName, string[] insertColumns, string[] insertParams, string[] updateColumns, string[] updateParams, string[] keyColumns, string[] keyParams) => _inner.GenerateUpsertSql(tableName, insertColumns, insertParams, updateColumns, updateParams, keyColumns, keyParams);
     public string GenerateRowNumber() => _inner.GenerateRowNumber();
     public string GenerateRank() => _inner.GenerateRank();
     public string GenerateDenseRank() => _inner.GenerateDenseRank();

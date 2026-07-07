@@ -71,7 +71,39 @@ internal sealed class SqlServerDialect : ISqlDialect
 
     public string GetPagingSql(string baseSql, int offset, int fetchNext)
     {
-        return $"{baseSql} OFFSET {offset} ROWS FETCH NEXT {fetchNext} ROWS ONLY";
+        // SQL Server's OFFSET/FETCH is only valid immediately after an ORDER BY. Without one,
+        // it fails at execution with "Incorrect syntax near 'OFFSET'." - unlike Postgres/MySQL/
+        // SQLite, which tolerate LIMIT/OFFSET with no explicit order. Auto-inject SQL Server's
+        // own idiom for "no real order needed" when the query has no top-level ORDER BY, so
+        // paging behaves the same way it does on the other 3 dialects.
+        string sql = HasTopLevelOrderBy(baseSql) ? baseSql : $"{baseSql} ORDER BY (SELECT NULL)";
+        return $"{sql} OFFSET {offset} ROWS FETCH NEXT {fetchNext} ROWS ONLY";
+    }
+
+    // Tracks paren depth so an ORDER BY nested inside a window function's OVER(...) clause
+    // (or a subquery) isn't mistaken for the query's own top-level ORDER BY.
+    private static bool HasTopLevelOrderBy(string sql)
+    {
+        int depth = 0;
+        for (int i = 0; i < sql.Length; i++)
+        {
+            char c = sql[i];
+            if (c == '(')
+            {
+                depth++;
+            }
+            else if (c == ')')
+            {
+                depth--;
+            }
+            else if (depth == 0 && i + 8 <= sql.Length &&
+                     string.Compare(sql, i, "ORDER BY", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public string GenerateCaseSensitiveLike(string columnName, string parameterName, string escapeChar)
@@ -154,25 +186,53 @@ internal sealed class SqlServerDialect : ISqlDialect
         string[] insertParams,
         string[] updateColumns,
         string[] updateParams,
-        string[] keyColumns)
+        string[] keyColumns,
+        string[] keyParams)
     {
         // SQL Server: MERGE INTO table AS target USING (VALUES (...)) AS source (...) ON ... WHEN MATCHED THEN UPDATE WHEN NOT MATCHED THEN INSERT
+        //
+        // The USING/AS source column list must carry every key column, even an identity key
+        // excluded from insertColumns (identity columns can't appear in the actual INSERT
+        // list below), otherwise the ON clause's "source.<key>" reference doesn't exist.
+        int extraKeyCount = 0;
+        for (int i = 0; i < keyColumns.Length; i++)
+        {
+            if (Array.IndexOf(insertColumns, keyColumns[i]) < 0)
+                extraKeyCount++;
+        }
+
+        var sourceColumns = new string[insertColumns.Length + extraKeyCount];
+        var sourceParams = new string[insertParams.Length + extraKeyCount];
+        Array.Copy(insertColumns, sourceColumns, insertColumns.Length);
+        Array.Copy(insertParams, sourceParams, insertParams.Length);
+
+        int sourceIndex = insertColumns.Length;
+        for (int i = 0; i < keyColumns.Length; i++)
+        {
+            if (Array.IndexOf(insertColumns, keyColumns[i]) < 0)
+            {
+                sourceColumns[sourceIndex] = keyColumns[i];
+                sourceParams[sourceIndex] = keyParams[i];
+                sourceIndex++;
+            }
+        }
+
         var sb = new System.Text.StringBuilder(512);
         sb.Append("MERGE INTO ");
         sb.Append(tableName);
         sb.Append(" AS target USING (VALUES (");
 
-        for (int i = 0; i < insertParams.Length; i++)
+        for (int i = 0; i < sourceParams.Length; i++)
         {
             if (i > 0) sb.Append(", ");
-            sb.Append(insertParams[i]);
+            sb.Append(sourceParams[i]);
         }
 
         sb.Append(")) AS source (");
-        for (int i = 0; i < insertColumns.Length; i++)
+        for (int i = 0; i < sourceColumns.Length; i++)
         {
             if (i > 0) sb.Append(", ");
-            sb.Append(insertColumns[i]);
+            sb.Append(sourceColumns[i]);
         }
 
         sb.Append(") ON ");
