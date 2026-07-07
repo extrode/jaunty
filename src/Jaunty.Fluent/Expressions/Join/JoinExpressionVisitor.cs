@@ -205,7 +205,7 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
         for (int i = 0; i < columns.Count; i++)
         {
-            if (columns[i].Property.Name == propertyName)
+            if (columns[i].PropertyName == propertyName)
             {
                 columnName = columns[i].ColumnName;
                 break;

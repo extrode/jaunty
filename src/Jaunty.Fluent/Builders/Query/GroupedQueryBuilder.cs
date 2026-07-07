@@ -386,7 +386,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         IReadOnlyList<ColumnMetadata> columns = _metadata.Columns;
 
         for (int i = 0; i < columns.Count; i++)
-            if (columns[i].Property.Name == propertyName)
+            if (columns[i].PropertyName == propertyName)
                 return columns[i].ColumnName;
 
         return propertyName;

@@ -40,7 +40,7 @@ internal abstract class QueryBuilderBase
 
         for (var i = 0; i < columns.Count; i++)
         {
-            if (columns[i].Property.Name == propertyName)
+            if (columns[i].PropertyName == propertyName)
             {
                 columnName = columns[i].ColumnName;
                 break;

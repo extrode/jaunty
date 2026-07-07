@@ -51,7 +51,7 @@ internal static class WriteParameterCache<T> where T : new()
         var getters = new Func<T, object?>[columns.Count];
         for (int i = 0; i < columns.Count; i++)
         {
-            getters[i] = CreateTypedGetter(columns[i].Property);
+            getters[i] = CreateTypedGetter(columns[i]);
         }
 
         return (pc, entity) =>
@@ -74,11 +74,11 @@ internal static class WriteParameterCache<T> where T : new()
 
         for (int i = 0; i < updateColumns.Count; i++)
         {
-            getters[i] = CreateTypedGetter(updateColumns[i].Property);
+            getters[i] = CreateTypedGetter(updateColumns[i]);
         }
         for (int i = 0; i < primaryKeys.Count; i++)
         {
-            getters[updateColumns.Count + i] = CreateTypedGetter(primaryKeys[i].Property);
+            getters[updateColumns.Count + i] = CreateTypedGetter(primaryKeys[i]);
         }
 
         return (pc, entity) =>
@@ -100,7 +100,7 @@ internal static class WriteParameterCache<T> where T : new()
         var getters = new Func<T, object?>[deleteColumns.Count];
         for (int i = 0; i < deleteColumns.Count; i++)
         {
-            getters[i] = CreateTypedGetter(deleteColumns[i].Property);
+            getters[i] = CreateTypedGetter(deleteColumns[i]);
         }
 
         return (pc, entity) =>
@@ -114,13 +114,18 @@ internal static class WriteParameterCache<T> where T : new()
     }
 
     /// <summary>
-    /// Compiles a strongly-typed property getter delegate using expression trees.
-    /// ~10x faster than PropertyInfo.GetValue() on repeated calls.
+    /// Returns a strongly-typed property getter delegate for the column. Prefers the
+    /// column's reflection-free compiled <see cref="ColumnMetadata.Getter"/> when present
+    /// (source-generated metadata); otherwise compiles one from <see cref="ColumnMetadata.Property"/>
+    /// using expression trees, ~10x faster than <c>PropertyInfo.GetValue()</c> on repeated calls.
     /// </summary>
-    private static Func<T, object?> CreateTypedGetter(PropertyInfo prop)
+    private static Func<T, object?> CreateTypedGetter(ColumnMetadata column)
     {
+        if (column.Getter is { } getter)
+            return entity => getter(entity!);
+
         ParameterExpression param = Expression.Parameter(typeof(T), "e");
-        MemberExpression access = Expression.Property(param, prop);
+        MemberExpression access = Expression.Property(param, column.Property!);
         UnaryExpression box = Expression.Convert(access, typeof(object));
         return Expression.Lambda<Func<T, object?>>(box, param).Compile();
     }

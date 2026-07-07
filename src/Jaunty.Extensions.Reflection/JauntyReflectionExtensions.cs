@@ -285,8 +285,9 @@ public static class JauntyReflectionExtensions
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;
-                object? propValue = col.Property.GetValue(entity);
-                p.Value = ApplyHandlersAndEnumStorage(col.Property, propValue) ?? DBNull.Value;
+                PropertyInfo property = col.Property!;
+                object? propValue = property.GetValue(entity);
+                p.Value = ApplyHandlersAndEnumStorage(property, propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
         };
@@ -303,7 +304,8 @@ public static class JauntyReflectionExtensions
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;
-                object? propValue = col.Property.GetValue(entity); p.Value = ApplyHandlersAndEnumStorage(col.Property, propValue) ?? DBNull.Value;
+                PropertyInfo property = col.Property!;
+                object? propValue = property.GetValue(entity); p.Value = ApplyHandlersAndEnumStorage(property, propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
 
@@ -311,7 +313,8 @@ public static class JauntyReflectionExtensions
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;
-                object? propValue = col.Property.GetValue(entity); p.Value = ApplyHandlersAndEnumStorage(col.Property, propValue) ?? DBNull.Value;
+                PropertyInfo property = col.Property!;
+                object? propValue = property.GetValue(entity); p.Value = ApplyHandlersAndEnumStorage(property, propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
         };
@@ -328,8 +331,9 @@ public static class JauntyReflectionExtensions
             {
                 IDbDataParameter p = cmd.CreateParameter();
                 p.ParameterName = "@" + col.ColumnName;
-                object? propValue = col.Property.GetValue(entity);
-                p.Value = ApplyHandlersAndEnumStorage(col.Property, propValue) ?? DBNull.Value;
+                PropertyInfo property = col.Property!;
+                object? propValue = property.GetValue(entity);
+                p.Value = ApplyHandlersAndEnumStorage(property, propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
         };
