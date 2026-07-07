@@ -22,6 +22,7 @@ internal static class SourceGeneratedMetadataResolver
     /// </summary>
 #if NET5_0_OR_GREATER
     [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Source-generated static members are always preserved because the generated class itself is reachable.")]
+    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "The ColumnInfo nested type's properties are always preserved because the generated class itself is reachable.")]
 #endif
     public static EntityMetadata? TryBuild(Type type)
     {
