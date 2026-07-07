@@ -142,10 +142,17 @@ public class JauntyRepository<T> : IReadRepository<T>, IRepository<T>
                 whereApplied = true;
             }
 
+            var hasExplicitOrder = specification.OrderExpressions.Any();
+
             foreach (var order in specification.OrderExpressions)
             {
                 var keySelector = SpecRetargeter.RetargetKey<T, TRow>(order.KeySelector);
                 query = ApplyOrder(query, keySelector, order.OrderType);
+            }
+
+            if (!hasExplicitOrder && (specification.Skip.HasValue || specification.Take.HasValue))
+            {
+                query = ApplyOrder(query, ToObjectSelector(idSelector), OrderTypeEnum.OrderBy);
             }
 
             if (specification.Skip.HasValue)
@@ -193,6 +200,12 @@ public class JauntyRepository<T> : IReadRepository<T>, IRepository<T>
     private static IQueryTerminal<TRow> ApplyTake<TRow>(IQueryTerminal<TRow> query, int count)
         where TRow : new()
         => ((IFromClause<TRow>)query).Take(count);
+
+    private static Expression<Func<TRow, object?>> ToObjectSelector<TRow>(Expression<Func<TRow, int>> selector)
+    {
+        var body = Expression.Convert(selector.Body, typeof(object));
+        return Expression.Lambda<Func<TRow, object?>>(body, selector.Parameters[0]);
+    }
 
     // Fetches child rows for the given parent ids with a single WHERE fk IN (...) query. Returns an
     // empty list when there are no parents so no query is issued.
