@@ -25,11 +25,9 @@ public static class JauntyCatalogSeed
                 connection.Open();
             }
 
-            // No EF migrations any more; create the schema for SQLite-backed connections.
-            if (IsSqlite(connection))
-            {
-                SqliteSchema.EnsureCreated(connection);
-            }
+            // No EF migrations any more; create the schema for whichever dialect this connection
+            // targets (idempotent create-if-not-exists across all supported providers).
+            CatalogSchema.EnsureCreated(connection);
 
             if (Count(connection, "CatalogBrands") == 0)
             {
@@ -58,9 +56,6 @@ public static class JauntyCatalogSeed
             throw;
         }
     }
-
-    private static bool IsSqlite(IDbConnection connection)
-        => connection.GetType().Name.IndexOf("Sqlite", StringComparison.OrdinalIgnoreCase) >= 0;
 
     private static int Count(IDbConnection connection, string table)
     {

@@ -33,7 +33,8 @@ else{
     builder.Services.AddScoped<System.Data.IDbConnection>(_ =>
     {
         var connectionString = builder.Configuration[builder.Configuration["AZURE_SQL_CATALOG_CONNECTION_STRING_KEY"] ?? ""];
-        return new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+        var provider = Microsoft.eShopWeb.Infrastructure.Data.Persistence.CatalogSchema.Parse(builder.Configuration["DatabaseProvider"]);
+        return Microsoft.eShopWeb.Infrastructure.Dependencies.CreateCatalogConnection(provider, connectionString);
     });
     builder.Services.AddDbContext<AppIdentityDbContext>(options =>
     {
