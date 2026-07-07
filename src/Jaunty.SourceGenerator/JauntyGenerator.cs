@@ -154,17 +154,23 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("    {");
         sb.AppendLine("        public readonly struct ColumnInfo");
         sb.AppendLine("        {");
-        sb.AppendLine("            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity)");
+        sb.AppendLine("            public ColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, System.Type propertyType, System.Func<object, object?> getter, System.Action<object, object?> setter)");
         sb.AppendLine("            {");
         sb.AppendLine("                ColumnName = columnName;");
         sb.AppendLine("                PropertyName = propertyName;");
         sb.AppendLine("                IsPrimaryKey = isPrimaryKey;");
         sb.AppendLine("                IsIdentity = isIdentity;");
+        sb.AppendLine("                PropertyType = propertyType;");
+        sb.AppendLine("                Getter = getter;");
+        sb.AppendLine("                Setter = setter;");
         sb.AppendLine("            }");
         sb.AppendLine("            public string ColumnName { get; }");
         sb.AppendLine("            public string PropertyName { get; }");
         sb.AppendLine("            public bool IsPrimaryKey { get; }");
         sb.AppendLine("            public bool IsIdentity { get; }");
+        sb.AppendLine("            public System.Type PropertyType { get; }");
+        sb.AppendLine("            public System.Func<object, object?> Getter { get; }");
+        sb.AppendLine("            public System.Action<object, object?> Setter { get; }");
         sb.AppendLine("        }");
         sb.AppendLine();
 
@@ -423,13 +429,16 @@ public class JauntyGenerator : IIncrementalGenerator
         var updateProps = properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity).ToList();
         var deleteProps = properties.Where(x => x.IsPrimaryKey).ToList();
 
+        string ColumnInfoCtor(PropertyMetadata p)
+            => $"new ColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, " +
+               $"typeof({p.TypeName}), e => (object?)(({className})e).{p.PropertyName}, (e, v) => (({className})e).{p.PropertyName} = ({p.TypeName})v!)";
+
         sb.AppendLine();
         sb.AppendLine("        public static System.Collections.Generic.IReadOnlyList<ColumnInfo> InsertColumns { get; }");
         sb.AppendLine("            = new ColumnInfo[] {");
         for (int i = 0; i < insertProps.Count; i++)
         {
-            PropertyMetadata p = insertProps[i];
-            sb.AppendLine($"            new ColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}),");
+            sb.AppendLine($"            {ColumnInfoCtor(insertProps[i])},");
         }
         sb.AppendLine("        };");
 
@@ -438,8 +447,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            = new ColumnInfo[] {");
         for (int i = 0; i < updateProps.Count; i++)
         {
-            PropertyMetadata p = updateProps[i];
-            sb.AppendLine($"            new ColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}),");
+            sb.AppendLine($"            {ColumnInfoCtor(updateProps[i])},");
         }
         sb.AppendLine("        };");
 
@@ -448,8 +456,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            = new ColumnInfo[] {");
         for (int i = 0; i < deleteProps.Count; i++)
         {
-            PropertyMetadata p = deleteProps[i];
-            sb.AppendLine($"            new ColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}),");
+            sb.AppendLine($"            {ColumnInfoCtor(deleteProps[i])},");
         }
         sb.AppendLine("        };");
 
@@ -460,7 +467,7 @@ public class JauntyGenerator : IIncrementalGenerator
         for (int i = 0; i < properties.Count; i++)
         {
             PropertyMetadata p = properties[i];
-            sb.AppendLine($"            [\"{p.ColumnName}\"] = new ColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}),");
+            sb.AppendLine($"            [\"{p.ColumnName}\"] = {ColumnInfoCtor(p)},");
         }
         sb.AppendLine("        };");
 
