@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>		
+		<RootNamespace>Microsoft.eShopWeb.Infrastructure</RootNamespace>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!--
+		  Ardalis.Specification.EntityFrameworkCore is retained (not removed as the port brief
+		  suggested) because EfRepository.cs and the IntegrationTests project (which must remain
+		  untouched) still depend on it. The Jaunty-backed JauntyRepository uses only the base
+		  Ardalis.Specification contract, referenced explicitly below.
+		-->
+		<PackageReference Include="Ardalis.Specification" />
+		<PackageReference Include="Ardalis.Specification.EntityFrameworkCore" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+		<PackageReference Include="Microsoft.Data.SqlClient" />
+		<PackageReference Include="Microsoft.Data.Sqlite" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\ApplicationCore\ApplicationCore.csproj" />
+		<ProjectReference Include="..\..\..\..\src\Jaunty\Jaunty.csproj" />
+		<ProjectReference Include="..\..\..\..\src\Jaunty.Fluent\Jaunty.Fluent.csproj" />
+		<ProjectReference Include="..\..\..\..\src\Jaunty.Extensions.Reflection\Jaunty.Extensions.Reflection.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<Folder Include="Data\Migrations\" />
+	</ItemGroup>
+</Project>
