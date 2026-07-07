@@ -38,7 +38,7 @@ services:
     image: mysql:8
     container_name: torture-mysql
     ports:
-      - "3306:3306"
+      - "3308:3306"
     environment:
       MYSQL_ROOT_PASSWORD: "Torture_Test_Pwd1!"
       MYSQL_DATABASE: "torture_db"
