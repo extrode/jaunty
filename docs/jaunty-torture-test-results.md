@@ -1,12 +1,76 @@
 # Jaunty Torture Test — Results Matrix
 
-Part 1 only (eShopOnWeb port). Part 2 (Sakila/Pagila) and optional Part 3 (Conduit/SQLite
-smoke test) not attempted in this pass — see `docs/jaunty-torture-test-handoff.md`.
+Part 1 (eShopOnWeb port) and Part 2 (Sakila/Pagila dialect-translation stress test) complete.
+Optional Part 3 (Conduit/SQLite smoke test) not attempted — see
+`docs/jaunty-torture-test-handoff.md`.
 
 | Test | SQL Server | Postgres | MySQL | MariaDB | SQLite |
 |---|---|---|---|---|---|
 | eShopOnWeb FunctionalTests (12 tests) | 12/12 pass | 12/12 pass | 12/12 pass | 12/12 pass | 12/12 pass |
-| Sakila query 1..15 | not attempted | not attempted | not attempted | not attempted | not attempted |
+| Sakila query 1..15 | pass (see notes) | pass (see notes) | pass | pass | pass (baseline) |
+
+## Part 2 — Sakila/Pagila query results
+
+All 15 queries (`samples/torture-test-sakila-queries/`) ran successfully against all 5 targets
+with no crashes and no unexplained result differences. Per-query comparison against the SQLite
+baseline:
+
+| # | Query | SQL Server | Postgres | MySQL | MariaDB |
+|---|---|---|---|---|---|
+| 1 | Rental history for a customer (3-way join) | exact | same rows, shifted dates* | exact | exact |
+| 2 | Top 5 films by revenue (raw SQL — join+GROUP BY) | exact | exact | exact | exact |
+| 3 | Actor filmography (2-way join) | exact | exact | exact | exact |
+| 4 | Monthly rental count per store (raw SQL, per-dialect date-trunc) | exact | same rows, shifted dates* | exact | exact |
+| 5 | Customers with outstanding rentals (2-way join) | same rows, tie-order differs† | same rows, shifted dates* | same rows, tie-order differs† | same rows, tie-order differs† |
+| 6 | Film count per category (GroupBy+Count) | exact | exact | exact | exact |
+| 7 | Average rental rate by category (raw SQL — join+GROUP BY, portable SQL) | exact | exact | exact | exact |
+| 8 | Films with no category (WhereNotExists) | exact (empty set) | exact (empty set) | exact (empty set) | exact (empty set) |
+| 9 | Top 10 customers by spend (GroupBy+Sum, client-sorted) | same rows, tie-order differs† | same rows, tie-order differs† | exact | exact |
+| 10 | Actors in >25 films (GroupBy+Having, closure threshold) | exact | exact | exact | exact |
+| 11 | Distinct stores stocking a film (Distinct) | exact | exact | exact | exact |
+| 12 | Rental count per staff member (GroupBy+Count) | exact | exact | exact | exact |
+| 13 | Customers who never paid (WhereNotExists) | exact (empty set) | exact (empty set) | exact (empty set) | exact (empty set) |
+| 14 | Films above average rental rate (2-step: raw scalar + fluent filter) | same rows, tie-order differs† | same rows, tie-order differs† | exact | same rows, tie-order differs† |
+| 15 | Paginated film list, page 2 (Skip/Take + OrderBy) | exact | exact | exact | exact |
+
+`*` **Not a Jaunty issue.** Pagila's `rental`/`payment` timestamp data is systematically shifted
+(~17 years forward, ~1 hour time-of-day) relative to jOOQ/sakila's static 2005–2006 snapshot used
+by the other 4 targets — a data-provenance difference between the two independently-maintained
+upstream sample-database projects, confirmed by checking the raw rows directly with each engine's
+own CLI (`mysql`, `psql`). Row counts, row identities, and relative patterns (which customer
+rented which film, which rentals are still outstanding) match exactly; only the literal date
+values differ for the 3 queries that surface raw timestamps (Q1, Q4, Q5). Query correctness is
+unaffected — this would reproduce identically even if Jaunty were never involved.
+
+`†` **Not a Jaunty issue.** These 3 queries order or select "top N" by a column with many exact
+ties (`rental_date` shared by dozens of rentals seeded at the same instant; `total spend`/
+`rental_rate` shared by many customers/films) without a secondary tiebreaker in the query design
+itself — SQL doesn't guarantee tie order unless one is specified, so which of several tied rows
+sorts first is legitimately implementation-defined per engine. Row *sets* match exactly (verified
+by sorting before diffing); only the order of tied rows differs. A production query needing
+deterministic tie order would add an explicit secondary `OrderBy` (e.g. by id) — intentionally
+not done here since the point was to prove the aggregate/filter logic, not tie-breaking.
+
+**Net result: zero unexplained result differences across all 5 dialects for all 15 queries.**
+Every observed difference traces to one of the two documented, non-Jaunty causes above.
+
+## Part 2 — Jaunty gaps found
+
+Four real findings while writing and running these queries, all in `docs/jaunty-torture-test-gaps-log.md`
+(entries #11–14):
+- **#11 (core candidate, significant):** `Jaunty.Fluent`'s query builder has no NativeAOT-safe
+  metadata path — it requires `Jaunty.Extensions.Reflection` for every single fluent query,
+  contradicting the constitution's "no runtime reflection in core" principle for its primary API.
+- **#12 (fixed):** source generator produced uncompilable code for any `DateTime?`/`Guid?`
+  property — a missing fully-qualified case in an existing type-name switch.
+- **#13 (core candidate):** `GroupBy` cannot be combined with joins in the fluent API at all —
+  forced 3 of the 15 queries to raw SQL passthrough, 2 of which needed no dialect-specific SQL.
+- **#14 (fixed):** `HAVING` rejected any closure-captured variable or method parameter as a
+  comparison value — only literals worked, an easy-to-hit gap in ordinary parameterized code.
+
+Also confirmed via the codegen-diff step (entries #9–10, not fixed, low priority): Postgres
+enum/array columns and one SQLite compound-type-declaration edge case both fall back to `object`
+in generated entities instead of a precise type.
 
 All 5 targets run the same `JauntyRepository<T>` code path with real SQL-level query
 translation (not in-memory filtering) — `WHERE`/`ORDER BY`/`SKIP`/`TAKE` are pushed to SQL
@@ -65,3 +129,14 @@ Two genuine bugs found and fixed during this test, neither a Jaunty gap:
 - The eShopOnWeb clone itself lives at `torture-test/eshoponweb/` (gitignored — a disposable
   vendor clone). The actual port code that was written/edited is preserved at
   `samples/torture-test-eshoponweb-port/` in this repo.
+
+For Part 2 (Sakila/Pagila):
+
+- Same `docker compose up -d`, plus `data/sqlite/sakila.db` for the SQLite target (see
+  `seed/sakila/README.md` for how it and the 4 real-DB databases were loaded).
+- `cd samples/torture-test-sakila-queries && dotnet run -- <sqlite|sqlserver|postgres|mysql|mariadb>`.
+  SQLite needs no env vars; the other 4 need the same `JAUNTY_TORTURE_CONNSTR_*` env vars as
+  Part 1 (not committed, same reasoning as above), pointed at the `sakila`/`pagila` databases
+  instead of the eShopOnWeb ones.
+- Codegen-diff output (`dotnet-jaunty scaffold` run against each target) is preserved at
+  `samples/torture-test-sakila-codegen/`.
