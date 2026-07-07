@@ -50,13 +50,7 @@ public class TestApiApplication : WebApplicationFactory<AuthenticateEndpoint>
             }
 
             services.AddSingleton<IDbConnection>(_ =>
-            {
-                var connection = new SqliteConnection(
-                    $"DataSource={_sqliteDataSource};Mode=Memory;Cache=Shared");
-                connection.Open();
-                SqliteSchema.EnsureCreated(connection);
-                return connection;
-            });
+                TortureDatabase.CreateOpenConnection(_sqliteDataSource));
         });
 
         return base.CreateHost(builder);
