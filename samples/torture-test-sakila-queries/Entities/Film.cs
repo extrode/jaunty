@@ -14,7 +14,4 @@ public partial class Film
 
     [Column("rental_rate")]
     public decimal RentalRate { get; set; }
-
-    [Column("rental_duration")]
-    public int RentalDuration { get; set; }
 }
