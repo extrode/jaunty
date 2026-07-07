@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<IsPackable>false</IsPackable>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+		<PackageReference Include="coverlet.collector" Version="10.0.1" PrivateAssets="all" />
+		<PackageReference Include="xunit.v3" Version="3.2.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.3" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" /><!-- pin: GHSA-2m69-gcr7-jv3q; 2.1.x native sqlite is vulnerable; 3.0.3 pulls SourceGear.sqlite3 3.50.4+ -->
+	</ItemGroup>
+
+	<!--
+	Deliberately does NOT reference Jaunty.Extensions.Reflection. Spec 003 (fluent
+	NativeAOT-safe metadata) User Story 1's acceptance criteria requires fluent queries
+	against source-generated entities to work with "no call to UseReflectionMapping()
+	anywhere in the process" - the absence of the package reference here is itself part
+	of the proof, not just an assertion in test code.
+	-->
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\..\src\Jaunty.Fluent\Jaunty.Fluent.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+		<ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
+		                  OutputItemType="Analyzer"
+		                  ReferenceOutputAssembly="false"
+		                  Private="false"
+		                  SetTargetFramework="TargetFramework=netstandard2.0" />
+	</ItemGroup>
+
+</Project>
