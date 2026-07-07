@@ -188,7 +188,7 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
         }
 
         var propertyName = member.Member.Name;
-        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
+        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.PropertyName == propertyName);
         var columnName = column?.ColumnName ?? propertyName;
         var escapedColumn = _dialect.EscapeColumnName(columnName);
 

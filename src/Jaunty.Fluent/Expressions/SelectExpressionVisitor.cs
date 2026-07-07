@@ -402,7 +402,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
     {
         var propertyName = member.Member.Name;
 
-        ColumnMetadata? column = _metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
+        ColumnMetadata? column = _metadata.Columns.FirstOrDefault(c => c.PropertyName == propertyName);
         return column?.ColumnName ?? propertyName;
     }
 

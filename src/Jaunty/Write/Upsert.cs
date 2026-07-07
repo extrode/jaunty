@@ -187,7 +187,7 @@ public static partial class Jaunty
 
             IDbDataParameter param = command.CreateParameter();
             param.ParameterName = "@" + col.ColumnName;
-            param.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+            param.Value = GetColumnValue(col, entity) ?? DBNull.Value;
             command.Parameters.Add(param);
             addedParams.Add(col.ColumnName);
         }
@@ -201,8 +201,11 @@ public static partial class Jaunty
 
             IDbDataParameter param = command.CreateParameter();
             param.ParameterName = "@" + col.ColumnName;
-            param.Value = col.Property.GetValue(entity) ?? DBNull.Value;
+            param.Value = GetColumnValue(col, entity) ?? DBNull.Value;
             command.Parameters.Add(param);
         }
     }
+
+    private static object? GetColumnValue<T>(ColumnMetadata col, T entity)
+        => col.Getter is { } getter ? getter(entity!) : col.Property!.GetValue(entity);
 }
