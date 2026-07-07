@@ -46,10 +46,33 @@ public class SqlDialectTests
     }
 
     [Fact]
-    public void SqlServer_GetPagingSql_GeneratesCorrectSql()
+    public void SqlServer_GetPagingSql_NoOrderBy_AutoInjectsNoOpOrder()
     {
+        // Regression test: SQL Server's OFFSET/FETCH is invalid without a preceding ORDER BY.
+        // Jaunty auto-injects a deterministic no-op order so paging behaves like the other
+        // 3 dialects instead of failing at execution time.
         var result = _sqlServer.GetPagingSql("SELECT * FROM table", 10, 20);
-        Assert.Equal("SELECT * FROM table OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY", result);
+        Assert.Equal("SELECT * FROM table ORDER BY (SELECT NULL) OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY", result);
+    }
+
+    [Fact]
+    public void SqlServer_GetPagingSql_ExistingOrderBy_NotDuplicated()
+    {
+        var result = _sqlServer.GetPagingSql("SELECT * FROM table ORDER BY id", 10, 20);
+        Assert.Equal("SELECT * FROM table ORDER BY id OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY", result);
+    }
+
+    [Fact]
+    public void SqlServer_GetPagingSql_OrderByOnlyInsideWindowFunction_StillInjectsTopLevelOrder()
+    {
+        // An ORDER BY nested inside a window function's OVER(...) clause is not a top-level
+        // order - the outer query still needs one for OFFSET/FETCH to be valid.
+        var result = _sqlServer.GetPagingSql(
+            "SELECT id, ROW_NUMBER() OVER (PARTITION BY category ORDER BY price) AS rn FROM table",
+            10, 20);
+        Assert.Equal(
+            "SELECT id, ROW_NUMBER() OVER (PARTITION BY category ORDER BY price) AS rn FROM table ORDER BY (SELECT NULL) OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY",
+            result);
     }
 
     [Fact]
@@ -946,7 +969,8 @@ public class SqlDialectTests
             insertParams: new[] { "@id", "@name", "@value" },
             updateColumns: new[] { "name", "value" },
             updateParams: new[] { "@name", "@value" },
-            keyColumns: new[] { "id" });
+            keyColumns: new[] { "id" },
+            keyParams: new[] { "@id" });
 
         Assert.Contains("MERGE INTO products AS target", sql);
         Assert.Contains("USING (VALUES (@id, @name, @value))", sql);
@@ -954,6 +978,28 @@ public class SqlDialectTests
         Assert.Contains("ON target.id = source.id", sql);
         Assert.Contains("WHEN MATCHED THEN UPDATE SET target.name = source.name, target.value = source.value", sql);
         Assert.Contains("WHEN NOT MATCHED THEN INSERT (id, name, value) VALUES (source.id, source.name, source.value)", sql);
+    }
+
+    [Fact]
+    public void SqlServer_GenerateUpsertSql_IdentityKey_ExcludedFromInsertButIncludedInSource()
+    {
+        // Regression test: identity primary keys are excluded from insertColumns (SQL Server
+        // rejects an explicit INSERT into an identity column), but the ON clause still needs
+        // "source.<key>" to exist in the USING/AS source column list to match existing rows.
+        var sql = _sqlServer.GenerateUpsertSql(
+            "products",
+            insertColumns: new[] { "name", "value" },
+            insertParams: new[] { "@name", "@value" },
+            updateColumns: new[] { "name", "value" },
+            updateParams: new[] { "@name", "@value" },
+            keyColumns: new[] { "id" },
+            keyParams: new[] { "@id" });
+
+        Assert.Contains("USING (VALUES (@name, @value, @id))", sql);
+        Assert.Contains("AS source (name, value, id)", sql);
+        Assert.Contains("ON target.id = source.id", sql);
+        Assert.Contains("WHEN NOT MATCHED THEN INSERT (name, value) VALUES (source.name, source.value)", sql);
+        Assert.DoesNotContain("WHEN NOT MATCHED THEN INSERT (name, value, id)", sql);
     }
 
     [Fact]
@@ -965,7 +1011,8 @@ public class SqlDialectTests
             insertParams: new[] { "@k1", "@k2", "@col" },
             updateColumns: new[] { "col" },
             updateParams: new[] { "@col" },
-            keyColumns: new[] { "k1", "k2" });
+            keyColumns: new[] { "k1", "k2" },
+            keyParams: new[] { "@k1", "@k2" });
 
         Assert.Contains("target.k1 = source.k1 AND target.k2 = source.k2", sql);
     }
@@ -985,7 +1032,8 @@ public class SqlDialectTests
             insertParams: new[] { "@id", "@name", "@value" },
             updateColumns: new[] { "name", "value" },
             updateParams: new[] { "@name", "@value" },
-            keyColumns: new[] { "id" });
+            keyColumns: new[] { "id" },
+            keyParams: new[] { "@id" });
 
         Assert.Contains("INSERT INTO products", sql);
         Assert.Contains("(id, name, value) VALUES (@id, @name, @value)", sql);
@@ -1008,7 +1056,8 @@ public class SqlDialectTests
             insertParams: new[] { "@id", "@name", "@value" },
             updateColumns: new[] { "name", "value" },
             updateParams: new[] { "@name", "@value" },
-            keyColumns: new[] { "id" });
+            keyColumns: new[] { "id" },
+            keyParams: new[] { "@id" });
 
         Assert.Contains("INSERT INTO products", sql);
         Assert.Contains("(id, name, value) VALUES (@id, @name, @value)", sql);
@@ -1032,7 +1081,8 @@ public class SqlDialectTests
             insertParams: new[] { "@id", "@name", "@value" },
             updateColumns: new[] { "name", "value" },
             updateParams: new[] { "@name", "@value" },
-            keyColumns: new[] { "id" });
+            keyColumns: new[] { "id" },
+            keyParams: new[] { "@id" });
 
         Assert.Contains("INSERT INTO products", sql);
         Assert.Contains("(id, name, value) VALUES (@id, @name, @value)", sql);
@@ -1049,7 +1099,8 @@ public class SqlDialectTests
             insertParams: new[] { "@k1", "@k2", "@col" },
             updateColumns: new[] { "col" },
             updateParams: new[] { "@col" },
-            keyColumns: new[] { "k1", "k2" });
+            keyColumns: new[] { "k1", "k2" },
+            keyParams: new[] { "@k1", "@k2" });
 
         Assert.Contains("ON CONFLICT (k1, k2)", sql);
     }

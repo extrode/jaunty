@@ -146,7 +146,8 @@ public class SqlDialectTests
                 new[] { "@Id", "@Name" },
                 new[] { "name" },
                 new[] { "@Name" },
-                new[] { "id" });
+                new[] { "id" },
+                new[] { "@Id" });
 
             Assert.Contains("ON CONFLICT (id)", result);
             Assert.Contains("DO UPDATE SET", result);
@@ -276,7 +277,7 @@ public class SqlDialectTests
         public void GetPagingSql_UsesOffsetFetch()
         {
             var result = _dialect.GetPagingSql("SELECT * FROM t", 10, 20);
-            Assert.Equal("SELECT * FROM t OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY", result);
+            Assert.Equal("SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY", result);
         }
 
         [Fact]
@@ -306,7 +307,8 @@ public class SqlDialectTests
                 new[] { "@Id", "@Name" },
                 new[] { "name" },
                 new[] { "@Name" },
-                new[] { "id" });
+                new[] { "id" },
+                new[] { "@Id" });
 
             Assert.Contains("MERGE INTO", result);
             Assert.Contains("WHEN MATCHED THEN UPDATE", result);
@@ -436,7 +438,8 @@ public class SqlDialectTests
                 new[] { "@Id", "@Name" },
                 new[] { "name" },
                 new[] { "@Name" },
-                new[] { "id" });
+                new[] { "id" },
+                new[] { "@Id" });
 
             Assert.Contains("ON DUPLICATE KEY UPDATE", result);
             Assert.Contains("VALUES(name)", result);
@@ -451,7 +454,8 @@ public class SqlDialectTests
                 new[] { "@Id", "@Name", "@Description" },
                 new[] { "name", "description" },
                 new[] { "@Name", "@Description" },
-                new[] { "id" });
+                new[] { "id" },
+                new[] { "@Id" });
 
             Assert.Equal("INSERT INTO items (id, name, description) VALUES (@Id, @Name, @Description) ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description)", result);
         }
@@ -721,7 +725,8 @@ public class SqlDialectTests
                 new[] { "@Id", "@Name" },
                 new[] { "name" },
                 new[] { "@Name" },
-                new[] { "id" });
+                new[] { "id" },
+                new[] { "@Id" });
 
             Assert.Contains("ON CONFLICT (id)", result);
             Assert.Contains("DO UPDATE SET", result);
@@ -737,7 +742,8 @@ public class SqlDialectTests
                 new[] { "@Id", "@Name", "@Description" },
                 new[] { "name", "description" },
                 new[] { "@Name", "@Description" },
-                new[] { "id" });
+                new[] { "id" },
+                new[] { "@Id" });
 
             Assert.Equal("INSERT INTO items (id, name, description) VALUES (@Id, @Name, @Description) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description", result);
         }
@@ -1102,11 +1108,11 @@ public class SqlDialectTests
 
             // Zero offset
             var result1 = dialect.GetPagingSql("SELECT * FROM t", 0, 10);
-            Assert.Equal("SELECT * FROM t OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY", result1);
+            Assert.Equal("SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY", result1);
 
             // Zero fetchNext
             var result2 = dialect.GetPagingSql("SELECT * FROM t", 10, 0);
-            Assert.Equal("SELECT * FROM t OFFSET 10 ROWS FETCH NEXT 0 ROWS ONLY", result2);
+            Assert.Equal("SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 10 ROWS FETCH NEXT 0 ROWS ONLY", result2);
         }
 
         [Fact]

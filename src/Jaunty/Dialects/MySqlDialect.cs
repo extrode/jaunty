@@ -155,7 +155,8 @@ internal sealed class MySqlDialect : ISqlDialect
         string[] insertParams,
         string[] updateColumns,
         string[] updateParams,
-        string[] keyColumns)
+        string[] keyColumns,
+        string[] keyParams)
     {
         // MySQL: INSERT INTO table (...) VALUES (...) ON DUPLICATE KEY UPDATE col = VALUES(col)
         var sb = new System.Text.StringBuilder(256);
