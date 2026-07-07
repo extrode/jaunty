@@ -37,7 +37,7 @@ internal static class FluentMetadataCache
 
             foreach (ColumnMetadata col in meta.Columns)
             {
-                escapedCols[col.Property.Name] = dialect.EscapeColumnName(col.ColumnName);
+                escapedCols[col.PropertyName] = dialect.EscapeColumnName(col.ColumnName);
             }
 
             return new CachedDialectMetadata(escapedTable, escapedCols);

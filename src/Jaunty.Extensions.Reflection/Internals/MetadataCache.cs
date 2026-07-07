@@ -47,17 +47,18 @@ internal static class MetadataCache<T>
         for (int i = 0; i < columns.Length; i++)
         {
             ColumnMetadata column = columns[i];
-            Action<T, IDataRecord, int> setter = CreateSetter(column.Property);
-            Action<T, DbDataReader, int> fastSetter = CreateFastSetter(column.Property);
-            Func<T, object?> getter = CreateGetter(column.Property);
-            bool isNonNullable = IsNonNullableType(column.Property.PropertyType);
+            PropertyInfo property = column.Property!;
+            Action<T, IDataRecord, int> setter = CreateSetter(property);
+            Action<T, DbDataReader, int> fastSetter = CreateFastSetter(property);
+            Func<T, object?> getter = CreateGetter(property);
+            bool isNonNullable = IsNonNullableType(property.PropertyType);
 
-            contexts.Add(new PropertyContext<T>(column.Property, setter, fastSetter, getter, column.Property.Name, column.ColumnName, isNonNullable));
+            contexts.Add(new PropertyContext<T>(property, setter, fastSetter, getter, column.PropertyName, column.ColumnName, isNonNullable));
 
             nameToIndex[column.ColumnName] = i;
 
-            if (!column.ColumnName.Equals(column.Property.Name, StringComparison.OrdinalIgnoreCase))
-                nameToIndex[column.Property.Name] = i;
+            if (!column.ColumnName.Equals(column.PropertyName, StringComparison.OrdinalIgnoreCase))
+                nameToIndex[column.PropertyName] = i;
         }
 
         Properties = contexts.ToArray();

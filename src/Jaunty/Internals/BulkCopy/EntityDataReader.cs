@@ -119,7 +119,7 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
 
     /// <inheritdoc/>
 #pragma warning disable IL2093 // Interface mismatch in DynamicallyAccessedMembersAttribute
-    public Type GetFieldType(int i) => _columns[i].Property.PropertyType;
+    public Type GetFieldType(int i) => _columns[i].PropertyType;
 #pragma warning restore IL2093
 
     /// <inheritdoc/>
@@ -231,9 +231,15 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
 
             for (int i = 0; i < columns.Length; i++)
             {
-                PropertyInfo prop = columns[i].Property;
+                ColumnMetadata column = columns[i];
+                if (column.Getter is { } getter)
+                {
+                    getters[i] = entity => getter(entity!);
+                    continue;
+                }
+
                 ParameterExpression param = Expression.Parameter(typeof(TEntity), "e");
-                MemberExpression access = Expression.Property(param, prop);
+                MemberExpression access = Expression.Property(param, column.Property!);
                 UnaryExpression box = Expression.Convert(access, typeof(object));
                 getters[i] = Expression.Lambda<Func<TEntity, object?>>(box, param).Compile();
             }

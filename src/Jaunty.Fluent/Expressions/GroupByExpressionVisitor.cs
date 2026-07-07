@@ -249,7 +249,7 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
         IReadOnlyList<ColumnMetadata> columns = _metadata.Columns;
         for (int i = 0; i < columns.Count; i++)
         {
-            if (columns[i].Property.Name == propertyName)
+            if (columns[i].PropertyName == propertyName)
                 return columns[i].ColumnName;
         }
         return propertyName;

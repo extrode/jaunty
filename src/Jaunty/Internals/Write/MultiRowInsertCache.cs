@@ -31,9 +31,15 @@ internal static class MultiRowInsertCache
         var getters = new Func<T, object?>[columns.Count];
         for (int c = 0; c < columns.Count; c++)
         {
-            PropertyInfo prop = columns[c].Property;
+            ColumnMetadata column = columns[c];
+            if (column.Getter is { } getter)
+            {
+                getters[c] = entity => getter(entity!);
+                continue;
+            }
+
             ParameterExpression param = Expression.Parameter(typeof(T), "e");
-            MemberExpression access = Expression.Property(param, prop);
+            MemberExpression access = Expression.Property(param, column.Property!);
             UnaryExpression box = Expression.Convert(access, typeof(object));
             getters[c] = Expression.Lambda<Func<T, object?>>(box, param).Compile();
         }

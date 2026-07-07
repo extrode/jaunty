@@ -97,7 +97,7 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
 
         for (int i = 0; i < columns.Count; i++)
         {
-            if (columns[i].Property.Name == propertyName)
+            if (columns[i].PropertyName == propertyName)
             {
                 columnName = columns[i].ColumnName;
                 break;
@@ -539,7 +539,7 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
         for (int i = 0; i < columns.Count; i++)
         {
-            if (columns[i].Property.Name == propertyName)
+            if (columns[i].PropertyName == propertyName)
             {
                 columnName = columns[i].ColumnName;
                 break;
