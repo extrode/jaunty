@@ -8,8 +8,6 @@ using Npgsql;
 
 using SakilaQueries;
 
-Jaunty.Extensions.Reflection.JauntyReflectionExtensions.UseReflectionMapping();
-
 if (args.Length < 1)
 {
     Console.Error.WriteLine("Usage: SakilaQueries <sqlserver|postgres|mysql|mariadb|sqlite>");
