@@ -2,32 +2,28 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
-    <ExcludeFromCoverage>true</ExcludeFromCoverage>
-    <NoWarn>$(NoWarn);CS8321</NoWarn>
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
-    <PackageReference Include="Npgsql" Version="8.0.5" />
-    <PackageReference Include="MySqlConnector" Version="2.4.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
-  </ItemGroup>
 
   <!--
   Deliberately does NOT reference Jaunty.Extensions.Reflection. Spec 003 (fluent
-  NativeAOT-safe metadata) closed gap #11 - all 15 queries here now resolve
-  source-generated entity metadata reflection-free, with no UseReflectionMapping() call.
+  NativeAOT-safe metadata) closed the gap that made this impossible: fluent queries
+  (not just Query<T>) now resolve source-generated entity metadata reflection-free.
   -->
   <ItemGroup>
     <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" />
     <ProjectReference Include="..\..\src\Jaunty.Fluent\Jaunty.Fluent.csproj" />
     <ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" /><!-- pin: GHSA-2m69-gcr7-jv3q; 2.1.x native sqlite is vulnerable; 3.0.3 pulls SourceGear.sqlite3 3.50.4+ -->
   </ItemGroup>
 
 </Project>
