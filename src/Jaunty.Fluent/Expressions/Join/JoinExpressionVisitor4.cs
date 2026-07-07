@@ -198,7 +198,7 @@ internal sealed class JoinExpressionVisitor4<T1, T2, T3, T4> : ExpressionVisitor
         }
 
         string propertyName = member.Member.Name;
-        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
+        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.PropertyName == propertyName);
         string columnName = column?.ColumnName ?? propertyName;
         string escapedColumn = _dialect.EscapeColumnName(columnName);
 

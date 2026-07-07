@@ -334,10 +334,13 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
                 if (!reader.IsDBNull(ordinal))
                 {
                     object? value = reader.GetValue(ordinal);
-                    Type propertyType = col.Property.PropertyType;
+                    Type propertyType = col.PropertyType;
                     Type targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
                     object? convertedValue = Convert.ChangeType(value, targetType);
-                    col.Property.SetValue(entity, convertedValue);
+                    if (col.Setter is { } setter)
+                        setter(entity!, convertedValue);
+                    else
+                        col.Property!.SetValue(entity, convertedValue);
                 }
             }
             catch (IndexOutOfRangeException)

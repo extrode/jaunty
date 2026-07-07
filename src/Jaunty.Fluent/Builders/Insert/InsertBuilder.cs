@@ -43,8 +43,8 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
             ColumnMetadata col = columns[i];
             if (!col.IsComputed)
             {
-                var value = col.Property.GetValue(entity);
-                var paramName = $"{_dialect.ParameterPrefix}{col.Property.Name}";
+                var value = col.Getter is { } getter ? getter(entity!) : col.Property!.GetValue(entity);
+                var paramName = $"{_dialect.ParameterPrefix}{col.PropertyName}";
                 _parameters.Add(paramName, value);
                 _columns.Add(new InsertColumn(_dialect.EscapeColumnName(col.ColumnName), paramName));
             }
@@ -247,7 +247,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         IReadOnlyList<ColumnMetadata> columns = _metadata.Columns;
         for (int i = 0; i < columns.Count; i++)
         {
-            if (columns[i].Property.Name == propertyName)
+            if (columns[i].PropertyName == propertyName)
                 return columns[i];
         }
         return null;
