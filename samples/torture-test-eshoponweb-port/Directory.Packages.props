@@ -37,6 +37,8 @@
     <PackageVersion Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="$(VSCodeGeneratorVersion)" />
     <PackageVersion Include="Microsoft.Web.LibraryManager.Build" Version="2.1.175" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.1.5" />
+    <PackageVersion Include="Npgsql" Version="10.0.1" />
+    <PackageVersion Include="MySql.Data" Version="9.6.0" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="$(EntityFramworkCoreVersion)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="$(EntityFramworkCoreVersion)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="$(EntityFramworkCoreVersion)" />
