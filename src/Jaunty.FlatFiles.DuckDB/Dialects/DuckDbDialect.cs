@@ -194,7 +194,8 @@ public sealed class DuckDbDialect : IFlatFileDialect
         string[] insertParams,
         string[] updateColumns,
         string[] updateParams,
-        string[] keyColumns)
+        string[] keyColumns,
+        string[] keyParams)
     {
         var sb = new StringBuilder(256);
         sb.Append("INSERT INTO ");
