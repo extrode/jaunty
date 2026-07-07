@@ -137,6 +137,22 @@ public class FluentGroupByTests : IClassFixture<FluentDatabaseFixture>
         Assert.All(results, r => Assert.True(r.Count > 0));
     }
 
+    [Fact]
+    public void GroupBy_WithHaving_CapturedVariableThreshold_FiltersGroupsAfterGrouping()
+    {
+        // A closed-over local (not a literal) on the right-hand side of a HAVING
+        // comparison compiles to a MemberExpression over a compiler-generated
+        // closure class, not a ConstantExpression - this must still translate.
+        var minCount = 5;
+
+        var results = _fixture.Connection.From<Product>()
+            .GroupBy(p => p.CategoryId)
+            .Having(g => g.Count() > minCount)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.All(results, r => Assert.True(r.Count > minCount));
+    }
+
     // --- GROUP BY with Composite Key Tests ---
 
     [Fact]
