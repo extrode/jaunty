@@ -323,18 +323,40 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         // Constants
         if (expr is ConstantExpression constant)
         {
-            return constant.Value is null
-                ? "NULL"
-                : constant.Value is string s
-                ? $"'{s.Replace("'", "''")}'"
-                : constant.Value is bool b
-                ? b
-                    ? "1"
-                    : "0"
-                        : constant.Value.ToString() ?? "NULL";
+            return FormatHavingLiteral(constant.Value);
+        }
+
+        // Captured local variables, method parameters, and other closed-over values
+        // (e.g. `.Having(g => g.Count() > minFilms)`) compile to a MemberExpression
+        // over a compiler-generated closure class, not a ConstantExpression. Evaluate
+        // it the same way WhereExpressionVisitor/JoinExpressionVisitor/etc. already do.
+        if (expr is MemberExpression or UnaryExpression)
+        {
+            return FormatHavingLiteral(EvaluateExpression(expr));
         }
 
         throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
+    }
+
+    private static string FormatHavingLiteral(object? value)
+    {
+        return value switch
+        {
+            null => "NULL",
+            string s => $"'{s.Replace("'", "''")}'",
+            bool b => b ? "1" : "0",
+            _ => value.ToString() ?? "NULL"
+        };
+    }
+
+    private static object? EvaluateExpression(Expression expression)
+    {
+        if (expression is ConstantExpression constant)
+            return constant.Value;
+
+        LambdaExpression lambda = Expression.Lambda(expression);
+        Delegate compiled = lambda.Compile();
+        return compiled.DynamicInvoke();
     }
 
     private string BuildHavingAggregate(string aggregate, Expression selectorExpr)
