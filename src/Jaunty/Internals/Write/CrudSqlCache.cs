@@ -42,8 +42,9 @@ internal static class CrudSqlCache
         {
             throw new InvalidOperationException(
                 $"Cannot build CRUD SQL for type '{typeof(T).Name}'. " +
-                "The type is not source-generated and no reflection fallback is registered. " +
-                "Ensure the class has [Table] attribute or 'Jaunty.Extensions.Reflection' is loaded.");
+                "Ensure the class has [Table] and is processed by the Jaunty source generator " +
+                "(the class must be declared 'partial'), or call " +
+                "Jaunty.Extensions.Reflection's UseReflectionMapping().");
         }
 
         string escapedTableName = dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
@@ -77,11 +78,13 @@ internal static class CrudSqlCache
 
     private static EntityMetadata? TryResolveMetadata<T>() where T : new()
     {
-        // 1. Check if IMapped<T> provides metadata (Source Gen path)
-        // Our source gen could implement a GetMetadata() on IMapped, but for now we'll rely on the extension hook
-        // for complex metadata like PrimaryKeys/Identity.
+        // 1. Source-generated static surface (TableName/SchemaName/ParameterMap) - reflection-free
+        if (SourceGeneratedMetadataResolver.TryBuild(typeof(T)) is EntityMetadata sourceGenMetadata)
+        {
+            return sourceGenMetadata;
+        }
 
-        // 2. Fallback to extension hook
+        // 2. Fallback to extension hook (Jaunty.Extensions.Reflection)
         if (JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is EntityMetadata metadata)
         {
             return metadata;
