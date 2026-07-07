@@ -1,5 +1,7 @@
 using System.Data;
 using Jaunty;
+using MySql.Data.MySqlClient;
+using Npgsql;
 using Microsoft.Data.Sqlite;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -45,14 +47,28 @@ public static class Dependencies
         }
         else
         {
-            // Real SQL Server catalog store via Jaunty. The connection string is the same
-            // "CatalogConnection" previously consumed by EF Core.
+            // Real catalog store via Jaunty. The connection string is the same "CatalogConnection"
+            // previously consumed by EF Core; "DatabaseProvider" selects which client to construct.
+            var provider = CatalogSchema.Parse(configuration["DatabaseProvider"]);
+
             services.AddScoped<IDbConnection>(_ =>
-                new SqlConnection(configuration.GetConnectionString("CatalogConnection")));
+                CreateCatalogConnection(provider, configuration.GetConnectionString("CatalogConnection")));
 
             // Add Identity DbContext (still EF Core).
             services.AddDbContext<AppIdentityDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("IdentityConnection")));
         }
+    }
+
+    public static IDbConnection CreateCatalogConnection(CatalogDatabaseProvider provider, string? connectionString)
+    {
+        return provider switch
+        {
+            CatalogDatabaseProvider.Sqlite => new SqliteConnection(connectionString),
+            CatalogDatabaseProvider.Postgres => new NpgsqlConnection(connectionString),
+            CatalogDatabaseProvider.MySql => new MySqlConnection(connectionString),
+            CatalogDatabaseProvider.MariaDb => new MySqlConnection(connectionString),
+            _ => new SqlConnection(connectionString),
+        };
     }
 }
