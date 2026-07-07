@@ -89,7 +89,8 @@ internal class TestDialect : ISqlDialect
         string[] insertParams,
         string[] updateColumns,
         string[] updateParams,
-        string[] keyColumns)
+        string[] keyColumns,
+        string[] keyParams)
     {
         var columnsList = string.Join(", ", insertColumns);
         var valuesList = string.Join(", ", insertParams);
