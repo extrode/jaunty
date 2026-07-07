@@ -508,10 +508,10 @@ public class JauntyGenerator : IIncrementalGenerator
             "float?" or "Single?" => new("reader.GetFloat", "float", true),
             "short?" or "Int16?" => new("reader.GetInt16", "short", true),
             "byte?" or "Byte?" => new("reader.GetByte", "byte", true),
-            "Guid?" => new("reader.GetGuid", "Guid", true),
-            "DateTime?" => new("reader.GetDateTime", "DateTime", true),
-            "TimeSpan?" => new("reader.GetValue", "object", true),
-            "DateTimeOffset?" => new("reader.GetValue", "object", true),
+            "Guid?" or "System.Guid?" => new("reader.GetGuid", "Guid", true),
+            "DateTime?" or "System.DateTime?" => new("reader.GetDateTime", "DateTime", true),
+            "TimeSpan?" or "System.TimeSpan?" => new("reader.GetValue", "object", true),
+            "DateTimeOffset?" or "System.DateTimeOffset?" => new("reader.GetValue", "object", true),
 
             // Reference types - needs null check
             "string" or "String" or "string?" or "String?" or "System.String" => new("reader.GetString", "string", true),
