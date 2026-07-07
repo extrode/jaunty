@@ -173,6 +173,9 @@ ehthumbs.db
 # AOT installation (may contain sensitive workload info)
 /.dotnet
 
+# Torture test: external reference repo clones (vendored, not part of Jaunty history)
+/torture-test/eshoponweb/
+
 # =============================================================================
 # EDITOR AND TOOL STATE
 # =============================================================================
