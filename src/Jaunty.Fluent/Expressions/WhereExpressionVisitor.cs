@@ -651,7 +651,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         // Look up the actual column name from metadata
         EntityMetadata metadata = FluentMetadataCache.GetMetadata<T>();
 
-        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
+        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.PropertyName == propertyName);
 
         return column?.ColumnName ?? propertyName;
     }

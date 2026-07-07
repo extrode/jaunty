@@ -212,7 +212,7 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
     {
         var propertyName = member.Member.Name;
 
-        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.Property.Name == propertyName);
+        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.PropertyName == propertyName);
         return column?.ColumnName ?? propertyName;
     }
 
