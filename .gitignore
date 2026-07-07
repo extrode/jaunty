@@ -162,6 +162,7 @@ ehthumbs.db
 
 # Bulk/generated test data (tpch.db is 1 GB, TPC-H CSVs are hundreds of MB)
 /data/**/*.db
+/data/**/*.db-journal
 /data/**/*.sqlite
 /data/**/*.csv
 !data/README.md
@@ -175,6 +176,8 @@ ehthumbs.db
 
 # Torture test: external reference repo clones (vendored, not part of Jaunty history)
 /torture-test/eshoponweb/
+/torture-test/sakila/
+/torture-test/pagila/
 
 # =============================================================================
 # EDITOR AND TOOL STATE
