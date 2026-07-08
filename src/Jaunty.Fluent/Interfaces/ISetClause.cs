@@ -1,4 +1,7 @@
+using System.Data;
 using System.Linq.Expressions;
+
+using Jaunty.Core;
 
 namespace Jaunty.Fluent;
 
@@ -68,9 +71,26 @@ public interface ISetClause<T> where T : new()
     int UpdateAll();
 
     /// <summary>
+    /// Updates all rows in the table without a WHERE clause, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// Use with caution.
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <returns>Number of rows affected.</returns>
+    int UpdateAll(CommandOptions options);
+
+    /// <summary>
     /// Asynchronously updates all rows in the table without a WHERE clause.
     /// </summary>
     Task<int> UpdateAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Asynchronously updates all rows in the table without a WHERE clause, executing within the
+    /// given <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    Task<int> UpdateAllAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     // SQL introspection
     /// <summary>
