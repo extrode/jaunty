@@ -11,53 +11,58 @@ using Jaunty.Internals.Entity;
 namespace Jaunty.Fluent;
 
 /// <summary>
-/// Query builder for grouped 2-way joined queries. Implements IGroupedJoinedQuery. Sibling to
-/// GroupedQueryBuilder for the joined case - reuses the parent JoinedQueryBuilder's
-/// already-accumulated join/WHERE state (spec 004's state-reuse seam) rather than rebuilding
-/// the FROM/JOIN/WHERE fragment.
+/// Query builder for grouped 3-way joined queries. Implements IGroupedJoinedQuery3. Sibling
+/// to GroupedJoinedQueryBuilder for the 3-entity case - reuses the parent JoinedQuery3Builder
+/// (and, through it, the root JoinedQueryBuilder's) already-accumulated join/WHERE state.
 /// </summary>
-internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJoinedQuery<TFrom, TJoin, TKey>
-    where TFrom : new()
-    where TJoin : new()
+internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoinedQuery3<T1, T2, T3, TKey>
+    where T1 : new()
+    where T2 : new()
+    where T3 : new()
 {
-    private readonly JoinedQueryBuilder<TFrom, TJoin> _parent;
+    private readonly JoinedQuery3Builder<T1, T2, T3> _parent;
     private readonly EntityMetadata[] _metadata;
     private readonly JoinedGroupByExpressionVisitor _visitor;
     private readonly List<string> _havingConditions = [];
 
-    internal GroupedJoinedQueryBuilder(JoinedQueryBuilder<TFrom, TJoin> parent, Expression<Func<TFrom, TJoin, TKey>> keySelector)
+    internal GroupedJoinedQueryBuilder3(JoinedQuery3Builder<T1, T2, T3> parent, Expression<Func<T1, T2, T3, TKey>> keySelector)
     {
         _parent = parent;
-        _metadata = [FluentMetadataCache.GetMetadata<TFrom>(), FluentMetadataCache.GetMetadata<TJoin>()];
-        string[] tablePrefixes = [_parent.FromAlias ?? _metadata[0].TableName, _parent.Joins[0].Alias ?? _metadata[1].TableName];
-        _visitor = new JoinedGroupByExpressionVisitor(_parent.Dialect, _metadata, tablePrefixes, keySelector);
+        _metadata = [FluentMetadataCache.GetMetadata<T1>(), FluentMetadataCache.GetMetadata<T2>(), FluentMetadataCache.GetMetadata<T3>()];
+        string[] tablePrefixes =
+        [
+            _parent._parent.FromAlias ?? _metadata[0].TableName,
+            _parent._parent.Joins[0].Alias ?? _metadata[1].TableName,
+            _parent._parent.Joins[1].Alias ?? _metadata[2].TableName
+        ];
+        _visitor = new JoinedGroupByExpressionVisitor(_parent._parent.Dialect, _metadata, tablePrefixes, keySelector);
     }
 
-    public IGroupedJoinedQuery<TFrom, TJoin, TKey> Having(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, bool>> predicate)
+    public IGroupedJoinedQuery3<T1, T2, T3, TKey> Having(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, bool>> predicate)
     {
         var havingSql = _visitor.TranslateHavingPredicate(predicate);
         _havingConditions.Add(havingSql);
         return this;
     }
 
-    public List<TResult> Select<TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector)
+    public List<TResult> Select<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector)
     {
         var sql = BuildSelectSql(selector);
         return ExecuteQuery<TResult>(sql, selector);
     }
 
-    public async Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CancellationToken cancellationToken = default)
+    public async Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CancellationToken cancellationToken = default)
     {
         var sql = BuildSelectSql(selector);
         return await ExecuteQueryAsync<TResult>(sql, selector, cancellationToken).ConfigureAwait(false);
     }
 
-    public string ToSql<TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector)
+    public string ToSql<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector)
     {
         return BuildSelectSql(selector);
     }
 
-    private string BuildSelectSql<TResult>(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector)
+    private string BuildSelectSql<TResult>(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector)
     {
         (string[] selectColumns, string[] _) = _visitor.TranslateSelect(selector);
 
@@ -71,7 +76,7 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
         }
 
         sb.Append(" FROM ");
-        sb.Append(_parent.BuildFromJoinWhereSql());
+        sb.Append(_parent._parent.BuildFromJoinWhereSql());
 
         sb.Append(" GROUP BY ");
         string[] groupByColumns = _visitor.GroupByColumns;
@@ -94,18 +99,18 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
         return sb.ToString();
     }
 
-    private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector)
+    private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector)
     {
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
 
         var results = new List<TResult>();
 
-        using IDbCommand command = _parent.Connection.CreateCommand();
+        using IDbCommand command = _parent._parent.Connection.CreateCommand();
         command.CommandText = sql;
-        _parent.BindParameters(command);
+        _parent._parent.BindParameters(command);
 
-        var wasClosed = _parent.Connection.State == ConnectionState.Closed;
-        if (wasClosed) _parent.Connection.Open();
+        var wasClosed = _parent._parent.Connection.State == ConnectionState.Closed;
+        if (wasClosed) _parent._parent.Connection.Open();
         try
         {
             using IDataReader reader = command.ExecuteReader();
@@ -118,15 +123,15 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
         }
         finally
         {
-            if (wasClosed) _parent.Connection.Close();
+            if (wasClosed) _parent._parent.Connection.Close();
         }
 
         return results;
     }
 
-    private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CancellationToken cancellationToken)
+    private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CancellationToken cancellationToken)
     {
-        if (_parent.Connection is not DbConnection dbConn)
+        if (_parent._parent.Connection is not DbConnection dbConn)
             return ExecuteQuery(sql, selector);
 
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
@@ -135,9 +140,9 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
 
         using DbCommand command = dbConn.CreateCommand();
         command.CommandText = sql;
-        _parent.BindParameters(command);
+        _parent._parent.BindParameters(command);
 
-        bool wasClosed = _parent.Connection.State == ConnectionState.Closed;
+        bool wasClosed = _parent._parent.Connection.State == ConnectionState.Closed;
         if (wasClosed) await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         try
@@ -157,5 +162,4 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
 
         return results;
     }
-
 }

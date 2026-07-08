@@ -583,6 +583,15 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     /// </summary>
     IJoinedQuery3<T1, T2, T3> ThenByJoinedDescending<TKey>(Expression<Func<T3, TKey>> keySelector);
 
+    // --- GROUP BY Operations ---
+
+    /// <summary>
+    /// Groups the joined results by a key drawn from any of the three entities, for
+    /// HAVING/aggregate Select projections. See
+    /// <see cref="IGroupedJoinedQuery3{T1,T2,T3,TKey}"/>.
+    /// </summary>
+    IGroupedJoinedQuery3<T1, T2, T3, TKey> GroupBy<TKey>(Expression<Func<T1, T2, T3, TKey>> keySelector);
+
     // --- SELECT Operations ---
 
     /// <summary>
