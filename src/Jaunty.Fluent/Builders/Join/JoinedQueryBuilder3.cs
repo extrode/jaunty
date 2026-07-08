@@ -249,6 +249,13 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
         return this;
     }
 
+    // ==================== GROUP BY ====================
+
+    public IGroupedJoinedQuery3<T1, T2, T3, TKey> GroupBy<TKey>(Expression<Func<T1, T2, T3, TKey>> keySelector)
+    {
+        return new GroupedJoinedQueryBuilder3<T1, T2, T3, TKey>(this, keySelector);
+    }
+
     // ==================== SELECT ====================
 
     public List<T1> Select() => _parent.Select();
