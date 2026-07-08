@@ -119,7 +119,7 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
     where T3 : new()
     where T4 : new()
 {
-    private readonly JoinedQuery3Builder<T1, T2, T3> _parent;
+    internal readonly JoinedQuery3Builder<T1, T2, T3> _parent;
 
     public JoinedQuery4Builder(JoinedQuery3Builder<T1, T2, T3> parent) => _parent = parent;
 
