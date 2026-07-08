@@ -36,6 +36,75 @@ internal sealed class JoinedGroupByExpressionVisitor
     public string[] GroupByColumns => _groupByColumns;
 
     /// <summary>
+    /// Translates a HAVING predicate (its single parameter is the IGroupingJoined{,3,4}
+    /// instance) to a SQL boolean expression. Reuses <see cref="HavingExpressionHelpers"/>
+    /// (the same closure-safety fix single-entity HAVING uses) and the same aggregate-column
+    /// resolution as <see cref="TranslateSelect"/>.
+    /// </summary>
+    public string TranslateHavingPredicate(LambdaExpression predicate)
+    {
+        Expression body = predicate.Body;
+
+        if (body is BinaryExpression binary)
+        {
+            string left = TranslateHavingExpression(binary.Left);
+            string right = TranslateHavingExpression(binary.Right);
+            string op = GetSqlOperator(binary.NodeType);
+            return $"{left} {op} {right}";
+        }
+
+        throw new NotSupportedException($"HAVING predicate type '{body.NodeType}' is not supported.");
+    }
+
+    private string TranslateHavingExpression(Expression expr)
+    {
+        // g.Count() > 5, g.Sum((t1,t2) => t1.Price) > total, etc.
+        if (expr is MethodCallExpression methodCall)
+        {
+            var methodName = methodCall.Method.Name;
+
+            return methodName switch
+            {
+                "Count" when methodCall.Arguments.Count == 0 => "COUNT(*)",
+                "Count" => BuildAggregateWithColumn("COUNT", methodCall.Arguments[0]),
+                "Sum" => BuildAggregateWithColumn("SUM", methodCall.Arguments[0]),
+                "Avg" => BuildAggregateWithColumn("AVG", methodCall.Arguments[0]),
+                "Min" => BuildAggregateWithColumn("MIN", methodCall.Arguments[0]),
+                "Max" => BuildAggregateWithColumn("MAX", methodCall.Arguments[0]),
+                _ => throw new NotSupportedException($"Method '{methodName}' is not supported in HAVING.")
+            };
+        }
+
+        if (expr is ConstantExpression constant)
+        {
+            return HavingExpressionHelpers.FormatLiteral(constant.Value);
+        }
+
+        // Captured local variables, method parameters, and other closed-over values compile
+        // to a MemberExpression over a compiler-generated closure class, not a
+        // ConstantExpression - evaluate it (gap #14's closure-safety fix).
+        if (expr is MemberExpression or UnaryExpression)
+        {
+            return HavingExpressionHelpers.FormatLiteral(HavingExpressionHelpers.EvaluateExpression(expr));
+        }
+
+        throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
+    }
+
+    private static string GetSqlOperator(ExpressionType nodeType) => nodeType switch
+    {
+        ExpressionType.Equal => "=",
+        ExpressionType.NotEqual => "<>",
+        ExpressionType.GreaterThan => ">",
+        ExpressionType.GreaterThanOrEqual => ">=",
+        ExpressionType.LessThan => "<",
+        ExpressionType.LessThanOrEqual => "<=",
+        ExpressionType.AndAlso => "AND",
+        ExpressionType.OrElse => "OR",
+        _ => throw new NotSupportedException($"Operator '{nodeType}' is not supported.")
+    };
+
+    /// <summary>
     /// Translates a Select projection expression (its single parameter is the
     /// IGroupingJoined{,3,4} instance) to a SQL column list.
     /// </summary>
