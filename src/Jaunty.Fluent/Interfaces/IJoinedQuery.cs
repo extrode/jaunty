@@ -829,6 +829,15 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     /// </summary>
     IJoinedQuery4<T1, T2, T3, T4> ThenByJoinedDescending<TKey>(Expression<Func<T4, TKey>> keySelector);
 
+    // --- GROUP BY Operations ---
+
+    /// <summary>
+    /// Groups the joined results by a key drawn from any of the four entities, for
+    /// HAVING/aggregate Select projections. See
+    /// <see cref="IGroupedJoinedQuery4{T1,T2,T3,T4,TKey}"/>.
+    /// </summary>
+    IGroupedJoinedQuery4<T1, T2, T3, T4, TKey> GroupBy<TKey>(Expression<Func<T1, T2, T3, T4, TKey>> keySelector);
+
     // --- SELECT Operations ---
 
     /// <summary>
