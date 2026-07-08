@@ -52,6 +52,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal ISqlDialect Dialect => _dialect;
     internal IDbConnection Connection => _connection;
     internal List<JoinInfo> Joins => _joins;
+    internal List<WhereCondition> Conditions => _conditions;
     internal List<OrderByColumn> GetOrderByColumns() => _orderByColumns;
     internal ParameterCollection GetParameters() => _parameters;
 
@@ -150,6 +151,46 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
                 if (orderBy.Descending)
                     sb.Append(" DESC");
             }
+        }
+
+        return sb.ToString();
+    }
+
+    // FROM/JOIN/WHERE fragment shared with grouped-joined queries (spec 004's state-reuse
+    // seam), which append GROUP BY/HAVING instead of the plain column SELECT/ORDER BY that
+    // BuildSelectSql/BuildCountSql/BuildSelectPartialSql produce.
+    internal string BuildFromJoinWhereSql()
+    {
+        var sb = new StringBuilder(256);
+        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
+
+        if (_fromAlias is not null)
+        {
+            sb.Append(' ');
+            sb.Append(_fromAlias);
+        }
+
+        foreach (JoinInfo join in _joins)
+        {
+            sb.Append(' ');
+            sb.Append(join.JoinKeyword);
+            sb.Append(' ');
+            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
+
+            if (join.Alias is not null)
+            {
+                sb.Append(' ');
+                sb.Append(join.Alias);
+            }
+
+            sb.Append(" ON ");
+            sb.Append(join.OnCondition);
+        }
+
+        if (_conditions.Count > 0)
+        {
+            sb.Append(" WHERE ");
+            sb.Append(BuildWhereExpression(_conditions));
         }
 
         return sb.ToString();
