@@ -93,6 +93,22 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     /// </summary>
     IJoinedQuery<TFrom, TJoin> ThenByJoinedDescending<TKey>(Expression<Func<TJoin, TKey>> keySelector);
 
+    // --- GROUP BY Operations ---
+
+    /// <summary>
+    /// Groups the joined results by a key drawn from either entity, for HAVING/aggregate
+    /// Select projections. See <see cref="IGroupedJoinedQuery{TFrom,TJoin,TKey}"/>.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// db.From&lt;Film&gt;()
+    ///     .InnerJoin&lt;Category&gt;().On(f =&gt; f.CategoryId, c =&gt; c.CategoryId)
+    ///     .GroupBy((f, c) =&gt; c.Name)
+    ///     .Select(g =&gt; new { Category = g.Key, Count = g.Count() });
+    /// </code>
+    /// </example>
+    IGroupedJoinedQuery<TFrom, TJoin, TKey> GroupBy<TKey>(Expression<Func<TFrom, TJoin, TKey>> keySelector);
+
     // --- SELECT Operations ---
 
     /// <summary>
