@@ -21,15 +21,25 @@ internal sealed class JoinedGroupByExpressionVisitor
 {
     private readonly ISqlDialect _dialect;
     private readonly EntityMetadata[] _metadata;
+    private readonly string[] _tablePrefixes;
     private readonly string[] _groupByColumns;
     private readonly Dictionary<string, string> _keyPropertyToColumn;
     private readonly List<string> _selectColumns = new();
     private readonly List<string> _columnAliases = new();
 
-    public JoinedGroupByExpressionVisitor(ISqlDialect dialect, EntityMetadata[] metadata, LambdaExpression keySelector)
+    /// <param name="dialect">The SQL dialect, for column escaping.</param>
+    /// <param name="metadata">Entity metadata, ordered index 0 = TFrom, index 1 = TJoin, etc.</param>
+    /// <param name="tablePrefixes">Table alias (or table name, if unaliased) per joined
+    /// entity, same order as <paramref name="metadata"/> - every generated column reference
+    /// is qualified with it, since two joined tables can share a column name (e.g. both
+    /// having an "id" or shared FK column) and an unqualified GROUP BY/SELECT reference to it
+    /// is ambiguous and fails at execution, unlike the single-entity case where it can't be.</param>
+    /// <param name="keySelector">The GROUP BY key selector.</param>
+    public JoinedGroupByExpressionVisitor(ISqlDialect dialect, EntityMetadata[] metadata, string[] tablePrefixes, LambdaExpression keySelector)
     {
         _dialect = dialect;
         _metadata = metadata;
+        _tablePrefixes = tablePrefixes;
         (_groupByColumns, _keyPropertyToColumn) = ExtractGroupByColumns(keySelector);
     }
 
@@ -269,8 +279,8 @@ internal sealed class JoinedGroupByExpressionVisitor
             if (body is MemberExpression memberExpr)
             {
                 int paramIndex = GetParameterIndex(memberExpr, lambda.Parameters);
-                string columnName = GetColumnName(_metadata[paramIndex], memberExpr.Member.Name);
-                return $"{aggregate}({_dialect.EscapeColumnName(columnName)})";
+                string qualified = GetQualifiedColumnName(paramIndex, memberExpr.Member.Name);
+                return $"{aggregate}({qualified})";
             }
 
             if (body is ConstantExpression constant)
@@ -293,8 +303,8 @@ internal sealed class JoinedGroupByExpressionVisitor
         if (body is MemberExpression member)
         {
             int paramIndex = GetParameterIndex(member, keySelector.Parameters);
-            string columnName = GetColumnName(_metadata[paramIndex], member.Member.Name);
-            return ([_dialect.EscapeColumnName(columnName)], new Dictionary<string, string>());
+            string qualified = GetQualifiedColumnName(paramIndex, member.Member.Name);
+            return ([qualified], new Dictionary<string, string>());
         }
 
         // Composite key: (t1,t2) => new { t1.CategoryId, t2.SupplierId }
@@ -309,12 +319,11 @@ internal sealed class JoinedGroupByExpressionVisitor
                     throw new NotSupportedException("GROUP BY key must be property expressions.");
 
                 int paramIndex = GetParameterIndex(memberArg, keySelector.Parameters);
-                string columnName = GetColumnName(_metadata[paramIndex], memberArg.Member.Name);
-                string escaped = _dialect.EscapeColumnName(columnName);
-                columns[i] = escaped;
+                string qualified = GetQualifiedColumnName(paramIndex, memberArg.Member.Name);
+                columns[i] = qualified;
 
                 var keyPropertyName = newExpr.Members?[i]?.Name ?? memberArg.Member.Name;
-                propertyToColumn[keyPropertyName] = escaped;
+                propertyToColumn[keyPropertyName] = qualified;
             }
 
             return (columns, propertyToColumn);
@@ -348,14 +357,20 @@ internal sealed class JoinedGroupByExpressionVisitor
         return expr is ParameterExpression p && ReferenceEquals(p, groupingParam);
     }
 
-    private static string GetColumnName(EntityMetadata metadata, string propertyName)
+    private string GetQualifiedColumnName(int paramIndex, string propertyName)
     {
-        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
+        IReadOnlyList<ColumnMetadata> columns = _metadata[paramIndex].Columns;
+        string columnName = propertyName;
+
         for (int i = 0; i < columns.Count; i++)
         {
             if (columns[i].PropertyName == propertyName)
-                return columns[i].ColumnName;
+            {
+                columnName = columns[i].ColumnName;
+                break;
+            }
         }
-        return propertyName;
+
+        return $"{_tablePrefixes[paramIndex]}.{_dialect.EscapeColumnName(columnName)}";
     }
 }
