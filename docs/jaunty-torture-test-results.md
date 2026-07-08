@@ -28,10 +28,13 @@ model-binding quirk in the vendor app's `ArticlesController` — non-nullable `[
 parameters implicitly required by ASP.NET's validation — unrelated to the data layer and present
 in the untouched vendor code.)
 
-One real Jaunty gap found and logged (not fixed this session, `docs/jaunty-torture-test-gaps-log.md`
-#15): the fluent bulk `.Where(...).Delete()`/`.DeleteAsync()` terminal has no `CommandOptions`/
-transaction overload, unlike every other Jaunty write path — forced a less efficient
-select-then-loop-delete workaround for the one handler needing transactional bulk deletes.
+One real Jaunty gap found (`docs/jaunty-torture-test-gaps-log.md` #15) and **fixed the same day**:
+the fluent bulk `.Where(...).Delete()`/`.DeleteAsync()` terminal (plus its `Update` sibling) had
+no `CommandOptions`/transaction overload, unlike every other Jaunty write path — forced a less
+efficient select-then-loop-delete workaround for the one handler needing transactional bulk
+deletes at the time. `Delete`/`DeleteAsync`/`DeleteAll`/`DeleteAllAsync`/`Update`/`UpdateAsync`/
+`UpdateAll`/`UpdateAllAsync` all gained `CommandOptions` overloads on
+`fix/fluent-bulk-delete-transaction-overload`.
 
 ## Part 2 — Sakila/Pagila query results
 
