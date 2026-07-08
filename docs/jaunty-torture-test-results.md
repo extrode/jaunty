@@ -1,13 +1,37 @@
 # Jaunty Torture Test — Results Matrix
 
-Part 1 (eShopOnWeb port) and Part 2 (Sakila/Pagila dialect-translation stress test) complete.
-Optional Part 3 (Conduit/SQLite smoke test) not attempted — see
-`docs/jaunty-torture-test-handoff.md`.
+Parts 1 (eShopOnWeb port), 2 (Sakila/Pagila dialect-translation stress test), and 3
+(Conduit/RealWorld backend) are all complete. See `docs/jaunty-torture-test-handoff.md` for the
+original scope.
 
 | Test | SQL Server | Postgres | MySQL | MariaDB | SQLite |
 |---|---|---|---|---|---|
 | eShopOnWeb FunctionalTests (12 tests) | 12/12 pass | 12/12 pass | 12/12 pass | 12/12 pass | 12/12 pass |
 | Sakila query 1..15 | pass (see notes) | pass (see notes) | pass | pass | pass (baseline) |
+| Conduit.IntegrationTests (7 tests) | not attempted (SQLite-only scope) | not attempted | not attempted | not attempted | 7/7 pass |
+
+## Part 3 — Conduit/RealWorld backend
+
+Zero-config SQLite smoke check per the handoff doc's Part 3 scope: clone a .NET RealWorld
+backend, swap EF Core for Jaunty, confirm it works out of the box. Unlike the doc's original
+"quick sanity check" framing, Conduit's MediatR handlers compose EF `IQueryable<T>` directly in
+every handler body rather than through a repository seam, so the actual port ended up touching
+all 19 handlers — full detail and design decisions in
+`samples/torture-test-conduit-port/README.md`.
+
+**Result:** all 7 `Conduit.IntegrationTests` pass against a real, disposable per-test SQLite
+file. A live HTTP smoke test against the running app (`dotnet run`, real ASP.NET DI/MediatR
+pipeline) confirmed the full round trip working: user registration, article creation with tags,
+article detail retrieval with full author/tag/favorite graph hydration, tag listing, and profile
+lookup all returned correct data. (`GET /articles` list endpoint 422s on a pre-existing
+model-binding quirk in the vendor app's `ArticlesController` — non-nullable `[FromQuery] string`
+parameters implicitly required by ASP.NET's validation — unrelated to the data layer and present
+in the untouched vendor code.)
+
+One real Jaunty gap found and logged (not fixed this session, `docs/jaunty-torture-test-gaps-log.md`
+#15): the fluent bulk `.Where(...).Delete()`/`.DeleteAsync()` terminal has no `CommandOptions`/
+transaction overload, unlike every other Jaunty write path — forced a less efficient
+select-then-loop-delete workaround for the one handler needing transactional bulk deletes.
 
 ## Part 2 — Sakila/Pagila query results
 
