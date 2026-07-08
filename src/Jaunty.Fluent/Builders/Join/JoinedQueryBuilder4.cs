@@ -303,6 +303,13 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         return this;
     }
 
+    // ==================== GROUP BY ====================
+
+    public IGroupedJoinedQuery4<T1, T2, T3, T4, TKey> GroupBy<TKey>(Expression<Func<T1, T2, T3, T4, TKey>> keySelector)
+    {
+        return new GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey>(this, keySelector);
+    }
+
     // ==================== SELECT ====================
 
     public List<T1> Select() => _parent._parent.Select();
