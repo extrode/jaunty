@@ -18,11 +18,12 @@ public class OverdueRow
     public DateTime RentalDate { get; set; }
 }
 
-// [Table] here has no real table behind it - this class is only ever populated via raw SQL
-// passthrough (Query<T>(sql)), never a fluent query. The attribute exists purely to trigger
-// source generation (IMapped<T>.ReadEntity), so raw-SQL DTO mapping stays reflection-free too.
-[Table("query_result_film_revenue")]
-public partial class FilmRevenueRow : IMapped<FilmRevenueRow>
+// Spec 004 (gap #13) closure: Q02 now populates this via the fluent GroupBy-on-join API's
+// Select<TResult> projection (reflection-based Activator.CreateInstance, same as every
+// other LINQ-projected row type below), not raw SQL passthrough - no longer needs [Table]/
+// partial/IMapped<T> (that was only ever required to trigger source-gen mapping for
+// Query<T>(sql), a different, unrelated resolution path).
+public class FilmRevenueRow
 {
     public string Title { get; set; } = string.Empty;
     public decimal Revenue { get; set; }
@@ -34,8 +35,7 @@ public class CategoryFilmCountRow
     public int FilmCount { get; set; }
 }
 
-[Table("query_result_category_avg_rate")]
-public partial class CategoryAvgRateRow : IMapped<CategoryAvgRateRow>
+public class CategoryAvgRateRow
 {
     public string CategoryName { get; set; } = string.Empty;
     public decimal AvgRentalRate { get; set; }

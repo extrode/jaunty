@@ -40,7 +40,7 @@ using (connection)
         w.WriteLine($"{r.Title}|{FmtDate(r.RentalDate)}|{FmtDateN(r.ReturnDate)}");
 
     w.WriteLine("== Q02 Top5FilmsByRevenue ==");
-    foreach (var r in Queries.Q02_Top5FilmsByRevenue(connection, dialect))
+    foreach (var r in Queries.Q02_Top5FilmsByRevenue(connection))
         w.WriteLine($"{r.Title}|{FmtDec(r.Revenue)}");
 
     w.WriteLine("== Q03 ActorFilmography(1) ==");

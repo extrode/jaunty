@@ -66,8 +66,11 @@ Four real findings while writing and running these queries, all in `docs/jaunty-
   still pass against all 5 targets.
 - **#12 (fixed):** source generator produced uncompilable code for any `DateTime?`/`Guid?`
   property — a missing fully-qualified case in an existing type-name switch.
-- **#13 (core candidate):** `GroupBy` cannot be combined with joins in the fluent API at all —
+- **#13 (fixed 2026-07-08):** `GroupBy` cannot be combined with joins in the fluent API at all —
   forced 3 of the 15 queries to raw SQL passthrough, 2 of which needed no dialect-specific SQL.
+  Closed by spec 004 (`IGroupingJoined`/`IGroupedJoinedQuery` for 2/3/4-way); `Q02`/`Q07`
+  rewritten on the new API, byte-identical output across all 5 targets. `Q04` remains raw SQL
+  (date-truncation, an unrelated, explicitly out-of-scope capability).
 - **#14 (fixed):** `HAVING` rejected any closure-captured variable or method parameter as a
   comparison value — only literals worked, an easy-to-hit gap in ordinary parameterized code.
 
