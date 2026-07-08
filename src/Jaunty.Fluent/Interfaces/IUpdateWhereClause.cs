@@ -1,4 +1,7 @@
+using System.Data;
 using System.Linq.Expressions;
+
+using Jaunty.Core;
 
 namespace Jaunty.Fluent;
 
@@ -91,9 +94,26 @@ public interface IUpdateWhereClause<T> where T : new()
     int Update();
 
     /// <summary>
+    /// Executes the UPDATE statement with the specified SET and WHERE clauses, within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <returns>Number of rows affected.</returns>
+    int Update(CommandOptions options);
+
+    /// <summary>
     /// Asynchronously executes the UPDATE statement with the specified SET and WHERE clauses.
     /// </summary>
     Task<int> UpdateAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Asynchronously executes the UPDATE statement with the specified SET and WHERE clauses,
+    /// within the given <see cref="CommandOptions"/> (e.g.
+    /// <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    Task<int> UpdateAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     // SQL introspection
     /// <summary>
