@@ -178,6 +178,7 @@ ehthumbs.db
 /torture-test/eshoponweb/
 /torture-test/sakila/
 /torture-test/pagila/
+/torture-test/conduit/
 
 # =============================================================================
 # EDITOR AND TOOL STATE
