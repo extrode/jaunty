@@ -122,6 +122,27 @@ public class FluentGroupByJoinTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public void GroupBy_Having_ClosureCapturedLocalVariable_FiltersGroups()
+    {
+        // T013: gap #14's HAVING closure-safety fix, reused here via HavingExpressionHelpers
+        // (T001) rather than copy-pasted - a closure-captured local variable compiles to a
+        // MemberExpression over a compiler-generated closure class, not a ConstantExpression,
+        // so it must be evaluated rather than read as a literal. This is exactly the shape
+        // that broke GroupedQueryBuilder before gap #14 (only literals worked there).
+        int minCount = 0;
+
+        var results = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .GroupBy((p, c) => p.CategoryId)
+            .Having(g => g.Count() > minCount)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.True(r.Count > minCount));
+    }
+
+    [Fact]
     public async Task GroupBy_SelectAsync_ReturnsGroupedResults()
     {
         var results = await _fixture.Connection.From<Product>()
