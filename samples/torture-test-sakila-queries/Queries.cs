@@ -26,9 +26,29 @@ public static class Queries
         }).ToList();
     }
 
-    public static List<FilmRevenueRow> Q02_Top5FilmsByRevenue(IDbConnection db, Dialect dialect)
+    public static List<FilmRevenueRow> Q02_Top5FilmsByRevenue(IDbConnection db)
     {
-        return db.Query<FilmRevenueRow>(DialectSql.Top5FilmsByRevenue(dialect));
+        // Spec 004 (gap #13) closure: JOIN + GROUP BY + aggregate now pushed down to SQL via
+        // the fluent GroupBy-on-join API instead of raw per-dialect SQL. The final "top 5 by
+        // revenue" ordering/limiting stays in-memory - grouped-joined queries deliberately
+        // don't support OrderBy/Take (out of this spec's scope; single-entity GroupBy doesn't
+        // either), and this step doesn't reduce which rows the SQL side has to touch anyway
+        // (every category's group is computed regardless of dialect).
+        var results = db.From<Payment>()
+            .InnerJoin<Rental>().On((p, r) => p.RentalId == r.RentalId)
+            .InnerJoin<Inventory>().OnFromSecond(r => r.InventoryId, i => i.InventoryId)
+            .InnerJoin<Payment, Rental, Inventory, Film>().OnFromThird(i => i.FilmId, f => f.FilmId)
+            .GroupBy((p, r, i, f) => f.Title)
+            .Select(g => new FilmRevenueRow
+            {
+                Title = g.Key,
+                Revenue = g.Sum((p, r, i, f) => p.Amount)
+            });
+
+        return results
+            .OrderByDescending(x => x.Revenue)
+            .Take(5)
+            .ToList();
     }
 
     public static List<string> Q03_ActorFilmography(IDbConnection db, int actorId)
@@ -73,7 +93,21 @@ public static class Queries
 
     public static List<CategoryAvgRateRow> Q07_AverageRentalRateByCategory(IDbConnection db)
     {
-        return db.Query<CategoryAvgRateRow>(DialectSql.AverageRentalRateByCategory());
+        // Spec 004 (gap #13) closure: same as Q02 - JOIN + GROUP BY + AVG pushed down to SQL
+        // via the fluent GroupBy-on-join API; the final alphabetical-by-name ordering stays
+        // in-memory since grouped-joined queries don't support OrderBy. Unlike Q02 there's no
+        // LIMIT here, so doing the sort in C# instead of SQL touches exactly the same rows.
+        var results = db.From<FilmCategory>()
+            .InnerJoin<Film>().On((fc, f) => fc.FilmId == f.FilmId)
+            .InnerJoin<Category>().On(fc => fc.CategoryId, c => c.CategoryId)
+            .GroupBy((fc, f, c) => c.Name)
+            .Select(g => new CategoryAvgRateRow
+            {
+                CategoryName = g.Key,
+                AvgRentalRate = (decimal)g.Avg((fc, f, c) => f.RentalRate)
+            });
+
+        return results.OrderBy(x => x.CategoryName).ToList();
     }
 
     public static List<Film> Q08_FilmsWithNoCategory(IDbConnection db)
