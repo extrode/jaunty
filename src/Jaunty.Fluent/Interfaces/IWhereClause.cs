@@ -1,4 +1,7 @@
+using System.Data;
 using System.Linq.Expressions;
+
+using Jaunty.Core;
 
 namespace Jaunty.Fluent;
 
@@ -135,9 +138,25 @@ public interface IWhereClause<T> : IQueryTerminal<T> where T : new()
     int Delete();
 
     /// <summary>
+    /// Deletes rows matching the WHERE conditions, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <returns>Number of rows affected.</returns>
+    int Delete(CommandOptions options);
+
+    /// <summary>
     /// Asynchronously deletes rows matching the WHERE conditions.
     /// </summary>
     Task<int> DeleteAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Asynchronously deletes rows matching the WHERE conditions, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    Task<int> DeleteAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     // ORDER BY - expression-based
     /// <summary>

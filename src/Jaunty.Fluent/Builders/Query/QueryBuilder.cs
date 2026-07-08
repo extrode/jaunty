@@ -1444,43 +1444,67 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     /// <summary>
     /// Deletes rows matching the WHERE conditions.
     /// </summary>
-    public int Delete()
+    public int Delete() => Delete(default);
+
+    /// <summary>
+    /// Deletes rows matching the WHERE conditions, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    public int Delete(CommandOptions options)
     {
         if (_conditions.Count == 0)
             throw new InvalidOperationException("Delete() requires a WHERE clause. Use DeleteAll() to delete all rows.");
 
         var sql = BuildDeleteSql();
-        return ExecuteNonQuery(sql);
+        return ExecuteNonQuery(sql, options);
     }
 
     /// <summary>
     /// Asynchronously deletes rows matching the WHERE conditions.
     /// </summary>
-    public async Task<int> DeleteAsync(CancellationToken cancellationToken = default)
+    public Task<int> DeleteAsync(CancellationToken cancellationToken = default) => DeleteAsync(default, cancellationToken);
+
+    /// <summary>
+    /// Asynchronously deletes rows matching the WHERE conditions, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    public async Task<int> DeleteAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
         if (_conditions.Count == 0)
             throw new InvalidOperationException("DeleteAsync() requires a WHERE clause. Use DeleteAllAsync() to delete all rows.");
 
         var sql = BuildDeleteSql();
-        return await ExecuteNonQueryAsync(sql, cancellationToken).ConfigureAwait(false);
+        return await ExecuteNonQueryAsync(sql, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
     /// Deletes all rows from the table (no WHERE clause).
     /// </summary>
-    public int DeleteAll()
+    public int DeleteAll() => DeleteAll(default);
+
+    /// <summary>
+    /// Deletes all rows from the table (no WHERE clause), executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    public int DeleteAll(CommandOptions options)
     {
         var sql = BuildDeleteSql();
-        return ExecuteNonQuery(sql);
+        return ExecuteNonQuery(sql, options);
     }
 
     /// <summary>
     /// Asynchronously deletes all rows from the table (no WHERE clause).
     /// </summary>
-    public async Task<int> DeleteAllAsync(CancellationToken cancellationToken = default)
+    public Task<int> DeleteAllAsync(CancellationToken cancellationToken = default) => DeleteAllAsync(default, cancellationToken);
+
+    /// <summary>
+    /// Asynchronously deletes all rows from the table (no WHERE clause), executing within the
+    /// given <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    public async Task<int> DeleteAllAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
         var sql = BuildDeleteSql();
-        return await ExecuteNonQueryAsync(sql, cancellationToken).ConfigureAwait(false);
+        return await ExecuteNonQueryAsync(sql, options, cancellationToken).ConfigureAwait(false);
     }
 
     private string BuildDeleteSql()
@@ -1498,7 +1522,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return sb.ToString();
     }
 
-    private int ExecuteNonQuery(string sql)
+    private int ExecuteNonQuery(string sql, CommandOptions options = default)
     {
         var wasClosed = _connection.State == System.Data.ConnectionState.Closed;
         try
@@ -1508,6 +1532,13 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
             using IDbCommand command = _connection.CreateCommand();
             command.CommandText = sql;
+
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
             _parameters.BindTo(command);
 
             return command.ExecuteNonQuery();
@@ -1519,7 +1550,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         }
     }
 
-    private async Task<int> ExecuteNonQueryAsync(string sql, CancellationToken cancellationToken)
+    private async Task<int> ExecuteNonQueryAsync(string sql, CommandOptions options, CancellationToken cancellationToken)
     {
         if (_connection is not System.Data.Common.DbConnection dbConnection)
             throw new InvalidOperationException("Async operations require a DbConnection.");
@@ -1532,6 +1563,13 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
             using DbCommand command = dbConnection.CreateCommand();
             command.CommandText = sql;
+
+            if (options.Transaction is DbTransaction dbTransaction)
+                command.Transaction = dbTransaction;
+
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
             _parameters.BindTo(command);
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -1810,31 +1848,49 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     /// <summary>
     /// Updates all rows (no WHERE clause). Use with caution.
     /// </summary>
-    public int UpdateAll()
+    public int UpdateAll() => UpdateAll(default);
+
+    /// <summary>
+    /// Updates all rows (no WHERE clause), executing within the given <see cref="CommandOptions"/>
+    /// (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>). Use with caution.
+    /// </summary>
+    public int UpdateAll(CommandOptions options)
     {
         if (_setColumns.Count == 0)
             throw new InvalidOperationException("UpdateAll() requires at least one Set() call.");
 
         var sql = BuildUpdateSql();
-        return ExecuteNonQuery(sql);
+        return ExecuteNonQuery(sql, options);
     }
 
     /// <summary>
     /// Asynchronously updates all rows (no WHERE clause).
     /// </summary>
-    public async Task<int> UpdateAllAsync(CancellationToken cancellationToken = default)
+    public Task<int> UpdateAllAsync(CancellationToken cancellationToken = default) => UpdateAllAsync(default, cancellationToken);
+
+    /// <summary>
+    /// Asynchronously updates all rows (no WHERE clause), executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    public async Task<int> UpdateAllAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
         if (_setColumns.Count == 0)
             throw new InvalidOperationException("UpdateAllAsync() requires at least one Set() call.");
 
         var sql = BuildUpdateSql();
-        return await ExecuteNonQueryAsync(sql, cancellationToken).ConfigureAwait(false);
+        return await ExecuteNonQueryAsync(sql, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
     /// Executes the UPDATE with WHERE conditions.
     /// </summary>
-    public int Update()
+    public int Update() => Update(default);
+
+    /// <summary>
+    /// Executes the UPDATE with WHERE conditions, within the given <see cref="CommandOptions"/>
+    /// (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    public int Update(CommandOptions options)
     {
         if (_setColumns.Count == 0)
             throw new InvalidOperationException("Update() requires at least one Set() call.");
@@ -1842,13 +1898,19 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             throw new InvalidOperationException("Update() requires a WHERE clause. Use UpdateAll() to update all rows.");
 
         var sql = BuildUpdateSql();
-        return ExecuteNonQuery(sql);
+        return ExecuteNonQuery(sql, options);
     }
 
     /// <summary>
     /// Asynchronously executes the UPDATE with WHERE conditions.
     /// </summary>
-    public async Task<int> UpdateAsync(CancellationToken cancellationToken = default)
+    public Task<int> UpdateAsync(CancellationToken cancellationToken = default) => UpdateAsync(default, cancellationToken);
+
+    /// <summary>
+    /// Asynchronously executes the UPDATE with WHERE conditions, within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(IDbTransaction)"/>).
+    /// </summary>
+    public async Task<int> UpdateAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
         if (_setColumns.Count == 0)
             throw new InvalidOperationException("UpdateAsync() requires at least one Set() call.");
@@ -1856,7 +1918,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             throw new InvalidOperationException("UpdateAsync() requires a WHERE clause. Use UpdateAllAsync() to update all rows.");
 
         var sql = BuildUpdateSql();
-        return await ExecuteNonQueryAsync(sql, cancellationToken).ConfigureAwait(false);
+        return await ExecuteNonQueryAsync(sql, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
