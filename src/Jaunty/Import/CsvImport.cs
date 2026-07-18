@@ -173,26 +173,44 @@ public static class CsvImportExtensions
 
     private static long ImportViaPreparedStatements(IDbConnection connection, string tableName, string filePath, CsvImportOptions options)
     {
-        // Read header to get column names
-        string[] headers;
+        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+
+        // Read the first physical line to determine the column layout. When the CSV has a header row
+        // its fields are the column names. When it does not, the first line is a data row: we insert
+        // positionally (no column list) so the first row is not consumed as SQL identifiers, and it is
+        // still imported as an ordinary data row by the streaming loop below (which only skips the
+        // first line when HasHeader is true).
+        string[]? headers;
+        int columnCount;
         using (var reader = new StreamReader(filePath, options.Encoding))
         {
-            string? headerLine = reader.ReadLine();
-            if (headerLine == null)
+            string? firstLine = reader.ReadLine();
+            if (firstLine == null)
                 return 0;
 
-            headers = ParseCsvLine(headerLine, options.Delimiter, options.Quote);
+            string[] firstFields = ParseCsvLine(firstLine, options.Delimiter, options.Quote);
+            columnCount = firstFields.Length;
+            headers = options.HasHeader ? firstFields : null;
         }
 
-        foreach (string header in headers)
-            ValidateIdentifier(header, nameof(headers));
-
-        // Build INSERT statement
+        // Build INSERT statement. Table and column identifiers are escaped through the dialect, which
+        // validates them and quotes any that collide with a SQL keyword; anything that is not a bare
+        // identifier is rejected before it can reach the command text.
         var sb = new StringBuilder();
-        sb.Append($"INSERT INTO {tableName} (");
-        sb.Append(string.Join(", ", headers));
-        sb.Append(") VALUES (");
-        for (int i = 0; i < headers.Length; i++)
+        sb.Append("INSERT INTO ");
+        sb.Append(EscapeQualifiedTableName(dialect, tableName));
+        if (headers != null)
+        {
+            sb.Append(" (");
+            for (int i = 0; i < headers.Length; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                sb.Append(dialect.EscapeColumnName(headers[i]));
+            }
+            sb.Append(')');
+        }
+        sb.Append(" VALUES (");
+        for (int i = 0; i < columnCount; i++)
         {
             if (i > 0) sb.Append(", ");
             sb.Append($"@p{i}");
@@ -213,8 +231,8 @@ public static class CsvImportExtensions
             command.CommandText = insertSql;
 
             // Create parameters
-            var parameters = new IDbDataParameter[headers.Length];
-            for (int i = 0; i < headers.Length; i++)
+            var parameters = new IDbDataParameter[columnCount];
+            for (int i = 0; i < columnCount; i++)
             {
                 IDbDataParameter param = command.CreateParameter();
                 param.ParameterName = $"@p{i}";
@@ -279,8 +297,11 @@ public static class CsvImportExtensions
         {
             if (wasClosed) connection.Open();
 
+            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+            string escapedTable = EscapeQualifiedTableName(dialect, tableName);
+
             // Use COPY ... FROM STDIN via raw SQL (works with all Npgsql versions)
-            string copyCommand = $"COPY {tableName} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
+            string copyCommand = $"COPY {escapedTable} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
 
             // Use reflection to call BeginTextImport on NpgsqlConnection
 
@@ -303,7 +324,7 @@ public static class CsvImportExtensions
 
             // Fallback: Use COPY FROM with file path (requires server access to file)
             using IDbCommand cmd = connection.CreateCommand();
-            cmd.CommandText = $"COPY {tableName} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
+            cmd.CommandText = $"COPY {escapedTable} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
             return cmd.ExecuteNonQuery();
         }
         finally
@@ -319,7 +340,10 @@ public static class CsvImportExtensions
         {
             if (wasClosed) await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            string copyCommand = $"COPY {tableName} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
+            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+            string escapedTable = EscapeQualifiedTableName(dialect, tableName);
+
+            string copyCommand = $"COPY {escapedTable} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
 
             // AOT-SAFE: Npgsql feature probe on the runtime connection type; null (trimmed or non-Npgsql) falls back to server-side COPY FROM below
             MethodInfo? beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
@@ -339,7 +363,7 @@ public static class CsvImportExtensions
             }
 
             using DbCommand cmd = connection.CreateCommand();
-            cmd.CommandText = $"COPY {tableName} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
+            cmd.CommandText = $"COPY {escapedTable} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
             return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -366,10 +390,13 @@ public static class CsvImportExtensions
         {
             if (wasClosed) connection.Open();
 
+            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+            string escapedTable = EscapeQualifiedTableName(dialect, tableName);
+
             using IDbCommand cmd = connection.CreateCommand();
             var sb = new StringBuilder();
             sb.Append($"LOAD DATA LOCAL INFILE '{filePath.Replace("\\", "\\\\").Replace("'", "\\'")}' ");
-            sb.Append($"INTO TABLE {tableName} ");
+            sb.Append($"INTO TABLE {escapedTable} ");
             sb.Append($"FIELDS TERMINATED BY '{options.Delimiter}' ");
             sb.Append("OPTIONALLY ENCLOSED BY '\"' ");
             sb.Append("LINES TERMINATED BY '\\n' ");
@@ -392,10 +419,13 @@ public static class CsvImportExtensions
         {
             if (wasClosed) await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+            string escapedTable = EscapeQualifiedTableName(dialect, tableName);
+
             using DbCommand cmd = connection.CreateCommand();
             var sb = new StringBuilder();
             sb.Append($"LOAD DATA LOCAL INFILE '{filePath.Replace("\\", "\\\\").Replace("'", "\\'")}' ");
-            sb.Append($"INTO TABLE {tableName} ");
+            sb.Append($"INTO TABLE {escapedTable} ");
             sb.Append($"FIELDS TERMINATED BY '{options.Delimiter}' ");
             sb.Append("OPTIONALLY ENCLOSED BY '\"' ");
             sb.Append("LINES TERMINATED BY '\\n' ");
@@ -429,9 +459,12 @@ public static class CsvImportExtensions
         {
             if (wasClosed) connection.Open();
 
+            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+            string escapedTable = EscapeQualifiedTableName(dialect, tableName);
+
             using IDbCommand cmd = connection.CreateCommand();
             var sb = new StringBuilder();
-            sb.Append($"BULK INSERT {tableName} FROM '{filePath.Replace("'", "''")}' ");
+            sb.Append($"BULK INSERT {escapedTable} FROM '{filePath.Replace("'", "''")}' ");
             sb.Append("WITH (");
             sb.Append($"FIELDTERMINATOR = '{options.Delimiter}', ");
             sb.Append("ROWTERMINATOR = '\\n', ");
@@ -456,9 +489,12 @@ public static class CsvImportExtensions
         {
             if (wasClosed) await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+            string escapedTable = EscapeQualifiedTableName(dialect, tableName);
+
             using DbCommand cmd = connection.CreateCommand();
             var sb = new StringBuilder();
-            sb.Append($"BULK INSERT {tableName} FROM '{filePath.Replace("'", "''")}' ");
+            sb.Append($"BULK INSERT {escapedTable} FROM '{filePath.Replace("'", "''")}' ");
             sb.Append("WITH (");
             sb.Append($"FIELDTERMINATOR = '{options.Delimiter}', ");
             sb.Append("ROWTERMINATOR = '\\n', ");
@@ -499,6 +535,18 @@ public static class CsvImportExtensions
     {
         if (string.IsNullOrWhiteSpace(identifier) || !ValidIdentifierPattern.IsMatch(identifier))
             throw new ArgumentException($"'{identifier}' is not a valid SQL identifier.", paramName);
+    }
+
+    // Escapes a possibly schema-qualified table name through the dialect. The dialect validates each
+    // segment and quotes any that collide with a SQL keyword, so a keyword table name stays usable
+    // while an injection-shaped name is rejected instead of being interpolated raw.
+    private static string EscapeQualifiedTableName(ISqlDialect dialect, string tableName)
+    {
+        int dot = tableName.IndexOf('.');
+        if (dot >= 0)
+            return dialect.EscapeTableName(tableName.Substring(0, dot), tableName.Substring(dot + 1));
+
+        return dialect.EscapeTableName(null, tableName);
     }
 
     private static void ValidateDelimiter(char delimiter)

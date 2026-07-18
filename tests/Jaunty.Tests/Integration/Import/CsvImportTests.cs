@@ -450,4 +450,140 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         Assert.Equal("32", fields[1]);
         Assert.Equal("New York", fields[2]);
     }
+
+    // =============================================
+    // Security & correctness regression tests
+    // =============================================
+
+    private static string WriteTempCsv(string content)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"jaunty_csv_reg_{Guid.NewGuid():N}.csv");
+        File.WriteAllText(path, content);
+        return path;
+    }
+
+    [Fact]
+    public void ImportCsv_InjectionShapedTableName_IsRejectedNotExecuted()
+    {
+        var csvPath = ResolveCsvPath();
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        connection.Open();
+        CreateTable(connection, DialectProvider.SystemSqlite);
+
+        Assert.Throws<ArgumentException>(() =>
+            connection.ImportCsv("csv_import_test\"); DROP TABLE csv_import_test;--", csvPath));
+
+        // The table must still exist: the malicious name was rejected, not executed as SQL.
+        Assert.Equal(0L, GetRowCount(connection, DialectProvider.SystemSqlite));
+    }
+
+    [Fact]
+    public void ImportCsv_InjectionShapedColumnHeader_IsRejectedNotExecuted()
+    {
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        connection.Open();
+        CreateTable(connection, DialectProvider.SystemSqlite);
+
+        var csv =
+            "Name,Age,City,x); DROP TABLE csv_import_test;--\n" +
+            "Alice,30,NYC,alice@example.com\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            Assert.Throws<ArgumentException>(() => connection.ImportCsv(TableName, path));
+
+            // Table untouched: the injection-shaped header never reached executable SQL.
+            Assert.Equal(0L, GetRowCount(connection, DialectProvider.SystemSqlite));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ImportCsv_SqliteCli_TableNameWithShellInjection_IsRejected()
+    {
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_sec_{Guid.NewGuid():N}.db");
+        try
+        {
+            using (var setup = new SQLiteConnection($"Data Source={tempDb}"))
+            {
+                setup.Open();
+                CreateTable(setup, DialectProvider.SystemSqlite);
+            }
+
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            // A newline would turn the sqlite3 CLI .import token into extra dot-commands (e.g. .shell);
+            // it must be rejected before any CLI process is started.
+            var malicious = "csv_import_test\n.shell echo pwned";
+            Assert.Throws<ArgumentException>(() => connection.ImportCsv(malicious, csvPath));
+        }
+        finally
+        {
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Fact]
+    public void ImportCsv_ShortRow_FillsNullInsteadOfReusingPreviousValue()
+    {
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        connection.Open();
+        CreateTable(connection, DialectProvider.SystemSqlite);
+
+        var csv =
+            "Name,Age,City,Email\n" +
+            "Alice,30,NYC,alice@example.com\n" +
+            "Bob,25\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            long rows = connection.ImportCsv(TableName, path);
+            Assert.Equal(2L, rows);
+
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT City FROM csv_import_test WHERE Name = 'Bob'";
+            var city = cmd.ExecuteScalar();
+
+            // Bob's row was short; City must be NULL, not a reuse of Alice's 'NYC'.
+            Assert.True(city is null || city == DBNull.Value);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ImportCsv_NoHeader_TreatsFirstRowAsDataNotHeaders()
+    {
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        connection.Open();
+        CreateTable(connection, DialectProvider.SystemSqlite);
+
+        var csv =
+            "Alice,30,NYC,alice@example.com\n" +
+            "Bob,25,LA,bob@example.com\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            var options = new CsvImportOptions { HasHeader = false };
+            long rows = connection.ImportCsv(TableName, path, options);
+
+            // Both lines are data; the first must not be swallowed as a header row.
+            Assert.Equal(2L, rows);
+            Assert.Equal(2L, GetRowCount(connection, DialectProvider.SystemSqlite));
+
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT COUNT(*) FROM csv_import_test WHERE Name = 'Alice'";
+            Assert.Equal(1L, Convert.ToInt64(cmd.ExecuteScalar()));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }
