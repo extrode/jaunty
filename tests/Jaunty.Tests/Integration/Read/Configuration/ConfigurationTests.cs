@@ -3,6 +3,7 @@ using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read.Configuration;
 
+[Collection("Configuration Operations")]
 public class ConfigurationTests : IClassFixture<DialectFixture>, IDisposable
 {
     private readonly DialectFixture _fixture;
