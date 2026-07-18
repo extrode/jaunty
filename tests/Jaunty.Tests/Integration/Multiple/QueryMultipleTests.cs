@@ -1,3 +1,4 @@
+using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
@@ -11,6 +12,35 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
     {
         _fixture = fixture;
     }
+
+    #region CommandType Tests
+
+    /// <summary>
+    /// Gets stored procedure name. PostgreSQL folds unquoted names to lowercase.
+    /// </summary>
+    private static string SpName(string name, DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.Postgres ? name.ToLower() : name;
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void QueryMultiple_WithStoredProcedureCommandType_ReturnsResults(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        using var gridReader = connection.QueryMultiple(
+            SpName("GetAllProducts", dialect),
+            CommandOptions.AsStoredProcedure());
+
+        var products = gridReader.Read<Product>();
+
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.True(p.ProductId > 0));
+    }
+
+    #endregion
+
     #region Sync Read Tests
 
     [Theory]
