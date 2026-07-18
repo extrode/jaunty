@@ -339,6 +339,68 @@ public class EntityDataReaderTests : IDisposable
         reader.Dispose();
     }
 
+    [Fact]
+    public void EntityDataReaderCache_DifferentColumnLayouts_SameType_UsesGettersMatchingEachLayout()
+    {
+        // Regression test: EntityDataReaderCache<TEntity> used to build getters once
+        // on the FIRST Initialize call and silently reuse them for every subsequent
+        // call, even when a later call for the same TEntity specifies a different
+        // column subset/order. That caused wrong values to be written to wrong
+        // columns on a second bulk-insert of the same entity type with a different
+        // layout.
+
+        // Arrange: full layout (Id, Name, Price, CreatedAt), same as other tests in
+        // this file — may or may not be the first EntityDataReader<TestEntity> built
+        // in this test run, which is exactly the point: the fix must not depend on
+        // call order.
+        var fullMetadata = CreateTestMetadata();
+        var fullEntities = new List<TestEntity>
+        {
+            new TestEntity { Id = 1, Name = "Full", Price = 5.00m, CreatedAt = new DateTime(2024, 1, 1) }
+        };
+        var fullReader = new EntityDataReader<TestEntity>(fullEntities, fullMetadata);
+        fullReader.Read();
+
+        Assert.Equal(4, fullReader.FieldCount);
+        Assert.Equal(1, fullReader.GetValue(0));
+        Assert.Equal("Full", fullReader.GetValue(1));
+        Assert.Equal(5.00m, fullReader.GetValue(2));
+        Assert.Equal(new DateTime(2024, 1, 1), fullReader.GetValue(3));
+        fullReader.Dispose();
+
+        // Act: a different (narrower, reordered) layout for the SAME TestEntity type —
+        // simulates a second bulk-insert specifying a different column subset/order.
+        var partialMetadata = CreateReorderedSubsetMetadata();
+        var partialEntities = new List<TestEntity>
+        {
+            new TestEntity { Id = 99, Name = "Partial", Price = 1.00m, CreatedAt = DateTime.UtcNow }
+        };
+        var partialReader = new EntityDataReader<TestEntity>(partialEntities, partialMetadata);
+        partialReader.Read();
+
+        // Assert: getters must match THIS layout (Name at ordinal 0, Id at ordinal 1)
+        // — not stale getters bound to the full layout's ordinal order.
+        Assert.Equal(2, partialReader.FieldCount);
+        Assert.Equal("Partial", partialReader.GetValue(0));
+        Assert.Equal(99, partialReader.GetValue(1));
+
+        partialReader.Dispose();
+    }
+
+    private static EntityMetadata CreateReorderedSubsetMetadata()
+    {
+        var nameProp = typeof(TestEntity).GetProperty(nameof(TestEntity.Name))!;
+        var idProp = typeof(TestEntity).GetProperty(nameof(TestEntity.Id))!;
+
+        var columns = new List<ColumnMetadata>
+        {
+            new ColumnMetadata(nameProp, nameProp.Name, isPrimaryKey: false, databaseGeneratedOption: null),
+            new ColumnMetadata(idProp, idProp.Name, isPrimaryKey: true, databaseGeneratedOption: null),
+        };
+
+        return new EntityMetadata("TestEntities", null, columns);
+    }
+
     private static EntityMetadata CreateTestMetadata()
     {
         // Create mock metadata for TestEntity
