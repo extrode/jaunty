@@ -23,21 +23,40 @@ public static partial class Jaunty
         if (wasClosed)
             await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-        // Do NOT use 'using' — the reader may depend on the command lifetime.
+        // Do NOT use 'using' — the GridReader owns the command and disposes it.
         DbCommand command = connection.CreateCommand();
-        command.CommandText = sql;
 
-        if (options.Transaction is DbTransaction dbTransaction)
-            command.Transaction = dbTransaction;
+        try
+        {
+            command.CommandText = sql;
 
-        if (options.CommandTimeout.HasValue)
-            command.CommandTimeout = options.CommandTimeout.Value;
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
-        if (parameters is not null)
-            ParameterBinder.Bind(command, parameters);
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
-        // Do NOT use 'using' — the GridReader owns the reader and disposes it.
-        DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        return new GridReader(reader, connection, wasClosed);
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            // Do NOT use 'using' — the GridReader owns the reader and disposes it.
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            return new GridReader(reader, connection, wasClosed, command);
+        }
+        catch
+        {
+            command.Dispose();
+            if (wasClosed && connection.State != ConnectionState.Closed)
+            {
+#if NET8_0_OR_GREATER
+                await connection.CloseAsync().ConfigureAwait(false);
+#else
+                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+#endif
+            }
+            throw;
+        }
     }
 }

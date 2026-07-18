@@ -39,7 +39,7 @@ namespace Jaunty.Core;
 /// </example>
 /// <seealso cref="Jaunty.QueryMultiple(IDbConnection, string)"/>
 /// <seealso cref="Jaunty.QueryMultipleAsync(IDbConnection, string, CancellationToken)"/>
-public sealed class GridReader(IDataReader reader, IDbConnection connection, bool closeConnection) : IDisposable, IAsyncDisposable
+public sealed class GridReader(IDataReader reader, IDbConnection connection, bool closeConnection, IDbCommand? command = null) : IDisposable, IAsyncDisposable
 {
     private bool _consumed;
 
@@ -639,6 +639,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     public void Dispose()
     {
         reader.Dispose();
+        command?.Dispose();
         if (closeConnection && connection.State != ConnectionState.Closed)
             connection.Close();
     }
@@ -654,6 +655,8 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
             await asyncReader.DisposeAsync().ConfigureAwait(false);
         else
             reader.Dispose();
+
+        command?.Dispose();
 
         if (closeConnection && connection.State != ConnectionState.Closed)
         {
