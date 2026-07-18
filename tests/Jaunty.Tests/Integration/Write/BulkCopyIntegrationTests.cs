@@ -361,6 +361,127 @@ public class BulkCopyIntegrationTests : IClassFixture<DialectFixture>, IDisposab
         }
     }
 
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void BulkInsert_NativePath_DefaultCheckConstraintsDoesNotAffectTableLockWiring(DialectInfo dialect)
+    {
+        // Regression: BulkInsertNativeCore's BulkCopyOptions.TableLock used to be copy-pasted
+        // from the CheckConstraints line (TableLock = DefaultCheckConstraints ? BulkLock :
+        // Default), so flipping DefaultCheckConstraints silently also forced a bulk table lock.
+        // TableLock must now always be TableLockOption.Default regardless of
+        // DefaultCheckConstraints, and CheckConstraints must keep working independently -
+        // this exercises the native bulk-copy path (>= MinimumRowsForNativeBulkCopy rows) with
+        // constraint checking turned on and confirms it still round-trips correctly.
+        bool originalCheckConstraints = BulkCopyConfiguration.DefaultCheckConstraints;
+        BulkCopyConfiguration.DefaultCheckConstraints = true;
+
+        try
+        {
+            using var ctx = _fixture.GetWriteContext(dialect);
+            var connection = ctx.Connection;
+            ClearTestTable(connection);
+
+            var entities = new List<BulkTestEntity>();
+            for (int i = 0; i < 100; i++)
+            {
+                entities.Add(new BulkTestEntity
+                {
+                    Name = $"CheckConstraintsTest{i}",
+                    Value = i
+                });
+            }
+
+            int inserted = connection.BulkInsert(entities);
+
+            Assert.Equal(100, inserted);
+            Assert.Equal(100, GetRowCount(connection));
+        }
+        finally
+        {
+            BulkCopyConfiguration.DefaultCheckConstraints = originalCheckConstraints;
+        }
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertAsync_NativePath_DefaultCheckConstraintsDoesNotAffectTableLockWiring(DialectInfo dialect)
+    {
+        // Async counterpart of the sync test above - same copy-paste bug existed in
+        // BulkInsertNativeCoreAsync's bulkOptions initializer.
+        bool originalCheckConstraints = BulkCopyConfiguration.DefaultCheckConstraints;
+        BulkCopyConfiguration.DefaultCheckConstraints = true;
+
+        try
+        {
+            using var ctx = _fixture.GetWriteContext(dialect);
+            var connection = ctx.Connection;
+            ClearTestTable(connection);
+
+            var entities = new List<BulkTestEntity>();
+            for (int i = 0; i < 100; i++)
+            {
+                entities.Add(new BulkTestEntity
+                {
+                    Name = $"AsyncCheckConstraintsTest{i}",
+                    Value = i
+                });
+            }
+
+            int inserted = await connection.BulkInsertAsync(entities);
+
+            Assert.Equal(100, inserted);
+            Assert.Equal(100, GetRowCount(connection));
+        }
+        finally
+        {
+            BulkCopyConfiguration.DefaultCheckConstraints = originalCheckConstraints;
+        }
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertAsync_NativePath_PreCanceledToken_ThrowsOperationCanceled_NotNullReferenceException(DialectInfo dialect)
+    {
+        // Regression: BulkInsertNativeCoreAsync's catch/finally used null-forgiving
+        // transaction!.RollbackAsync/DisposeAsync. When BeginTransactionAsync itself never
+        // completes (e.g. the token is already canceled before/while it runs), "transaction"
+        // is never assigned, so the null-forgiving calls threw NullReferenceException and
+        // masked the real OperationCanceledException. The real cancellation exception must
+        // surface cleanly instead.
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection as System.Data.Common.DbConnection;
+        Assert.NotNull(connection);
+        ClearTestTable(connection!);
+
+        var entities = new List<BulkTestEntity>();
+        for (int i = 0; i < 100; i++)
+        {
+            entities.Add(new BulkTestEntity { Name = $"CancelNativeTest{i}", Value = i });
+        }
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var ex = await Record.ExceptionAsync(
+            () => connection!.BulkInsertAsync(entities, cancellationToken: cts.Token).AsTask());
+
+        Assert.NotNull(ex);
+        Assert.IsNotType<NullReferenceException>(ex);
+        Assert.IsAssignableFrom<OperationCanceledException>(ex);
+    }
+
     public void Dispose()
     {
         // Restore original configuration

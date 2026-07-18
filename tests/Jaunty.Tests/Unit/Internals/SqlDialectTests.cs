@@ -316,6 +316,24 @@ public class SqlDialectTests
         }
 
         [Fact]
+        public void GenerateUpsertSql_UsesHoldlockOnTargetTable()
+        {
+            // Regression: without WITH (HOLDLOCK) on the MERGE target, two concurrent MERGE
+            // statements can both evaluate WHEN NOT MATCHED as true for the same key and both
+            // attempt to INSERT, causing a duplicate-key violation under concurrent upserts.
+            var result = _dialect.GenerateUpsertSql(
+                "items",
+                new[] { "id", "name" },
+                new[] { "@Id", "@Name" },
+                new[] { "name" },
+                new[] { "@Name" },
+                new[] { "id" },
+                new[] { "@Id" });
+
+            Assert.Contains("MERGE INTO items WITH (HOLDLOCK) AS target USING", result);
+        }
+
+        [Fact]
         public void GenerateIsNull_UsesISNULL()
         {
             Assert.Equal("ISNULL(col, 0)", _dialect.GenerateIsNull("col", "0"));
@@ -686,6 +704,15 @@ public class SqlDialectTests
         }
 
         [Fact]
+        public void GetLastInsertIdSql_WithColumnName_ReturnsActualPrimaryKeyColumn()
+        {
+            // The empty-args overload above can only guess "id"; real callers (e.g.
+            // CrudSqlCache, which always knows the actual identity column) must pass the real
+            // primary key column name so RETURNING targets the correct column.
+            Assert.Equal("RETURNING CategoryId;", _dialect.GetLastInsertIdSql("CategoryId"));
+        }
+
+        [Fact]
         public void GetPagingSql_UsesLimitOffset()
         {
             var result = _dialect.GetPagingSql("SELECT * FROM t", 10, 20);
@@ -919,6 +946,26 @@ public class SqlDialectTests
             Assert.IsType<SqlServerDialect>(dialect);
         }
 
+        [Fact]
+        public void RegisterDialect_ByName_InvalidatesAlreadyCachedResolutionForThatType()
+        {
+            // Regression: a connection type resolved (and cached) via GetDialect BEFORE
+            // RegisterDialect(string, ISqlDialect) is called for that same type name must pick
+            // up the newly registered dialect on the next GetDialect call, not keep returning
+            // the stale built-in dialect from the cache.
+            var connection = new CacheInvalidationConnection();
+
+            // Prime the cache with the default (SQL Server) resolution.
+            var before = SqlDialectFactory.GetDialect(connection);
+            Assert.IsType<SqlServerDialect>(before);
+
+            var custom = new PostgreSqlDialect();
+            SqlDialectFactory.RegisterDialect(nameof(CacheInvalidationConnection), custom);
+
+            var after = SqlDialectFactory.GetDialect(connection);
+            Assert.Same(custom, after);
+        }
+
         // Mock connection classes whose type names match the factory's switch cases
         private class SQLiteConnection : MockConnectionBase { }
         private class SqliteConnection : MockConnectionBase { } // Microsoft.Data.Sqlite uses this name
@@ -926,6 +973,7 @@ public class SqlDialectTests
         private class NpgsqlConnection : MockConnectionBase { }
         private class MySqlConnection : MockConnectionBase { }
         private class UnknownConnection : MockConnectionBase { }
+        private class CacheInvalidationConnection : MockConnectionBase { }
 
         private abstract class MockConnectionBase : IDbConnection
         {

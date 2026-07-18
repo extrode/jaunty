@@ -409,7 +409,7 @@ public static partial class Jaunty
                 Transaction = transaction,
                 IdentityMode = BulkCopyConfiguration.DefaultIdentityMode,
                 CheckConstraints = !ignoreConstraints && BulkCopyConfiguration.DefaultCheckConstraints,
-                TableLock = BulkCopyConfiguration.DefaultCheckConstraints ? TableLockOption.BulkLock : TableLockOption.Default
+                TableLock = TableLockOption.Default
             };
 
             int totalInserted = 0;
@@ -439,30 +439,40 @@ public static partial class Jaunty
             }
             catch
             {
-                if (ownTransaction)
+                if (ownTransaction && transaction is not null)
                 {
+                    try
+                    {
 #if NET8_0_OR_GREATER
-                    await transaction!.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                        await transaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
 #else
-                    transaction!.Rollback();
+                        transaction.Rollback();
 #endif
+                    }
+                    catch { /* Best effort */ }
                 }
                 throw;
             }
         }
         finally
         {
-            if (ownTransaction)
+            if (ownTransaction && transaction is not null)
             {
 #if NET8_0_OR_GREATER
-                await transaction!.DisposeAsync().ConfigureAwait(false);
+                await transaction.DisposeAsync().ConfigureAwait(false);
 #else
-                transaction!.Dispose();
+                transaction.Dispose();
 #endif
             }
 
             if (wasClosed && connection.State != ConnectionState.Closed)
+            {
+#if NET8_0_OR_GREATER
+                await connection.CloseAsync().ConfigureAwait(false);
+#else
                 await Task.Run(() => connection.Close()).ConfigureAwait(false);
+#endif
+            }
         }
     }
 }

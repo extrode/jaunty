@@ -142,8 +142,8 @@ public static partial class Jaunty
 #endif
                             command.CommandText = sql;
 
-                            // Only set CommandType if not default (Text) - SQLite doesn't support setting CommandType
-                            if (commandType != CommandType.Text)
+                            // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
+                            if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
                                 command.CommandType = commandType;
 
                             if (options.Transaction is DbTransaction dbTransaction)
@@ -166,8 +166,8 @@ public static partial class Jaunty
                             using IDbCommand command = connection.CreateCommand();
                             command.CommandText = sql;
 
-                            // Only set CommandType if not default (Text) - SQLite doesn't support setting CommandType
-                            if (commandType != CommandType.Text)
+                            // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
+                            if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
                                 command.CommandType = commandType;
 
                             if (options.Transaction is not null)
@@ -220,8 +220,8 @@ public static partial class Jaunty
 #endif
                 command.CommandText = sql;
 
-                // Only set CommandType if not default (Text) - SQLite doesn't support setting CommandType
-                if (commandType != CommandType.Text)
+                // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
+                if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
                     command.CommandType = commandType;
 
                 if (options.Transaction is DbTransaction dbTransaction)
@@ -246,8 +246,8 @@ public static partial class Jaunty
                 using IDbCommand command = connection.CreateCommand();
                 command.CommandText = sql;
 
-                // Only set CommandType if not default (Text) - SQLite doesn't support setting CommandType
-                if (commandType != CommandType.Text)
+                // Only set CommandType for stored procedures - SQLite doesn't support setting CommandType
+                if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
                     command.CommandType = commandType;
 
                 if (options.Transaction is not null)
