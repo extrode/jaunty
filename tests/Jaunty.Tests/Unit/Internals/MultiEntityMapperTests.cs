@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.SQLite;
 
 using Jaunty.Attributes;
+using Jaunty.Configuration;
 using Jaunty.Internals.Read;
 
 namespace Jaunty.Tests.Unit.Internals;
@@ -388,6 +389,139 @@ public class MultiEntityMapperTests : IDisposable
         Assert.Equal(string.Empty, a.Name);
         Assert.Equal(0, b.Code);
         Assert.Equal(string.Empty, b.Label);
+    }
+
+    #endregion
+
+    #region Build - Arity-3 Schema Key Collision (Fix 1 regression)
+
+    // Entities scoped to this scenario so their generic MultiEntityMapper<...>
+    // static cache can't be warmed by any other test in the suite.
+    public class SchemaKeyColA
+    {
+        public int? A { get; set; }
+    }
+
+    public class SchemaKeyColBC
+    {
+        public int? BC { get; set; }
+    }
+
+    public class SchemaKeyColC
+    {
+        public int? C { get; set; }
+    }
+
+    [Fact]
+    public void Build_Arity3_DifferentColumnSets_SameFieldCount_DoNotCollide()
+    {
+        // Regression test for the BuildSchemaKey cache-key collision bug: with a
+        // delimiter-less concatenation, field count 2 with column names ["A","BC"]
+        // and ["AB","C"] both produced the same cache key ("2ABC"), so the second
+        // query would silently reuse the first query's cached mapper.
+        //
+        // The outer cache under test lives in Jaunty.Internals.Read.MultiEntityMapperN.
+        // The inner Jaunty.Extensions.Reflection resolver has its own, separately
+        // scoped (currently unfixed) cache with the same structural bug, which would
+        // otherwise also collide on this exact scenario and mask what's being tested.
+        // To isolate the outer cache, this test installs a resolver stub that rebuilds
+        // appliers fresh on every call (no caching of its own). Any stale/wrong
+        // mapping observed here can therefore only come from the outer BuildSchemaKey
+        // cache under test.
+        Func<Type[], IDataReader, Action<object, IDataRecord>[]>? originalResolver =
+            JauntyConfig.ReflectionMultiMapperResolverN;
+
+        try
+        {
+            JauntyConfig.ReflectionMultiMapperResolverN = (types, reader) =>
+            {
+                var appliers = new Action<object, IDataRecord>[types.Length];
+                for (int i = 0; i < types.Length; i++)
+                    appliers[i] = BuildLiveApplier(types[i], reader);
+                return appliers;
+            };
+
+            using var cmdA = _connection.CreateCommand();
+            cmdA.CommandText = "SELECT 1 AS A, 2 AS BC";
+            using var readerA = cmdA.ExecuteReader();
+            readerA.Read();
+
+            var mapperA = global::Jaunty.Internals.Read.MultiEntityMapper<SchemaKeyColA, SchemaKeyColBC, SchemaKeyColC>.Build(readerA);
+            var a1 = new SchemaKeyColA();
+            var bc1 = new SchemaKeyColBC();
+            var c1 = new SchemaKeyColC();
+            mapperA.ApplyT1(a1, readerA);
+            mapperA.ApplyT2(bc1, readerA);
+            mapperA.ApplyT3(c1, readerA);
+
+            Assert.Equal(1, a1.A);
+            Assert.Equal(2, bc1.BC);
+            Assert.Null(c1.C);
+
+            using var cmdB = _connection.CreateCommand();
+            cmdB.CommandText = "SELECT 100 AS AB, 200 AS C";
+            using var readerB = cmdB.ExecuteReader();
+            readerB.Read();
+
+            var mapperB = global::Jaunty.Internals.Read.MultiEntityMapper<SchemaKeyColA, SchemaKeyColBC, SchemaKeyColC>.Build(readerB);
+            var a2 = new SchemaKeyColA();
+            var bc2 = new SchemaKeyColBC();
+            var c2 = new SchemaKeyColC();
+            mapperB.ApplyT1(a2, readerB);
+            mapperB.ApplyT2(bc2, readerB);
+            mapperB.ApplyT3(c2, readerB);
+
+            // With the collision bug, mapperB would be the SAME cached instance as
+            // mapperA (schema key "2ABC" for both), so ApplyT1 would blindly bind
+            // ordinal 0 to A (reading readerB's "AB" value = 100) instead of correctly
+            // recognizing there is no "A" column in readerB.
+            Assert.Null(a2.A);
+            Assert.Null(bc2.BC);
+            Assert.Equal(200, c2.C);
+        }
+        finally
+        {
+            JauntyConfig.ReflectionMultiMapperResolverN = originalResolver;
+        }
+    }
+
+    private static Action<object, IDataRecord> BuildLiveApplier(Type type, IDataReader reader)
+    {
+        var matches = new List<(System.Reflection.PropertyInfo Property, int Ordinal)>();
+        foreach (var property in type.GetProperties())
+        {
+            int ordinal = FindOrdinal(reader, property.Name);
+            if (ordinal >= 0)
+                matches.Add((property, ordinal));
+        }
+
+        return (target, record) =>
+        {
+            foreach ((System.Reflection.PropertyInfo property, int ordinal) in matches)
+            {
+                object value = record.GetValue(ordinal);
+                if (value is DBNull)
+                {
+                    property.SetValue(target, null);
+                    continue;
+                }
+
+                Type targetType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                object converted = targetType.IsInstanceOfType(value) ? value : Convert.ChangeType(value, targetType);
+                property.SetValue(target, converted);
+            }
+        };
+    }
+
+    private static int FindOrdinal(IDataReader reader, string name)
+    {
+        for (int i = 0; i < reader.FieldCount; i++)
+        {
+            if (string.Equals(reader.GetName(i), name, StringComparison.OrdinalIgnoreCase))
+                return i;
+        }
+
+        return -1;
     }
 
     #endregion
