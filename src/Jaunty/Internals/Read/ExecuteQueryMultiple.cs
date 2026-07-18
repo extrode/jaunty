@@ -34,19 +34,34 @@ public static partial class Jaunty
         if (wasClosed)
             connection.Open();
 
+        // Do NOT use 'using' — the GridReader owns the command and disposes it.
         IDbCommand command = connection.CreateCommand();
-        command.CommandText = sql;
 
-        if (options.Transaction is DbTransaction dbTransaction)
-            command.Transaction = dbTransaction;
+        try
+        {
+            command.CommandText = sql;
 
-        if (options.CommandTimeout.HasValue)
-            command.CommandTimeout = options.CommandTimeout.Value;
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
-        if (parameters is not null)
-            ParameterBinder.Bind(command, parameters);
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
-        IDataReader reader = command.ExecuteReader();
-        return new GridReader(reader, connection, wasClosed);
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
+
+            if (parameters is not null)
+                ParameterBinder.Bind(command, parameters);
+
+            IDataReader reader = command.ExecuteReader();
+            return new GridReader(reader, connection, wasClosed, command);
+        }
+        catch
+        {
+            command.Dispose();
+            if (wasClosed && connection.State != ConnectionState.Closed)
+                connection.Close();
+            throw;
+        }
     }
 }
