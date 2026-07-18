@@ -147,3 +147,26 @@ public class IDataReaderWrapper : IDataReader
     public bool NextResult() => _inner.NextResult();
     public bool Read() => _inner.Read();
 }
+
+/// <summary>
+/// Wraps a real IDbTransaction without extending DbTransaction.
+/// Used to force code paths that must accept any IDbTransaction (the synchronous
+/// IDbCommand fallback path) and to verify code paths that must reject a non-DbTransaction
+/// (the async DbCommand path, which requires DbTransaction).
+/// </summary>
+public class IDbTransactionWrapper : IDbTransaction
+{
+    private readonly IDbTransaction _inner;
+
+    public IDbTransactionWrapper(IDbTransaction inner)
+    {
+        _inner = inner;
+    }
+
+    public IDbConnection? Connection => _inner.Connection;
+    public IsolationLevel IsolationLevel => _inner.IsolationLevel;
+
+    public void Commit() => _inner.Commit();
+    public void Rollback() => _inner.Rollback();
+    public void Dispose() => _inner.Dispose();
+}
