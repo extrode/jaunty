@@ -26,11 +26,16 @@ public class IDbConnectionWrapper : IDbConnection
     public string Database => _inner.Database;
     public ConnectionState State => _inner.State;
 
+    /// <summary>
+    /// The most recently created command wrapper, so tests can observe whether it was disposed.
+    /// </summary>
+    public IDbCommandWrapper? LastCommand { get; private set; }
+
     public IDbTransaction BeginTransaction() => _inner.BeginTransaction();
     public IDbTransaction BeginTransaction(IsolationLevel il) => _inner.BeginTransaction(il);
     public void ChangeDatabase(string databaseName) => _inner.ChangeDatabase(databaseName);
     public void Close() => _inner.Close();
-    public IDbCommand CreateCommand() => new IDbCommandWrapper(_inner.CreateCommand());
+    public IDbCommand CreateCommand() => LastCommand = new IDbCommandWrapper(_inner.CreateCommand());
     public void Open() => _inner.Open();
     public void Dispose() => _inner.Dispose();
 }
@@ -94,7 +99,17 @@ public class IDbCommandWrapper : IDbCommand
     public IDataReader ExecuteReader(CommandBehavior behavior) => new IDataReaderWrapper(_inner.ExecuteReader(behavior));
     public object? ExecuteScalar() => _inner.ExecuteScalar();
     public void Prepare() => _inner.Prepare();
-    public void Dispose() => _inner.Dispose();
+
+    /// <summary>
+    /// True once <see cref="Dispose"/> has been called. Lets tests verify the command is disposed.
+    /// </summary>
+    public bool Disposed { get; private set; }
+
+    public void Dispose()
+    {
+        Disposed = true;
+        _inner.Dispose();
+    }
 }
 
 /// <summary>
