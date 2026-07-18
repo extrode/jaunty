@@ -1,6 +1,8 @@
 using System.Data;
 
+using Jaunty.Configuration;
 using Jaunty.Internals.Parameters;
+using Jaunty.TypeHandlers;
 
 namespace Jaunty.Tests;
 
@@ -862,6 +864,142 @@ public class ParameterBinderTests
 
     #endregion
 
+    #region Audit Regression Tests
+
+    // Finding 1: a first call whose collection property is null must not cache a scalar-binding
+    // template that permanently defeats IN-clause expansion on later populated calls.
+    [Fact]
+    public void Bind_NullCollectionThenPopulated_StillExpandsInClause()
+    {
+        const string sql = "SELECT * FROM products WHERE id IN @Ids";
+
+        var first = new MockDbCommand(sql);
+        ParameterBinder.Bind(first, new { Ids = (int[]?)null });
+
+        var second = new MockDbCommand(sql);
+        ParameterBinder.Bind(second, new { Ids = new[] { 10, 20 } });
+
+        Assert.Equal(2, second.Parameters.Count);
+        Assert.Contains("(@Ids0, @Ids1)", second.CommandText);
+        Assert.Equal(10, second.Parameters[0].Value);
+        Assert.Equal(20, second.Parameters[1].Value);
+    }
+
+    // Finding 4: an @Name-looking token inside a string literal must not be expanded.
+    [Fact]
+    public void Bind_CollectionNameInsideStringLiteral_LiteralIsNotExpanded()
+    {
+        var command = new MockDbCommand("SELECT * FROM t WHERE note = 'match @Ids here' AND id IN @Ids");
+
+        ParameterBinder.Bind(command, new { Ids = new[] { 1, 2 } });
+
+        Assert.Equal(2, command.Parameters.Count);
+        Assert.Contains("'match @Ids here'", command.CommandText);
+        Assert.Contains("id IN (@Ids0, @Ids1)", command.CommandText);
+    }
+
+    // Finding 4: an @Name-looking token inside a comment must not be expanded.
+    [Fact]
+    public void Bind_CollectionNameInsideComment_CommentIsNotExpanded()
+    {
+        var command = new MockDbCommand("SELECT * FROM t /* filter @Ids */ WHERE id IN @Ids");
+
+        ParameterBinder.Bind(command, new { Ids = new[] { 7, 8 } });
+
+        Assert.Equal(2, command.Parameters.Count);
+        Assert.Contains("/* filter @Ids */", command.CommandText);
+        Assert.Contains("WHERE id IN (@Ids0, @Ids1)", command.CommandText);
+    }
+
+    // Finding 5: a one-shot/forward-only sequence must be enumerated exactly once.
+    [Fact]
+    public void Bind_OneShotEnumerable_IsEnumeratedExactlyOnce()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids");
+        var ids = new SingleUseEnumerable<int>(YieldOneToThree());
+
+        ParameterBinder.Bind(command, new { Ids = ids });
+
+        Assert.Equal(3, command.Parameters.Count);
+        Assert.Contains("(@Ids0, @Ids1, @Ids2)", command.CommandText);
+        Assert.Equal(1, command.Parameters[0].Value);
+        Assert.Equal(3, command.Parameters[2].Value);
+    }
+
+    // Finding 6: a lone scalar cannot unambiguously fill two distinct parameters.
+    [Fact]
+    public void Bind_ScalarValue_WithMultipleDistinctParameters_Throws()
+    {
+        var command = new MockDbCommand("SELECT * FROM t WHERE a = @A AND b = @B");
+
+        Assert.Throws<ArgumentException>(() => ParameterBinder.Bind(command, 42));
+    }
+
+    // Finding 6: a scalar against SQL that repeats a single parameter name still binds once.
+    [Fact]
+    public void Bind_ScalarValue_WithRepeatedSingleParameter_BindsOnce()
+    {
+        var command = new MockDbCommand("SELECT * FROM t WHERE a = @A OR @A IS NULL");
+
+        ParameterBinder.Bind(command, 5);
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("A", command.Parameters[0].ParameterName);
+        Assert.Equal(5, command.Parameters[0].Value);
+    }
+
+    // Finding 3: a throwing type handler must surface, not silently bind unconverted data.
+    [Fact]
+    public void Bind_WhenTypeHandlerThrows_PropagatesAsInvalidOperationException()
+    {
+        JauntyConfig.RegisterTypeHandler(new ThrowingBoxHandler());
+        try
+        {
+            var command = new MockDbCommand("SELECT * FROM t WHERE v = @Box");
+
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                ParameterBinder.Bind(command, new { Box = new ThrowingBox() }));
+            Assert.IsType<FormatException>(ex.InnerException);
+        }
+        finally
+        {
+            JauntyConfig.RemoveTypeHandler<ThrowingBox>();
+        }
+    }
+
+    // Finding 7: the bounded cache evicts the oldest-added entry once its cap is exceeded.
+    [Fact]
+    public void BoundedCache_WhenMaxExceeded_EvictsOldestAddedEntry()
+    {
+        var cache = new BoundedCache<string, string>(maxEntries: 3);
+        cache.TryAdd("a", "1");
+        cache.TryAdd("b", "2");
+        cache.TryAdd("c", "3");
+        cache.TryAdd("d", "4");
+
+        Assert.True(cache.Count <= 3);
+        Assert.False(cache.TryGetValue("a", out _));
+        Assert.True(cache.TryGetValue("d", out var d));
+        Assert.Equal("4", d);
+    }
+
+    // Finding 7: GetOrAdd caches and does not re-invoke the factory for a hit.
+    [Fact]
+    public void BoundedCache_GetOrAdd_CachesAndDoesNotReinvokeFactory()
+    {
+        var cache = new BoundedCache<string, string>(maxEntries: 8);
+        int calls = 0;
+
+        var first = cache.GetOrAdd("k", key => { calls++; return key + "!"; });
+        var second = cache.GetOrAdd("k", key => { calls++; return key + "!"; });
+
+        Assert.Equal("k!", first);
+        Assert.Equal("k!", second);
+        Assert.Equal(1, calls);
+    }
+
+    #endregion
+
     #region Test Helpers
 
     private enum TestEnum
@@ -869,6 +1007,42 @@ public class ParameterBinderTests
         Inactive = 0,
         Active = 1,
         Pending = 2
+    }
+
+    private static IEnumerable<int> YieldOneToThree()
+    {
+        yield return 1;
+        yield return 2;
+        yield return 3;
+    }
+
+    private sealed class SingleUseEnumerable<T> : IEnumerable<T>
+    {
+        private readonly IEnumerable<T> _inner;
+        private bool _enumerated;
+
+        public SingleUseEnumerable(IEnumerable<T> inner) => _inner = inner;
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            if (_enumerated)
+                throw new InvalidOperationException("This sequence has already been enumerated.");
+            _enumerated = true;
+            return _inner.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    private sealed class ThrowingBox
+    {
+    }
+
+    private sealed class ThrowingBoxHandler : TypeHandler<ThrowingBox>
+    {
+        public override ThrowingBox Parse(object? dbValue) => throw new FormatException("parse boom");
+
+        public override object? ToDbValue(ThrowingBox? value) => throw new FormatException("todb boom");
     }
 
     #endregion

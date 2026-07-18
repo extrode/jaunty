@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Data;
 using System.Text;
 using System.Reflection;
@@ -12,7 +11,9 @@ namespace Jaunty.Internals.Parameters;
 
 internal static class ParameterBinder
 {
-    private static readonly ConcurrentDictionary<(string Sql, Type ParamType, Type CommandType), CommandTemplate> TemplateCache = new();
+    // Size-capped to prevent unbounded growth when callers embed literals instead of parameters
+    // or generate SQL dynamically (each distinct SQL text would otherwise be a permanent key).
+    private static readonly BoundedCache<(string Sql, Type ParamType, Type CommandType), CommandTemplate> TemplateCache = new();
 
     internal static void Bind(IDbCommand command, object parameters)
     {
@@ -52,7 +53,7 @@ internal static class ParameterBinder
         // Try get cached template
         if (TemplateCache.TryGetValue((sql, type, commandType), out CommandTemplate? template))
         {
-            template.Bind(command, parameters);
+            template!.Bind(command, parameters);
             return;
         }
 
@@ -271,7 +272,7 @@ internal static class ParameterBinder
         var paramPrefix = DetectParameterPrefix(sql);
         var expandedParams = new Dictionary<string, object?>(CommonConstants.OrdinalIgnoreCase);
         var expandedOriginalNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
-        var result = sql;
+        var replacements = new Dictionary<string, string>(CommonConstants.OrdinalIgnoreCase);
 
         foreach (CollectionExpansion expansion in expansions)
         {
@@ -300,9 +301,13 @@ internal static class ParameterBinder
                 replacement = sb.ToString();
             }
 
-            // Replace all occurrences (case-insensitive)
-            result = ReplaceCaseInsensitive(result, paramPrefix + expansion.Name, replacement);
+            replacements[expansion.Name] = replacement;
         }
+
+        // Rewrite the SQL in a single literal/comment-aware pass so that @Name-looking text inside
+        // string literals, quoted identifiers, or comments is never mistaken for a real placeholder
+        // (unlike a naive textual find/replace, which would corrupt such SQL).
+        var result = ReplaceParametersLiteralAware(sql, paramPrefix[0], replacements);
 
         return (result, expandedParams, expandedOriginalNames);
     }
@@ -323,30 +328,92 @@ internal static class ParameterBinder
         return "@"; // default
     }
 
-    private static string ReplaceCaseInsensitive(string source, string oldValue, string newValue)
+    // Literal/comment-aware placeholder rewrite. Walks the SQL using the same tokenization rules as
+    // SqlParameterParser (skipping string literals, quoted identifiers, comments, and @@ system
+    // variables) and replaces only genuine parameter placeholders whose name is in 'replacements'.
+    private static string ReplaceParametersLiteralAware(string sql, char prefix, Dictionary<string, string> replacements)
     {
-        var sb = new StringBuilder();
-        int currentIndex = 0;
-        int foundIndex;
+        var sb = new StringBuilder(sql.Length + 16);
+        int i = 0;
+        int len = sql.Length;
 
-        while ((foundIndex = source.IndexOf(oldValue, currentIndex, StringComparison.OrdinalIgnoreCase)) >= 0)
+        while (i < len)
         {
-            // Check if this is a complete parameter (not part of a longer name)
-            int endIndex = foundIndex + oldValue.Length;
-            if (endIndex < source.Length && IsParameterChar(source[endIndex]))
+            char c = sql[i];
+
+            // Single-line comment: copy verbatim to end of line
+            if (c == '-' && i + 1 < len && sql[i + 1] == '-')
             {
-                // Part of a longer parameter name, skip
-                sb.Append(source, currentIndex, foundIndex - currentIndex + oldValue.Length);
-                currentIndex = endIndex;
+                int start = i;
+                i += 2;
+                while (i < len && sql[i] is not ('\n' or '\r')) i++;
+                sb.Append(sql, start, i - start);
                 continue;
             }
 
-            sb.Append(source, currentIndex, foundIndex - currentIndex);
-            sb.Append(newValue);
-            currentIndex = endIndex;
+            // Block comment: copy verbatim through the closing */
+            if (c == '/' && i + 1 < len && sql[i + 1] == '*')
+            {
+                int start = i;
+                i += 2;
+                while (i + 1 < len && !(sql[i] == '*' && sql[i + 1] == '/')) i++;
+                i = i + 1 < len ? i + 2 : len;
+                sb.Append(sql, start, i - start);
+                continue;
+            }
+
+            // String literal or quoted identifier: copy verbatim (handles doubled-quote escapes)
+            if (c is '\'' or '"' or '[')
+            {
+                char terminator = c == '[' ? ']' : c;
+                int start = i;
+                i++;
+                while (i < len)
+                {
+                    if (sql[i] == terminator)
+                    {
+                        if (i + 1 < len && sql[i + 1] == terminator)
+                        {
+                            i += 2;
+                            continue;
+                        }
+                        i++;
+                        break;
+                    }
+                    i++;
+                }
+                sb.Append(sql, start, i - start);
+                continue;
+            }
+
+            // SQL Server @@ system variable: copy verbatim, never a bindable parameter
+            if (c == '@' && i + 1 < len && sql[i + 1] == '@')
+            {
+                int start = i;
+                i += 2;
+                while (i < len && IsParameterChar(sql[i])) i++;
+                sb.Append(sql, start, i - start);
+                continue;
+            }
+
+            // Genuine parameter placeholder
+            if (c == prefix)
+            {
+                int nameStart = i + 1;
+                int j = nameStart;
+                while (j < len && IsParameterChar(sql[j])) j++;
+                if (j > nameStart && replacements.TryGetValue(sql.Substring(nameStart, j - nameStart), out string? replacement))
+                {
+                    sb.Append(replacement);
+                    i = j;
+                    continue;
+                }
+            }
+
+            sb.Append(c);
+            i++;
         }
 
-        sb.Append(source, currentIndex, source.Length - currentIndex);
         return sb.ToString();
     }
 
@@ -368,11 +435,16 @@ internal static class ParameterBinder
 
         if (value is IEnumerable enumerable)
         {
-            items = enumerable;
-            // Count manually if not ICollection
-            int c = 0;
-            foreach (var _ in enumerable) c++;
-            count = c;
+            // A non-ICollection sequence (e.g. a yield-return iterator or a side-effecting source)
+            // may be forward-only/one-shot. Enumerate exactly once, materializing into a list that
+            // is used for both the count and the later value binding, so we never re-run the source.
+            var materialized = new List<object?>();
+            foreach (var item in enumerable)
+            {
+                materialized.Add(item);
+            }
+            items = materialized;
+            count = materialized.Count;
             return true;
         }
 
@@ -432,9 +504,21 @@ internal static class ParameterBinder
 
         for (int i = 0; i < sqlParamNames.Length; i++)
         {
-            string sqlName = sqlParamNames[i];
-            if (!bound.Add(sqlName)) continue;
+            bound.Add(sqlParamNames[i]);
+        }
 
+        // A single scalar value is ambiguous when the SQL references more than one distinct
+        // parameter: it would silently bind the same value to all of them. Mirror the named-object
+        // path's arity checking and require the caller to pass an object/dictionary instead.
+        if (bound.Count > 1)
+        {
+            throw new ArgumentException(
+                $"A single scalar parameter value cannot be bound to SQL containing {bound.Count} distinct parameters ({string.Join(", ", bound)}). Pass an object or dictionary with a value per parameter instead.",
+                nameof(value));
+        }
+
+        foreach (string sqlName in bound)
+        {
             IDbDataParameter p = command.CreateParameter();
             p.ParameterName = sqlName;
             p.Value = ApplyTypeHandlerIfNeeded(value, propertyInfo: null) ?? DBNull.Value;
@@ -503,9 +587,12 @@ internal static class ParameterBinder
             {
                 return handler.ToDbValue(value);
             }
-            catch
+            catch (Exception ex)
             {
-                // If handler fails, fall through to default binding
+                // Surface conversion failures rather than silently binding unconverted data.
+                throw new InvalidOperationException(
+                    $"Type handler '{handler.GetType().Name}' failed to convert a value of type '{valueType.Name}' to its database representation.",
+                    ex);
             }
         }
 
