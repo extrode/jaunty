@@ -43,6 +43,15 @@ public static class SqlDialectFactory
     public static void RegisterDialect(string connectionTypeName, ISqlDialect dialect)
     {
         _customDialects[connectionTypeName] = dialect;
+
+        // Invalidate any already-cached resolution for a connection type with this name so a
+        // type resolved (and cached) via GetDialect before this registration doesn't keep
+        // returning the stale built-in dialect on subsequent calls.
+        foreach (Type cachedType in _dialectCache.Keys)
+        {
+            if (cachedType.Name == connectionTypeName)
+                _dialectCache.TryRemove(cachedType, out _);
+        }
     }
 
     /// <summary>

@@ -972,7 +972,7 @@ public class SqlDialectTests
             keyColumns: new[] { "id" },
             keyParams: new[] { "@id" });
 
-        Assert.Contains("MERGE INTO products AS target", sql);
+        Assert.Contains("MERGE INTO products WITH (HOLDLOCK) AS target", sql);
         Assert.Contains("USING (VALUES (@id, @name, @value))", sql);
         Assert.Contains("AS source (id, name, value)", sql);
         Assert.Contains("ON target.id = source.id", sql);

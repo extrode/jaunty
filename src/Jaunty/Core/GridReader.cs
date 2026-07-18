@@ -102,8 +102,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// </exception>
     public T ReadFirst<T>(CommandOptions<T> options = default) where T : new()
     {
-        T? result = ReadFirstOrDefaultCore(options, MappingMode.Strict);
-        return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+        return ReadFirstCore(options, MappingMode.Strict);
     }
 
     /// <summary>
@@ -136,8 +135,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// </remarks>
     public T ReadPartialFirst<T>(CommandOptions<T> options = default) where T : new()
     {
-        T? result = ReadFirstOrDefaultCore(options, MappingMode.Projection);
-        return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+        return ReadFirstCore(options, MappingMode.Projection);
     }
 
     /// <summary>
@@ -172,8 +170,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// </exception>
     public T ReadSingle<T>(CommandOptions<T> options = default) where T : new()
     {
-        T? result = ReadSingleOrDefaultCore(options, MappingMode.Strict);
-        return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+        return ReadSingleCore(options, MappingMode.Strict);
     }
 
     /// <summary>
@@ -208,8 +205,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// </remarks>
     public T ReadPartialSingle<T>(CommandOptions<T> options = default) where T : new()
     {
-        T? result = ReadSingleOrDefaultCore(options, MappingMode.Projection);
-        return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+        return ReadSingleCore(options, MappingMode.Projection);
     }
 
     /// <summary>
@@ -236,10 +232,15 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// </summary>
     /// <typeparam name="T">The type to convert the scalar value to.</typeparam>
     /// <param name="options">Optional command options.</param>
-    /// <returns>The scalar value converted to type <typeparamref name="T"/>, or default if no results.</returns>
+    /// <returns>The scalar value converted to type <typeparamref name="T"/>, or default if there are no rows or the value is null.</returns>
     /// <remarks>
     /// <para>
     /// This method reads a single value from the first column of the first row.
+    /// </para>
+    /// <para>
+    /// A genuine failure to convert the raw value to <typeparamref name="T"/> is not treated
+    /// as "no value" — it propagates as an exception so callers can distinguish an empty/null
+    /// result from a real type mismatch.
     /// </para>
     /// </remarks>
     public T? ReadScalar<T>(CommandOptions options = default)
@@ -262,20 +263,14 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
                 }
                 catch (Exception ex) when (ex is InvalidCastException or NullReferenceException or IndexOutOfRangeException)
                 {
-                    // Handle SQLite DataReader edge cases and type conversion issues
-                    try
+                    // Some providers (e.g. SQLite) throw from GetFieldValue<T> even though a
+                    // value is present; fall back to GetValue + Convert.ChangeType. If this
+                    // fallback also fails, it is a genuine conversion error and must propagate
+                    // rather than being silently reported as "no value" (default).
+                    if (!reader.IsDBNull(0))
                     {
-                        // Fallback to GetValue + Convert.ChangeType for better compatibility
-                        if (!reader.IsDBNull(0))
-                        {
-                            var rawValue = reader.GetValue(0);
-                            result = (T)Convert.ChangeType(rawValue, typeof(T));
-                        }
-                    }
-                    catch
-                    {
-                        // If all else fails, return default
-                        result = default;
+                        var rawValue = reader.GetValue(0);
+                        result = (T)Convert.ChangeType(rawValue, typeof(T));
                     }
                 }
             }
@@ -342,12 +337,51 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         }
     }
 
+    // Separate from ReadFirstOrDefaultCore rather than layering "?? throw" on top of it: for an
+    // unconstrained T (no class/struct constraint), T? does not compile to Nullable<T> for value
+    // types, so a value-type T's "no rows" default(T) (e.g. 0) is indistinguishable from a real
+    // value via "?? throw" -- the throw would never fire. Checking reader.Read() directly here
+    // sidesteps that footgun entirely.
+    private T ReadFirstCore<T>(CommandOptions<T> options, MappingMode mode) where T : new()
+    {
+        EnsureNotConsumed();
+        try
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
+            return map(reader);
+        }
+        finally
+        {
+            Advance();
+        }
+    }
+
     private T? ReadSingleOrDefaultCore<T>(CommandOptions<T> options, MappingMode mode) where T : new()
     {
         EnsureNotConsumed();
         try
         {
             if (!reader.Read()) return default;
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
+            T entity = map(reader);
+            return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.") : entity;
+        }
+        finally
+        {
+            Advance();
+        }
+    }
+
+    // See ReadFirstCore for why this can't be built on top of ReadSingleOrDefaultCore + "?? throw".
+    private T ReadSingleCore<T>(CommandOptions<T> options, MappingMode mode) where T : new()
+    {
+        EnsureNotConsumed();
+        try
+        {
+            if (!reader.Read())
+                throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
             Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
             T entity = map(reader);
             return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.") : entity;
@@ -400,11 +434,8 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// <exception cref="InvalidOperationException">
     /// Thrown when the result set is empty.
     /// </exception>
-    public async Task<T> ReadFirstAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
-    {
-        T? result = await ReadFirstOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken).ConfigureAwait(false);
-        return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-    }
+    public Task<T> ReadFirstAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+        => ReadFirstAsyncCore(options, MappingMode.Strict, cancellationToken);
 
     /// <summary>
     /// Asynchronously reads the first row from the current result set as an entity of type <typeparamref name="T"/>, 
@@ -416,11 +447,8 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// <summary>
     /// Asynchronously reads the first row from the current result set using partial mapping.
     /// </summary>
-    public async Task<T> ReadPartialFirstAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
-    {
-        T? result = await ReadFirstOrDefaultAsyncCore(options, MappingMode.Projection, cancellationToken).ConfigureAwait(false);
-        return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-    }
+    public Task<T> ReadPartialFirstAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+        => ReadFirstAsyncCore(options, MappingMode.Projection, cancellationToken);
 
     /// <summary>
     /// Asynchronously reads the first row from the current result set using partial mapping, or returns <see langword="null"/>.
@@ -434,11 +462,8 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// <exception cref="InvalidOperationException">
     /// Thrown when the result set doesn't contain exactly one row.
     /// </exception>
-    public async Task<T> ReadSingleAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
-    {
-        T? result = await ReadSingleOrDefaultAsyncCore(options, MappingMode.Strict, cancellationToken).ConfigureAwait(false);
-        return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-    }
+    public Task<T> ReadSingleAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+        => ReadSingleAsyncCore(options, MappingMode.Strict, cancellationToken);
 
     /// <summary>
     /// Asynchronously reads exactly one row from the current result set, or returns <see langword="null"/>.
@@ -449,11 +474,8 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// <summary>
     /// Asynchronously reads exactly one row using partial mapping.
     /// </summary>
-    public async Task<T> ReadPartialSingleAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
-    {
-        T? result = await ReadSingleOrDefaultAsyncCore(options, MappingMode.Projection, cancellationToken).ConfigureAwait(false);
-        return result ?? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
-    }
+    public Task<T> ReadPartialSingleAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+        => ReadSingleAsyncCore(options, MappingMode.Projection, cancellationToken);
 
     /// <summary>
     /// Asynchronously reads exactly one row using partial mapping, or returns <see langword="null"/>.
@@ -483,17 +505,13 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
                 }
                 catch (Exception ex) when (ex is InvalidCastException or NullReferenceException or IndexOutOfRangeException)
                 {
-                    try
+                    // Same reasoning as the sync ReadScalar<T>: fall back to GetValue +
+                    // Convert.ChangeType, but let a genuine conversion failure propagate
+                    // instead of silently reporting "no value" (default).
+                    if (!await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
                     {
-                        if (!await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
-                        {
-                            var rawValue = dbReader.GetValue(0);
-                            result = (T)Convert.ChangeType(rawValue, typeof(T));
-                        }
-                    }
-                    catch
-                    {
-                        result = default;
+                        var rawValue = dbReader.GetValue(0);
+                        result = (T)Convert.ChangeType(rawValue, typeof(T));
                     }
                 }
             }
@@ -586,6 +604,26 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         }
     }
 
+    // See the sync ReadFirstCore for why this can't be built on top of
+    // ReadFirstOrDefaultAsyncCore + "?? throw" (unconstrained T? isn't Nullable<T> for value types).
+    private async Task<T> ReadFirstAsyncCore<T>(CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken) where T : new()
+    {
+        EnsureNotConsumed();
+        if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
+
+        try
+        {
+            if (!await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
+            return map(reader);
+        }
+        finally
+        {
+            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     private async Task<T?> ReadSingleOrDefaultAsyncCore<T>(CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken) where T : new()
     {
         EnsureNotConsumed();
@@ -594,6 +632,29 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         try
         {
             if (!await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false)) return default;
+            Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
+            T entity = map(reader);
+
+            return await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false)
+                ? throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.")
+                : entity;
+        }
+        finally
+        {
+            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    // See ReadFirstAsyncCore for why this can't be built on top of ReadSingleOrDefaultAsyncCore + "?? throw".
+    private async Task<T> ReadSingleAsyncCore<T>(CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken) where T : new()
+    {
+        EnsureNotConsumed();
+        if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
+
+        try
+        {
+            if (!await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.");
             Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
             T entity = map(reader);
 

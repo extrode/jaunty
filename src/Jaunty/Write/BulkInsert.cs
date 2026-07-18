@@ -199,7 +199,7 @@ public static partial class Jaunty
                 Transaction = transaction,
                 IdentityMode = BulkCopyConfiguration.DefaultIdentityMode,
                 CheckConstraints = !ignoreConstraints && BulkCopyConfiguration.DefaultCheckConstraints,
-                TableLock = BulkCopyConfiguration.DefaultCheckConstraints ? TableLockOption.BulkLock : TableLockOption.Default
+                TableLock = TableLockOption.Default
             };
 
             int totalInserted = 0;
