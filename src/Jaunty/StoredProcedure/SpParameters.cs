@@ -1,5 +1,7 @@
 using System.Data;
 
+using Jaunty.Internals.Read;
+
 namespace Jaunty.StoredProcedure;
 
 /// <summary>
@@ -284,31 +286,36 @@ public sealed class SpParameters
         // After execution, the DbParameter will have the output value
         object? value = param.DbParameter?.Value ?? param.Value;
 
-        return value is null || value == DBNull.Value ? default : (T)Convert.ChangeType(value, typeof(T));
+        return value is null || value == DBNull.Value ? default : ScalarConverter<T>.Convert(value);
     }
 
     /// <summary>
     /// Gets the return value after execution.
     /// </summary>
-    /// <returns>The return value as an integer, or 0 if no return value was defined.</returns>
+    /// <returns>The return value as an integer, or 0 if the return value is null.</returns>
     /// <remarks>
     /// <para>
     /// This method retrieves the integer return value of a stored procedure.
-    /// You must call <see cref="AddReturnValue"/> before executing the stored procedure 
+    /// You must call <see cref="AddReturnValue"/> before executing the stored procedure
     /// to capture the return value.
     /// </para>
     /// <para>
-    /// If no return value parameter was defined or the value is null, this method returns 0.
+    /// If a return value parameter was defined but its captured value is null, this method
+    /// returns 0. If no return value parameter was defined at all (<see cref="AddReturnValue"/>
+    /// was never called), this method throws <see cref="InvalidOperationException"/>.
     /// </para>
     /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when no return value parameter was defined. Use <see cref="AddReturnValue"/> to add one.
+    /// </exception>
     /// <example>
     /// <code>
     /// var parameters = new SpParameters()
     ///     .AddInput("CategoryId", 5)
     ///     .AddReturnValue();
-    /// 
+    ///
     /// connection.ExecuteStoredProcedureNonQuery("DeleteCategory", parameters);
-    /// 
+    ///
     /// int returnValue = parameters.GetReturnValue();
     /// if (returnValue == 0)
     /// {
