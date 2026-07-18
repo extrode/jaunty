@@ -225,7 +225,8 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
-            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -464,7 +465,8 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
-            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -719,7 +721,8 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
-            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -986,7 +989,8 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
-            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -1269,7 +1273,8 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
-            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -1568,7 +1573,8 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
-            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -1883,7 +1889,8 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
-            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            if (options.Transaction is not null)
+                command.Transaction = options.Transaction;
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
