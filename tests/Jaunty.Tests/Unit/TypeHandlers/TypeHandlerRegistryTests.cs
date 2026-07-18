@@ -290,6 +290,53 @@ public class TypeHandlerRegistryTests : IDisposable
 
     #endregion
 
+    #region Concurrent Register/Remove (Finding: _handlerCount race)
+
+    [Fact]
+    public async Task HasHandlers_DuringConcurrentRegisterRemoveOfOtherTypes_NeverFalselyReportsEmpty()
+    {
+        // A witness handler stays registered for the whole test — HasHandlers must never
+        // read false while this is registered, even under heavy concurrent Register/Remove
+        // churn on a different type (regression for the non-atomic _handlerCount race).
+        JauntyConfig.RegisterTypeHandler<Guid>(fromDb: v => Guid.Empty, toDb: v => v.ToString());
+        try
+        {
+            const int iterations = 500;
+            int threadCount = Math.Max(4, Environment.ProcessorCount);
+            var tasks = new Task[threadCount];
+            int falseNegatives = 0;
+
+            for (int t = 0; t < threadCount; t++)
+            {
+                tasks[t] = Task.Run(() =>
+                {
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        JauntyConfig.RegisterTypeHandler<string>(fromDb: v => v?.ToString() ?? string.Empty, toDb: v => v);
+                        if (!TypeHandlerRegistry.HasHandlers)
+                            Interlocked.Increment(ref falseNegatives);
+
+                        JauntyConfig.RemoveTypeHandler<string>();
+                        if (!TypeHandlerRegistry.HasHandlers)
+                            Interlocked.Increment(ref falseNegatives);
+                    }
+                });
+            }
+
+            await Task.WhenAll(tasks);
+
+            Assert.Equal(0, falseNegatives);
+            Assert.True(TypeHandlerRegistry.HasHandlers);
+        }
+        finally
+        {
+            JauntyConfig.RemoveTypeHandler<Guid>();
+            JauntyConfig.RemoveTypeHandler<string>();
+        }
+    }
+
+    #endregion
+
     private sealed class ThrowingStringHandler : TypeHandler<string>
     {
         public override string Parse(object? dbValue) => throw new FormatException("parse boom");
