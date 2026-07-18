@@ -191,9 +191,9 @@ public static partial class Jaunty
                             if (dbConnection is not null)
                                 await dbConnection.CloseAsync().ConfigureAwait(false);
                             else
-                                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                                await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #else
-                            await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                            await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #endif
                         }
                     }
@@ -272,9 +272,9 @@ public static partial class Jaunty
                 if (dbConnection is not null)
                     await dbConnection.CloseAsync().ConfigureAwait(false);
                 else
-                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #endif
             }
         }
