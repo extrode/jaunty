@@ -157,11 +157,16 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
     {
         // The identity-retrieval SQL must run in the same batch/round-trip as the INSERT.
         // Two dialect shapes are supported:
-        //   - A RETURNING clause (e.g. PostgreSQL "RETURNING id;") appended directly to
-        //     the INSERT VALUES clause before the terminating semicolon.
+        //   - A RETURNING clause (e.g. PostgreSQL "RETURNING <column>;") appended directly to
+        //     the INSERT VALUES clause before the terminating semicolon. Unlike SCOPE_IDENTITY()/
+        //     LAST_INSERT_ID()/last_insert_rowid(), Postgres has no dialect-wide "last id"
+        //     function - RETURNING needs the actual identity column name, so it must be passed
+        //     here rather than calling the no-args overload (which hardcodes "id").
         //   - A standalone SELECT statement (e.g. SQL Server, MySQL, SQLite) appended as
-        //     a second statement in the same command batch after a semicolon.
-        string identitySql = _dialect.GetLastInsertIdSql();
+        //     a second statement in the same command batch after a semicolon; these dialects
+        //     ignore the column name argument entirely, so passing it is harmless for them.
+        string identityColumnName = _dialect.EscapeColumnName(_metadata.PrimaryKeys[0].ColumnName);
+        string identitySql = _dialect.GetLastInsertIdSql(identityColumnName);
 
         if (identitySql.TrimStart().StartsWith("RETURNING", StringComparison.OrdinalIgnoreCase))
             return $"{insertSql} {identitySql}";
