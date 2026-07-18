@@ -211,6 +211,39 @@ public class SpParametersTests
         Assert.Throws<ArgumentException>(() => parameters.Get<int>("NonExistent"));
     }
 
+    [Fact]
+    public void Get_Guid_ReturnsValue()
+    {
+        // Regression: Convert.ChangeType(guid, typeof(Guid)) throws InvalidCastException
+        // because Guid does not implement IConvertible, even for an identity conversion.
+        var expected = Guid.NewGuid();
+        var parameters = new SpParameters()
+            .AddOutput("Id", DbType.Guid);
+
+        var param = parameters.Parameters[0];
+        param.DbParameter = CreateMockParameter(expected);
+
+        var result = parameters.Get<Guid>("Id");
+
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void Get_NullableInt_WithNonNullValue_ReturnsValue()
+    {
+        // Regression: Convert.ChangeType(value, typeof(int?)) throws InvalidCastException
+        // because Convert.ChangeType does not understand Nullable<T> as a target type.
+        var parameters = new SpParameters()
+            .AddOutput("Count", DbType.Int32);
+
+        var param = parameters.Parameters[0];
+        param.DbParameter = CreateMockParameter(42);
+
+        var result = parameters.Get<int?>("Count");
+
+        Assert.Equal(42, result);
+    }
+
     #endregion
 
     #region GetReturnValue Tests
@@ -236,6 +269,20 @@ public class SpParametersTests
             .AddInput("Param", 1);
 
         Assert.Throws<InvalidOperationException>(() => parameters.GetReturnValue());
+    }
+
+    [Fact]
+    public void GetReturnValue_DefinedButNullValue_ReturnsZero()
+    {
+        var parameters = new SpParameters()
+            .AddReturnValue();
+
+        var param = parameters.Parameters[0];
+        param.DbParameter = CreateMockParameter(null);
+
+        var result = parameters.GetReturnValue();
+
+        Assert.Equal(0, result);
     }
 
     #endregion
