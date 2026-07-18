@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -16,6 +17,7 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
 {
     private readonly IEnumerator<T> _enumerator;
     private readonly ColumnMetadata[] _columns;
+    private readonly Func<T, object?>[] _getters;
     private bool _disposed;
 
     /// <summary>
@@ -28,11 +30,10 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
         _enumerator = entities.GetEnumerator();
         _columns = ColumnMetadataHelper.GetInsertableColumns(metadata).ToArray();
 
-        // Initialize cached getters for this type if not already done
-        if (Getters.Length == 0)
-        {
-            EntityDataReaderCache<T>.Initialize(_columns);
-        }
+        // Getters are cached per distinct column layout, not just per type, so a second
+        // bulk-insert of the same T with a different column subset/order gets its own
+        // correctly-matching getters instead of reusing a stale layout's getters.
+        _getters = EntityDataReaderCache<T>.GetGetters(_columns);
     }
 
     /// <inheritdoc/>
@@ -41,7 +42,7 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
         if (_enumerator.Current is null)
             return DBNull.Value;
 
-        var value = Getters[i](_enumerator.Current);
+        var value = _getters[i](_enumerator.Current);
         return value ?? DBNull.Value;
     }
 
@@ -53,7 +54,7 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
 
         for (int i = 0; i < _columns.Length; i++)
         {
-            values[i] = Getters[i](_enumerator.Current) ?? DBNull.Value;
+            values[i] = _getters[i](_enumerator.Current) ?? DBNull.Value;
         }
 
         return _columns.Length;
@@ -187,42 +188,31 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
         => Task.FromResult(IsDBNull(i));
 
     /// <summary>
-    /// Gets the cached compiled property getters for type T.
-    /// Getters are compiled once per type and reused for all instances.
-    /// </summary>
-    private static Func<T, object?>[] Getters => EntityDataReaderCache<T>.Getters;
-
-    /// <summary>
     /// Static generic cache for entity readers.
-    /// Compiled getters are created once per type and reused forever.
-    /// Thread-safe initialization using double-check locking pattern.
+    /// Compiled getters are keyed by column layout (not just by type), so distinct
+    /// column subsets/orderings for the same <typeparamref name="T"/> each get their
+    /// own correctly-matching getters instead of one layout's getters being reused
+    /// for a differently-shaped one.
     /// </summary>
     private static class EntityDataReaderCache<TEntity> where TEntity : new()
     {
-        private static readonly object _lock = new();
-        private static Func<TEntity, object?>[]? _getters;
+        private static readonly ConcurrentDictionary<string, Func<TEntity, object?>[]> _gettersByLayout = new(StringComparer.Ordinal);
 
         /// <summary>
-        /// Gets the cached compiled property getters for type TEntity.
-        /// Returns empty array if not yet initialized.
+        /// Gets the cached compiled property getters for type TEntity matching the given
+        /// column layout, building and caching them on first use for that layout.
         /// </summary>
-        public static Func<TEntity, object?>[] Getters => _getters ?? Array.Empty<Func<TEntity, object?>>();
+        /// <param name="columns">The column metadata identifying the layout to get getters for.</param>
+        public static Func<TEntity, object?>[] GetGetters(ColumnMetadata[] columns)
+            => _gettersByLayout.GetOrAdd(BuildLayoutKey(columns), _ => BuildGetters(columns));
 
-        /// <summary>
-        /// Initializes the cached getters for this type.
-        /// Thread-safe: only the first call takes effect.
-        /// </summary>
-        /// <param name="columns">The column metadata to build getters for.</param>
-        public static void Initialize(ColumnMetadata[] columns)
+        private static string BuildLayoutKey(ColumnMetadata[] columns)
         {
-            if (_getters is null)
-            {
-                lock (_lock)
-                {
-                    if (_getters is null)
-                        _getters = BuildGetters(columns);
-                }
-            }
+            int columnCount = columns.Length;
+            var parts = new string[columnCount + 1];
+            parts[0] = columnCount.ToString();
+            for (int i = 0; i < columnCount; i++) parts[i + 1] = columns[i].ColumnName ?? string.Empty;
+            return string.Join("", parts);
         }
 
         private static Func<TEntity, object?>[] BuildGetters(ColumnMetadata[] columns)
