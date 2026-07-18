@@ -169,8 +169,7 @@ public static partial class Jaunty
                         if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                             command.CommandType = options.CommandType;
 
-                        if (options.Transaction is DbTransaction dbTransaction)
-                            command.Transaction = dbTransaction;
+                        command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
                         if (options.CommandTimeout.HasValue)
                             command.CommandTimeout = options.CommandTimeout.Value;
@@ -224,8 +223,7 @@ public static partial class Jaunty
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
                 command.CommandType = options.CommandType;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -275,8 +273,7 @@ public static partial class Jaunty
 #endif
             command.CommandText = sql;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -323,8 +320,7 @@ public static partial class Jaunty
             using var command = dbConnection.CreateCommand();
             command.CommandText = sql;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -510,8 +506,7 @@ public static partial class Jaunty
             using DbCommand command = dbConnection.CreateCommand();
             command.CommandText = sql;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
