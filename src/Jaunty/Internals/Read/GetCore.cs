@@ -19,7 +19,7 @@ public static partial class Jaunty
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (string.IsNullOrEmpty(cached.SelectByIdSql))
-            throw new InvalidOperationException("Cannot get entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
+            throw new InvalidOperationException($"Cannot get entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
         bool wasClosed = connection.State == ConnectionState.Closed;
 
@@ -58,7 +58,7 @@ public static partial class Jaunty
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (string.IsNullOrEmpty(cached.SelectByIdSql))
-            throw new InvalidOperationException("Cannot get entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
+            throw new InvalidOperationException($"Cannot get entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
         bool wasClosed = connection.State == ConnectionState.Closed;
 

@@ -10,7 +10,10 @@ namespace Jaunty;
 
 public static partial class Jaunty
 {
-    private static async ValueTask<TResult> ExecuteReaderAsync<TResult>(IDbConnection connection, string sql, object? parameters,
+    // Internal (not private) so tests can exercise the non-DbConnection fallback branch directly:
+    // every current public async entry point rejects non-DbConnection connections before reaching
+    // here, so this path is otherwise unreachable from outside the assembly.
+    internal static async ValueTask<TResult> ExecuteReaderAsync<TResult>(IDbConnection connection, string sql, object? parameters,
             CommandOptions options, Func<IDataReader, CancellationToken, Task<TResult>> handler, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
@@ -106,9 +109,9 @@ public static partial class Jaunty
                             if (dbConnection is not null)
                                 await dbConnection.CloseAsync().ConfigureAwait(false);
                             else
-                                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                                await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #else
-                            await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                            await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #endif
                         }
                     }
@@ -195,9 +198,9 @@ public static partial class Jaunty
                 if (dbConnection is not null)
                     await dbConnection.CloseAsync().ConfigureAwait(false);
                 else
-                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #endif
             }
         }
