@@ -192,12 +192,28 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
         return type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
     }
 
+    /// <summary>
+    /// Strips a single leading provider-prefix character (e.g. <c>@</c>, <c>:</c>, <c>?</c>, <c>$</c>)
+    /// from a parameter name so it can be matched against configured sensitive parameter names.
+    /// </summary>
+    private static string StripProviderPrefix(string paramName)
+    {
+        if (paramName.Length == 0)
+            return paramName;
+
+        var first = paramName[0];
+        if (first is '@' or ':' or '?' or '$')
+            return paramName.Substring(1);
+
+        return paramName;
+    }
+
     private string FormatParameterValue(string paramName, object? value)
     {
         if (value is null || value == DBNull.Value)
             return "NULL";
 
-        if (_config.SensitiveParameterNames.Contains(paramName))
+        if (_config.SensitiveParameterNames.Contains(paramName) || _config.SensitiveParameterNames.Contains(StripProviderPrefix(paramName)))
             return _config.MaskedValueFormat;
 
         return value switch
