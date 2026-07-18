@@ -220,7 +220,11 @@ internal sealed class SqlServerDialect : ISqlDialect
         var sb = new System.Text.StringBuilder(512);
         sb.Append("MERGE INTO ");
         sb.Append(tableName);
-        sb.Append(" AS target USING (VALUES (");
+        // WITH (HOLDLOCK) escalates to a serializable-range lock on the target table for the
+        // duration of the MERGE, closing the well-known race where two concurrent MERGE
+        // statements both evaluate WHEN NOT MATCHED as true for the same key and both attempt
+        // to INSERT, causing a duplicate-key violation.
+        sb.Append(" WITH (HOLDLOCK) AS target USING (VALUES (");
 
         for (int i = 0; i < sourceParams.Length; i++)
         {

@@ -668,6 +668,44 @@ public class GridReaderTests : IClassFixture<DialectFixture>
         Assert.Contains("consumed", ex.Message.ToLower());
     }
 
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadScalar_ConversionFailure_PropagatesException(DialectInfo dialect)
+    {
+        // Regression: a genuine type-conversion failure must not be silently swallowed
+        // and reported as default(T) — it must propagate so callers can distinguish
+        // "no value" from "wrong value". Target Guid rather than int: SQLite's own
+        // dynamic-typing/CAST coercion rules turn a non-numeric string into 0 when read as
+        // an integer (provider-level behavior, not a Jaunty bug), which would make this
+        // test pass vacuously under Microsoft.Data.Sqlite. There's no equivalent numeric
+        // coercion for Guid, so the conversion genuinely fails on every provider.
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple("SELECT 'not-a-guid' AS value");
+
+        Assert.ThrowsAny<Exception>(() => gridReader.ReadScalar<Guid>());
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadFirst_ValueType_NoResults_Throws(DialectInfo dialect)
+    {
+        // Regression: ReadFirst<T> for a value type T must throw InvalidOperationException
+        // on an empty result set, the same as it does for reference types — not silently
+        // return default(T) (e.g. 0).
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple("SELECT 1 WHERE 1 = 0");
+
+        var mapper = new Func<IDataReader, int>(reader => reader.GetInt32(0));
+
+        Assert.Throws<InvalidOperationException>(() =>
+            gridReader.ReadFirst<int>(new CommandOptions<int>(mapper: mapper)));
+    }
+
     private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
         dialect.Provider == DialectProvider.SqlServer
             ? $"SELECT TOP ({top}) CategoryId, CategoryName, Description FROM Categories{(orderById ? " ORDER BY CategoryId" : string.Empty)}"

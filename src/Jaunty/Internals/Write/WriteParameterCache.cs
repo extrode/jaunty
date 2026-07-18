@@ -132,6 +132,11 @@ internal static class WriteParameterCache<T> where T : new()
 
     private static EntityMetadata? ResolveMetadata()
     {
+        // 1. Source-generated static surface (TableName/SchemaName/ParameterMap) - reflection-free
+        if (SourceGeneratedMetadataResolver.TryBuild(typeof(T)) is EntityMetadata sourceGenMetadata)
+            return sourceGenMetadata;
+
+        // 2. Fallback to extension hook (Jaunty.Extensions.Reflection)
         return JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is EntityMetadata meta ? meta : null;
     }
 
