@@ -8,6 +8,7 @@ using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read.Configuration;
 
+[Collection("Configuration Operations")]
 public class ConfigResolverTests : IClassFixture<DialectFixture>, IDisposable
 {
     private readonly DialectFixture _fixture;
@@ -19,10 +20,16 @@ public class ConfigResolverTests : IClassFixture<DialectFixture>, IDisposable
 
     public void Dispose()
     {
-        _fixture.Dispose();
-        JauntyConfig.Reset();
-        JauntyReflectionExtensions.UseReflectionMapping();
-        SpecialTypeMappers.Register();
+        try
+        {
+            _fixture.Dispose();
+        }
+        finally
+        {
+            JauntyConfig.Reset();
+            JauntyReflectionExtensions.UseReflectionMapping();
+            SpecialTypeMappers.Register();
+        }
     }
 
     [Theory]
