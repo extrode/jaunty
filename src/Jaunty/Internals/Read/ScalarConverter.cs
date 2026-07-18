@@ -19,16 +19,31 @@ internal static class ScalarConverter<T>
         if (value is T direct)
             return direct;
 
+        // Defensive DBNull guard (callers already filter this out, but be correct standalone)
+        if (value is DBNull)
+            return default!;
+
         // Enum path
         if (IsEnum)
         {
+            if (value is string enumString)
+                return (T)Enum.Parse(TargetType, enumString, ignoreCase: true);
+
             Type enumUnderlyingType = Enum.GetUnderlyingType(TargetType);
-            var numeric = System.Convert.ChangeType(value, enumUnderlyingType);
-            return (T)Enum.ToObject(TargetType, numeric!);
+            var numericEnum = System.Convert.ChangeType(value, enumUnderlyingType);
+            return (T)Enum.ToObject(TargetType, numericEnum!);
         }
 
-        // Standard conversion with nullable unwrapping
-        var converted = System.Convert.ChangeType(value, TargetType);
+        // Guid / DateTimeOffset from string: System.Convert.ChangeType does not support these
+        object converted;
+        if (TargetType == typeof(Guid) && value is string guidString)
+            converted = Guid.Parse(guidString);
+        else if (TargetType == typeof(DateTimeOffset) && value is string dtoString)
+            converted = DateTimeOffset.Parse(dtoString, System.Globalization.CultureInfo.InvariantCulture);
+        else
+            converted = System.Convert.ChangeType(value, TargetType);
+
+        // Standard nullable unwrapping
         return IsNullable ? (T?)converted ?? default! : (T)converted!;
     }
 }
