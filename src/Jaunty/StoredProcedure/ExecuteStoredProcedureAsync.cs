@@ -271,7 +271,12 @@ public static partial class Jaunty
 
     #region Core async execution with output parameters
 
-    private static async ValueTask<TResult> ExecuteWithOutputParametersAsync<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
+    // Internal (not private) so tests can pass a custom handler that cancels the operation's
+    // CancellationToken right before returning a successful result, exercising the reader-close
+    // cleanup below (which runs after the handler, not inside a finally block) with an
+    // already-canceled token. Not reachable via the public API, whose handlers are fixed internal
+    // lambdas.
+    internal static async ValueTask<TResult> ExecuteWithOutputParametersAsync<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
         CommandOptions options, Func<IDataReader, SpParameters, CancellationToken, Task<TResult>> handler, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
@@ -322,7 +327,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await reader.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => reader.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => reader.Close()).ConfigureAwait(false);
 #endif
 
                 // Read output parameter values
@@ -365,9 +370,9 @@ public static partial class Jaunty
                 if (dbConnection is not null)
                     await dbConnection.CloseAsync().ConfigureAwait(false);
                 else
-                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #endif
             }
         }
@@ -458,9 +463,9 @@ public static partial class Jaunty
                 if (dbConnection is not null)
                     await dbConnection.CloseAsync().ConfigureAwait(false);
                 else
-                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #endif
             }
         }
@@ -543,9 +548,9 @@ public static partial class Jaunty
                 if (dbConnection is not null)
                     await dbConnection.CloseAsync().ConfigureAwait(false);
                 else
-                    await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #endif
             }
         }

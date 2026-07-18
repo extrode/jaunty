@@ -128,7 +128,12 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<T> QueryScalarCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken)
+    // Internal (not private) so tests can inject a custom DbCommand wrapper that deterministically
+    // cancels the operation's CancellationToken from inside ExecuteScalarAsync, right before the
+    // real exception it throws propagates into this method's finally-block cleanup. There is no
+    // other way to reach that precise interleaving through the public API, since it depends on
+    // control over exactly when cancellation happens relative to command execution.
+    internal static async ValueTask<T> QueryScalarCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(dbConnection);
@@ -195,7 +200,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                             await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                            await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                            await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
                         }
                     }
@@ -250,7 +255,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
@@ -301,7 +306,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
@@ -341,7 +346,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
@@ -540,7 +545,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
