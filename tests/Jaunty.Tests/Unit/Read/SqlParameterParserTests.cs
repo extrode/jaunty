@@ -309,6 +309,20 @@ WHERE product_name = @Name";
     }
 
     [Fact]
+    public void ExtractParameterNames_SystemVariableAmongRealParameters_SkipsOnlySystemVariable()
+    {
+        // Regression (Finding 2): @@SPID is a SQL Server system variable and must not be parsed as
+        // a @SPID parameter, even when surrounded by genuine @-parameters in the same statement.
+        var sql = "SET @x = @@SPID + @y";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
+        Assert.Equal(2, names.Length);
+        Assert.Equal("x", names[0]);
+        Assert.Equal("y", names[1]);
+    }
+
+    [Fact]
     public void ExtractParameterNames_ParameterFollowedByOperator_ExtractsCorrectly()
     {
         var sql = "SELECT * FROM products WHERE price>@MinPrice AND price<@MaxPrice";

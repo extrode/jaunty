@@ -266,6 +266,37 @@ public class TypeHandlerRegistryTests : IDisposable
 
     #endregion
 
+    #region Type Handler Exception Propagation (Finding 3)
+
+    [Fact]
+    public void TryConvertToDb_WhenHandlerThrows_PropagatesAsInvalidOperationException()
+    {
+        JauntyConfig.RegisterTypeHandler(new ThrowingStringHandler());
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            TypeHandlerRegistry.TryConvertToDb<string>("x", out _));
+        Assert.IsType<FormatException>(ex.InnerException);
+    }
+
+    [Fact]
+    public void TryConvertFromDb_WhenHandlerThrows_PropagatesAsInvalidOperationException()
+    {
+        JauntyConfig.RegisterTypeHandler(new ThrowingStringHandler());
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            TypeHandlerRegistry.TryConvertFromDb<string>("x", out _));
+        Assert.IsType<FormatException>(ex.InnerException);
+    }
+
+    #endregion
+
+    private sealed class ThrowingStringHandler : TypeHandler<string>
+    {
+        public override string Parse(object? dbValue) => throw new FormatException("parse boom");
+
+        public override object? ToDbValue(string? value) => throw new FormatException("todb boom");
+    }
+
     private class UpperCaseStringHandler : TypeHandler<string>
     {
         public override string Parse(object? dbValue) =>
