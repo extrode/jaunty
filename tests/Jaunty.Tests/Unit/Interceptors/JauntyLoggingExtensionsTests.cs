@@ -193,6 +193,25 @@ public class JauntyLoggingExtensionsTests : IDisposable
         Assert.Null(ex);
     }
 
+    [Fact]
+    public void ApplyJauntyInterceptors_CalledTwice_WithSameProvider_DoesNotDuplicateInterceptorInstance()
+    {
+        // Regression: ApplyJauntyInterceptors must resolve interceptors from the real,
+        // already-built IServiceProvider passed in (not a throwaway container), and must not
+        // append the same singleton interceptor instance to JauntyConfig a second time when
+        // called more than once with the same provider.
+        var services = new ServiceCollection();
+        services.AddJauntyInterceptor<StubInterceptor>();
+        var provider = services.BuildServiceProvider();
+
+        provider.ApplyJauntyInterceptors();
+        provider.ApplyJauntyInterceptors();
+
+        var interceptors = JauntyConfig.InterceptorPipeline!.GetInterceptors().ToList();
+        Assert.Single(interceptors);
+        Assert.Same(provider.GetRequiredService<StubInterceptor>(), interceptors[0]);
+    }
+
     // ------------------------------------------------------------------
     // Stub interceptor — minimal ICommandInterceptor implementation
     // ------------------------------------------------------------------
