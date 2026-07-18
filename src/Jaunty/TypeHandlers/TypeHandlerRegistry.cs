@@ -102,9 +102,12 @@ internal static class TypeHandlerRegistry
             }
             return true;
         }
-        catch
+        catch (Exception ex)
         {
-            return false;
+            // Surface conversion failures rather than silently reporting "no conversion".
+            throw new InvalidOperationException(
+                $"Type handler '{handler.GetType().Name}' failed to parse a database value into type '{typeof(T).Name}'.",
+                ex);
         }
     }
 
@@ -127,10 +130,12 @@ internal static class TypeHandlerRegistry
             dbValue = handler.ToDbValue(value);
             return true;
         }
-        catch
+        catch (Exception ex)
         {
-            dbValue = null;
-            return false;
+            // Surface conversion failures rather than silently reporting "no conversion".
+            throw new InvalidOperationException(
+                $"Type handler '{handler.GetType().Name}' failed to convert a value of type '{typeof(T).Name}' to its database representation.",
+                ex);
         }
     }
 }
