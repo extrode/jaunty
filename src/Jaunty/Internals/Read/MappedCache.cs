@@ -61,17 +61,8 @@ internal static class MappedCache<T> where T : new()
             MethodInfo? instanceMethod = typeof(T).GetMethod("ReadEntity", BindingFlags.Public | BindingFlags.Instance, null, [typeof(IDataReader)], null);
             if (instanceMethod != null)
             {
-                return (IDataReader r) =>
-                {
-                    var instance = new T();
-                    // We need a bridge here because instanceMethod is on IMapped<T> but we call it on T
-                    if (instance is IMapped<T> mapped)
-                    {
-                        // On some frameworks we might need to invoke via reflection if the cast fails
-                        return (T)instanceMethod.Invoke(instance, [r])!;
-                    }
-                    return (T)instanceMethod.Invoke(instance, [r])!;
-                };
+                var openDelegate = (Func<T, IDataReader, T>)instanceMethod.CreateDelegate(typeof(Func<T, IDataReader, T>));
+                return (IDataReader r) => openDelegate(new T(), r);
             }
         }
 
