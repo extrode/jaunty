@@ -606,6 +606,66 @@ public class LoggingInterceptorTests
         Assert.Contains("name=\"Test\"", logs[0].Message);
     }
 
+    [Fact]
+    public async Task OnCommandExecutingAsync_MasksSensitiveParameters_ForProviderPrefixedDictionaryKey()
+    {
+        // Arrange
+        var provider = CreateTestProvider();
+        var logger = CreateLogger(provider);
+        var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
+        config.SensitiveParameterNames.Add("Password");
+        var interceptor = new LoggingInterceptor(logger, config);
+        var parameters = new System.Collections.Generic.Dictionary<string, object>
+        {
+            { "@Name", "John" },
+            { "@Password", "secret123" }
+        };
+        var context = new CommandContext(
+            "INSERT INTO Users (Name, Password) VALUES (@Name, @Password)",
+            parameters,
+            CreateMockConnection(),
+            CommandType.Text);
+
+        // Act
+        await interceptor.OnCommandExecutingAsync(context, CancellationToken.None);
+
+        // Assert
+        var logs = provider.Logs;
+        Assert.Single(logs);
+        Assert.Contains("***MASKED***", logs[0].Message);
+        Assert.DoesNotContain("secret123", logs[0].Message);
+    }
+
+    [Fact]
+    public async Task OnCommandExecutingAsync_MasksSensitiveParameters_ForUnprefixedDictionaryKey()
+    {
+        // Arrange
+        var provider = CreateTestProvider();
+        var logger = CreateLogger(provider);
+        var config = new LoggingConfiguration { LogSql = true, LogParameters = true };
+        config.SensitiveParameterNames.Add("Password");
+        var interceptor = new LoggingInterceptor(logger, config);
+        var parameters = new System.Collections.Generic.Dictionary<string, object>
+        {
+            { "Name", "John" },
+            { "Password", "secret123" }
+        };
+        var context = new CommandContext(
+            "INSERT INTO Users (Name, Password) VALUES (@Name, @Password)",
+            parameters,
+            CreateMockConnection(),
+            CommandType.Text);
+
+        // Act
+        await interceptor.OnCommandExecutingAsync(context, CancellationToken.None);
+
+        // Assert
+        var logs = provider.Logs;
+        Assert.Single(logs);
+        Assert.Contains("***MASKED***", logs[0].Message);
+        Assert.DoesNotContain("secret123", logs[0].Message);
+    }
+
     #endregion
 
     #region Test Helper Classes
