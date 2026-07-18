@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 
 namespace Jaunty.Interceptors;
 
@@ -83,10 +84,39 @@ public sealed class CommandContext
     public string DatabaseName => Connection.Database ?? "(unknown)";
 
     /// <summary>
-    /// Gets the connection string (without sensitive data if provider supports it).
+    /// Gets the connection string with sensitive values (such as passwords) redacted.
     /// </summary>
     /// <remarks>
-    /// Some providers may return a sanitized connection string.
+    /// The underlying provider's connection string is parsed with <see cref="DbConnectionStringBuilder"/>
+    /// and any key that case-insensitively matches a known sensitive keyword (e.g. "Password", "Pwd",
+    /// "User Password") is removed before the string is rebuilt. This sanitization is performed
+    /// unconditionally; it does not rely on the provider itself withholding sensitive data.
+    /// If the connection string cannot be parsed, "(unknown)" is returned instead of the raw value.
     /// </remarks>
-    public string ConnectionString => Connection.ConnectionString ?? "(unknown)";
+    public string ConnectionString => SanitizeConnectionString(Connection.ConnectionString);
+
+    private static readonly string[] SensitiveConnectionStringKeys = { "Password", "Pwd", "User Password" };
+
+    private static string SanitizeConnectionString(string? connectionString)
+    {
+        if (string.IsNullOrEmpty(connectionString))
+            return "(unknown)";
+
+        try
+        {
+            var builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
+
+            foreach (var sensitiveKey in SensitiveConnectionStringKeys)
+            {
+                if (builder.ContainsKey(sensitiveKey))
+                    builder.Remove(sensitiveKey);
+            }
+
+            return builder.ConnectionString ?? "(unknown)";
+        }
+        catch (ArgumentException)
+        {
+            return "(unknown)";
+        }
+    }
 }
