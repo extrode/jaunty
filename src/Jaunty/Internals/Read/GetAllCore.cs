@@ -121,7 +121,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
@@ -253,7 +253,7 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
                 await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConnection.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
