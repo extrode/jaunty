@@ -10,7 +10,13 @@ namespace Jaunty.Internals.Read;
 /// </summary>
 internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new()
 {
-    private static readonly ConcurrentDictionary<(Type, Type), MultiEntityMapper<T1, T2>> _cache = new();
+    // Keyed by reader column layout (field count + names), not just (typeof(T1), typeof(T2)) -
+    // mirrors MultiEntityMapperN.cs's arity-3..7 BuildSchemaKey rationale. Since this class is
+    // already generic on T1/T2, a static field's typeof(T1)/typeof(T2) never vary per
+    // instantiation, so keying on them alone amounted to a single-entry cache: two different
+    // multi-entity queries projecting into the same (T1, T2) pair but splitting columns
+    // differently would silently reuse the first query's cached split points.
+    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2>> _cache = new(StringComparer.Ordinal);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -23,7 +29,7 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
 
     internal static MultiEntityMapper<T1, T2> Build(IDataReader reader)
     {
-        (Type, Type) key = (typeof(T1), typeof(T2));
+        string key = BuildSchemaKey(reader);
 
         if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2>? cached))
             return cached;
@@ -31,6 +37,15 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
         MultiEntityMapper<T1, T2> mapper = CreateMapper(reader);
         _cache.TryAdd(key, mapper);
         return mapper;
+    }
+
+    private static string BuildSchemaKey(IDataReader reader)
+    {
+        int fieldCount = reader.FieldCount;
+        var parts = new string[fieldCount + 1];
+        parts[0] = fieldCount.ToString();
+        for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2> CreateMapper(IDataReader reader)
