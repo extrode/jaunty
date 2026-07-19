@@ -237,7 +237,6 @@ public static partial class Jaunty
         }
     }
 
-#if ASYNC_ENUMERABLE_SUPPORT
     internal static async IAsyncEnumerable<T> GetAllStreamCoreAsync<T>(DbConnection dbConnection, CommandOptions<T> options, [EnumeratorCancellation] CancellationToken cancellationToken) where T : new()
     {
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
@@ -292,10 +291,4 @@ public static partial class Jaunty
             }
         }
     }
-#else
-    internal static async ValueTask<IEnumerable<T>> GetAllStreamCoreAsync<T>(DbConnection dbConnection, CommandOptions<T> options, CancellationToken cancellationToken) where T : new()
-    {
-        return await GetAllCoreAsync<T>(dbConnection, options, cancellationToken).ConfigureAwait(false);
-    }
-#endif
 }

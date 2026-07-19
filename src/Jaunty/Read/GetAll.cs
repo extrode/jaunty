@@ -113,7 +113,6 @@ public static partial class Jaunty
         return GetAllStreamCore<T>(connection, options);
     }
 
-#if ASYNC_ENUMERABLE_SUPPORT
     /// <summary>
     /// Asynchronously streams all rows from the table mapped to <typeparamref name="T"/>, yielding entities lazily.
     /// </summary>
@@ -152,38 +151,4 @@ public static partial class Jaunty
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetAllStreamCoreAsync<T>(dbConnection, options, cancellationToken);
     }
-#else
-    /// <summary>
-    /// Asynchronously retrieves all rows from the table mapped to <typeparamref name="T"/>.
-    /// On .NET Framework (netstandard2.0), returns a completed task with the buffered results.
-    /// </summary>
-    /// <typeparam name="T">The entity type. Must have a parameterless constructor.</typeparam>
-    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
-    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
-    /// <returns>A task containing an enumerable of all entities.</returns>
-    public static ValueTask<IEnumerable<T>> GetAllStreamAsync<T>(this IDbConnection connection, CancellationToken cancellationToken = default) where T : new()
-    {
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-        return GetAllStreamCoreAsync<T>(dbConnection, default, cancellationToken);
-    }
-
-    /// <summary>
-    /// Asynchronously retrieves all rows from the table mapped to <typeparamref name="T"/> with command options.
-    /// On .NET Framework (netstandard2.0), returns a completed task with the buffered results.
-    /// </summary>
-    /// <typeparam name="T">The entity type. Must have a parameterless constructor.</typeparam>
-    /// <param name="connection">The database connection. Must be a <see cref="DbConnection"/>.</param>
-    /// <param name="options">Command options for transaction or timeout.</param>
-    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
-    /// <returns>A task containing an enumerable of all entities.</returns>
-    public static ValueTask<IEnumerable<T>> GetAllStreamAsync<T>(this IDbConnection connection, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
-    {
-        if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-        return GetAllStreamCoreAsync<T>(dbConnection, options, cancellationToken);
-    }
-#endif
 }
