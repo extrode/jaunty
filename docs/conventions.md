@@ -21,10 +21,14 @@ project memory lives in docs/lessons/.
 - NEVER auto-delete files, branches, or artifacts (the guards block it anyway).
 - Instead: append every cleanup candidate to a running list, then generate a reviewed PowerShell
   script at `scripts/cleanup-<milestone>.ps1` for the user to run manually (flat in `scripts/`,
-  alongside any existing build/publish scripts — no `cleanup/` subfolder).
-- Script rules: `$ErrorActionPreference='Stop'`; safety gate (refuse if not on `dev`); numbered
-  sections; `git branch -d` (never `-D`); destructive/DB steps commented-out or opt-in; print the
-  remaining state at the end. Follow the existing `cleanup-*.ps1` pattern in the repo.
+  alongside any existing build/publish scripts — no `cleanup/` subfolder), EXCEPT continuous-audit
+  branch cleanup, which goes at `scripts/cleanup/<round>-audit.ps1` (e.g.
+  `scripts/cleanup/round1-audit.ps1`) — a dedicated subfolder so round-over-round audit cleanup
+  scripts don't clutter the flat `scripts/` listing alongside build/publish tooling.
+- Script rules: `$ErrorActionPreference='Stop'`; safety gate (refuse if not on `dev`/`main`, or if
+  the working tree is dirty); numbered sections; `git branch -d` (never `-D`); destructive/DB steps
+  commented-out or opt-in; print the remaining state at the end. Follow the existing `cleanup-*.ps1`
+  pattern in the repo.
 
 ## Specs freshness
 - When code diverges from a shipped spec, update `docs/specs/NNN-*/spec.md` (bump its `Status:`
