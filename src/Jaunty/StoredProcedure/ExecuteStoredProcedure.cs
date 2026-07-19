@@ -2,6 +2,7 @@ using System.Data;
 
 using Jaunty.Core;
 using Jaunty.Configuration;
+using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Read;
 using Jaunty.StoredProcedure;
 
@@ -442,7 +443,7 @@ public static partial class Jaunty
 
             // Set value for Input and InputOutput parameters
             if (sp.Direction is ParameterDirection.Input or ParameterDirection.InputOutput)
-                dbParam.Value = sp.Value ?? DBNull.Value;
+                dbParam.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(sp.Value, propertyInfo: null) ?? DBNull.Value;
 
             command.Parameters.Add(dbParam);
 
