@@ -31,6 +31,27 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
+    // AUD-R6: GridReader.ReadAsyncCore ignored CommandOptions<T>.ExpectedRowCount and always
+    // hardcoded new List<T>(16). ReadAsync<T> returns List<T> directly, so the pre-sized capacity
+    // is directly observable here.
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadAsync_WithExpectedRowCount_PreSizesListCapacity(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync(
+            FullCategorySql(dialect, 2));
+
+        List<Category> categories = await gridReader.ReadAsync(CommandOptions<Category>.WithExpectedRowCount(500));
+
+        Assert.Equal(2, categories.Count);
+        Assert.True(categories.Capacity >= 500);
+    }
+
     [Theory]
     [SqlServer]
     [Postgres]
