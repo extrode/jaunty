@@ -749,6 +749,12 @@ public class SqlDialectTests
         Assert.False(_sqlite.IsKeyword("my_column"));
     }
 
+    [Fact]
+    public void Sqlite_IsKeyword_NullIdentifier_ReturnsFalse()
+    {
+        Assert.False(_sqlite.IsKeyword(null!));
+    }
+
     #endregion
 
     #region EscapeTableName with Schema Edge Cases

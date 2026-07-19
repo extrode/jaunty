@@ -20,8 +20,9 @@ public static partial class Jaunty
     /// matching columns in the result set are mapped. Properties without matching columns are left with their default values.
     /// </para>
     /// <para>
-    /// <strong>Unbuffered streaming:</strong> Results are read one row at a time without any buffering, 
-    /// providing maximum memory efficiency for very large result sets.
+    /// This overload is functionally identical to <see cref="QueryPartialStream{T}(IDbConnection, string)"/>:
+    /// results are streamed and not buffered in memory. It exists as an alias for callers who prefer the
+    /// "unbuffered" naming to describe the streaming behavior.
     /// </para>
     /// <para>
     /// <strong>Important:</strong> The connection remains open until the enumeration completes.
@@ -85,7 +86,9 @@ public static partial class Jaunty
     /// Uses <strong>partial mapping mode</strong> - only properties with matching columns are mapped.
     /// </para>
     /// <para>
-    /// <strong>Unbuffered streaming:</strong> Maximum memory efficiency for very large result sets.
+    /// This overload is functionally identical to
+    /// <see cref="QueryPartialStream{T}(IDbConnection, string, object)"/> - it streams results without
+    /// buffering them in memory.
     /// </para>
     /// </remarks>
     /// <example>
@@ -133,7 +136,9 @@ public static partial class Jaunty
     /// Use this overload when you need to execute the query within a transaction or with a specific timeout.
     /// </para>
     /// <para>
-    /// <strong>Unbuffered streaming:</strong> Maximum memory efficiency for very large result sets.
+    /// This overload is functionally identical to
+    /// <see cref="QueryPartialStream{T}(IDbConnection, string, CommandOptions{T})"/> - it streams results
+    /// without buffering them in memory.
     /// </para>
     /// </remarks>
     /// <example>
@@ -180,7 +185,9 @@ public static partial class Jaunty
     /// This is the most flexible overload, combining parameter binding with execution options.
     /// </para>
     /// <para>
-    /// <strong>Unbuffered streaming:</strong> Maximum memory efficiency for very large result sets.
+    /// This overload is functionally identical to
+    /// <see cref="QueryPartialStream{T}(IDbConnection, string, object, CommandOptions{T})"/> - it streams
+    /// results without buffering them in memory.
     /// </para>
     /// </remarks>
     /// <example>

@@ -579,19 +579,11 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
 
         var results = new List<T>(16);
         Func<IDataReader, T>? map = null;
-        var hasRead = false;
 
         while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
-            hasRead = true;
             map ??= DrDispatcher.Resolve(reader, options, mode);
             results.Add(map(reader));
-        }
-
-        if (!hasRead && results.Count == 0)
-        {
-            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
-            return results;
         }
 
         await AdvanceAsync(cancellationToken).ConfigureAwait(false);
@@ -694,6 +686,9 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         }
         catch (NullReferenceException)
         {
+            // Some ADO.NET providers (observed with SQLite) throw NullReferenceException from
+            // NextResultAsync when there are no more result sets, instead of returning false the
+            // way the synchronous NextResult() does on the same providers; treat it as end-of-results.
             _consumed = true;
             await DisposeAsync().ConfigureAwait(false);
         }
