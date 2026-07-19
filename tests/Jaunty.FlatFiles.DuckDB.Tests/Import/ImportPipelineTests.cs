@@ -257,6 +257,11 @@ public class ImportPipelineTests : IDisposable
         // Second import with Skip — should not add duplicates
         var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Skip));
 
+        // ImportIntoAsync's return value counts every source row processed (ExecuteNonQuery
+        // called), not rows actually inserted - it does not decrement for ON CONFLICT DO NOTHING
+        // no-ops, so all 5 duplicate rows are still counted here even though none were inserted.
+        Assert.Equal(5, count);
+
         // Still 5 rows — duplicates skipped
         Assert.Equal(5, CountRows(sqlite, "inventory"));
     }
@@ -340,6 +345,7 @@ public class ImportPipelineTests : IDisposable
         Assert.Equal(5, count);
         // With batch size 2 and 5 rows: progress at 2, 4, then final at 5
         Assert.True(progressCallCount >= 3, $"Expected at least 3 progress calls, got {progressCallCount}");
+        Assert.Equal(5, lastReported);
     }
 
     // ==========================================
