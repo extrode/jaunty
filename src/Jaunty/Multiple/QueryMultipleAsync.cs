@@ -228,8 +228,12 @@ public static partial class Jaunty
     public static async ValueTask QueryMultipleAsync(this IDbConnection connection, string sql, Action<GridReader> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
@@ -271,8 +275,12 @@ public static partial class Jaunty
     public static async ValueTask QueryMultipleAsync(this IDbConnection connection, string sql, Func<GridReader, Task> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
@@ -316,8 +324,12 @@ public static partial class Jaunty
     public static async ValueTask<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, TResult> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
@@ -361,8 +373,12 @@ public static partial class Jaunty
     public static async ValueTask<TResult> QueryMultipleAsync<TResult>(this IDbConnection connection, string sql, Func<GridReader, Task<TResult>> reader, object? parameters = null, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(reader);
 #else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
         if (reader is null) throw new ArgumentNullException(nameof(reader));
 #endif
         if (connection is not DbConnection dbConnection)
