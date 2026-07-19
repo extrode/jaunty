@@ -69,6 +69,35 @@ public class AsyncTransactionValidatorWiringTests : IDisposable
         realTransaction.Rollback();
     }
 
+    // AUD-R6: GetByIdSimpleCoreDirect assigned options.Transaction to the shared IDbCommand
+    // before branching on "connection is DbConnection" - so with a real DbConnection (making the
+    // command a genuine DbCommand at runtime) and a non-DbTransaction, the plain assignment threw
+    // an opaque InvalidCastException instead of routing through AsyncTransactionValidator like its
+    // sibling GetAllCoreDirect/ExecuteReaderDirect already did.
+    [Fact]
+    public void Get_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        Category? category = _connection.Get<Category>(1, CommandOptions<Category>.WithTransaction(transaction));
+
+        Assert.NotNull(category);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public void Get_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _connection.Get<Category>(1, CommandOptions<Category>.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
     [Fact]
     public async Task GetAllAsync_WithRealDbTransaction_ExecutesWithinTransaction()
     {

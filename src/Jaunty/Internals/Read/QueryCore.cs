@@ -266,8 +266,14 @@ public static partial class Jaunty
             Func<IDataReader, T> userMapper = options.Mapper;
             mapper = dbReader => userMapper(dbReader);
         }
-        // 2. Source-generated (IMapped<T>)
-        else if (mode == MappingMode.Strict && Internals.Read.MappedCache<T>.Mapper is not null)
+        // 2. Source-generated - prefer MapperFactory (shape validated once here instead of per
+        // row) over the plain per-row Mapper delegate, matching DrDispatcher.Resolve's ordering.
+        // MapperFactory needs a reader to build the row mapper, so leave 'mapper' unset here and
+        // let it resolve via DrDispatcher.Resolve below once the reader is open; checking Mapper
+        // first would silently drop this optimization for any type that has both.
+        else if (mode == MappingMode.Strict
+            && Internals.Read.MappedCache<T>.MapperFactory is null
+            && Internals.Read.MappedCache<T>.Mapper is not null)
         {
             Func<IDataReader, T> sgMapper = Internals.Read.MappedCache<T>.Mapper;
             mapper = dbReader => sgMapper(dbReader);
