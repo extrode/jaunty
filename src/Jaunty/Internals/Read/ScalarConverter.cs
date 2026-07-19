@@ -30,7 +30,7 @@ internal static class ScalarConverter<T>
                 return (T)Enum.Parse(TargetType, enumString, ignoreCase: true);
 
             Type enumUnderlyingType = Enum.GetUnderlyingType(TargetType);
-            var numericEnum = System.Convert.ChangeType(value, enumUnderlyingType);
+            var numericEnum = System.Convert.ChangeType(value, enumUnderlyingType, System.Globalization.CultureInfo.InvariantCulture);
             return (T)Enum.ToObject(TargetType, numericEnum!);
         }
 
@@ -45,7 +45,7 @@ internal static class ScalarConverter<T>
         else if (TargetType == typeof(TimeSpan) && value is string tsString)
             converted = TimeSpan.Parse(tsString, System.Globalization.CultureInfo.InvariantCulture);
         else
-            converted = System.Convert.ChangeType(value, TargetType);
+            converted = System.Convert.ChangeType(value, TargetType, System.Globalization.CultureInfo.InvariantCulture);
 
         // Standard nullable unwrapping
         return IsNullable ? (T?)converted ?? default! : (T)converted!;
