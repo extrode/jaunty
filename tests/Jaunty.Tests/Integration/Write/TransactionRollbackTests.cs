@@ -114,52 +114,25 @@ public class TransactionRollbackTests : IClassFixture<DialectFixture>
         }
         else
         {
-            // For other databases, use a temporary table to avoid modifying Northwind
-            using var connection = _fixture.GetConnection(dialect);
+            // For other databases, insert into the existing bulk_test table within a transaction
+            // and roll back - mirrors BulkInsert_WithTransactionRollback_NoDataInserted above
+            // (same table, same GetWriteContext fixture) but via Insert() instead of BulkInsert().
+            // This actually exercises Jaunty's single-row Insert() + transaction-rollback path
+            // (the temp-table workaround this replaced never called Insert() at all, only raw
+            // ADO.NET). Using bulk_test rather than the real categories table avoids dialect-
+            // specific constraints on that table (e.g. Postgres identity-column strictness,
+            // MariaDB column length limits) that are irrelevant to what this test verifies.
+            using var ctx = _fixture.GetWriteContext(dialect);
+            var newEntity = new BulkTestEntity { Name = "Rollback Insert Test", Value = 1 };
 
-            // Create temporary table OUTSIDE transaction (temp tables persist across transactions)
-            using var createCmd = connection.CreateCommand();
-
-            var tempTableSql = dialect.Provider == DialectProvider.Postgres
-                ? "CREATE TEMP TABLE temp_categories (category_id SERIAL PRIMARY KEY, category_name VARCHAR(255), description TEXT)"
-                : dialect.Provider == DialectProvider.SqlServer
-                ? "CREATE TABLE #temp_categories (category_id INT IDENTITY(1,1) PRIMARY KEY, category_name NVARCHAR(255), description NVARCHAR(MAX))"
-                : "CREATE TEMPORARY TABLE temp_categories (category_id INT AUTO_INCREMENT PRIMARY KEY, category_name VARCHAR(255), description TEXT)";
-
-            createCmd.CommandText = tempTableSql;
-            createCmd.ExecuteNonQuery();
-
-            // Now do the insert WITHIN a transaction
-            using var transaction = connection.BeginTransaction();
-
-            // Insert into temp table
-            using var insertCmd = connection.CreateCommand();
-            insertCmd.Transaction = transaction;
-            insertCmd.CommandText = dialect.Provider == DialectProvider.Postgres
-                ? "INSERT INTO temp_categories (category_name, description) VALUES (@CategoryName, @Description)"
-                : dialect.Provider == DialectProvider.SqlServer
-                ? "INSERT INTO #temp_categories (category_name, description) VALUES (@CategoryName, @Description)"
-                : "INSERT INTO temp_categories (category_name, description) VALUES (@CategoryName, @Description)";
-
-            var paramName = insertCmd.CreateParameter();
-            paramName.ParameterName = "@CategoryName";
-            paramName.Value = "Rollback Test";
-            insertCmd.Parameters.Add(paramName);
-
-            var paramDesc = insertCmd.CreateParameter();
-            paramDesc.ParameterName = "@Description";
-            paramDesc.Value = "Test";
-            insertCmd.Parameters.Add(paramDesc);
-
-            insertCmd.ExecuteNonQuery();
+            using var transaction = ctx.Connection.BeginTransaction();
+            ctx.Connection.Insert(newEntity, CommandOptions<BulkTestEntity>.WithTransaction(transaction));
             transaction.Rollback();
 
-            // Verify rollback worked (temp table should have no rows)
-            var selectSql = dialect.Provider == DialectProvider.SqlServer
-                ? "SELECT COUNT(*) FROM #temp_categories"
-                : "SELECT COUNT(*) FROM temp_categories";
+            var count = ctx.Connection.QueryScalar<long>(
+                "SELECT COUNT(*) FROM bulk_test WHERE name = @Name",
+                new { Name = "Rollback Insert Test" });
 
-            var count = connection.QueryScalar<long>(selectSql);
             Assert.Equal(0, count);
         }
     }
