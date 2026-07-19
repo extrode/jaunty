@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty API Reference — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty API Reference</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html" class="active" aria-current="page">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty API Reference</nav>
+        <article>
+<h1 id="jaunty-api-reference">Jaunty API Reference</h1>
+<h2 id="introduction">Introduction</h2>
+<p>Jaunty is a high-performance micro-ORM for .NET that executes SQL and maps results to objects with strict mapping by default. This documentation provides comprehensive reference for all public APIs.</p>
+<h2 id="quick-start">Quick Start</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> connection = <span class="tok-kw">new</span> SqlConnection(connectionString);
+
+<span class="tok-com">// Query</span>
+<span class="tok-kw">var</span> products = connection.Query&lt;Product&gt;(
+    &quot;SELECT * FROM products WHERE category_id = @CategoryId&quot;, <span class="tok-kw">new</span> { CategoryId = <span class="tok-num">1</span> });
+
+<span class="tok-com">// Insert</span>
+<span class="tok-kw">var</span> newId = connection.Insert(<span class="tok-kw">new</span> Product { ProductName = &quot;Widget Pro&quot;, CategoryId = <span class="tok-num">1</span>, Price = <span class="tok-num">24.99m</span> });
+
+<span class="tok-com">// Fluent, LINQ-like query building</span>
+<span class="tok-kw">var</span> cheapWidgets = connection.From&lt;Product&gt;()
+    .Where(p =&gt; p.CategoryId == <span class="tok-num">1</span>)
+    .WhereBetween(p =&gt; p.Price, <span class="tok-num">0m</span>, <span class="tok-num">25m</span>)
+    .OrderBy(p =&gt; p.ProductName)
+    .Select();
+</code></pre>
+</div>
+<h2 id="core-concepts">Core Concepts</h2>
+<h3 id="extension-methods">Extension Methods</h3>
+<p>All Jaunty methods are extension methods on <code>IDbConnection</code>, providing a fluent API for database operations.</p>
+<h3 id="mapping-modes">Mapping Modes</h3>
+<ul>
+<li><strong>Strict Mode</strong> (default): All entity properties must have matching columns in the result set</li>
+<li><strong>Partial Mode</strong>: Only maps properties with matching columns, ignores missing ones</li>
+</ul>
+<h3 id="command-options">Command Options</h3>
+<p>Common options for controlling command execution:</p>
+<ul>
+<li>Transaction</li>
+<li>Command timeout</li>
+<li>Custom mapper</li>
+<li>Command type (Text or StoredProcedure)</li>
+</ul>
+<h2 id="api-documentation">API Documentation</h2>
+<h3 id="query-operations">Query Operations</h3>
+<ul>
+<li><a href="01-api-reference-query-methods.html">Query Methods</a> - Basic query operations with strict and partial mapping</li>
+<li><a href="01-api-reference-scalar-methods.html">Scalar Methods</a> - Scalar value operations</li>
+<li><a href="01-api-reference-single-result-methods.html">Single Result Methods</a> - Operations returning single results</li>
+<li><a href="01-api-reference-streaming-methods.html">Streaming Methods</a> - Memory-efficient streaming operations</li>
+</ul>
+<h3 id="multiple-result-sets">Multiple Result Sets</h3>
+<ul>
+<li><a href="01-api-reference-multiple-result-sets.html">Multiple Result Sets</a> - Operations for handling multiple result sets with GridReader</li>
+</ul>
+<h3 id="multi-entity-mapping">Multi-Entity Mapping</h3>
+<ul>
+<li><a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a> - Mapping joined query results to two or more entity types (<code>Query&lt;T1,...,T7&gt;</code>), ordinal claiming, and custom per-position mappers</li>
+</ul>
+<h3 id="data-modification">Data Modification</h3>
+<ul>
+<li><a href="01-api-reference-crud-operations.html">CRUD Operations</a> - Insert, Update, Delete operations</li>
+<li><a href="01-api-reference-get-and-execute-operations.html">Get and Execute Operations</a> - Key-based Get/GetAll retrieval, raw Execute, and ExecuteBatch</li>
+<li><a href="01-api-reference-stored-procedures.html">Stored Procedures</a> - Stored procedure execution with input, output, and return parameters</li>
+</ul>
+<h3 id="query-building">Query Building</h3>
+<ul>
+<li><a href="01-api-reference-fluent-api.html">Fluent API</a> - Type-safe query builder with LINQ-like syntax</li>
+</ul>
+<h3 id="configuration-and-attributes">Configuration and Attributes</h3>
+<ul>
+<li><a href="01-api-reference-configuration.html">Configuration</a> - Global configuration options and CommandOptions</li>
+<li><a href="01-api-reference-attributes.html">Attributes</a> - Mapping attributes for customizing entity mapping</li>
+</ul>
+<h3 id="complete-reference">Complete Reference</h3>
+<ul>
+<li><a href="01-api-reference-api-summary.html">API Summary</a> - Complete overview of all public APIs</li>
+</ul>
+<h2 id="key-features">Key Features</h2>
+<h3 id="strict-by-default">Strict by Default</h3>
+<p>Jaunty uses strict mapping by default, ensuring all entity properties have matching columns in the result set. This prevents silent mapping bugs that can occur with loose mapping.</p>
+<h3 id="performance-optimized">Performance Optimized</h3>
+<ul>
+<li>Metadata caching per-type for optimal performance</li>
+<li>Compiled expression trees for property mapping</li>
+<li>Minimal allocations during query execution</li>
+</ul>
+<h3 id="modern-c-support">Modern C# Support</h3>
+<ul>
+<li>C# 13 extension syntax</li>
+<li>Full async/await support</li>
+<li>IAsyncEnumerable for streaming large result sets</li>
+<li>Records and primary constructors support</li>
+</ul>
+<h3 id="flexible-mapping">Flexible Mapping</h3>
+<ul>
+<li>Strict and partial mapping modes</li>
+<li>Attribute-based mapping configuration</li>
+<li>Global configuration via JauntyConfig</li>
+<li>Custom mapper support via CommandOptions</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-multiple-result-sets.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Multiple result sets</span>
+</a><a class="pn-next" href="01-api-reference-query-methods.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Query methods</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

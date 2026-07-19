@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dependency Injection Integration Design — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Dependency Injection Integration Design</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html" class="active" aria-current="page">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Dependency Injection Integration Design</nav>
+        <article>
+<h1 id="dependency-injection-integration-design">Dependency Injection Integration Design</h1>
+<p><strong>Status:</strong> Draft - Deferred for future discussion
+<strong>Created:</strong> 2026-03-11
+<strong>Priority:</strong> P0 (Critical for Production Adoption)</p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>This document explores design options for full Dependency Injection integration in Jaunty. The goal is to provide simple, intuitive registration of <code>IDbConnection</code> with automatic interceptor configuration.</p>
+<hr />
+<h2 id="current-state">Current State</h2>
+<p>Existing DI extensions (in <code>JauntyLoggingExtensions.cs</code>):</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Registers LoggingInterceptor</span>
+services.AddJauntyLogging(config =&gt; { ... });
+
+<span class="tok-com">// Registers custom interceptor</span>
+services.AddJauntyInterceptor&lt;AuditInterceptor&gt;();
+
+<span class="tok-com">// Applies interceptors to JauntyConfig (static)</span>
+services.ApplyJauntyInterceptors();
+<span class="tok-com">// OR</span>
+serviceProvider.ApplyJauntyInterceptors();
+</code></pre>
+</div>
+<p><strong>Problem:</strong> No built-in way to register <code>IDbConnection</code>. Users must manually wire up connections:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Current manual approach - verbose and error-prone</span>
+services.AddSingleton(sp =&gt;
+{
+    <span class="tok-kw">var</span> conn = <span class="tok-kw">new</span> SqlConnection(connectionString);
+    sp.ApplyJauntyInterceptors();
+    <span class="tok-kw">return</span> conn;
+});
+</code></pre>
+</div>
+<hr />
+<h2 id="design-goals">Design Goals</h2>
+<ol>
+<li><strong>Simple for common case</strong> - Single connection should be one line</li>
+<li><strong>Support multiple connections</strong> - Named/keyed connections for multi-database apps</li>
+<li><strong>Proper lifetime management</strong> - Scoped connections, Singleton factories</li>
+<li><strong>Interceptor integration</strong> - Automatic interceptor application</li>
+<li><strong>NativeAOT compatible</strong> - No reflection-based activation</li>
+<li><strong>Multi-target support</strong> - Work on .NET Standard 2.0, .NET Framework, and .NET 8+</li>
+</ol>
+<hr />
+<h2 id="option-1-simple-connection-factory-recommended">Option 1: Simple Connection Factory (Recommended)</h2>
+<h3 id="api-design">API Design</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Simple single connection</span>
+services.AddJaunty&lt;SqlConnection&gt;(&quot;Server=...;Database=...&quot;)
+        .AddJauntyLogging();
+
+<span class="tok-com">// Named connections</span>
+services.AddJaunty(options =&gt;
+{
+    options.Add&lt;SqlConnection&gt;(&quot;<span class="tok-kw">default</span>&quot;, &quot;conn1&quot;);
+    options.Add&lt;SqlConnection&gt;(&quot;analytics&quot;, &quot;conn2&quot;);
+});
+
+<span class="tok-com">// Usage - inject factory</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductRepository(IDbConnectionFactory factory)
+{
+    <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> IDbConnection _db = factory.CreateConnection(&quot;<span class="tok-kw">default</span>&quot;);
+}
+</code></pre>
+</div>
+<h3 id="implementation-sketch">Implementation Sketch</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">interface</span> IDbConnectionFactory
+{
+    IDbConnection CreateConnection(string name = &quot;<span class="tok-kw">default</span>&quot;);
+}
+
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> JauntyServiceCollectionExtensions
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> IServiceCollection AddJaunty&lt;TConnection&gt;(
+        <span class="tok-kw">this</span> IServiceCollection services,
+        string connectionString)
+        <span class="tok-kw">where</span> TConnection : <span class="tok-kw">class</span>, IDbConnection, <span class="tok-kw">new</span>()
+    {
+        services.AddSingleton&lt;IDbConnectionFactory&gt;(sp =&gt;
+        {
+            sp.ApplyJauntyInterceptors();
+            <span class="tok-kw">return</span> <span class="tok-kw">new</span> ConnectionFactory&lt;TConnection&gt;(connectionString);
+        });
+
+        services.AddScoped&lt;IDbConnection&gt;(sp =&gt;
+            sp.GetRequiredService&lt;IDbConnectionFactory&gt;().CreateConnection());
+
+        <span class="tok-kw">return</span> services;
+    }
+
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> IServiceCollection AddJaunty(<span class="tok-kw">this</span> IServiceCollection services,
+        Action&lt;JauntyConnectionOptions&gt; configure)
+    {
+        services.Configure(configure);
+        services.AddSingleton&lt;IDbConnectionFactory, ConnectionFactory&gt;();
+        services.AddScoped&lt;IDbConnection&gt;(sp =&gt;
+            sp.GetRequiredService&lt;IDbConnectionFactory&gt;().CreateConnection(&quot;<span class="tok-kw">default</span>&quot;));
+
+        <span class="tok-kw">return</span> services;
+    }
+}
+</code></pre>
+</div>
+<h3 id="pros">Pros</h3>
+<ul>
+<li>Clean, simple API</li>
+<li>Connection factory abstraction (testable)</li>
+<li>Supports multiple named connections</li>
+<li>Proper lifetime (Scoped connections, Singleton factory)</li>
+</ul>
+<h3 id="cons">Cons</h3>
+<ul>
+<li>Requires factory abstraction</li>
+<li>Users inject <code>IDbConnection</code> not concrete type</li>
+<li>Extra layer of indirection</li>
+</ul>
+<hr />
+<h2 id="option-2-direct-idbconnection-registration-keyed-services">Option 2: Direct IDbConnection Registration (Keyed Services)</h2>
+<h3 id="api-design-1">API Design</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// .NET 8+ keyed services</span>
+services.AddJaunty&lt;SqlConnection&gt;(&quot;conn&quot;);
+
+<span class="tok-com">// Multiple named connections</span>
+services.AddJaunty(options =&gt;
+{
+    options.Add&lt;SqlConnection&gt;(&quot;<span class="tok-kw">default</span>&quot;, &quot;conn1&quot;);
+    options.Add&lt;NpgsqlConnection&gt;(&quot;analytics&quot;, &quot;conn2&quot;);
+});
+
+<span class="tok-com">// Usage - keyed injection</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> MultiDbRepo(
+    [FromKeyedServices(&quot;<span class="tok-kw">default</span>&quot;)] IDbConnection db,
+    [FromKeyedServices(&quot;analytics&quot;)] IDbConnection analytics)
+{
+}
+</code></pre>
+</div>
+<h3 id="implementation-sketch-1">Implementation Sketch</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> JauntyServiceCollectionExtensions
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> IServiceCollection AddJaunty&lt;TConnection&gt;(
+        <span class="tok-kw">this</span> IServiceCollection services,
+        string connectionString)
+        <span class="tok-kw">where</span> TConnection : <span class="tok-kw">class</span>, IDbConnection, <span class="tok-kw">new</span>()
+    {
+        services.AddSingleton(sp =&gt;
+        {
+            JauntyConfig.InitializeInterceptors(sp);
+            <span class="tok-kw">return</span> NullInterceptors.Instance;
+        });
+
+        services.AddScoped&lt;IDbConnection&gt;(sp =&gt;
+        {
+            <span class="tok-kw">var</span> conn = <span class="tok-kw">new</span> TConnection { ConnectionString = connectionString };
+            <span class="tok-kw">return</span> conn;
+        });
+
+        <span class="tok-kw">return</span> services;
+    }
+
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> IServiceCollection AddJaunty(
+        <span class="tok-kw">this</span> IServiceCollection services,
+        Action&lt;JauntyOptions&gt; configure)
+    {
+        <span class="tok-kw">var</span> options = <span class="tok-kw">new</span> JauntyOptions();
+        configure(options);
+
+        services.AddSingleton(sp =&gt;
+        {
+            JauntyConfig.InitializeInterceptors(sp);
+            <span class="tok-kw">return</span> NullInterceptors.Instance;
+        });
+
+        <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> connConfig <span class="tok-kw">in</span> options.Connections)
+        {
+            services.AddKeyedScoped&lt;IDbConnection&gt;(connConfig.Name, (sp, key) =&gt;
+            {
+                <span class="tok-kw">var</span> conn = connConfig.Factory(sp);
+                <span class="tok-kw">return</span> conn;
+            });
+        }
+
+        <span class="tok-kw">return</span> services;
+    }
+}
+</code></pre>
+</div>
+<h3 id="pros-1">Pros</h3>
+<ul>
+<li>Minimal abstraction</li>
+<li>Uses built-in keyed services (.NET 8+)</li>
+<li>Clear injection points</li>
+</ul>
+<h3 id="cons-1">Cons</h3>
+<ul>
+<li><code>[FromKeyedServices]</code> couples user code to DI framework</li>
+<li>Doesn't work on .NET Standard 2.0 or .NET Framework 4.7.2</li>
+<li>Requires conditional compilation or multi-target gymnastics</li>
+</ul>
+<hr />
+<h2 id="option-3-typed-connections-concrete-type-injection">Option 3: Typed Connections (Concrete Type Injection)</h2>
+<h3 id="api-design-2">API Design</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Register with concrete type</span>
+services.AddJaunty&lt;SqlConnection&gt;(&quot;conn&quot;)
+        .AddJauntyLogging();
+
+<span class="tok-com">// Usage - inject concrete type</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductRepository(SqlConnection db) { }
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> AnalyticsService(NpgsqlConnection analytics) { }
+</code></pre>
+</div>
+<h3 id="implementation-sketch-2">Implementation Sketch</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> JauntyServiceCollectionExtensions
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> IServiceCollection AddJaunty&lt;TConnection&gt;(
+        <span class="tok-kw">this</span> IServiceCollection services,
+        string connectionString)
+        <span class="tok-kw">where</span> TConnection : <span class="tok-kw">class</span>, IDbConnection, <span class="tok-kw">new</span>()
+    {
+        services.AddSingleton(sp =&gt;
+        {
+            JauntyConfig.InitializeInterceptors(sp);
+            <span class="tok-kw">return</span> NullInterceptors.Instance;
+        });
+
+        services.AddScoped&lt;TConnection&gt;(sp =&gt;
+        {
+            <span class="tok-kw">return</span> <span class="tok-kw">new</span> TConnection { ConnectionString = connectionString };
+        });
+
+        <span class="tok-kw">return</span> services;
+    }
+}
+</code></pre>
+</div>
+<h3 id="pros-2">Pros</h3>
+<ul>
+<li>Inject concrete connection types</li>
+<li>No factory abstraction needed</li>
+<li>Simplest for single-connection scenarios</li>
+</ul>
+<h3 id="cons-2">Cons</h3>
+<ul>
+<li>Each connection type needs separate registration</li>
+<li>Doesn't scale well for many connections</li>
+<li>No unified factory for dynamic scenarios</li>
+</ul>
+<hr />
+<h2 id="option-4-polly-style-builder-pattern">Option 4: Polly-Style Builder Pattern</h2>
+<h3 id="api-design-3">API Design</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">services.AddJaunty(builder =&gt;
+{
+    builder.UseConnection&lt;SqlConnection&gt;(&quot;<span class="tok-kw">default</span>&quot;, &quot;conn1&quot;)
+           .UseConnection&lt;NpgsqlConnection&gt;(&quot;analytics&quot;, &quot;conn2&quot;)
+           .UseLogging()
+           .UseInterceptor&lt;AuditInterceptor&gt;()
+           .UseRetry(retry =&gt; retry.WithMaxAttempts(<span class="tok-num">3</span>));
+});
+
+<span class="tok-com">// Usage</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> MultiDbRepo(IDbConnectionFactory factory)
+{
+    IDbConnection Default =&gt; factory.Get(&quot;<span class="tok-kw">default</span>&quot;);
+    IDbConnection Analytics =&gt; factory.Get(&quot;analytics&quot;);
+}
+</code></pre>
+</div>
+<h3 id="implementation-sketch-3">Implementation Sketch</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> JauntyBuilder
+{
+    <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> IServiceCollection _services;
+    <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> List&lt;ConnectionConfig&gt; _connections = <span class="tok-kw">new</span>();
+    <span class="tok-kw">private</span> <span class="tok-kw">readonly</span> List&lt;Action&lt;IServiceProvider&gt;&gt; _configurers = <span class="tok-kw">new</span>();
+
+    <span class="tok-kw">public</span> JauntyBuilder(IServiceCollection services)
+    {
+        _services = services;
+    }
+
+    <span class="tok-kw">public</span> JauntyBuilder UseConnection&lt;TConnection&gt;(
+        string name,
+        string connectionString)
+        <span class="tok-kw">where</span> TConnection : <span class="tok-kw">class</span>, IDbConnection, <span class="tok-kw">new</span>()
+    {
+        _connections.Add(<span class="tok-kw">new</span> ConnectionConfig
+        {
+            Name = name,
+            ConnectionString = connectionString,
+            Factory = sp =&gt; <span class="tok-kw">new</span> TConnection { ConnectionString = connectionString }
+        });
+        <span class="tok-kw">return</span> <span class="tok-kw">this</span>;
+    }
+
+    <span class="tok-kw">public</span> JauntyBuilder UseLogging(Action&lt;LoggingConfiguration&gt;? configure = <span class="tok-kw">null</span>)
+    {
+        _services.AddJauntyLogging(configure);
+        <span class="tok-kw">return</span> <span class="tok-kw">this</span>;
+    }
+
+    <span class="tok-kw">public</span> JauntyBuilder UseInterceptor&lt;T&gt;() <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, ICommandInterceptor
+    {
+        _services.AddJauntyInterceptor&lt;T&gt;();
+        <span class="tok-kw">return</span> <span class="tok-kw">this</span>;
+    }
+
+    <span class="tok-kw">public</span> IServiceCollection Build()
+    {
+        <span class="tok-com">// Apply interceptors at startup</span>
+        _services.AddSingleton(sp =&gt;
+        {
+            JauntyConfig.InitializeInterceptors(sp);
+            <span class="tok-kw">return</span> NullInterceptors.Instance;
+        });
+
+        <span class="tok-com">// Register connection factory</span>
+        _services.AddSingleton&lt;IDbConnectionFactory&gt;(sp =&gt;
+        {
+            <span class="tok-kw">return</span> <span class="tok-kw">new</span> MultiConnectionFactory(
+                _connections.ToDictionary(c =&gt; c.Name, c =&gt; c.Factory));
+        });
+
+        <span class="tok-kw">return</span> _services;
+    }
+}
+</code></pre>
+</div>
+<h3 id="pros-3">Pros</h3>
+<ul>
+<li>Most expressive API</li>
+<li>Single configuration point</li>
+<li>Easy to extend with new features (retry, caching)</li>
+</ul>
+<h3 id="cons-3">Cons</h3>
+<ul>
+<li>Most complex implementation</li>
+<li>Builder pattern overhead</li>
+<li>More surface area to maintain</li>
+</ul>
+<hr />
+<h2 id="comparison-matrix">Comparison Matrix</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Option 1: Factory</th>
+<th>Option 2: Keyed</th>
+<th>Option 3: Typed</th>
+<th>Option 4: Builder</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Simple API</td>
+<td></td>
+<td></td>
+<td></td>
+<td> Verbose</td>
+</tr>
+<tr>
+<td>Multiple connections</td>
+<td></td>
+<td></td>
+<td> Manual</td>
+<td></td>
+</tr>
+<tr>
+<td>.NET Standard 2.0</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>.NET Framework 4.7.2</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Concrete type injection</td>
+<td></td>
+<td></td>
+<td></td>
+<td> Via factory</td>
+</tr>
+<tr>
+<td>Testability</td>
+<td> Good</td>
+<td> Coupled</td>
+<td> Best</td>
+<td> Good</td>
+</tr>
+<tr>
+<td>Implementation complexity</td>
+<td>Low</td>
+<td>Medium</td>
+<td>Lowest</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Extensibility</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Low</td>
+<td>High</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="recommended-approach">Recommended Approach</h2>
+<h3 id="hybrid-option-1-option-3">Hybrid: Option 1 + Option 3</h3>
+<p>Provide both patterns for different scenarios:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Scenario 1: Single connection - use typed registration</span>
+services.AddJaunty&lt;SqlConnection&gt;(&quot;conn&quot;)
+        .AddJauntyLogging();
+
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Repo(SqlConnection db) { }
+
+<span class="tok-com">// Scenario 2: Multiple connections - use factory</span>
+services.AddJaunty(options =&gt;
+{
+    options.Add&lt;SqlConnection&gt;(&quot;<span class="tok-kw">default</span>&quot;, &quot;conn1&quot;);
+    options.Add&lt;NpgsqlConnection&gt;(&quot;analytics&quot;, &quot;conn2&quot;);
+});
+
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> MultiDbRepo(IDbConnectionFactory factory)
+{
+    IDbConnection Default =&gt; factory.Get(&quot;<span class="tok-kw">default</span>&quot;);
+    IDbConnection Analytics =&gt; factory.Get(&quot;analytics&quot;);
+}
+</code></pre>
+</div>
+<hr />
+<h2 id="open-design-questions">Open Design Questions</h2>
+<h3 id="connection-lifetime">1. Connection Lifetime</h3>
+<table>
+<thead>
+<tr>
+<th>Lifetime</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scoped</td>
+<td> Recommended - one connection per request/operation</td>
+</tr>
+<tr>
+<td>Transient</td>
+<td> Possible but creates new connection each time</td>
+</tr>
+<tr>
+<td>Singleton</td>
+<td> Not recommended - connection state issues</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decision needed:</strong> Default to Scoped? Allow override?</p>
+<h3 id="interceptor-timing">2. Interceptor Timing</h3>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Eager (at startup)</td>
+<td>Apply interceptors when service provider builds</td>
+</tr>
+<tr>
+<td>Lazy (on first use)</td>
+<td>Apply interceptors when first connection opened</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommendation:</strong> Eager at startup for fail-fast behavior.</p>
+<h3 id="multiple-providers">3. Multiple Providers</h3>
+<p>Should we support mixing database providers in same application?</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">services.AddJaunty&lt;SqlConnection&gt;(&quot;<span class="tok-kw">default</span>&quot;, &quot;...&quot;)
+        .AddJaunty&lt;NpgsqlConnection&gt;(&quot;analytics&quot;, &quot;...&quot;);
+</code></pre>
+</div>
+<p><strong>Recommendation:</strong> Yes, but keep it opt-in.</p>
+<h3 id="connection-string-management">4. Connection String Management</h3>
+<p>How to handle connection strings securely?</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Option A: Direct string</span>
+services.AddJaunty&lt;SqlConnection&gt;(configuration.GetConnectionString(&quot;Default&quot;));
+
+<span class="tok-com">// Option B: Factory with IOptions</span>
+services.AddJaunty&lt;SqlConnection&gt;(options =&gt;
+    options.ConnectionString = configuration.GetConnectionString(&quot;Default&quot;));
+
+<span class="tok-com">// Option C: Named from IConfiguration</span>
+services.AddJaunty&lt;SqlConnection&gt;(&quot;Default&quot;); <span class="tok-com">// Auto-resolves from IConfiguration</span>
+</code></pre>
+</div>
+<p><strong>Recommendation:</strong> Support all three patterns.</p>
+<hr />
+<h2 id="implementation-checklist">Implementation Checklist</h2>
+<p>When we implement this:</p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Create <code>IDbConnectionFactory</code> interface</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Create <code>JauntyConnectionOptions</code> class</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Create <code>JauntyServiceCollectionExtensions</code> class</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Support .NET Standard 2.0 (no keyed services)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Support .NET 8+ (keyed services optional)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Add XML documentation</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Add unit tests for DI registration</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Add integration tests with real connections</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Update README with usage examples</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Update feature-gap-analysis.md</li>
+</ul>
+<hr />
+<h2 id="related-documents">Related Documents</h2>
+<ul>
+<li><a href="06-releases-feature-gap-analysis.html"><code>../06-releases/feature-gap-analysis.md</code></a> - Feature roadmap</li>
+<li><a href="04-extensions-README.html"><code>../04-extensions/README.md</code></a> - Extension documentation</li>
+</ul>
+<hr />
+<h2 id="decision-log">Decision Log</h2>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Decision</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-03-11</td>
+<td>Deferred</td>
+<td>Revisit after other P0 features complete</td>
+</tr>
+</tbody>
+</table>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="03-development-code-review-checklist.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Code review checklist</span>
+</a><a class="pn-next" href="03-development-file-naming-convention.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">File naming convention</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

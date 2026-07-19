@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Development Guides — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Development Guides</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html" class="active" aria-current="page">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Development Guides</nav>
+        <article>
+<h1 id="development-guides">Development Guides</h1>
+<p>Guides for developing and extending Jaunty.</p>
+<h2 id="core-guides">Core Guides</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="03-development-coding-conventions.html"><code>coding-conventions.md</code></a></td>
+<td>C# coding standards and conventions</td>
+</tr>
+<tr>
+<td><a href="03-development-file-naming-convention.html"><code>file-naming-convention.md</code></a></td>
+<td>Documentation file naming standard</td>
+</tr>
+<tr>
+<td><a href="03-development-adding-new-methods.html"><code>adding-new-methods.md</code></a></td>
+<td>How to add new query methods</td>
+</tr>
+<tr>
+<td><a href="03-development-multi-targeting.html"><code>multi-targeting.md</code></a></td>
+<td>Supporting netstandard2.0 and net8.0</td>
+</tr>
+<tr>
+<td><a href="03-development-performance-checklist.html"><code>performance-checklist.md</code></a></td>
+<td>Performance optimization checklist</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Recommended .NET skills for Jaunty</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="quick-reference">Quick Reference</h2>
+<h3 id="adding-a-new-query-method">Adding a New Query Method</h3>
+<ol>
+<li>Create file in <code>src/Jaunty/Read/</code> (e.g., <code>QueryFoo.cs</code>)</li>
+<li>Add extension method in <code>partial class Jaunty</code></li>
+<li>Add <code>where T : new()</code> constraint if needed</li>
+<li>Delegate to <code>QueryCore</code> or <code>QueryCoreAsync</code></li>
+<li>Create async variant in <code>QueryFooAsync.cs</code></li>
+<li>Add tests in <code>tests/Jaunty.Tests/Integration/Sqlite/Read/</code></li>
+</ol>
+<h3 id="adding-a-new-attribute">Adding a New Attribute</h3>
+<ol>
+<li>Create in <code>src/Jaunty/Attributes/</code></li>
+<li>Use appropriate <code>AttributeTargets</code></li>
+<li>Update <code>MetadataBuilder.cs</code> to read the attribute</li>
+<li>Add tests for attribute resolution</li>
+<li>Document priority: <code>[Attribute]</code> &gt; <code>JauntyConfig</code> &gt; default</li>
+</ol>
+<h3 id="modifying-parameter-binding">Modifying Parameter Binding</h3>
+<ol>
+<li>Update <code>SqlParameterParser.cs</code> for parsing changes</li>
+<li>Update <code>ParameterBinder.cs</code> for binding changes</li>
+<li>Update caches if needed</li>
+<li>Add unit tests for edge cases</li>
+</ol>
+<h2 id="file-organization">File Organization</h2>
+<h3 id="public-api-files">Public API Files</h3>
+<table>
+<thead>
+<tr>
+<th>Location</th>
+<th>Naming</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Read/</code></td>
+<td><code>MethodName.cs</code></td>
+<td><code>Query.cs</code>, <code>QueryFirst.cs</code></td>
+</tr>
+<tr>
+<td><code>Read/</code></td>
+<td><code>MethodNameAsync.cs</code></td>
+<td><code>QueryAsync.cs</code></td>
+</tr>
+<tr>
+<td><code>Write/</code></td>
+<td><code>Operation.cs</code></td>
+<td><code>Insert.cs</code>, <code>BulkInsert.cs</code></td>
+</tr>
+<tr>
+<td><code>Streaming/</code></td>
+<td><code>MethodStream.cs</code></td>
+<td><code>QueryStream.cs</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="internal-files">Internal Files</h3>
+<table>
+<thead>
+<tr>
+<th>Location</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Internals/Entity/</code></td>
+<td>Metadata caching system</td>
+</tr>
+<tr>
+<td><code>Internals/Parameters/</code></td>
+<td>Parameter parsing and binding</td>
+</tr>
+<tr>
+<td><code>Internals/Dialects/</code></td>
+<td>SQL dialect implementations</td>
+</tr>
+<tr>
+<td><code>Internals/Write/</code></td>
+<td>Internal write helpers</td>
+</tr>
+</tbody>
+</table>
+<h2 id="coding-standards">Coding Standards</h2>
+<h3 id="c-language-features">C# Language Features</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>File-scoped namespaces</td>
+<td> Required</td>
+</tr>
+<tr>
+<td>Primary constructors</td>
+<td> Use for simple cases</td>
+</tr>
+<tr>
+<td>Pattern matching</td>
+<td> Encouraged</td>
+</tr>
+<tr>
+<td>Records</td>
+<td> For immutable data</td>
+</tr>
+<tr>
+<td><code>readonly struct</code></td>
+<td> For small value types</td>
+</tr>
+<tr>
+<td><code>Span&lt;T&gt;</code></td>
+<td> For zero-allocation slicing</td>
+</tr>
+<tr>
+<td>LINQ</td>
+<td> Avoid in hot paths</td>
+</tr>
+</tbody>
+</table>
+<h3 id="naming-conventions">Naming Conventions</h3>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Convention</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Namespaces</td>
+<td>Hierarchical</td>
+<td><code>Jaunty.Internals.Entity</code></td>
+</tr>
+<tr>
+<td>Public classes</td>
+<td>PascalCase</td>
+<td><code>GridReader</code>, <code>CommandOptions</code></td>
+</tr>
+<tr>
+<td>Internal classes</td>
+<td><code>internal sealed</code></td>
+<td><code>internal sealed class MetadataCache&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Methods</td>
+<td>PascalCase, verb-based</td>
+<td><code>Query&lt;T&gt;()</code>, <code>CreateSetter()</code></td>
+</tr>
+<tr>
+<td>Properties</td>
+<td>PascalCase, noun-based</td>
+<td><code>ColumnName</code>, <code>Mapper</code></td>
+</tr>
+<tr>
+<td>Parameters</td>
+<td>camelCase</td>
+<td><code>sql</code>, <code>reader</code>, <code>columnName</code></td>
+</tr>
+<tr>
+<td>Private fields</td>
+<td>_camelCase</td>
+<td><code>_cache</code>, <code>_columnNameResolver</code></td>
+</tr>
+<tr>
+<td>Generic type params</td>
+<td>Single letter</td>
+<td><code>&lt;T&gt;</code>, <code>&lt;TResult&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="async-patterns">Async Patterns</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Pass-through async (no resource management)</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; QueryAsync&lt;T&gt;(...)
+    =&gt; QueryCoreAsync&lt;T&gt;(...);
+
+<span class="tok-com">// Resource management async</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">async</span> Task&lt;T&gt; QueryAsync&lt;T&gt;(...)
+{
+    <span class="tok-kw">await</span> <span class="tok-kw">using</span> <span class="tok-kw">var</span> resource = <span class="tok-kw">await</span> GetResourceAsync();
+    <span class="tok-kw">return</span> <span class="tok-kw">await</span> ProcessAsync(resource);
+}
+
+<span class="tok-com">// Always use ConfigureAwait(false)</span>
+<span class="tok-kw">await</span> something.ConfigureAwait(<span class="tok-kw">false</span>);
+</code></pre>
+</div>
+<h2 id="performance-rules">Performance Rules</h2>
+<h3 id="memory">Memory</h3>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pre-size collections</td>
+<td><code>new List&lt;T&gt;(expectedCount)</code></td>
+</tr>
+<tr>
+<td>Use <code>Span&lt;T&gt;</code></td>
+<td><code>ReadOnlySpan&lt;char&gt; sqlSpan = sql.AsSpan()</code></td>
+</tr>
+<tr>
+<td>Avoid boxing</td>
+<td>Use generic constraints</td>
+</tr>
+<tr>
+<td>Cache reflection</td>
+<td>Compile once, reuse forever</td>
+</tr>
+</tbody>
+</table>
+<h3 id="execution">Execution</h3>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No LINQ in hot paths</td>
+<td>Use <code>for</code> loops</td>
+</tr>
+<tr>
+<td>Inline small methods</td>
+<td><code>[MethodImpl(MethodImplOptions.AggressiveInlining)]</code></td>
+</tr>
+<tr>
+<td>Use <code>FrozenDictionary</code></td>
+<td>On .NET 8+ for lookups</td>
+</tr>
+<tr>
+<td>String comparison</td>
+<td><code>StringComparison.Ordinal</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="testing-requirements">Testing Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unit tests</td>
+<td>For internal components (parser, binder)</td>
+</tr>
+<tr>
+<td>Integration tests</td>
+<td>For all public APIs</td>
+</tr>
+<tr>
+<td>Error case tests</td>
+<td>Test all exception paths</td>
+</tr>
+<tr>
+<td>Coverage goal</td>
+<td>100% for public APIs</td>
+</tr>
+</tbody>
+</table>
+<p>See  for details.</p>
+<h2 id="git-workflow">Git Workflow</h2>
+<h3 id="commit-messages">Commit Messages</h3>
+<pre><code>type: short description
+
+Optional longer description.
+
+- Bullet points for details
+- Explain why, not just what
+</code></pre>
+<p><strong>Types</strong>:</p>
+<ul>
+<li><code>feat</code>: New feature</li>
+<li><code>fix</code>: Bug fix</li>
+<li><code>docs</code>: Documentation</li>
+<li><code>test</code>: Tests</li>
+<li><code>refactor</code>: Code restructuring</li>
+<li><code>perf</code>: Performance improvements</li>
+</ul>
+<h3 id="branch-naming">Branch Naming</h3>
+<ul>
+<li><code>feature/description</code> - New features</li>
+<li><code>fix/description</code> - Bug fixes</li>
+<li><code>docs/description</code> - Documentation</li>
+<li><code>refactor/description</code> - Refactoring</li>
+</ul>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="../../the coding standards"><code>../../the coding standards</code></a> - Full development guidelines</li>
+<li><a href="../../00-quick-start/build-and-test.md"><code>../../00-quick-start/build-and-test.md</code></a> - Build commands</li>
+<li><a href="02-architecture-README.html"><code>../02-architecture/README.md</code></a> - Architecture overview</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="02-architecture-performance-spec.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Performance spec</span>
+</a><a class="pn-next" href="03-development-api-design-guidelines.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Api design guidelines</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

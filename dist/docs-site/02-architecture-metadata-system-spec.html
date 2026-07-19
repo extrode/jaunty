@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metadata System Specification — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Metadata System Specification</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html" class="active" aria-current="page">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Metadata System Specification</nav>
+        <article>
+<h1 id="metadata-system-specification">Metadata System Specification</h1>
+<p><strong>Version</strong>: 2026.02.19<br />
+<strong>Status</strong>: Active</p>
+<blockquote>
+<p>The metadata system is the foundation of Jaunty's performance. It builds and caches entity metadata once per type, eliminating reflection at query execution time.</p>
+</blockquote>
+<hr />
+<h2 id="overview">Overview</h2>
+<div class="mermaid">flowchart TD
+    subgraph Build["Build Phase (One-time)"]
+        A1["MetadataBuilder.Build&lt;T>()"]
+        A2["Extract attributes&lt;br/>[Table], [Column], [Key]"]
+        A3["Apply JauntyConfig&lt;br/>resolvers"]
+        A4["Build EntityMetadata"]
+    end
+    
+    subgraph Cache["Cache Phase (One-time)"]
+        B1["MetadataCache&lt;T> static ctor"]
+        B2["Create PropertyContext&lt;T>"]
+        B3["Compile expression trees"]
+        B4["Build ColumnToIndex map"]
+    end
+    
+    subgraph Use["Usage Phase (Per-query)"]
+        C1["GetSetters(reader)"]
+        C2["Match columns to properties"]
+        C3["Return PropertySetter&lt;T>[]"]
+        C4["Execute setters (zero reflection)"]
+    end
+    
+    Build --> Cache
+    Cache --> Use
+    
+    style Build fill:#ff9
+    style Cache fill:#9f9
+    style Use fill:#9cf
+</div>
+<p><strong>Key Characteristics</strong>:</p>
+<ul>
+<li><strong>Build Phase</strong>: Runs once per type, uses reflection</li>
+<li><strong>Cache Phase</strong>: Compiles delegates, stores in static fields</li>
+<li><strong>Usage Phase</strong>: Zero reflection, O(1) lookups</li>
+</ul>
+<hr />
+<h2 id="component-architecture">Component Architecture</h2>
+<h3 id="system-component-diagram">System Component Diagram</h3>
+<div class="mermaid">classDiagram
+    class MetadataCache_T {
+        &lt;&lt;static>>
+        +EntityMetadata Metadata
+        +GetSetters(reader, mode) PropertySetter&lt;T>[]
+        -Properties PropertyContext&lt;T>[]
+        -ColumnToIndex Dictionary/FrozenDictionary
+        +CreateSetter(property) Action&lt;T, IDataRecord, int>
+    }
+    
+    class MetadataBuilder {
+        &lt;&lt;static>>
+        +Build&lt;T>() EntityMetadata
+        -ResolveColumn(property) string
+    }
+    
+    class EntityMetadata {
+        +TableName string
+        +SchemaName string
+        +Columns ColumnMetadata[]
+        +KeyProperty ColumnMetadata
+        +NonKeyProperties ColumnMetadata[]
+    }
+    
+    class ColumnMetadata {
+        +Property PropertyInfo
+        +ColumnName string
+        +IsKey bool
+        +IsIdentity bool
+    }
+    
+    class PropertyContext_T {
+        +Property PropertyInfo
+        +Setter Action&lt;T, IDataRecord, int>
+        +PropertyName string
+        +ColumnName string
+        +IsNonNullable bool
+    }
+    
+    class PropertySetter_T {
+        +Set(target, record) void
+    }
+    
+    class MappedCache_T {
+        &lt;&lt;static>>
+        +Mapper Func&lt;IDataReader, T>
+    }
+    
+    MetadataCache_T --> MetadataBuilder : uses
+    MetadataCache_T --> EntityMetadata : contains
+    MetadataCache_T --> PropertyContext_T : contains
+    MetadataCache_T --> PropertySetter_T : creates
+    MetadataCache_T --> MappedCache_T : checks first
+</div>
+<hr />
+<h2 id="initialization-flow">Initialization Flow</h2>
+<h3 id="static-constructor-sequence">Static Constructor Sequence</h3>
+<div class="mermaid">sequenceDiagram
+    participant CLR
+    participant FirstQuery
+    participant MetadataCache
+    participant MetadataBuilder
+    participant ExpressionTrees
+    
+    FirstQuery->>CLR: Access MetadataCache&lt;T>
+    CLR->>MetadataCache: Run static constructor
+    
+    MetadataCache->>MetadataBuilder: Build&lt;T>()
+    MetadataBuilder->>MetadataBuilder: Get [Table] attribute
+    MetadataBuilder->>MetadataBuilder: Get [Column] attributes
+    MetadataBuilder->>MetadataBuilder: Apply JauntyConfig resolvers
+    MetadataBuilder-->>MetadataCache: EntityMetadata
+    
+    MetadataCache->>MetadataCache: Extract columns
+    loop For each column
+        MetadataCache->>ExpressionTrees: CreateSetter(property)
+        ExpressionTrees->>ExpressionTrees: Build expression tree
+        ExpressionTrees->>ExpressionTrees: Compile()
+        ExpressionTrees-->>MetadataCache: Action&lt;T, IDataRecord, int>
+        MetadataCache->>MetadataCache: Create PropertyContext&lt;T>
+        MetadataCache->>MetadataCache: Add to ColumnToIndex
+    end
+    
+    MetadataCache->>MetadataCache: Create FrozenDictionary (net8.0)
+    MetadataCache-->>CLR: Initialization complete
+    CLR-->>FirstQuery: Return cached metadata
+    
+    Note over FirstQuery: All subsequent queries&lt;br/>use cached metadata (no reflection)
+</div>
+<hr />
+<h2 id="metadata-resolution">Metadata Resolution</h2>
+<h3 id="column-name-resolution-priority">Column Name Resolution Priority</h3>
+<div class="mermaid">flowchart TD
+    Prop["Property 'ProductName'"] --> CheckAttr{"Has [Column]&lt;br/>attribute?"}
+    
+    CheckAttr -->|Yes| UseAttr["Use [Column] name&lt;br/>e.g., 'prod_name'"]
+    CheckAttr -->|No| CheckConfig{"JauntyConfig.&lt;br/>ColumnNameResolver?"}
+    
+    CheckConfig -->|Yes| UseResolver["Use resolver result&lt;br/>e.g., 'product_name'"]
+    CheckConfig -->|No| UseProp["Use property name&lt;br/>'ProductName'"]
+    
+    UseAttr --> Final["Final column name"]
+    UseResolver --> Final
+    UseProp --> Final
+    
+    style CheckAttr fill:#ff9
+    style CheckConfig fill:#ff9
+    style Final fill:#9f9
+</div>
+<p><strong>Example</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    <span class="tok-com">// [Column] takes priority</span>
+    [Column(&quot;prod_id&quot;)]
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    <span class="tok-com">// JauntyConfig resolver applies (if no [Column])</span>
+    <span class="tok-kw">public</span> string ProductName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    <span class="tok-com">// JauntyConfig resolver applies</span>
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-com">// With JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase</span>
+<span class="tok-com">// Resolution:</span>
+<span class="tok-com">// Id -&gt; &quot;prod_id&quot; (from [Column])</span>
+<span class="tok-com">// ProductName -&gt; &quot;product_name&quot; (from resolver)</span>
+<span class="tok-com">// Price -&gt; &quot;price&quot; (from resolver)</span>
+</code></pre>
+</div>
+<hr />
+<h2 id="expression-tree-compilation">Expression Tree Compilation</h2>
+<h3 id="createsetter-process">CreateSetter Process</h3>
+<div class="mermaid">flowchart TD
+    Start["CreateSetter(property)"] --> Params["Create parameters"]
+    
+    Params --> P1["target: Parameter(typeof(T))"]
+    Params --> P2["record: Parameter(typeof(IDataRecord))"]
+    Params --> P3["index: Parameter(typeof(int))"]
+    
+    P1 --> GetValue["Call record.GetValue(index)"]
+    P2 --> GetType["Get property type"]
+    P3 --> CheckNull{"Nullable type?"}
+    
+    CheckNull -->|Yes| ConvNull["Convert.ChangeType&lt;br/>to underlying type"]
+    CheckNull -->|No| ConvNotNull["Convert.ChangeType&lt;br/>to property type"]
+    
+    ConvNull --> Wrap["Wrap in Nullable&lt;T>"]
+    ConvNotNull --> Assign
+    
+    Wrap --> Assign["Expression.Assign&lt;br/>target.Property = value"]
+    Assign --> Lambda["Expression.Lambda&lt;Action&lt;T, IDataRecord, int>>"]
+    Lambda --> Compile["Compile()"]
+    Compile --> Return["Return compiled delegate"]
+    
+    style Start fill:#9f9
+    style Return fill:#9f9
+    style GetValue fill:#ff9
+    style Compile fill:#ff9
+</div>
+<h3 id="generated-expression-tree">Generated Expression Tree</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// For property: public int Id { get; set; }</span>
+
+<span class="tok-com">// Generated lambda:</span>
+(T target, IDataRecord <span class="tok-kw">record</span>, int index) =&gt;
+{
+    target.Id = (int)Convert.ChangeType(
+        <span class="tok-kw">record</span>.GetValue(index),
+        <span class="tok-kw">typeof</span>(int)
+    );
+};
+
+<span class="tok-com">// Compiled to IL (no reflection at runtime):</span>
+IL_0000: ldarg.<span class="tok-num">0</span>  <span class="tok-com">// target</span>
+IL_0001: ldarg.<span class="tok-num">1</span>  <span class="tok-com">// record</span>
+IL_0002: ldarg.<span class="tok-num">2</span>  <span class="tok-com">// index</span>
+IL_0003: callvirt IDataRecord.GetValue
+IL_0008: ldclass <span class="tok-kw">typeof</span>(int)
+IL_000d: call Convert.ChangeType
+IL_0012: unbox.any int
+IL_0017: stfld Product.Id
+</code></pre>
+</div>
+<hr />
+<h2 id="gettersetter-resolution">Getter/Setter Resolution</h2>
+<h3 id="getsetters-flow">GetSetters Flow</h3>
+<div class="mermaid">flowchart TD
+    Start["GetSetters(reader, mode)"] --> GetCount["reader.FieldCount"]
+    GetCount --> Alloc["new PropertySetter&lt;T>[fieldCount]"]
+    Alloc --> InitSpan["Span&lt;bool> matchedProperties"]
+    
+    InitSpan --> Loop["For i = 0 to fieldCount-1"]
+    
+    Loop --> GetName["reader.GetName(i)"]
+    GetName --> Lookup{"ColumnToIndex.&lt;br/>TryGetValue(name)"}
+    
+    Lookup -->|Found| CheckMatched{"Already&lt;br/>matched?"}
+    Lookup -->|Not Found| StrictCheck{"mode ==&lt;br/>Strict?"}
+    
+    CheckMatched -->|Yes| StrictMatch{"mode ==&lt;br/>Strict?"}
+    CheckMatched -->|No| CreateSetter["Create PropertySetter&lt;T>"]
+    
+    StrictMatch -->|Yes| ThrowDup["Throw: duplicate mapping"]
+    StrictMatch -->|No| Continue
+    
+    StrictCheck -->|Yes| ThrowMissing["Throw: no mapping"]
+    StrictCheck -->|No| Continue
+    
+    CreateSetter --> MarkMatched["matchedProperties[index] = true"]
+    MarkMatched --> Continue{"More columns?"}
+    Continue -->|Yes| Loop
+    Continue -->|No| CheckAllMatched
+    
+    CheckAllMatched{"mode == Strict?"} -->|Yes| VerifyAll
+    CheckAllMatched -->|No| Return
+    
+    VerifyAll{"All properties&lt;br/>matched?"} -->|No| ThrowMissingProp
+    VerifyAll -->|Yes| Return
+    
+    ThrowDup["Throw InvalidOperationException&lt;br/>'Property mapped more than once'"]
+    ThrowMissing["Throw InvalidOperationException&lt;br/>'Column has no mapping'"]
+    ThrowMissingProp["Throw InvalidOperationException&lt;br/>'Property missing from result'"]
+    
+    Return["Return PropertySetter&lt;T>[]"]
+    
+    style Start fill:#9f9
+    style Return fill:#9f9
+    style ThrowDup fill:#f99
+    style ThrowMissing fill:#f99
+    style ThrowMissingProp fill:#f99
+    style Lookup fill:#ff9
+    style CheckMatched fill:#ff9
+</div>
+<hr />
+<h2 id="null-handling">NULL Handling</h2>
+<h3 id="null-resolution-flow">NULL Resolution Flow</h3>
+<div class="mermaid">flowchart TD
+    Start["PropertySetter.Set(target, record)"] --> CheckNull{"record.&lt;br/>IsDBNull(ordinal)?"}
+    
+    CheckNull -->|No| SetValue["context.Setter(target, record, ordinal)"]
+    CheckNull -->|Yes| CheckType{"IsNonNullable&lt;br/>type?"}
+    
+    CheckType -->|Yes| Throw["Throw InvalidOperationException&lt;br/>'Cannot assign NULL to&lt;br/>non-nullable property'"]
+    CheckType -->|No| Skip["Skip (keeps default value)"]
+    
+    SetValue --> Done["Property set"]
+    Skip --> Done2["Property = default"]
+    Throw --> Error["Exception thrown"]
+    
+    style Start fill:#9f9
+    style SetValue fill:#9cf
+    style CheckType fill:#ff9
+    style Throw fill:#f99
+    style Skip fill:#9f9
+</div>
+<p><strong>Type Handling</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>NULL Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>string</code></td>
+<td>Becomes <code>null</code></td>
+</tr>
+<tr>
+<td><code>int?</code></td>
+<td>Becomes <code>null</code></td>
+</tr>
+<tr>
+<td><code>DateTime?</code></td>
+<td>Becomes <code>null</code></td>
+</tr>
+<tr>
+<td><code>int</code></td>
+<td><strong>Throws</strong> <code>InvalidOperationException</code></td>
+</tr>
+<tr>
+<td><code>DateTime</code></td>
+<td><strong>Throws</strong> <code>InvalidOperationException</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><strong>Throws</strong> <code>InvalidOperationException</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="configuration-interaction">Configuration Interaction</h2>
+<h3 id="static-caching-behavior">Static Caching Behavior</h3>
+<div class="mermaid">sequenceDiagram
+    participant App
+    participant JauntyConfig
+    participant MetadataCache
+    
+    Note over App,MetadataCache: Application Startup
+    
+    App->>JauntyConfig: ColumnNameResolver = ToSnakeCase
+    App->>JauntyConfig: TableNameResolver = SnakeCasePlural
+    
+    Note over App,MetadataCache: First Query (triggers caching)
+    
+    App->>MetadataCache: Query&lt;Product>(sql)
+    MetadataCache->>MetadataCache: Static constructor runs
+    MetadataCache->>JauntyConfig: Read resolvers
+    MetadataCache->>MetadataCache: Cache with snake_case names
+    
+    Note over App,MetadataCache: Configuration Change (INEFFECTIVE)
+    
+    App->>JauntyConfig: ColumnNameResolver = null
+    
+    Note over App,MetadataCache: Second Query (uses cached metadata)
+    
+    App->>MetadataCache: Query&lt;Product>(sql)
+    MetadataCache->>MetadataCache: Use CACHED metadata
+    MetadataCache-->>App: Still uses snake_case
+    
+    Note over App,MetadataCache: Configuration changes after first&lt;br/>use have NO EFFECT on cached types
+</div>
+<hr />
+<h2 id="performance-characteristics">Performance Characteristics</h2>
+<h3 id="initialization-cost-one-time-per-type">Initialization Cost (One-Time per Type)</h3>
+<div class="mermaid">gantt
+    title MetadataCache&lt;T> Initialization Timeline
+    dateFormat X
+    axisFormat %Lms
+    
+    section Build
+    MetadataBuilder.Build&lt;T>     :0, 500
+    Extract attributes           :50, 200
+    Apply resolvers              :250, 100
+    
+    section Cache
+    Create PropertyContext       :500, 1000
+    Build expression trees       :600, 800
+    Compile delegates            :1400, 2000
+    Build ColumnToIndex          :3400, 500
+    
+    section Complete
+    Ready for queries            :3900, 100
+</div>
+<p><strong>Typical Cost</strong>:</p>
+<ul>
+<li>Entity with 10 properties: ~1-5ms</li>
+<li>Entity with 50 properties: ~5-15ms</li>
+</ul>
+<h3 id="query-execution-cost-per-query">Query Execution Cost (Per-Query)</h3>
+<div class="mermaid">xychart-beta
+    title "Per-Query Overhead by Entity Size"
+    x-axis "Properties" [5, 10, 20, 50, 100]
+    y-axis "Time per row (μs)" 0 --> 10
+    line "Metadata lookup" [0.01, 0.01, 0.01, 0.01, 0.01]
+    line "ColumnToIndex lookup" [0.05, 0.05, 0.1, 0.2, 0.5]
+    line "Property setters" [0.5, 1, 2, 5, 10]
+</div>
+<p><strong>Typical Cost</strong>:</p>
+<ul>
+<li>Metadata lookup: O(1) - ~10ns</li>
+<li>Column-to-index lookup: O(1) - ~50ns (FrozenDictionary)</li>
+<li>Property setter invocation: O(1) - ~100ns per property</li>
+</ul>
+<hr />
+<h2 id="thread-safety">Thread Safety</h2>
+<h3 id="static-initialization-guarantee">Static Initialization Guarantee</h3>
+<div class="mermaid">sequenceDiagram
+    participant CLR
+    participant Thread1
+    participant Thread2
+    participant Thread3
+    
+    Thread1->>CLR: Access MetadataCache&lt;T>
+    CLR->>CLR: Check if initialized
+    CLR->>Thread1: Run static constructor
+    
+    Thread2->>CLR: Access MetadataCache&lt;T>
+    CLR->>Thread2: Wait (constructor in progress)
+    
+    Thread3->>CLR: Access MetadataCache&lt;T>
+    CLR->>Thread3: Wait (constructor in progress)
+    
+    Thread1->>Thread1: Build metadata
+    Thread1->>Thread1: Compile delegates
+    
+    Thread1->>CLR: Constructor complete
+    CLR->>Thread2: Return initialized cache
+    CLR->>Thread3: Return initialized cache
+    
+    Note over Thread1,Thread3: All threads now have&lt;br/>lock-free read access
+</div>
+<p><strong>Guarantees</strong>:</p>
+<ul>
+<li>Static constructors are thread-safe by CLR guarantee</li>
+<li>Only one thread runs the constructor</li>
+<li>Other threads wait until initialization completes</li>
+<li>After initialization: lock-free reads (all fields are <code>readonly</code>)</li>
+</ul>
+<hr />
+<h2 id="extension-points">Extension Points</h2>
+<h3 id="imapped-override">IMapped<T> Override</h3>
+<div class="mermaid">flowchart TD
+    User["User implements IMapped&lt;T>"] --> Define["Define static Map method"]
+    Define --> Cache["MappedCache&lt;T>.Mapper set"]
+    Cache --> DrDisp["DrDispatcher.Resolve&lt;T>()"]
+    
+    DrDisp --> Check{"MappedCache&lt;T>.Mapper&lt;br/>not null?"}
+    Check -->|Yes| UseCustom["Use custom Map method"]
+    Check -->|No| UseMetadata["Use MetadataCache&lt;T>"]
+    
+    UseCustom --> Skip["Skip metadata reflection&lt;br/>Skip expression compilation"]
+    UseMetadata --> Normal["Normal metadata path"]
+    
+    style User fill:#9cf
+    style UseCustom fill:#9f9
+    style Skip fill:#9f9
+</div>
+<p><strong>Example</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product : IMapped&lt;Product&gt;
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    <span class="tok-com">// Custom mapping - bypasses MetadataCache</span>
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> Map(<span class="tok-kw">ref</span> Product target, IDataReader reader, int columnIndex)
+    {
+        target.Id = reader.GetInt32(columnIndex);
+        target.Name = reader.GetString(columnIndex + <span class="tok-num">1</span>);
+        target.Price = reader.GetDecimal(columnIndex + <span class="tok-num">2</span>);
+    }
+}
+</code></pre>
+</div>
+<hr />
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="error-scenarios">Error Scenarios</h3>
+<div class="mermaid">flowchart TD
+    Start["GetSetters execution"] --> Error{"Error type?"}
+    
+    Error --> EmptyResult["Empty result set"]
+    Error --> DupMapping["Duplicate column mapping"]
+    Error --> MissingMapping["Column has no property mapping"]
+    Error --> MissingProp["Property missing from result"]
+    Error --> NullNonNullable["NULL for non-nullable property"]
+    
+    EmptyResult --> ReturnEmpty["Return empty array"]
+    DupMapping --> ThrowStrict{"mode == Strict?"}
+    MissingMapping --> ThrowStrict
+    MissingProp --> ThrowStrict
+    NullNonNullable --> ThrowAlways["Throw InvalidOperationException"]
+    
+    ThrowStrict -->|Yes| Throw["Throw InvalidOperationException&lt;br/>with detailed message"]
+    ThrowStrict -->|No| Ignore["Ignore (partial mode)"]
+    
+    style ReturnEmpty fill:#9f9
+    style Throw fill:#f99
+    style ThrowAlways fill:#f99
+    style Ignore fill:#ff9
+</div>
+<h3 id="error-message-examples">Error Message Examples</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│ Strict mapping failed: property 'Price' (mapped to column      │
+│ 'price') was missing from the result set.                       │
+│                                                                 │
+│ Type: MyApp.Product                                             │
+│ SQL columns: [id, name, category_id]                           │
+│ Missing properties: [Price]                                     │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ Strict mapping failed: Property 'Name' was mapped more than    │
+│ once from the result set.                                       │
+│                                                                 │
+│ Type: MyApp.Product                                             │
+│ Duplicate column: 'name' appears at positions 1 and 3          │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ Cannot assign NULL to non-nullable property 'Id' on type       │
+│ 'Product'.                                                      │
+│                                                                 │
+│ Column: 'id' (ordinal: 0)                                       │
+│ Value: DBNull                                                   │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr />
+<h2 id="see-also">See Also</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="02-architecture-architecture-specification.html"><code>architecture-specification.md</code></a></td>
+<td>Full architecture</td>
+</tr>
+<tr>
+<td><a href="02-architecture-parameter-binding-spec.html"><code>parameter-binding-spec.md</code></a></td>
+<td>Parameter binding</td>
+</tr>
+<tr>
+<td><a href="02-architecture-performance-spec.html"><code>performance-spec.md</code></a></td>
+<td>Performance optimization</td>
+</tr>
+<tr>
+<td><a href="../../01-api-reference/attributes.md"><code>../../01-api-reference/attributes.md</code></a></td>
+<td>Mapping attributes</td>
+</tr>
+<tr>
+<td><a href="../../01-api-reference/configuration.md"><code>../../01-api-reference/configuration.md</code></a></td>
+<td>JauntyConfig</td>
+</tr>
+</tbody>
+</table>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="02-architecture-design-philosophy.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Design philosophy</span>
+</a><a class="pn-next" href="02-architecture-parameter-binding-spec.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Parameter binding spec</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>
