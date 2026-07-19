@@ -9,13 +9,14 @@ public class PostgreSqlTypeMapperTests
 {
     private readonly PostgreSqlTypeMapper _mapper = new();
 
-    private static ColumnSchema CreateColumn(string dataType, bool isNullable = false) =>
+    private static ColumnSchema CreateColumn(string dataType, bool isNullable = false, int? maxLength = null) =>
         new()
         {
             ColumnName = "test_column",
             DataType = dataType,
             IsNullable = isNullable,
-            OrdinalPosition = 1
+            OrdinalPosition = 1,
+            MaxLength = maxLength
         };
 
     // ------------------------------------------------------------------
@@ -197,10 +198,35 @@ public class PostgreSqlTypeMapperTests
     [InlineData("bit")]
     [InlineData("bit varying")]
     [InlineData("varbit")]
-    public void MapToCSharpType_BitStringTypes_ReturnsBool(string sqlType)
+    public void MapToCSharpType_MaxLengthOneBitStringTypes_ReturnsBool(string sqlType)
     {
-        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        // bit(1)/bit varying(1) follow the common single-bit boolean-flag convention.
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType, maxLength: 1));
         Assert.Equal("bool", result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    [Theory]
+    [InlineData("bit")]
+    [InlineData("bit varying")]
+    [InlineData("varbit")]
+    public void MapToCSharpType_WiderBitStringTypes_ReturnsUlong(string sqlType)
+    {
+        // bit varying(64) etc. hold more than one bit and must not be collapsed to bool.
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType, maxLength: 64));
+        Assert.Equal("ulong", result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    [Theory]
+    [InlineData("bit")]
+    [InlineData("bit varying")]
+    [InlineData("varbit")]
+    public void MapToCSharpType_BitStringWithoutMaxLength_ReturnsUlong(string sqlType)
+    {
+        // No MaxLength at all (e.g. unbounded "bit varying") must NOT be treated as bit(1).
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType, maxLength: null));
+        Assert.Equal("ulong", result.TypeName);
         Assert.True(result.IsValueType);
     }
 
