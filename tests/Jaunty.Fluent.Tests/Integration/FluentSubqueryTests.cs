@@ -371,7 +371,12 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public void WhereInSubquery_WithDistinct_ReturnsUniqueResults()
     {
+        // Distinct() only exists on IFromClause<T>/IDistinctClause<T>, and WhereInSubquery(...)
+        // (which returns IWhereClause<T>) is only on IFromClause<T> - the outer Product query
+        // therefore can't chain both. Distinct() is applied to the subquery instead, which is
+        // still a valid IQueryTerminal<Category> and actually exercises the Distinct() call path.
         var subquery = _fixture.Connection.From<Category>()
+            .Distinct()
             .Where(c => c.CategoryName.StartsWith("C"));
 
         var products = _fixture.Connection.From<Product>()
