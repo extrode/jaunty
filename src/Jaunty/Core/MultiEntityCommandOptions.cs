@@ -6,6 +6,48 @@ using Jaunty.Core;
 namespace Jaunty.Core;
 
 // ============================================================
+//  Arity-2: MultiEntityCommandOptions<T1,T2>
+// ============================================================
+
+/// <summary>
+/// Options for multi-entity command execution with two entity types.
+/// Per-position mapper delegates allow individual type positions to bypass automatic
+/// ordinal-claiming and use a caller-supplied mapping function instead.
+/// </summary>
+public readonly struct MultiEntityCommandOptions<T1, T2>
+    where T1 : new()
+    where T2 : new()
+{
+    /// <summary>Custom mapper for position 1. When set, T1 is excluded from ordinal claiming.</summary>
+    public readonly Func<IDataReader, T1>? Mapper1;
+    /// <summary>Custom mapper for position 2. When set, T2 is excluded from ordinal claiming.</summary>
+    public readonly Func<IDataReader, T2>? Mapper2;
+
+    /// <summary>Transaction to use for command execution.</summary>
+    public readonly IDbTransaction? Transaction;
+
+    /// <summary>Command timeout in seconds.</summary>
+    public readonly int? CommandTimeout;
+
+    /// <summary>Command type. Defaults to Text.</summary>
+    public readonly CommandType CommandType;
+
+    /// <summary>Initializes a new instance with optional per-position mappers and execution options.</summary>
+    public MultiEntityCommandOptions(Func<IDataReader, T1>? mapper1 = null, Func<IDataReader, T2>? mapper2 = null, IDbTransaction? transaction = null, int? commandTimeout = null, CommandType commandType = CommandType.Text)
+    {
+        Mapper1 = mapper1;
+        Mapper2 = mapper2;
+        Transaction = transaction;
+        CommandTimeout = commandTimeout;
+        CommandType = commandType;
+    }
+
+    /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2)&gt; for use with the multi-entity query core.</summary>
+    public static implicit operator CommandOptions<(T1, T2)>(MultiEntityCommandOptions<T1, T2> opts) =>
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
+}
+
+// ============================================================
 //  Arity-3: MultiEntityCommandOptions<T1,T2,T3>
 // ============================================================
 
