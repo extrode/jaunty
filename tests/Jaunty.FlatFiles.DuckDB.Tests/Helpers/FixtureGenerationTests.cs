@@ -8,8 +8,12 @@ public class FixtureGenerationTests
     [Fact]
     public void Generate_ParquetFixture()
     {
-        var outputPath = "data/parquet/inventory.parquet";
-        FixtureGenerator.GenerateParquetFixture(outputPath);
+        var outputPath = Path.Combine(AppContext.BaseDirectory, "data", "parquet", "inventory.parquet");
+
+        if (!File.Exists(outputPath))
+        {
+            FixtureGenerator.GenerateParquetFixture(outputPath);
+        }
 
         Assert.True(File.Exists(outputPath), "Parquet fixture should be generated");
     }
@@ -17,8 +21,12 @@ public class FixtureGenerationTests
     [Fact]
     public void Generate_LargeCsvFixture()
     {
-        var outputPath = "data/csv/large-10k.csv";
-        FixtureGenerator.GenerateLargeCsv(outputPath, 10000);
+        var outputPath = Path.Combine(AppContext.BaseDirectory, "data", "csv", "large-10k.csv");
+
+        if (!File.Exists(outputPath))
+        {
+            FixtureGenerator.GenerateLargeCsv(outputPath, 10000);
+        }
 
         Assert.True(File.Exists(outputPath), "Large CSV fixture should be generated");
 

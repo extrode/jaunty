@@ -517,23 +517,6 @@ public class FluentJoinTests : IClassFixture<FluentDatabaseFixture>
 
 
     [Fact]
-    public void InnerJoin_MultipleJoins_ThreeTables_ReturnsJoinedResults()
-    {
-        var results = _fixture.Connection.From<Product>()
-            .InnerJoin<Category>()
-            .On(p => p.CategoryId, c => c.CategoryId)
-            .InnerJoin<Supplier>()
-            .On(p => p.SupplierId, s => s.SupplierId)
-            .SelectAll();
-
-        Assert.NotEmpty(results);
-        var first = results.First();
-        Assert.NotEmpty(first.Item1.ProductName);
-        Assert.NotEmpty(first.Item2.CategoryName);
-        Assert.NotEmpty(first.Item3.CompanyName);
-    }
-
-    [Fact]
     public void InnerJoin_MultipleJoins_ThreeTables_ReturnsTuples()
     {
         var results = _fixture.Connection.From<Product>()

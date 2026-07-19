@@ -574,14 +574,26 @@ public class FluentQueryBuilderReadOnlyTests : IClassFixture<FluentDatabaseFixtu
     {
         var allDistinct = _fixture.Connection.From<Product>()
             .Distinct()
+            .OrderBy(p => p.ProductId)
             .Select();
 
-        var paged = _fixture.Connection.From<Product>()
+        var firstPage = _fixture.Connection.From<Product>()
             .Distinct()
+            .OrderBy(p => p.ProductId)
             .Take(3)
             .Select();
 
-        Assert.True(paged.Count <= 3);
+        var pagedSkip = _fixture.Connection.From<Product>()
+            .Distinct()
+            .OrderBy(p => p.ProductId)
+            .Skip(3)
+            .Take(3)
+            .Select();
+
+        Assert.Equal(3, firstPage.Count);
+        Assert.Equal(3, pagedSkip.Count);
+        Assert.NotEqual(firstPage.First().ProductId, pagedSkip.First().ProductId);
+        Assert.Equal(allDistinct[3].ProductId, pagedSkip.First().ProductId);
     }
 
     [Fact]

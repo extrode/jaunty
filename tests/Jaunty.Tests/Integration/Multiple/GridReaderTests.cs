@@ -455,14 +455,14 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public void GridReader_Dispose_ClosesReader(DialectInfo dialect)
     {
-        using var connection = _fixture.GetConnection(dialect);
+        using var connection = _fixture.GetClosedConnection(dialect);
         var gridReader = connection.QueryMultiple(FullCategorySql(dialect, 1));
 
         gridReader.ReadFirst<Category>();
         gridReader.Dispose();
 
-        // After Dispose, the reader should be marked as consumed
-        // Verify no exception is thrown and reader is properly disposed
+        // GridReader self-opened the connection, so Dispose should close it again.
+        Assert.Equal(ConnectionState.Closed, connection.State);
     }
 
     [Theory]
