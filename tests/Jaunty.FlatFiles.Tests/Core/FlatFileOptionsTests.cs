@@ -117,6 +117,154 @@ public class FlatFileOptionsTests
         Assert.Equal(3, options.Sources.Count);
     }
 
+    [Fact]
+    public void AddExcel_MultiFile_AddsExcelFileSourceWithAllPaths()
+    {
+        var options = new FlatFileOptions();
+        var returned = options.AddExcel<ExcelRow>(["a.xlsx", "b.xlsx"]);
+
+        Assert.Same(options, returned);
+        var src = Assert.IsType<ExcelFileSource>(options.Sources[0]);
+        Assert.Equal(["a.xlsx", "b.xlsx"], src.FilePaths);
+    }
+
+    // ------------------------------------------------------------------
+    // AddCsv / AddTsv / AddParquet / AddJson fluent builders
+    // ------------------------------------------------------------------
+
+    private sealed class CsvRow { }
+    private sealed class TsvRow { }
+    private sealed class ParquetRow { }
+    private sealed class JsonRow { }
+
+    [Fact]
+    public void AddCsv_AddsCsvFileSource()
+    {
+        var options = new FlatFileOptions();
+        var returned = options.AddCsv<CsvRow>("data.csv");
+
+        Assert.Same(options, returned); // fluent chaining
+        Assert.Single(options.Sources);
+        Assert.IsType<CsvFileSource>(options.Sources[0]);
+    }
+
+    [Fact]
+    public void AddCsv_WithConfigure_AppliesConfiguration()
+    {
+        var options = new FlatFileOptions();
+        options.AddCsv<CsvRow>("data.csv", src => src.Delimiter = ';');
+
+        var src = Assert.IsType<CsvFileSource>(options.Sources[0]);
+        Assert.Equal(';', src.Delimiter);
+    }
+
+    [Fact]
+    public void AddCsv_MultiFile_AddsCsvFileSourceWithAllPaths()
+    {
+        var options = new FlatFileOptions();
+        var returned = options.AddCsv<CsvRow>(["a.csv", "b.csv"]);
+
+        Assert.Same(options, returned);
+        var src = Assert.IsType<CsvFileSource>(options.Sources[0]);
+        Assert.Equal(["a.csv", "b.csv"], src.FilePaths);
+    }
+
+    [Fact]
+    public void AddTsv_AddsTsvFileSource()
+    {
+        var options = new FlatFileOptions();
+        var returned = options.AddTsv<TsvRow>("data.tsv");
+
+        Assert.Same(options, returned);
+        Assert.Single(options.Sources);
+        Assert.IsType<TsvFileSource>(options.Sources[0]);
+    }
+
+    [Fact]
+    public void AddTsv_WithConfigure_AppliesConfiguration()
+    {
+        var options = new FlatFileOptions();
+        options.AddTsv<TsvRow>("data.tsv", src => src.SkipRows = 2);
+
+        var src = Assert.IsType<TsvFileSource>(options.Sources[0]);
+        Assert.Equal(2, src.SkipRows);
+    }
+
+    [Fact]
+    public void AddTsv_MultiFile_AddsTsvFileSourceWithAllPaths()
+    {
+        var options = new FlatFileOptions();
+        var returned = options.AddTsv<TsvRow>(["a.tsv", "b.tsv"]);
+
+        Assert.Same(options, returned);
+        var src = Assert.IsType<TsvFileSource>(options.Sources[0]);
+        Assert.Equal(["a.tsv", "b.tsv"], src.FilePaths);
+    }
+
+    [Fact]
+    public void AddParquet_AddsParquetFileSource()
+    {
+        var options = new FlatFileOptions();
+        var returned = options.AddParquet<ParquetRow>("data.parquet");
+
+        Assert.Same(options, returned);
+        Assert.Single(options.Sources);
+        Assert.IsType<ParquetFileSource>(options.Sources[0]);
+    }
+
+    [Fact]
+    public void AddParquet_WithConfigure_AppliesConfiguration()
+    {
+        var options = new FlatFileOptions();
+        options.AddParquet<ParquetRow>("data.parquet", src => src.HivePartitioning = true);
+
+        var src = Assert.IsType<ParquetFileSource>(options.Sources[0]);
+        Assert.True(src.HivePartitioning);
+    }
+
+    [Fact]
+    public void AddParquet_MultiFile_AddsParquetFileSourceWithAllPaths()
+    {
+        var options = new FlatFileOptions();
+        var returned = options.AddParquet<ParquetRow>(["a.parquet", "b.parquet"]);
+
+        Assert.Same(options, returned);
+        var src = Assert.IsType<ParquetFileSource>(options.Sources[0]);
+        Assert.Equal(["a.parquet", "b.parquet"], src.FilePaths);
+    }
+
+    [Fact]
+    public void AddJson_AddsJsonFileSource()
+    {
+        var options = new FlatFileOptions();
+        var returned = options.AddJson<JsonRow>("data.json");
+
+        Assert.Same(options, returned);
+        Assert.Single(options.Sources);
+        Assert.IsType<JsonFileSource>(options.Sources[0]);
+    }
+
+    [Fact]
+    public void AddJson_WithConfigure_AppliesConfiguration()
+    {
+        var options = new FlatFileOptions();
+        options.AddJson<JsonRow>("data.json", src => src.JsonFormat = JsonFileFormat.Array);
+
+        var src = Assert.IsType<JsonFileSource>(options.Sources[0]);
+        Assert.Equal(JsonFileFormat.Array, src.JsonFormat);
+    }
+
+    [Fact]
+    public void AddJson_MultiFile_AddsJsonFileSourceWithAllPaths()
+    {
+        var options = new FlatFileOptions();
+        var returned = options.AddJson<JsonRow>(["a.json", "b.json"]);
+
+        Assert.Same(options, returned);
+        var src = Assert.IsType<JsonFileSource>(options.Sources[0]);
+        Assert.Equal(["a.json", "b.json"], src.FilePaths);
+    }
+
     // ------------------------------------------------------------------
     // ValidateSchema / PreloadIntoMemory
     // ------------------------------------------------------------------

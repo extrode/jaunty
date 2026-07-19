@@ -655,9 +655,7 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     public void GridReader_ReadPartial_WithMultipleResultSets_ReadsAll(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT 1; SELECT 2; SELECT 3"
-            : "SELECT 1; SELECT 2; SELECT 3";
+        const string sql = "SELECT 1; SELECT 2; SELECT 3";
 
         using var gridReader = connection.QueryMultiple(sql);
 

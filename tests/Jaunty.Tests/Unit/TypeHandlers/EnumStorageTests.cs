@@ -97,9 +97,9 @@ public class EnumStorageTests : IDisposable
 
         // Reset() also nulls JauntyConfig.InterceptorPipeline, a process-wide static shared with
         // the "Logging Extensions" collection (running concurrently as a different xunit
-        // collection) - capture and restore it so this test doesn't wipe out interceptors another
-        // collection has registered mid-test.
-        var interceptorsBeforeReset = JauntyConfig.InterceptorPipeline?.GetInterceptors().ToArray();
+        // collection) - capture and clear it atomically (AUD-R7) so an interceptor registered by
+        // that collection between a separate capture-then-Reset() pair can't be silently dropped.
+        var interceptorsBeforeReset = JauntyConfig.CaptureAndClearInterceptors();
 
         // Act — Reset() is the API under test here; restore reflection mapping afterwards
         // so other concurrently-running test collections are not affected.
