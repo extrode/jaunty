@@ -168,15 +168,19 @@ internal static class MetadataCache<T>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("IL", "IL2072:")]
     private static Action<T, IDataRecord, int> CreateSetter(PropertyInfo property)
     {
-        // Check if there's a registered type handler for this property type
         Type propertyType = property.PropertyType;
         Type underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
 
-        // Check registered type handlers first (before enum handling)
-        if (TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(underlyingType, out ITypeHandler? handler) && handler is not null)
+        Action<T, IDataRecord, int> fallback = CreateFallbackSetter(property, propertyType, underlyingType);
+
+        // TypeHandlerRegistry is mutable process-wide state (RegisterTypeHandler/RemoveTypeHandler
+        // can be called at any time, e.g. multi-tenant apps swapping handlers per request, or tests).
+        // This setter is compiled once inside T's static constructor and reused for the lifetime of
+        // the process, so the handler must be re-resolved on every call rather than captured once -
+        // otherwise a handler registered/changed after T's first read would silently never apply.
+        return (target, record, index) =>
         {
-            // Use the type handler's Parse/FromDb conversion
-            return (target, record, index) =>
+            if (TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(underlyingType, out ITypeHandler? handler) && handler is not null)
             {
                 object dbValue = record.GetValue(index);
 
@@ -214,9 +218,16 @@ internal static class MetadataCache<T>
                         property.SetValue(target, dbValue);
                     }
                 }
-            };
-        }
 
+                return;
+            }
+
+            fallback(target, record, index);
+        };
+    }
+
+    private static Action<T, IDataRecord, int> CreateFallbackSetter(PropertyInfo property, Type propertyType, Type underlyingType)
+    {
         // Check if this is an enum with string storage
         if (underlyingType.IsEnum)
         {
