@@ -15,21 +15,15 @@ internal static class FluentMetadataCache
     {
         return _metadataCache.GetOrAdd(typeof(T), _ =>
         {
-            if (SourceGeneratedMetadataResolver.TryBuild(typeof(T)) is EntityMetadata sourceGenMetadata)
-            {
-                return sourceGenMetadata;
-            }
-
-            if (JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is EntityMetadata metadata)
-            {
-                return metadata;
-            }
-
-            throw new InvalidOperationException(
-                $"No metadata found for type '{typeof(T).Name}'. " +
-                "Ensure the class has [Table] and is processed by the Jaunty source generator " +
-                "(the class must be declared 'partial'), or call " +
-                "Jaunty.Extensions.Reflection's UseReflectionMapping().");
+            return SourceGeneratedMetadataResolver.TryBuild<T>() is EntityMetadata sourceGenMetadata
+                ? sourceGenMetadata
+                : JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is EntityMetadata metadata
+                    ? metadata
+                        : throw new InvalidOperationException(
+                        $"No metadata found for type '{typeof(T).Name}'. " +
+                        "Ensure the class has [Table] and is processed by the Jaunty source generator " +
+                        "(the class must be declared 'partial'), or call " +
+                        "Jaunty.Extensions.Reflection's UseReflectionMapping().");
         });
     }
 
@@ -39,7 +33,7 @@ internal static class FluentMetadataCache
         return _dialectCache.GetOrAdd(key, _ =>
         {
             EntityMetadata meta = GetMetadata<T>();
-            var escapedTable = dialect.EscapeTableName(meta.SchemaName, meta.TableName);
+            string escapedTable = dialect.EscapeTableName(meta.SchemaName, meta.TableName);
             var escapedCols = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (ColumnMetadata col in meta.Columns)
