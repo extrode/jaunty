@@ -1,77 +1,35 @@
-using System.Collections;
-#if NET5_0_OR_GREATER
-using System.Diagnostics.CodeAnalysis;
-#endif
-using System.Reflection;
+using Jaunty.Interfaces;
 
 namespace Jaunty.Internals.Entity;
 
 /// <summary>
-/// Builds <see cref="EntityMetadata"/> from a source-generated entity's static
-/// <c>TableName</c>/<c>SchemaName</c>/<c>ParameterMap</c> members, with no dependency on
-/// runtime reflection resolvers. Shared by <c>CrudSqlCache</c> (core CRUD) and
-/// <c>FluentMetadataCache</c> (fluent queries) so the synthesis logic lives in one place.
+/// Builds <see cref="EntityMetadata"/> from a source-generated entity's
+/// <see cref="IEntityMetadataSource"/> implementation, with no runtime reflection on either
+/// side of the boundary. Shared by <c>CrudSqlCache</c> (core CRUD) and <c>WriteParameterCache</c>
+/// (parameter binding) so the synthesis logic lives in one place.
 /// </summary>
 internal static class SourceGeneratedMetadataResolver
 {
     /// <summary>
-    /// Attempts to build <see cref="EntityMetadata"/> from <paramref name="type"/>'s
-    /// source-generated static surface. Returns <see langword="null"/> when <paramref name="type"/>
-    /// has no such static surface (not source-generated), in which case the caller should fall
-    /// back to <c>JauntyConfig.ReflectionTableMetadataResolver</c>.
+    /// Attempts to build <see cref="EntityMetadata"/> from <typeparamref name="T"/>'s
+    /// source-generated <see cref="IEntityMetadataSource"/> implementation. Returns
+    /// <see langword="null"/> when <typeparamref name="T"/> does not implement
+    /// <see cref="IEntityMetadataSource"/> (not source-generated), in which case the caller
+    /// should fall back to <c>JauntyConfig.ReflectionTableMetadataResolver</c>.
     /// </summary>
-#if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Source-generated static members are always preserved because the generated class itself is reachable.")]
-    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "The ColumnInfo nested type's properties are always preserved because the generated class itself is reachable.")]
-#endif
-    public static EntityMetadata? TryBuild(Type type)
+    public static EntityMetadata? TryBuild<T>() where T : new()
     {
-        PropertyInfo? tableNameProp = type.GetProperty("TableName", BindingFlags.Public | BindingFlags.Static);
-        PropertyInfo? parameterMapProp = type.GetProperty("ParameterMap", BindingFlags.Public | BindingFlags.Static);
-        if (tableNameProp is not { PropertyType.Name: nameof(String) } || parameterMapProp is null)
+        if (new T() is not IEntityMetadataSource source)
             return null;
 
-        if (parameterMapProp.GetValue(null) is not IDictionary parameterMap)
-            return null;
-
-        var tableName = (string)tableNameProp.GetValue(null)!;
-        var schemaName = type.GetProperty("SchemaName", BindingFlags.Public | BindingFlags.Static)?.GetValue(null) as string;
-
-        Type? columnInfoType = null;
-        PropertyInfo? columnNameProp = null;
-        PropertyInfo? propertyNameProp = null;
-        PropertyInfo? isPrimaryKeyProp = null;
-        PropertyInfo? isIdentityProp = null;
-        PropertyInfo? propertyTypeProp = null;
-        PropertyInfo? getterProp = null;
-        PropertyInfo? setterProp = null;
-
-        var columns = new List<ColumnMetadata>(parameterMap.Count);
-        foreach (DictionaryEntry entry in parameterMap)
+        IReadOnlyList<EntityColumnInfo> sourceColumns = source.Columns;
+        var columns = new List<ColumnMetadata>(sourceColumns.Count);
+        for (int i = 0; i < sourceColumns.Count; i++)
         {
-            object columnInfo = entry.Value!;
-            if (columnInfoType is null)
-            {
-                columnInfoType = columnInfo.GetType();
-                columnNameProp = columnInfoType.GetProperty("ColumnName")!;
-                propertyNameProp = columnInfoType.GetProperty("PropertyName")!;
-                isPrimaryKeyProp = columnInfoType.GetProperty("IsPrimaryKey")!;
-                isIdentityProp = columnInfoType.GetProperty("IsIdentity")!;
-                propertyTypeProp = columnInfoType.GetProperty("PropertyType")!;
-                getterProp = columnInfoType.GetProperty("Getter")!;
-                setterProp = columnInfoType.GetProperty("Setter")!;
-            }
-
-            columns.Add(new ColumnMetadata(
-                (string)propertyNameProp!.GetValue(columnInfo)!,
-                (Type)propertyTypeProp!.GetValue(columnInfo)!,
-                (string)columnNameProp!.GetValue(columnInfo)!,
-                (bool)isPrimaryKeyProp!.GetValue(columnInfo)!,
-                (bool)isIdentityProp!.GetValue(columnInfo)!,
-                (Func<object, object?>)getterProp!.GetValue(columnInfo)!,
-                (Action<object, object?>)setterProp!.GetValue(columnInfo)!));
+            EntityColumnInfo c = sourceColumns[i];
+            columns.Add(new ColumnMetadata(c.PropertyName, c.PropertyType, c.ColumnName, c.IsPrimaryKey, c.IsIdentity, c.Getter, c.Setter));
         }
 
-        return new EntityMetadata(tableName, schemaName, columns);
+        return new EntityMetadata(source.TableName, source.SchemaName, columns);
     }
 }
