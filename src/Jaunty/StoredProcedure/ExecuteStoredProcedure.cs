@@ -66,7 +66,7 @@ public static partial class Jaunty
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedure{T}(IDbConnection, string, object?, CommandOptions{T})"/>
     /// <seealso cref="ExecuteStoredProcedureAsync{T}(IDbConnection, string, SpParameters, CommandOptions{T}, CancellationToken)"/>
-    public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default) where T : new()
+    public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
 
@@ -122,7 +122,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureFirst{T}(IDbConnection, string, object?, CommandOptions{T})"/>
-    public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default) where T : new()
+    public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteWithOutputParameters(connection, procedureName, parameters, spOptions, (reader, _) =>
@@ -176,7 +176,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefault{T}(IDbConnection, string, object?, CommandOptions{T})"/>
-    public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default) where T : new()
+    public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteWithOutputParameters<T?>(connection, procedureName, parameters, spOptions, (reader, _) =>
@@ -225,7 +225,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureScalar{T}(IDbConnection, string, object?, CommandOptions{T})"/>
-    public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default)
+    public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options = default)
     {
         var spOptions = new CommandOptions(options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteScalarWithOutputParameters<T>(connection, procedureName, parameters, spOptions);
@@ -269,7 +269,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureNonQuery(IDbConnection, string, object?, CommandOptions)"/>
-    public static int ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default)
+    public static int ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options = default)
     {
         var spOptions = new CommandOptions(options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteNonQueryWithOutputParameters(connection, procedureName, parameters, spOptions);
@@ -277,18 +277,20 @@ public static partial class Jaunty
 
     #region Core execution with output parameters
 
-    private static TResult ExecuteWithOutputParameters<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
+    private static TResult ExecuteWithOutputParameters<TResult>(IDbConnection connection, string procedureName, SpParameters? parameters,
         CommandOptions options, Func<IDataReader, SpParameters, TResult> handler)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        // A null literal binds to this overload over the object?-parameter overload (SpParameters
+        // is a more specific reference type), so treat null the same as "no parameters" instead of
+        // throwing - matches the zero-parameter convenience overload's behavior.
+        parameters ??= new SpParameters();
 
         bool wasClosed = connection.State == ConnectionState.Closed;
 
@@ -327,17 +329,16 @@ public static partial class Jaunty
         }
     }
 
-    private static T ExecuteScalarWithOutputParameters<T>(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options)
+    private static T ExecuteScalarWithOutputParameters<T>(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        parameters ??= new SpParameters();
 
         bool wasClosed = connection.State == ConnectionState.Closed;
 
@@ -376,17 +377,16 @@ public static partial class Jaunty
         }
     }
 
-    private static int ExecuteNonQueryWithOutputParameters(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options)
+    private static int ExecuteNonQueryWithOutputParameters(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        parameters ??= new SpParameters();
 
         bool wasClosed = connection.State == ConnectionState.Closed;
 
