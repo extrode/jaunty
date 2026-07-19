@@ -50,13 +50,17 @@ public class SqlServerSchemaReaderTests
     [Fact]
     public void MarkPrimaryKeyColumns_NoPrimaryKey_LeavesColumnsUnchanged()
     {
+        // IsPrimaryKey starts true (an atypical initial state) so this assertion would fail
+        // if a null primaryKey ever caused the method to reset column state instead of
+        // taking its early-return no-op path - IsPrimaryKey's own default (false) can't
+        // distinguish "the method ran and left it alone" from "the method never ran".
         var columns = new List<ColumnSchema>
         {
-            new() { ColumnName = "col1", DataType = "int", OrdinalPosition = 1 }
+            new() { ColumnName = "col1", DataType = "int", OrdinalPosition = 1, IsPrimaryKey = true }
         };
 
         SqlServerSchemaReader.MarkPrimaryKeyColumns(columns, null);
 
-        Assert.False(columns[0].IsPrimaryKey);
+        Assert.True(columns[0].IsPrimaryKey);
     }
 }
