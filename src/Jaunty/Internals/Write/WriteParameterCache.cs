@@ -35,16 +35,18 @@ internal static class WriteParameterCache<T> where T : new()
         // Value setters for bulk operations: update values on existing parameters by index.
         // PrepareXxxParameters has already created provider-native parameters on the command;
         // the value setter just walks the collection and sets .Value for each matching param.
-        InsertValueSetter = InsertBinder != null ? CreateInsertValueSetter() : null;
-        UpdateValueSetter = UpdateBinder != null ? CreateUpdateValueSetter() : null;
-        DeleteValueSetter = DeleteBinder != null ? CreateDeleteValueSetter() : null;
+        // Metadata is resolved once here (rather than separately inside each Create*ValueSetter)
+        // since ResolveMetadata() re-instantiates new T() and rebuilds EntityMetadata from scratch.
+        EntityMetadata? metadata = ResolveMetadata();
+        InsertValueSetter = InsertBinder != null ? CreateInsertValueSetter(metadata) : null;
+        UpdateValueSetter = UpdateBinder != null ? CreateUpdateValueSetter(metadata) : null;
+        DeleteValueSetter = DeleteBinder != null ? CreateDeleteValueSetter(metadata) : null;
 
         IdSetter = CreateIdSetter();
     }
 
-    private static Action<IDataParameterCollection, T>? CreateInsertValueSetter()
+    private static Action<IDataParameterCollection, T>? CreateInsertValueSetter(EntityMetadata? metadata)
     {
-        EntityMetadata? metadata = ResolveMetadata();
         if (metadata == null) return null;
 
         IReadOnlyList<ColumnMetadata> columns = metadata.InsertColumns;
@@ -63,9 +65,8 @@ internal static class WriteParameterCache<T> where T : new()
         };
     }
 
-    private static Action<IDataParameterCollection, T>? CreateUpdateValueSetter()
+    private static Action<IDataParameterCollection, T>? CreateUpdateValueSetter(EntityMetadata? metadata)
     {
-        EntityMetadata? metadata = ResolveMetadata();
         if (metadata == null) return null;
 
         IReadOnlyList<ColumnMetadata> updateColumns = metadata.UpdateColumns;
@@ -91,9 +92,8 @@ internal static class WriteParameterCache<T> where T : new()
         };
     }
 
-    private static Action<IDataParameterCollection, T>? CreateDeleteValueSetter()
+    private static Action<IDataParameterCollection, T>? CreateDeleteValueSetter(EntityMetadata? metadata)
     {
-        EntityMetadata? metadata = ResolveMetadata();
         if (metadata == null) return null;
 
         IReadOnlyList<ColumnMetadata> deleteColumns = metadata.DeleteColumns;

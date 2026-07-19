@@ -152,7 +152,7 @@ internal static class CrudSqlCache
         }
 
         sb.Append(" WHERE ");
-        AppendWhereClause(sb, primaryKeys, dialect, usePropertyNames: true);
+        AppendWhereClause(sb, primaryKeys, dialect);
 
         return sb.ToString();
     }
@@ -167,7 +167,7 @@ internal static class CrudSqlCache
         sb.Append("DELETE FROM ");
         sb.Append(escapedTableName);
         sb.Append(" WHERE ");
-        AppendWhereClause(sb, primaryKeys, dialect, usePropertyNames: true);
+        AppendWhereClause(sb, primaryKeys, dialect);
 
         return sb.ToString();
     }
@@ -235,7 +235,7 @@ internal static class CrudSqlCache
             keyParams);
     }
 
-    private static void AppendWhereClause(StringBuilder sb, IReadOnlyList<ColumnMetadata> keys, ISqlDialect dialect, bool usePropertyNames)
+    private static void AppendWhereClause(StringBuilder sb, IReadOnlyList<ColumnMetadata> keys, ISqlDialect dialect)
     {
         for (int i = 0; i < keys.Count; i++)
         {
@@ -244,7 +244,7 @@ internal static class CrudSqlCache
 
             sb.Append(dialect.EscapeColumnName(keys[i].ColumnName));
             sb.Append(" = @");
-            sb.Append(usePropertyNames ? keys[i].ColumnName : "Id");
+            sb.Append(keys[i].ColumnName);
         }
     }
 
