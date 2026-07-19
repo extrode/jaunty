@@ -373,6 +373,35 @@ public class LoggingInterceptorTests
         Assert.Empty(provider.Logs);
     }
 
+    [Fact]
+    public async Task OnCommandExecutedAsync_LogsSlowQueryWarning_EvenWhenMinimumLogLevelDisablesInformation()
+    {
+        // Arrange - provider only accepts Warning+ (Information is disabled), and the configured
+        // MinimumLogLevel (Information, the default) is itself below what the provider accepts.
+        // AUD-R8: an early gate on _config.MinimumLogLevel used to short-circuit before the
+        // slow-query-escalates-to-Warning logic ever ran, silently suppressing slow-query warnings
+        // whenever the ambient logger was configured more restrictively than MinimumLogLevel.
+        var provider = CreateTestProvider(LogLevel.Warning);
+        var logger = CreateLogger(provider);
+        var config = new LoggingConfiguration { SlowQueryThreshold = TimeSpan.FromMilliseconds(100) };
+        var interceptor = new LoggingInterceptor(logger, config);
+        var context = new CommandContext(
+            "SELECT * FROM Users",
+            null,
+            CreateMockConnection(),
+            CommandType.Text,
+            TimeSpan.FromMilliseconds(500));
+
+        // Act
+        await interceptor.OnCommandExecutedAsync(context, CancellationToken.None);
+
+        // Assert
+        var logs = provider.Logs;
+        Assert.Single(logs);
+        Assert.Equal(LogLevel.Warning, logs[0].Level);
+        Assert.Contains("SLOW", logs[0].Message);
+    }
+
     #endregion
 
     #region OnCommandFailedAsync Tests
