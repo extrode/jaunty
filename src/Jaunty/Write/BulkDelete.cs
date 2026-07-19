@@ -334,7 +334,10 @@ public static partial class Jaunty
                 }
 
                 if (ownTransaction)
-                    transaction?.Rollback();
+                {
+                    try { transaction?.Rollback(); }
+                    catch { /* Best effort - do not mask the original exception */ }
+                }
 
                 throw;
             }
