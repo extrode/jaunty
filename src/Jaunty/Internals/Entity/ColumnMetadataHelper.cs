@@ -14,14 +14,7 @@ internal static class ColumnMetadataHelper
     /// <returns>A read-only list of insertable columns.</returns>
     public static IReadOnlyList<ColumnMetadata> GetInsertableColumns(EntityMetadata metadata)
     {
-        IReadOnlyList<ColumnMetadata> columns = metadata.NonIdentityColumns;
-        var insertable = new List<ColumnMetadata>(columns.Count);
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (!columns[i].IsComputed)
-                insertable.Add(columns[i]);
-        }
-        return insertable;
+        return metadata.InsertColumns;
     }
 
     /// <summary>
