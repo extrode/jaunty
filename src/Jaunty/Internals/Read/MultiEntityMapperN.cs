@@ -41,7 +41,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
         var parts = new string[fieldCount + 1];
         parts[0] = fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3> CreateMapper(IDataReader reader)
@@ -103,7 +103,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
         var parts = new string[fieldCount + 1];
         parts[0] = fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4> CreateMapper(IDataReader reader)
@@ -170,7 +170,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
         var parts = new string[fieldCount + 1];
         parts[0] = fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5> CreateMapper(IDataReader reader)
@@ -242,7 +242,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
         var parts = new string[fieldCount + 1];
         parts[0] = fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6> CreateMapper(IDataReader reader)
@@ -319,7 +319,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : n
         var parts = new string[fieldCount + 1];
         parts[0] = fieldCount.ToString();
         for (int i = 0; i < fieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> CreateMapper(IDataReader reader)
