@@ -12,7 +12,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests.WriteBack;
 /// </summary>
 public class WriteBackTests : IDisposable
 {
-    private static readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_writeback_tests_{Guid.NewGuid():N}");
+    private readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_writeback_tests_{Guid.NewGuid():N}");
     private readonly string _csvPath;
     private readonly DuckDb _db;
 

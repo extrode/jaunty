@@ -256,7 +256,8 @@ public class LoggingInterceptorTests
     public async Task OnCommandExecutingAsync_SkipsWhenLoggerDisabled()
     {
         // Arrange
-        var logger = NullLogger<LoggingInterceptor>.Instance;
+        var provider = CreateTestProvider();
+        var logger = CreateLogger(provider);
         var config = new LoggingConfiguration { MinimumLogLevel = LogLevel.None };
         var interceptor = new LoggingInterceptor(logger, config);
         var context = new CommandContext(
@@ -268,8 +269,8 @@ public class LoggingInterceptorTests
         // Act
         await interceptor.OnCommandExecutingAsync(context, CancellationToken.None);
 
-        // Assert - Should complete without error
-        Assert.True(true);
+        // Assert - no log entry should have been written when logging is disabled
+        Assert.Empty(provider.Logs);
     }
 
     #endregion
@@ -689,7 +690,7 @@ public class LoggingInterceptorTests
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
-        public bool IsEnabled(LogLevel logLevel) => logLevel >= _minimumLevel;
+        public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None && logLevel >= _minimumLevel;
 
         public void Log<TState>(
             LogLevel logLevel,
