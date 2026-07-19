@@ -9,13 +9,14 @@ public class MySqlTypeMapperTests
 {
     private readonly MySqlTypeMapper _mapper = new();
 
-    private static ColumnSchema CreateColumn(string dataType, bool isNullable = false) =>
+    private static ColumnSchema CreateColumn(string dataType, bool isNullable = false, int? maxLength = null) =>
         new()
         {
             ColumnName = "test_column",
             DataType = dataType,
             IsNullable = isNullable,
-            OrdinalPosition = 1
+            OrdinalPosition = 1,
+            MaxLength = maxLength
         };
 
     // ------------------------------------------------------------------
@@ -29,6 +30,35 @@ public class MySqlTypeMapperTests
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
         Assert.Equal("bool", result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    [Theory]
+    [InlineData("bit")]
+    [InlineData("tinyint")]
+    public void MapToCSharpType_MaxLengthOneBooleanConvention_ReturnsBool(string sqlType)
+    {
+        // MySQL's tinyint(1)/bit(1) boolean convention - depends on the nullable MaxLength
+        // comparison, a common source of off-by-one/null-handling bugs.
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType, maxLength: 1));
+        Assert.Equal("bool", result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    [Fact]
+    public void MapToCSharpType_BitWithoutMaxLengthOne_ReturnsUlong()
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn("bit", maxLength: 8));
+        Assert.Equal("ulong", result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    [Fact]
+    public void MapToCSharpType_TinyintWithoutMaxLength_ReturnsSbyte()
+    {
+        // No MaxLength at all (null) must NOT be treated as the MaxLength==1 boolean case.
+        var result = _mapper.MapToCSharpType(CreateColumn("tinyint", maxLength: null));
+        Assert.Equal("sbyte", result.TypeName);
         Assert.True(result.IsValueType);
     }
 
@@ -72,6 +102,8 @@ public class MySqlTypeMapperTests
     [Theory]
     [InlineData("decimal")]
     [InlineData("numeric")]
+    [InlineData("dec")]
+    [InlineData("fixed")]
     public void MapToCSharpType_DecimalTypes_ReturnsDecimal(string sqlType)
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
@@ -127,6 +159,26 @@ public class MySqlTypeMapperTests
     [InlineData("mediumblob")]
     [InlineData("longblob")]
     public void MapToCSharpType_BinaryTypes_ReturnsByteArray(string sqlType)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("byte[]", result.TypeName);
+        Assert.False(result.IsValueType);
+    }
+
+    // ------------------------------------------------------------------
+    // Spatial types
+    // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData("geometry")]
+    [InlineData("point")]
+    [InlineData("linestring")]
+    [InlineData("polygon")]
+    [InlineData("multipoint")]
+    [InlineData("multilinestring")]
+    [InlineData("multipolygon")]
+    [InlineData("geometrycollection")]
+    public void MapToCSharpType_SpatialTypes_ReturnsByteArray(string sqlType)
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
         Assert.Equal("byte[]", result.TypeName);

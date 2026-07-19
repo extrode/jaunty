@@ -67,6 +67,104 @@ public class CsvFileSourceTests
         Assert.Throws<ArgumentNullException>(() => new CsvFileSource("t", "f.csv", null!));
     }
 
+    // ------------------------------------------------------------------
+    // GenerateReadFunction
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void GenerateReadFunction_NoOptions_ProducesBasicReadCsv()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord));
+        var fn = source.GenerateReadFunction("'f.csv'");
+
+        Assert.StartsWith("read_csv(", fn);
+        Assert.Contains("'f.csv'", fn);
+        Assert.Contains("auto_detect = true", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithHeader_IncludesHeaderTrue()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { HasHeader = true };
+        var fn = source.GenerateReadFunction("'f.csv'");
+
+        Assert.Contains("header = true", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithHeaderFalse_IncludesHeaderFalse()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { HasHeader = false };
+        var fn = source.GenerateReadFunction("'f.csv'");
+
+        Assert.Contains("header = false", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithDelimiter_IncludesDelimParam()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { Delimiter = ';' };
+        var fn = source.GenerateReadFunction("'f.csv'");
+
+        Assert.Contains("delim = ';'", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithQuoteChar_IncludesQuoteParam()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { QuoteChar = '\'' };
+        var fn = source.GenerateReadFunction("'f.csv'");
+
+        Assert.Contains("quote = '''", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithNullString_IncludesNullstrParam()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { NullString = "NA" };
+        var fn = source.GenerateReadFunction("'f.csv'");
+
+        Assert.Contains("nullstr = 'NA'", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithNullStringContainingSingleQuote_Escapes()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { NullString = "N'A" };
+        var fn = source.GenerateReadFunction("'f.csv'");
+
+        Assert.Contains("nullstr = 'N''A'", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithSkipRows_IncludesSkipParam()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { SkipRows = 3 };
+        var fn = source.GenerateReadFunction("'f.csv'");
+
+        Assert.Contains("skip = 3", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_SkipRowsZero_OmitsSkipParam()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { SkipRows = 0 };
+        var fn = source.GenerateReadFunction("'f.csv'");
+
+        Assert.DoesNotContain("skip =", fn);
+    }
+
+    // ------------------------------------------------------------------
+    // GenerateCopyToOptions
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void GenerateCopyToOptions_ReturnsHeaderTrue()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord));
+        Assert.Equal("HEADER true", source.GenerateCopyToOptions());
+    }
+
     // Minimal test entity
     private class SalesRecord { }
 }
