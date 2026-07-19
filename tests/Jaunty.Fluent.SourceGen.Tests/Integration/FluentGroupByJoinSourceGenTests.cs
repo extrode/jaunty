@@ -144,8 +144,8 @@ public sealed class FluentGroupByJoinSourceGenTests
             });
 
         Assert.Equal(2, results.Count);
-        Assert.Contains(results, r => r.WidgetId == 1 && r.TagCount == 2);
-        Assert.Contains(results, r => r.WidgetId == 2 && r.TagCount == 1);
+        Assert.Contains(results, r => r.WidgetId == 1 && r.TagCount == 2 && r.TotalPrice == 19.98m);
+        Assert.Contains(results, r => r.WidgetId == 2 && r.TagCount == 1 && r.TotalPrice == 19.99m);
 
         var havingResults = connection.From<SourceGenWidget>()
             .InnerJoin<SourceGenWidgetTag>().On((w, t) => w.WidgetId == t.WidgetId)

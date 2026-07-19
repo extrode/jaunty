@@ -41,13 +41,24 @@ public class AuditInterceptorTests
     }
 
     [Fact]
-    public void Constructor_WithZeroOrNegativeMaxRecords_UsesDefault()
+    public async Task Constructor_WithZeroOrNegativeMaxRecords_UsesDefault()
     {
-        // Arrange & Act
+        // Arrange
         var interceptor = new AuditInterceptor(0);
+        var context = new CommandContext(
+            "SELECT 1",
+            null,
+            CreateMockConnection(),
+            CommandType.Text);
 
-        // Assert - should use default of 1000
-        Assert.NotNull(interceptor);
+        // Act - execute more than the documented default of 1000 records
+        for (int i = 0; i < 1005; i++)
+        {
+            await interceptor.OnCommandExecutingAsync(context, CancellationToken.None);
+        }
+
+        // Assert - should use default of 1000, not the unclamped 0
+        Assert.Equal(1000, interceptor.RecordCount);
     }
 
     #endregion
