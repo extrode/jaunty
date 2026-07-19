@@ -125,7 +125,10 @@ public sealed class SqliteGeneratedMapperShapeTests : IDisposable
         Assert.True(reader.Read());
         // The cached ordinals from the first result set no longer match; strict
         // generated mapping must fail loudly on the narrower shape, not reuse them.
-        Assert.ThrowsAny<Exception>(() => GenProduct.ReadEntity(reader));
+        // Microsoft.Data.Sqlite's GetOrdinal throws ArgumentOutOfRangeException for a missing
+        // column name (unlike System.Data.SqlClient, which throws IndexOutOfRangeException for
+        // the same failure mode) - confirmed by running this test against the real provider.
+        Assert.Throws<ArgumentOutOfRangeException>(() => GenProduct.ReadEntity(reader));
     }
 
     [Fact]

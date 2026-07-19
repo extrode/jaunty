@@ -357,7 +357,8 @@ public class ParameterBinderTests
         var command = new MockDbCommand("SELECT * FROM users");
 
         // This shouldn't throw - 0 params in SQL, 0 values provided
-        // Note: Can't create truly empty anonymous object, so this tests the SQL side
+        ParameterBinder.Bind(command, new { });
+
         Assert.Equal(0, command.Parameters.Count);
     }
 

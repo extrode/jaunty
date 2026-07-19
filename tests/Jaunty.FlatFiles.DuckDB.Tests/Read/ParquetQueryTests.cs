@@ -11,7 +11,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests.Read;
 /// </summary>
 public class ParquetQueryTests : IDisposable
 {
-    private static readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_parquet_tests_{Guid.NewGuid():N}");
+    private readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_parquet_tests_{Guid.NewGuid():N}");
     private readonly string _parquetPath;
     private readonly DuckDb _db;
 
