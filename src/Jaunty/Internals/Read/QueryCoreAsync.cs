@@ -182,6 +182,8 @@ public static partial class Jaunty
                         if (parameters is not null)
                             ParameterBinder.Bind(command, parameters);
 
+                        JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
                         object? commandResult = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
                         if (commandResult is null or DBNull)
