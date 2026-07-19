@@ -47,7 +47,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns no results, more than one result, or when a property has no matching column.
+    /// Thrown when the query returns no results or more than one result. This method uses partial/projection mapping, so properties without matching columns are left at their default value rather than throwing.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when the number of provided parameters doesn't match the SQL.
@@ -93,7 +93,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns no results, more than one result, or when a property has no matching column.
+    /// Thrown when the query returns no results or more than one result. This method uses partial/projection mapping, so properties without matching columns are left at their default value rather than throwing.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.
@@ -141,7 +141,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns no results, more than one result, or when a property has no matching column.
+    /// Thrown when the query returns no results or more than one result. This method uses partial/projection mapping, so properties without matching columns are left at their default value rather than throwing.
     /// </exception>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="QueryPartialSingle{T}(IDbConnection, string)"/>
@@ -188,7 +188,7 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the query returns no results, more than one result, or when a property has no matching column.
+    /// Thrown when the query returns no results or more than one result. This method uses partial/projection mapping, so properties without matching columns are left at their default value rather than throwing.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.

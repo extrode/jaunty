@@ -20,7 +20,9 @@ namespace Jaunty.Interceptors;
 /// </list>
 /// <para>
 /// If any interceptor throws during <see cref="InvokeExecutingAsync"/>, the command is not executed
-/// and remaining interceptors' <see cref="ICommandInterceptor.OnCommandFailedAsync"/> methods are called.
+/// and every registered interceptor's <see cref="ICommandInterceptor.OnCommandFailedAsync"/> method is
+/// called - including ones that already ran successfully before the failing interceptor, and the
+/// failing interceptor itself.
 /// </para>
 /// <para>
 /// This pipeline also emits diagnostic events via <see cref="JauntyDiagnosticListener"/>
