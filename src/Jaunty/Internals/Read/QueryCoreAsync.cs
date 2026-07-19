@@ -324,7 +324,7 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity * 2);
+            var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity);
 
             if (reader is DbDataReader dbReader)
             {
@@ -399,6 +399,7 @@ public static partial class Jaunty
             if (!reader.Read())
                 return null;
 
+            ct.ThrowIfCancellationRequested();
             var mappingFallback = MultiEntityMapper<T1, T2>.Build(reader);
 
             var t1Fallback = new T1();
@@ -609,6 +610,7 @@ public static partial class Jaunty
             if (!reader.Read())
                 return null;
 
+            ct.ThrowIfCancellationRequested();
             var mappingFallback = MultiEntityMapper<T1, T2, T3>.Build(reader);
 
             var t1Fallback = new T1();
@@ -829,6 +831,7 @@ public static partial class Jaunty
             if (!reader.Read())
                 return null;
 
+            ct.ThrowIfCancellationRequested();
             var mappingFallback = MultiEntityMapper<T1, T2, T3, T4>.Build(reader);
 
             var t1Fallback = new T1();
@@ -1063,6 +1066,7 @@ public static partial class Jaunty
             if (!reader.Read())
                 return null;
 
+            ct.ThrowIfCancellationRequested();
             var mappingFallback = MultiEntityMapper<T1, T2, T3, T4, T5>.Build(reader);
 
             var t1Fallback = new T1();
@@ -1311,6 +1315,7 @@ public static partial class Jaunty
             if (!reader.Read())
                 return null;
 
+            ct.ThrowIfCancellationRequested();
             var mappingFallback = MultiEntityMapper<T1, T2, T3, T4, T5, T6>.Build(reader);
 
             var t1Fallback = new T1();
@@ -1573,6 +1578,7 @@ public static partial class Jaunty
             if (!reader.Read())
                 return null;
 
+            ct.ThrowIfCancellationRequested();
             var mappingFallback = MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>.Build(reader);
 
             var t1Fallback = new T1();

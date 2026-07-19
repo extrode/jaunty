@@ -158,6 +158,30 @@ public class AuditInterceptorTests
         Assert.Equal("TestDb", records[0].Database);
     }
 
+    // AUD-R7: OnCommandExecutedAsync built its AuditRecord without setting ConnectionState at
+    // all, unlike OnCommandExecutingAsync - it silently defaulted to ConnectionState.Closed
+    // (enum value 0) regardless of the connection's actual state, misreporting every
+    // "Executed" audit record for a compliance/troubleshooting audit trail.
+    [Fact]
+    public async Task OnCommandExecutedAsync_RecordsConnectionState()
+    {
+        // Arrange
+        var interceptor = new AuditInterceptor();
+        var context = new CommandContext(
+            "SELECT 1",
+            null,
+            CreateMockConnection(),
+            CommandType.Text);
+
+        // Act
+        await interceptor.OnCommandExecutedAsync(context, CancellationToken.None);
+
+        // Assert - TestDbConnection.State is always ConnectionState.Open
+        var records = interceptor.GetRecentRecords().ToList();
+        Assert.Single(records);
+        Assert.Equal(ConnectionState.Open, records[0].ConnectionState);
+    }
+
     #endregion
 
     #region OnCommandFailedAsync Tests
@@ -212,6 +236,32 @@ public class AuditInterceptorTests
         var records = interceptor.GetRecentRecords().ToList();
         Assert.Single(records);
         Assert.Equal(100, records[0].ElapsedMilliseconds, 1);
+    }
+
+    // AUD-R7: same gap as OnCommandExecutedAsync - OnCommandFailedAsync never set
+    // ConnectionState either.
+    [Fact]
+    public async Task OnCommandFailedAsync_RecordsConnectionState()
+    {
+        // Arrange
+        var interceptor = new AuditInterceptor();
+        var exception = new Exception("Error");
+        var elapsed = TimeSpan.FromMilliseconds(10);
+        var context = new CommandContext(
+            "SELECT 1",
+            null,
+            CreateMockConnection(),
+            CommandType.Text,
+            elapsed,
+            exception);
+
+        // Act
+        await interceptor.OnCommandFailedAsync(context, exception, CancellationToken.None);
+
+        // Assert - TestDbConnection.State is always ConnectionState.Open
+        var records = interceptor.GetRecentRecords().ToList();
+        Assert.Single(records);
+        Assert.Equal(ConnectionState.Open, records[0].ConnectionState);
     }
 
     #endregion

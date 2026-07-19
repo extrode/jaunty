@@ -328,7 +328,7 @@ public static partial class Jaunty
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
-                var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity * 2);
+                var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity);
 
                 if (!reader.Read())
                     return results;
@@ -353,7 +353,7 @@ public static partial class Jaunty
 
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity * 2);
+            var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity);
 
             if (!reader.Read())
                 return results;
