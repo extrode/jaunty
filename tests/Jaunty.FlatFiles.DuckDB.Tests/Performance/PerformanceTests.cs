@@ -20,6 +20,15 @@ public class PerformanceTests : IDisposable
 
         using var genConnection = new DuckDBConnection("DataSource=:memory:");
         genConnection.Open();
+
+        // Seed DuckDB's random() so the generated fixture is identical across runs/machines,
+        // instead of a fresh random 100K-row dataset every test execution.
+        using (var seedCmd = genConnection.CreateCommand())
+        {
+            seedCmd.CommandText = "SELECT setseed(0.42);";
+            seedCmd.ExecuteNonQuery();
+        }
+
         using var cmd = genConnection.CreateCommand();
         cmd.CommandText = $@"
             COPY (
