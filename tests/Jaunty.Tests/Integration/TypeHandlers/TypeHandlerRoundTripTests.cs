@@ -27,6 +27,10 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
         JauntyConfig.DefaultEnumStorage = EnumStorage.Numeric;
     }
 
+    // Must match TypeHandlerTestEntity's [Table(...)] mapping - Insert<T>/Query<T> resolve
+    // the table name from entity metadata, not from a string passed at the call site.
+    private const string TableName = "typehandler_test";
+
     private static void CreateTableForTest(IDbConnection connection, DialectProvider provider, string tableName)
     {
         using var cmd = connection.CreateCommand();
@@ -89,9 +93,10 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
     [SystemSqlite]
     public void EnumAttribute_OverridesDefaultToString_RoundTrips(DialectInfo dialect)
     {
-        string tableName = "typehandler_test_enum_attr";
         using var ctx = _fixture.GetWriteContext(dialect);
-        CreateTableForTest(ctx.Connection, dialect.Provider, tableName);
+        CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
+
+        Assert.Equal(EnumStorage.Numeric, JauntyConfig.DefaultEnumStorage);
 
         var entity = new TypeHandlerTestEntity
         {
@@ -99,20 +104,21 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
             EnumStringOverride = TestEnumForHandlers.Completed
         };
 
-        Assert.Equal(EnumStorage.Numeric, JauntyConfig.DefaultEnumStorage);
+        // Goes through Jaunty's real write pipeline (WriteParameterCache / TypeHandler
+        // resolution), not raw ADO.NET - exercises the same code path production callers use.
+        ctx.Connection.Insert(entity);
 
-        using var cmd = ctx.Connection.CreateCommand();
-        cmd.CommandText = $"INSERT INTO {tableName} (name, enum_string_override) VALUES (@name, @enum)";
-        var p1 = cmd.CreateParameter(); p1.ParameterName = "@name"; p1.Value = entity.Name; cmd.Parameters.Add(p1);
-        var p2 = cmd.CreateParameter(); p2.ParameterName = "@enum"; p2.Value = entity.EnumStringOverride.ToString(); cmd.Parameters.Add(p2);
-        cmd.ExecuteNonQuery();
+        // [EnumStorage(EnumStorage.String)] on EnumStringOverride overrides the process-wide
+        // Numeric default. If the attribute weren't honored by the read pipeline, this would
+        // either fail to parse the stored string back into the enum or never have been stored
+        // as a string in the first place.
+        var roundTripped = ctx.Connection.QueryFirst<TypeHandlerTestEntity>(
+            $"SELECT * FROM {TableName} WHERE name = @Name", new { entity.Name });
+        Assert.Equal(TestEnumForHandlers.Completed, roundTripped.EnumStringOverride);
 
-        using var getCmd = ctx.Connection.CreateCommand();
-        getCmd.CommandText = $"SELECT enum_string_override FROM {tableName} WHERE name = @name";
-        var p3 = getCmd.CreateParameter(); p3.ParameterName = "@name"; p3.Value = entity.Name; getCmd.Parameters.Add(p3);
-        var rawValue = getCmd.ExecuteScalar();
-        Assert.NotNull(rawValue);
-        Assert.Equal("Completed", rawValue.ToString());
+        var raw = ctx.Connection.QueryScalar<string>(
+            $"SELECT enum_string_override FROM {TableName} WHERE name = @Name", new { entity.Name });
+        Assert.Equal("Completed", raw);
     }
 
     [Theory]
@@ -121,9 +127,8 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
     {
         JauntyConfig.DefaultEnumStorage = EnumStorage.String;
 
-        string tableName = "typehandler_test_global_enum";
         using var ctx = _fixture.GetWriteContext(dialect);
-        CreateTableForTest(ctx.Connection, dialect.Provider, tableName);
+        CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
 
         var entity = new TypeHandlerTestEntity
         {
@@ -131,18 +136,15 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
             EnumGlobalString = TestEnumForHandlers.Cancelled
         };
 
-        using var cmd = ctx.Connection.CreateCommand();
-        cmd.CommandText = $"INSERT INTO {tableName} (name, enum_global_string) VALUES (@name, @enum)";
-        var p1 = cmd.CreateParameter(); p1.ParameterName = "@name"; p1.Value = entity.Name; cmd.Parameters.Add(p1);
-        var p2 = cmd.CreateParameter(); p2.ParameterName = "@enum"; p2.Value = entity.EnumGlobalString.ToString(); cmd.Parameters.Add(p2);
-        cmd.ExecuteNonQuery();
+        ctx.Connection.Insert(entity);
 
-        using var getCmd = ctx.Connection.CreateCommand();
-        getCmd.CommandText = $"SELECT enum_global_string FROM {tableName} WHERE name = @name";
-        var p3 = getCmd.CreateParameter(); p3.ParameterName = "@name"; p3.Value = entity.Name; getCmd.Parameters.Add(p3);
-        var rawValue = getCmd.ExecuteScalar();
-        Assert.NotNull(rawValue);
-        Assert.Equal("Cancelled", rawValue.ToString());
+        var roundTripped = ctx.Connection.QueryFirst<TypeHandlerTestEntity>(
+            $"SELECT * FROM {TableName} WHERE name = @Name", new { entity.Name });
+        Assert.Equal(TestEnumForHandlers.Cancelled, roundTripped.EnumGlobalString);
+
+        var raw = ctx.Connection.QueryScalar<string>(
+            $"SELECT enum_global_string FROM {TableName} WHERE name = @Name", new { entity.Name });
+        Assert.Equal("Cancelled", raw);
     }
 
     [Theory]
@@ -167,26 +169,22 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
             }
         );
 
-        string tableName = "typehandler_test_delegate";
         using var ctx = _fixture.GetWriteContext(dialect);
-        CreateTableForTest(ctx.Connection, dialect.Provider, tableName);
+        CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
 
-        var entity = new TypeHandlerTestEntity
-        {
-            Name = "TestValue"
-        };
+        var entity = new TypeHandlerTestEntity { Name = "TestValue" };
 
-        using var cmd = ctx.Connection.CreateCommand();
-        cmd.CommandText = $"INSERT INTO {tableName} (name) VALUES (@name)";
-        var p1 = cmd.CreateParameter(); p1.ParameterName = "@name"; p1.Value = entity.Name; cmd.Parameters.Add(p1);
-        cmd.ExecuteNonQuery();
+        // toDb is a passthrough for values without the "HANDLED:" prefix, so this stores
+        // "TestValue" unchanged - if it weren't invoked at all this assertion wouldn't
+        // distinguish that, which is exactly why the read-back check below matters.
+        ctx.Connection.Insert(entity);
 
-        using var getCmd = ctx.Connection.CreateCommand();
-        getCmd.CommandText = $"SELECT name FROM {tableName} WHERE name LIKE @prefix";
-        var p2 = getCmd.CreateParameter(); p2.ParameterName = "@prefix"; p2.Value = "%TestValue%"; getCmd.Parameters.Add(p2);
-        var rawValue = getCmd.ExecuteScalar();
-        Assert.NotNull(rawValue);
-        Assert.Equal("TestValue", rawValue.ToString());
+        // fromDb prefixes "HANDLED:" onto whatever is read. This only comes back prefixed
+        // if Jaunty's QueryFirst<T> actually invoked the registered delegate-based handler
+        // while mapping the row - the prior version of this test never asserted this.
+        var roundTripped = ctx.Connection.QueryFirst<TypeHandlerTestEntity>(
+            $"SELECT * FROM {TableName} WHERE name = @Name", new { entity.Name });
+        Assert.Equal("HANDLED:TestValue", roundTripped.Name);
     }
 
     [Theory]
@@ -196,26 +194,19 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
         var handler = new PrefixTypeHandler();
         JauntyConfig.RegisterTypeHandler<string>(handler);
 
-        string tableName = "typehandler_test_class";
         using var ctx = _fixture.GetWriteContext(dialect);
-        CreateTableForTest(ctx.Connection, dialect.Provider, tableName);
+        CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
 
-        var entity = new TypeHandlerTestEntity
-        {
-            Name = "ClassHandlerTest"
-        };
+        var entity = new TypeHandlerTestEntity { Name = "ClassHandlerTest" };
 
-        using var cmd = ctx.Connection.CreateCommand();
-        cmd.CommandText = $"INSERT INTO {tableName} (name) VALUES (@name)";
-        var p1 = cmd.CreateParameter(); p1.ParameterName = "@name"; p1.Value = entity.Name; cmd.Parameters.Add(p1);
-        cmd.ExecuteNonQuery();
+        ctx.Connection.Insert(entity);
 
-        using var getCmd = ctx.Connection.CreateCommand();
-        getCmd.CommandText = $"SELECT name FROM {tableName} WHERE name LIKE @prefix";
-        var p2 = getCmd.CreateParameter(); p2.ParameterName = "@prefix"; p2.Value = "%ClassHandlerTest%"; getCmd.Parameters.Add(p2);
-        var rawValue = getCmd.ExecuteScalar();
-        Assert.NotNull(rawValue);
-        Assert.Equal("ClassHandlerTest", rawValue.ToString());
+        // Only comes back "CLASSHANDLED:"-prefixed if PrefixTypeHandler.Parse actually ran
+        // during the read - the prior version of this test never asserted this, only that
+        // the raw string it wrote via ADO.NET was unchanged by ADO.NET reading it back.
+        var roundTripped = ctx.Connection.QueryFirst<TypeHandlerTestEntity>(
+            $"SELECT * FROM {TableName} WHERE name = @Name", new { entity.Name });
+        Assert.Equal("CLASSHANDLED:ClassHandlerTest", roundTripped.Name);
     }
 
     private class PrefixTypeHandler : TypeHandler<string>
