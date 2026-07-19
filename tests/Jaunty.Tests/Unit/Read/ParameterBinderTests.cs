@@ -4,7 +4,7 @@ using Jaunty.Configuration;
 using Jaunty.Internals.Parameters;
 using Jaunty.TypeHandlers;
 
-namespace Jaunty.Tests;
+namespace Jaunty.Tests.Unit.Read;
 
 /// <remarks>
 /// Shares the "Type Handler Operations" collection with

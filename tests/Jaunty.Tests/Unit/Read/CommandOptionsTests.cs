@@ -1,7 +1,7 @@
 using System.Data;
 using Jaunty.Core;
 
-namespace Jaunty.Tests.Unit;
+namespace Jaunty.Tests.Unit.Read;
 
 public class CommandOptionsTests
 {

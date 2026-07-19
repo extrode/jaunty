@@ -1,7 +1,7 @@
 using Jaunty.Configuration;
 using Jaunty.Interceptors;
 
-namespace Jaunty.Tests.Configuration;
+namespace Jaunty.Tests.Unit.Configuration;
 
 /// <summary>
 /// Unit tests for the thread safety of <see cref="JauntyConfig"/> interceptor registration.

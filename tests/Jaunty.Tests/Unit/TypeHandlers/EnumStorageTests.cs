@@ -2,7 +2,7 @@ using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection;
 
-namespace Jaunty.Tests.TypeHandlers;
+namespace Jaunty.Tests.Unit.TypeHandlers;
 
 /// <summary>
 /// Unit tests for enum storage strategy configuration and attribute handling.
