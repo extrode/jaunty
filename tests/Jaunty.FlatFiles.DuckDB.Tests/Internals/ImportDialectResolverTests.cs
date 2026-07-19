@@ -12,6 +12,13 @@ namespace Jaunty.FlatFiles.DuckDB.Tests.Internals;
 /// explicit dialect override, and fallback to SQLite for unknown connections.
 /// Accessible because Jaunty.FlatFiles.DuckDB has InternalsVisibleTo this test project.
 /// </summary>
+/// <remarks>
+/// ImportDialectResolver.Register mutates a static, process-wide registry with no corresponding
+/// Unregister/Reset API, so every registration below persists for the rest of the test process.
+/// Registration keys and connection type names are prefixed with this class's name specifically
+/// to make an accidental substring collision with an unrelated connection type name elsewhere in
+/// the process effectively impossible.
+/// </remarks>
 public class ImportDialectResolverTests
 {
     // ------------------------------------------------------------------
@@ -75,10 +82,10 @@ public class ImportDialectResolverTests
     public void Register_CustomKey_ResolvesForMatchingConnectionTypeName()
     {
         var custom = new StubImportDialect();
-        // "UnknownDb" is a substring of UnknownDbConnection's full type name
-        ImportDialectResolver.Register("UnknownDb", custom);
+        // "ImportDialectResolverTestsUnknownDb" is a substring of ImportDialectResolverTestsUnknownDbConnection's full type name
+        ImportDialectResolver.Register("ImportDialectResolverTestsUnknownDb", custom);
 
-        using var conn = new UnknownDbConnection();
+        using var conn = new ImportDialectResolverTestsUnknownDbConnection();
         var resolved = ImportDialectResolver.Resolve(conn, null);
 
         Assert.Same(custom, resolved);
@@ -100,10 +107,10 @@ public class ImportDialectResolverTests
         var first = new StubImportDialect();
         var second = new StubImportDialect();
 
-        ImportDialectResolver.Register("OverwriteTestKey", first);
-        ImportDialectResolver.Register("OverwriteTestKey", second);
+        ImportDialectResolver.Register("ImportDialectResolverTestsOverwriteKey", first);
+        ImportDialectResolver.Register("ImportDialectResolverTestsOverwriteKey", second);
 
-        using var conn = new OverwriteTestKeyConnection();
+        using var conn = new ImportDialectResolverTestsOverwriteKeyConnection();
         var resolved = ImportDialectResolver.Resolve(conn, null);
 
         // The second registration must win, proving Register() overwrites the existing
@@ -134,10 +141,10 @@ public class ImportDialectResolverTests
     }
 
     /// <summary>
-    /// A DbConnection whose type name contains "UnknownDb" to trigger the
+    /// A DbConnection whose type name contains "ImportDialectResolverTestsUnknownDb" to trigger the
     /// fallback / custom-registration path in ImportDialectResolver.
     /// </summary>
-    private sealed class UnknownDbConnection : DbConnection
+    private sealed class ImportDialectResolverTestsUnknownDbConnection : DbConnection
     {
         [System.Diagnostics.CodeAnalysis.AllowNull]
         public override string ConnectionString { get; set; } = string.Empty;
@@ -158,7 +165,7 @@ public class ImportDialectResolverTests
     }
     /// <summary>
     /// A DbConnection with no registered key - triggers the SQLite fallback path.
-    /// Does NOT contain "UnknownDb" in its name to avoid matching the custom registration test.
+    /// Does NOT contain "ImportDialectResolverTestsUnknownDb" in its name to avoid matching the custom registration test.
     /// </summary>
     private sealed class FallbackDbConnection : DbConnection
     {
@@ -181,10 +188,10 @@ public class ImportDialectResolverTests
     }
 
     /// <summary>
-    /// A DbConnection whose type name contains "OverwriteTestKey" - used to verify
+    /// A DbConnection whose type name contains "ImportDialectResolverTestsOverwriteKey" - used to verify
     /// that a second Register() call for the same key replaces the first registration.
     /// </summary>
-    private sealed class OverwriteTestKeyConnection : DbConnection
+    private sealed class ImportDialectResolverTestsOverwriteKeyConnection : DbConnection
     {
         [System.Diagnostics.CodeAnalysis.AllowNull]
         public override string ConnectionString { get; set; } = string.Empty;
