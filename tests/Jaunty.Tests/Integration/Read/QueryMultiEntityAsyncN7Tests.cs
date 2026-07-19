@@ -7,6 +7,7 @@ using Jaunty.Tests.Helpers.Dialects;
 namespace Jaunty.Tests.Integration.Read;
 
 /// <summary>Integration tests for QueryAsync&lt;T1,T2,T3,T4,T5,T6,T7&gt; — arity-7 async multi-entity mapping.</summary>
+[Collection("Multi-Entity Mapper Reflection Resolver")]
 public class QueryMultiEntityAsyncN7Tests : IClassFixture<DialectFixture>
 {
     internal sealed class Ae1 { [Column("id1")] public long Id { get; set; } }

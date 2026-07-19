@@ -10,6 +10,7 @@ namespace Jaunty.Tests.Integration.Read;
 /// reflection extension. Verifies ordinal-claiming and [Column] attribute disambiguation.
 /// Uses an isolated in-memory SQLite database with three private tables.
 /// </summary>
+[Collection("Multi-Entity Mapper Reflection Resolver")]
 public class QueryMultiEntityN3Tests : IClassFixture<DialectFixture>
 {
     // ---------------------------------------------------------------------------
