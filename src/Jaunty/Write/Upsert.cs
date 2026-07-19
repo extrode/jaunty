@@ -3,6 +3,7 @@ using System.Data;
 using Jaunty.Core;
 using Jaunty.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Write;
 
 namespace Jaunty;
@@ -187,7 +188,7 @@ public static partial class Jaunty
 
             IDbDataParameter param = command.CreateParameter();
             param.ParameterName = "@" + col.ColumnName;
-            param.Value = GetColumnValue(col, entity) ?? DBNull.Value;
+            param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(GetColumnValue(col, entity), col.Property) ?? DBNull.Value;
             command.Parameters.Add(param);
             addedParams.Add(col.ColumnName);
         }
@@ -201,7 +202,7 @@ public static partial class Jaunty
 
             IDbDataParameter param = command.CreateParameter();
             param.ParameterName = "@" + col.ColumnName;
-            param.Value = GetColumnValue(col, entity) ?? DBNull.Value;
+            param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(GetColumnValue(col, entity), col.Property) ?? DBNull.Value;
             command.Parameters.Add(param);
         }
     }

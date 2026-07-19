@@ -5,6 +5,7 @@ using Jaunty.Internals.BulkCopy;
 using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Write;
 
 namespace Jaunty;
@@ -114,7 +115,7 @@ public static partial class Jaunty
         if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
             throw new NotSupportedException(
                 $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
-                "Use BulkInsertAsync instead, or disable constraints manually before calling this method.");
+                "Use BulkInsert instead, or disable constraints manually before calling this method.");
 
         // Check if native bulk copy should be used
         if (BulkCopyConfiguration.EnableNativeBulkCopy &&
@@ -312,7 +313,7 @@ public static partial class Jaunty
                     IDbDataParameter p = command.CreateParameter();
                     // Parameter name matches SQL generated in MultiRowInsertCache.Build()
                     p.ParameterName = insertableColumns[c].ColumnName + "_" + row;
-                    p.Value = getters[c](entity) ?? DBNull.Value;
+                    p.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(getters[c](entity), insertableColumns[c].Property) ?? DBNull.Value;
                     command.Parameters.Add(p);
                 }
             }
