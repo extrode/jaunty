@@ -31,6 +31,17 @@ public static partial class Jaunty
     /// <para>
     /// Async streaming is memory-efficient for large result sets and doesn't block the calling thread.
     /// </para>
+    /// <para>
+    /// <strong>Interceptor gap:</strong> streamed commands honor <see cref="CommandOptions{T}.CommandType"/>
+    /// and the simple <see cref="global::Jaunty.Configuration.JauntyConfig.Logger"/> callback, the same as
+    /// buffered queries, but they do NOT currently pass through the registered
+    /// <see cref="global::Jaunty.Interceptors.ICommandInterceptor"/> pipeline. Wiring pipeline interceptors into
+    /// a streaming path would require materializing the entire result set before the "command executed"
+    /// hook could fire, which would defeat the purpose of streaming, so this is intentionally left
+    /// unwired for now. Callers relying on interceptor-based auditing should not assume streamed
+    /// queries (<c>QueryStream</c>, <c>QueryPartialStream</c>, <c>QueryPartialUnbuffered</c>, and their
+    /// async equivalents) are observed by their interceptors.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -291,6 +302,9 @@ public static partial class Jaunty
     /// <para>
     /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
     /// </para>
+    /// <para>
+    /// Note: This method buffers all results in memory. For true streaming, enable ASYNC_ENUMERABLE_SUPPORT.
+    /// </para>
     /// </remarks>
     /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, CancellationToken)"/>
     /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, object, CommandOptions{T}, CancellationToken)"/>
@@ -326,6 +340,9 @@ public static partial class Jaunty
     /// <remarks>
     /// <para>
     /// Use this overload when you need to execute the query within a transaction or with a specific timeout.
+    /// </para>
+    /// <para>
+    /// Note: This method buffers all results in memory. For true streaming, enable ASYNC_ENUMERABLE_SUPPORT.
     /// </para>
     /// </remarks>
     /// <seealso cref="CommandOptions{T}"/>
@@ -363,6 +380,9 @@ public static partial class Jaunty
     /// <remarks>
     /// <para>
     /// This is the most flexible overload, combining parameter binding with execution options.
+    /// </para>
+    /// <para>
+    /// Note: This method buffers all results in memory. For true streaming, enable ASYNC_ENUMERABLE_SUPPORT.
     /// </para>
     /// </remarks>
     /// <seealso cref="QueryStreamAsync{T}(IDbConnection, string, CancellationToken)"/>

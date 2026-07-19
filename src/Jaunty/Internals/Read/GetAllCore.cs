@@ -6,6 +6,7 @@ using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Read;
 using Jaunty.Internals.Write;
+using Jaunty.Interceptors;
 
 namespace Jaunty;
 
@@ -15,6 +16,24 @@ public static partial class Jaunty
     {
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in ExecuteReader.cs so GetAll participates in registered
+        // ICommandInterceptor auditing/logging the same way Query/QueryFirst/etc. do.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+                cached.SelectAllSql,
+                null,
+                connection,
+                options.CommandType,
+                () => GetAllCoreDirect(connection, cached, options));
+        }
+
+        return GetAllCoreDirect(connection, cached, options);
+    }
+
+    private static List<T> GetAllCoreDirect<T>(IDbConnection connection, CachedCrudSql cached, CommandOptions<T> options) where T : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -79,6 +98,25 @@ public static partial class Jaunty
     {
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in ExecuteReaderAsync.cs so GetAllAsync participates in registered
+        // ICommandInterceptor auditing/logging the same way QueryAsync/QueryFirstAsync/etc. do.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                cached.SelectAllSql,
+                null,
+                dbConnection,
+                options.CommandType,
+                () => GetAllCoreDirectAsync(dbConnection, cached, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await GetAllCoreDirectAsync(dbConnection, cached, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<List<T>> GetAllCoreDirectAsync<T>(DbConnection dbConnection, CachedCrudSql cached, CommandOptions<T> options, CancellationToken cancellationToken) where T : new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try

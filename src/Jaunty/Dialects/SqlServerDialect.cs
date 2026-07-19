@@ -106,6 +106,17 @@ internal sealed class SqlServerDialect : ISqlDialect
         return false;
     }
 
+    /// <remarks>
+    /// The COLLATE clause is attached to the parameter, not the column, on purpose: SQL Server's
+    /// collation-coercion rules give an explicit COLLATE the same precedence regardless of which
+    /// operand carries it, so <c>col LIKE @p COLLATE X</c> compares identically to
+    /// <c>col COLLATE X LIKE @p</c>. Attaching it to the parameter instead of the column avoids
+    /// wrapping the column in an expression, which is what disqualifies an index from a seek.
+    /// This lets SQL Server still seek the column's own index (e.g. for StartsWith/EndsWith or
+    /// non-wildcard prefixes) and apply the explicit-collation comparison as a residual predicate,
+    /// instead of forcing a full scan. A leading-wildcard Contains() still can't seek regardless of
+    /// COLLATE placement, since LIKE '%...' is never seekable.
+    /// </remarks>
     public string GenerateCaseSensitiveLike(string columnName, string parameterName, string escapeChar)
     {
         // SQL Server: Use COLLATE with a case-sensitive, accent-sensitive collation
@@ -113,22 +124,24 @@ internal sealed class SqlServerDialect : ISqlDialect
         // - CS = Case Sensitive
         // - AS = Accent Sensitive
         // This matches C# string comparison behavior
-        return $"{columnName} COLLATE Latin1_General_CS_AS LIKE {parameterName} ESCAPE '{escapeChar}'";
+        return $"{columnName} LIKE {parameterName} COLLATE Latin1_General_CS_AS ESCAPE '{escapeChar}'";
     }
 
+    /// <inheritdoc cref="GenerateCaseSensitiveLike"/>
     public string GenerateCaseInsensitiveLike(string columnName, string parameterName, string escapeChar)
     {
         // SQL Server: Use COLLATE with a case-insensitive collation
         // Latin1_General_CI_AS is the default for most SQL Server installations
         // - CI = Case Insensitive
         // - AS = Accent Sensitive
-        return $"{columnName} COLLATE Latin1_General_CI_AS LIKE {parameterName} ESCAPE '{escapeChar}'";
+        return $"{columnName} LIKE {parameterName} COLLATE Latin1_General_CI_AS ESCAPE '{escapeChar}'";
     }
 
+    /// <inheritdoc cref="GenerateCaseSensitiveLike"/>
     public string GenerateCaseInsensitiveEquals(string columnName, string parameterName)
     {
         // SQL Server: Use COLLATE with a case-insensitive collation
-        return $"{columnName} COLLATE Latin1_General_CI_AS = {parameterName}";
+        return $"{columnName} = {parameterName} COLLATE Latin1_General_CI_AS";
     }
 
     public string FormatContainsPattern(string value) => $"%{value}%";

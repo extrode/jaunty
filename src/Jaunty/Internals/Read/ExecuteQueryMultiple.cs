@@ -1,7 +1,9 @@
 using System.Data;
 using System.Data.Common;
 
+using Jaunty.Configuration;
 using Jaunty.Core;
+using Jaunty.Interceptors;
 using Jaunty.Internals.Parameters;
 
 namespace Jaunty;
@@ -29,6 +31,27 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
 
+        // Use InterceptorPipeline if registered, otherwise execute directly. Unlike streaming,
+        // ExecuteReader() here fully executes the command against the database in one round trip
+        // (the multiple result sets are already available); GridReader only lazily walks rows the
+        // caller already has. So wrapping just command-creation-through-ExecuteReader() is safe and
+        // matches the interceptor semantics used by the other Query* cores, without requiring the
+        // grid's result sets to be materialized upfront.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+                sql,
+                parameters,
+                connection,
+                options.CommandType,
+                () => ExecuteQueryMultipleDirect(connection, sql, parameters, options));
+        }
+
+        return ExecuteQueryMultipleDirect(connection, sql, parameters, options);
+    }
+
+    private static GridReader ExecuteQueryMultipleDirect(IDbConnection connection, string sql, object? parameters, CommandOptions options)
+    {
         var wasClosed = connection.State == ConnectionState.Closed;
 
         if (wasClosed)
@@ -52,6 +75,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             IDataReader reader = command.ExecuteReader();
             return new GridReader(reader, connection, wasClosed, command);

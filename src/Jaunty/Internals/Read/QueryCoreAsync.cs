@@ -278,6 +278,9 @@ public static partial class Jaunty
 #endif
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -285,6 +288,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
 #if NET8_0_OR_GREATER
             DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -325,6 +330,9 @@ public static partial class Jaunty
             using var command = dbConnection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -332,6 +340,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             var map = DrDispatcher.Resolve(reader, options, mode);
@@ -511,6 +521,9 @@ public static partial class Jaunty
             using DbCommand command = dbConnection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -518,6 +531,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 
