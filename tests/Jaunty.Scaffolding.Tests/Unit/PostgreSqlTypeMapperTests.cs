@@ -51,6 +51,22 @@ public class PostgreSqlTypeMapperTests
         Assert.True(result.IsValueType);
     }
 
+    [Theory]
+    [InlineData("serial", "int")]
+    [InlineData("serial4", "int")]
+    [InlineData("bigserial", "long")]
+    [InlineData("serial8", "long")]
+    [InlineData("smallserial", "short")]
+    [InlineData("serial2", "short")]
+    public void MapToCSharpType_SerialAliases_MapsToIdentityColumnType(string sqlType, string expected)
+    {
+        // serial/bigserial/smallserial are the most commonly-used identity-column type
+        // aliases in Postgres primary keys.
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal(expected, result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
     // ------------------------------------------------------------------
     // Float types
     // ------------------------------------------------------------------
@@ -165,11 +181,46 @@ public class PostgreSqlTypeMapperTests
     [InlineData("inet")]
     [InlineData("cidr")]
     [InlineData("macaddr")]
+    [InlineData("macaddr8")]
     [InlineData("xml")]
     public void MapToCSharpType_NetworkAndXmlTypes_ReturnsString(string sqlType)
     {
         var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
         Assert.Equal("string", result.TypeName);
+    }
+
+    // ------------------------------------------------------------------
+    // Bit strings
+    // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData("bit")]
+    [InlineData("bit varying")]
+    [InlineData("varbit")]
+    public void MapToCSharpType_BitStringTypes_ReturnsBool(string sqlType)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("bool", result.TypeName);
+        Assert.True(result.IsValueType);
+    }
+
+    // ------------------------------------------------------------------
+    // Geometric types
+    // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData("point")]
+    [InlineData("line")]
+    [InlineData("lseg")]
+    [InlineData("box")]
+    [InlineData("path")]
+    [InlineData("polygon")]
+    [InlineData("circle")]
+    public void MapToCSharpType_GeometricTypes_ReturnsString(string sqlType)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("string", result.TypeName);
+        Assert.False(result.IsValueType);
     }
 
     // ------------------------------------------------------------------
