@@ -1029,9 +1029,12 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
-    public void ThreeTableJoin_Where_String_NoOp()
+    public void ThreeTableJoin_Where_String_AddsRawWhereClause()
     {
-        // Tests the Where(string) path on JoinedQuery3Builder (which is a no-op in current impl)
+        // Tests the Where(string) path on JoinedQuery3Builder. Per IJoinedQuery3<T1,T2,T3>.Where(string)'s
+        // documented contract ("Adds a WHERE clause using a raw SQL condition"), and confirmed by
+        // JoinedQuery3Builder.Where(string) forwarding to the parent's AddWhereCondition, the raw
+        // predicate is appended verbatim to the generated WHERE clause - it is NOT a no-op.
         var sql = _fixture.Connection.From<Product>()
             .InnerJoin<Category>()
             .On(p => p.CategoryId, c => c.CategoryId)
@@ -1041,6 +1044,7 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
             .ToSql();
 
         Assert.Contains("INNER JOIN", sql);
+        Assert.Contains("WHERE 1=1", sql);
     }
 
     // ==========================================

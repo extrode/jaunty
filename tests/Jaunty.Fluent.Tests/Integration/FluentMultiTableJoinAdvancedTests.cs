@@ -595,9 +595,11 @@ public class FluentMultiTableJoinAdvancedTests : IClassFixture<FluentDatabaseFix
             .On("p.supplier_id", "s.supplier_id")
             .ToSql();
 
-        Assert.Contains("p", sql);
-        Assert.Contains("c", sql);
-        Assert.Contains("s", sql);
+        // BuildFromAndJoinClause emits "<table> <alias>" verbatim after the table name in
+        // FROM/JOIN, so these substrings only appear if the alias was actually applied.
+        Assert.Contains("products p", sql);
+        Assert.Contains("categories c", sql);
+        Assert.Contains("suppliers s", sql);
     }
 
     [Fact]
