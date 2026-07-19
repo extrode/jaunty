@@ -79,8 +79,13 @@ public class JauntyDiagnosticListenerTests : IDisposable
     [Fact]
     public void WriteCommandExecuting_WhenDisabled_DoesNotEmit()
     {
-        // Arrange
+        // Arrange - subscribe a local observer to the local listener under test. DiagnosticSource
+        // subscriptions are per-instance, so asserting against the class-level _observer (which is
+        // only ever subscribed to the class-level _listener, never this local one) would pass
+        // unconditionally regardless of whether disposal actually suppressed emission.
         var listener = new JauntyDiagnosticListener();
+        var localObserver = new TestDiagnosticObserver();
+        listener.Subscribe(localObserver);
         var context = new CommandContext("SELECT 1", null, _connection, CommandType.Text);
 
         // Act - dispose to disable
@@ -88,7 +93,7 @@ public class JauntyDiagnosticListenerTests : IDisposable
         listener.WriteCommandExecuting(context);
 
         // Assert
-        Assert.Empty(_observer.Events);
+        Assert.Empty(localObserver.Events);
     }
 
     #endregion
