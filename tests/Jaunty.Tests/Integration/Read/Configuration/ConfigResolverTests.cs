@@ -26,9 +26,19 @@ public class ConfigResolverTests : IClassFixture<DialectFixture>, IDisposable
         }
         finally
         {
+            // Reset() also nulls JauntyConfig.InterceptorPipeline, a process-wide static shared
+            // with the "Logging Extensions" collection (running concurrently as a different
+            // xunit collection) - capture and restore it so this Dispose(), which runs after
+            // every test in this class, doesn't wipe out interceptors another collection has
+            // registered mid-test.
+            var interceptorsBeforeReset = JauntyConfig.InterceptorPipeline?.GetInterceptors().ToArray();
+
             JauntyConfig.Reset();
             JauntyReflectionExtensions.UseReflectionMapping();
             SpecialTypeMappers.Register();
+
+            if (interceptorsBeforeReset is { Length: > 0 })
+                JauntyConfig.AddInterceptors(interceptorsBeforeReset);
         }
     }
 
