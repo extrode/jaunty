@@ -16,7 +16,12 @@ namespace Jaunty.Internals.Write;
 internal static class MultiRowInsertCache
 {
     private static readonly ConcurrentDictionary<(Type EntityType, Type ConnectionType, int BatchSize), string> _cache = new();
-    private static readonly ConcurrentDictionary<Type, Delegate[]> _getterCache = new();
+
+    // Keyed by (entity type, column layout) - not just entity type - so a second bulk insert of
+    // the same T with a different column subset/order gets its own correctly-matching getters
+    // instead of reusing a stale layout's getters. Mirrors EntityDataReaderCache<TEntity>'s
+    // layout-keyed cache in Internals/BulkCopy/EntityDataReader.cs.
+    private static readonly ConcurrentDictionary<(Type EntityType, string LayoutKey), Delegate[]> _getterCache = new();
 
     /// <summary>
     /// Gets or creates cached compiled property getters for multi-row parameter binding.
@@ -24,10 +29,12 @@ internal static class MultiRowInsertCache
     /// </summary>
     public static Func<T, object?>[] GetOrBuildGetters<T>(EntityMetadata metadata)
     {
-        if (_getterCache.TryGetValue(typeof(T), out Delegate[]? cached))
+        IReadOnlyList<ColumnMetadata> columns = ColumnMetadataHelper.GetInsertableColumns(metadata);
+        (Type, string) key = (typeof(T), BuildLayoutKey(columns));
+
+        if (_getterCache.TryGetValue(key, out Delegate[]? cached))
             return (Func<T, object?>[])cached;
 
-        IReadOnlyList<ColumnMetadata> columns = ColumnMetadataHelper.GetInsertableColumns(metadata);
         var getters = new Func<T, object?>[columns.Count];
         for (int c = 0; c < columns.Count; c++)
         {
@@ -44,8 +51,17 @@ internal static class MultiRowInsertCache
             getters[c] = Expression.Lambda<Func<T, object?>>(box, param).Compile();
         }
 
-        _getterCache.TryAdd(typeof(T), getters);
+        _getterCache.TryAdd(key, getters);
         return getters;
+    }
+
+    private static string BuildLayoutKey(IReadOnlyList<ColumnMetadata> columns)
+    {
+        int columnCount = columns.Count;
+        var parts = new string[columnCount + 1];
+        parts[0] = columnCount.ToString();
+        for (int i = 0; i < columnCount; i++) parts[i + 1] = columns[i].ColumnName ?? string.Empty;
+        return string.Join("", parts);
     }
 
     /// <summary>
