@@ -95,10 +95,18 @@ public class EnumStorageTests : IDisposable
         // Arrange
         JauntyConfig.DefaultEnumStorage = EnumStorage.String;
 
+        // Reset() also nulls JauntyConfig.InterceptorPipeline, a process-wide static shared with
+        // the "Logging Extensions" collection (running concurrently as a different xunit
+        // collection) - capture and restore it so this test doesn't wipe out interceptors another
+        // collection has registered mid-test.
+        var interceptorsBeforeReset = JauntyConfig.InterceptorPipeline?.GetInterceptors().ToArray();
+
         // Act — Reset() is the API under test here; restore reflection mapping afterwards
         // so other concurrently-running test collections are not affected.
         JauntyConfig.Reset();
         JauntyReflectionExtensions.UseReflectionMapping();
+        if (interceptorsBeforeReset is { Length: > 0 })
+            JauntyConfig.AddInterceptors(interceptorsBeforeReset);
 
         // Assert
         Assert.Equal(EnumStorage.Numeric, JauntyConfig.DefaultEnumStorage);
