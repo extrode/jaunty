@@ -24,6 +24,60 @@ public class TsvFileSourceTests
         Assert.Null(source.NullString);
         Assert.Equal(0, source.SkipRows);
     }
+
+    [Fact]
+    public void GenerateReadFunction_NoOptions_ProducesTabDelimitedReadCsv()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object));
+        var fn = source.GenerateReadFunction("'f.tsv'");
+
+        Assert.StartsWith("read_csv(", fn);
+        Assert.Contains("delim = '\t'", fn);
+        Assert.Contains("auto_detect = true", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithHeader_IncludesHeaderTrue()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object)) { HasHeader = true };
+        var fn = source.GenerateReadFunction("'f.tsv'");
+
+        Assert.Contains("header = true", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithNullString_IncludesNullstrParam()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object)) { NullString = "NA" };
+        var fn = source.GenerateReadFunction("'f.tsv'");
+
+        Assert.Contains("nullstr = 'NA'", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithNullStringContainingSingleQuote_Escapes()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object)) { NullString = "N'A" };
+        var fn = source.GenerateReadFunction("'f.tsv'");
+
+        Assert.Contains("nullstr = 'N''A'", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithSkipRows_IncludesSkipParam()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object)) { SkipRows = 4 };
+        var fn = source.GenerateReadFunction("'f.tsv'");
+
+        Assert.Contains("skip = 4", fn);
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_ReturnsTabDelimiterAndHeader()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object));
+        Assert.Equal("DELIMITER '\t', HEADER true", source.GenerateCopyToOptions());
+    }
 }
 
 public class ParquetFileSourceTests
@@ -78,5 +132,51 @@ public class JsonFileSourceTests
 
         Assert.Equal(JsonFileFormat.NewlineDelimited, source.JsonFormat);
         Assert.Equal(5, source.MaxDepth);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_NoOptions_ProducesBasicReadJsonAuto()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object));
+        var fn = source.GenerateReadFunction("'f.json'");
+
+        Assert.StartsWith("read_json_auto(", fn);
+        Assert.Contains("'f.json'", fn);
+        Assert.DoesNotContain("format =", fn);
+        Assert.DoesNotContain("maximum_depth", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithArrayFormat_IncludesFormatParam()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object)) { JsonFormat = JsonFileFormat.Array };
+        var fn = source.GenerateReadFunction("'f.json'");
+
+        Assert.Contains("format = 'array'", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithNewlineDelimitedFormat_IncludesFormatParam()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object)) { JsonFormat = JsonFileFormat.NewlineDelimited };
+        var fn = source.GenerateReadFunction("'f.json'");
+
+        Assert.Contains("format = 'newline_delimited'", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithMaxDepth_IncludesMaximumDepthParam()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object)) { MaxDepth = 10 };
+        var fn = source.GenerateReadFunction("'f.json'");
+
+        Assert.Contains("maximum_depth = 10", fn);
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_ReturnsNull()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object));
+        Assert.Null(source.GenerateCopyToOptions());
     }
 }
