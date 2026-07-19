@@ -40,11 +40,6 @@ internal sealed class EntityMetadata
     public IReadOnlyList<ColumnMetadata> NonIdentityColumns { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the entity has an identity primary key.
-    /// </summary>
-    public bool HasIdentityKey => PrimaryKeys.Any(c => c.IsIdentity);
-
-    /// <summary>
     /// Gets the columns used for INSERT operations (excludes identity and computed columns).
     /// </summary>
     public IReadOnlyList<ColumnMetadata> InsertColumns { get; }
