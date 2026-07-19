@@ -413,6 +413,103 @@ public class MultiEntityMapperTests : IDisposable
         public int? C { get; set; }
     }
 
+    public class SchemaKeyPairT1
+    {
+        public int? A { get; set; }
+        public int? AB { get; set; }
+    }
+
+    public class SchemaKeyPairT2
+    {
+        public int? BC { get; set; }
+        public int? C { get; set; }
+    }
+
+    [Fact]
+    public void Build_Arity2_DifferentColumnSets_SameFieldCount_DoNotCollide()
+    {
+        // Round-5 audit regression: MultiEntityMapper<T1, T2>.Build used to cache by
+        // (typeof(T1), typeof(T2)) alone. Since this class is already generic on T1/T2, that
+        // key never varies for a given closed generic instantiation's static _cache field, so
+        // it behaved as a single-entry cache regardless of the reader's actual column layout.
+        // Fixed to key by reader schema (field count + column names), mirroring
+        // MultiEntityMapperN.cs's arity-3..7 BuildSchemaKey. This test reproduces the exact
+        // delimiter-less-concatenation collision scenario from the arity-3 regression test
+        // below: field count 2 with columns ["A","BC"] and ["AB","C"] both produce "2ABC".
+        //
+        // As in the arity-3 test, a resolver stub that rebuilds appliers fresh on every call
+        // (no caching of its own) isolates the outer MultiEntityMapper<T1,T2> cache under test
+        // from the inner Jaunty.Extensions.Reflection resolver's own cache.
+        Func<Type, Type, object>? originalResolver = JauntyConfig.ReflectionMultiMapperResolver;
+
+        try
+        {
+            JauntyConfig.ReflectionMultiMapperResolver = (t1Type, t2Type) =>
+            {
+                Action<object, IDataRecord>? applyT1 = null;
+                Action<object, IDataRecord>? applyT2 = null;
+
+                Action<SchemaKeyPairT1, SchemaKeyPairT2, IDataRecord> combined = (t1, t2, record) =>
+                {
+                    // Mirrors CreateMapper's real call pattern: ApplyT1 invokes this with a
+                    // non-null t1 and default!/null t2 (and vice versa for ApplyT2) - only
+                    // apply the side that's actually present on this call.
+                    if (t1 is not null)
+                    {
+                        applyT1 ??= BuildLiveApplier(t1Type, (IDataReader)record);
+                        applyT1(t1, record);
+                    }
+                    if (t2 is not null)
+                    {
+                        applyT2 ??= BuildLiveApplier(t2Type, (IDataReader)record);
+                        applyT2(t2, record);
+                    }
+                };
+                return combined;
+            };
+
+            using var cmdA = _connection.CreateCommand();
+            cmdA.CommandText = "SELECT 1 AS A, 2 AS BC";
+            using var readerA = cmdA.ExecuteReader();
+            readerA.Read();
+
+            var mapperA = global::Jaunty.Internals.Read.MultiEntityMapper<SchemaKeyPairT1, SchemaKeyPairT2>.Build(readerA);
+            var t1A = new SchemaKeyPairT1();
+            var t2A = new SchemaKeyPairT2();
+            mapperA.ApplyT1(t1A, readerA);
+            mapperA.ApplyT2(t2A, readerA);
+
+            Assert.Equal(1, t1A.A);
+            Assert.Null(t1A.AB);
+            Assert.Equal(2, t2A.BC);
+            Assert.Null(t2A.C);
+
+            using var cmdB = _connection.CreateCommand();
+            cmdB.CommandText = "SELECT 100 AS AB, 200 AS C";
+            using var readerB = cmdB.ExecuteReader();
+            readerB.Read();
+
+            var mapperB = global::Jaunty.Internals.Read.MultiEntityMapper<SchemaKeyPairT1, SchemaKeyPairT2>.Build(readerB);
+            var t1B = new SchemaKeyPairT1();
+            var t2B = new SchemaKeyPairT2();
+            mapperB.ApplyT1(t1B, readerB);
+            mapperB.ApplyT2(t2B, readerB);
+
+            // With the collision bug, mapperB would be the SAME cached instance as mapperA
+            // (schema key "2ABC" for both), so ApplyT1 would blindly bind ordinal 0 to "A"
+            // (reading readerB's "AB" value = 100 as if it were "A") instead of correctly
+            // recognizing there is no "A" column in readerB.
+            Assert.Null(t1B.A);
+            Assert.Equal(100, t1B.AB);
+            Assert.Null(t2B.BC);
+            Assert.Equal(200, t2B.C);
+        }
+        finally
+        {
+            JauntyConfig.ReflectionMultiMapperResolver = originalResolver;
+        }
+    }
+
     [Fact]
     public void Build_Arity3_DifferentColumnSets_SameFieldCount_DoNotCollide()
     {
