@@ -711,7 +711,7 @@ internal static class ParameterBinder
         }
     }
 
-    private static object? ApplyTypeHandlerIfNeeded(object? value, PropertyInfo? propertyInfo)
+    internal static object? ApplyTypeHandlerIfNeeded(object? value, PropertyInfo? propertyInfo)
     {
         if (value is null)
             return value;
