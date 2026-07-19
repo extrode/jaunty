@@ -199,14 +199,21 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public void Intersect_TwoQueries_ReturnsOnlyCommonRows()
     {
-        // Get products that are both in category 1 AND have low stock (ReorderLevel > 0)
+        // Get products that are both in category 1 AND have low stock (< 50 units).
+        // NOTE: reorder_level is never populated in the seed data (always NULL), so a
+        // "ReorderLevel > 0" filter here would silently match zero rows; UnitsInStock is
+        // used instead so the intersection actually has to filter real data.
         var results = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
-            .Intersect(_fixture.Connection.From<Product>().Where(p => p.ReorderLevel > 0))
+            .Intersect(_fixture.Connection.From<Product>().Where(p => p.UnitsInStock < 50))
             .Select();
 
-        // All results should be in category 1 AND have ReorderLevel > 0
-        Assert.All(results, p => Assert.True(p.CategoryId == 1 && p.ReorderLevel > 0));
+        Assert.NotEmpty(results);
+        // All results should be in category 1 AND have UnitsInStock < 50
+        Assert.All(results, p => Assert.True(p.CategoryId == 1 && p.UnitsInStock < 50));
+        // "Cheap Product" (category 1, stock 100) must be excluded - proves the intersect
+        // actually filters rather than just returning the whole category-1 set.
+        Assert.DoesNotContain(results, p => p.ProductId == 8);
     }
 
     [Fact]
@@ -223,12 +230,16 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public void Intersect_WithOrderBy_OrdersEntireResult()
     {
+        // Same non-vacuous filter as Intersect_TwoQueries_ReturnsOnlyCommonRows above -
+        // reorder_level is always NULL in the seed data, so "ReorderLevel > 0" would
+        // silently match zero rows and this test would pass over an empty result set.
         var results = _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
-            .Intersect(_fixture.Connection.From<Product>().Where(p => p.ReorderLevel > 0))
+            .Intersect(_fixture.Connection.From<Product>().Where(p => p.UnitsInStock < 50))
             .OrderByDescending(p => p.ProductName)
             .Select();
 
+        Assert.NotEmpty(results);
         for (int i = 1; i < results.Count; i++)
         {
             Assert.True(string.Compare(results[i - 1].ProductName, results[i].ProductName) >= 0);
