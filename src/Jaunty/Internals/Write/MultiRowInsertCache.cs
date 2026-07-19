@@ -61,7 +61,10 @@ internal static class MultiRowInsertCache
         var parts = new string[columnCount + 1];
         parts[0] = columnCount.ToString();
         for (int i = 0; i < columnCount; i++) parts[i + 1] = columns[i].ColumnName ?? string.Empty;
-        return string.Join("", parts);
+        // Unit Separator (0x1F) prevents adjacent column names from colliding when concatenated
+        // (e.g. ["ab","c"] and ["a","bc"] would otherwise both key to "2abc") - mirrors
+        // EntityDataReaderCache<TEntity>.BuildLayoutKey in Internals/BulkCopy/EntityDataReader.cs.
+        return string.Join("\x1F", parts);
     }
 
     /// <summary>
