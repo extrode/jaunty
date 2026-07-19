@@ -22,39 +22,28 @@ internal sealed class MultiEntityMapper<T1, T2, T3>
     private MultiEntityMapper(PropertySetter<T1>[] t1, PropertySetter<T2>[] t2, PropertySetter<T3>[] t3)
     { _t1 = t1; _t2 = t2; _t3 = t3; }
 
-    public static MultiEntityMapper<T1, T2, T3> Build(
-        IDataReader reader,
-        Func<IDataReader, T1>? m1 = null,
-        Func<IDataReader, T2>? m2 = null,
-        Func<IDataReader, T3>? m3 = null)
+    public static MultiEntityMapper<T1, T2, T3> Build(IDataReader reader)
     {
-        string key = BuildSchemaKey(reader, m1, m2, m3);
-        return Cache.GetOrAdd(key, _ => Create(reader, m1, m2, m3));
+        string key = BuildSchemaKey(reader);
+        return Cache.GetOrAdd(key, _ => Create(reader));
     }
 
-    private static string BuildSchemaKey(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3)
+    private static string BuildSchemaKey(IDataReader reader)
     {
-        var parts = new string[reader.FieldCount + 4];
+        var parts = new string[reader.FieldCount + 1];
         parts[0] = reader.FieldCount.ToString();
-        parts[1] = m1 is null ? "0" : "1";
-        parts[2] = m2 is null ? "0" : "1";
-        parts[3] = m3 is null ? "0" : "1";
-        for (int i = 0; i < reader.FieldCount; i++) parts[i + 4] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("", parts);
     }
 
-    private static MultiEntityMapper<T1, T2, T3> Create(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3)
+    private static MultiEntityMapper<T1, T2, T3> Create(IDataReader reader)
     {
         var c = new HashSet<int>();
-        PropertySetter<T1>[] t1;
-        if (m1 is null) { (t1, int[] o1) = MultiEntityMapperCore.GetSettersExcluding<T1>(reader, c); foreach (int o in o1) c.Add(o); }
-        else t1 = Array.Empty<PropertySetter<T1>>();
-        PropertySetter<T2>[] t2;
-        if (m2 is null) { (t2, int[] o2) = MultiEntityMapperCore.GetSettersExcluding<T2>(reader, c); foreach (int o in o2) c.Add(o); }
-        else t2 = Array.Empty<PropertySetter<T2>>();
-        PropertySetter<T3>[] t3;
-        if (m3 is null) { (t3, _) = MultiEntityMapperCore.GetSettersExcluding<T3>(reader, c); }
-        else t3 = Array.Empty<PropertySetter<T3>>();
+        (PropertySetter<T1>[] t1, int[] o1) = MultiEntityMapperCore.GetSettersExcluding<T1>(reader, c);
+        foreach (int o in o1) c.Add(o);
+        (PropertySetter<T2>[] t2, int[] o2) = MultiEntityMapperCore.GetSettersExcluding<T2>(reader, c);
+        foreach (int o in o2) c.Add(o);
+        (PropertySetter<T3>[] t3, _) = MultiEntityMapperCore.GetSettersExcluding<T3>(reader, c);
         return new MultiEntityMapper<T1, T2, T3>(t1, t2, t3);
     }
 
@@ -81,44 +70,30 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4>
     private MultiEntityMapper(PropertySetter<T1>[] t1, PropertySetter<T2>[] t2, PropertySetter<T3>[] t3, PropertySetter<T4>[] t4)
     { _t1 = t1; _t2 = t2; _t3 = t3; _t4 = t4; }
 
-    public static MultiEntityMapper<T1, T2, T3, T4> Build(
-        IDataReader reader,
-        Func<IDataReader, T1>? m1 = null,
-        Func<IDataReader, T2>? m2 = null,
-        Func<IDataReader, T3>? m3 = null,
-        Func<IDataReader, T4>? m4 = null)
+    public static MultiEntityMapper<T1, T2, T3, T4> Build(IDataReader reader)
     {
-        string key = BuildSchemaKey(reader, m1, m2, m3, m4);
-        return Cache.GetOrAdd(key, _ => Create(reader, m1, m2, m3, m4));
+        string key = BuildSchemaKey(reader);
+        return Cache.GetOrAdd(key, _ => Create(reader));
     }
 
-    private static string BuildSchemaKey(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4)
+    private static string BuildSchemaKey(IDataReader reader)
     {
-        var parts = new string[reader.FieldCount + 5];
+        var parts = new string[reader.FieldCount + 1];
         parts[0] = reader.FieldCount.ToString();
-        parts[1] = m1 is null ? "0" : "1";
-        parts[2] = m2 is null ? "0" : "1";
-        parts[3] = m3 is null ? "0" : "1";
-        parts[4] = m4 is null ? "0" : "1";
-        for (int i = 0; i < reader.FieldCount; i++) parts[i + 5] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("", parts);
     }
 
-    private static MultiEntityMapper<T1, T2, T3, T4> Create(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4)
+    private static MultiEntityMapper<T1, T2, T3, T4> Create(IDataReader reader)
     {
         var c = new HashSet<int>();
-        PropertySetter<T1>[] t1;
-        if (m1 is null) { (t1, int[] o1) = MultiEntityMapperCore.GetSettersExcluding<T1>(reader, c); foreach (int o in o1) c.Add(o); }
-        else t1 = Array.Empty<PropertySetter<T1>>();
-        PropertySetter<T2>[] t2;
-        if (m2 is null) { (t2, int[] o2) = MultiEntityMapperCore.GetSettersExcluding<T2>(reader, c); foreach (int o in o2) c.Add(o); }
-        else t2 = Array.Empty<PropertySetter<T2>>();
-        PropertySetter<T3>[] t3;
-        if (m3 is null) { (t3, int[] o3) = MultiEntityMapperCore.GetSettersExcluding<T3>(reader, c); foreach (int o in o3) c.Add(o); }
-        else t3 = Array.Empty<PropertySetter<T3>>();
-        PropertySetter<T4>[] t4;
-        if (m4 is null) { (t4, _) = MultiEntityMapperCore.GetSettersExcluding<T4>(reader, c); }
-        else t4 = Array.Empty<PropertySetter<T4>>();
+        (PropertySetter<T1>[] t1, int[] o1) = MultiEntityMapperCore.GetSettersExcluding<T1>(reader, c);
+        foreach (int o in o1) c.Add(o);
+        (PropertySetter<T2>[] t2, int[] o2) = MultiEntityMapperCore.GetSettersExcluding<T2>(reader, c);
+        foreach (int o in o2) c.Add(o);
+        (PropertySetter<T3>[] t3, int[] o3) = MultiEntityMapperCore.GetSettersExcluding<T3>(reader, c);
+        foreach (int o in o3) c.Add(o);
+        (PropertySetter<T4>[] t4, _) = MultiEntityMapperCore.GetSettersExcluding<T4>(reader, c);
         return new MultiEntityMapper<T1, T2, T3, T4>(t1, t2, t3, t4);
     }
 
@@ -147,49 +122,32 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5>
     private MultiEntityMapper(PropertySetter<T1>[] t1, PropertySetter<T2>[] t2, PropertySetter<T3>[] t3, PropertySetter<T4>[] t4, PropertySetter<T5>[] t5)
     { _t1 = t1; _t2 = t2; _t3 = t3; _t4 = t4; _t5 = t5; }
 
-    public static MultiEntityMapper<T1, T2, T3, T4, T5> Build(
-        IDataReader reader,
-        Func<IDataReader, T1>? m1 = null,
-        Func<IDataReader, T2>? m2 = null,
-        Func<IDataReader, T3>? m3 = null,
-        Func<IDataReader, T4>? m4 = null,
-        Func<IDataReader, T5>? m5 = null)
+    public static MultiEntityMapper<T1, T2, T3, T4, T5> Build(IDataReader reader)
     {
-        string key = BuildSchemaKey(reader, m1, m2, m3, m4, m5);
-        return Cache.GetOrAdd(key, _ => Create(reader, m1, m2, m3, m4, m5));
+        string key = BuildSchemaKey(reader);
+        return Cache.GetOrAdd(key, _ => Create(reader));
     }
 
-    private static string BuildSchemaKey(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4, Func<IDataReader, T5>? m5)
+    private static string BuildSchemaKey(IDataReader reader)
     {
-        var parts = new string[reader.FieldCount + 6];
+        var parts = new string[reader.FieldCount + 1];
         parts[0] = reader.FieldCount.ToString();
-        parts[1] = m1 is null ? "0" : "1";
-        parts[2] = m2 is null ? "0" : "1";
-        parts[3] = m3 is null ? "0" : "1";
-        parts[4] = m4 is null ? "0" : "1";
-        parts[5] = m5 is null ? "0" : "1";
-        for (int i = 0; i < reader.FieldCount; i++) parts[i + 6] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("", parts);
     }
 
-    private static MultiEntityMapper<T1, T2, T3, T4, T5> Create(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4, Func<IDataReader, T5>? m5)
+    private static MultiEntityMapper<T1, T2, T3, T4, T5> Create(IDataReader reader)
     {
         var c = new HashSet<int>();
-        PropertySetter<T1>[] t1;
-        if (m1 is null) { (t1, int[] o1) = MultiEntityMapperCore.GetSettersExcluding<T1>(reader, c); foreach (int o in o1) c.Add(o); }
-        else t1 = Array.Empty<PropertySetter<T1>>();
-        PropertySetter<T2>[] t2;
-        if (m2 is null) { (t2, int[] o2) = MultiEntityMapperCore.GetSettersExcluding<T2>(reader, c); foreach (int o in o2) c.Add(o); }
-        else t2 = Array.Empty<PropertySetter<T2>>();
-        PropertySetter<T3>[] t3;
-        if (m3 is null) { (t3, int[] o3) = MultiEntityMapperCore.GetSettersExcluding<T3>(reader, c); foreach (int o in o3) c.Add(o); }
-        else t3 = Array.Empty<PropertySetter<T3>>();
-        PropertySetter<T4>[] t4;
-        if (m4 is null) { (t4, int[] o4) = MultiEntityMapperCore.GetSettersExcluding<T4>(reader, c); foreach (int o in o4) c.Add(o); }
-        else t4 = Array.Empty<PropertySetter<T4>>();
-        PropertySetter<T5>[] t5;
-        if (m5 is null) { (t5, _) = MultiEntityMapperCore.GetSettersExcluding<T5>(reader, c); }
-        else t5 = Array.Empty<PropertySetter<T5>>();
+        (PropertySetter<T1>[] t1, int[] o1) = MultiEntityMapperCore.GetSettersExcluding<T1>(reader, c);
+        foreach (int o in o1) c.Add(o);
+        (PropertySetter<T2>[] t2, int[] o2) = MultiEntityMapperCore.GetSettersExcluding<T2>(reader, c);
+        foreach (int o in o2) c.Add(o);
+        (PropertySetter<T3>[] t3, int[] o3) = MultiEntityMapperCore.GetSettersExcluding<T3>(reader, c);
+        foreach (int o in o3) c.Add(o);
+        (PropertySetter<T4>[] t4, int[] o4) = MultiEntityMapperCore.GetSettersExcluding<T4>(reader, c);
+        foreach (int o in o4) c.Add(o);
+        (PropertySetter<T5>[] t5, _) = MultiEntityMapperCore.GetSettersExcluding<T5>(reader, c);
         return new MultiEntityMapper<T1, T2, T3, T4, T5>(t1, t2, t3, t4, t5);
     }
 
@@ -220,54 +178,34 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6>
     private MultiEntityMapper(PropertySetter<T1>[] t1, PropertySetter<T2>[] t2, PropertySetter<T3>[] t3, PropertySetter<T4>[] t4, PropertySetter<T5>[] t5, PropertySetter<T6>[] t6)
     { _t1 = t1; _t2 = t2; _t3 = t3; _t4 = t4; _t5 = t5; _t6 = t6; }
 
-    public static MultiEntityMapper<T1, T2, T3, T4, T5, T6> Build(
-        IDataReader reader,
-        Func<IDataReader, T1>? m1 = null,
-        Func<IDataReader, T2>? m2 = null,
-        Func<IDataReader, T3>? m3 = null,
-        Func<IDataReader, T4>? m4 = null,
-        Func<IDataReader, T5>? m5 = null,
-        Func<IDataReader, T6>? m6 = null)
+    public static MultiEntityMapper<T1, T2, T3, T4, T5, T6> Build(IDataReader reader)
     {
-        string key = BuildSchemaKey(reader, m1, m2, m3, m4, m5, m6);
-        return Cache.GetOrAdd(key, _ => Create(reader, m1, m2, m3, m4, m5, m6));
+        string key = BuildSchemaKey(reader);
+        return Cache.GetOrAdd(key, _ => Create(reader));
     }
 
-    private static string BuildSchemaKey(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4, Func<IDataReader, T5>? m5, Func<IDataReader, T6>? m6)
+    private static string BuildSchemaKey(IDataReader reader)
     {
-        var parts = new string[reader.FieldCount + 7];
+        var parts = new string[reader.FieldCount + 1];
         parts[0] = reader.FieldCount.ToString();
-        parts[1] = m1 is null ? "0" : "1";
-        parts[2] = m2 is null ? "0" : "1";
-        parts[3] = m3 is null ? "0" : "1";
-        parts[4] = m4 is null ? "0" : "1";
-        parts[5] = m5 is null ? "0" : "1";
-        parts[6] = m6 is null ? "0" : "1";
-        for (int i = 0; i < reader.FieldCount; i++) parts[i + 7] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("", parts);
     }
 
-    private static MultiEntityMapper<T1, T2, T3, T4, T5, T6> Create(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4, Func<IDataReader, T5>? m5, Func<IDataReader, T6>? m6)
+    private static MultiEntityMapper<T1, T2, T3, T4, T5, T6> Create(IDataReader reader)
     {
         var c = new HashSet<int>();
-        PropertySetter<T1>[] t1;
-        if (m1 is null) { (t1, int[] o1) = MultiEntityMapperCore.GetSettersExcluding<T1>(reader, c); foreach (int o in o1) c.Add(o); }
-        else t1 = Array.Empty<PropertySetter<T1>>();
-        PropertySetter<T2>[] t2;
-        if (m2 is null) { (t2, int[] o2) = MultiEntityMapperCore.GetSettersExcluding<T2>(reader, c); foreach (int o in o2) c.Add(o); }
-        else t2 = Array.Empty<PropertySetter<T2>>();
-        PropertySetter<T3>[] t3;
-        if (m3 is null) { (t3, int[] o3) = MultiEntityMapperCore.GetSettersExcluding<T3>(reader, c); foreach (int o in o3) c.Add(o); }
-        else t3 = Array.Empty<PropertySetter<T3>>();
-        PropertySetter<T4>[] t4;
-        if (m4 is null) { (t4, int[] o4) = MultiEntityMapperCore.GetSettersExcluding<T4>(reader, c); foreach (int o in o4) c.Add(o); }
-        else t4 = Array.Empty<PropertySetter<T4>>();
-        PropertySetter<T5>[] t5;
-        if (m5 is null) { (t5, int[] o5) = MultiEntityMapperCore.GetSettersExcluding<T5>(reader, c); foreach (int o in o5) c.Add(o); }
-        else t5 = Array.Empty<PropertySetter<T5>>();
-        PropertySetter<T6>[] t6;
-        if (m6 is null) { (t6, _) = MultiEntityMapperCore.GetSettersExcluding<T6>(reader, c); }
-        else t6 = Array.Empty<PropertySetter<T6>>();
+        (PropertySetter<T1>[] t1, int[] o1) = MultiEntityMapperCore.GetSettersExcluding<T1>(reader, c);
+        foreach (int o in o1) c.Add(o);
+        (PropertySetter<T2>[] t2, int[] o2) = MultiEntityMapperCore.GetSettersExcluding<T2>(reader, c);
+        foreach (int o in o2) c.Add(o);
+        (PropertySetter<T3>[] t3, int[] o3) = MultiEntityMapperCore.GetSettersExcluding<T3>(reader, c);
+        foreach (int o in o3) c.Add(o);
+        (PropertySetter<T4>[] t4, int[] o4) = MultiEntityMapperCore.GetSettersExcluding<T4>(reader, c);
+        foreach (int o in o4) c.Add(o);
+        (PropertySetter<T5>[] t5, int[] o5) = MultiEntityMapperCore.GetSettersExcluding<T5>(reader, c);
+        foreach (int o in o5) c.Add(o);
+        (PropertySetter<T6>[] t6, _) = MultiEntityMapperCore.GetSettersExcluding<T6>(reader, c);
         return new MultiEntityMapper<T1, T2, T3, T4, T5, T6>(t1, t2, t3, t4, t5, t6);
     }
 
@@ -300,59 +238,36 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>
     private MultiEntityMapper(PropertySetter<T1>[] t1, PropertySetter<T2>[] t2, PropertySetter<T3>[] t3, PropertySetter<T4>[] t4, PropertySetter<T5>[] t5, PropertySetter<T6>[] t6, PropertySetter<T7>[] t7)
     { _t1 = t1; _t2 = t2; _t3 = t3; _t4 = t4; _t5 = t5; _t6 = t6; _t7 = t7; }
 
-    public static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> Build(
-        IDataReader reader,
-        Func<IDataReader, T1>? m1 = null,
-        Func<IDataReader, T2>? m2 = null,
-        Func<IDataReader, T3>? m3 = null,
-        Func<IDataReader, T4>? m4 = null,
-        Func<IDataReader, T5>? m5 = null,
-        Func<IDataReader, T6>? m6 = null,
-        Func<IDataReader, T7>? m7 = null)
+    public static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> Build(IDataReader reader)
     {
-        string key = BuildSchemaKey(reader, m1, m2, m3, m4, m5, m6, m7);
-        return Cache.GetOrAdd(key, _ => Create(reader, m1, m2, m3, m4, m5, m6, m7));
+        string key = BuildSchemaKey(reader);
+        return Cache.GetOrAdd(key, _ => Create(reader));
     }
 
-    private static string BuildSchemaKey(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4, Func<IDataReader, T5>? m5, Func<IDataReader, T6>? m6, Func<IDataReader, T7>? m7)
+    private static string BuildSchemaKey(IDataReader reader)
     {
-        var parts = new string[reader.FieldCount + 8];
+        var parts = new string[reader.FieldCount + 1];
         parts[0] = reader.FieldCount.ToString();
-        parts[1] = m1 is null ? "0" : "1";
-        parts[2] = m2 is null ? "0" : "1";
-        parts[3] = m3 is null ? "0" : "1";
-        parts[4] = m4 is null ? "0" : "1";
-        parts[5] = m5 is null ? "0" : "1";
-        parts[6] = m6 is null ? "0" : "1";
-        parts[7] = m7 is null ? "0" : "1";
-        for (int i = 0; i < reader.FieldCount; i++) parts[i + 8] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
+        return string.Join("", parts);
     }
 
-    private static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> Create(IDataReader reader, Func<IDataReader, T1>? m1, Func<IDataReader, T2>? m2, Func<IDataReader, T3>? m3, Func<IDataReader, T4>? m4, Func<IDataReader, T5>? m5, Func<IDataReader, T6>? m6, Func<IDataReader, T7>? m7)
+    private static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> Create(IDataReader reader)
     {
         var c = new HashSet<int>();
-        PropertySetter<T1>[] t1;
-        if (m1 is null) { (t1, int[] o1) = MultiEntityMapperCore.GetSettersExcluding<T1>(reader, c); foreach (int o in o1) c.Add(o); }
-        else t1 = Array.Empty<PropertySetter<T1>>();
-        PropertySetter<T2>[] t2;
-        if (m2 is null) { (t2, int[] o2) = MultiEntityMapperCore.GetSettersExcluding<T2>(reader, c); foreach (int o in o2) c.Add(o); }
-        else t2 = Array.Empty<PropertySetter<T2>>();
-        PropertySetter<T3>[] t3;
-        if (m3 is null) { (t3, int[] o3) = MultiEntityMapperCore.GetSettersExcluding<T3>(reader, c); foreach (int o in o3) c.Add(o); }
-        else t3 = Array.Empty<PropertySetter<T3>>();
-        PropertySetter<T4>[] t4;
-        if (m4 is null) { (t4, int[] o4) = MultiEntityMapperCore.GetSettersExcluding<T4>(reader, c); foreach (int o in o4) c.Add(o); }
-        else t4 = Array.Empty<PropertySetter<T4>>();
-        PropertySetter<T5>[] t5;
-        if (m5 is null) { (t5, int[] o5) = MultiEntityMapperCore.GetSettersExcluding<T5>(reader, c); foreach (int o in o5) c.Add(o); }
-        else t5 = Array.Empty<PropertySetter<T5>>();
-        PropertySetter<T6>[] t6;
-        if (m6 is null) { (t6, int[] o6) = MultiEntityMapperCore.GetSettersExcluding<T6>(reader, c); foreach (int o in o6) c.Add(o); }
-        else t6 = Array.Empty<PropertySetter<T6>>();
-        PropertySetter<T7>[] t7;
-        if (m7 is null) { (t7, _) = MultiEntityMapperCore.GetSettersExcluding<T7>(reader, c); }
-        else t7 = Array.Empty<PropertySetter<T7>>();
+        (PropertySetter<T1>[] t1, int[] o1) = MultiEntityMapperCore.GetSettersExcluding<T1>(reader, c);
+        foreach (int o in o1) c.Add(o);
+        (PropertySetter<T2>[] t2, int[] o2) = MultiEntityMapperCore.GetSettersExcluding<T2>(reader, c);
+        foreach (int o in o2) c.Add(o);
+        (PropertySetter<T3>[] t3, int[] o3) = MultiEntityMapperCore.GetSettersExcluding<T3>(reader, c);
+        foreach (int o in o3) c.Add(o);
+        (PropertySetter<T4>[] t4, int[] o4) = MultiEntityMapperCore.GetSettersExcluding<T4>(reader, c);
+        foreach (int o in o4) c.Add(o);
+        (PropertySetter<T5>[] t5, int[] o5) = MultiEntityMapperCore.GetSettersExcluding<T5>(reader, c);
+        foreach (int o in o5) c.Add(o);
+        (PropertySetter<T6>[] t6, int[] o6) = MultiEntityMapperCore.GetSettersExcluding<T6>(reader, c);
+        foreach (int o in o6) c.Add(o);
+        (PropertySetter<T7>[] t7, _) = MultiEntityMapperCore.GetSettersExcluding<T7>(reader, c);
         return new MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>(t1, t2, t3, t4, t5, t6, t7);
     }
 
