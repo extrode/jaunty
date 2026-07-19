@@ -369,4 +369,60 @@ WHERE product_name = @Name";
     }
 
     #endregion
+
+    #region PostgreSQL Dollar-Quoted Strings
+
+    [Fact]
+    public void ExtractParameterNames_EmptyDollarQuote_BodyNotMistakenForParameter()
+    {
+        var sql = "SELECT $$SELECT 1$$";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
+        Assert.Empty(names);
+    }
+
+    [Fact]
+    public void ExtractParameterNames_TaggedDollarQuote_BodyNotMistakenForParameter()
+    {
+        var sql = "DO $body$ BEGIN RAISE NOTICE 'hi'; END $body$";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
+        Assert.Empty(names);
+    }
+
+    [Fact]
+    public void ExtractParameterNames_RealParameterAfterDollarQuote_ExtractedCorrectly()
+    {
+        var sql = "SELECT $$literal text$$, col FROM products WHERE product_id = $ProductId";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
+        Assert.Single(names);
+        Assert.Equal("ProductId", names[0]);
+    }
+
+    [Fact]
+    public void ExtractParameterNames_RealParameterBeforeDollarQuote_ExtractedCorrectly()
+    {
+        var sql = "SELECT * FROM products WHERE product_id = $ProductId AND note = $$plain text$$";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
+        Assert.Single(names);
+        Assert.Equal("ProductId", names[0]);
+    }
+
+    [Fact]
+    public void ExtractParameterNames_UnterminatedDollarQuote_HandlesGracefully()
+    {
+        var sql = "SELECT $$unterminated";
+
+        var names = SqlParameterParser.ExtractParameterNames(sql);
+
+        Assert.Empty(names);
+    }
+
+    #endregion
 }
