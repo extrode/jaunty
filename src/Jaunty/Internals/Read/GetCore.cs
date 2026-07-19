@@ -21,6 +21,24 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.SelectByIdSql))
             throw new InvalidOperationException($"Cannot get entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs so GetById participates in registered
+        // ICommandInterceptor auditing/logging the same way GetAll/Query/etc. do.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+                cached.SelectByIdSql,
+                new { Id = id },
+                connection,
+                options.CommandType,
+                () => GetByIdSimpleCoreDirect(connection, id, cached, options));
+        }
+
+        return GetByIdSimpleCoreDirect(connection, id, cached, options);
+    }
+
+    private static T? GetByIdSimpleCoreDirect<T>(IDbConnection connection, object id, CachedCrudSql cached, CommandOptions<T> options) where T : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -60,6 +78,23 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.SelectByIdSql))
             throw new InvalidOperationException($"Cannot get entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+                cached.SelectByIdSql,
+                new { Id = id },
+                connection,
+                options.CommandType,
+                () => GetByIdTypedCoreDirect<T, TId>(connection, id, cached, options));
+        }
+
+        return GetByIdTypedCoreDirect<T, TId>(connection, id, cached, options);
+    }
+
+    private static T? GetByIdTypedCoreDirect<T, TId>(IDbConnection connection, TId id, CachedCrudSql cached, CommandOptions<T> options) where T : IEntity<TId>, new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -131,6 +166,24 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.SelectByIdSql))
             throw new InvalidOperationException($"Cannot get entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                cached.SelectByIdSql,
+                new { Id = id },
+                dbConnection,
+                options.CommandType,
+                () => GetByIdSimpleCoreDirectAsync(dbConnection, id, cached, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await GetByIdSimpleCoreDirectAsync(dbConnection, id, cached, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<T?> GetByIdSimpleCoreDirectAsync<T>(DbConnection dbConnection, object id, CachedCrudSql cached, CommandOptions<T> options, CancellationToken cancellationToken) where T : new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
@@ -182,6 +235,24 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.SelectByIdSql))
             throw new InvalidOperationException($"Cannot get entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                cached.SelectByIdSql,
+                new { Id = id },
+                dbConnection,
+                options.CommandType,
+                () => GetByIdTypedCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await GetByIdTypedCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<T?> GetByIdTypedCoreDirectAsync<T, TId>(DbConnection dbConnection, TId id, CachedCrudSql cached, CommandOptions<T> options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
