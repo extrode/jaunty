@@ -62,8 +62,12 @@ public sealed class PostgreSqlTypeMapper : ITypeMapper
             "inet" or "cidr" => new CSharpTypeInfo { TypeName = "string", IsValueType = false },
             "macaddr" or "macaddr8" => new CSharpTypeInfo { TypeName = "string", IsValueType = false },
 
-            // Bit strings
-            "bit" or "bit varying" or "varbit" => new CSharpTypeInfo { TypeName = "bool", IsValueType = true },
+            // Bit strings - a single-bit bit(1)/bit varying(1) column follows the common
+            // boolean-flag convention; wider bit strings hold more than one bit of data and
+            // must not be collapsed to bool (mirrors MySqlTypeMapper's bit(1)/tinyint(1) handling)
+            "bit" or "bit varying" or "varbit" when column.MaxLength == 1 =>
+                new CSharpTypeInfo { TypeName = "bool", IsValueType = true },
+            "bit" or "bit varying" or "varbit" => new CSharpTypeInfo { TypeName = "ulong", IsValueType = true },
 
             // Geometric types - map to string for now
             "point" or "line" or "lseg" or "box" or "path" or "polygon" or "circle" =>
