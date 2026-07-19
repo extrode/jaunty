@@ -7,6 +7,7 @@ using Jaunty.Tests.Helpers.Dialects;
 namespace Jaunty.Tests.Integration.Read;
 
 /// <summary>Integration tests for Query&lt;T1,T2,T3,T4&gt; — arity-4 multi-entity mapping.</summary>
+[Collection("Multi-Entity Mapper Reflection Resolver")]
 public class QueryMultiEntityN4Tests : IClassFixture<DialectFixture>
 {
     internal sealed class Author
