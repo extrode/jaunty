@@ -7,6 +7,15 @@ namespace Jaunty.Tests.TypeHandlers;
 /// <summary>
 /// Unit tests for enum storage strategy configuration and attribute handling.
 /// </summary>
+/// <remarks>
+/// Shares the "Type Handler Operations" collection with
+/// <see cref="Jaunty.Tests.TypeHandlers.TypeHandlerRegistryTests"/>,
+/// <see cref="Jaunty.Tests.Integration.TypeHandlers.TypeHandlerRoundTripTests"/>, and
+/// <see cref="Jaunty.Tests.ParameterBinderTests"/> — all mutate the same process-wide
+/// <see cref="JauntyConfig.DefaultEnumStorage"/>/type-handler registry static state and must run
+/// serialized against each other.
+/// </remarks>
+[Collection("Type Handler Operations")]
 public class EnumStorageTests : IDisposable
 {
     public void Dispose()

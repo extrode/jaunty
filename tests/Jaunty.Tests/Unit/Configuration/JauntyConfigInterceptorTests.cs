@@ -6,13 +6,20 @@ namespace Jaunty.Tests.Configuration;
 /// <summary>
 /// Unit tests for the thread safety of <see cref="JauntyConfig"/> interceptor registration.
 /// </summary>
+/// <remarks>
+/// Shares the "Logging Extensions" collection with <see cref="Jaunty.Tests.Unit.Interceptors.JauntyLoggingExtensionsTests"/>
+/// and <see cref="Jaunty.Tests.Unit.Internals.ReadCoreInterceptorTests"/> — all three mutate the
+/// same process-wide <see cref="JauntyConfig.InterceptorPipeline"/> static state and must run
+/// serialized against each other.
+/// </remarks>
+[Collection("Logging Extensions")]
 public class JauntyConfigInterceptorTests : IDisposable
 {
     public void Dispose()
     {
-        // No other test in the suite currently registers interceptors via JauntyConfig,
-        // so it is safe to fully clear the pipeline here without affecting other tests
-        // that may be running concurrently in other collections.
+        // Other tests in the "Logging Extensions" collection also register interceptors via
+        // JauntyConfig, but the [Collection] attribute serializes them against this class, so
+        // it's safe to fully clear the pipeline here.
         JauntyConfig.ClearInterceptors();
     }
 
