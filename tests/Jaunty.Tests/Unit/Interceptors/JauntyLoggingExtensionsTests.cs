@@ -212,6 +212,24 @@ public class JauntyLoggingExtensionsTests : IDisposable
         Assert.Same(provider.GetRequiredService<StubInterceptor>(), interceptors[0]);
     }
 
+    [Fact]
+    public void ApplyJauntyInterceptors_CalledConcurrently_WithSameProvider_DoesNotDuplicateInterceptorInstance()
+    {
+        // Regression: the old check-then-act (IsAlreadyRegistered then AddInterceptor as two
+        // separate unsynchronized calls) let two concurrent callers both observe "not yet
+        // registered" and both append the same instance. AddInterceptorIfNotPresent now does
+        // both atomically under one lock.
+        var services = new ServiceCollection();
+        services.AddJauntyInterceptor<StubInterceptor>();
+        var provider = services.BuildServiceProvider();
+
+        Parallel.For(0, 16, _ => provider.ApplyJauntyInterceptors());
+
+        var interceptors = JauntyConfig.InterceptorPipeline!.GetInterceptors().ToList();
+        Assert.Single(interceptors);
+        Assert.Same(provider.GetRequiredService<StubInterceptor>(), interceptors[0]);
+    }
+
     // ------------------------------------------------------------------
     // Stub interceptor — minimal ICommandInterceptor implementation
     // ------------------------------------------------------------------

@@ -86,7 +86,8 @@ public static partial class Jaunty
 
         if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
             throw new NotSupportedException(
-                $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling.");
+                $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
+                "Use BulkInsertAsync instead, or disable constraints manually before calling this method.");
 
         // Check if native bulk copy should be used
         if (BulkCopyConfiguration.EnableNativeBulkCopy &&

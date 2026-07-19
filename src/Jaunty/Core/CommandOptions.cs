@@ -40,8 +40,8 @@ namespace Jaunty.Core;
 /// var options = CommandOptions&lt;Product&gt;.AsStoredProcedure();
 /// var products = connection.Query("GetAllProducts", options: options);
 /// 
-/// // Combine multiple options
-/// var options = CommandOptions&lt;Product&gt;.WithTransaction(tx).WithTimeout(60);
+/// // Combine multiple options - use the constructor directly, or With(mapper, transaction, timeoutSeconds)
+/// var options = new CommandOptions&lt;Product&gt;(transaction: tx, commandTimeout: 60);
 /// 
 /// // Pre-size list for large result sets
 /// var options = CommandOptions&lt;Product&gt;.WithExpectedRowCount(10000);
