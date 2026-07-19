@@ -85,9 +85,10 @@ public class SqlServerBulkCopyProviderTests
         CreateTable(conn, "bulk_mssql_sync");
 
         using var reader = MakeTable(1200).CreateDataReader();
-        new SqlServerBulkCopyProvider().CopyToServer(
+        int inserted = new SqlServerBulkCopyProvider().CopyToServer(
             conn, "bulk_mssql_sync", reader, new BulkCopyOptions());
 
+        Assert.Equal(1200, inserted);
         Assert.Equal(1200, Count(conn, "bulk_mssql_sync"));
 
         using (var check = conn.CreateCommand())
@@ -114,9 +115,10 @@ public class SqlServerBulkCopyProviderTests
         CreateTable(conn, "bulk_mssql_async");
 
         using var reader = MakeTable(750).CreateDataReader();
-        await new SqlServerBulkCopyProvider().CopyToServerAsync(
+        int inserted = await new SqlServerBulkCopyProvider().CopyToServerAsync(
             conn, "bulk_mssql_async", reader, new BulkCopyOptions(), CancellationToken.None);
 
+        Assert.Equal(750, inserted);
         Assert.Equal(750, Count(conn, "bulk_mssql_async"));
     }
 
@@ -129,8 +131,9 @@ public class SqlServerBulkCopyProviderTests
         using (var txn = conn.BeginTransaction())
         {
             using var reader = MakeTable(50).CreateDataReader();
-            new SqlServerBulkCopyProvider().CopyToServer(
+            int inserted = new SqlServerBulkCopyProvider().CopyToServer(
                 conn, "bulk_mssql_txn", reader, new BulkCopyOptions { Transaction = txn });
+            Assert.Equal(50, inserted);
             txn.Rollback();
         }
 

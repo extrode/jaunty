@@ -814,9 +814,7 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     public async Task GridReader_ReadAsync_WithMultipleResultSets_ReadsAll(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
-        var sql = dialect.Provider == DialectProvider.SqlServer
-            ? "SELECT 1; SELECT 2; SELECT 3"
-            : "SELECT 1; SELECT 2; SELECT 3";
+        const string sql = "SELECT 1; SELECT 2; SELECT 3";
 
         using var gridReader = await connection.QueryMultipleAsync(sql);
 
