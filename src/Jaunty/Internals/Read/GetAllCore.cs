@@ -45,8 +45,7 @@ public static partial class Jaunty
                 using DbCommand command = dbConnection.CreateCommand();
                 command.CommandText = cached.SelectAllSql;
 
-                if (options.Transaction is DbTransaction dbTx)
-                    command.Transaction = dbTx;
+                command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
                 if (options.CommandTimeout.HasValue)
                     command.CommandTimeout = options.CommandTimeout.Value;
@@ -132,8 +131,7 @@ public static partial class Jaunty
 #endif
             command.CommandText = cached.SelectAllSql;
 
-            if (options.Transaction is DbTransaction dbTx)
-                command.Transaction = dbTx;
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -218,8 +216,7 @@ public static partial class Jaunty
             using DbCommand command = dbConnection.CreateCommand();
             command.CommandText = cached.SelectAllSql;
 
-            if (options.Transaction is DbTransaction dbTx)
-                command.Transaction = dbTx;
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -259,8 +256,7 @@ public static partial class Jaunty
 #endif
             command.CommandText = cached.SelectAllSql;
 
-            if (options.Transaction is DbTransaction dbTx)
-                command.Transaction = dbTx;
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
