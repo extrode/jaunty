@@ -32,8 +32,11 @@ public class TypeHandlerRegistryTests : IDisposable
             toDb: value => value.ToString()
         );
 
-        // Assert - registration completed without exception
-        Assert.True(true);
+        // Assert - the delegate-based handler is retrievable and parses as registered
+        bool found = TypeHandlerRegistry.TryGetHandler(typeof(int), out var handler);
+        Assert.True(found);
+        Assert.NotNull(handler);
+        Assert.Equal(42, (int)handler!.Parse(42)!);
     }
 
     [Fact]
@@ -67,8 +70,11 @@ public class TypeHandlerRegistryTests : IDisposable
         // Act
         JauntyConfig.RegisterTypeHandler(handler);
 
-        // Assert - smoke test
-        Assert.True(true);
+        // Assert - the typed handler is retrievable and parses as registered
+        bool found = TypeHandlerRegistry.TryGetHandler(typeof(int), out var retrieved);
+        Assert.True(found);
+        Assert.NotNull(retrieved);
+        Assert.Equal(7, (int)retrieved!.Parse(7)!);
     }
 
     [Fact]
