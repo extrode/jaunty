@@ -256,19 +256,35 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     public void Query_TwoEntities_T1HasPriority_WhenColumnMatchesBoth(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
-        // Both ProductInfo and CategoryInfo have no common properties in this test,
-        // but if they did, T1 would win
-        var results = connection.Query<ProductInfo, CategoryInfo>(
+        // NamedT1 and NamedT2 both have a "Name" property, but the result set has only one
+        // column aliased "Name" - proving T1 claims it (left-to-right ordinal claiming) and T2's
+        // Name property is left at its default, rather than both binding the same column.
+        var results = connection.Query<NamedT1, NamedT2>(
             $@"SELECT {TopPrefix(dialect, 1)}
-                p.product_id AS ProductId,
-                p.product_name AS ProductName,
-                c.category_id AS CategoryId,
-                c.category_name AS CategoryName
+                p.product_id AS Id,
+                p.product_name AS Name,
+                c.category_id AS OtherId
               FROM products p
               JOIN categories c ON p.category_id = c.category_id
               {LimitSuffix(dialect, 1)}");
 
-        Assert.Single(results);
+        (NamedT1 t1, NamedT2 t2) = Assert.Single(results);
+        Assert.NotEqual(0, t1.Id);
+        Assert.False(string.IsNullOrEmpty(t1.Name));
+        Assert.NotEqual(0, t2.OtherId);
+        Assert.Equal(string.Empty, t2.Name);
+    }
+
+    private class NamedT1
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private class NamedT2
+    {
+        public int OtherId { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 
     [Theory]
