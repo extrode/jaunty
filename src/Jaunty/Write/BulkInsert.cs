@@ -61,6 +61,9 @@ public static partial class Jaunty
     /// See <see cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/> for the identity-population
     /// caveat: only the loop-based insert path populates entity IDs back.
     /// </remarks>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling (e.g., SQL Server).
+    /// </exception>
     public static int BulkInsertIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -80,6 +83,9 @@ public static partial class Jaunty
     /// See <see cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/> for the identity-population
     /// caveat: only the loop-based insert path populates entity IDs back.
     /// </remarks>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling.
+    /// </exception>
     public static int BulkInsertIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -187,7 +193,11 @@ public static partial class Jaunty
                     catch { }
                 }
 
-                if (ownTransaction) transaction?.Rollback();
+                if (ownTransaction)
+                {
+                    try { transaction?.Rollback(); }
+                    catch { /* Best effort - do not mask the original exception */ }
+                }
                 throw;
             }
         }
@@ -243,7 +253,11 @@ public static partial class Jaunty
             }
             catch
             {
-                if (ownTransaction) transaction?.Rollback();
+                if (ownTransaction)
+                {
+                    try { transaction?.Rollback(); }
+                    catch { /* Best effort - do not mask the original exception */ }
+                }
                 throw;
             }
         }
