@@ -6,6 +6,15 @@ using Jaunty.TypeHandlers;
 
 namespace Jaunty.Tests;
 
+/// <remarks>
+/// Shares the "Type Handler Operations" collection with
+/// <see cref="Jaunty.Tests.TypeHandlers.EnumStorageTests"/>,
+/// <see cref="Jaunty.Tests.TypeHandlers.TypeHandlerRegistryTests"/>, and
+/// <see cref="Jaunty.Tests.Integration.TypeHandlers.TypeHandlerRoundTripTests"/> —
+/// <see cref="Bind_WhenTypeHandlerThrows_PropagatesAsInvalidOperationException"/> mutates the same
+/// process-wide type-handler registry static state and must run serialized against them.
+/// </remarks>
+[Collection("Type Handler Operations")]
 public class ParameterBinderTests
 {
     #region Basic Binding
