@@ -31,29 +31,10 @@ public class ColumnMappingCachePerformanceTests
         Assert.Equal(cacheCountBefore, GetCacheCount()); // Cache count unchanged
     }
 
-    [Fact]
-    public void Get_DifferentTypes_CachedSeparately()
-    {
-        // Arrange & Act
-        var salesMappings = ColumnMappingCache.Get(typeof(SalesRecord));
-        var inventoryMappings = ColumnMappingCache.Get(typeof(InventoryItem));
-
-        // Assert
-        Assert.NotSame(salesMappings, inventoryMappings);
-        Assert.Equal(6, salesMappings.Count); // Id, ProductName, Revenue, Quantity, Date, Region
-        Assert.Equal(6, inventoryMappings.Count); // ItemId, ItemName, Category, StockQuantity, UnitPrice, InStock
-    }
-
-    [Fact]
-    public void Get_RespectsColumnAttribute()
-    {
-        // Arrange & Act
-        var mappings = ColumnMappingCache.Get(typeof(SalesRecord));
-
-        // Assert
-        var productNameMapping = mappings.First(m => m.Value.Property.Name == "ProductName");
-        Assert.Equal("product_name", productNameMapping.Value.ColumnName); // From [Column] attribute
-    }
+    // Get_DifferentTypes_CachedSeparately and Get_RespectsColumnAttribute were removed from this
+    // file - they duplicated ColumnMappingCacheTests.cs's tests of the same name/intent (general
+    // caching/mapping correctness, not performance). That file remains the single source of
+    // truth for those behaviors; this file keeps only cache-behavior/performance-specific tests.
 
     [Fact]
     public void Caching_ImprovesPerformance()
