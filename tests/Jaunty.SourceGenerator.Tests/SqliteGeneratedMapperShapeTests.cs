@@ -10,10 +10,11 @@ namespace Jaunty.SourceGenerator.Tests;
 /// <summary>
 /// Runtime validation for PRD-001: the source-generated ordinal cache must never
 /// serve stale ordinals when the result shape (column order, subset, or width)
-/// changes between readers or between result sets on the same reader.
-/// Unlike OrdinalMapCacheEntryTests in Jaunty.Tests, these tests exercise the
-/// actual generator output compiled into this project, end-to-end through a real
-/// ADO.NET provider.
+/// changes between readers or between result sets on the same reader. These tests
+/// exercise the actual generator output compiled into this project, end-to-end
+/// through a real ADO.NET provider (the hand-simulated equivalent that used to live
+/// in Jaunty.Tests as OrdinalMapCacheEntryTests was removed - it tested a copy of
+/// the generator's template, not the template itself).
 /// </summary>
 public sealed class SqliteGeneratedMapperShapeTests : IDisposable
 {
