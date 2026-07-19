@@ -61,8 +61,6 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
             customers = reader.ReadPartial<Customer>().ToList();
         });
 
-        connection.QueryMultiple(sql);
-
         Assert.NotNull(orders);
         Assert.NotNull(customers);
         Assert.Equal(3, orders.Count);
