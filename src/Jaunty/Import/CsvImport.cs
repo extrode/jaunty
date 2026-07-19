@@ -1,6 +1,9 @@
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
+#if NET5_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -290,6 +293,9 @@ public static class CsvImportExtensions
     // PostgreSQL: COPY FROM STDIN
     // =============================================
 
+#if NET5_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "Npgsql BeginTextImport feature probe on the runtime connection type; the null check below handles a trimmed or non-Npgsql connection by falling back to server-side COPY FROM.")]
+#endif
     private static long ImportPostgreSql(IDbConnection connection, string tableName, string filePath, CsvImportOptions options)
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
@@ -333,6 +339,9 @@ public static class CsvImportExtensions
         }
     }
 
+#if NET5_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "Npgsql BeginTextImport feature probe on the runtime connection type; the null check below handles a trimmed or non-Npgsql connection by falling back to server-side COPY FROM.")]
+#endif
     private static async ValueTask<long> ImportPostgreSqlAsync(DbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken)
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
