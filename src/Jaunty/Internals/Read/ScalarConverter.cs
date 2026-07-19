@@ -34,12 +34,16 @@ internal static class ScalarConverter<T>
             return (T)Enum.ToObject(TargetType, numericEnum!);
         }
 
-        // Guid / DateTimeOffset from string: System.Convert.ChangeType does not support these
+        // Guid / DateTimeOffset / TimeSpan from string: none of these implement IConvertible, so
+        // System.Convert.ChangeType cannot produce them (e.g. a provider like SQLite that returns
+        // a "time" column as ISO-8601-ish text would otherwise throw InvalidCastException here).
         object converted;
         if (TargetType == typeof(Guid) && value is string guidString)
             converted = Guid.Parse(guidString);
         else if (TargetType == typeof(DateTimeOffset) && value is string dtoString)
             converted = DateTimeOffset.Parse(dtoString, System.Globalization.CultureInfo.InvariantCulture);
+        else if (TargetType == typeof(TimeSpan) && value is string tsString)
+            converted = TimeSpan.Parse(tsString, System.Globalization.CultureInfo.InvariantCulture);
         else
             converted = System.Convert.ChangeType(value, TargetType);
 
