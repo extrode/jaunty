@@ -392,9 +392,20 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         }
     }
 
+    // Eagerly validates (EnsureNotConsumed) rather than deferring to first enumeration: a
+    // yield-return method only executes its body once enumerated, so a check placed there would
+    // silently never run for a caller who discards the returned IEnumerable<T> (or breaks out of a
+    // foreach early) without enumerating it. Splitting into a thin eager wrapper plus a private
+    // iterator ensures misuse (e.g. a second read on an already-consumed grid) is caught
+    // immediately at call time instead of being deferred to whenever/if enumeration happens.
     private IEnumerable<T> ReadStreamCore<T>(CommandOptions<T> options, MappingMode mode) where T : new()
     {
         EnsureNotConsumed();
+        return ReadStreamIterator(options, mode);
+    }
+
+    private IEnumerable<T> ReadStreamIterator<T>(CommandOptions<T> options, MappingMode mode) where T : new()
+    {
         Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
 
         while (reader.Read())
@@ -526,36 +537,36 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// <summary>
     /// Asynchronously streams all rows from the current result set as entities of type <typeparamref name="T"/>.
     /// </summary>
-    public async IAsyncEnumerable<T> ReadStreamAsync<T>(CommandOptions<T> options = default, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+    public IAsyncEnumerable<T> ReadStreamAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
-        CommandOptions<T> opts = options;
-        Func<IDataReader, T>? map = null;
-
-        while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
-        {
-            map ??= DrDispatcher.Resolve(reader, opts, MappingMode.Strict);
-            yield return map(reader);
-        }
-        await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+        return ReadStreamAsyncIterator(dbReader, options, MappingMode.Strict, cancellationToken);
     }
 
     /// <summary>
     /// Asynchronously streams all rows from the current result set using partial mapping.
     /// </summary>
-    public async IAsyncEnumerable<T> ReadPartialStreamAsync<T>(CommandOptions<T> options = default, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+    public IAsyncEnumerable<T> ReadPartialStreamAsync<T>(CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
         EnsureNotConsumed();
         if (reader is not DbDataReader dbReader) throw new NotSupportedException("Async operations require a DbDataReader.");
 
-        CommandOptions<T> opts = options;
+        return ReadStreamAsyncIterator(dbReader, options, MappingMode.Projection, cancellationToken);
+    }
+
+    // See ReadStreamCore for why EnsureNotConsumed/the DbDataReader check run eagerly in the two
+    // public wrappers above rather than here: an async-iterator body only executes once
+    // enumeration begins, so validation placed here would silently never run for a caller who
+    // discards the returned IAsyncEnumerable<T> without enumerating it.
+    private async IAsyncEnumerable<T> ReadStreamAsyncIterator<T>(DbDataReader dbReader, CommandOptions<T> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken) where T : new()
+    {
         Func<IDataReader, T>? map = null;
 
         while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
-            map ??= DrDispatcher.Resolve(reader, opts, MappingMode.Projection);
+            map ??= DrDispatcher.Resolve(reader, options, mode);
             yield return map(reader);
         }
         await AdvanceAsync(cancellationToken).ConfigureAwait(false);
