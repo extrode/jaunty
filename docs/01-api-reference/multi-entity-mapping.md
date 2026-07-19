@@ -86,49 +86,22 @@ Each arity from 3 through 7 (`Query<T1,T2,T3>` ... `Query<T1,T2,T3,T4,T5,T6,T7>`
 - `QuerySingleOrDefault<T1,...,TN>` — returns the only tuple, or `default` if empty; throws if more than one row.
 - `QueryStream<T1,...,TN>` — returns `IEnumerable<(T1,...,TN)>`, lazily streaming one row at a time (see [Streaming Methods](streaming-methods.md) for the single-entity equivalent).
 
-## Per-Position Custom Mapper Delegates
+## MultiEntityCommandOptions
 
-`MultiEntityCommandOptions<T1,...,TN>` lets you supply a mapper delegate for any individual position. A type with a custom mapper is **excluded entirely from ordinal claiming** — it neither claims columns for itself nor blocks other positions from claiming columns it reads. This is Jaunty's own mechanism for the cases Dapper covers with `SplitOn` plus a custom mapper, and it also supports keyless/projection-only trailing types.
+`MultiEntityCommandOptions<T1,...,TN>` (arities 2-7) carries the same execution-level settings as `CommandOptions<T>` for multi-entity queries: `Transaction`, `CommandTimeout`, and `CommandType`. It implicitly converts to the appropriate `CommandOptions`/`CommandOptions<(T1,...,TN)>` overload.
 
-**Signature (arity 3, representative):**
 ```csharp
 public readonly struct MultiEntityCommandOptions<T1, T2, T3>
     where T1 : new() where T2 : new() where T3 : new()
 {
     public MultiEntityCommandOptions(
-        Func<IDataReader, T1>? mapper1 = null,
-        Func<IDataReader, T2>? mapper2 = null,
-        Func<IDataReader, T3>? mapper3 = null,
         IDbTransaction? transaction = null,
         int? commandTimeout = null,
         CommandType commandType = CommandType.Text);
 }
 ```
 
-Every arity 3-7 has a matching `MultiEntityCommandOptions<T1,...,TN>` with one `mapperN` parameter per position, plus `Transaction`, `CommandTimeout`, and `CommandType`.
-
-**Example — keyless projection-only trailing type:**
-```csharp
-public class Author { public long Id { get; set; } }
-public class Book   { public long Id { get; set; } }
-
-// Intentionally keyless - has no properties Jaunty could auto-map, so it must
-// opt in via a custom mapper delegate rather than participating in ordinal claiming.
-public class Metadata
-{
-    public string Description { get; set; } = string.Empty;
-}
-
-var options = new MultiEntityCommandOptions<Author, Book, Metadata>(
-    mapper1: null,
-    mapper2: null,
-    mapper3: reader => new Metadata { Description = reader["description"]?.ToString() ?? string.Empty }
-);
-
-var results = connection.Query<Author, Book, Metadata>(sql, options);
-```
-
-Leaving `mapper1`/`mapper2` as `null` means `Author` and `Book` still participate in automatic ordinal claiming as usual; only the position with a supplied delegate is handled manually.
+> **No per-position custom mapper.** Earlier pre-release builds carried `mapper1..mapperN` parameters on this type intended to let an individual position supply its own `Func<IDataReader, TN>` and opt out of ordinal claiming (for keyless or projection-only trailing types). That capability was never actually wired up end-to-end — the delegate was accepted but silently discarded before it reached the mapping engine — and has been removed rather than shipped as a working 1.0 API. There is currently no way to supply a custom mapper for an individual type position in a multi-entity query; every type in the tuple must have properties that ordinal claiming can bind directly. This is tracked as a possible future enhancement, not a currently-supported feature.
 
 ## Mapping Modes
 
@@ -144,14 +117,14 @@ Since ordinal claiming is left-to-right, list your generic type parameters in th
 
 If two mapped types share a property name (e.g. both have `Name` or `CreatedAt`), alias the columns distinctly in SQL and use `[Column("...")]` on at least one of the properties so claiming is unambiguous.
 
-### 3. Use a custom mapper for keyless or computed trailing types
+### 3. Give every type at least one property ordinal claiming can bind
 
-If a type in your tuple has no properties that map cleanly to columns (e.g. an aggregate or projection-only DTO), supply a `mapperN` delegate via `MultiEntityCommandOptions<...>` rather than trying to force it through ordinal claiming.
+Multi-entity mapping has no mechanism today for keyless or computed trailing types — each type in the tuple needs at least one property that matches an unclaimed result-set column, or it maps back as an empty (default-constructed) instance.
 
 ## Important Notes
 
-- **No SplitOn**: Jaunty does not implement Dapper's `splitOn` parameter. Ambiguous column names are resolved with `[Column]`; keyless/projection types are resolved with per-position mapper delegates.
+- **No SplitOn**: Jaunty does not implement Dapper's `splitOn` parameter. Ambiguous column names are resolved with `[Column]`.
 - **Left-to-right claiming**: `T1` always claims before `T2`, `T2` before `T3`, and so on — order of generic type parameters is significant.
-- **Custom mappers opt out of claiming**: a position with a supplied `mapperN` delegate does not claim any ordinals, so it never blocks other positions from reading the same columns.
+- **No per-position custom mapper**: there is no way to supply a custom mapping delegate for an individual type position; see the note under [MultiEntityCommandOptions](#multientitycommandoptions) above.
 - **Arity range**: `T1` through `T7` are supported (2 to 7 total types per row).
 - **Performance**: `Query<T1,...,TN>` uses the same `DbConnection`/`DbDataReader` fast path as single-entity queries when the connection is a concrete `DbConnection`, and `QueryStream<T1,...,TN>` streams lazily rather than materializing a list.
