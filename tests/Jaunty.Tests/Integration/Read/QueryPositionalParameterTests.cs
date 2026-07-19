@@ -90,7 +90,8 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
             "SELECT COUNT(*) FROM products WHERE category_id = @Cat AND supplier_id = @Sup",
             new { Cat = 1, Sup = 1 });
 
-        Assert.True(count >= 0);
+        // Northwind's seed data has products matching category 1 / supplier 1.
+        Assert.True(count > 0);
     }
 
     #endregion
@@ -128,7 +129,8 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
             "SELECT COUNT(*) FROM customers WHERE region = @Region OR @Region IS NULL",
             new { region = (long?)null });
 
-        Assert.True(count >= 0);
+        // A null @Region makes "@Region IS NULL" true, matching every customer row.
+        Assert.True(count > 0);
     }
 
     #endregion

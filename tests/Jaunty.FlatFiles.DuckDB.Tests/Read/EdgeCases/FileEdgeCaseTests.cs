@@ -111,8 +111,9 @@ public class FileEdgeCaseTests
         }
         catch (Exception ex) when (ex is System.Data.Common.DbException || ex is InvalidOperationException)
         {
-            // DuckDB may reject the file — that's also acceptable behavior
-            Assert.NotNull(ex.Message);
+            // DuckDB may reject the file — that's also acceptable behavior. The exception filter
+            // above (DbException or InvalidOperationException) is the actual assertion: any other
+            // exception type propagates and fails the test instead of being silently accepted.
         }
     }
 

@@ -74,7 +74,8 @@ public class ExecuteScalarAsyncTests : IClassFixture<DialectFixture>
         }
         else
         {
-            var count = await _fixture.GetDbConnection(dialect)
+            using var otherConnection = _fixture.GetDbConnection(dialect);
+            var count = await otherConnection
                 .ExecuteScalarAsync<long>("SELECT COUNT(*) FROM products",
                     CommandOptions.WithTimeout(30));
             Assert.True(count > 0);
