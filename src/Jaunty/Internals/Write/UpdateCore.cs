@@ -20,6 +20,24 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.UpdateSql))
             throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No primary key found or no columns to update.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs so Update participates in registered
+        // ICommandInterceptor auditing/logging the same way Query/GetAll/etc. do.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+                cached.UpdateSql,
+                entity,
+                connection,
+                options.CommandType,
+                () => UpdateCoreDirect(connection, entity, cached, binder, options));
+        }
+
+        return UpdateCoreDirect(connection, entity, cached, binder, options);
+    }
+
+    private static int UpdateCoreDirect<T>(IDbConnection connection, T entity, CachedCrudSql cached, Action<IDbCommand, T> binder, CommandOptions options) where T : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -57,6 +75,24 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.UpdateSql))
             throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No primary key found or no columns to update.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                cached.UpdateSql,
+                entity,
+                dbConnection,
+                options.CommandType,
+                () => UpdateCoreDirectAsync(dbConnection, entity, cached, binder, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await UpdateCoreDirectAsync(dbConnection, entity, cached, binder, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<int> UpdateCoreDirectAsync<T>(DbConnection dbConnection, T entity, CachedCrudSql cached, Action<IDbCommand, T> binder, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
