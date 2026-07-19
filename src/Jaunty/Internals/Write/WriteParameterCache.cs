@@ -8,6 +8,7 @@ using System.Reflection;
 using Jaunty.Interfaces;
 using Jaunty.Configuration;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Parameters;
 
 namespace Jaunty.Internals.Write;
 
@@ -51,9 +52,11 @@ internal static class WriteParameterCache<T> where T : new()
 
         IReadOnlyList<ColumnMetadata> columns = metadata.InsertColumns;
         var getters = new Func<T, object?>[columns.Count];
+        var properties = new PropertyInfo?[columns.Count];
         for (int i = 0; i < columns.Count; i++)
         {
             getters[i] = CreateTypedGetter(columns[i]);
+            properties[i] = columns[i].Property;
         }
 
         return (pc, entity) =>
@@ -61,7 +64,7 @@ internal static class WriteParameterCache<T> where T : new()
             int count = Math.Min(getters.Length, pc.Count);
 
             for (int i = 0; i < count; i++)
-                (pc[i] as IDbDataParameter)?.Value = getters[i](entity) ?? DBNull.Value;
+                (pc[i] as IDbDataParameter)?.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(getters[i](entity), properties[i]) ?? DBNull.Value;
         };
     }
 
@@ -72,14 +75,17 @@ internal static class WriteParameterCache<T> where T : new()
         IReadOnlyList<ColumnMetadata> updateColumns = metadata.UpdateColumns;
         IReadOnlyList<ColumnMetadata> primaryKeys = metadata.PrimaryKeys;
         var getters = new Func<T, object?>[updateColumns.Count + primaryKeys.Count];
+        var properties = new PropertyInfo?[updateColumns.Count + primaryKeys.Count];
 
         for (int i = 0; i < updateColumns.Count; i++)
         {
             getters[i] = CreateTypedGetter(updateColumns[i]);
+            properties[i] = updateColumns[i].Property;
         }
         for (int i = 0; i < primaryKeys.Count; i++)
         {
             getters[updateColumns.Count + i] = CreateTypedGetter(primaryKeys[i]);
+            properties[updateColumns.Count + i] = primaryKeys[i].Property;
         }
 
         return (pc, entity) =>
@@ -87,7 +93,7 @@ internal static class WriteParameterCache<T> where T : new()
             int count = Math.Min(getters.Length, pc.Count);
             for (int i = 0; i < count; i++)
             {
-                (pc[i] as IDbDataParameter)?.Value = getters[i](entity) ?? DBNull.Value;
+                (pc[i] as IDbDataParameter)?.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(getters[i](entity), properties[i]) ?? DBNull.Value;
             }
         };
     }
@@ -98,9 +104,11 @@ internal static class WriteParameterCache<T> where T : new()
 
         IReadOnlyList<ColumnMetadata> deleteColumns = metadata.DeleteColumns;
         var getters = new Func<T, object?>[deleteColumns.Count];
+        var properties = new PropertyInfo?[deleteColumns.Count];
         for (int i = 0; i < deleteColumns.Count; i++)
         {
             getters[i] = CreateTypedGetter(deleteColumns[i]);
+            properties[i] = deleteColumns[i].Property;
         }
 
         return (pc, entity) =>
@@ -108,7 +116,7 @@ internal static class WriteParameterCache<T> where T : new()
             int count = Math.Min(getters.Length, pc.Count);
             for (int i = 0; i < count; i++)
             {
-                (pc[i] as IDbDataParameter)?.Value = getters[i](entity) ?? DBNull.Value;
+                (pc[i] as IDbDataParameter)?.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(getters[i](entity), properties[i]) ?? DBNull.Value;
             }
         };
     }
