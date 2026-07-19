@@ -227,6 +227,36 @@ public static partial class Jaunty
         return QueryMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
 
+    /// <summary>
+    /// Executes a SQL query with multi-entity command options and maps columns to two entity types by property name, returning a list of tuples.
+    /// </summary>
+    public static List<(T1, T2)> Query<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
+        return QueryMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+    }
+
+    /// <summary>
+    /// Executes a SQL query with parameters and multi-entity command options and maps columns to two entity types by property name, returning a list of tuples.
+    /// </summary>
+    public static List<(T1, T2)> Query<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
+        return QueryMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
+    }
+
     #endregion
 
     #region Legacy Multi-Entity Query APIs (Marked as Obsolete for Consistency)
@@ -499,6 +529,36 @@ public static partial class Jaunty
     }
 
     /// <summary>
+    /// Executes a SQL query with multi-entity command options and returns the first row mapped to two entity types.
+    /// </summary>
+    public static (T1, T2) QueryFirst<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
+        return QueryFirstMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+    }
+
+    /// <summary>
+    /// Executes a SQL query with parameters and multi-entity command options and returns the first row mapped to two entity types.
+    /// </summary>
+    public static (T1, T2) QueryFirst<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
+        return QueryFirstMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
+    }
+
+    /// <summary>
     /// Executes a query and returns the first row mapped to two entity types.
     /// Throws if no rows are returned.
     /// </summary>
@@ -728,6 +788,36 @@ public static partial class Jaunty
     }
 
     /// <summary>
+    /// Executes a SQL query with multi-entity command options and returns the first row mapped to two entity types, or <see langword="null"/> if empty.
+    /// </summary>
+    public static (T1, T2)? QueryFirstOrDefault<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
+        return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+    }
+
+    /// <summary>
+    /// Executes a SQL query with parameters and multi-entity command options and returns the first row mapped to two entity types, or <see langword="null"/> if empty.
+    /// </summary>
+    public static (T1, T2)? QueryFirstOrDefault<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
+        return QueryFirstOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
+    }
+
+    /// <summary>
     /// Executes a query and returns the first row mapped to two entity types, or default if empty.
     /// </summary>
     [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
@@ -946,6 +1036,36 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return QuerySingleMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
+    }
+
+    /// <summary>
+    /// Executes a SQL query with multi-entity command options and returns exactly one row mapped to two entity types.
+    /// </summary>
+    public static (T1, T2) QuerySingle<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
+        return QuerySingleMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+    }
+
+    /// <summary>
+    /// Executes a SQL query with parameters and multi-entity command options and returns exactly one row mapped to two entity types.
+    /// </summary>
+    public static (T1, T2) QuerySingle<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
         return QuerySingleMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
@@ -1188,6 +1308,36 @@ public static partial class Jaunty
     }
 
     /// <summary>
+    /// Executes a SQL query with multi-entity command options and returns exactly one row mapped to two entity types, or <see langword="null"/> if empty.
+    /// </summary>
+    public static (T1, T2)? QuerySingleOrDefault<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
+        return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+    }
+
+    /// <summary>
+    /// Executes a SQL query with parameters and multi-entity command options and returns exactly one row mapped to two entity types, or <see langword="null"/> if empty.
+    /// </summary>
+    public static (T1, T2)? QuerySingleOrDefault<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
+        return QuerySingleOrDefaultMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
+    }
+
+    /// <summary>
     /// Executes a query and returns exactly one row mapped to two entity types, or default if empty.
     /// Throws if more than one row is returned.
     /// </summary>
@@ -1409,6 +1559,36 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return QueryStreamMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
+    }
+
+    /// <summary>
+    /// Executes a SQL query with multi-entity command options and streams rows mapped to two entity types.
+    /// </summary>
+    public static IEnumerable<(T1, T2)> QueryStream<T1, T2>(this IDbConnection connection, string sql, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
+        return QueryStreamMultiEntityCore<T1, T2>(connection, sql, null, options, MappingMode.Strict);
+    }
+
+    /// <summary>
+    /// Executes a SQL query with parameters and multi-entity command options and streams rows mapped to two entity types.
+    /// </summary>
+    public static IEnumerable<(T1, T2)> QueryStream<T1, T2>(this IDbConnection connection, string sql, object parameters, MultiEntityCommandOptions<T1, T2> options) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
         return QueryStreamMultiEntityCore<T1, T2>(connection, sql, parameters, options, MappingMode.Strict);
     }
