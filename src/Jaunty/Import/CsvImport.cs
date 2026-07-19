@@ -115,11 +115,11 @@ public static class CsvImportExtensions
         return ImportViaSqliteCli(dbPath, tableName, filePath, options);
     }
 
-    private static ValueTask<long> ImportSqliteAsync(DbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken)
+    private static async ValueTask<long> ImportSqliteAsync(DbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken)
     {
-        // sqlite3 CLI is process-based; run synchronously wrapped in ValueTask
-        long result = ImportSqlite(connection, tableName, filePath, options);
-        return new ValueTask<long>(result);
+        // sqlite3 CLI is process-based; offload the blocking call to a thread-pool thread so the
+        // calling async thread isn't blocked for the duration of the CLI process.
+        return await Task.Run(() => ImportSqlite(connection, tableName, filePath, options), cancellationToken).ConfigureAwait(false);
     }
 
     private static long ImportViaSqliteCli(string dbPath, string tableName, string filePath, CsvImportOptions options)

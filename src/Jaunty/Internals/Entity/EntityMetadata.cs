@@ -119,6 +119,9 @@ internal sealed class EntityMetadata
         var parameterMap = new Dictionary<string, ColumnMetadata>(colList.Count, CommonConstants.OrdinalIgnoreCase);
         for (int i = 0; i < colList.Count; i++)
         {
+            if (parameterMap.ContainsKey(colList[i].ColumnName))
+                throw new ArgumentException($"An item with the same key has already been added. Key: {colList[i].ColumnName}");
+
             parameterMap[colList[i].ColumnName] = colList[i];
         }
         ParameterMap = parameterMap;

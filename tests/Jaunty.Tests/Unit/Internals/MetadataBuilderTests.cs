@@ -110,6 +110,15 @@ public class MetadataBuilderTests
         public int Id { get; set; }
     }
 
+    public class DuplicateColumnNameEntity
+    {
+        [Column("Foo")]
+        public int A { get; set; }
+
+        [Column("foo")]
+        public string B { get; set; } = string.Empty;
+    }
+
     #endregion
 
     [Fact]
@@ -280,5 +289,12 @@ public class MetadataBuilderTests
 
         var nameCol = metadata.Columns.First(c => c.Property.Name == "Name");
         Assert.Equal("Name", nameCol.ColumnName);
+    }
+
+    [Fact]
+    public void Build_DuplicateColumnNameCaseInsensitive_ThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            MetadataBuilder.Build<DuplicateColumnNameEntity>());
     }
 }

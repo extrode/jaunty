@@ -74,7 +74,7 @@ public static class SqlDialectFactory
 
         ISqlDialect dialect = connectionTypeName switch
         {
-            "SqlConnection" or "Microsoft.Data.SqlClient.SqlConnection" => new SqlServerDialect(),
+            "SqlConnection" => new SqlServerDialect(),
             "NpgsqlConnection" => new PostgreSqlDialect(),
             "MySqlConnection" => new MySqlDialect(),
             "SQLiteConnection" or "SqliteConnection" => new SQLiteDialect(),
