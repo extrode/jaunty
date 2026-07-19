@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html" class="active" aria-current="page">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report</nav>
+        <article>
+<h1 id="jaunty-orm-commercial-viability-competitive-analysis-report">Jaunty ORM: Commercial Viability &amp; Competitive Analysis Report</h1>
+<blockquote>
+<p>Status note (2026-03-03): this report is historical and contains metrics that may no longer match current repository state.<br />
+For current engineering readiness, use <code>docs/05-quality/reports/PRODUCTION-READINESS-2026-03-03.md</code> and <code>docs/06-releases/tasklists/production-readiness-tasklist.md</code>.</p>
+</blockquote>
+<p><strong>Date:</strong> 2026-02-26
+<strong>Scope:</strong> Full codebase analysis, competitive landscape, commercial strategy</p>
+<hr />
+<h2 id="executive-summary">Executive Summary</h2>
+<p>Jaunty is a <strong>production-grade micro-ORM ecosystem</strong> for .NET comprising 6 projects (168 source files), backed by 2,786+ tests at ~76% code coverage. It occupies a unique position in the .NET data access landscape: a <strong>performance-first micro-ORM with source-generated mapping, strict validation, and a full fluent query builder</strong> -- capabilities no single competitor offers together.</p>
+<p>The project has genuine technical differentiators (strict mapping, positional parameters, AOT-compatible source generation) but faces significant go-to-market challenges in a market dominated by free alternatives (Dapper at 350M+ downloads, EF Core backed by Microsoft). A <strong>hybrid open-source core + commercial premium</strong> model is the most viable path to commercialization.</p>
+<hr />
+<h2 id="part-1-project-inventory">Part 1: Project Inventory</h2>
+<h3 id="ecosystem-overview">Ecosystem Overview</h3>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Purpose</th>
+<th>Frameworks</th>
+<th>Files</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Jaunty</strong></td>
+<td>Core micro-ORM</td>
+<td>netstandard2.0, net8.0</td>
+<td>~95</td>
+<td>Production</td>
+</tr>
+<tr>
+<td><strong>Jaunty.Extensions.Reflection</strong></td>
+<td>Reflection fallback mapper</td>
+<td>netstandard2.0, net8.0</td>
+<td>5</td>
+<td>Production</td>
+</tr>
+<tr>
+<td><strong>Jaunty.Fluent</strong></td>
+<td>Fluent query builder</td>
+<td>netstandard2.0, net8.0</td>
+<td>~30</td>
+<td>Production</td>
+</tr>
+<tr>
+<td><strong>Jaunty.Scaffolding</strong></td>
+<td>Database-first code gen</td>
+<td>net8.0</td>
+<td>~25</td>
+<td>Production</td>
+</tr>
+<tr>
+<td><strong>Jaunty.Scaffolding.Cli</strong></td>
+<td>CLI tool (<code>dotnet-jaunty</code>)</td>
+<td>net8.0</td>
+<td>~5</td>
+<td>Production</td>
+</tr>
+<tr>
+<td><strong>Jaunty.SourceGenerator</strong></td>
+<td>Roslyn source generator</td>
+<td>netstandard2.0, net8.0</td>
+<td>1</td>
+<td>Production</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Test Projects:</strong> 3 projects, 172 test files, 2,786+ tests</p>
+<p><strong>NuGet Packages (all v2026.01.01):</strong></p>
+<ul>
+<li><code>Beparey.Jaunty</code> -- Core</li>
+<li><code>Beparey.Jaunty.Extensions.Reflection</code> -- Reflection fallback</li>
+<li><code>Beparey.Jaunty.Fluent</code> -- Query builder</li>
+<li><code>Beparey.Jaunty.Scaffolding</code> -- Scaffolding library</li>
+<li><code>Beparey.Jaunty.Scaffolding.Cli</code> -- CLI tool</li>
+</ul>
+<hr />
+<h2 id="part-2-technical-capabilities-assessment">Part 2: Technical Capabilities Assessment</h2>
+<h3 id="core-query-engine">2.1 Core Query Engine</h3>
+<p><strong>Rating: A (Excellent)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Query<T> (strict mapping)</td>
+<td>Complete</td>
+<td>Unique differentiator -- all properties must match columns</td>
+</tr>
+<tr>
+<td>QueryPartial<T> (partial mapping)</td>
+<td>Complete</td>
+<td>Flexible mapping for projections</td>
+</tr>
+<tr>
+<td>QueryFirst/Single/OrDefault variants</td>
+<td>Complete</td>
+<td>Full family with strict + partial modes</td>
+</tr>
+<tr>
+<td>QueryScalar<T></td>
+<td>Complete</td>
+<td>Single-value extraction</td>
+</tr>
+<tr>
+<td>ExecuteScalar</td>
+<td>Complete</td>
+<td>Raw ADO.NET scalar execution</td>
+</tr>
+<tr>
+<td>QueryMultiEntity&lt;T1, T2&gt;</td>
+<td>Complete</td>
+<td>Tuple-based multi-entity joins</td>
+</tr>
+<tr>
+<td>QueryMultiple (GridReader)</td>
+<td>Complete</td>
+<td>Multiple result sets in single round-trip</td>
+</tr>
+<tr>
+<td>QueryStream / IAsyncEnumerable</td>
+<td>Complete</td>
+<td>Memory-efficient row-by-row streaming</td>
+</tr>
+<tr>
+<td>Stored procedures</td>
+<td>Complete</td>
+<td>With output parameters (SpParameters)</td>
+</tr>
+<tr>
+<td>Async variants for all methods</td>
+<td>Complete</td>
+<td>CancellationToken support throughout</td>
+</tr>
+</tbody>
+</table>
+<h3 id="object-mapping-architecture">2.2 Object Mapping Architecture</h3>
+<p><strong>Rating: A+ (Exceptional)</strong></p>
+<p><strong>Mapper Resolution Hierarchy (DrDispatcher):</strong></p>
+<ol>
+<li>User-provided custom mapper (CommandOptions)</li>
+<li>IMapped<T> source-generated mapper (zero reflection)</li>
+<li>Special types (Dictionary, ExpandoObject, KeyValuePair, ValueTuple)</li>
+<li>Reflection extension fallback</li>
+<li>Error if none available</li>
+</ol>
+<p><strong>Key Design Decisions:</strong></p>
+<ul>
+<li>Source-generated mappers are the <strong>primary</strong> path; reflection is the fallback</li>
+<li>Compiled expression trees cached in static generic classes -- zero per-query allocation</li>
+<li>Two mapping modes: Strict (all columns required) and Projection (partial mapping)</li>
+<li>FrozenDictionary on .NET 8+ for metadata caching</li>
+</ul>
+<h3 id="crud-operations">2.3 CRUD Operations</h3>
+<p><strong>Rating: A (Excellent)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Sync</th>
+<th>Async</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Insert</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Returns identity (long), auto-excludes identity columns</td>
+</tr>
+<tr>
+<td>Update</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>By primary key, returns affected rows</td>
+</tr>
+<tr>
+<td>Delete (by entity)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>By primary key from entity</td>
+</tr>
+<tr>
+<td>Delete (by ID)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Type-safe with IEntity<TId></td>
+</tr>
+<tr>
+<td>BulkInsert</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Transaction-wrapped, FK constraint bypass option</td>
+</tr>
+<tr>
+<td>BulkUpdate</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Transaction-wrapped</td>
+</tr>
+<tr>
+<td>BulkDelete</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Transaction-wrapped</td>
+</tr>
+<tr>
+<td>Upsert</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Dialect-dependent (MERGE, ON CONFLICT, etc.)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="parameter-binding">2.4 Parameter Binding</h3>
+<p><strong>Rating: A+ (Exceptional -- Unique Feature)</strong></p>
+<ul>
+<li><strong>Named parameters:</strong> <code>new { CategoryId = 1, Status = &quot;active&quot; }</code></li>
+<li><strong>Positional parameters:</strong> <code>Query(sql, 1, &quot;active&quot;, 50.00m)</code> -- <strong>No competitor offers this</strong></li>
+<li><strong>Collection expansion:</strong> <code>WHERE Id IN @Ids</code> auto-expands to <code>(@Ids0, @Ids1, ...)</code></li>
+<li><strong>Duplicate parameter detection:</strong> Same parameter used twice requires one value</li>
+<li><strong>Parameter count validation:</strong> Immediate mismatch detection</li>
+<li><strong>SQL parsing:</strong> Handles comments, string literals, quoted identifiers</li>
+</ul>
+<h3 id="database-dialect-support">2.5 Database Dialect Support</h3>
+<p><strong>Rating: A (Excellent)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Database</th>
+<th>Status</th>
+<th>Provider</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL Server</td>
+<td>Full</td>
+<td>Microsoft.Data.SqlClient</td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td>Full</td>
+<td>Npgsql</td>
+</tr>
+<tr>
+<td>MySQL/MariaDB</td>
+<td>Full</td>
+<td>MySql.Data / MySqlConnector</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>Full</td>
+<td>System.Data.SQLite, Microsoft.Data.Sqlite</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Dialect Abstraction (ISqlDialect):</strong></p>
+<ul>
+<li>Identifier escaping</li>
+<li>Identity retrieval (SCOPE_IDENTITY, RETURNING, LAST_INSERT_ID)</li>
+<li>Upsert syntax (MERGE, ON CONFLICT, ON DUPLICATE KEY)</li>
+<li>FK constraint toggling</li>
+<li>String/date/window functions</li>
+<li>Case-sensitive comparisons</li>
+</ul>
+<h3 id="fluent-query-builder-jaunty.fluent">2.6 Fluent Query Builder (Jaunty.Fluent)</h3>
+<p><strong>Rating: B+ (Very Good)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SELECT (string + expression)</td>
+<td>Complete</td>
+<td>Column projection with type safety</td>
+</tr>
+<tr>
+<td>WHERE (expression-based)</td>
+<td>Complete</td>
+<td>Full predicate translation</td>
+</tr>
+<tr>
+<td>WHERE IN / BETWEEN / EXISTS</td>
+<td>Complete</td>
+<td>Advanced filtering</td>
+</tr>
+<tr>
+<td>JOIN (INNER/LEFT/RIGHT)</td>
+<td>Complete</td>
+<td>2-way joins fully functional</td>
+</tr>
+<tr>
+<td>3-way JOINs</td>
+<td>Partial</td>
+<td>Missing async, OrderBy, pagination</td>
+</tr>
+<tr>
+<td>GROUP BY / HAVING</td>
+<td>Complete</td>
+<td>Aggregate functions</td>
+</tr>
+<tr>
+<td>ORDER BY / ThenBy</td>
+<td>Complete</td>
+<td>Multi-column ordering</td>
+</tr>
+<tr>
+<td>DISTINCT</td>
+<td>Complete</td>
+<td>With WHERE support</td>
+</tr>
+<tr>
+<td>UNION / INTERSECT / EXCEPT</td>
+<td>Complete</td>
+<td>Set operations</td>
+</tr>
+<tr>
+<td>Window Functions</td>
+<td>Complete</td>
+<td>ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD</td>
+</tr>
+<tr>
+<td>CTEs</td>
+<td>Partial</td>
+<td>Missing some async variants</td>
+</tr>
+<tr>
+<td>CASE WHEN</td>
+<td>Complete</td>
+<td>Expression-based</td>
+</tr>
+<tr>
+<td>INSERT / UPDATE / DELETE</td>
+<td>Complete</td>
+<td>Fluent write operations</td>
+</tr>
+<tr>
+<td>Pagination (Take/Skip)</td>
+<td>Complete</td>
+<td>Dialect-aware</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scaffolding-jaunty.scaffolding">2.7 Scaffolding (Jaunty.Scaffolding)</h3>
+<p><strong>Rating: B+ (Very Good)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Table/column discovery</td>
+<td>Complete</td>
+<td>All 4 databases</td>
+</tr>
+<tr>
+<td>Primary key detection</td>
+<td>Complete</td>
+<td>Including composite keys</td>
+</tr>
+<tr>
+<td>Foreign key reading</td>
+<td>Complete</td>
+<td>Data collected, not used in codegen yet</td>
+</tr>
+<tr>
+<td>Type mapping (DB -&gt; C#)</td>
+<td>Complete</td>
+<td>Per-database implementations</td>
+</tr>
+<tr>
+<td>Entity class generation</td>
+<td>Complete</td>
+<td>With attributes, annotations, naming</td>
+</tr>
+<tr>
+<td>Naming conventions</td>
+<td>Complete</td>
+<td>PascalCase, singularization</td>
+</tr>
+<tr>
+<td>CLI tool</td>
+<td>Complete</td>
+<td><code>dotnet-jaunty</code> command</td>
+</tr>
+<tr>
+<td>Schema filtering</td>
+<td>Complete</td>
+<td>Include/exclude tables</td>
+</tr>
+<tr>
+<td>File-scoped namespaces</td>
+<td>Complete</td>
+<td>C# 10+</td>
+</tr>
+<tr>
+<td>Nullable reference types</td>
+<td>Complete</td>
+<td>Proper nullability</td>
+</tr>
+<tr>
+<td>Navigation properties</td>
+<td>Not started</td>
+<td>FK data available but not generated</td>
+</tr>
+</tbody>
+</table>
+<h3 id="source-generator">2.8 Source Generator</h3>
+<p><strong>Rating: B (Good -- Foundation)</strong></p>
+<ul>
+<li>Roslyn-based source generator for IMapped<T> implementations</li>
+<li>AOT-compatible -- no runtime reflection</li>
+<li>Generates compiled property mappers at build time</li>
+</ul>
+<hr />
+<h2 id="part-3-testing-quality">Part 3: Testing &amp; Quality</h2>
+<h3 id="test-suite-overview">3.1 Test Suite Overview</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+<th>Assessment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total tests</td>
+<td>2,786+</td>
+<td>Excellent</td>
+</tr>
+<tr>
+<td>Passing tests</td>
+<td>2,341+</td>
+<td>Excellent</td>
+</tr>
+<tr>
+<td>Code coverage</td>
+<td>~76%</td>
+<td>Good</td>
+</tr>
+<tr>
+<td>Test-to-code ratio</td>
+<td>~5:1</td>
+<td>Excellent</td>
+</tr>
+<tr>
+<td>Multi-database testing</td>
+<td>5 databases</td>
+<td>Excellent</td>
+</tr>
+<tr>
+<td>Async test coverage</td>
+<td>Dedicated files</td>
+<td>Excellent</td>
+</tr>
+<tr>
+<td>Edge case coverage</td>
+<td>18+ test files</td>
+<td>Excellent</td>
+</tr>
+<tr>
+<td>Performance tests</td>
+<td>Stress tests present</td>
+<td>Good</td>
+</tr>
+</tbody>
+</table>
+<h3 id="test-categories">3.2 Test Categories</h3>
+<ul>
+<li><strong>Unit tests:</strong> 35 files -- Metadata, parameters, dialects, caching</li>
+<li><strong>Integration tests:</strong> 111+ files -- All query methods, CRUD, streaming, stored procedures</li>
+<li><strong>Fluent API tests:</strong> 395 tests across 19 feature areas</li>
+<li><strong>Scaffolding tests:</strong> ~50 tests for code generation and schema reading</li>
+<li><strong>Fallback path tests:</strong> IDbConnection wrapper tests for non-DbConnection paths</li>
+<li><strong>Concurrency tests:</strong> 180-operation stress tests with semaphore-based throttling</li>
+</ul>
+<h3 id="coverage-gaps-priority-order">3.3 Coverage Gaps (Priority Order)</h3>
+<ol>
+<li><strong>Jaunty.Fluent:</strong> 33% coverage (large API surface -- 6199 statements)</li>
+<li><strong>Scaffolding CLI:</strong> 0% (tooling, may exclude)</li>
+<li><strong>GridReader async methods:</strong> Tested indirectly, needs explicit coverage</li>
+<li><strong>Complex fluent expression edge cases</strong></li>
+</ol>
+<hr />
+<h2 id="part-4-competitive-landscape">Part 4: Competitive Landscape</h2>
+<h3 id="market-leaders">4.1 Market Leaders</h3>
+<table>
+<thead>
+<tr>
+<th>ORM</th>
+<th>Downloads</th>
+<th>License</th>
+<th>Positioning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dapper</strong></td>
+<td>350M+</td>
+<td>Apache 2.0</td>
+<td>Dominant micro-ORM</td>
+</tr>
+<tr>
+<td><strong>EF Core</strong></td>
+<td>500-600M+</td>
+<td>MIT</td>
+<td>Full ORM, Microsoft-backed</td>
+</tr>
+<tr>
+<td><strong>RepoDB</strong></td>
+<td>5-8M</td>
+<td>Apache 2.0</td>
+<td>&quot;Hybrid ORM&quot; -- Dapper + EF Core middle ground</td>
+</tr>
+<tr>
+<td><strong>SqlKata</strong></td>
+<td>5-7M</td>
+<td>MIT</td>
+<td>Query builder (pairs with Dapper)</td>
+</tr>
+<tr>
+<td><strong>PetaPoco/NPoco</strong></td>
+<td>5-7M / 2-3M</td>
+<td>Apache 2.0</td>
+<td>Legacy micro-ORMs</td>
+</tr>
+<tr>
+<td><strong>ServiceStack.OrmLite</strong></td>
+<td>10-15M</td>
+<td>Commercial</td>
+<td>Only commercial .NET ORM</td>
+</tr>
+<tr>
+<td><strong>Insight.Database</strong></td>
+<td>2-4M</td>
+<td>MIT</td>
+<td>Stored procedure focused</td>
+</tr>
+</tbody>
+</table>
+<h3 id="feature-comparison-matrix">4.2 Feature Comparison Matrix</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Jaunty</th>
+<th>Dapper</th>
+<th>EF Core</th>
+<th>RepoDB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Raw SQL execution</td>
+<td><strong>Yes</strong></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Strict mapping mode</strong></td>
+<td><strong>YES (UNIQUE)</strong></td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Partial mapping mode</td>
+<td><strong>Yes</strong></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Positional parameters</strong></td>
+<td><strong>YES (UNIQUE)</strong></td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Parameter count validation</strong></td>
+<td><strong>YES (UNIQUE)</strong></td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Auto CRUD (Insert/Update/Delete)</td>
+<td><strong>Yes</strong></td>
+<td>No*</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Bulk operations</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>Partial</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Upsert</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>Yes (7+)</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Query builder</td>
+<td><strong>Yes (Fluent)</strong></td>
+<td>No</td>
+<td>LINQ</td>
+<td>Fluent</td>
+</tr>
+<tr>
+<td>Streaming (IAsyncEnumerable)</td>
+<td><strong>Yes</strong></td>
+<td>Limited</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Multiple result sets</td>
+<td><strong>Yes</strong></td>
+<td>Yes</td>
+<td>Limited</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Stored procedures (with output)</td>
+<td><strong>Yes</strong></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Naming conventions</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>Extension</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Source generator / AOT</strong></td>
+<td><strong>YES (UNIQUE)</strong></td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Scaffolding</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Zero dependencies (net8.0)</td>
+<td><strong>Yes</strong></td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Multi-database dialects</td>
+<td><strong>Yes (4)</strong></td>
+<td>N/A</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Caching abstraction</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr>
+<td>Interceptors / Hooks</td>
+<td>No</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr>
+<td>Change tracking</td>
+<td>No</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+</tr>
+<tr>
+<td>Migrations</td>
+<td>No</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+</tr>
+<tr>
+<td>LINQ-to-SQL</td>
+<td>No</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>*Dapper.Contrib adds basic CRUD but is a separate package with limitations</p>
+<h3 id="jauntys-unique-differentiators">4.3 Jaunty's Unique Differentiators</h3>
+<p>These are capabilities <strong>no competitor offers</strong>:</p>
+<ol>
+<li><p><strong>Strict mapping by default</strong> -- Validates ALL entity properties match columns. Catches schema drift, typos, and partial SELECT bugs at runtime immediately. No other micro-ORM does this.</p>
+</li>
+<li><p><strong>Positional parameter binding</strong> -- <code>Query(sql, 1, &quot;active&quot;, 50.00m)</code> with SQL parsing to extract parameter names. Natural, concise syntax unique to Jaunty.</p>
+</li>
+<li><p><strong>Parameter count validation</strong> -- Immediate ArgumentException if SQL has 2 parameters but 3 values are provided. No other ORM validates this.</p>
+</li>
+<li><p><strong>Source-generated AOT-compatible mapping</strong> -- Roslyn source generator produces compiled mappers at build time. Forward-looking for .NET's AOT trajectory.</p>
+</li>
+<li><p><strong>Single-package completeness</strong> -- CRUD + Bulk + Upsert + Streaming + Query Builder + Scaffolding in a cohesive ecosystem. Competitors require combining 3-5 separate packages.</p>
+</li>
+<li><p><strong>CommandOptions pattern</strong> -- Clean API design that avoids Dapper's overload explosion. <code>CommandOptions.WithTransaction(tx)</code> vs. multiple optional parameters.</p>
+</li>
+</ol>
+<hr />
+<h2 id="part-5-gap-analysis-for-commercial-product">Part 5: Gap Analysis for Commercial Product</h2>
+<h3 id="critical-gaps-must-fix">5.1 Critical Gaps (Must Fix)</h3>
+<table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Impact</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>No interceptors / diagnostics hooks</strong></td>
+<td>Cannot integrate with logging, APM, auditing, or multi-tenancy</td>
+<td>Medium</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>No DI / service registration helpers</strong></td>
+<td>Modern .NET apps expect first-class Dependency Injection support</td>
+<td>Low</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>No caching abstraction</strong></td>
+<td>RepoDB has this; enterprise teams expect it</td>
+<td>Medium</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>3-way join limitations in Fluent</strong></td>
+<td>Users hit wall on complex queries</td>
+<td>Medium</td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>No published benchmarks</strong></td>
+<td>Cannot prove performance claims</td>
+<td>Low</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>Zero community / NuGet presence</strong></td>
+<td>No credibility with adopters</td>
+<td>High</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>Private license</strong></td>
+<td>Barrier to adoption; open-source expected for core ORM</td>
+<td>Low</td>
+<td>P0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="important-gaps-should-fix">5.2 Important Gaps (Should Fix)</h3>
+<table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Impact</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No connection resilience / retry</td>
+<td>Enterprise deployments need this</td>
+<td>Medium</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>No query profiling / slow query detection</td>
+<td>Developer experience</td>
+<td>Medium</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>No navigation property generation (Scaffolding)</td>
+<td>Incomplete scaffolding story</td>
+<td>Medium</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>Fluent API CTE async gaps</td>
+<td>Limits advanced queries</td>
+<td>Low</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>No composite primary key support</td>
+<td>Blocks some legacy schemas</td>
+<td>Medium</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>No batch/TVP insert optimization</td>
+<td>SQL Server SqlBulkCopy path missing</td>
+<td>High</td>
+<td>P2</td>
+</tr>
+</tbody>
+</table>
+<h3 id="nice-to-have-gaps-consider">5.3 Nice-to-Have Gaps (Consider)</h3>
+<table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Impact</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No soft delete / global query filters</td>
+<td>Common enterprise pattern</td>
+<td>Medium</td>
+<td>P3</td>
+</tr>
+<tr>
+<td>No audit trail helpers (CreatedAt, etc.)</td>
+<td>Cross-cutting concern</td>
+<td>Medium</td>
+<td>P3</td>
+</tr>
+<tr>
+<td>No multi-tenancy support</td>
+<td>SaaS applications need this</td>
+<td>High</td>
+<td>P3</td>
+</tr>
+<tr>
+<td>No read replica routing</td>
+<td>Scale-out scenarios</td>
+<td>High</td>
+<td>P3</td>
+</tr>
+<tr>
+<td>No compiled query caching</td>
+<td>Further performance optimization</td>
+<td>Medium</td>
+<td>P3</td>
+</tr>
+</tbody>
+</table>
+<h3 id="known-limitations-documented">5.4 Known Limitations (Documented)</h3>
+<p>These are acknowledged trade-offs, not bugs:</p>
+<ol>
+<li><strong>No LINQ-to-SQL</strong> -- By design. Jaunty is SQL-first.</li>
+<li><strong>No change tracking</strong> -- By design. Micro-ORM philosophy.</li>
+<li><strong>No migrations</strong> -- By design. Schema managed separately.</li>
+<li><strong>COUNT(*) return type variance</strong> -- Int32 on SQL Server vs Int64 on others. Must document prominently.</li>
+<li><strong>Static configuration caching</strong> -- JauntyConfig must be set before first query. Intentional for performance.</li>
+</ol>
+<hr />
+<h2 id="part-6-commercial-strategy">Part 6: Commercial Strategy</h2>
+<h3 id="the-market-reality">6.1 The Market Reality</h3>
+<p><strong>Challenges:</strong></p>
+<ul>
+<li>Dapper is free, dominant (350M+ downloads), and &quot;good enough&quot;</li>
+<li>EF Core is free and Microsoft-backed</li>
+<li>.NET community strongly prefers open-source data access libraries</li>
+<li>RepoDB occupies the same &quot;better Dapper&quot; space and has gained only 5-8M downloads in 6 years</li>
+<li>Switching costs between micro-ORMs are low</li>
+</ul>
+<p><strong>Opportunities:</strong></p>
+<ul>
+<li>No micro-ORM offers strict mapping validation</li>
+<li>No micro-ORM has AOT-ready source generation</li>
+<li>No single package offers CRUD + Bulk + Upsert + Query Builder + Scaffolding</li>
+<li>.NET's AOT trajectory creates headwinds for reflection-based ORMs</li>
+<li>Enterprise teams value correctness and early failure detection</li>
+</ul>
+<h3 id="recommended-commercial-model">6.2 Recommended Commercial Model</h3>
+<p><strong>Hybrid Open-Source + Premium:</strong></p>
+<p><strong>Free / OSS Tier (MIT License):</strong></p>
+<ul>
+<li>Core query engine (Query, QueryPartial, all variants)</li>
+<li>Parameter binding (named + positional)</li>
+<li>Strict/partial mapping</li>
+<li>Connection management</li>
+<li>Basic configuration</li>
+<li>Multi-database dialect support</li>
+</ul>
+<p><strong>Commercial Premium Tier ($299-$499/dev/year):</strong></p>
+<ul>
+<li>Bulk operations (BulkInsert, BulkUpdate, BulkDelete)</li>
+<li>Upsert support</li>
+<li>Jaunty.Fluent (query builder)</li>
+<li>Jaunty.Scaffolding + CLI</li>
+<li>Jaunty.SourceGenerator (AOT)</li>
+<li>Interceptors / diagnostics (once built)</li>
+<li>Caching abstraction (once built)</li>
+<li>Priority support / SLA</li>
+</ul>
+<p><strong>Rationale:</strong> This mirrors the proven Z.EntityFramework.Extensions model (free EF Core + paid bulk operations). The free core builds adoption; premium features monetize enterprise needs.</p>
+<h3 id="go-to-market-roadmap">6.3 Go-to-Market Roadmap</h3>
+<p><strong>Phase 1: Foundation (Build Credibility)</strong></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Open-source core under MIT license</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Publish to NuGet with proper metadata, README, icon</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Create documentation website (GitHub Pages or similar)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Publish comprehensive benchmarks vs. Dapper</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Write migration guides (from Dapper, from EF Core)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Target 100,000+ NuGet downloads (credibility threshold)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Establish presence: Reddit r/dotnet, .NET blog posts, Stack Overflow</li>
+</ul>
+<p><strong>Phase 2: Community Building</strong></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> GitHub Discussions / Discord community</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Blog series: &quot;Why Strict Mapping Catches Bugs&quot;, &quot;AOT-Ready Data Access&quot;</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Conference talks / .NET meetup presentations</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Sample projects and starter templates</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> GitHub Actions CI/CD pipeline (public builds)</li>
+</ul>
+<p><strong>Phase 3: Monetization</strong></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Commercial premium package with bulk ops + fluent + scaffolding</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Commercial website with pricing, testimonials</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Trial period for premium features</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Enterprise support contracts</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Premium documentation and training materials</li>
+</ul>
+<h3 id="positioning-statement">6.4 Positioning Statement</h3>
+<blockquote>
+<p><strong>Jaunty: The micro-ORM that validates your data access.</strong></p>
+<p>Write SQL. Get type-safe results. Catch mapping bugs before production.
+Built for .NET teams that value correctness, performance, and control.</p>
+</blockquote>
+<h3 id="key-marketing-messages">6.5 Key Marketing Messages</h3>
+<ol>
+<li><strong>&quot;Strict by default&quot;</strong> -- The only micro-ORM that catches missing column mappings at query time. No more silent nulls.</li>
+<li><strong>&quot;Zero to CRUD in one package&quot;</strong> -- Query + Insert + Update + Delete + Bulk + Upsert + Streaming. No package soup.</li>
+<li><strong>&quot;AOT-ready today&quot;</strong> -- Source-generated mappers. No reflection. Ready for .NET's Native AOT future.</li>
+<li><strong>&quot;Your SQL, your way&quot;</strong> -- Positional parameters, named parameters, or anonymous objects. Natural syntax for every style.</li>
+</ol>
+<hr />
+<h2 id="part-7-technical-recommendations">Part 7: Technical Recommendations</h2>
+<h3 id="architecture-improvements-pre-launch">7.1 Architecture Improvements (Pre-Launch)</h3>
+<ol>
+<li><p><strong>Add interceptor pipeline:</strong>
+Implement <code>IJauntyInterceptor</code> to support cross-cutting concerns:</p>
+<ul>
+<li><strong>Auditing</strong>: Automatically set <code>CreatedAt</code>/<code>UpdatedAt</code> and <code>CreatedBy</code>/<code>UpdatedBy</code>.</li>
+<li><strong>Multi-Tenancy</strong>: Automatically inject <code>tenant_id</code> filters into SQL queries.</li>
+<li><strong>Diagnostics</strong>: Detailed execution timing and exception logging.</li>
+</ul>
+</li>
+<li><p><strong>Add DI integration package (<code>Jaunty.Extensions.DependencyInjection</code>):</strong></p>
+<ul>
+<li>Provide <code>IJauntyDb</code> interface for better mockability and testability.</li>
+<li>Manage connection lifetimes (Scoped/Transient) automatically.</li>
+<li>Support named/multiple database configurations.</li>
+</ul>
+</li>
+<li><p><strong>Add caching abstraction:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">JauntyConfig.CacheProvider = <span class="tok-kw">new</span> MemoryCacheProvider(TimeSpan.FromMinutes(<span class="tok-num">5</span>));
+connection.Query&lt;Product&gt;(sql, cacheKey: &quot;products_active&quot;);
+</code></pre>
+</div>
+</li>
+<li><p><strong>Add connection resilience:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">JauntyConfig.RetryPolicy = RetryPolicy.ExponentialBackoff(maxRetries: <span class="tok-num">3</span>);
+</code></pre>
+</div>
+</li>
+</ol>
+<h3 id="testing-improvements">7.2 Testing Improvements</h3>
+<ol>
+<li>Fix 24 failing Fluent API tests (namespace issues)</li>
+<li>Add explicit GridReader async method tests</li>
+<li>Push Fluent API coverage from 33% to 70%+</li>
+<li>Add BenchmarkDotNet performance test project</li>
+<li>Add multi-database CI matrix (SQL Server, PostgreSQL in containers)</li>
+</ol>
+<h3 id="documentation-improvements">7.3 Documentation Improvements</h3>
+<ol>
+<li>API reference website (DocFX or similar)</li>
+<li>Getting started tutorial with step-by-step examples</li>
+<li>Migration guides from Dapper and EF Core</li>
+<li>Performance benchmark page with reproducible results</li>
+<li>Architecture deep-dive blog posts</li>
+</ol>
+<hr />
+<h2 id="part-8-risk-assessment">Part 8: Risk Assessment</h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Probability</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Low adoption due to market saturation</td>
+<td>High</td>
+<td>High</td>
+<td>Focus on unique differentiators (strict mapping, AOT)</td>
+</tr>
+<tr>
+<td>Single maintainer / bus factor</td>
+<td>Medium</td>
+<td>High</td>
+<td>Build community contributors, document everything</td>
+</tr>
+<tr>
+<td>.NET version churn breaks compatibility</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Multi-target, integration tests on new previews</td>
+</tr>
+<tr>
+<td>Competitor adds strict mapping</td>
+<td>Low</td>
+<td>Medium</td>
+<td>First-mover advantage, deeper feature integration</td>
+</tr>
+<tr>
+<td>Enterprise customers need features not yet built</td>
+<td>High</td>
+<td>Medium</td>
+<td>Prioritize interceptors + caching before commercial launch</td>
+</tr>
+<tr>
+<td>Price resistance for data access library</td>
+<td>High</td>
+<td>Medium</td>
+<td>Generous free tier, prove value with benchmarks</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="part-9-swot-analysis">Part 9: SWOT Analysis</h2>
+<h3 id="strengths">Strengths</h3>
+<ul>
+<li>Unique strict mapping validation (no competitor)</li>
+<li>Complete ecosystem (ORM + Query Builder + Scaffolding + Source Generator)</li>
+<li>AOT-compatible architecture (forward-looking)</li>
+<li>Clean, well-documented codebase (340 files, comprehensive docs)</li>
+<li>2,786+ tests demonstrating production quality</li>
+<li>Zero external dependencies on net8.0</li>
+<li>Multi-database support (4 databases)</li>
+<li>Modern C# features (extension methods, IAsyncEnumerable, Span<T>)</li>
+</ul>
+<h3 id="weaknesses">Weaknesses</h3>
+<ul>
+<li>Zero community adoption / brand recognition</li>
+<li>Missing enterprise features (interceptors, caching, resilience)</li>
+<li>Fluent API has 3-way join limitations</li>
+<li>76% code coverage needs improvement</li>
+<li>No published benchmarks to prove performance claims</li>
+<li>Private license blocks adoption</li>
+</ul>
+<h3 id="opportunities">Opportunities</h3>
+<ul>
+<li>.NET AOT trajectory creates demand for reflection-free ORMs</li>
+<li>Dapper's CRUD gap drives developers to seek alternatives</li>
+<li>Enterprise &quot;correctness&quot; market underserved by micro-ORMs</li>
+<li>Commercial model proven by Z.EntityFramework.Extensions ($600-$4000/year)</li>
+<li>Growing .NET ecosystem in cloud-native / microservices space</li>
+</ul>
+<h3 id="threats">Threats</h3>
+<ul>
+<li>Dapper remains &quot;good enough&quot; for most teams</li>
+<li>EF Core performance improvements close the gap</li>
+<li>RepoDB occupies similar &quot;better Dapper&quot; positioning</li>
+<li>Microsoft could add strict mapping to EF Core</li>
+<li>Community resistance to commercial .NET data access libraries</li>
+</ul>
+<hr />
+<h2 id="conclusion">Conclusion</h2>
+<p>Jaunty is a <strong>technically excellent</strong> micro-ORM with genuine differentiators that no competitor matches. The codebase demonstrates professional engineering: comprehensive testing, clean architecture, and thoughtful API design. The ecosystem (core + fluent + scaffolding + source generator) is more complete than any single competing package.</p>
+<p>The path to commercial viability requires:</p>
+<ol>
+<li><strong>Open-source the core</strong> to build adoption</li>
+<li><strong>Add enterprise features</strong> (interceptors, caching) before monetization</li>
+<li><strong>Publish benchmarks</strong> to prove performance</li>
+<li><strong>Build community</strong> through content, presence, and developer experience</li>
+<li><strong>Monetize premium features</strong> that enterprise teams need</li>
+</ol>
+<p>The unique combination of strict mapping + AOT source generation + complete single-vendor ecosystem positions Jaunty to serve a specific but valuable market segment: .NET teams that prioritize <strong>data access correctness and performance</strong> over convenience abstractions.</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="06-releases-README.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">README</span>
+</a><a class="pn-next" href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">COMMERCIAL DISTRIBUTION FLOW</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Structure — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Project Structure</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html" class="active" aria-current="page">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Project Structure</nav>
+        <article>
+<h1 id="project-structure">Project Structure</h1>
+<p>This document explains the Jaunty codebase organization.</p>
+<h2 id="repository-layout">Repository Layout</h2>
+<pre><code>Jaunty/
+├── .editorconfig                  # Code style rules
+├── .gitignore                     # Git ignore patterns
+├── README.md                      # Project overview
+├── Jaunty.slnx                    # Visual Studio solution
+│
+├── docs/                          # Documentation
+│   ├── README.md                  # Documentation index
+│   ├── 00-quick-start/            # Getting started
+│   ├── 01-api-reference/          # API docs
+│   ├── 02-architecture/           # Architecture
+│   ├── 03-development/            # Development guides
+│   ├── code-coverage/             # Test coverage
+│   └── archive/                   # Historical docs
+│
+├── src/                           # Source code
+│   ├── Jaunty/                    # Main library
+│   │   ├── Attributes/            # Mapping attributes
+│   │   ├── Configuration/         # JauntyConfig
+│   │   ├── Core/                  # Core types
+│   │   ├── Interfaces/            # IMapped&lt;T&gt;, IEntity&lt;T&gt;
+│   │   ├── Read/                  # Query methods
+│   │   ├── Streaming/             # Streaming methods
+│   │   ├── Write/                 # CRUD operations
+│   │   ├── Multiple/              # Multiple result sets
+│   │   ├── StoredProcedure/       # Stored procedures
+│   │   └── Internals/             # Implementation
+│   │
+│   ├── Jaunty.Fluent/             # Fluent API (optional)
+│   ├── Jaunty.Scaffolding/        # Code scaffolding
+│   └── Jaunty.Scaffolding.Cli/    # Scaffolding CLI
+│
+└── tests/                         # Test projects
+    ├── Jaunty.Tests/              # Main test suite
+    ├── Jaunty.Fluent.Tests/      # Fluent API tests
+    └── Jaunty.Scaffolding.Tests/  # Scaffolding tests
+</code></pre>
+<h2 id="main-library-srcjaunty">Main Library: src/Jaunty/</h2>
+<h3 id="public-api-directories">Public API Directories</h3>
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th>Purpose</th>
+<th>the coding standards</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Attributes/</code></td>
+<td><code>[Table]</code>, <code>[Column]</code>, <code>[Ignore]</code>, <code>[Key]</code>, <code>[DatabaseGenerated]</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>Configuration/</code></td>
+<td><code>JauntyConfig</code>, <code>NamingConvention</code> helpers</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Core/</code></td>
+<td><code>CommandOptions&lt;T&gt;</code>, <code>GridReader</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>Interfaces/</code></td>
+<td><code>IMapped&lt;T&gt;</code>, <code>IEntity&lt;T&gt;</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Read/</code></td>
+<td>Query* methods</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Streaming/</code></td>
+<td>QueryStream*, QueryPartialStream*</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Write/</code></td>
+<td>Insert, Update, Delete, Bulk*, Upsert</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Multiple/</code></td>
+<td>QueryMultiple, GridReader</td>
+<td></td>
+</tr>
+<tr>
+<td><code>StoredProcedure/</code></td>
+<td>ExecuteStoredProcedure*</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="internal-implementation-internals">Internal Implementation: Internals/</h3>
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Dialects/</code></td>
+<td>ISqlDialect, SQLite/SqlServer/MySql/PostgreSql dialects</td>
+</tr>
+<tr>
+<td><code>Entity/</code></td>
+<td>EntityMetadata, MetadataCache<T>, MetadataBuilder</td>
+</tr>
+<tr>
+<td><code>Enums/</code></td>
+<td>MappingMode enum (Strict, Partial)</td>
+</tr>
+<tr>
+<td><code>Parameters/</code></td>
+<td>SqlParameterParser, ParameterBinder, ParameterCache</td>
+</tr>
+<tr>
+<td><code>Write/</code></td>
+<td>Internal write operation helpers</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>QueryCore.cs</code> / <code>QueryCoreAsync.cs</code></td>
+<td>Core query execution</td>
+</tr>
+<tr>
+<td><code>ExecuteReader.cs</code> / <code>ExecuteReaderAsync.cs</code></td>
+<td>DataReader execution</td>
+</tr>
+<tr>
+<td><code>ExecuteQueryMultiple.cs</code> / <code>ExecuteQueryMultipleAsync.cs</code></td>
+<td>Multiple result sets</td>
+</tr>
+<tr>
+<td><code>DrDispatcher.cs</code></td>
+<td>Mapper resolution dispatcher</td>
+</tr>
+<tr>
+<td><code>MappedCache.cs</code></td>
+<td>Custom mapper cache</td>
+</tr>
+<tr>
+<td><code>CrudSqlCache.cs</code> / <code>CachedCrudSql.cs</code></td>
+<td>CRUD SQL generation cache</td>
+</tr>
+<tr>
+<td><code>MultiEntityMapper.cs</code></td>
+<td>Tuple mapping for Query&lt;T1, T2&gt;</td>
+</tr>
+</tbody>
+</table>
+<h2 id="test-projects">Test Projects</h2>
+<h3 id="jaunty.tests">Jaunty.Tests</h3>
+<pre><code>tests/Jaunty.Tests/
+├── Entities/                      # Test models
+│   ├── Product.cs
+│   ├── Category.cs
+│   ├── ProductSummary.cs
+│   └── ...
+│
+├── Helpers/                       # Test infrastructure
+│   ├── Database.cs                # SQLite connection helper
+│   ├── SQLiteTestBase.cs          # Base class for integration tests
+│   └── SkipSQLiteAsyncAttribute.cs
+│
+├── Integration/Sqlite/            # Database integration tests
+│   ├── Configuration/             # JauntyConfig tests
+│   ├── Infrastructure/            # Connection, dialect tests
+│   ├── Multiple/                  # QueryMultiple, GridReader
+│   ├── Read/                      # ~29 test files for Query*
+│   ├── Streaming/                 # QueryStream* tests
+│   └── Write/                     # Bulk*, Upsert tests
+│
+└── Unit/Read/                     # Unit tests
+    ├── CommandOptionsTests.cs
+    ├── SqlParameterParserTests.cs
+    └── ParameterBinderTests.cs
+</code></pre>
+<h3 id="test-file-count">Test File Count</h3>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Files</th>
+<th>Tests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Jaunty.Tests</code></td>
+<td>~66</td>
+<td>~600+</td>
+</tr>
+<tr>
+<td><code>Jaunty.Fluent.Tests</code></td>
+<td>~18</td>
+<td>~100+</td>
+</tr>
+<tr>
+<td><code>Jaunty.Scaffolding.Tests</code></td>
+<td>~8</td>
+<td>~50+</td>
+</tr>
+</tbody>
+</table>
+<h2 id="target-frameworks">Target Frameworks</h2>
+<table>
+<thead>
+<tr>
+<th>Framework</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>netstandard2.0</code></td>
+<td>Broad compatibility (.NET Framework, .NET Core 2.0+)</td>
+</tr>
+<tr>
+<td><code>net8.0</code></td>
+<td>Modern .NET optimizations (FrozenDictionary, etc.)</td>
+</tr>
+</tbody>
+</table>
+<p>Conditional compilation:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">#<span class="tok-kw">if</span> NET8_0_OR_GREATER
+    <span class="tok-com">// FrozenDictionary, modern APIs</span>
+#<span class="tok-kw">else</span>
+    <span class="tok-com">// Dictionary fallback</span>
+#endif
+</code></pre>
+</div>
+<h2 id="key-dependencies">Key Dependencies</h2>
+<h3 id="runtime">Runtime</h3>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Framework</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Microsoft.Bcl.AsyncInterfaces</code></td>
+<td>netstandard2.0</td>
+<td>Async interfaces</td>
+</tr>
+</tbody>
+</table>
+<h3 id="test">Test</h3>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>xunit</code></td>
+<td>Test framework</td>
+</tr>
+<tr>
+<td><code>FluentAssertions</code></td>
+<td>Assertions</td>
+</tr>
+<tr>
+<td><code>System.Data.SQLite.Core</code></td>
+<td>SQLite provider</td>
+</tr>
+<tr>
+<td><code>Microsoft.NET.Test.Sdk</code></td>
+<td>Test platform</td>
+</tr>
+</tbody>
+</table>
+<h2 id="file-naming-conventions">File Naming Conventions</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Pattern</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sync methods</td>
+<td><code>MethodName.cs</code></td>
+<td><code>Query.cs</code>, <code>QueryFirst.cs</code></td>
+</tr>
+<tr>
+<td>Async methods</td>
+<td><code>MethodNameAsync.cs</code></td>
+<td><code>QueryAsync.cs</code></td>
+</tr>
+<tr>
+<td>Tests</td>
+<td><code>ClassNameTests.cs</code></td>
+<td><code>QueryTests.cs</code>, <code>ParameterBinderTests.cs</code></td>
+</tr>
+<tr>
+<td>Internals</td>
+<td><code>ComponentName.cs</code></td>
+<td><code>MetadataCache.cs</code>, <code>SqlParameterParser.cs</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="00-quick-start-README.html"><code>README.md</code></a> - Quick start</li>
+<li><a href="01-api-reference-README.html"><code>../01-api-reference/README.md</code></a> - API reference</li>
+<li><a href="02-architecture-README.html"><code>../02-architecture/README.md</code></a> - Architecture</li>
+<li><a href="../../the coding standards"><code>../../the coding standards</code></a> - Development guidelines</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="00-quick-start-project-layout.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Project layout</span>
+</a><a class="pn-next" href="00-quick-start-why-jaunty.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Why jaunty</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

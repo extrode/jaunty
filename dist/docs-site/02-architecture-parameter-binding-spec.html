@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parameter Binding Specification — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Parameter Binding Specification</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html" class="active" aria-current="page">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Parameter Binding Specification</nav>
+        <article>
+<h1 id="parameter-binding-specification">Parameter Binding Specification</h1>
+<p><strong>Version</strong>: 2026.02.19<br />
+<strong>Status</strong>: Active</p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>Jaunty's parameter binding system extracts parameter names from SQL, validates counts, and binds object properties to <code>DbCommand.Parameters</code>.</p>
+<hr />
+<h2 id="components">Components</h2>
+<h3 id="sqlparameterparser">1. SqlParameterParser</h3>
+<p><strong>Purpose</strong>: State machine that extracts <code>@param</code> names from SQL strings.</p>
+<p><strong>Location</strong>: <code>src/Jaunty/Internals/Parameters/SqlParameterParser.cs</code></p>
+<p><strong>State Machine States</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Trigger</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Normal</code></td>
+<td><code>@</code></td>
+<td>Start parameter name</td>
+</tr>
+<tr>
+<td><code>Normal</code></td>
+<td><code>--</code></td>
+<td>Enter <code>SingleLineComment</code></td>
+</tr>
+<tr>
+<td><code>Normal</code></td>
+<td><code>/*</code></td>
+<td>Enter <code>BlockComment</code></td>
+</tr>
+<tr>
+<td><code>Normal</code></td>
+<td><code>'</code></td>
+<td>Enter <code>StringLiteral</code></td>
+</tr>
+<tr>
+<td><code>Normal</code></td>
+<td><code>&quot;</code></td>
+<td>Enter <code>QuotedIdentifier</code></td>
+</tr>
+<tr>
+<td><code>Normal</code></td>
+<td><code>[</code></td>
+<td>Enter <code>QuotedIdentifier</code></td>
+</tr>
+<tr>
+<td><code>SingleLineComment</code></td>
+<td><code>\n</code></td>
+<td>Return to <code>Normal</code></td>
+</tr>
+<tr>
+<td><code>BlockComment</code></td>
+<td><code>*/</code></td>
+<td>Return to <code>Normal</code></td>
+</tr>
+<tr>
+<td><code>StringLiteral</code></td>
+<td><code>'</code> (unescaped)</td>
+<td>Return to <code>Normal</code></td>
+</tr>
+<tr>
+<td><code>QuotedIdentifier</code></td>
+<td><code>&quot;</code> or <code>]</code></td>
+<td>Return to <code>Normal</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Implementation</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> SqlParameterParser
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> string[] ExtractParameterNames(string sql)
+    {
+        <span class="tok-kw">var</span> parameters = <span class="tok-kw">new</span> HashSet&lt;string&gt;();
+        <span class="tok-kw">var</span> state = ParserState.Normal;
+        <span class="tok-kw">var</span> i = <span class="tok-num">0</span>;
+        
+        <span class="tok-kw">while</span> (i &lt; sql.Length)
+        {
+            <span class="tok-kw">var</span> c = sql[i];
+            
+            <span class="tok-kw">switch</span> (state)
+            {
+                <span class="tok-kw">case</span> ParserState.Normal:
+                    <span class="tok-kw">if</span> (c == <span class="tok-str">'@'</span> &amp;&amp; i + <span class="tok-num">1</span> &lt; sql.Length &amp;&amp; char.IsLetterOrDigit(sql[i + <span class="tok-num">1</span>]))
+                    {
+                        <span class="tok-com">// Extract parameter name</span>
+                        <span class="tok-kw">var</span> start = i + <span class="tok-num">1</span>;
+                        <span class="tok-kw">while</span> (i &lt; sql.Length &amp;&amp; (char.IsLetterOrDigit(sql[i]) || sql[i] == <span class="tok-str">'_'</span>))
+                            i++;
+                        
+                        <span class="tok-kw">var</span> paramName = sql.Substring(start, i - start);
+                        parameters.Add(paramName);
+                        <span class="tok-kw">continue</span>;
+                    }
+                    <span class="tok-kw">else</span> <span class="tok-kw">if</span> (c == <span class="tok-str">'-'</span> &amp;&amp; i + <span class="tok-num">1</span> &lt; sql.Length &amp;&amp; sql[i + <span class="tok-num">1</span>] == <span class="tok-str">'-'</span>)
+                    {
+                        state = ParserState.SingleLineComment;
+                        i += <span class="tok-num">2</span>;
+                        <span class="tok-kw">continue</span>;
+                    }
+                    <span class="tok-kw">else</span> <span class="tok-kw">if</span> (c == <span class="tok-str">'/'</span> &amp;&amp; i + <span class="tok-num">1</span> &lt; sql.Length &amp;&amp; sql[i + <span class="tok-num">1</span>] == <span class="tok-str">'*'</span>)
+                    {
+                        state = ParserState.BlockComment;
+                        i += <span class="tok-num">2</span>;
+                        <span class="tok-kw">continue</span>;
+                    }
+                    <span class="tok-kw">else</span> <span class="tok-kw">if</span> (c == <span class="tok-str">'\''</span>)
+                    {
+                        state = ParserState.StringLiteral;
+                        i++;
+                        <span class="tok-kw">continue</span>;
+                    }
+                    <span class="tok-kw">else</span> <span class="tok-kw">if</span> (c == <span class="tok-str">'&quot;'</span> || c == <span class="tok-str">'['</span>)
+                    {
+                        state = ParserState.QuotedIdentifier;
+                        i++;
+                        <span class="tok-kw">continue</span>;
+                    }
+                    <span class="tok-kw">break</span>;
+                    
+                <span class="tok-kw">case</span> ParserState.SingleLineComment:
+                    <span class="tok-kw">if</span> (c == <span class="tok-str">'\n'</span>)
+                        state = ParserState.Normal;
+                    <span class="tok-kw">break</span>;
+                    
+                <span class="tok-kw">case</span> ParserState.BlockComment:
+                    <span class="tok-kw">if</span> (c == <span class="tok-str">'*'</span> &amp;&amp; i + <span class="tok-num">1</span> &lt; sql.Length &amp;&amp; sql[i + <span class="tok-num">1</span>] == <span class="tok-str">'/'</span>)
+                    {
+                        state = ParserState.Normal;
+                        i++;
+                    }
+                    <span class="tok-kw">break</span>;
+                    
+                <span class="tok-kw">case</span> ParserState.StringLiteral:
+                    <span class="tok-kw">if</span> (c == <span class="tok-str">'\''</span> &amp;&amp; (i == <span class="tok-num">0</span> || sql[i - <span class="tok-num">1</span>] != <span class="tok-str">'\\'</span>))
+                        state = ParserState.Normal;
+                    <span class="tok-kw">break</span>;
+                    
+                <span class="tok-kw">case</span> ParserState.QuotedIdentifier:
+                    <span class="tok-kw">if</span> ((c == <span class="tok-str">'&quot;'</span> || c == <span class="tok-str">']'</span>))
+                        state = ParserState.Normal;
+                    <span class="tok-kw">break</span>;
+            }
+            
+            i++;
+        }
+        
+        <span class="tok-kw">return</span> parameters.ToArray();
+    }
+}
+</code></pre>
+</div>
+<p><strong>Examples</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Simple parameter</span>
+ExtractParameterNames(&quot;SELECT * FROM products WHERE id = @Id&quot;)
+<span class="tok-com">// Returns: [&quot;Id&quot;]</span>
+
+<span class="tok-com">// Multiple parameters</span>
+ExtractParameterNames(&quot;SELECT * FROM products WHERE category_id = @CategoryId AND price &gt; @MinPrice&quot;)
+<span class="tok-com">// Returns: [&quot;CategoryId&quot;, &quot;MinPrice&quot;]</span>
+
+<span class="tok-com">// Duplicate parameters (deduplicated)</span>
+ExtractParameterNames(&quot;SELECT * FROM products WHERE category_id = @Id OR supplier_id = @Id&quot;)
+<span class="tok-com">// Returns: [&quot;Id&quot;]</span>
+
+<span class="tok-com">// Comments ignored</span>
+ExtractParameterNames(&quot;SELECT * FROM products WHERE id = @Id -- @NotAParam&quot;)
+<span class="tok-com">// Returns: [&quot;Id&quot;]</span>
+
+<span class="tok-com">// String literals ignored</span>
+ExtractParameterNames(&quot;SELECT * FROM products WHERE name = <span class="tok-str">'@NotAParam'</span>&quot;)
+<span class="tok-com">// Returns: []</span>
+
+<span class="tok-com">// Quoted identifiers ignored</span>
+ExtractParameterNames(&quot;SELECT * FROM [products] WHERE [id] = @Id&quot;)
+<span class="tok-com">// Returns: [&quot;Id&quot;]</span>
+</code></pre>
+</div>
+<hr />
+<h3 id="sqlparameterparsercache">2. SqlParameterParserCache</h3>
+<p><strong>Purpose</strong>: Caches parsed parameter names per SQL string.</p>
+<p><strong>Location</strong>: <code>src/Jaunty/Internals/Parameters/SqlParameterParserCache.cs</code></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> SqlParameterParserCache
+{
+    <span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> ConcurrentDictionary&lt;string, string[]&gt; _cache = <span class="tok-kw">new</span>();
+    
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> string[] GetParameterNames(string sql)
+    {
+        <span class="tok-kw">return</span> _cache.GetOrAdd(sql, SqlParameterParser.ExtractParameterNames);
+    }
+}
+</code></pre>
+</div>
+<p><strong>Cache Key</strong>: Raw SQL string (case-sensitive).</p>
+<p><strong>Eviction</strong>: None (application lifetime).</p>
+<hr />
+<h3 id="parameterbinder">3. ParameterBinder</h3>
+<p><strong>Purpose</strong>: Binds object properties to <code>DbCommand.Parameters</code>.</p>
+<p><strong>Location</strong>: <code>src/Jaunty/Internals/Parameters/ParameterBinder.cs</code></p>
+<p><strong>Named Parameter Binding</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> ParameterBinder
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> Bind(DbCommand command, object parameters)
+    {
+        <span class="tok-kw">if</span> (parameters <span class="tok-kw">is</span> <span class="tok-kw">null</span>) <span class="tok-kw">return</span>;
+        
+        <span class="tok-kw">var</span> type = parameters.GetType();
+        <span class="tok-kw">var</span> properties = ParameterCache.GetProperties(type);
+        
+        <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> prop <span class="tok-kw">in</span> properties)
+        {
+            <span class="tok-kw">var</span> value = prop.GetValue(parameters);
+            <span class="tok-kw">var</span> dbParam = command.CreateParameter();
+            dbParam.ParameterName = prop.Name;
+            dbParam.Value = value ?? DBNull.Value;
+            command.Parameters.Add(dbParam);
+        }
+    }
+}
+</code></pre>
+</div>
+<p><strong>Positional Parameter Binding</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> BindPositional(DbCommand command, object[] parameters, string[] parameterNames)
+{
+    <span class="tok-kw">if</span> (parameters.Length != parameterNames.Length)
+    {
+        <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentException(
+            $&quot;Parameter count mismatch: SQL contains {parameterNames.Length} unique parameter(s), &quot; +
+            $&quot;but {parameters.Length} value(s) provided.&quot;);
+    }
+    
+    <span class="tok-kw">for</span> (<span class="tok-kw">var</span> i = <span class="tok-num">0</span>; i &lt; parameters.Length; i++)
+    {
+        <span class="tok-kw">var</span> dbParam = command.CreateParameter();
+        dbParam.ParameterName = parameterNames[i];
+        dbParam.Value = parameters[i] ?? DBNull.Value;
+        command.Parameters.Add(dbParam);
+    }
+}
+</code></pre>
+</div>
+<p><strong>Type Handling</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>CLR Type</th>
+<th>DbType</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>string</code></td>
+<td><code>String</code></td>
+<td>NULL → <code>DBNull.Value</code></td>
+</tr>
+<tr>
+<td><code>int</code></td>
+<td><code>Int32</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>long</code></td>
+<td><code>Int64</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>decimal</code></td>
+<td><code>Decimal</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>double</code></td>
+<td><code>Double</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>float</code></td>
+<td><code>Single</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>Boolean</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>DateTime</code></td>
+<td><code>DateTime</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Guid</code></td>
+<td><code>Guid</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>byte[]</code></td>
+<td><code>Binary</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>enum</code></td>
+<td>underlying</td>
+<td>Converted to underlying type</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="parametercache">4. ParameterCache<T></h3>
+<p><strong>Purpose</strong>: Caches property info for parameter types.</p>
+<p><strong>Location</strong>: <code>src/Jaunty/Internals/Parameters/ParameterCache.cs</code></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> ParameterCache&lt;T&gt;
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> PropertyInfo[] Properties = <span class="tok-kw">typeof</span>(T)
+        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+        .Where(p =&gt; p.CanRead)
+        .ToArray();
+}
+
+<span class="tok-kw">internal</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> ParameterCache
+{
+    <span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> ConcurrentDictionary&lt;Type, PropertyInfo[]&gt; _cache = <span class="tok-kw">new</span>();
+    
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> PropertyInfo[] GetProperties(Type type)
+    {
+        <span class="tok-kw">return</span> _cache.GetOrAdd(type, t =&gt;
+            t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p =&gt; p.CanRead)
+                .ToArray());
+    }
+}
+</code></pre>
+</div>
+<hr />
+<h2 id="validation">Validation</h2>
+<h3 id="parameter-count-validation">Parameter Count Validation</h3>
+<p><strong>Purpose</strong>: Catch parameter mismatches early with clear error messages.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> ValidateParameterCount(string sql, object? parameters)
+{
+    <span class="tok-kw">if</span> (parameters <span class="tok-kw">is</span> <span class="tok-kw">null</span>) <span class="tok-kw">return</span>;
+    
+    <span class="tok-kw">var</span> expectedParameters = SqlParameterParserCache.GetParameterNames(sql);
+    
+    <span class="tok-kw">if</span> (parameters <span class="tok-kw">is</span> <span class="tok-kw">not</span> IEnumerable&lt;object&gt; paramArray)
+    {
+        <span class="tok-com">// Single object - check property count matches</span>
+        <span class="tok-kw">var</span> properties = ParameterCache.GetProperties(parameters.GetType());
+        
+        <span class="tok-com">// Handle duplicate parameters in SQL</span>
+        <span class="tok-kw">var</span> uniqueSqlParams = expectedParameters.Length;
+        <span class="tok-kw">var</span> providedParams = properties.Length;
+        
+        <span class="tok-kw">if</span> (uniqueSqlParams != providedParams)
+        {
+            <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentException(
+                $&quot;Parameter count mismatch: SQL contains {uniqueSqlParams} unique parameter(s), &quot; +
+                $&quot;but {providedParams} property/properties provided.&quot;);
+        }
+    }
+    <span class="tok-kw">else</span>
+    {
+        <span class="tok-com">// Array - check element count matches</span>
+        <span class="tok-kw">var</span> paramList = paramArray.ToList();
+        <span class="tok-kw">if</span> (expectedParameters.Length != paramList.Count)
+        {
+            <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentException(
+                $&quot;Parameter count mismatch: SQL contains {expectedParameters.Length} unique parameter(s), &quot; +
+                $&quot;but {paramList.Count} value(s) provided.&quot;);
+        }
+    }
+}
+</code></pre>
+</div>
+<p><strong>Error Messages</strong>:</p>
+<pre><code>Parameter count mismatch: SQL contains 2 unique parameter(s), but 3 value(s) provided.
+SQL parameters: [@CategoryId, @MinPrice]. Provided: [1, 100, 200].
+
+Parameter count mismatch: SQL contains 3 unique parameter(s), but 2 property/properties provided.
+SQL parameters: [@CategoryId, @MinPrice, @MaxPrice]. Provided: [CategoryId, MinPrice].
+</code></pre>
+<hr />
+<h2 id="collection-parameter-expansion">Collection Parameter Expansion</h2>
+<p><strong>Purpose</strong>: Support <code>WHERE id IN @Ids</code> syntax.</p>
+<p><strong>Location</strong>: <code>src/Jaunty/Internals/Parameters/ParameterBinder.cs</code></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> BindWithCollectionExpansion(DbCommand command, object parameters)
+{
+    <span class="tok-kw">var</span> type = parameters.GetType();
+    <span class="tok-kw">var</span> properties = ParameterCache.GetProperties(type);
+    
+    <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> prop <span class="tok-kw">in</span> properties)
+    {
+        <span class="tok-kw">var</span> value = prop.GetValue(parameters);
+        
+        <span class="tok-kw">if</span> (value <span class="tok-kw">is</span> IEnumerable enumerable &amp;&amp; value <span class="tok-kw">is</span> <span class="tok-kw">not</span> string)
+        {
+            <span class="tok-com">// Expand collection into individual parameters</span>
+            <span class="tok-kw">var</span> items = enumerable.Cast&lt;object&gt;().ToList();
+            
+            <span class="tok-kw">if</span> (items.Count == <span class="tok-num">0</span>)
+            {
+                <span class="tok-com">// Empty collection - use sentinel value</span>
+                <span class="tok-kw">var</span> dbParam = command.CreateParameter();
+                dbParam.ParameterName = prop.Name;
+                dbParam.Value = DBNull.Value;
+                command.Parameters.Add(dbParam);
+            }
+            <span class="tok-kw">else</span>
+            {
+                <span class="tok-com">// Create individual parameters @Ids_0, @Ids_1, etc.</span>
+                <span class="tok-kw">for</span> (<span class="tok-kw">var</span> i = <span class="tok-num">0</span>; i &lt; items.Count; i++)
+                {
+                    <span class="tok-kw">var</span> dbParam = command.CreateParameter();
+                    dbParam.ParameterName = $&quot;{prop.Name}_{i}&quot;;
+                    dbParam.Value = items[i] ?? DBNull.Value;
+                    command.Parameters.Add(dbParam);
+                }
+            }
+        }
+        <span class="tok-kw">else</span>
+        {
+            <span class="tok-com">// Single value</span>
+            <span class="tok-kw">var</span> dbParam = command.CreateParameter();
+            dbParam.ParameterName = prop.Name;
+            dbParam.Value = value ?? DBNull.Value;
+            command.Parameters.Add(dbParam);
+        }
+    }
+}
+</code></pre>
+</div>
+<p><strong>SQL Rewriting</strong>:</p>
+<p>The SQL must be rewritten to match expanded parameters:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Original SQL</span>
+WHERE category_id IN @CategoryIds
+
+<span class="tok-com">// Rewritten SQL</span>
+WHERE category_id IN (@CategoryIds_0, @CategoryIds_1, @CategoryIds_2)
+</code></pre>
+</div>
+<hr />
+<h2 id="performance-characteristics">Performance Characteristics</h2>
+<h3 id="parsing-cost-one-time-per-sql">Parsing Cost (One-Time per SQL)</h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Complexity</th>
+<th>Allocations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ExtractParameterNames</code></td>
+<td>O(s) where s = SQL length</td>
+<td>string[], HashSet</td>
+</tr>
+<tr>
+<td>Cache lookup</td>
+<td>O(1)</td>
+<td>None (after warm)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Typical cost</strong>: ~1-10μs for 100-1000 character SQL.</p>
+<h3 id="binding-cost-per-query">Binding Cost (Per-Query)</h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Complexity</th>
+<th>Allocations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Property lookup</td>
+<td>O(1)</td>
+<td>None (cached)</td>
+</tr>
+<tr>
+<td>Property value read</td>
+<td>O(1)</td>
+<td>Boxed value (if value type)</td>
+</tr>
+<tr>
+<td>DbParameter creation</td>
+<td>O(1)</td>
+<td>DbParameter instance</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Typical cost</strong>: ~100-500ns per parameter.</p>
+<hr />
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="null-handling">NULL Handling</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Reference types: NULL → null</span>
+<span class="tok-com">// Value types: NULL → throws</span>
+<span class="tok-com">// Nullable&lt;T&gt;: NULL → null</span>
+
+<span class="tok-kw">if</span> (value <span class="tok-kw">is</span> <span class="tok-kw">null</span>)
+{
+    dbParam.Value = DBNull.Value;
+}
+</code></pre>
+</div>
+<h3 id="type-conversion-errors">Type Conversion Errors</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">try</span>
+{
+    dbParam.Value = value;
+}
+<span class="tok-kw">catch</span> (InvalidCastException ex)
+{
+    <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentException(
+        $&quot;Cannot convert parameter <span class="tok-str">'{prop.Name}'</span> of type <span class="tok-str">'{value?.GetType().Name ?? &quot;null&quot;}'</span> &quot; +
+        $&quot;to database type <span class="tok-str">'{dbParam.DbType}'</span>.&quot;, ex);
+}
+</code></pre>
+</div>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="02-architecture-architecture-specification.html"><code>architecture-specification.md</code></a> - Full architecture</li>
+<li><a href="01-api-reference-query-methods.html"><code>../01-api-reference/query-methods.md</code></a> - Query method API</li>
+<li><a href="03-development-adding-new-methods.html"><code>../03-development/adding-new-methods.md</code></a> - Adding methods</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="02-architecture-metadata-system-spec.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Metadata system spec</span>
+</a><a class="pn-next" href="02-architecture-performance-spec.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Performance spec</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Performance Optimization Guide — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Performance Optimization Guide</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html" class="active" aria-current="page">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Performance Optimization Guide</nav>
+        <article>
+<h1 id="performance-optimization-guide">Performance Optimization Guide</h1>
+<p><strong>Version</strong>: 2026.02.19<br />
+<strong>Status</strong>: Active</p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>Jaunty is designed for high performance. This document details the optimization strategies used throughout the codebase.</p>
+<hr />
+<h2 id="memory-optimization">Memory Optimization</h2>
+<h3 id="pre-size-collections">1. Pre-Size Collections</h3>
+<p><strong>Problem</strong>: Dynamic resizing causes allocations and copies.</p>
+<p><strong>Solution</strong>: Pre-size collections when count is known or estimable.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// BAD: Default capacity (4), will resize multiple times</span>
+<span class="tok-kw">var</span> results = <span class="tok-kw">new</span> List&lt;T&gt;();
+
+<span class="tok-com">// GOOD: Pre-size with expected count</span>
+<span class="tok-kw">var</span> results = <span class="tok-kw">new</span> List&lt;T&gt;(expectedRows);
+
+<span class="tok-com">// GOOD: Use capacity from metadata</span>
+<span class="tok-kw">var</span> results = <span class="tok-kw">new</span> List&lt;T&gt;(metadata.Properties.Length);
+</code></pre>
+</div>
+<p><strong>Impact</strong>: 50-80% reduction in allocations for large result sets.</p>
+<hr />
+<h3 id="span-for-zero-allocation-slicing">2. Span<T> for Zero-Allocation Slicing</h3>
+<p><strong>Problem</strong>: <code>Substring</code> allocates new strings.</p>
+<p><strong>Solution</strong>: Use <code>Span&lt;T&gt;</code> for zero-allocation slicing.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// BAD: Allocates new string</span>
+<span class="tok-kw">var</span> paramName = sql.Substring(start, length);
+
+<span class="tok-com">// GOOD: Zero allocation</span>
+ReadOnlySpan&lt;char&gt; sqlSpan = sql.AsSpan();
+ReadOnlySpan&lt;char&gt; paramSpan = sqlSpan.Slice(start, length);
+
+<span class="tok-com">// Convert only when needed</span>
+<span class="tok-kw">var</span> paramName = paramSpan.ToString();
+</code></pre>
+</div>
+<p><strong>Impact</strong>: Eliminates allocations in SQL parsing hot path.</p>
+<hr />
+<h3 id="frozendictionary-for-lookups">3. FrozenDictionary for Lookups</h3>
+<p><strong>Problem</strong>: <code>Dictionary&lt;K,V&gt;</code> has locking overhead and isn't optimized for reads.</p>
+<p><strong>Solution</strong>: Use <code>FrozenDictionary&lt;K,V&gt;</code> on .NET 8+.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">#<span class="tok-kw">if</span> NET8_0_OR_GREATER
+    <span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> FrozenDictionary&lt;string, int&gt; _columnToIndex;
+#<span class="tok-kw">else</span>
+    <span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> Dictionary&lt;string, int&gt; _columnToIndex;
+#endif
+
+<span class="tok-com">// Initialization</span>
+#<span class="tok-kw">if</span> NET8_0_OR_GREATER
+    _columnToIndex = properties.ToFrozenDictionary(p =&gt; p.ColumnName, p =&gt; p.Index);
+#<span class="tok-kw">else</span>
+    _columnToIndex = properties.ToDictionary(p =&gt; p.ColumnName, p =&gt; p.Index);
+#endif
+</code></pre>
+</div>
+<p><strong>Impact</strong>: 2-3x faster lookups, thread-safe without locking.</p>
+<hr />
+<h3 id="compiled-delegates-instead-of-reflection">4. Compiled Delegates Instead of Reflection</h3>
+<p><strong>Problem</strong>: <code>PropertyInfo.SetValue</code> is slow and allocates.</p>
+<p><strong>Solution</strong>: Compile expression trees once, reuse forever.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// BAD: Slow reflection per row</span>
+property.SetValue(entity, reader.GetValue(columnIndex));
+
+<span class="tok-com">// GOOD: Compiled delegate (one-time cost)</span>
+<span class="tok-kw">private</span> <span class="tok-kw">static</span> Action&lt;T, IDataRecord, int&gt; CreateSetter(PropertyInfo property)
+{
+    <span class="tok-com">// Build expression tree</span>
+    <span class="tok-kw">var</span> targetParam = Expression.Parameter(<span class="tok-kw">typeof</span>(T), &quot;target&quot;);
+    <span class="tok-kw">var</span> readerParam = Expression.Parameter(<span class="tok-kw">typeof</span>(IDataRecord), &quot;reader&quot;);
+    <span class="tok-kw">var</span> indexParam = Expression.Parameter(<span class="tok-kw">typeof</span>(int), &quot;index&quot;);
+    
+    <span class="tok-kw">var</span> getValueCall = Expression.Call(readerParam, nameof(IDataRecord.GetValue), <span class="tok-kw">null</span>, indexParam);
+    <span class="tok-kw">var</span> convert = Expression.Convert(getValueCall, property.PropertyType);
+    <span class="tok-kw">var</span> assign = Expression.Assign(Expression.Property(targetParam, property), convert);
+    
+    <span class="tok-com">// Compile once</span>
+    <span class="tok-kw">return</span> Expression.Lambda&lt;Action&lt;T, IDataRecord, int&gt;&gt;(assign, targetParam, readerParam, indexParam).Compile();
+}
+
+<span class="tok-com">// Usage: O(1) with no reflection</span>
+setter(entity, reader, columnIndex);
+</code></pre>
+</div>
+<p><strong>Impact</strong>: 10-100x faster property setting.</p>
+<hr />
+<h3 id="readonly-struct-for-small-value-types">5. readonly struct for Small Value Types</h3>
+<p><strong>Problem</strong>: Structs can cause hidden defensive copies.</p>
+<p><strong>Solution</strong>: Use <code>readonly struct</code> to prevent copies.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// BAD: Potential defensive copies</span>
+<span class="tok-kw">public</span> <span class="tok-kw">struct</span> PropertyMetadata
+{
+    <span class="tok-kw">public</span> string ColumnName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-com">// GOOD: No defensive copies</span>
+<span class="tok-kw">public</span> <span class="tok-kw">readonly</span> <span class="tok-kw">struct</span> PropertyMetadata
+{
+    <span class="tok-kw">public</span> string ColumnName { <span class="tok-kw">get</span>; <span class="tok-kw">init</span>; }
+}
+</code></pre>
+</div>
+<p><strong>Impact</strong>: Eliminates hidden allocations in tight loops.</p>
+<hr />
+<h2 id="execution-optimization">Execution Optimization</h2>
+<h3 id="no-linq-in-hot-paths">1. No LINQ in Hot Paths</h3>
+<p><strong>Problem</strong>: LINQ allocates delegates and enumerators.</p>
+<p><strong>Solution</strong>: Use manual loops.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// BAD: LINQ allocation</span>
+<span class="tok-kw">var</span> columns = properties.Select(p =&gt; p.ColumnName).ToList();
+
+<span class="tok-com">// GOOD: Manual loop</span>
+<span class="tok-kw">var</span> columns = <span class="tok-kw">new</span> List&lt;string&gt;(properties.Length);
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> p <span class="tok-kw">in</span> properties)
+{
+    columns.Add(p.ColumnName);
+}
+</code></pre>
+</div>
+<p><strong>Impact</strong>: 5-10x fewer allocations in hot paths.</p>
+<hr />
+<h3 id="aggressive-inlining">2. Aggressive Inlining</h3>
+<p><strong>Problem</strong>: Method call overhead in tight loops.</p>
+<p><strong>Solution</strong>: Use <code>[MethodImpl(MethodImplOptions.AggressiveInlining)]</code>.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[MethodImpl(MethodImplOptions.AggressiveInlining)]
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> string QuoteIdentifier(string identifier)
+{
+    <span class="tok-kw">return</span> $&quot;\&quot;{identifier}\&quot;&quot;;
+}
+</code></pre>
+</div>
+<p><strong>Impact</strong>: Eliminates call overhead for small methods.</p>
+<p><strong>Caution</strong>: Don't inline large methods (increases code size, hurts I-cache).</p>
+<hr />
+<h3 id="valuetask-for-async">3. ValueTask<T> for Async</h3>
+<p><strong>Problem</strong>: <code>Task&lt;T&gt;</code> allocates even for synchronous completion.</p>
+<p><strong>Solution</strong>: Use <code>ValueTask&lt;T&gt;</code> on .NET 8+.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">#<span class="tok-kw">if</span> NET8_0_OR_GREATER
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">async</span> ValueTask&lt;T&gt; QuerySingleAsync&lt;T&gt;(...) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+{
+    <span class="tok-com">// May complete synchronously</span>
+}
+#<span class="tok-kw">else</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">async</span> Task&lt;T&gt; QuerySingleAsync&lt;T&gt;(...) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+{
+    <span class="tok-com">// Fallback for netstandard2.0</span>
+}
+#endif
+</code></pre>
+</div>
+<p><strong>Impact</strong>: Zero allocation for synchronously-completing async operations.</p>
+<hr />
+<h3 id="configureawaitfalse">4. ConfigureAwait(false)</h3>
+<p><strong>Problem</strong>: Capturing <code>SynchronizationContext</code> causes overhead and potential deadlocks.</p>
+<p><strong>Solution</strong>: Always use <code>ConfigureAwait(false)</code> in library code.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// GOOD: Doesn't capture context</span>
+<span class="tok-kw">await</span> reader.ReadAsync(cancellationToken).ConfigureAwait(<span class="tok-kw">false</span>);
+</code></pre>
+</div>
+<p><strong>Impact</strong>: Reduced overhead, deadlock prevention.</p>
+<hr />
+<h3 id="manual-for-loops-over-foreach">5. Manual for Loops Over foreach</h3>
+<p><strong>Problem</strong>: <code>foreach</code> allocates enumerator for some collections.</p>
+<p><strong>Solution</strong>: Use <code>for</code> loop for arrays and lists.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// BAD: Potential enumerator allocation</span>
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> property <span class="tok-kw">in</span> properties)
+{
+    <span class="tok-com">// ...</span>
+}
+
+<span class="tok-com">// GOOD: No allocation</span>
+<span class="tok-kw">for</span> (<span class="tok-kw">var</span> i = <span class="tok-num">0</span>; i &lt; properties.Length; i++)
+{
+    <span class="tok-kw">var</span> property = properties[i];
+    <span class="tok-com">// ...</span>
+}
+</code></pre>
+</div>
+<p><strong>Impact</strong>: Eliminates enumerator allocations.</p>
+<hr />
+<h2 id="string-optimization">String Optimization</h2>
+<h3 id="string.create-for-construction">1. string.Create for Construction</h3>
+<p><strong>Problem</strong>: String concatenation allocates intermediate strings.</p>
+<p><strong>Solution</strong>: Use <code>string.Create</code> for direct buffer writing.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// BAD: Multiple allocations</span>
+<span class="tok-kw">var</span> sql = &quot;INSERT INTO &quot; + tableName + &quot; (&quot; + columns + &quot;) VALUES (&quot; + values + &quot;)&quot;;
+
+<span class="tok-com">// GOOD: Single allocation</span>
+<span class="tok-kw">var</span> sql = string.Create(totalLength, (tableName, columns, values), (span, state) =&gt;
+{
+    span.Slice(<span class="tok-num">0</span>, state.tableName.Length).CopyFrom(state.tableName);
+    <span class="tok-com">// ... write rest</span>
+});
+</code></pre>
+</div>
+<p><strong>Impact</strong>: Single allocation instead of multiple.</p>
+<hr />
+<h3 id="ordinal-string-comparison">2. Ordinal String Comparison</h3>
+<p><strong>Problem</strong>: Culture-aware comparison is slow.</p>
+<p><strong>Solution</strong>: Use <code>StringComparison.Ordinal</code>.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// BAD: Culture-aware (slow)</span>
+<span class="tok-kw">if</span> (columnName.ToLower() == parameterName.ToLower()) { }
+
+<span class="tok-com">// GOOD: Ordinal (fast)</span>
+<span class="tok-kw">if</span> (columnName.Equals(parameterName, StringComparison.OrdinalIgnoreCase)) { }
+</code></pre>
+</div>
+<p><strong>Impact</strong>: 5-10x faster string comparison.</p>
+<hr />
+<h3 id="searchvalues-for-character-search">3. SearchValues<T> for Character Search</h3>
+<p><strong>Problem</strong>: Multiple <code>IndexOf</code> calls for character search.</p>
+<p><strong>Solution</strong>: Use <code>SearchValues&lt;T&gt;</code> on .NET 8+.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">#<span class="tok-kw">if</span> NET8_0_OR_GREATER
+<span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> SearchValues&lt;char&gt; s_commentStart = SearchValues.Create(&quot;--&quot;);
+<span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> SearchValues&lt;char&gt; s_stringChar = SearchValues.Create(&quot;'&quot;);
+
+<span class="tok-com">// Usage</span>
+<span class="tok-kw">var</span> index = sqlSpan.IndexOfAny(s_commentStart);
+#<span class="tok-kw">else</span>
+<span class="tok-kw">var</span> index = sqlSpan.IndexOf(&quot;--&quot;);
+#endif
+</code></pre>
+</div>
+<p><strong>Impact</strong>: 2-3x faster character searching.</p>
+<hr />
+<h2 id="caching-strategy">Caching Strategy</h2>
+<h3 id="cache-hierarchy">Cache Hierarchy</h3>
+<table>
+<thead>
+<tr>
+<th>Cache</th>
+<th>Scope</th>
+<th>Lifetime</th>
+<th>Access Pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MetadataCache&lt;T&gt;</code></td>
+<td>Per type</td>
+<td>Application</td>
+<td>Read-only after init</td>
+</tr>
+<tr>
+<td><code>ParameterCache&lt;T&gt;</code></td>
+<td>Per type</td>
+<td>Application</td>
+<td>Read-only after init</td>
+</tr>
+<tr>
+<td><code>SqlParameterParserCache</code></td>
+<td>Per SQL</td>
+<td>Application</td>
+<td>Read-heavy</td>
+</tr>
+<tr>
+<td><code>CrudSqlCache&lt;T&gt;</code></td>
+<td>Per type</td>
+<td>Application</td>
+<td>Read-only after init</td>
+</tr>
+<tr>
+<td><code>ParameterBinder</code> property getters</td>
+<td>Per type</td>
+<td>Application</td>
+<td>Read-only after init</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cache-implementation">Cache Implementation</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Static generic cache (thread-safe by CLR)</span>
+<span class="tok-kw">internal</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> MetadataCache&lt;T&gt; <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+{
+    <span class="tok-kw">static</span> MetadataCache() { <span class="tok-com">/* One-time init */</span> }
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> EntityMetadata Metadata;
+}
+
+<span class="tok-com">// ConcurrentDictionary for dynamic caching</span>
+<span class="tok-kw">internal</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> SqlParameterParserCache
+{
+    <span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> ConcurrentDictionary&lt;string, string[]&gt; _cache = <span class="tok-kw">new</span>();
+    
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> string[] GetParameterNames(string sql)
+    {
+        <span class="tok-kw">return</span> _cache.GetOrAdd(sql, SqlParameterParser.ExtractParameterNames);
+    }
+}
+</code></pre>
+</div>
+<hr />
+<h2 id="performance-checklist">Performance Checklist</h2>
+<h3 id="code-review-checklist">Code Review Checklist</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Pre-sized collections where count is known</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>Span&lt;T&gt;</code> for string/array slicing</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>FrozenDictionary</code> on .NET 8+</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Compiled delegates instead of reflection</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>readonly struct</code> for small value types</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No LINQ in hot paths</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>for</code> loops instead of <code>foreach</code> for arrays</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>ConfigureAwait(false)</code> on all async</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>StringComparison.Ordinal</code> for string comparison</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>[MethodImpl(MethodImplOptions.AggressiveInlining)]</code> for small methods</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <code>ValueTask&lt;T&gt;</code> for async methods that may complete synchronously</li>
+</ul>
+<h3 id="profiling-targets">Profiling Targets</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+<th>Measurement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>First query (cold)</td>
+<td>&lt;10ms</td>
+<td>Includes metadata build</td>
+</tr>
+<tr>
+<td>Subsequent queries</td>
+<td>&lt;1ms per 1000 rows</td>
+<td>Warm cache</td>
+</tr>
+<tr>
+<td>Allocations per row</td>
+<td>&lt;1KB</td>
+<td>Depends on entity size</td>
+</tr>
+<tr>
+<td>GC pressure</td>
+<td>Gen 0 &lt;10ms</td>
+<td>During query execution</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="benchmarking">Benchmarking</h2>
+<h3 id="benchmarkdotnet-setup">BenchmarkDotNet Setup</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[MemoryDiagnoser]
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> QueryBenchmarks
+{
+    <span class="tok-kw">private</span> IDbConnection _connection;
+    <span class="tok-kw">private</span> <span class="tok-kw">const</span> string Sql = &quot;SELECT * FROM products WHERE category_id = @CategoryId&quot;;
+    
+    [GlobalSetup]
+    <span class="tok-kw">public</span> <span class="tok-kw">void</span> Setup()
+    {
+        _connection = <span class="tok-kw">new</span> SQLiteConnection(&quot;Data Source=:memory:&quot;);
+        _connection.Open();
+    }
+    
+    [Benchmark]
+    <span class="tok-kw">public</span> List&lt;Product&gt; Query()
+    {
+        <span class="tok-kw">return</span> _connection.Query&lt;Product&gt;(Sql, <span class="tok-kw">new</span> { CategoryId = <span class="tok-num">1</span> }).ToList();
+    }
+}
+</code></pre>
+</div>
+<h3 id="running-benchmarks">Running Benchmarks</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">dotnet run -c Release --project benchmarks/Jaunty.Benchmarks
+</code></pre>
+</div>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="02-architecture-architecture-specification.html"><code>architecture-specification.md</code></a> - Full architecture</li>
+<li><a href="02-architecture-metadata-system-spec.html"><code>metadata-system-spec.md</code></a> - Metadata caching</li>
+<li><a href="02-architecture-parameter-binding-spec.html"><code>parameter-binding-spec.md</code></a> - Parameter binding</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="02-architecture-parameter-binding-spec.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Parameter binding spec</span>
+</a><a class="pn-next" href="03-development-README.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">README</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

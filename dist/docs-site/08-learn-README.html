@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your First Hour with Jaunty — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Your First Hour with Jaunty</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html" class="active" aria-current="page">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Your First Hour with Jaunty</nav>
+        <article>
+<h1 id="your-first-hour-with-jaunty">Your First Hour with Jaunty</h1>
+<p>This is a hands-on walkthrough, not a reference. Every snippet below is runnable as-is against
+an in-memory SQLite database, so you can follow along without installing a database server.
+By the end you'll have touched every core Jaunty feature: strict and partial mapping, parameters,
+writes, transactions, custom mappers, attribute mapping, async, and streaming.</p>
+<p>If you want the full API surface, see <code>README.md</code> at the repository root. This guide only
+uses APIs documented there (plus the two official samples under <code>samples/</code>), so anything you see
+here is safe to rely on.</p>
+<h2 id="setup">Setup</h2>
+<p>Create a new console project and add the packages:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">dotnet new console -n JauntyLearn
+cd JauntyLearn
+dotnet add package Beparey.Jaunty
+dotnet add package Microsoft.Data.Sqlite
+</code></pre>
+</div>
+<p>Open <code>Program.cs</code> and start with an in-memory database, a schema, and some seed data:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> Jaunty;
+<span class="tok-kw">using</span> Microsoft.Data.Sqlite;
+
+<span class="tok-kw">using</span> <span class="tok-kw">var</span> connection = <span class="tok-kw">new</span> SqliteConnection(&quot;Data Source=:memory:&quot;);
+connection.Open();
+
+<span class="tok-kw">using</span> (<span class="tok-kw">var</span> cmd = connection.CreateCommand())
+{
+    cmd.CommandText = &quot;&quot;&quot;
+        CREATE TABLE products (
+            product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_name TEXT NOT NULL,
+            unit_price REAL NOT NULL,
+            discontinued INTEGER NOT NULL DEFAULT <span class="tok-num">0</span>
+        );
+        INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Chai'</span>, <span class="tok-num">18.00</span>, <span class="tok-num">0</span>);
+        INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Chang'</span>, <span class="tok-num">19.00</span>, <span class="tok-num">0</span>);
+        INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Aniseed Syrup'</span>, <span class="tok-num">10.00</span>, <span class="tok-num">0</span>);
+        INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Tofu'</span>, <span class="tok-num">23.25</span>, <span class="tok-num">0</span>);
+        INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Genen Shouyu'</span>, <span class="tok-num">15.50</span>, <span class="tok-num">1</span>);
+        &quot;&quot;&quot;;
+    cmd.ExecuteNonQuery();
+}
+</code></pre>
+</div>
+<p>Keep this connection open for the rest of the walkthrough. Run it now (<code>dotnet run</code>) just to
+confirm the schema and seed data work before we touch Jaunty at all.</p>
+<h2 id="step-1-your-first-queryt">Step 1: Your First <code>Query&lt;T&gt;</code></h2>
+<p>Define an entity whose properties line up with the columns you're about to select:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<p>Query for it, aliasing each column to the matching property name:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.Query&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;);
+
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> p <span class="tok-kw">in</span> products)
+    Console.WriteLine($&quot;[{p.Id}] {p.Name} - ${p.Price:F2}&quot;);
+</code></pre>
+</div>
+<p>Expected output:</p>
+<pre><code>[1] Chai - $18.00
+[2] Chang - $19.00
+[3] Aniseed Syrup - $10.00
+[4] Tofu - $23.25
+[5] Genen Shouyu - $15.50
+</code></pre>
+<p>Nothing surprising yet. <code>Query&lt;T&gt;</code> selected five rows and mapped each one onto a <code>Product</code>.</p>
+<h2 id="step-2-break-it-on-purpose-strict-mode">Step 2: Break It on Purpose (Strict Mode)</h2>
+<p>Now drop the <code>Price</code> column from the query and run it again:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> broken = connection.Query&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name FROM products&quot;);
+</code></pre>
+</div>
+<p>This throws immediately:</p>
+<pre><code>System.InvalidOperationException: Strict mapping failed: property 'Price' has no matching column
+</code></pre>
+<p>This is deliberate, and it's the whole reason <code>Query&lt;T&gt;</code> exists in this strict form. Every
+property on <code>Product</code> — <code>Id</code>, <code>Name</code>, <code>Price</code> — must have a matching column in the result set.
+If you meant to select all three, the exception just caught a real bug in your SQL before it
+shipped. If you meant to select only two columns on purpose, Jaunty wants you to say so
+explicitly, which is exactly what Step 3 does.</p>
+<div class="mermaid">flowchart LR
+    A[Run SQL] --> B{Every entity property&lt;br/>has a matching column?}
+    B -- Yes --> C[Query&amp;lt;T&amp;gt; returns mapped rows]
+    B -- No --> D[Query&amp;lt;T&amp;gt; throws InvalidOperationException]
+    B -- "Not applicable\n(intentional subset)" --> E[QueryPartial&amp;lt;T&amp;gt; returns partial rows]
+</div>
+<h2 id="step-3-projections-with-querypartialt">Step 3: Projections with <code>QueryPartial&lt;T&gt;</code></h2>
+<p>Define a smaller DTO for a summary view:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductSummary
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<p>Select only the columns you need, and use <code>QueryPartial&lt;T&gt;</code> instead of <code>Query&lt;T&gt;</code>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> summaries = connection.QueryPartial&lt;ProductSummary&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name FROM products&quot;);
+
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> s <span class="tok-kw">in</span> summaries)
+    Console.WriteLine($&quot;{s.Id}: {s.Name}&quot;);
+</code></pre>
+</div>
+<p>You can even select extra columns you don't map — <code>QueryPartial&lt;T&gt;</code> ignores anything without a
+matching property, silently:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> summaries2 = connection.QueryPartial&lt;ProductSummary&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price, discontinued FROM products&quot;);
+</code></pre>
+</div>
+<p>Same five rows, same two mapped properties. <code>unit_price</code> and <code>discontinued</code> are simply not
+looked at. This is the tool you reach for whenever you're intentionally projecting a subset of
+columns.</p>
+<h2 id="step-4-parameterized-queries">Step 4: Parameterized Queries</h2>
+<p>Pass an anonymous object for named parameters:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> cheap = connection.Query&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products WHERE unit_price &lt; @MaxPrice&quot;,
+    <span class="tok-kw">new</span> { MaxPrice = <span class="tok-num">15.00m</span> });
+</code></pre>
+</div>
+<p>Or skip the object entirely and pass values positionally — Jaunty parses the SQL to find the
+parameter names and binds your values in order:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> cheapPositional = connection.Query&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products WHERE unit_price &lt; @MaxPrice&quot;,
+    <span class="tok-num">15.00m</span>);
+</code></pre>
+</div>
+<p>Both return the same three rows (Chai, Aniseed Syrup, Genen Shouyu).</p>
+<h2 id="step-5-writing-data">Step 5: Writing Data</h2>
+<p>Insert, update, and delete work against the same connection, using the entity's shape to build
+the SQL. For this section we need <code>[Key]</code> so Jaunty knows which column identifies a row — see
+Step 8 for the full attribute story. For now, a minimal write:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> rows = connection.QueryScalar&lt;long&gt;(&quot;SELECT COUNT(*) FROM products&quot;);
+Console.WriteLine($&quot;Before insert: {rows} products&quot;);
+
+<span class="tok-kw">using</span> (<span class="tok-kw">var</span> insertCmd = connection.CreateCommand())
+{
+    insertCmd.CommandText = &quot;INSERT INTO products (product_name, unit_price, discontinued) VALUES (@Name, @Price, <span class="tok-num">0</span>)&quot;;
+    <span class="tok-kw">var</span> nameParam = insertCmd.CreateParameter();
+    nameParam.ParameterName = &quot;@Name&quot;;
+    nameParam.Value = &quot;Ikura&quot;;
+    insertCmd.Parameters.Add(nameParam);
+
+    <span class="tok-kw">var</span> priceParam = insertCmd.CreateParameter();
+    priceParam.ParameterName = &quot;@Price&quot;;
+    priceParam.Value = <span class="tok-num">31.00m</span>;
+    insertCmd.Parameters.Add(priceParam);
+
+    insertCmd.ExecuteNonQuery();
+}
+
+<span class="tok-kw">var</span> after = connection.QueryScalar&lt;long&gt;(&quot;SELECT COUNT(*) FROM products&quot;);
+Console.WriteLine($&quot;After insert: {after} products&quot;);
+</code></pre>
+</div>
+<p>Expected output:</p>
+<pre><code>Before insert: 5 products
+After insert: 6 products
+</code></pre>
+<p>We'll come back to Jaunty's entity-based <code>Insert</code>/<code>Update</code>/<code>Delete</code> in Step 8, once we have an
+entity with <code>[Key]</code> and <code>[DatabaseGenerated]</code> attributes wired up correctly.</p>
+<h2 id="step-6-a-transaction">Step 6: A Transaction</h2>
+<p>Wrap several statements in a transaction so they succeed or fail together:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.BeginTransaction();
+
+<span class="tok-kw">try</span>
+{
+    <span class="tok-kw">using</span> (<span class="tok-kw">var</span> cmd1 = connection.CreateCommand())
+    {
+        cmd1.Transaction = transaction;
+        cmd1.CommandText = &quot;INSERT INTO products (product_name, unit_price, discontinued) VALUES (<span class="tok-str">'Konbu'</span>, <span class="tok-num">6.00</span>, <span class="tok-num">0</span>)&quot;;
+        cmd1.ExecuteNonQuery();
+    }
+
+    <span class="tok-kw">var</span> totalRows = connection.Query&lt;Product&gt;(
+        &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;,
+        CommandOptions.WithTransaction(transaction));
+
+    Console.WriteLine($&quot;Rows visible inside the transaction: {totalRows.Count}&quot;);
+
+    transaction.Commit();
+}
+<span class="tok-kw">catch</span>
+{
+    transaction.Rollback();
+    <span class="tok-kw">throw</span>;
+}
+</code></pre>
+</div>
+<p><code>CommandOptions.WithTransaction(transaction)</code> is how you tell any Jaunty call — reads or writes —
+to participate in a transaction. There's no special &quot;transactional&quot; overload to remember; every
+<code>Query</code>/<code>Insert</code>/<code>Update</code>/<code>BulkInsert</code> call accepts the same <code>CommandOptions</code>.</p>
+<h2 id="step-7-a-custom-row-mapper">Step 7: A Custom Row Mapper</h2>
+<p>Sometimes you want full control over how a row becomes an object — no attributes, no
+reflection, just a function. Jaunty lets you hand it a mapper delegate through
+<code>CommandOptions&lt;T&gt;</code>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> System.Data;
+<span class="tok-kw">using</span> Jaunty.Core;
+
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductRow
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-kw">static</span> ProductRow MapProductRow(IDataReader reader)
+{
+    <span class="tok-kw">return</span> <span class="tok-kw">new</span> ProductRow
+    {
+        Id = reader.GetInt32(reader.GetOrdinal(&quot;product_id&quot;)),
+        Name = reader.GetString(reader.GetOrdinal(&quot;product_name&quot;)),
+        Price = (decimal)reader.GetDouble(reader.GetOrdinal(&quot;unit_price&quot;))
+    };
+}
+
+<span class="tok-kw">var</span> options = CommandOptions&lt;ProductRow&gt;.WithMapper(MapProductRow);
+
+<span class="tok-kw">var</span> mapped = connection.Query&lt;ProductRow&gt;(
+    &quot;SELECT product_id, product_name, unit_price FROM products&quot;,
+    options: options);
+
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> p <span class="tok-kw">in</span> mapped)
+    Console.WriteLine($&quot;{p.Id}: {p.Name} (${p.Price:F2})&quot;);
+</code></pre>
+</div>
+<p>Notice the SQL doesn't even need column aliases anymore — the mapper reads columns by their
+real database names via <code>reader.GetOrdinal</code>. This is the escape hatch for cases where
+reflection-based mapping (or a source-generated one) isn't the right fit: hand-tuned
+performance-critical paths, unusual type conversions, or NativeAOT builds that can't use
+runtime reflection at all.</p>
+<h2 id="step-8-attribute-mapping">Step 8: Attribute Mapping</h2>
+<p>Real schemas rarely match your C# naming exactly. Attributes let you keep idiomatic C# property
+names while pointing at whatever the database actually calls things:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> Jaunty.Attributes;
+
+[Table(&quot;products&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductEntity
+{
+    [Key]
+    [Column(&quot;product_id&quot;)]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;product_name&quot;)]
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;unit_price&quot;)]
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;discontinued&quot;)]
+    <span class="tok-kw">public</span> bool Discontinued { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<p><code>[Table]</code> overrides the table name Jaunty infers from the class name. <code>[Column]</code> does the same
+for a property's column. <code>[Key]</code> marks the primary key, and
+<code>[DatabaseGenerated(DatabaseGeneratedOption.Identity)]</code> tells Jaunty the database assigns this
+value on insert, so <code>Insert</code> won't try to send it and will hand you back the generated id:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entity = <span class="tok-kw">new</span> ProductEntity { Name = &quot;Mishi Kobe Niku&quot;, Price = <span class="tok-num">97.00m</span>, Discontinued = <span class="tok-kw">false</span> };
+<span class="tok-kw">var</span> newId = connection.Insert(entity);
+Console.WriteLine($&quot;Inserted product <span class="tok-kw">with</span> id {newId}&quot;);
+
+entity.Id = (int)newId;
+entity.Price = <span class="tok-num">99.00m</span>;
+<span class="tok-kw">var</span> updatedRows = connection.Update(entity);
+Console.WriteLine($&quot;Updated {updatedRows} row(s)&quot;);
+
+<span class="tok-kw">var</span> deletedRows = connection.Delete(entity);
+Console.WriteLine($&quot;Deleted {deletedRows} row(s)&quot;);
+</code></pre>
+</div>
+<p>Because <code>ProductEntity</code> maps onto the same <code>products</code> table with <code>[Column]</code> attributes, you can
+also read it back with <code>QueryPartial&lt;T&gt;</code> using the real database column names directly, no
+aliasing required:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entities = connection.QueryPartial&lt;ProductEntity&gt;(
+    &quot;SELECT product_id, product_name, unit_price, discontinued FROM products&quot;);
+</code></pre>
+</div>
+<h2 id="step-9-async-variants">Step 9: Async Variants</h2>
+<p>Every method used so far has an async counterpart with the same name plus <code>Async</code>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> asyncProducts = <span class="tok-kw">await</span> connection.QueryAsync&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;);
+
+Console.WriteLine($&quot;Fetched {asyncProducts.Count} products asynchronously&quot;);
+
+<span class="tok-kw">var</span> id = <span class="tok-kw">await</span> connection.InsertAsync(<span class="tok-kw">new</span> ProductEntity { Name = &quot;Async Item&quot;, Price = <span class="tok-num">5.00m</span> });
+Console.WriteLine($&quot;Inserted <span class="tok-kw">async</span> <span class="tok-kw">with</span> id {id}&quot;);
+</code></pre>
+</div>
+<p><code>CancellationToken</code> is an optional trailing argument on all of these — pass one when you have a
+real cancellation source (an HTTP request, a background job) and skip it otherwise.</p>
+<h2 id="step-10-streaming-a-large-result-set">Step 10: Streaming a Large Result Set</h2>
+<p><code>Query&lt;T&gt;</code> buffers the whole result set into a <code>List&lt;T&gt;</code>. When a result set is too large to
+comfortably hold in memory, use <code>QueryStream&lt;T&gt;</code> (or the async, <code>IAsyncEnumerable</code>-based
+<code>QueryStreamAsync&lt;T&gt;</code>) to process rows one at a time as they arrive from the database:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> product <span class="tok-kw">in</span> connection.QueryStream&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;))
+{
+    Console.WriteLine($&quot;Streamed: {product.Name}&quot;);
+}
+
+<span class="tok-kw">await</span> <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> product <span class="tok-kw">in</span> connection.QueryStreamAsync&lt;Product&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;))
+{
+    Console.WriteLine($&quot;Streamed <span class="tok-kw">async</span>: {product.Name}&quot;);
+}
+</code></pre>
+</div>
+<p>With only five rows this won't feel any different from <code>Query&lt;T&gt;</code> — the value shows up once
+you're pulling back tens of thousands of rows and don't want them all resident in memory at once.</p>
+<h2 id="where-to-go-next">Where to Go Next</h2>
+<p>You've now touched every core building block: strict mapping, partial mapping, parameters,
+writes, transactions, a custom mapper, attribute mapping, async, and streaming. From here:</p>
+<ul>
+<li>Read the <a href="08-learn-exercises.html"><code>exercises.md</code></a> in this folder to practice each of these on your own.</li>
+<li>The root <code>README.md</code> in the repository documents the full API surface, including bulk
+operations, upserts, stored procedures, <code>GridReader</code> for multiple result sets, and
+interceptors for logging and auditing.</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="07-design-README.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">README</span>
+</a><a class="pn-next" href="08-learn-exercises.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Exercises</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Decision Records (ADRs) — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Architecture Decision Records (ADRs)</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html" class="active" aria-current="page">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Architecture Decision Records (ADRs)</nav>
+        <article>
+<h1 id="architecture-decision-records-adrs">Architecture Decision Records (ADRs)</h1>
+<p>This directory contains Architecture Decision Records (ADRs) for Jaunty. Each ADR documents a significant architectural decision, its context, and consequences.</p>
+<h2 id="what-is-an-adr">What is an ADR?</h2>
+<p>An ADR is a document that captures:</p>
+<ul>
+<li>A significant architectural decision</li>
+<li>The context and problem being solved</li>
+<li>Options considered</li>
+<li>The decision made and rationale</li>
+<li>Consequences (both positive and negative)</li>
+</ul>
+<h2 id="adr-template">ADR Template</h2>
+<p>Copy this template for new ADRs:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">markdown</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="markdown"><code class="language-markdown"># ADR-NNN: [Title]
+
+**Status:** [Proposed | Accepted | Deprecated | Superseded]  
+**Date:** YYYY-MM-DD  
+**Author:** [Name]
+
+## Context
+
+What is the issue that we're seeing that is motivating this decision or change?
+
+## Problem Statement
+
+What problem are we trying to solve?
+
+## Options Considered
+
+### Option 1: [Name]
+
+**Description:** Brief description
+
+**Pros:**
+- Pro 1
+- Pro 2
+
+**Cons:**
+- Con 1
+- Con 2
+
+### Option 2: [Name]
+
+[Same format as Option 1]
+
+## Decision
+
+What is the change that we're proposing and/or doing?
+
+## Rationale
+
+Why did we choose this option over the others?
+
+## Consequences
+
+### Positive
+- What becomes easier or better?
+- What improvements do we expect?
+
+### Negative
+- What becomes harder or worse?
+- What trade-offs are we making?
+
+### Neutral
+- What changes but has no significant impact?
+
+## References
+
+- Links to related issues, PRs, or documentation
+- Links to external resources
+
+## Status History
+
+- YYYY-MM-DD: Proposed
+- YYYY-MM-DD: Accepted
+</code></pre>
+</div>
+<h2 id="adr-index">ADR Index</h2>
+<table>
+<thead>
+<tr>
+<th>ADR</th>
+<th>Title</th>
+<th>Status</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADR-001</td>
+<td>Use SQLite for Integration Testing</td>
+<td>Accepted</td>
+<td>2025-01-15</td>
+</tr>
+<tr>
+<td>ADR-002</td>
+<td>Support Multiple Database Dialects</td>
+<td>Accepted</td>
+<td>2025-01-20</td>
+</tr>
+<tr>
+<td>ADR-003</td>
+<td>Strict vs Partial Mapping Modes</td>
+<td>Accepted</td>
+<td>2025-02-01</td>
+</tr>
+<tr>
+<td>ADR-004</td>
+<td>Compiled Delegates for Parameter Binding</td>
+<td>Accepted</td>
+<td>2025-02-10</td>
+</tr>
+<tr>
+<td>ADR-005</td>
+<td>Return Type Design: long vs int</td>
+<td>Accepted</td>
+<td>2025-02-15</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="adr-001-use-sqlite-for-integration-testing">ADR-001: Use SQLite for Integration Testing</h2>
+<p><strong>Status:</strong> Accepted<br />
+<strong>Date:</strong> 2025-01-15<br />
+<strong>Author:</strong> Jaunty Team</p>
+<h3 id="context">Context</h3>
+<p>Integration tests require a real database to validate SQL generation and execution. We need a lightweight, portable solution that works across all development environments.</p>
+<h3 id="problem-statement">Problem Statement</h3>
+<p>How do we run integration tests reliably across different development environments without requiring external database servers?</p>
+<h3 id="options-considered">Options Considered</h3>
+<h4 id="option-1-sqlite-in-memory">Option 1: SQLite In-Memory</h4>
+<p><strong>Description:</strong> Use SQLite in-memory database for all integration tests</p>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>No external dependencies</li>
+<li>Fast execution</li>
+<li>Portable across platforms</li>
+<li>Easy to set up and tear down</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>SQLite dialect differences from SQL Server/PostgreSQL</li>
+<li>Some SQL features not available</li>
+</ul>
+<h4 id="option-2-testcontainers">Option 2: TestContainers</h4>
+<p><strong>Description:</strong> Use Docker containers for real database instances</p>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>Tests against real database engines</li>
+<li>Can test database-specific features</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>Requires Docker</li>
+<li>Slower test execution</li>
+<li>More complex setup</li>
+</ul>
+<h3 id="decision">Decision</h3>
+<p>Use SQLite in-memory database for integration tests.</p>
+<h3 id="rationale">Rationale</h3>
+<p>SQLite provides the best balance of speed, portability, and simplicity for our use case. Most of our SQL generation is standard SQL that works across databases. Database-specific features are tested through dialect-specific unit tests.</p>
+<h3 id="consequences">Consequences</h3>
+<h4 id="positive">Positive</h4>
+<ul>
+<li>Fast test execution (&lt; 2 seconds for full test suite)</li>
+<li>No external dependencies required</li>
+<li>Works on all developer machines without setup</li>
+</ul>
+<h4 id="negative">Negative</h4>
+<ul>
+<li>Cannot test database-specific SQL features directly</li>
+<li>Need separate dialect tests for database-specific behavior</li>
+</ul>
+<hr />
+<h2 id="adr-002-support-multiple-database-dialects">ADR-002: Support Multiple Database Dialects</h2>
+<p><strong>Status:</strong> Accepted<br />
+<strong>Date:</strong> 2025-01-20<br />
+<strong>Author:</strong> Jaunty Team</p>
+<h3 id="context-1">Context</h3>
+<p>Different databases have different SQL syntax, identifier escaping, and feature support. We need to support multiple databases without duplicating code.</p>
+<h3 id="problem-statement-1">Problem Statement</h3>
+<p>How do we support multiple database dialects (SQL Server, PostgreSQL, MySQL, SQLite) while maintaining a single codebase?</p>
+<h3 id="options-considered-1">Options Considered</h3>
+<h4 id="option-1-isqldialect-interface">Option 1: ISqlDialect Interface</h4>
+<p><strong>Description:</strong> Define interface with dialect-specific methods, implement per database</p>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>Clear separation of concerns</li>
+<li>Easy to add new dialects</li>
+<li>Type-safe</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>Interface may grow over time</li>
+<li>Need to implement all methods for each dialect</li>
+</ul>
+<h4 id="option-2-configuration-based">Option 2: Configuration-Based</h4>
+<p><strong>Description:</strong> Use configuration files to define dialect behavior</p>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>No code changes to add dialects</li>
+<li>Flexible</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>Harder to validate correctness</li>
+<li>Less type-safe</li>
+<li>Complex logic hard to express in config</li>
+</ul>
+<h3 id="decision-1">Decision</h3>
+<p>Use ISqlDialect interface with concrete implementations per database.</p>
+<h3 id="rationale-1">Rationale</h3>
+<p>The interface approach provides type safety, clear contracts, and makes it easy to add new dialects. Each dialect is self-contained and testable.</p>
+<h3 id="consequences-1">Consequences</h3>
+<h4 id="positive-1">Positive</h4>
+<ul>
+<li>Type-safe dialect implementations</li>
+<li>Easy to test each dialect independently</li>
+<li>Clear extension point for new databases</li>
+</ul>
+<h4 id="negative-1">Negative</h4>
+<ul>
+<li>Need to update all dialects when adding new interface methods</li>
+<li>Some code duplication in similar dialect implementations</li>
+</ul>
+<hr />
+<h2 id="adr-003-strict-vs-partial-mapping-modes">ADR-003: Strict vs Partial Mapping Modes</h2>
+<p><strong>Status:</strong> Accepted<br />
+<strong>Date:</strong> 2025-02-01<br />
+<strong>Author:</strong> Jaunty Team</p>
+<h3 id="context-2">Context</h3>
+<p>Entity mapping can be strict (all properties must match columns) or partial (only matching columns are mapped). Different use cases require different approaches.</p>
+<h3 id="problem-statement-2">Problem Statement</h3>
+<p>How do we support both strict validation and flexible partial mapping for different use cases?</p>
+<h3 id="options-considered-2">Options Considered</h3>
+<h4 id="option-1-single-mapping-mode">Option 1: Single Mapping Mode</h4>
+<p><strong>Description:</strong> Choose either strict or partial, apply everywhere</p>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>Simple, consistent behavior</li>
+<li>Less code to maintain</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>Doesn't support all use cases</li>
+<li>Forces users to adapt their entities</li>
+</ul>
+<h4 id="option-2-configurable-mapping-mode">Option 2: Configurable Mapping Mode</h4>
+<p><strong>Description:</strong> Support both modes, configurable per query</p>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>Supports all use cases</li>
+<li>Users can choose appropriate mode</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>More complex API</li>
+<li>Need to maintain both code paths</li>
+</ul>
+<h3 id="decision-2">Decision</h3>
+<p>Support both Strict and Partial mapping modes via <code>MappingMode</code> enum.</p>
+<h3 id="rationale-2">Rationale</h3>
+<p>Different scenarios require different mapping modes:</p>
+<ul>
+<li><strong>Strict</strong>: Production code where entity-schema alignment is critical</li>
+<li><strong>Partial</strong>: DTOs, projections, queries that select subsets of columns</li>
+</ul>
+<h3 id="consequences-2">Consequences</h3>
+<h4 id="positive-2">Positive</h4>
+<ul>
+<li>Flexible mapping for different use cases</li>
+<li>Strict mode catches schema drift early</li>
+<li>Partial mode enables efficient projections</li>
+</ul>
+<h4 id="negative-2">Negative</h4>
+<ul>
+<li>Slightly more complex API</li>
+<li>Need to test both modes</li>
+</ul>
+<hr />
+<h2 id="adr-004-compiled-delegates-for-parameter-binding">ADR-004: Compiled Delegates for Parameter Binding</h2>
+<p><strong>Status:</strong> Accepted<br />
+<strong>Date:</strong> 2025-02-10<br />
+<strong>Author:</strong> Jaunty Team</p>
+<h3 id="context-3">Context</h3>
+<p>Parameter binding from entity properties to SQL parameters happens on every query. We need efficient binding without reflection overhead.</p>
+<h3 id="problem-statement-3">Problem Statement</h3>
+<p>How do we efficiently bind entity properties to SQL parameters without sacrificing performance?</p>
+<h3 id="options-considered-3">Options Considered</h3>
+<h4 id="option-1-reflection-on-every-call">Option 1: Reflection on Every Call</h4>
+<p><strong>Description:</strong> Use reflection to read property values for each binding</p>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>Simple implementation</li>
+<li>No caching complexity</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>Slow performance (reflection is expensive)</li>
+<li>Allocation overhead</li>
+</ul>
+<h4 id="option-2-compiled-expression-trees">Option 2: Compiled Expression Trees</h4>
+<p><strong>Description:</strong> Build and cache compiled delegates for property access</p>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>Fast execution (near direct call performance)</li>
+<li>One-time compilation cost</li>
+<li>No per-call reflection</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>More complex implementation</li>
+<li>Cache management</li>
+</ul>
+<h3 id="decision-3">Decision</h3>
+<p>Use compiled expression trees cached per type.</p>
+<h3 id="rationale-3">Rationale</h3>
+<p>The performance benefit of compiled delegates far outweighs the implementation complexity. Parameter binding is on the critical path for every query, so optimization is justified.</p>
+<h3 id="consequences-3">Consequences</h3>
+<h4 id="positive-3">Positive</h4>
+<ul>
+<li>Fast parameter binding (microseconds vs milliseconds)</li>
+<li>Scales well with high query volume</li>
+<li>No per-call reflection overhead</li>
+</ul>
+<h4 id="negative-3">Negative</h4>
+<ul>
+<li>More complex code in ParameterCache</li>
+<li>Need to handle cache invalidation (rarely needed)</li>
+</ul>
+<hr />
+<h2 id="adr-005-return-type-design-long-vs-int">ADR-005: Return Type Design: long vs int</h2>
+<p><strong>Status:</strong> Accepted<br />
+<strong>Date:</strong> 2025-02-15<br />
+<strong>Author:</strong> Jaunty Team</p>
+<h3 id="context-4">Context</h3>
+<p>Different operations return different types: identity values can be large (bigint), row counts fit in int. We need to choose appropriate return types.</p>
+<h3 id="problem-statement-4">Problem Statement</h3>
+<p>Should Insert return <code>long</code> (for identity values) or <code>int</code> (consistent with Update/Delete)?</p>
+<h3 id="options-considered-4">Options Considered</h3>
+<h4 id="option-1-uniform-int-return-type">Option 1: Uniform int Return Type</h4>
+<p><strong>Description:</strong> All write operations return <code>int</code></p>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>Consistent API</li>
+<li>Simpler to use</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>Loses precision for large identity values</li>
+<li>May truncate bigint identities</li>
+</ul>
+<h4 id="option-2-semantic-return-types">Option 2: Semantic Return Types</h4>
+<p><strong>Description:</strong> Insert returns <code>long</code> (identity), Update/Delete return <code>int</code> (row count)</p>
+<p><strong>Pros:</strong></p>
+<ul>
+<li>Preserves full identity value range</li>
+<li>Semantically correct (identity vs count)</li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul>
+<li>Inconsistent API surface</li>
+<li>Users need to handle different types</li>
+</ul>
+<h3 id="decision-4">Decision</h3>
+<p>Use semantic return types: <code>Insert</code> returns <code>long</code>, <code>Update</code>/<code>Delete</code> return <code>int</code>.</p>
+<h3 id="rationale-4">Rationale</h3>
+<p>Identity columns can be <code>bigint</code> in some databases, supporting values beyond <code>int.MaxValue</code>. Row counts will never exceed <code>int.MaxValue</code> in practice. The semantic difference justifies different return types.</p>
+<h3 id="consequences-4">Consequences</h3>
+<h4 id="positive-4">Positive</h4>
+<ul>
+<li>Supports full range of identity values</li>
+<li>Semantically correct (identity value vs row count)</li>
+<li>Prevents silent truncation of large identities</li>
+</ul>
+<h4 id="negative-4">Negative</h4>
+<ul>
+<li>Slightly inconsistent API</li>
+<li>Users need to be aware of different return types</li>
+</ul>
+<hr />
+<h2 id="creating-new-adrs">Creating New ADRs</h2>
+<ol>
+<li>Copy the ADR template above</li>
+<li>Fill in all sections</li>
+<li>Use next sequential ADR number</li>
+<li>Submit as PR for review</li>
+<li>Update ADR Index when merged</li>
+</ol>
+<h2 id="adr-status-definitions">ADR Status Definitions</h2>
+<ul>
+<li><strong>Proposed</strong>: Under discussion, not yet accepted</li>
+<li><strong>Accepted</strong>: Decision is made, implementation in progress or complete</li>
+<li><strong>Deprecated</strong>: No longer recommended, superseded by newer ADR</li>
+<li><strong>Superseded</strong>: Replaced by a newer ADR</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="02-architecture-README.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">README</span>
+</a><a class="pn-next" href="02-architecture-architecture-specification.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Architecture specification</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

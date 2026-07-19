@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bulk Copy Operations — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Bulk Copy Operations</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html" class="active" aria-current="page">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Bulk Copy Operations</nav>
+        <article>
+<h1 id="bulk-copy-operations">Bulk Copy Operations</h1>
+<h2 id="overview">Overview</h2>
+<p>Jaunty's bulk copy functionality provides high-performance data loading for large datasets by automatically leveraging database-specific native bulk copy APIs (SqlBulkCopy, NpgsqlBinaryImporter, etc.).</p>
+<p><strong>Key Benefits</strong>:</p>
+<ul>
+<li><strong>10-100x faster</strong> than standard INSERT for large datasets (10K+ rows)</li>
+<li><strong>Automatic activation</strong> when beneficial (configurable threshold: 100 rows default)</li>
+<li><strong>Zero configuration required</strong> - works out of the box</li>
+<li><strong>Consistent API</strong> across all supported databases</li>
+</ul>
+<h2 id="quick-start">Quick Start</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> Jaunty;
+<span class="tok-kw">using</span> Jaunty.Configuration;
+
+<span class="tok-com">// Optional: Configure global settings at application startup</span>
+BulkCopyConfiguration.DefaultBatchSize = <span class="tok-num">10000</span>;
+BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = <span class="tok-num">100</span>;
+
+<span class="tok-com">// Bulk insert - native bulk copy used automatically for 100+ rows</span>
+<span class="tok-kw">var</span> products = GetProducts(); <span class="tok-com">// List&lt;Product&gt;</span>
+int inserted = connection.BulkInsert(products);
+
+Console.WriteLine($&quot;Inserted {inserted} products&quot;);
+</code></pre>
+</div>
+<h2 id="configuration">Configuration</h2>
+<h3 id="global-configuration">Global Configuration</h3>
+<p>Configure at application startup:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Set default batch size</span>
+BulkCopyConfiguration.DefaultBatchSize = <span class="tok-num">10000</span>;
+
+<span class="tok-com">// Set timeout (seconds)</span>
+BulkCopyConfiguration.DefaultTimeout = <span class="tok-num">30</span>;
+
+<span class="tok-com">// Set minimum rows for native bulk copy (default: 100)</span>
+BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = <span class="tok-num">50</span>;
+
+<span class="tok-com">// Disable native bulk copy entirely</span>
+BulkCopyConfiguration.EnableNativeBulkCopy = <span class="tok-kw">false</span>;
+
+<span class="tok-com">// Configure identity handling</span>
+BulkCopyConfiguration.DefaultIdentityMode = BulkCopyIdentityMode.KeepIdentity;
+
+<span class="tok-com">// Reset to defaults</span>
+BulkCopyConfiguration.Reset();
+</code></pre>
+</div>
+<h3 id="configuration-options">Configuration Options</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DefaultBatchSize</code></td>
+<td>10,000</td>
+<td>Rows per batch for native bulk copy</td>
+</tr>
+<tr>
+<td><code>DefaultTimeout</code></td>
+<td>30</td>
+<td>Timeout in seconds (0 = no timeout)</td>
+</tr>
+<tr>
+<td><code>DefaultIdentityMode</code></td>
+<td><code>Default</code></td>
+<td>How to handle identity columns</td>
+</tr>
+<tr>
+<td><code>DefaultCheckConstraints</code></td>
+<td><code>false</code></td>
+<td>Whether to check constraints</td>
+</tr>
+<tr>
+<td><code>MinimumRowsForNativeBulkCopy</code></td>
+<td>100</td>
+<td>Minimum rows to trigger native bulk copy</td>
+</tr>
+<tr>
+<td><code>EnableNativeBulkCopy</code></td>
+<td><code>true</code></td>
+<td>Enable/disable native bulk copy</td>
+</tr>
+</tbody>
+</table>
+<h3 id="identity-mode-options">Identity Mode Options</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Default</code></td>
+<td>Provider default behavior</td>
+</tr>
+<tr>
+<td><code>KeepIdentity</code></td>
+<td>Preserve identity values from entities</td>
+</tr>
+<tr>
+<td><code>AutoGenerate</code></td>
+<td>Let database generate identity values</td>
+</tr>
+</tbody>
+</table>
+<h3 id="table-lock-options">Table Lock Options</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Default</code></td>
+<td>Provider default locking</td>
+</tr>
+<tr>
+<td><code>BulkLock</code></td>
+<td>Acquire bulk update lock (SQL Server: TABLOCK)</td>
+</tr>
+<tr>
+<td><code>NoLock</code></td>
+<td>No table lock</td>
+</tr>
+</tbody>
+</table>
+<h2 id="api-reference">API Reference</h2>
+<h3 id="bulkinsert">BulkInsert<T>()</h3>
+<p>Inserts multiple entities using native bulk copy when beneficial.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Basic usage</span>
+int BulkInsert&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+
+<span class="tok-com">// With options</span>
+int BulkInsert&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+
+<span class="tok-com">// Ignore constraints (if supported)</span>
+int BulkInsertIgnoreConstraints&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+
+int BulkInsertIgnoreConstraints&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+</code></pre>
+</div>
+<p><strong>Returns</strong>: Number of rows inserted</p>
+<p><strong>Example</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = <span class="tok-kw">new</span> List&lt;Product&gt;
+{
+    <span class="tok-kw">new</span> Product { Name = &quot;Product <span class="tok-num">1</span>&quot;, Price = <span class="tok-num">10.00m</span> },
+    <span class="tok-kw">new</span> Product { Name = &quot;Product <span class="tok-num">2</span>&quot;, Price = <span class="tok-num">20.00m</span> },
+    <span class="tok-com">// ... 100+ more items for native bulk copy</span>
+};
+
+int inserted = connection.BulkInsert(products);
+</code></pre>
+</div>
+<h3 id="bulkinsertasync">BulkInsertAsync<T>()</h3>
+<p>Async version of BulkInsert.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">ValueTask&lt;int&gt; BulkInsertAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities, CancellationToken cancellationToken = <span class="tok-kw">default</span>);
+
+ValueTask&lt;int&gt; BulkInsertAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>);
+</code></pre>
+</div>
+<p><strong>Example</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">int inserted = <span class="tok-kw">await</span> connection.BulkInsertAsync(products, cancellationToken);
+</code></pre>
+</div>
+<h3 id="bulkupdate">BulkUpdate<T>()</h3>
+<p>Updates multiple entities in a single transaction.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">int BulkUpdate&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+
+int BulkUpdate&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+</code></pre>
+</div>
+<p><strong>Note</strong>: Bulk update uses standard UPDATE statements. Native bulk update is not generally supported across databases.</p>
+<p><strong>Example</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = GetUpdatedProducts();
+int updated = connection.BulkUpdate(products);
+</code></pre>
+</div>
+<h3 id="bulkupdateignoreconstraints">BulkUpdateIgnoreConstraints<T>()</h3>
+<p>Updates multiple entities, bypassing foreign key constraints (if supported).</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">int BulkUpdateIgnoreConstraints&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+
+int BulkUpdateIgnoreConstraints&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+</code></pre>
+</div>
+<p><strong>Supported Databases</strong>:</p>
+<ul>
+<li> PostgreSQL (<code>SET session_replication_role = 'replica'</code>)</li>
+<li> MySQL (<code>SET FOREIGN_KEY_CHECKS = 0</code>)</li>
+<li> SQLite (<code>PRAGMA foreign_keys = OFF</code>)</li>
+<li> SQL Server (not supported)</li>
+</ul>
+<h3 id="bulkdelete">BulkDelete<T>()</h3>
+<p>Deletes multiple entities by primary key.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">int BulkDelete&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+
+int BulkDelete&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, IEnumerable&lt;T&gt; entities, CommandOptions options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>();
+</code></pre>
+</div>
+<p><strong>Example</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> productsToDelete = GetProductsToDelete();
+int deleted = connection.BulkDelete(productsToDelete);
+</code></pre>
+</div>
+<h2 id="transaction-support">Transaction Support</h2>
+<p>All bulk operations support transactions:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.BeginTransaction();
+
+<span class="tok-kw">try</span>
+{
+    connection.BulkInsert(products, CommandOptions.WithTransaction(transaction));
+    connection.BulkInsert(orders, CommandOptions.WithTransaction(transaction));
+    transaction.Commit();
+}
+<span class="tok-kw">catch</span>
+{
+    transaction.Rollback();
+    <span class="tok-kw">throw</span>;
+}
+</code></pre>
+</div>
+<h2 id="database-specific-behavior">Database-Specific Behavior</h2>
+<h3 id="sql-server">SQL Server</h3>
+<p><strong>Technology</strong>: <code>SqlBulkCopy</code></p>
+<p><strong>Performance</strong>: 10-100x faster than INSERT for 10K+ rows</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Configurable batch size</li>
+<li>Identity column handling</li>
+<li>Table locking (TABLOCK)</li>
+<li>Transaction support</li>
+</ul>
+<p><strong>Requirements</strong>: <code>Microsoft.Data.SqlClient</code> or <code>System.Data.SqlClient</code></p>
+<h3 id="postgresql">PostgreSQL</h3>
+<p><strong>Technology</strong>: <code>NpgsqlBinaryImporter</code> (COPY BINARY)</p>
+<p><strong>Performance</strong>: 15-25x faster than INSERT for 10K+ rows</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Binary COPY protocol</li>
+<li>Very high throughput</li>
+<li>Automatic type conversion</li>
+</ul>
+<p><strong>Requirements</strong>: <code>Npgsql</code></p>
+<h3 id="mysql-mariadb">MySQL / MariaDB</h3>
+<p><strong>Technology</strong>: Chunked multi-row parameterized INSERT (2,000-parameter
+budget per statement; no server-side <code>local_infile</code> requirement)</p>
+<p><strong>Performance</strong>: 12.9-16.1x faster than a transactional loop (measured 2026-07-04)</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>No LOAD DATA / local_infile server configuration needed</li>
+<li>Reused prepared command for full chunks</li>
+<li>Own or caller-supplied transaction</li>
+</ul>
+<p><strong>Requirements</strong>: <code>MySql.Data</code> or <code>MySqlConnector</code></p>
+<h3 id="sqlite">SQLite</h3>
+<p><strong>Technology</strong>: Prepared-loop INSERT in a single transaction (BulkInsert
+routes SQLite here automatically; multi-row VALUES is quadratic in
+Microsoft.Data.Sqlite)</p>
+<p><strong>Performance</strong>: parity with hand-coded ADO.NET (measured 2026-07-04)</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Single transaction for all rows</li>
+<li>Prepared statement reuse</li>
+</ul>
+<p><strong>Note</strong>: SQLite has no native bulk copy API; there is no separate provider.</p>
+<h2 id="performance-guidelines">Performance Guidelines</h2>
+<h3 id="when-to-use-bulk-copy">When to Use Bulk Copy</h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1-10 rows</td>
+<td>Use <code>Insert&lt;T&gt;()</code></td>
+</tr>
+<tr>
+<td>10-100 rows</td>
+<td>Use <code>BulkInsert&lt;T&gt;()</code> (standard INSERT)</td>
+</tr>
+<tr>
+<td>100+ rows</td>
+<td>Use <code>BulkInsert&lt;T&gt;()</code> (native bulk copy)</td>
+</tr>
+<tr>
+<td>10K+ rows</td>
+<td>Use <code>BulkInsert&lt;T&gt;()</code> (native bulk copy)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="optimization-tips">Optimization Tips</h3>
+<ol>
+<li><strong>Batch large datasets</strong>: For 1M+ rows, batch into chunks of 10K-50K</li>
+<li><strong>Use transactions</strong>: Always wrap bulk operations in transactions</li>
+<li><strong>Disable indexes</strong>: For very large loads, consider dropping/recreating indexes</li>
+<li><strong>Set appropriate batch size</strong>: Match to your database's optimal batch size</li>
+<li><strong>Consider identity mode</strong>: Use <code>AutoGenerate</code> unless you need to preserve IDs</li>
+</ol>
+<h3 id="performance-comparison">Performance Comparison</h3>
+<table>
+<thead>
+<tr>
+<th>Rows</th>
+<th>Standard INSERT</th>
+<th>Native Bulk Copy</th>
+<th>Speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td>50ms</td>
+<td>45ms</td>
+<td>1.1x</td>
+</tr>
+<tr>
+<td>1,000</td>
+<td>500ms</td>
+<td>100ms</td>
+<td>5x</td>
+</tr>
+<tr>
+<td>10,000</td>
+<td>5,000ms</td>
+<td>300ms</td>
+<td>16x</td>
+</tr>
+<tr>
+<td>100,000</td>
+<td>50,000ms</td>
+<td>1,000ms</td>
+<td>50x</td>
+</tr>
+</tbody>
+</table>
+<p><em>SQL Server example times</em></p>
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="common-errors">Common Errors</h3>
+<p><strong>Parameter count mismatch</strong>:</p>
+<pre><code>InvalidOperationException: No parameter binder found for type 'Product'.
+</code></pre>
+<p><strong>Solution</strong>: Ensure source generation or reflection extension is used.</p>
+<p><strong>Provider not available</strong>:</p>
+<pre><code>InvalidOperationException: SqlBulkCopy is not available.
+</code></pre>
+<p><strong>Solution</strong>: Ensure database provider package is installed.</p>
+<p><strong>Constraint violation</strong>:</p>
+<pre><code>DbException: FOREIGN KEY constraint failed.
+</code></pre>
+<p><strong>Solution</strong>: Use <code>BulkInsertIgnoreConstraints&lt;T&gt;()</code> if appropriate.</p>
+<h3 id="transaction-rollback">Transaction Rollback</h3>
+<p>Bulk operations automatically rollback on error when using transactions:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.BeginTransaction();
+<span class="tok-kw">try</span>
+{
+    connection.BulkInsert(products, CommandOptions.WithTransaction(transaction));
+    transaction.Commit();
+}
+<span class="tok-kw">catch</span> (Exception ex)
+{
+    transaction.Rollback();
+    <span class="tok-com">// ex contains details of what failed</span>
+    <span class="tok-kw">throw</span>;
+}
+</code></pre>
+</div>
+<h2 id="entity-requirements">Entity Requirements</h2>
+<h3 id="required-attributes">Required Attributes</h3>
+<p>For bulk operations, entities should have:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;products&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    [Column(&quot;name&quot;)]
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    [Column(&quot;price&quot;)]
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<h3 id="ignored-properties">Ignored Properties</h3>
+<p>Properties marked with <code>[Ignore]</code> are skipped:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    [Ignore]
+    <span class="tok-kw">public</span> string CalculatedValue { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } <span class="tok-com">// Not inserted</span>
+}
+</code></pre>
+</div>
+<h2 id="examples">Examples</h2>
+<h3 id="basic-bulk-insert">Basic Bulk Insert</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = <span class="tok-kw">new</span> List&lt;Product&gt;
+{
+    <span class="tok-kw">new</span> Product { Name = &quot;Widget&quot;, Price = <span class="tok-num">9.99m</span> },
+    <span class="tok-kw">new</span> Product { Name = &quot;Gadget&quot;, Price = <span class="tok-num">19.99m</span> },
+    <span class="tok-com">// ... 100+ more</span>
+};
+
+int inserted = connection.BulkInsert(products);
+Console.WriteLine($&quot;Inserted {inserted} products&quot;);
+</code></pre>
+</div>
+<h3 id="bulk-insert-with-transaction">Bulk Insert with Transaction</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.BeginTransaction();
+<span class="tok-kw">try</span>
+{
+    <span class="tok-kw">var</span> products = GetProducts();
+    <span class="tok-kw">var</span> categories = GetCategories();
+    
+    connection.BulkInsert(categories, CommandOptions.WithTransaction(transaction));
+    connection.BulkInsert(products, CommandOptions.WithTransaction(transaction));
+    
+    transaction.Commit();
+}
+<span class="tok-kw">catch</span>
+{
+    transaction.Rollback();
+    <span class="tok-kw">throw</span>;
+}
+</code></pre>
+</div>
+<h3 id="bulk-insert-with-custom-options">Bulk Insert with Custom Options</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> options = <span class="tok-kw">new</span> CommandOptions&lt;Product&gt;()
+    .WithTimeout(<span class="tok-num">60</span>)
+    .WithTransaction(transaction);
+
+int inserted = connection.BulkInsert(products, options);
+</code></pre>
+</div>
+<h3 id="async-bulk-insert">Async Bulk Insert</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = <span class="tok-kw">await</span> GetProductsAsync();
+int inserted = <span class="tok-kw">await</span> connection.BulkInsertAsync(products, cancellationToken);
+</code></pre>
+</div>
+<h3 id="bulk-update">Bulk Update</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = GetUpdatedProducts();
+int updated = connection.BulkUpdate(products);
+Console.WriteLine($&quot;Updated {updated} products&quot;);
+</code></pre>
+</div>
+<h3 id="bulk-delete">Bulk Delete</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> productsToDelete = GetProductsToDelete();
+int deleted = connection.BulkDelete(productsToDelete);
+Console.WriteLine($&quot;Deleted {deleted} products&quot;);
+</code></pre>
+</div>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="native-bulk-copy-not-being-used">Native Bulk Copy Not Being Used</h3>
+<p><strong>Symptom</strong>: Performance is same as standard INSERT</p>
+<p><strong>Check</strong>:</p>
+<ol>
+<li>Verify row count &gt;= <code>MinimumRowsForNativeBulkCopy</code></li>
+<li>Verify <code>EnableNativeBulkCopy = true</code></li>
+<li>Check database provider is installed</li>
+<li>Verify dialect supports native bulk copy</li>
+</ol>
+<p><strong>Solution</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Lower threshold</span>
+BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = <span class="tok-num">50</span>;
+
+<span class="tok-com">// Verify enabled</span>
+Console.WriteLine(BulkCopyConfiguration.EnableNativeBulkCopy); <span class="tok-com">// Should be true</span>
+</code></pre>
+</div>
+<h3 id="identity-values-not-preserved">Identity Values Not Preserved</h3>
+<p><strong>Symptom</strong>: Identity columns get new values instead of entity values</p>
+<p><strong>Solution</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">BulkCopyConfiguration.DefaultIdentityMode = BulkCopyIdentityMode.KeepIdentity;
+</code></pre>
+</div>
+<h3 id="timeout-errors">Timeout Errors</h3>
+<p><strong>Symptom</strong>: Bulk operation times out</p>
+<p><strong>Solution</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">BulkCopyConfiguration.DefaultTimeout = <span class="tok-num">120</span>; <span class="tok-com">// 2 minutes</span>
+
+<span class="tok-com">// Or per-operation</span>
+<span class="tok-kw">var</span> options = <span class="tok-kw">new</span> CommandOptions&lt;T&gt;().WithTimeout(<span class="tok-num">120</span>);
+</code></pre>
+</div>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="02-architecture-bulk-copy-architecture.html">Bulk Copy Architecture</a></li>
+<li><a href="01-api-reference-configuration.html">Configuration</a></li>
+<li><a href="01-api-reference-write-methods.html">Write Methods</a></li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-attributes.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Attributes</span>
+</a><a class="pn-next" href="01-api-reference-configuration.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Configuration</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>
