@@ -20,6 +20,24 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.InsertSql))
             throw new InvalidOperationException($"Cannot insert entity of type '{typeof(T).Name}': No insertable columns found.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs so Insert participates in registered
+        // ICommandInterceptor auditing/logging the same way Query/GetAll/etc. do.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+                cached.InsertCommandText,
+                entity,
+                connection,
+                options.CommandType,
+                () => InsertCoreDirect(connection, entity, cached, binder, options));
+        }
+
+        return InsertCoreDirect(connection, entity, cached, binder, options);
+    }
+
+    private static long InsertCoreDirect<T>(IDbConnection connection, T entity, CachedCrudSql cached, Action<IDbCommand, T> binder, CommandOptions options) where T : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -68,6 +86,24 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.InsertSql))
             throw new InvalidOperationException($"Cannot insert entity of type '{typeof(T).Name}': No insertable columns found.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                cached.InsertCommandText,
+                entity,
+                dbConnection,
+                options.CommandType,
+                () => InsertCoreDirectAsync(dbConnection, entity, cached, binder, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await InsertCoreDirectAsync(dbConnection, entity, cached, binder, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<long> InsertCoreDirectAsync<T>(DbConnection dbConnection, T entity, CachedCrudSql cached, Action<IDbCommand, T> binder, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
