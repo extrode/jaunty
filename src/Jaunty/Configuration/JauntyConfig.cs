@@ -258,6 +258,38 @@ public static class JauntyConfig
     }
 
     /// <summary>
+    /// Adds a single interceptor to the pipeline, unless a reference-equal instance is already
+    /// registered.
+    /// </summary>
+    /// <param name="interceptor">The interceptor to add.</param>
+    /// <returns><see langword="true"/> if the interceptor was added; <see langword="false"/> if a
+    /// reference-equal instance was already present.</returns>
+    /// <remarks>
+    /// Unlike checking the pipeline's interceptors then calling <see cref="AddInterceptor"/>
+    /// separately, the presence check and the add happen atomically under the same lock, so
+    /// concurrent callers cannot both observe "not yet registered" and both append the same
+    /// instance.
+    /// </remarks>
+    public static bool AddInterceptorIfNotPresent(ICommandInterceptor interceptor)
+    {
+        if (interceptor is null)
+            throw new ArgumentNullException(nameof(interceptor));
+
+        lock (InterceptorSync)
+        {
+            var existingInterceptors = _interceptorPipeline?.GetInterceptors() ?? Enumerable.Empty<ICommandInterceptor>();
+            foreach (ICommandInterceptor existing in existingInterceptors)
+            {
+                if (ReferenceEquals(existing, interceptor))
+                    return false;
+            }
+
+            _interceptorPipeline = new InterceptorPipeline(existingInterceptors.Concat(new[] { interceptor }));
+            return true;
+        }
+    }
+
+    /// <summary>
     /// Adds multiple interceptors to the pipeline.
     /// </summary>
     /// <param name="interceptors">The interceptors to add.</param>

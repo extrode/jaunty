@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Data;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Jaunty.Diagnostics;
 
@@ -191,6 +193,12 @@ public abstract class CommandEventPayload
 /// </summary>
 public class CommandExecutingPayload : CommandEventPayload
 {
+    // object.GetHashCode() is not guaranteed unique and can be reused across different
+    // connection instances once an earlier one is GC'd - a ConditionalWeakTable-assigned
+    // counter value is genuinely unique for the process lifetime of each live connection.
+    private static readonly ConditionalWeakTable<IDbConnection, string> ConnectionIds = new();
+    private static long _connectionIdCounter;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="CommandExecutingPayload"/> class.
     /// </summary>
@@ -200,7 +208,7 @@ public class CommandExecutingPayload : CommandEventPayload
         CommandText = context.CommandText;
         CommandType = context.CommandType;
         Database = context.DatabaseName;
-        ConnectionId = context.Connection.GetHashCode().ToString();
+        ConnectionId = ConnectionIds.GetValue(context.Connection, static _ => Interlocked.Increment(ref _connectionIdCounter).ToString());
         Timestamp = DateTime.UtcNow;
         ProviderName = context.ProviderName;
     }
