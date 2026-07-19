@@ -336,12 +336,31 @@ public static class JauntyConfig
         ReflectionTableMetadataResolver = null;
         ReflectionMultiMapperResolver = null;
         ReflectionMultiMapperResolverN = null;
-        _interceptorPipeline = null;
+        lock (InterceptorSync)
+        {
+            _interceptorPipeline = null;
+        }
         _defaultEnumStorage = EnumStorage.Numeric;
         _parameterParsingCapacity = 8;
         _queryResultCapacity = 64;
         _csvFieldCapacity = 16;
         TypeHandlerRegistry.Clear();
+    }
+
+    /// <summary>
+    /// Atomically captures the currently registered interceptors and clears the pipeline, for
+    /// callers (notably tests) that need to snapshot-then-restore interceptor state around a
+    /// <see cref="Reset"/> call without losing interceptors registered concurrently by other
+    /// threads between the snapshot and the clear.
+    /// </summary>
+    internal static ICommandInterceptor[]? CaptureAndClearInterceptors()
+    {
+        lock (InterceptorSync)
+        {
+            var existing = _interceptorPipeline?.GetInterceptors().ToArray();
+            _interceptorPipeline = null;
+            return existing;
+        }
     }
     private sealed class AdaptedTypeHandler<T> : ITypeHandler
     {
