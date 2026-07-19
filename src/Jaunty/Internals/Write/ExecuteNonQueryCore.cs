@@ -241,7 +241,7 @@ public static partial class Jaunty
             {
                 // Fallback for non-DbConnection - use sync methods
                 if (wasClosed)
-                    connection.Open();
+                    await Task.Run(() => connection.Open(), cancellationToken).ConfigureAwait(false);
 
                 using IDbCommand command = connection.CreateCommand();
                 command.CommandText = sql;
