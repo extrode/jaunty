@@ -192,7 +192,7 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetByIdSimpleCoreAsync<T>(dbConnection, id, default, cancellationToken);
     }
 
@@ -215,7 +215,7 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetByIdSimpleCoreAsync<T>(dbConnection, id, options, cancellationToken);
     }
 
@@ -238,7 +238,7 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetByIdTypedCoreAsync<T, TId>(dbConnection, id, default, cancellationToken);
     }
 
@@ -262,7 +262,7 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetByIdTypedCoreAsync<T, TId>(dbConnection, id, options, cancellationToken);
     }
 
@@ -285,7 +285,7 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, default, cancellationToken).ConfigureAwait(false);
         return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
     }
@@ -310,7 +310,7 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         var result = await GetByIdSimpleCoreAsync<T>(dbConnection, id, options, cancellationToken).ConfigureAwait(false);
         return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
     }
@@ -335,7 +335,7 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, default, cancellationToken).ConfigureAwait(false);
         return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
     }
@@ -361,7 +361,7 @@ public static partial class Jaunty
         if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, options, cancellationToken).ConfigureAwait(false);
         return result ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
     }
