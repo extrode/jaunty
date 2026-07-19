@@ -14,13 +14,6 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 
-    private static void ClearTestTable(IDbConnection connection)
-    {
-        using var cmd = connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM bulk_test";
-        cmd.ExecuteNonQuery();
-    }
-
     private static int GetRowCount(IDbConnection connection)
     {
         using var cmd = connection.CreateCommand();

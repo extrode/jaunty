@@ -19,9 +19,12 @@ public static class FixtureGenerator
         connection.Open();
 
         using var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT setseed(0.42)";
+        cmd.ExecuteNonQuery();
+
         cmd.CommandText = """
-            CREATE TABLE inventory AS 
-            SELECT 
+            CREATE TABLE inventory AS
+            SELECT
                 i as sku,
                 'Item ' || (i % 100) as name,
                 floor(random() * 1000)::int as stockLevel,
