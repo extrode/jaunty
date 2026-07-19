@@ -475,6 +475,9 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             if (options.Transaction is not null)
                 command.Transaction = options.Transaction;
 
@@ -483,6 +486,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using IDataReader reader = command.ExecuteReader();
 
@@ -521,6 +526,9 @@ public static partial class Jaunty
             using DbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -528,6 +536,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using DbDataReader reader = command.ExecuteReader();
 
@@ -731,6 +741,9 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             if (options.Transaction is not null)
                 command.Transaction = options.Transaction;
 
@@ -739,6 +752,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using IDataReader reader = command.ExecuteReader();
 
@@ -779,6 +794,9 @@ public static partial class Jaunty
             using DbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -786,6 +804,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using DbDataReader reader = command.ExecuteReader();
 
@@ -999,6 +1019,9 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             if (options.Transaction is not null)
                 command.Transaction = options.Transaction;
 
@@ -1007,6 +1030,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using IDataReader reader = command.ExecuteReader();
 
@@ -1049,6 +1074,9 @@ public static partial class Jaunty
             using DbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -1056,6 +1084,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using DbDataReader reader = command.ExecuteReader();
 
@@ -1283,6 +1313,9 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             if (options.Transaction is not null)
                 command.Transaction = options.Transaction;
 
@@ -1291,6 +1324,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using IDataReader reader = command.ExecuteReader();
 
@@ -1335,6 +1370,9 @@ public static partial class Jaunty
             using DbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -1342,6 +1380,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using DbDataReader reader = command.ExecuteReader();
 
@@ -1583,6 +1623,9 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             if (options.Transaction is not null)
                 command.Transaction = options.Transaction;
 
@@ -1591,6 +1634,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using IDataReader reader = command.ExecuteReader();
 
@@ -1637,6 +1682,9 @@ public static partial class Jaunty
             using DbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -1644,6 +1692,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using DbDataReader reader = command.ExecuteReader();
 
@@ -1899,6 +1949,9 @@ public static partial class Jaunty
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             if (options.Transaction is not null)
                 command.Transaction = options.Transaction;
 
@@ -1907,6 +1960,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using IDataReader reader = command.ExecuteReader();
 
@@ -1955,6 +2010,9 @@ public static partial class Jaunty
             using DbCommand command = connection.CreateCommand();
             command.CommandText = sql;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
@@ -1962,6 +2020,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using DbDataReader reader = command.ExecuteReader();
 
