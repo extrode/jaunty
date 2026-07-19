@@ -1491,4 +1491,151 @@ public static partial class Jaunty
     }
 
     #endregion
+
+    #region Multi-Entity QueryStreamAsync APIs
+
+    /// <summary>
+    /// Asynchronously executes a SQL query and streams rows mapped to two entity types.
+    /// </summary>
+    /// <typeparam name="T1">The first entity type. Must have a parameterless constructor.</typeparam>
+    /// <typeparam name="T2">The second entity type. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="sql">
+    /// The SQL query to execute. Should return columns that can be mapped to both <typeparamref name="T1"/>
+    /// and <typeparamref name="T2"/>. Use SQL aliases to disambiguate columns with the same name.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>An async enumerable of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Important:</strong> The connection stays open until enumeration completes.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// or when a non-nullable property receives a NULL value.
+    /// </exception>
+    /// <seealso cref="QueryStreamAsync{T1, T2}(IDbConnection, string, object, CancellationToken)"/>
+    /// <seealso cref="QueryAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
+    public static IAsyncEnumerable<(T1, T2)> QueryStreamAsync<T1, T2>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryStreamMultiEntityCoreAsync<T1, T2>(dbConnection, sql, null, default, MappingMode.Strict, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously executes a SQL query with parameters and streams rows mapped to two entity types.
+    /// </summary>
+    /// <typeparam name="T1">The first entity type. Must have a parameterless constructor.</typeparam>
+    /// <typeparam name="T2">The second entity type. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="sql">The SQL query to execute.</param>
+    /// <param name="parameters">
+    /// An anonymous object or dictionary containing parameter values.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>An async enumerable of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
+    /// <seealso cref="QueryStreamAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
+    public static IAsyncEnumerable<(T1, T2)> QueryStreamAsync<T1, T2>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryStreamMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, default, MappingMode.Strict, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously executes a SQL query with command options and streams rows mapped to two entity types.
+    /// </summary>
+    /// <typeparam name="T1">The first entity type. Must have a parameterless constructor.</typeparam>
+    /// <typeparam name="T2">The second entity type. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="sql">The SQL query to execute.</param>
+    /// <param name="options">
+    /// Command options for transaction, timeout, or custom mapper configuration.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>An async enumerable of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
+    /// <seealso cref="QueryStreamAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
+    /// <seealso cref="CommandOptions{T}"/>
+    public static IAsyncEnumerable<(T1, T2)> QueryStreamAsync<T1, T2>(this IDbConnection connection, string sql, CommandOptions<(T1, T2)> options, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryStreamMultiEntityCoreAsync<T1, T2>(dbConnection, sql, null, options, MappingMode.Strict, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously executes a SQL query with parameters and command options and streams rows mapped to two entity types.
+    /// </summary>
+    /// <typeparam name="T1">The first entity type. Must have a parameterless constructor.</typeparam>
+    /// <typeparam name="T2">The second entity type. Must have a parameterless constructor.</typeparam>
+    /// <param name="connection">The database connection to execute the query against. Must be a <see cref="DbConnection"/>.</param>
+    /// <param name="sql">The SQL query to execute.</param>
+    /// <param name="parameters">
+    /// An anonymous object or dictionary containing parameter values.
+    /// </param>
+    /// <param name="options">
+    /// Command options for transaction, timeout, or custom mapper configuration.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>An async enumerable of tuples containing mapped entities of type (<typeparamref name="T1"/>, <typeparamref name="T2"/>).</returns>
+    /// <remarks>
+    /// <para>
+    /// <strong>Important:</strong> The connection stays open until enumeration completes.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the connection is not a <see cref="DbConnection"/>, when a property has no matching column,
+    /// or when a non-nullable property receives a NULL value.
+    /// </exception>
+    /// <seealso cref="QueryStreamAsync{T1, T2}(IDbConnection, string, CancellationToken)"/>
+    public static IAsyncEnumerable<(T1, T2)> QueryStreamAsync<T1, T2>(this IDbConnection connection, string sql, object parameters, CommandOptions<(T1, T2)> options, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryStreamMultiEntityCoreAsync<T1, T2>(dbConnection, sql, parameters, options, MappingMode.Strict, cancellationToken);
+    }
+
+    #endregion
 }
