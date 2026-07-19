@@ -27,7 +27,15 @@ public class ObsoleteMultiEntityTests
             _ => throw new InvalidOperationException($"Unsupported dialect for obsolete multi-entity tests: {dialect.Provider}.")
         };
         connection.Open();
-        SeedData(connection, dialect);
+        try
+        {
+            SeedData(connection, dialect);
+        }
+        catch
+        {
+            connection.Dispose();
+            throw;
+        }
         return connection;
     }
 
