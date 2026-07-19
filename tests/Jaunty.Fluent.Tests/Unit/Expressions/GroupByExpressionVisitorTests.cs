@@ -162,7 +162,8 @@ public class GroupByExpressionVisitorTests
         var (columns, aliases) = visitor.TranslateSelect(expr);
 
         var column = Assert.Single(columns);
-        Assert.Contains("COUNT", column);
+        Assert.Contains("COUNT([discontinued])", column);
+        Assert.DoesNotContain("COUNT(*)", column);
     }
 
     #endregion
