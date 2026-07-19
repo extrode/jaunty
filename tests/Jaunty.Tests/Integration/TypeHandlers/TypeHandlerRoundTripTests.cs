@@ -2,6 +2,7 @@ using System.Data;
 using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Core;
+using Jaunty.StoredProcedure;
 using Jaunty.TypeHandlers;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -228,6 +229,220 @@ public class TypeHandlerRoundTripTests : IClassFixture<DialectFixture>, IDisposa
             if (value.StartsWith(Prefix))
                 return value.Substring(Prefix.Length);
             return value;
+        }
+    }
+
+    // The following tests target write paths that build parameters from cached, compiled
+    // property getters (WriteParameterCache, MultiRowInsertCache) or a raw explicit value
+    // (SpParameters, entity-ID lookups) instead of going through Insert<T>'s ParameterBinder
+    // call. Those cached paths used to assign getter output straight to IDbDataParameter.Value,
+    // bypassing ApplyTypeHandlerIfNeeded entirely - a registered ITypeHandler or [EnumStorage]
+    // attribute silently had no effect. Each test below exercises one specific bypassed call site.
+
+    [Theory]
+    [SystemSqlite]
+    public void BulkInsert_SqliteLoopPath_EnumAttributeOverride_RoundTrips(DialectInfo dialect)
+    {
+        // SQLite always takes BulkInsertLoop (see BulkInsert.IsSqliteDialect), which binds
+        // parameters via WriteParameterCache<T>.InsertValueSetter.
+        using var ctx = _fixture.GetWriteContext(dialect);
+        CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
+
+        var entities = new[]
+        {
+            new TypeHandlerTestEntity { Name = "BulkInsertLoop1", EnumStringOverride = TestEnumForHandlers.Completed },
+            new TypeHandlerTestEntity { Name = "BulkInsertLoop2", EnumStringOverride = TestEnumForHandlers.Cancelled }
+        };
+
+        ctx.Connection.BulkInsert(entities);
+
+        var raw = ctx.Connection.QueryScalar<string>(
+            $"SELECT enum_string_override FROM {TableName} WHERE name = @Name", new { Name = "BulkInsertLoop1" });
+        Assert.Equal("Completed", raw);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void BulkUpdate_WriteParameterCachePath_EnumAttributeOverride_RoundTrips(DialectInfo dialect)
+    {
+        // BulkUpdate always binds via WriteParameterCache<T>.UpdateValueSetter, regardless of dialect.
+        using var ctx = _fixture.GetWriteContext(dialect);
+        CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
+
+        var entity = new TypeHandlerTestEntity { Name = "BulkUpdateTarget", EnumStringOverride = TestEnumForHandlers.Pending };
+        ctx.Connection.Insert(entity);
+        var inserted = ctx.Connection.QueryFirst<TypeHandlerTestEntity>(
+            $"SELECT * FROM {TableName} WHERE name = @Name", new { entity.Name });
+
+        inserted.EnumStringOverride = TestEnumForHandlers.Completed;
+        ctx.Connection.BulkUpdate([inserted]);
+
+        var raw = ctx.Connection.QueryScalar<string>(
+            $"SELECT enum_string_override FROM {TableName} WHERE id = @Id", new { inserted.Id });
+        Assert.Equal("Completed", raw);
+    }
+
+    [Theory]
+    [MariaDB]
+    public void BulkInsert_MultiRowPath_EnumAttributeOverride_RoundTrips(DialectInfo dialect)
+    {
+        // Non-SQLite dialects with SupportsMultiRowInsert and >1 entities take BulkInsertMultiRow,
+        // which binds via MultiRowInsertCache.GetOrBuildGetters rather than WriteParameterCache.
+        using var ctx = _fixture.GetWriteContext(dialect);
+        CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
+
+        var entities = new[]
+        {
+            new TypeHandlerTestEntity { Name = "BulkInsertMultiRow1", EnumStringOverride = TestEnumForHandlers.Completed },
+            new TypeHandlerTestEntity { Name = "BulkInsertMultiRow2", EnumStringOverride = TestEnumForHandlers.Cancelled }
+        };
+
+        ctx.Connection.BulkInsert(entities);
+
+        var raw = ctx.Connection.QueryScalar<string>(
+            $"SELECT enum_string_override FROM {TableName} WHERE name = @Name", new { Name = "BulkInsertMultiRow1" });
+        Assert.Equal("Completed", raw);
+    }
+
+    [Theory]
+    [MariaDB]
+    public async Task BulkInsertAsync_MultiRowPath_EnumAttributeOverride_RoundTrips(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
+
+        var entities = new[]
+        {
+            new TypeHandlerTestEntity { Name = "BulkInsertAsyncMultiRow1", EnumStringOverride = TestEnumForHandlers.Completed },
+            new TypeHandlerTestEntity { Name = "BulkInsertAsyncMultiRow2", EnumStringOverride = TestEnumForHandlers.Cancelled }
+        };
+
+        await ctx.Connection.BulkInsertAsync(entities);
+
+        var raw = ctx.Connection.QueryScalar<string>(
+            $"SELECT enum_string_override FROM {TableName} WHERE name = @Name", new { Name = "BulkInsertAsyncMultiRow1" });
+        Assert.Equal("Completed", raw);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void Upsert_InsertBranch_EnumAttributeOverride_RoundTrips(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
+
+        var entity = new TypeHandlerTestEntity { Name = "UpsertInsert", EnumStringOverride = TestEnumForHandlers.Completed };
+        ctx.Connection.Upsert(entity);
+
+        var raw = ctx.Connection.QueryScalar<string>(
+            $"SELECT enum_string_override FROM {TableName} WHERE name = @Name", new { entity.Name });
+        Assert.Equal("Completed", raw);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void GetById_RegisteredTypeHandlerForIdType_HandlerAppliedToIdParameter(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
+
+        var entity = new TypeHandlerTestEntity { Name = "GetByIdHandlerTest" };
+        ctx.Connection.Insert(entity);
+        var inserted = ctx.Connection.QueryFirst<TypeHandlerTestEntity>(
+            $"SELECT * FROM {TableName} WHERE name = @Name", new { entity.Name });
+
+        int toDbInvocations = 0;
+        JauntyConfig.RegisterTypeHandler<long>(
+            fromDb: dbValue => Convert.ToInt64(dbValue),
+            toDb: value => { toDbInvocations++; return value; });
+        try
+        {
+            var fetched = ctx.Connection.Get<TypeHandlerTestEntity>(inserted.Id);
+
+            Assert.NotNull(fetched);
+            Assert.True(toDbInvocations > 0);
+        }
+        finally
+        {
+            JauntyConfig.RemoveTypeHandler<long>();
+        }
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void DeleteById_RegisteredTypeHandlerForIdType_HandlerAppliedToIdParameter(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        CreateTableForTest(ctx.Connection, dialect.Provider, TableName);
+
+        var entity = new TypeHandlerTestEntity { Name = "DeleteByIdHandlerTest" };
+        ctx.Connection.Insert(entity);
+        var inserted = ctx.Connection.QueryFirst<TypeHandlerTestEntity>(
+            $"SELECT * FROM {TableName} WHERE name = @Name", new { entity.Name });
+
+        int toDbInvocations = 0;
+        JauntyConfig.RegisterTypeHandler<long>(
+            fromDb: dbValue => Convert.ToInt64(dbValue),
+            toDb: value => { toDbInvocations++; return value; });
+        try
+        {
+            int rowsDeleted = ctx.Connection.Delete<TypeHandlerTestEntity>(inserted.Id);
+
+            Assert.Equal(1, rowsDeleted);
+            Assert.True(toDbInvocations > 0);
+        }
+        finally
+        {
+            JauntyConfig.RemoveTypeHandler<long>();
+        }
+    }
+
+    /// <summary>
+    /// UpdateProductPrice's NewPrice parameter name. PostgreSQL/MariaDB use p_ prefix with different casing.
+    /// </summary>
+    private static string NewPriceParamName(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.Postgres ? "p_new_price" :
+        dialect.Provider == DialectProvider.MariaDb ? "p_NewPrice" : "NewPrice";
+
+    private static string ProductIdParamName(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.Postgres ? "p_product_id" :
+        dialect.Provider == DialectProvider.MariaDb ? "p_ProductId" : "ProductId";
+
+    private static string SpName(string name, DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.Postgres ? name.ToLower() : name;
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void ExecuteStoredProcedureNonQuery_SpParametersExplicitValue_TypeHandlerApplied(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var transaction = connection.BeginTransaction();
+
+        int toDbInvocations = 0;
+        JauntyConfig.RegisterTypeHandler<decimal>(
+            fromDb: dbValue => Convert.ToDecimal(dbValue),
+            toDb: value => { toDbInvocations++; return value; });
+        try
+        {
+            var parameters = new SpParameters()
+                .AddInput(ProductIdParamName(dialect), 1)
+                .AddInput(NewPriceParamName(dialect), 55.55m);
+
+            connection.ExecuteStoredProcedureNonQuery(
+                SpName("UpdateProductPrice", dialect),
+                parameters,
+                CommandOptions.WithTransaction(transaction));
+
+            // BindSpParameters used to assign sp.Value straight to the ADO.NET parameter,
+            // bypassing any registered ITypeHandler entirely - toDb would never run.
+            Assert.True(toDbInvocations > 0);
+        }
+        finally
+        {
+            transaction.Rollback();
+            JauntyConfig.RemoveTypeHandler<decimal>();
         }
     }
 

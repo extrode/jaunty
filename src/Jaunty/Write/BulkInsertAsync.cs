@@ -9,6 +9,7 @@ using Jaunty.Internals.BulkCopy;
 using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Write;
 
 namespace Jaunty;
@@ -340,7 +341,7 @@ public static partial class Jaunty
                     DbParameter p = command.CreateParameter();
                     // Parameter name matches SQL generated in MultiRowInsertCache.Build()
                     p.ParameterName = insertableColumns[c].ColumnName + "_" + row;
-                    p.Value = getters[c](entity) ?? DBNull.Value;
+                    p.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(getters[c](entity), insertableColumns[c].Property) ?? DBNull.Value;
                     command.Parameters.Add(p);
                 }
             }

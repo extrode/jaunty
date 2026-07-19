@@ -9,6 +9,7 @@ using Jaunty.Internals.Write;
 using JauntyConfig = Jaunty.Configuration.JauntyConfig;
 using Jaunty.Interfaces;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Parameters;
 
 namespace Jaunty;
 
@@ -174,7 +175,7 @@ public static partial class Jaunty
         ColumnMetadata primaryKey = cached.Metadata.PrimaryKeys[0];
         IDbDataParameter param = command.CreateParameter();
         param.ParameterName = "@" + primaryKey.ColumnName;
-        param.Value = id ?? DBNull.Value;
+        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property) ?? DBNull.Value;
         command.Parameters.Add(param);
     }
     internal static async ValueTask<T?> GetByIdSimpleCoreAsync<T>(DbConnection dbConnection, object id, CommandOptions<T> options, CancellationToken cancellationToken) where T : new()
@@ -320,7 +321,7 @@ public static partial class Jaunty
         ColumnMetadata primaryKey = cached.Metadata.PrimaryKeys[0];
         DbParameter param = command.CreateParameter();
         param.ParameterName = "@" + primaryKey.ColumnName;
-        param.Value = id ?? DBNull.Value;
+        param.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(id, primaryKey.Property) ?? DBNull.Value;
         command.Parameters.Add(param);
     }
 }
