@@ -92,7 +92,13 @@ public static partial class Jaunty
         finally
         {
             if (wasClosed)
-                connection.Close();
+            {
+#if NET8_0_OR_GREATER
+                await connection.CloseAsync().ConfigureAwait(false);
+#else
+                await Task.Run(() => connection.Close()).ConfigureAwait(false);
+#endif
+            }
         }
     }
 }
