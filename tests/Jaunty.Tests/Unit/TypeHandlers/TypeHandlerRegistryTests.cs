@@ -3,7 +3,7 @@ using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection;
 using Jaunty.TypeHandlers;
 
-namespace Jaunty.Tests.TypeHandlers;
+namespace Jaunty.Tests.Unit.TypeHandlers;
 
 /// <summary>
 /// Unit tests for the TypeHandler registration and registry APIs.
