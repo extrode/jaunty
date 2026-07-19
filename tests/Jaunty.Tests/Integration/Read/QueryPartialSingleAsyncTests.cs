@@ -42,7 +42,7 @@ public class QueryPartialSingleAsyncTests : IClassFixture<DialectFixture>
             "SELECT product_id AS ProductId, product_name AS ProductName FROM products WHERE product_id = 2");
 
         Assert.NotNull(product);
-        Assert.Equal(0, product.CategoryId);
+        Assert.Null(product.CategoryId);
     }
 
     [Theory]
