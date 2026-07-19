@@ -140,7 +140,7 @@ public class ExpressionTranslatorTests
         Assert.Empty(parameters);
     }
 
-    [Fact(Skip = "IN clause translation needs implementation")]
+    [Fact]
     public void Translate_InClause_GeneratesInSql()
     {
         // Arrange

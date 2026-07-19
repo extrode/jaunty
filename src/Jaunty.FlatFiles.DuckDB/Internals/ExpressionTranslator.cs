@@ -144,6 +144,7 @@ internal static class ExpressionTranslator
 
         if (method.Method.Name == "Contains" && method.Method.DeclaringType != null &&
             (method.Method.DeclaringType == typeof(Enumerable) ||
+             method.Method.DeclaringType == typeof(MemoryExtensions) ||
              method.Method.DeclaringType.IsGenericType && method.Method.DeclaringType.GetGenericTypeDefinition() == typeof(List<>)))
         {
             return HandleInClause(method, parameters, paramOffset);
@@ -178,9 +179,15 @@ internal static class ExpressionTranslator
         Expression collectionExpr;
         Expression itemExpr;
 
-        if (method.Method.DeclaringType == typeof(Enumerable))
+        if (method.Method.DeclaringType == typeof(Enumerable) || method.Method.DeclaringType == typeof(MemoryExtensions))
         {
-            collectionExpr = method.Arguments[0];
+            // For an array, `array.Contains(x)` resolves to the span-based
+            // MemoryExtensions.Contains(ReadOnlySpan<T>, T) overload (preferred over
+            // Enumerable.Contains since C# started favoring first-class Span conversions), and
+            // the compiler wraps the array argument in an implicit `T[] -> ReadOnlySpan<T>`
+            // conversion call. ReadOnlySpan<T> is a ref struct and can't be evaluated/boxed by
+            // EvaluateExpression, so unwrap back to the original array expression first.
+            collectionExpr = UnwrapSpanConversion(method.Arguments[0]);
             itemExpr = method.Arguments[1];
         }
         else
@@ -210,6 +217,19 @@ internal static class ExpressionTranslator
         }
         sb.Append(')');
         return sb.ToString();
+    }
+
+    private static Expression UnwrapSpanConversion(Expression expr)
+    {
+        if (expr is MethodCallExpression { Method.Name: "op_Implicit" } call &&
+            call.Method.DeclaringType is { IsGenericType: true } declaringType &&
+            (declaringType.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>) ||
+             declaringType.GetGenericTypeDefinition() == typeof(Span<>)))
+        {
+            return call.Arguments[0];
+        }
+
+        return expr;
     }
 
     private static (string ColumnName, object? Value) ExtractColumnAndValue(BinaryExpression binary)
