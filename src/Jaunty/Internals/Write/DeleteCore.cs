@@ -22,6 +22,24 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}': No primary key found.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs so Delete participates in registered
+        // ICommandInterceptor auditing/logging the same way Query/GetAll/etc. do.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+                cached.DeleteSql,
+                entity,
+                connection,
+                options.CommandType,
+                () => DeleteByEntityCoreDirect(connection, entity, cached, binder, options));
+        }
+
+        return DeleteByEntityCoreDirect(connection, entity, cached, binder, options);
+    }
+
+    private static int DeleteByEntityCoreDirect<T>(IDbConnection connection, T entity, CachedCrudSql cached, Action<IDbCommand, T> binder, CommandOptions options) where T : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -59,6 +77,24 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}': No primary key found.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                cached.DeleteSql,
+                entity,
+                dbConnection,
+                options.CommandType,
+                () => DeleteByEntityCoreDirectAsync(dbConnection, entity, cached, binder, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await DeleteByEntityCoreDirectAsync(dbConnection, entity, cached, binder, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<int> DeleteByEntityCoreDirectAsync<T>(DbConnection dbConnection, T entity, CachedCrudSql cached, Action<IDbCommand, T> binder, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
@@ -105,6 +141,23 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteByIdSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+                cached.DeleteByIdSql,
+                new { Id = id },
+                connection,
+                options.CommandType,
+                () => DeleteByIdSimpleCoreDirect<T>(connection, id, cached, options));
+        }
+
+        return DeleteByIdSimpleCoreDirect<T>(connection, id, cached, options);
+    }
+
+    private static int DeleteByIdSimpleCoreDirect<T>(IDbConnection connection, object id, CachedCrudSql cached, CommandOptions options) where T : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -139,6 +192,24 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteByIdSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                cached.DeleteByIdSql,
+                new { Id = id },
+                dbConnection,
+                options.CommandType,
+                () => DeleteByIdSimpleCoreDirectAsync<T>(dbConnection, id, cached, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await DeleteByIdSimpleCoreDirectAsync<T>(dbConnection, id, cached, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<int> DeleteByIdSimpleCoreDirectAsync<T>(DbConnection dbConnection, object id, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
@@ -185,6 +256,23 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteByIdSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+                cached.DeleteByIdSql,
+                new { Id = id },
+                connection,
+                options.CommandType,
+                () => DeleteByIdCoreDirect<T, TId>(connection, id, cached, options));
+        }
+
+        return DeleteByIdCoreDirect<T, TId>(connection, id, cached, options);
+    }
+
+    private static int DeleteByIdCoreDirect<T, TId>(IDbConnection connection, TId id, CachedCrudSql cached, CommandOptions options) where T : IEntity<TId>, new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -219,6 +307,24 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteByIdSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}' by ID: Ensure it has exactly one primary key.");
 
+        // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
+        // established pattern in GetAllCore.cs.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                cached.DeleteByIdSql,
+                new { Id = id },
+                dbConnection,
+                options.CommandType,
+                () => DeleteByIdCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await DeleteByIdCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<int> DeleteByIdCoreDirectAsync<T, TId>(DbConnection dbConnection, object id, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
+    {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
