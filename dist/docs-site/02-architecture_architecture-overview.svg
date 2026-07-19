@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 720" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+      <feDropShadow dx="1" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a9eff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357abd;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff9f43;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e67e22;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2ed573;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#26a65b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#a55eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8854c0;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e74c3c;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="720" fill="#f8f9fa" rx="12"/>
+
+  <!-- Title -->
+  <text x="550" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1a2e">Jaunty.FlatFiles — Architecture Overview</text>
+
+  <!-- Developer Code (top) -->
+  <rect x="360" y="52" width="380" height="48" rx="8" fill="url(#greenGrad)" filter="url(#shadow)"/>
+  <text x="550" y="80" text-anchor="middle" font-size="14" font-weight="600" fill="#fff">Developer Code (Fluent API)</text>
+  <text x="550" y="94" text-anchor="middle" font-size="10" fill="#d4f5d4">.Query&lt;T&gt;().Where().OrderBy().Take() | .InsertAsync() | .SaveAsync()</text>
+
+  <!-- Arrow down -->
+  <line x1="550" y1="100" x2="550" y2="120" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#666"/></marker></defs>
+
+  <!-- Jaunty.FlatFiles (Abstractions) -->
+  <rect x="80" y="125" width="940" height="140" rx="10" fill="#fff" stroke="#4a9eff" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="80" y="125" width="940" height="30" rx="10" fill="url(#blueGrad)"/>
+  <rect x="80" y="145" width="940" height="10" fill="url(#blueGrad)"/>
+  <text x="550" y="144" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Jaunty.FlatFiles (netstandard2.0 + net10.0) — NativeAOT Safe</text>
+
+  <rect x="100" y="170" width="170" height="80" rx="6" fill="#e8f4fd" stroke="#4a9eff" stroke-width="1"/>
+  <text x="185" y="192" text-anchor="middle" font-size="11" font-weight="600" fill="#2c3e50">Interfaces</text>
+  <text x="185" y="208" text-anchor="middle" font-size="9" fill="#555">IFlatFileDatabase</text>
+  <text x="185" y="222" text-anchor="middle" font-size="9" fill="#555">IFileSource</text>
+  <text x="185" y="236" text-anchor="middle" font-size="9" fill="#555">IFlatFileDialect</text>
+
+  <rect x="290" y="170" width="170" height="80" rx="6" fill="#e8f4fd" stroke="#4a9eff" stroke-width="1"/>
+  <text x="375" y="192" text-anchor="middle" font-size="11" font-weight="600" fill="#2c3e50">Configuration</text>
+  <text x="375" y="208" text-anchor="middle" font-size="9" fill="#555">CsvOptions / TsvOptions</text>
+  <text x="375" y="222" text-anchor="middle" font-size="9" fill="#555">ParquetOptions</text>
+  <text x="375" y="236" text-anchor="middle" font-size="9" fill="#555">JsonFileOptions</text>
+
+  <rect x="480" y="170" width="170" height="80" rx="6" fill="#e8f4fd" stroke="#4a9eff" stroke-width="1"/>
+  <text x="565" y="192" text-anchor="middle" font-size="11" font-weight="600" fill="#2c3e50">Write-Back</text>
+  <text x="565" y="208" text-anchor="middle" font-size="9" fill="#555">WriteBackMode</text>
+  <text x="565" y="222" text-anchor="middle" font-size="9" fill="#555">ExportFormat</text>
+  <text x="565" y="236" text-anchor="middle" font-size="9" fill="#555">WriteBackOptions</text>
+
+  <rect x="670" y="170" width="170" height="80" rx="6" fill="#e8f4fd" stroke="#4a9eff" stroke-width="1"/>
+  <text x="755" y="192" text-anchor="middle" font-size="11" font-weight="600" fill="#2c3e50">Import</text>
+  <text x="755" y="208" text-anchor="middle" font-size="9" fill="#555">IImportPipeline</text>
+  <text x="755" y="222" text-anchor="middle" font-size="9" fill="#555">ImportOptions</text>
+  <text x="755" y="236" text-anchor="middle" font-size="9" fill="#555">ConflictStrategy</text>
+
+  <rect x="860" y="170" width="140" height="80" rx="6" fill="#e8f4fd" stroke="#4a9eff" stroke-width="1"/>
+  <text x="930" y="192" text-anchor="middle" font-size="11" font-weight="600" fill="#2c3e50">Enums</text>
+  <text x="930" y="208" text-anchor="middle" font-size="9" fill="#555">FileFormat</text>
+  <text x="930" y="222" text-anchor="middle" font-size="9" fill="#555">JsonFileFormat</text>
+
+  <!-- Arrow down -->
+  <line x1="550" y1="265" x2="550" y2="290" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="558" y="282" font-size="9" fill="#888">implements</text>
+
+  <!-- Jaunty.FlatFiles.DuckDB (Engine) -->
+  <rect x="80" y="295" width="940" height="140" rx="10" fill="#fff" stroke="#ff9f43" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="80" y="295" width="940" height="30" rx="10" fill="url(#orangeGrad)"/>
+  <rect x="80" y="315" width="940" height="10" fill="url(#orangeGrad)"/>
+  <text x="550" y="314" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Jaunty.FlatFiles.DuckDB (net8.0 + net10.0) — Engine Implementation</text>
+
+  <rect x="100" y="340" width="160" height="80" rx="6" fill="#fff3e0" stroke="#ff9f43" stroke-width="1"/>
+  <text x="180" y="362" text-anchor="middle" font-size="11" font-weight="600" fill="#2c3e50">Core</text>
+  <text x="180" y="378" text-anchor="middle" font-size="9" fill="#555">DuckDbFlatFileDatabase</text>
+  <text x="180" y="392" text-anchor="middle" font-size="9" fill="#555">DuckDbDialect</text>
+  <text x="180" y="406" text-anchor="middle" font-size="9" fill="#555">FileSourceFactory</text>
+
+  <rect x="280" y="340" width="200" height="80" rx="6" fill="#fff3e0" stroke="#ff9f43" stroke-width="1"/>
+  <text x="380" y="362" text-anchor="middle" font-size="11" font-weight="600" fill="#2c3e50">File Sources</text>
+  <text x="380" y="378" text-anchor="middle" font-size="9" fill="#555">DuckDbCsvSource → read_csv_auto()</text>
+  <text x="380" y="392" text-anchor="middle" font-size="9" fill="#555">DuckDbTsvSource → read_csv_auto(delim=\t)</text>
+  <text x="380" y="406" text-anchor="middle" font-size="9" fill="#555">DuckDbParquetSource → read_parquet()</text>
+  <text x="380" y="420" text-anchor="middle" font-size="9" fill="#555">DuckDbJsonSource → read_json_auto()</text>
+
+  <rect x="500" y="340" width="170" height="80" rx="6" fill="#fff3e0" stroke="#ff9f43" stroke-width="1"/>
+  <text x="585" y="362" text-anchor="middle" font-size="11" font-weight="600" fill="#2c3e50">Write-Back</text>
+  <text x="585" y="378" text-anchor="middle" font-size="9" fill="#555">DuckDbWriteBackEngine</text>
+  <text x="585" y="392" text-anchor="middle" font-size="9" fill="#555">CopyToExporter</text>
+  <text x="585" y="406" text-anchor="middle" font-size="9" fill="#555">COPY TO csv|parquet|json</text>
+
+  <rect x="690" y="340" width="310" height="80" rx="6" fill="#fff3e0" stroke="#ff9f43" stroke-width="1"/>
+  <text x="845" y="362" text-anchor="middle" font-size="11" font-weight="600" fill="#2c3e50">Import Optimizers</text>
+  <text x="845" y="378" text-anchor="middle" font-size="9" fill="#555">SQLite → Batched INSERT + Transaction</text>
+  <text x="845" y="392" text-anchor="middle" font-size="9" fill="#555">PostgreSQL → Npgsql COPY Binary Protocol</text>
+  <text x="845" y="406" text-anchor="middle" font-size="9" fill="#555">SQL Server → SqlBulkCopy</text>
+
+  <!-- Arrow down to dependencies -->
+  <line x1="350" y1="435" x2="350" y2="470" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="750" y1="435" x2="750" y2="470" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Dependencies row -->
+  <rect x="80" y="475" width="460" height="65" rx="8" fill="url(#greenGrad)" filter="url(#shadow)"/>
+  <text x="310" y="500" text-anchor="middle" font-size="13" font-weight="600" fill="#fff">Jaunty Core</text>
+  <text x="310" y="518" text-anchor="middle" font-size="10" fill="#d4f5d4">IDialect | Entity Mapping | Materialization | Fluent Query API</text>
+
+  <rect x="560" y="475" width="460" height="65" rx="8" fill="url(#purpleGrad)" filter="url(#shadow)"/>
+  <text x="790" y="500" text-anchor="middle" font-size="13" font-weight="600" fill="#fff">DuckDB.NET.Data.Full</text>
+  <text x="790" y="518" text-anchor="middle" font-size="10" fill="#e8d5f5">DuckDBConnection | DuckDBCommand | DbDataReader | Native Binary</text>
+
+  <!-- Arrow down to DuckDB engine -->
+  <line x1="790" y1="540" x2="790" y2="570" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- DuckDB Engine -->
+  <rect x="460" y="575" width="560" height="55" rx="8" fill="#2c2c54" filter="url(#shadow)"/>
+  <text x="740" y="600" text-anchor="middle" font-size="13" font-weight="600" fill="#fff"> DuckDB Embedded Engine (In-Process)</text>
+  <text x="740" y="618" text-anchor="middle" font-size="10" fill="#aaa">read_csv_auto() | read_parquet() | read_json_auto() | COPY TO | Full SQL</text>
+
+  <!-- File sources at bottom -->
+  <line x1="550" y1="630" x2="550" y2="655" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <rect x="80" y="660" width="170" height="44" rx="8" fill="url(#redGrad)" filter="url(#shadow)"/>
+  <text x="165" y="686" text-anchor="middle" font-size="12" font-weight="600" fill="#fff"> CSV / TSV</text>
+
+  <rect x="270" y="660" width="170" height="44" rx="8" fill="url(#redGrad)" filter="url(#shadow)"/>
+  <text x="355" y="686" text-anchor="middle" font-size="12" font-weight="600" fill="#fff"> Parquet</text>
+
+  <rect x="460" y="660" width="170" height="44" rx="8" fill="url(#redGrad)" filter="url(#shadow)"/>
+  <text x="545" y="686" text-anchor="middle" font-size="12" font-weight="600" fill="#fff"> JSON / NDJSON</text>
+
+  <!-- Target DBs (import destination) -->
+  <rect x="700" y="660" width="320" height="44" rx="8" fill="#2c3e50" filter="url(#shadow)"/>
+  <text x="860" y="680" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">Import Targets</text>
+  <text x="860" y="696" text-anchor="middle" font-size="10" fill="#bbb"> SQLite | PostgreSQL | SQL Server</text>
+
+  <!-- Connecting lines to files -->
+  <line x1="550" y1="630" x2="165" y2="660" stroke="#666" stroke-width="1" stroke-dasharray="4"/>
+  <line x1="550" y1="630" x2="355" y2="660" stroke="#666" stroke-width="1" stroke-dasharray="4"/>
+  <line x1="550" y1="630" x2="545" y2="660" stroke="#666" stroke-width="1" stroke-dasharray="4"/>
+  <line x1="790" y1="630" x2="860" y2="660" stroke="#666" stroke-width="1" stroke-dasharray="4"/>
+</svg>

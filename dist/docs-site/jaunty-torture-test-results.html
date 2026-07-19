@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty Torture Test — Results Matrix — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty Torture Test — Results Matrix</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html" class="active" aria-current="page">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty Torture Test — Results Matrix</nav>
+        <article>
+<h1 id="jaunty-torture-test-results-matrix">Jaunty Torture Test — Results Matrix</h1>
+<p>Parts 1 (eShopOnWeb port), 2 (Sakila/Pagila dialect-translation stress test), and 3
+(Conduit/RealWorld backend) are all complete. See <code>docs/jaunty-torture-test-handoff.md</code> for the
+original scope.</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>SQL Server</th>
+<th>Postgres</th>
+<th>MySQL</th>
+<th>MariaDB</th>
+<th>SQLite</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>eShopOnWeb FunctionalTests (12 tests)</td>
+<td>12/12 pass</td>
+<td>12/12 pass</td>
+<td>12/12 pass</td>
+<td>12/12 pass</td>
+<td>12/12 pass</td>
+</tr>
+<tr>
+<td>Sakila query 1..15</td>
+<td>pass (see notes)</td>
+<td>pass (see notes)</td>
+<td>pass</td>
+<td>pass</td>
+<td>pass (baseline)</td>
+</tr>
+<tr>
+<td>Conduit.IntegrationTests (7 tests)</td>
+<td>not attempted (SQLite-only scope)</td>
+<td>not attempted</td>
+<td>not attempted</td>
+<td>not attempted</td>
+<td>7/7 pass</td>
+</tr>
+</tbody>
+</table>
+<h2 id="part-3-conduitrealworld-backend">Part 3 — Conduit/RealWorld backend</h2>
+<p>Zero-config SQLite smoke check per the handoff doc's Part 3 scope: clone a .NET RealWorld
+backend, swap EF Core for Jaunty, confirm it works out of the box. Unlike the doc's original
+&quot;quick sanity check&quot; framing, Conduit's MediatR handlers compose EF <code>IQueryable&lt;T&gt;</code> directly in
+every handler body rather than through a repository seam, so the actual port ended up touching
+all 19 handlers — full detail and design decisions in
+<code>samples/torture-test-conduit-port/README.md</code>.</p>
+<p><strong>Result:</strong> all 7 <code>Conduit.IntegrationTests</code> pass against a real, disposable per-test SQLite
+file. A live HTTP smoke test against the running app (<code>dotnet run</code>, real ASP.NET DI/MediatR
+pipeline) confirmed the full round trip working: user registration, article creation with tags,
+article detail retrieval with full author/tag/favorite graph hydration, tag listing, and profile
+lookup all returned correct data. (<code>GET /articles</code> list endpoint 422s on a pre-existing
+model-binding quirk in the vendor app's <code>ArticlesController</code> — non-nullable <code>[FromQuery] string</code>
+parameters implicitly required by ASP.NET's validation — unrelated to the data layer and present
+in the untouched vendor code.)</p>
+<p>One real Jaunty gap found (<code>docs/jaunty-torture-test-gaps-log.md</code> #15) and <strong>fixed the same day</strong>:
+the fluent bulk <code>.Where(...).Delete()</code>/<code>.DeleteAsync()</code> terminal (plus its <code>Update</code> sibling) had
+no <code>CommandOptions</code>/transaction overload, unlike every other Jaunty write path — forced a less
+efficient select-then-loop-delete workaround for the one handler needing transactional bulk
+deletes at the time. <code>Delete</code>/<code>DeleteAsync</code>/<code>DeleteAll</code>/<code>DeleteAllAsync</code>/<code>Update</code>/<code>UpdateAsync</code>/
+<code>UpdateAll</code>/<code>UpdateAllAsync</code> all gained <code>CommandOptions</code> overloads on
+<code>fix/fluent-bulk-delete-transaction-overload</code>.</p>
+<h2 id="part-2-sakilapagila-query-results">Part 2 — Sakila/Pagila query results</h2>
+<p>All 15 queries (<code>samples/torture-test-sakila-queries/</code>) ran successfully against all 5 targets
+with no crashes and no unexplained result differences. Per-query comparison against the SQLite
+baseline:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Query</th>
+<th>SQL Server</th>
+<th>Postgres</th>
+<th>MySQL</th>
+<th>MariaDB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Rental history for a customer (3-way join)</td>
+<td>exact</td>
+<td>same rows, shifted dates*</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Top 5 films by revenue (raw SQL — join+GROUP BY)</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Actor filmography (2-way join)</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Monthly rental count per store (raw SQL, per-dialect date-trunc)</td>
+<td>exact</td>
+<td>same rows, shifted dates*</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Customers with outstanding rentals (2-way join)</td>
+<td>same rows, tie-order differs†</td>
+<td>same rows, shifted dates*</td>
+<td>same rows, tie-order differs†</td>
+<td>same rows, tie-order differs†</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Film count per category (GroupBy+Count)</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Average rental rate by category (raw SQL — join+GROUP BY, portable SQL)</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Films with no category (WhereNotExists)</td>
+<td>exact (empty set)</td>
+<td>exact (empty set)</td>
+<td>exact (empty set)</td>
+<td>exact (empty set)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Top 10 customers by spend (GroupBy+Sum, client-sorted)</td>
+<td>same rows, tie-order differs†</td>
+<td>same rows, tie-order differs†</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Actors in &gt;25 films (GroupBy+Having, closure threshold)</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Distinct stores stocking a film (Distinct)</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Rental count per staff member (GroupBy+Count)</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Customers who never paid (WhereNotExists)</td>
+<td>exact (empty set)</td>
+<td>exact (empty set)</td>
+<td>exact (empty set)</td>
+<td>exact (empty set)</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Films above average rental rate (2-step: raw scalar + fluent filter)</td>
+<td>same rows, tie-order differs†</td>
+<td>same rows, tie-order differs†</td>
+<td>exact</td>
+<td>same rows, tie-order differs†</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Paginated film list, page 2 (Skip/Take + OrderBy)</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+</tbody>
+</table>
+<p><code>*</code> <strong>Not a Jaunty issue.</strong> Pagila's <code>rental</code>/<code>payment</code> timestamp data is systematically shifted
+(~17 years forward, ~1 hour time-of-day) relative to jOOQ/sakila's static 2005–2006 snapshot used
+by the other 4 targets — a data-provenance difference between the two independently-maintained
+upstream sample-database projects, confirmed by checking the raw rows directly with each engine's
+own CLI (<code>mysql</code>, <code>psql</code>). Row counts, row identities, and relative patterns (which customer
+rented which film, which rentals are still outstanding) match exactly; only the literal date
+values differ for the 3 queries that surface raw timestamps (Q1, Q4, Q5). Query correctness is
+unaffected — this would reproduce identically even if Jaunty were never involved.</p>
+<p><code>†</code> <strong>Not a Jaunty issue.</strong> These 3 queries order or select &quot;top N&quot; by a column with many exact
+ties (<code>rental_date</code> shared by dozens of rentals seeded at the same instant; <code>total spend</code>/
+<code>rental_rate</code> shared by many customers/films) without a secondary tiebreaker in the query design
+itself — SQL doesn't guarantee tie order unless one is specified, so which of several tied rows
+sorts first is legitimately implementation-defined per engine. Row <em>sets</em> match exactly (verified
+by sorting before diffing); only the order of tied rows differs. A production query needing
+deterministic tie order would add an explicit secondary <code>OrderBy</code> (e.g. by id) — intentionally
+not done here since the point was to prove the aggregate/filter logic, not tie-breaking.</p>
+<p><strong>Net result: zero unexplained result differences across all 5 dialects for all 15 queries.</strong>
+Every observed difference traces to one of the two documented, non-Jaunty causes above.</p>
+<h2 id="part-2-jaunty-gaps-found">Part 2 — Jaunty gaps found</h2>
+<p>Four real findings while writing and running these queries, all in <code>docs/jaunty-torture-test-gaps-log.md</code>
+(entries #11–14):</p>
+<ul>
+<li><strong>#11 (fixed 2026-07-08):</strong> <code>Jaunty.Fluent</code>'s query builder had no NativeAOT-safe metadata
+path — it required <code>Jaunty.Extensions.Reflection</code> for every single fluent query, contradicting
+the constitution's &quot;no runtime reflection in core&quot; principle for its primary API. Closed via
+<code>docs/specs/003-fluent-nativeaot-metadata/</code>; this sample's <code>Jaunty.Extensions.Reflection</code>
+reference has since been removed entirely (see updated repro steps below) and all 15 queries
+still pass against all 5 targets.</li>
+<li><strong>#12 (fixed):</strong> source generator produced uncompilable code for any <code>DateTime?</code>/<code>Guid?</code>
+property — a missing fully-qualified case in an existing type-name switch.</li>
+<li><strong>#13 (fixed 2026-07-08):</strong> <code>GroupBy</code> cannot be combined with joins in the fluent API at all —
+forced 3 of the 15 queries to raw SQL passthrough, 2 of which needed no dialect-specific SQL.
+Closed by spec 004 (<code>IGroupingJoined</code>/<code>IGroupedJoinedQuery</code> for 2/3/4-way); <code>Q02</code>/<code>Q07</code>
+rewritten on the new API, byte-identical output across all 5 targets. <code>Q04</code> remains raw SQL
+(date-truncation, an unrelated, explicitly out-of-scope capability).</li>
+<li><strong>#14 (fixed):</strong> <code>HAVING</code> rejected any closure-captured variable or method parameter as a
+comparison value — only literals worked, an easy-to-hit gap in ordinary parameterized code.</li>
+</ul>
+<p>Also confirmed via the codegen-diff step (entries #9–10, not fixed, low priority): Postgres
+enum/array columns and one SQLite compound-type-declaration edge case both fall back to <code>object</code>
+in generated entities instead of a precise type.</p>
+<p>All 5 targets run the same <code>JauntyRepository&lt;T&gt;</code> code path with real SQL-level query
+translation (not in-memory filtering) — <code>WHERE</code>/<code>ORDER BY</code>/<code>SKIP</code>/<code>TAKE</code> are pushed to SQL
+via Jaunty's fluent builder (<code>connection.From&lt;TRow&gt;()...</code>), and <code>Include</code>/<code>ThenInclude</code>
+child collections are hydrated with one targeted <code>WhereIn(fk, parentIds)</code> query per include
+path, never a full child-table scan.</p>
+<h2 id="dialect-specific-workarounds-required-in-jaunty-itself">Dialect-specific workarounds required in Jaunty itself</h2>
+<p>One, found and worked around at the port level (not fixed in Jaunty — see
+<code>docs/jaunty-torture-test-gaps-log.md</code> #7 for the full writeup and recommendation):</p>
+<ul>
+<li><strong>SQL Server <code>OFFSET</code>/<code>FETCH</code> requires a preceding <code>ORDER BY</code>.</strong>
+<code>src/Jaunty/Dialects/SqlServerDialect.cs</code>'s <code>GetPagingSql</code> unconditionally appends
+<code>OFFSET...FETCH</code> without checking for or supplying an <code>ORDER BY</code>. <code>Skip</code>/<code>Take</code> without an
+explicit order — a completely ordinary query shape — works fine on Postgres/MySQL/SQLite
+and fails only on SQL Server, only at query-execution time (not at build time). Worked
+around in the port (<code>JauntyRepository&lt;T&gt;.QueryRootRows</code>) by defaulting to <code>ORDER BY &lt;Id&gt;</code>
+whenever paging is requested with no explicit spec-level order.</li>
+</ul>
+<p>No other dialect-specific SQL failures were observed. Other gaps found during this test
+(the <code>where T : new()</code> constraint excluding DDD-style aggregates, EF-InMemory test fixtures
+needing a real-DB substitute) are dialect-independent — see the gaps log for the full list
+and verdicts (core candidate / extension candidate / out of scope).</p>
+<h2 id="non-dialect-issues-found-in-the-port-not-jaunty">Non-dialect issues found (in the port, not Jaunty)</h2>
+<p>Two genuine bugs found and fixed during this test, neither a Jaunty gap:</p>
+<ol>
+<li><strong>Identity write-back after Insert.</strong> <code>JauntyRepository&lt;T&gt;</code>'s <code>Persist</code>/<code>PersistBasket</code>/
+<code>PersistOrder</code> originally discarded the DB-generated identity returned by
+<code>connection.Insert(...)</code> instead of writing it back onto the in-memory entity's <code>Id</code>. Any
+insert-then-immediately-update flow (e.g. adding the first item to a brand-new basket)
+silently operated against <code>Id == 0</code> afterward — no exception, just data that &quot;disappeared&quot;
+on the next read. Fixed by writing the generated ID back via the existing
+<code>AggregateMappers.SetBaseId</code> reflection helper after every insert.</li>
+<li><strong>Native Windows DB services intercepting docker-forwarded ports.</strong> This machine had
+native <code>postgres.exe</code> (port 5432) and <code>mysqld.exe</code> (port 3306) Windows services already
+bound to the same ports docker-compose was forwarding to the torture-test containers,
+producing confusing dialect-specific-looking errors (&quot;database does not exist&quot; on
+Postgres; an auth-plugin/access-denied error on MySQL) that were actually just a
+different server answering the connection. Fixed by remapping the containers to
+5433/3308 respectively (<code>docker-compose.yml</code>) rather than touching the unrelated system
+services.</li>
+</ol>
+<h2 id="environment-how-to-reproduce">Environment / how to reproduce</h2>
+<ul>
+<li><code>docker compose up -d</code> (repo root) starts all 4 real DBs.</li>
+<li>SQLite is the default target for <code>dotnet test tests/FunctionalTests/FunctionalTests.csproj</code>
+(no env var needed).</li>
+<li>For a real DB: set <code>JAUNTY_TORTURE_DB</code> to <code>mssql</code>/<code>postgres</code>/<code>mysql</code>/<code>mariadb</code>, and the
+matching <code>JAUNTY_TORTURE_CONNSTR_{MSSQL,POSTGRES,MYSQL,MARIADB}</code> to a full connection
+string (see <code>tests/FunctionalTests/TortureDatabase.cs</code> in the port — connection strings
+used for this run are recorded in <code>docs/jaunty-torture-test-gaps-log.md</code> history, not
+committed to source, since they contain the dev-only docker password).</li>
+<li>The eShopOnWeb clone itself lives at <code>torture-test/eshoponweb/</code> (gitignored — a disposable
+vendor clone). The actual port code that was written/edited is preserved at
+<code>samples/torture-test-eshoponweb-port/</code> in this repo.</li>
+</ul>
+<p>For Part 2 (Sakila/Pagila):</p>
+<ul>
+<li>Same <code>docker compose up -d</code>, plus <code>data/sqlite/sakila.db</code> for the SQLite target (see
+<code>seed/sakila/README.md</code> for how it and the 4 real-DB databases were loaded).</li>
+<li><code>cd samples/torture-test-sakila-queries &amp;&amp; dotnet run -- &lt;sqlite|sqlserver|postgres|mysql|mariadb&gt;</code>.
+SQLite needs no env vars; the other 4 need the same <code>JAUNTY_TORTURE_CONNSTR_*</code> env vars as
+Part 1 (not committed, same reasoning as above), pointed at the <code>sakila</code>/<code>pagila</code> databases
+instead of the eShopOnWeb ones.</li>
+<li>Codegen-diff output (<code>dotnet-jaunty scaffold</code> run against each target) is preserved at
+<code>samples/torture-test-sakila-codegen/</code>.</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-next" href="00-quick-start-README.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">README</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

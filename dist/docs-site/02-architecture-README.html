@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Documentation — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Architecture Documentation</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html" class="active" aria-current="page">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Architecture Documentation</nav>
+        <article>
+<h1 id="architecture-documentation">Architecture Documentation</h1>
+<p>Comprehensive architecture documentation for Jaunty micro-ORM with visual diagrams and detailed specifications.</p>
+<hr />
+<h2 id="quick-navigation">Quick Navigation</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Purpose</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="02-architecture-architecture-visuals.html"><code>architecture-visuals.md</code></a></td>
+<td><strong>Visual diagrams</strong> - Flow charts, sequence diagrams, state machines</td>
+<td>Quick understanding, visual learners</td>
+</tr>
+<tr>
+<td><a href="02-architecture-architecture-specification.html"><code>architecture-specification.md</code></a></td>
+<td><strong>Complete spec</strong> - All components, layers, data flows, extension points</td>
+<td>Deep dive, implementation reference</td>
+</tr>
+<tr>
+<td><a href="02-architecture-design-philosophy.html"><code>design-philosophy.md</code></a></td>
+<td><strong>Design decisions</strong> - Why Jaunty is designed this way</td>
+<td>Understanding trade-offs</td>
+</tr>
+<tr>
+<td><a href="02-architecture-metadata-system-spec.html"><code>metadata-system-spec.md</code></a></td>
+<td><strong>Metadata system</strong> - Caching, expression trees, compiled delegates</td>
+<td>Understanding performance</td>
+</tr>
+<tr>
+<td><a href="02-architecture-parameter-binding-spec.html"><code>parameter-binding-spec.md</code></a></td>
+<td><strong>Parameter binding</strong> - SQL parsing, parameter binding, validation</td>
+<td>Understanding parameter handling</td>
+</tr>
+<tr>
+<td><a href="02-architecture-performance-spec.html"><code>performance-spec.md</code></a></td>
+<td><strong>Performance guide</strong> - Optimization techniques, benchmarks</td>
+<td>Writing high-performance code</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="system-overview">System Overview</h2>
+<div class="mermaid">flowchart TB
+    subgraph API["Public API Layer"]
+        A1["Query&lt;T>()"]
+        A2["QueryPartial&lt;T>()"]
+        A3["Insert&lt;T>()"]
+        A4["Update&lt;T>()"]
+        A5["Delete&lt;T>()"]
+    end
+    
+    subgraph CORE["Core Execution Layer"]
+        C1["QueryCore / QueryCoreAsync"]
+        C2["ExecuteReader / ExecuteReaderAsync"]
+        C3["DrDispatcher (mapper resolution)"]
+    end
+    
+    subgraph META["Metadata Layer"]
+        M1["MetadataCache&lt;T> (static cache)"]
+        M2["MetadataBuilder (builds metadata)"]
+        M3["Compiled expression trees"]
+    end
+    
+    subgraph PARAM["Parameter Layer"]
+        P1["SqlParameterParser (state machine)"]
+        P2["ParameterBinder (binds properties)"]
+        P3["ParameterCache (caches property info)"]
+    end
+    
+    subgraph SQL["SQL Generation Layer"]
+        S1["CrudSqlCache&lt;T> (cached SQL)"]
+        S2["ISqlDialect (database-specific)"]
+    end
+    
+    API --> CORE
+    CORE --> META
+    CORE --> PARAM
+    CORE --> SQL
+    
+    style API fill:#e1f5ff
+    style CORE fill:#fff4e1
+    style META fill:#f0e1ff
+    style PARAM fill:#e1ffe1
+    style SQL fill:#ffe1e1
+</div>
+<hr />
+<h2 id="key-components">Key Components</h2>
+<h3 id="public-api-layer">Public API Layer</h3>
+<p><strong>Purpose</strong>: User-facing extension methods on <code>IDbConnection</code></p>
+<p><strong>Key Files</strong>:</p>
+<ul>
+<li><code>src/Jaunty/Read/Query.cs</code>, <code>QueryAsync.cs</code></li>
+<li><code>src/Jaunty/Read/QueryPartial.cs</code>, <code>QueryPartialAsync.cs</code></li>
+<li><code>src/Jaunty/Write/Insert.cs</code>, <code>Update.cs</code>, <code>Delete.cs</code></li>
+<li><code>src/Jaunty/Multiple/QueryMultiple.cs</code></li>
+</ul>
+<p><strong>See</strong>: <a href="02-architecture-architecture-specification.html#1-public-api-layer"><code>architecture-specification.md#1-public-api-layer</code></a></p>
+<hr />
+<h3 id="core-execution-layer">Core Execution Layer</h3>
+<p><strong>Purpose</strong>: Central query execution, connection management, mapper resolution</p>
+<p><strong>Key Files</strong>:</p>
+<ul>
+<li><code>src/Jaunty/Internals/QueryCore.cs</code>, <code>QueryCoreAsync.cs</code></li>
+<li><code>src/Jaunty/Internals/ExecuteReader.cs</code>, <code>ExecuteReaderAsync.cs</code></li>
+<li><code>src/Jaunty/Internals/DrDispatcher.cs</code></li>
+</ul>
+<p><strong>See</strong>: <a href="02-architecture-architecture-specification.html#2-core-execution-layer"><code>architecture-specification.md#2-core-execution-layer</code></a></p>
+<hr />
+<h3 id="metadata-layer">Metadata Layer</h3>
+<p><strong>Purpose</strong>: Build and cache entity metadata, compile expression trees</p>
+<p><strong>Key Files</strong>:</p>
+<ul>
+<li><code>src/Jaunty/Internals/Entity/MetadataCache.cs</code></li>
+<li><code>src/Jaunty/Internals/Entity/MetadataBuilder.cs</code></li>
+<li><code>src/Jaunty/Internals/Entity/EntityMetadata.cs</code></li>
+<li><code>src/Jaunty/Internals/MappedCache.cs</code></li>
+</ul>
+<p><strong>See</strong>: <a href="02-architecture-metadata-system-spec.html"><code>metadata-system-spec.md</code></a></p>
+<hr />
+<h3 id="parameter-layer">Parameter Layer</h3>
+<p><strong>Purpose</strong>: Extract parameter names from SQL, bind object properties</p>
+<p><strong>Key Files</strong>:</p>
+<ul>
+<li><code>src/Jaunty/Internals/Parameters/SqlParameterParser.cs</code></li>
+<li><code>src/Jaunty/Internals/Parameters/ParameterBinder.cs</code></li>
+<li><code>src/Jaunty/Internals/Parameters/ParameterCache.cs</code></li>
+</ul>
+<p><strong>See</strong>: <a href="02-architecture-parameter-binding-spec.html"><code>parameter-binding-spec.md</code></a></p>
+<hr />
+<h3 id="sql-generation-layer">SQL Generation Layer</h3>
+<p><strong>Purpose</strong>: Generate and cache CRUD SQL, handle database dialects</p>
+<p><strong>Key Files</strong>:</p>
+<ul>
+<li><code>src/Jaunty/Internals/CrudSqlCache.cs</code></li>
+<li><code>src/Jaunty/Internals/CachedCrudSql.cs</code></li>
+<li><code>src/Jaunty/Internals/Dialects/ISqlDialect.cs</code></li>
+</ul>
+<p><strong>See</strong>: <a href="02-architecture-architecture-specification.html#5-sql-generation-layer"><code>architecture-specification.md#5-sql-generation-layer</code></a></p>
+<hr />
+<h2 id="data-flows">Data Flows</h2>
+<h3 id="query-execution-flow">Query Execution Flow</h3>
+<div class="mermaid">sequenceDiagram
+    participant User
+    participant QueryCore
+    participant ExecuteReader
+    participant DrDispatcher
+    participant MetadataCache
+    participant DataReader
+    
+    User->>QueryCore: Query&lt;T>(sql, params)
+    QueryCore->>ExecuteReader: ExecuteReader(handler)
+    ExecuteReader->>ExecuteReader: Open connection (if closed)
+    ExecuteReader->>ExecuteReader: Create command
+    ExecuteReader->>ExecuteReader: Bind parameters
+    ExecuteReader->>ExecuteReader: ExecuteReader()
+    ExecuteReader->>DrDispatcher: Resolve mapper
+    DrDispatcher->>MetadataCache: GetSetters(reader)
+    MetadataCache-->>DrDispatcher: PropertySetter&lt;T>[]
+    DrDispatcher-->>ExecuteReader: Func&lt;IDataReader, T>
+    ExecuteReader->>DataReader: while Read()
+    DataReader-->>ExecuteReader: IDataReader
+    ExecuteReader->>ExecuteReader: map(reader) for each row
+    ExecuteReader-->>QueryCore: List&lt;T>
+    QueryCore-->>User: List&lt;T>
+</div>
+<p><strong>See</strong>: <a href="02-architecture-architecture-visuals.html#query-execution-lifecycle"><code>architecture-visuals.md#query-execution-lifecycle</code></a></p>
+<hr />
+<h2 id="performance-characteristics">Performance Characteristics</h2>
+<div class="mermaid">xychart-beta
+    title "Query Performance by Phase"
+    x-axis "Phase" ["Metadata Build", "First Query", "Warm Query", "Hot Query"]
+    y-axis "Time (ms)" 0 --> 100
+    bar [5, 10, 2, 0.5]
+</div>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Time</th>
+<th>Allocations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Metadata build (one-time)</td>
+<td>~5ms</td>
+<td>Metadata + delegates</td>
+</tr>
+<tr>
+<td>First query (cold)</td>
+<td>~10ms</td>
+<td>Command + reader</td>
+</tr>
+<tr>
+<td>Warm query</td>
+<td>~2ms per 1000 rows</td>
+<td>Entity instances</td>
+</tr>
+<tr>
+<td>Hot query (optimized)</td>
+<td>~0.5ms per 1000 rows</td>
+<td>Minimal</td>
+</tr>
+</tbody>
+</table>
+<p><strong>See</strong>: <a href="02-architecture-performance-spec.html"><code>performance-spec.md</code></a></p>
+<hr />
+<h2 id="threading-model">Threading Model</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Thread-Safe</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Public API methods</td>
+<td> Yes</td>
+<td>All methods are thread-safe</td>
+</tr>
+<tr>
+<td>Static caches</td>
+<td> Yes</td>
+<td>Initialized once, immutable</td>
+</tr>
+<tr>
+<td><code>DbConnection</code></td>
+<td> No</td>
+<td>User responsibility</td>
+</tr>
+<tr>
+<td><code>DbCommand</code></td>
+<td> No</td>
+<td>Created per operation</td>
+</tr>
+<tr>
+<td><code>DbTransaction</code></td>
+<td> No</td>
+<td>User responsibility</td>
+</tr>
+</tbody>
+</table>
+<p><strong>See</strong>: <a href="02-architecture-architecture-specification.html#threading-model"><code>architecture-specification.md#threading-model</code></a></p>
+<hr />
+<h2 id="multi-targeting">Multi-Targeting</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>netstandard2.0</th>
+<th>net8.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Collections</td>
+<td><code>Dictionary&lt;K,V&gt;</code></td>
+<td><code>FrozenDictionary&lt;K,V&gt;</code></td>
+</tr>
+<tr>
+<td>Async return</td>
+<td><code>Task&lt;T&gt;</code></td>
+<td><code>ValueTask&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Strings</td>
+<td>Regular</td>
+<td><code>string.Create</code>, <code>Span&lt;T&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>See</strong>: <a href="02-architecture-architecture-specification.html#multi-targeting-strategy"><code>architecture-specification.md#multi-targeting-strategy</code></a></p>
+<hr />
+<h2 id="for-human-readers">For Human Readers</h2>
+<h3 id="start-here">Start Here</h3>
+<ol>
+<li><a href="02-architecture-architecture-visuals.html"><code>architecture-visuals.md</code></a> - Visual overview</li>
+<li><a href="02-architecture-design-philosophy.html"><code>design-philosophy.md</code></a> - Why Jaunty is designed this way</li>
+<li><a href="02-architecture-architecture-specification.html"><code>architecture-specification.md</code></a> - Deep dive</li>
+</ol>
+<h3 id="for-specific-tasks">For Specific Tasks</h3>
+<ul>
+<li><strong>Adding a new query method</strong>: See <a href="02-architecture-architecture-specification.html#1-public-api-layer"><code>architecture-specification.md#1-public-api-layer</code></a></li>
+<li><strong>Understanding caching</strong>: See <a href="02-architecture-metadata-system-spec.html"><code>metadata-system-spec.md</code></a></li>
+<li><strong>Debugging parameter issues</strong>: See <a href="02-architecture-parameter-binding-spec.html"><code>parameter-binding-spec.md</code></a></li>
+<li><strong>Optimizing performance</strong>: See <a href="02-architecture-performance-spec.html"><code>performance-spec.md</code></a></li>
+</ul>
+<hr />
+<h2 id="see-also">See Also</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../../00-quick-start/README.md"><code>../../00-quick-start/README.md</code></a></td>
+<td>Quick start guide</td>
+</tr>
+<tr>
+<td><a href="../../01-api-reference/README.md"><code>../../01-api-reference/README.md</code></a></td>
+<td>API reference</td>
+</tr>
+<tr>
+<td><a href="../../03-development/README.md"><code>../../03-development/README.md</code></a></td>
+<td>Development guides</td>
+</tr>
+<tr>
+<td><a href="../../the coding standards"><code>../../the coding standards</code></a></td>
+<td>Development guidelines</td>
+</tr>
+</tbody>
+</table>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-streaming-methods.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Streaming methods</span>
+</a><a class="pn-next" href="02-architecture-ARCHITECTURE-DECISIONS.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">ARCHITECTURE DECISIONS</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

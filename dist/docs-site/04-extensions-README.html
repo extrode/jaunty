@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty Extensions — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty Extensions</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html" class="active" aria-current="page">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty Extensions</nav>
+        <article>
+<h1 id="jaunty-extensions">Jaunty Extensions</h1>
+<p>Documentation for Jaunty extension packages that build on top of Jaunty core.</p>
+<hr />
+<h2 id="available-extensions">Available Extensions</h2>
+<h3 id="jaunty.flatfiles">Jaunty.FlatFiles</h3>
+<p>Flat file support for Jaunty, enabling SQL queries on CSV, TSV, Parquet, JSON, and other file formats using DuckDB as the embedded query engine.</p>
+<p><strong>Documentation</strong>:</p>
+<ul>
+<li><a href="flatfiles-README.html"><code>flatfiles/README.md</code></a> - FlatFiles overview</li>
+<li><a href="flatfiles-architecture.html"><code>flatfiles/architecture.md</code></a> - Architecture and design</li>
+<li><a href="flatfiles-code-analysis.html"><code>flatfiles/code-analysis.md</code></a> - Code analysis report</li>
+</ul>
+<p><strong>Key Features</strong>:</p>
+<ul>
+<li>Query flat files using SQL</li>
+<li>Support for CSV, TSV, Parquet, JSON, Excel, Delta Lake, Iceberg</li>
+<li>DuckDB embedded query engine</li>
+<li>Import/export to external databases</li>
+<li>Full CRUD operations on file data</li>
+</ul>
+<h3 id="jaunty.extensions.reflection">Jaunty.Extensions.Reflection</h3>
+<p>Reflection-based entity mapping for scenarios where source generation is not available.</p>
+<p><strong>Documentation</strong>: <em>Coming soon</em></p>
+<p><strong>Key Features</strong>:</p>
+<ul>
+<li>Runtime reflection mapping</li>
+<li>Compatible with NativeAOT (with manual initialization)</li>
+<li>Fallback for dynamic scenarios</li>
+</ul>
+<hr />
+<h2 id="extension-architecture">Extension Architecture</h2>
+<p>Extensions follow the same design principles as Jaunty core:</p>
+<ol>
+<li><strong>Zero dependencies</strong> - Extensions only depend on Jaunty core</li>
+<li><strong>Consistent API</strong> - Match Jaunty core patterns and naming</li>
+<li><strong>Performance-first</strong> - Optimized for minimal allocations</li>
+<li><strong>NativeAOT compatible</strong> - Support for AOT compilation scenarios</li>
+</ol>
+<hr />
+<h2 id="for-extension-developers">For Extension Developers</h2>
+<h3 id="design-guidelines">Design Guidelines</h3>
+<p>When creating new extensions for Jaunty:</p>
+<ol>
+<li><strong>Match core patterns</strong> - Use the same folder structure and naming conventions</li>
+<li><strong>Document thoroughly</strong> - Follow the documentation structure in this folder</li>
+<li><strong>Test extensively</strong> - Maintain high test coverage like core</li>
+<li><strong>Consider AOT</strong> - Design for NativeAOT compatibility from the start</li>
+</ol>
+<h3 id="documentation-structure">Documentation Structure</h3>
+<pre><code>04-extensions/
+├── README.md                      # This file - extension overview
+├── {extension-name}/
+│   ├── README.md                  # Extension overview
+│   ├── architecture.md            # Architecture documentation
+│   ├── api-reference.md           # API documentation
+│   └── code-analysis.md           # Code analysis (if applicable)
+</code></pre>
+<hr />
+<h2 id="see-also">See Also</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="01-api-reference-README.html"><code>../01-api-reference/README.md</code></a></td>
+<td>Jaunty core API reference</td>
+</tr>
+<tr>
+<td><a href="02-architecture-README.html"><code>../02-architecture/README.md</code></a></td>
+<td>Jaunty core architecture</td>
+</tr>
+<tr>
+<td><a href="03-development-README.html"><code>../03-development/README.md</code></a></td>
+<td>Development guides</td>
+</tr>
+</tbody>
+</table>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="03-development-xml-documentation-style.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Xml documentation style</span>
+</a><a class="pn-next" href="05-quality-README.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">README</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

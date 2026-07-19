@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Review Checklist — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Code Review Checklist</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html" class="active" aria-current="page">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Code Review Checklist</nav>
+        <article>
+<h1 id="code-review-checklist">Code Review Checklist</h1>
+<p>Use this checklist when reviewing pull requests for Jaunty.</p>
+<h2 id="quick-links">Quick Links</h2>
+<ul>
+<li><a href="../CONTRIBUTING.md">Contributing Guide</a></li>
+<li><a href="03-development-API-DESIGN.html">API Design Guidelines</a></li>
+<li><a href="03-development-architecture-decisions.html">Architecture Decisions</a></li>
+</ul>
+<hr />
+<h2 id="pre-review-checklist">Pre-Review Checklist</h2>
+<p>Before starting a review, verify:</p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> PR has clear description of changes</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Related issues are linked</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Tests are included (if applicable)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Documentation is updated (if applicable)</li>
+</ul>
+<hr />
+<h2 id="code-quality">Code Quality</h2>
+<h3 id="correctness">Correctness</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Logic is correct and complete</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Edge cases are handled</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Error handling is appropriate</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No obvious bugs or typos</li>
+</ul>
+<h3 id="performance">Performance</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No unnecessary allocations in hot paths</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Async code uses <code>ConfigureAwait(false)</code></li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Caching is used appropriately</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No obvious performance issues</li>
+</ul>
+<h3 id="security">Security</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No SQL injection vulnerabilities (using parameterized queries)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No sensitive data in error messages</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Input validation is present</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No hardcoded credentials or secrets</li>
+</ul>
+<hr />
+<h2 id="code-style">Code Style</h2>
+<h3 id="naming">Naming</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Classes use PascalCase</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Methods use PascalCase</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Parameters use camelCase</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Private fields use <code>_camelCase</code></li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Names are descriptive and clear</li>
+</ul>
+<h3 id="organization">Organization</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> File organization is logical</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Methods are focused and concise</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Classes have single responsibility</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No god classes or methods</li>
+</ul>
+<h3 id="comments">Comments</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> XML documentation on public APIs</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Inline comments explain &quot;why&quot; not &quot;what&quot;</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No commented-out code</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> TODO comments have issue references</li>
+</ul>
+<hr />
+<h2 id="api-design">API Design</h2>
+<h3 id="consistency">Consistency</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Follows existing API patterns</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Parameter order is consistent</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Naming matches existing conventions</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Return types are appropriate</li>
+</ul>
+<h3 id="usability">Usability</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> API is intuitive to use</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Error messages are helpful</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Examples are provided (in documentation)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Breaking changes are avoided or justified</li>
+</ul>
+<h3 id="async-support">Async Support</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Async version available for I/O operations</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> CancellationToken parameter included</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Async method names end with <code>Async</code></li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No sync-over-async patterns</li>
+</ul>
+<hr />
+<h2 id="testing">Testing</h2>
+<h3 id="coverage">Coverage</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> New code has test coverage</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Edge cases are tested</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Error scenarios are tested</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Integration tests included (if applicable)</li>
+</ul>
+<h3 id="test-quality">Test Quality</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Test names describe the scenario</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Tests are independent and isolated</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No flaky tests</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Tests follow Arrange-Act-Assert pattern</li>
+</ul>
+<h3 id="test-execution">Test Execution</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> All tests pass locally</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No test failures in CI</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Performance tests meet thresholds (if applicable)</li>
+</ul>
+<hr />
+<h2 id="documentation">Documentation</h2>
+<h3 id="code-documentation">Code Documentation</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Public APIs have XML documentation</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Documentation includes examples</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Exceptions are documented</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> SeeAlso references related APIs</li>
+</ul>
+<h3 id="user-documentation">User Documentation</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> README updated (if applicable)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> API documentation generated successfully</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Breaking changes documented</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Migration guide provided (if applicable)</li>
+</ul>
+<hr />
+<h2 id="git-hygiene">Git Hygiene</h2>
+<h3 id="commits">Commits</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Commit messages are clear and descriptive</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Commits are logically grouped</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No merge commits in feature branch</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Commit history tells a coherent story</li>
+</ul>
+<h3 id="branch">Branch</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Branch name follows convention</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Branch is up to date with main</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No unrelated changes in PR</li>
+</ul>
+<hr />
+<h2 id="specific-areas">Specific Areas</h2>
+<h3 id="database-operations">Database Operations</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> SQL is parameterized (no string concatenation)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Connection handling is correct (open/close)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Transaction handling is correct</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Dialect-specific code is isolated</li>
+</ul>
+<h3 id="caching">Caching</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Cache keys are unique and stable</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Cache invalidation is handled</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Thread safety is considered</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Memory usage is reasonable</li>
+</ul>
+<h3 id="error-handling">Error Handling</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Specific exception types used</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Error messages are informative</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Inner exceptions preserved</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No swallowing exceptions</li>
+</ul>
+<hr />
+<h2 id="review-recommendations">Review Recommendations</h2>
+<h3 id="must-fix-blocking">Must Fix (Blocking)</h3>
+<p>List issues that must be fixed before merging:</p>
+<p>1.
+2.
+3.</p>
+<h3 id="should-fix-recommended">Should Fix (Recommended)</h3>
+<p>List issues that should be fixed but don't block merging:</p>
+<p>1.
+2.</p>
+<h3 id="nice-to-have-optional">Nice to Have (Optional)</h3>
+<p>List suggestions for future improvement:</p>
+<p>1.
+2.</p>
+<hr />
+<h2 id="final-checklist">Final Checklist</h2>
+<p>Before approving:</p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> All blocking issues resolved</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Code is production-ready</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Tests pass</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Documentation complete</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> No concerns unaddressed</li>
+</ul>
+<hr />
+<h2 id="approval">Approval</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <strong>Approved</strong> - Ready to merge</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <strong>Approved with minor fixes</strong> - Can merge after addressing non-blocking feedback</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <strong>Changes requested</strong> - Requires re-review after fixes</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <strong>Not approved</strong> - Significant issues, needs substantial rework</li>
+</ul>
+<hr />
+<h2 id="reviewer-notes">Reviewer Notes</h2>
+<p>Add any additional context, concerns, or observations:</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="03-development-api-design-guidelines.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Api design guidelines</span>
+</a><a class="pn-next" href="03-development-di-integration-design.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Di integration design</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

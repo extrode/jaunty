@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Naming Convention — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">File Naming Convention</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html" class="active" aria-current="page">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">File Naming Convention</nav>
+        <article>
+<h1 id="file-naming-convention">File Naming Convention</h1>
+<p>Standard naming conventions for documentation files and directories in Jaunty.</p>
+<hr />
+<h2 id="directory-naming">Directory Naming</h2>
+<p><strong>Standard</strong>: <code>lowercase-with-hyphens</code></p>
+<h3 id="numbered-sections-primary-docs">Numbered Sections (Primary Docs)</h3>
+<p>Numbered prefixes establish a clear reading order:</p>
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>00-quick-start/</code></td>
+<td>Getting started guides</td>
+</tr>
+<tr>
+<td><code>01-api-reference/</code></td>
+<td>API documentation</td>
+</tr>
+<tr>
+<td><code>02-architecture/</code></td>
+<td>Architecture docs</td>
+</tr>
+<tr>
+<td><code>03-development/</code></td>
+<td>Development guides</td>
+</tr>
+<tr>
+<td><code>04-extensions/</code></td>
+<td>Extension documentation</td>
+</tr>
+<tr>
+<td><code>05-quality/</code></td>
+<td>Quality &amp; testing</td>
+</tr>
+<tr>
+<td><code>06-releases/</code></td>
+<td>Release documentation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="special-purpose-directories">Special-Purpose Directories</h3>
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th>Purpose</th>
+<th>Naming Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_assets/</code></td>
+<td>Media assets (screenshots, diagrams)</td>
+<td>Underscore sorts first (visual priority)</td>
+</tr>
+<tr>
+<td><code>99-archive/</code></td>
+<td>Historical documents</td>
+<td>Numeric prefix sorts last (out of the way)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why these conventions?</strong></p>
+<ul>
+<li><code>_assets/</code> - Assets support docs but aren't read directly; underscore keeps them visible but distinct</li>
+<li><code>99-archive/</code> - Archives are rarely accessed; high number ensures they sort after all content folders</li>
+</ul>
+<hr />
+<h2 id="file-naming">File Naming</h2>
+<p>All documentation files should use lowercase letters with hyphens as word separators.</p>
+<h3 id="examples">Examples</h3>
+<p> <strong>Correct</strong>:</p>
+<ul>
+<li><code>api-design-guidelines.md</code></li>
+<li><code>code-review-checklist.md</code></li>
+<li><code>architecture-specification.md</code></li>
+<li><code>production-readiness-2026-03-03.md</code></li>
+</ul>
+<p> <strong>Incorrect</strong>:</p>
+<ul>
+<li><code>API-DESIGN-GUIDELINES.md</code> (uppercase)</li>
+<li><code>ApiDesignGuidelines.md</code> (PascalCase)</li>
+<li><code>api_design_guidelines.md</code> (underscores)</li>
+<li><code>apidesignguidelines.md</code> (no separators)</li>
+</ul>
+<hr />
+<h2 id="rationale">Rationale</h2>
+<ol>
+<li><strong>GitHub Standard</strong> - Matches GitHub wikis, Pages, and most open-source projects</li>
+<li><strong>URL-Friendly</strong> - Clean URLs when rendered (<code>/docs/api-design</code> not <code>/docs/APIDesign</code>)</li>
+<li><strong>Cross-Platform</strong> - Works consistently on:
+<ul>
+<li>Windows (case-insensitive filesystem)</li>
+<li>Linux (case-sensitive filesystem)</li>
+<li>macOS (case-insensitive by default)</li>
+</ul>
+</li>
+<li><strong>Sortable</strong> - Alphabetical sorting works predictably</li>
+<li><strong>Web Convention</strong> - Matches web URL standards (all lowercase)</li>
+<li><strong>Readable</strong> - Hyphens provide clear word separation</li>
+</ol>
+<hr />
+<h2 id="exceptions-keep-as-is">Exceptions (Keep As-Is)</h2>
+<h3 id="universal-standards">Universal Standards</h3>
+<p>These filenames are standardized across GitHub and should remain unchanged:</p>
+<table>
+<thead>
+<tr>
+<th>Filename</th>
+<th>Location</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>README.md</code></td>
+<td>Any folder</td>
+<td>Universal documentation standard</td>
+</tr>
+<tr>
+<td><code>CONTRIBUTING.md</code></td>
+<td>Repo root</td>
+<td>GitHub contribution guide</td>
+</tr>
+<tr>
+<td><code>LICENSE.md</code></td>
+<td>Repo root</td>
+<td>GitHub license display</td>
+</tr>
+<tr>
+<td><code>CHANGELOG.md</code></td>
+<td>Repo root</td>
+<td>GitHub changelog display</td>
+</tr>
+</tbody>
+</table>
+<h3 id="archive-files-99-archive">Archive Files (99-archive/)</h3>
+<p><strong>Historical documents in <code>99-archive/</code> are renamed to follow the standard convention.</strong></p>
+<p>Unlike typical archives that preserve original names, Jaunty's archive files are renamed to:</p>
+<ul>
+<li>Maintain consistency across all documentation</li>
+<li>Make files easier to reference and link to</li>
+<li>Avoid confusion from mixed naming conventions</li>
+</ul>
+<p><strong>Example renames applied</strong>:</p>
+<ul>
+<li><code>CODEBASE_SUMMARY.md</code> → <code>codebase-summary.md</code></li>
+<li><code>JauntyAnalysis.md</code> → <code>jaunty-analysis.md</code></li>
+<li><code>NATIVEAOT-GUIDE.md</code> → <code>nativeaot-guide.md</code></li>
+<li><code>2026-01-11_FinalTestReorganization.md</code> → <code>2026-01-11-final-test-reorganization.md</code></li>
+</ul>
+<blockquote>
+<p><strong>Note</strong>: Dates in filenames are preserved, only the descriptive text is lowercased.</p>
+</blockquote>
+<h3 id="dates-in-filenames">Dates in Filenames</h3>
+<p>When dates are part of the filename for sorting/versioning:</p>
+<p> <strong>Correct</strong>:</p>
+<ul>
+<li><code>production-readiness-2026-03-03.md</code></li>
+<li><code>coverage-plan-2026-02-24.md</code></li>
+<li><code>benchmark-results-2026-01-15.md</code></li>
+</ul>
+<p> <strong>Incorrect</strong>:</p>
+<ul>
+<li><code>PRODUCTION-READINESS-2026-03-03.md</code> (uppercase)</li>
+<li><code>2026-03-03-production-readiness.md</code> (date first - harder to scan)</li>
+</ul>
+<h3 id="archive-files">Archive Files</h3>
+<p>Historical documents in <code>archive/</code> should <strong>keep their original names</strong> to preserve historical accuracy and avoid breaking external references.</p>
+<hr />
+<h2 id="migration-guide">Migration Guide</h2>
+<h3 id="for-existing-files">For Existing Files</h3>
+<p>When renaming existing files:</p>
+<ol>
+<li><p><strong>Use <code>git mv</code></strong> for proper rename tracking:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">git mv docs/API-DESIGN.md docs/api-design-guidelines.md
+</code></pre>
+</div>
+</li>
+<li><p><strong>Update all internal links</strong> using search/replace:</p>
+<ul>
+<li>Search: <code>API-DESIGN.md</code></li>
+<li>Replace: <code>api-design-guidelines.md</code></li>
+</ul>
+</li>
+<li><p><strong>Test all links</strong> before committing</p>
+</li>
+<li><p><strong>Commit with clear message</strong>:</p>
+<pre><code>docs: rename API-DESIGN.md to api-design-guidelines.md
+
+Following new file naming convention (lowercase-with-hyphens).
+Updated 15 internal links.
+</code></pre>
+</li>
+</ol>
+<h3 id="for-new-files">For New Files</h3>
+<p>Always use the standard convention:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash"># Good
+docs/03-development/my-new-guide.md
+
+# Bad
+docs/03-development/MyNewGuide.md
+docs/03-development/MY-NEW-GUIDE.md
+</code></pre>
+</div>
+<hr />
+<h2 id="enforcement">Enforcement</h2>
+<h3 id="pre-commit-checks">Pre-commit Checks</h3>
+<p>Consider adding a pre-commit hook to check file naming:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">#!/bin/bash
+# .git/hooks/pre-commit
+
+# Check for uppercase .md files in docs/ (excluding exceptions)
+if git diff --cached --name-only | grep -E '^docs/.*[A-Z].*\.md$' | grep -v 'README.md'; then
+    echo &quot;Error: Documentation files must use lowercase-with-hyphens naming&quot;
+    echo &quot;See docs/03-development/file-naming-convention.md&quot;
+    exit 1
+fi
+</code></pre>
+</div>
+<h3 id="cicd-checks">CI/CD Checks</h3>
+<p>Add a workflow check for new documentation:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">yaml</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="yaml"><code class="language-yaml"># .github/workflows/docs-lint.yml
+name: Documentation Lint
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+
+jobs:
+  lint-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check file naming
+        run: |
+          # Check for uppercase in new/modified docs files
+          # (implementation depends on your CI setup)
+</code></pre>
+</div>
+<hr />
+<h2 id="quick-reference">Quick Reference</h2>
+<h3 id="dos">Do's</h3>
+<ul>
+<li> <code>api-design-guidelines.md</code></li>
+<li> <code>code-review-checklist.md</code></li>
+<li> <code>production-readiness-2026-03-03.md</code></li>
+<li> <code>README.md</code> (exception)</li>
+<li> <code>the coverage instructions</code> (agent docs)</li>
+</ul>
+<h3 id="donts">Don'ts</h3>
+<ul>
+<li> <code>API-DESIGN-GUIDELINES.md</code></li>
+<li> <code>ApiDesignGuidelines.md</code></li>
+<li> <code>api_design_guidelines.md</code></li>
+<li> <code>apidesignguidelines.md</code></li>
+<li> <code>the coverage instructions</code> (use lowercase)</li>
+</ul>
+<hr />
+<h2 id="related-documents">Related Documents</h2>
+<ul>
+<li><a href="../README.md"><code>../README.md</code></a> - Documentation index</li>
+<li><a href="03-development-code-review-checklist.html"><code>../03-development/code-review-checklist.md</code></a> - Code review standards</li>
+<li><a href="03-development-xml-documentation-style.html"><code>../03-development/xml-documentation-style.md</code></a> - XML documentation guide</li>
+</ul>
+<hr />
+<p><strong>Adopted</strong>: March 2026<br />
+<strong>Applies To</strong>: All documentation in <code>docs/</code> folder<br />
+<strong>Enforcement</strong>: Manual review + CI/CD (planned)</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="03-development-di-integration-design.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Di integration design</span>
+</a><a class="pn-next" href="03-development-hybrid-design.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Hybrid design</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>
