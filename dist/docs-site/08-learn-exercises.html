@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exercises — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Exercises</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html" class="active" aria-current="page">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Exercises</nav>
+        <article>
+<h1 id="exercises">Exercises</h1>
+<p>These five exercises build directly on the SQLite database from
+<a href="08-learn-README.html"><code>README.md</code></a> in this folder — the <code>products</code> table, plus whatever you insert as
+you go. Do them in order; each one leans on something the previous one set up. Every starter
+snippet compiles as-is (aside from the marked <code>TODO</code>s), so you can paste it straight into the
+same <code>Program.cs</code> you used for the tutorial and fill in the blanks.</p>
+<h2 id="exercise-1-map-a-new-table-with-attributes">Exercise 1: Map a New Table with Attributes</h2>
+<p><strong>Goal:</strong> Create a <code>categories</code> table and map it with <code>[Table]</code>, <code>[Column]</code>, <code>[Key]</code>, and
+<code>[DatabaseGenerated]</code>, then insert a row and read it back.</p>
+<p><strong>Starter code:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> (<span class="tok-kw">var</span> cmd = connection.CreateCommand())
+{
+    cmd.CommandText = &quot;&quot;&quot;
+        CREATE TABLE categories (
+            category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_name TEXT NOT NULL,
+            description TEXT
+        );
+        &quot;&quot;&quot;;
+    cmd.ExecuteNonQuery();
+}
+
+<span class="tok-kw">using</span> Jaunty.Attributes;
+
+<span class="tok-com">// TODO: add [Table(&quot;categories&quot;)] to this class</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Category
+{
+    <span class="tok-com">// TODO: mark this the primary key and identity-generated,</span>
+    <span class="tok-com">// and point it at the &quot;category_id&quot; column</span>
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    <span class="tok-com">// TODO: point this at the &quot;category_name&quot; column</span>
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    <span class="tok-com">// TODO: point this at the &quot;description&quot; column</span>
+    <span class="tok-kw">public</span> string Description { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-kw">var</span> category = <span class="tok-kw">new</span> Category { Name = &quot;Beverages&quot;, Description = &quot;Soft drinks, coffees, teas&quot; };
+
+<span class="tok-com">// TODO: insert `category` and capture the generated id</span>
+<span class="tok-com">// var newId = ...</span>
+
+<span class="tok-com">// TODO: read it back with QueryPartial&lt;Category&gt; using the real column names</span>
+<span class="tok-com">// var loaded = ...</span>
+</code></pre>
+</div>
+<p><strong>Hints:</strong></p>
+<ul>
+<li>The <code>[Key]</code> and <code>[DatabaseGenerated(DatabaseGeneratedOption.Identity)]</code> attributes go
+together on the same property, exactly like <code>ProductEntity.Id</code> in Step 8 of the tutorial.</li>
+<li><code>Insert&lt;T&gt;()</code> returns the generated identity value as a <code>long</code>.</li>
+</ul>
+<details>
+<summary>Solution</summary>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> Jaunty.Attributes;
+
+[Table(&quot;categories&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Category
+{
+    [Key]
+    [Column(&quot;category_id&quot;)]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;category_name&quot;)]
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;description&quot;)]
+    <span class="tok-kw">public</span> string Description { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-kw">var</span> category = <span class="tok-kw">new</span> Category { Name = &quot;Beverages&quot;, Description = &quot;Soft drinks, coffees, teas&quot; };
+
+<span class="tok-kw">var</span> newId = connection.Insert(category);
+Console.WriteLine($&quot;Inserted category <span class="tok-kw">with</span> id {newId}&quot;);
+
+<span class="tok-kw">var</span> loaded = connection.QueryPartial&lt;Category&gt;(
+    &quot;SELECT category_id, category_name, description FROM categories WHERE category_id = @Id&quot;,
+    (int)newId);
+
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> c <span class="tok-kw">in</span> loaded)
+    Console.WriteLine($&quot;{c.Id}: {c.Name} - {c.Description}&quot;);
+</code></pre>
+</div>
+</details>
+<h2 id="exercise-2-diagnose-and-fix-a-strict-mode-failure">Exercise 2: Diagnose and Fix a Strict-Mode Failure</h2>
+<p><strong>Goal:</strong> The code below throws. Figure out why without running it first, then fix it two
+different ways.</p>
+<p><strong>Starter code:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductDetails
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> bool Discontinued { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-com">// TODO: this throws an InvalidOperationException. Why?</span>
+<span class="tok-kw">var</span> details = connection.Query&lt;ProductDetails&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;);
+</code></pre>
+</div>
+<p><strong>Hints:</strong></p>
+<ul>
+<li>Count the properties on <code>ProductDetails</code> and count the aliased columns in the <code>SELECT</code>.</li>
+<li>There are two independent fixes: change the SQL, or change which method you call.</li>
+</ul>
+<details>
+<summary>Solution</summary>
+<p>The query selects three columns (<code>Id</code>, <code>Name</code>, <code>Price</code>) but <code>ProductDetails</code> has four
+properties. <code>Query&lt;T&gt;</code> is strict mode: every property needs a matching column, so it throws:</p>
+<pre><code>System.InvalidOperationException: Strict mapping failed: property 'Discontinued' has no matching column
+</code></pre>
+<p><strong>Fix 1 — add the missing column:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> details = connection.Query&lt;ProductDetails&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price, discontinued AS Discontinued FROM products&quot;);
+</code></pre>
+</div>
+<p><strong>Fix 2 — if you genuinely only want three of the four properties, say so with <code>QueryPartial&lt;T&gt;</code>:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> details = connection.QueryPartial&lt;ProductDetails&gt;(
+    &quot;SELECT product_id AS Id, product_name AS Name, unit_price AS Price FROM products&quot;);
+<span class="tok-com">// details[i].Discontinued is left at its default value (false)</span>
+</code></pre>
+</div>
+</details>
+<h2 id="exercise-3-a-projection-with-querypartialt">Exercise 3: A Projection with <code>QueryPartial&lt;T&gt;</code></h2>
+<p><strong>Goal:</strong> Write a projection that returns only <code>Name</code> and <code>Price</code> for products under $20, and
+explain in a comment why <code>Query&lt;T&gt;</code> would reject the same SQL.</p>
+<p><strong>Starter code:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> PriceListEntry
+{
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-com">// TODO: select product_name AS Name, unit_price AS Price for products where unit_price &lt; 20</span>
+<span class="tok-com">// TODO: use the mapping mode that matches &quot;we only want two columns, on purpose&quot;</span>
+<span class="tok-com">// var cheapEntries = ...</span>
+
+<span class="tok-com">// TODO: as a comment, explain why calling Query&lt;PriceListEntry&gt; with the same SQL</span>
+<span class="tok-com">// would be fine here specifically, then explain what would break it</span>
+</code></pre>
+</div>
+<p><strong>Hints:</strong></p>
+<ul>
+<li><code>PriceListEntry</code> only has two properties, and the SQL only selects two columns — so this is
+actually a case where <code>Query&lt;T&gt;</code> and <code>QueryPartial&lt;T&gt;</code> behave identically.</li>
+<li>The interesting question is: what happens the moment someone adds a third property to
+<code>PriceListEntry</code> (say, <code>Sku</code>) without also updating the SQL?</li>
+</ul>
+<details>
+<summary>Solution</summary>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> PriceListEntry
+{
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-kw">var</span> cheapEntries = connection.QueryPartial&lt;PriceListEntry&gt;(
+    &quot;SELECT product_name AS Name, unit_price AS Price FROM products WHERE unit_price &lt; @MaxPrice&quot;,
+    <span class="tok-num">20.00m</span>);
+
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> e <span class="tok-kw">in</span> cheapEntries)
+    Console.WriteLine($&quot;{e.Name}: ${e.Price:F2}&quot;);
+
+<span class="tok-com">// Query&lt;PriceListEntry&gt; would also succeed today, because the SQL selects exactly the two</span>
+<span class="tok-com">// columns PriceListEntry needs — strict mode is satisfied by coincidence. QueryPartial&lt;T&gt; is</span>
+<span class="tok-com">// still the right choice: it documents the intent (&quot;this is a deliberate projection&quot;) so that</span>
+<span class="tok-com">// if someone later adds a Sku property to PriceListEntry without updating this SQL, nothing</span>
+<span class="tok-com">// breaks. With Query&lt;T&gt; the same change would throw at runtime the next time this code path</span>
+<span class="tok-com">// ran, because Sku would have no matching column.</span>
+</code></pre>
+</div>
+</details>
+<h2 id="exercise-4-a-custom-mapper-and-a-query-counting-interceptor">Exercise 4: A Custom Mapper and a Query-Counting Interceptor</h2>
+<p><strong>Goal:</strong> Write a hand-rolled row mapper for <code>products</code>, then register a custom
+<code>ICommandInterceptor</code> that counts how many commands Jaunty executes, and prove the count goes
+up when you query.</p>
+<p><strong>Starter code:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> System.Data;
+<span class="tok-kw">using</span> Jaunty.Core;
+<span class="tok-kw">using</span> Jaunty.Configuration;
+<span class="tok-kw">using</span> Jaunty.Interceptors;
+
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductRow
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-com">// TODO: write a mapper that reads &quot;product_id&quot;, &quot;product_name&quot;, &quot;unit_price&quot; by ordinal</span>
+<span class="tok-kw">static</span> ProductRow MapProductRow(IDataReader reader)
+{
+    <span class="tok-kw">throw</span> <span class="tok-kw">new</span> NotImplementedException();
+}
+
+<span class="tok-com">// TODO: implement ICommandInterceptor with a public counter field/property</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> QueryCountingInterceptor : ICommandInterceptor
+{
+    <span class="tok-com">// TODO: increment a counter in OnCommandExecutingAsync</span>
+    <span class="tok-com">// TODO: leave OnCommandExecutedAsync and OnCommandFailedAsync as no-ops</span>
+}
+
+<span class="tok-kw">var</span> counter = <span class="tok-kw">new</span> QueryCountingInterceptor();
+<span class="tok-com">// TODO: register `counter` with JauntyConfig.InterceptorPipeline</span>
+
+<span class="tok-kw">var</span> options = CommandOptions&lt;ProductRow&gt;.WithMapper(MapProductRow);
+<span class="tok-kw">var</span> rows = connection.Query&lt;ProductRow&gt;(
+    &quot;SELECT product_id, product_name, unit_price FROM products&quot;, options: options);
+
+<span class="tok-com">// TODO: print counter's count — it should be at least 1</span>
+</code></pre>
+</div>
+<p><strong>Hints:</strong></p>
+<ul>
+<li><code>ICommandInterceptor</code> has three methods: <code>OnCommandExecutingAsync</code>, <code>OnCommandExecutedAsync</code>,
+<code>OnCommandFailedAsync</code>, all returning <code>ValueTask</code> — see Step 7's <code>CommandOptions&lt;T&gt;.WithMapper</code>
+and the root README's &quot;Custom Interceptors&quot; section for the shape.</li>
+<li>Register interceptors with
+<code>JauntyConfig.InterceptorPipeline = new InterceptorPipeline(new[] { counter });</code> before running
+any queries you want counted.</li>
+</ul>
+<details>
+<summary>Solution</summary>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> System.Data;
+<span class="tok-kw">using</span> Jaunty.Core;
+<span class="tok-kw">using</span> Jaunty.Configuration;
+<span class="tok-kw">using</span> Jaunty.Interceptors;
+
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductRow
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-kw">static</span> ProductRow MapProductRow(IDataReader reader)
+{
+    <span class="tok-kw">return</span> <span class="tok-kw">new</span> ProductRow
+    {
+        Id = reader.GetInt32(reader.GetOrdinal(&quot;product_id&quot;)),
+        Name = reader.GetString(reader.GetOrdinal(&quot;product_name&quot;)),
+        Price = (decimal)reader.GetDouble(reader.GetOrdinal(&quot;unit_price&quot;))
+    };
+}
+
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> QueryCountingInterceptor : ICommandInterceptor
+{
+    <span class="tok-kw">public</span> int Count { <span class="tok-kw">get</span>; <span class="tok-kw">private</span> <span class="tok-kw">set</span>; }
+
+    <span class="tok-kw">public</span> ValueTask OnCommandExecutingAsync(CommandContext context, CancellationToken ct)
+    {
+        Count++;
+        <span class="tok-kw">return</span> <span class="tok-kw">new</span> ValueTask();
+    }
+
+    <span class="tok-kw">public</span> ValueTask OnCommandExecutedAsync(CommandContext context, CancellationToken ct)
+    {
+        <span class="tok-kw">return</span> <span class="tok-kw">new</span> ValueTask();
+    }
+
+    <span class="tok-kw">public</span> ValueTask OnCommandFailedAsync(CommandContext context, Exception ex, CancellationToken ct)
+    {
+        <span class="tok-kw">return</span> <span class="tok-kw">new</span> ValueTask();
+    }
+}
+
+<span class="tok-kw">var</span> counter = <span class="tok-kw">new</span> QueryCountingInterceptor();
+JauntyConfig.InterceptorPipeline = <span class="tok-kw">new</span> InterceptorPipeline(<span class="tok-kw">new</span>[] { counter });
+
+<span class="tok-kw">var</span> options = CommandOptions&lt;ProductRow&gt;.WithMapper(MapProductRow);
+<span class="tok-kw">var</span> rows = connection.Query&lt;ProductRow&gt;(
+    &quot;SELECT product_id, product_name, unit_price FROM products&quot;, options: options);
+
+Console.WriteLine($&quot;Queries executed so far: {counter.Count}&quot;);
+<span class="tok-com">// Run another query and confirm the count increases again</span>
+connection.QueryScalar&lt;long&gt;(&quot;SELECT COUNT(*) FROM products&quot;);
+Console.WriteLine($&quot;Queries executed after a second call: {counter.Count}&quot;);
+</code></pre>
+</div>
+</details>
+<h2 id="exercise-5-bulk-insert-vs.a-loop-timed">Exercise 5: Bulk Insert vs. a Loop, Timed</h2>
+<p><strong>Goal:</strong> Insert 500 new products two ways — one <code>Insert</code> call per row inside a transaction, and
+one <code>BulkInsert</code> call for the whole batch inside a transaction — and compare elapsed time.</p>
+<p><strong>Starter code:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> System.Diagnostics;
+<span class="tok-kw">using</span> Jaunty.Attributes;
+
+[Table(&quot;products&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> BenchProduct
+{
+    [Key]
+    [Column(&quot;product_id&quot;)]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;product_name&quot;)]
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;unit_price&quot;)]
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;discontinued&quot;)]
+    <span class="tok-kw">public</span> bool Discontinued { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-kw">var</span> loopBatch = Enumerable.Range(<span class="tok-num">1</span>, <span class="tok-num">500</span>)
+    .Select(i =&gt; <span class="tok-kw">new</span> BenchProduct { Name = $&quot;Loop Item {i}&quot;, Price = i * <span class="tok-num">1.5m</span>, Discontinued = <span class="tok-kw">false</span> })
+    .ToList();
+
+<span class="tok-kw">var</span> bulkBatch = Enumerable.Range(<span class="tok-num">1</span>, <span class="tok-num">500</span>)
+    .Select(i =&gt; <span class="tok-kw">new</span> BenchProduct { Name = $&quot;Bulk Item {i}&quot;, Price = i * <span class="tok-num">1.5m</span>, Discontinued = <span class="tok-kw">false</span> })
+    .ToList();
+
+<span class="tok-com">// TODO: time inserting `loopBatch` one row at a time with Insert(), inside a single transaction</span>
+<span class="tok-com">// TODO: time inserting `bulkBatch` in one call with BulkInsert(), inside a single transaction</span>
+<span class="tok-com">// TODO: print both elapsed times</span>
+</code></pre>
+</div>
+<p><strong>Hints:</strong></p>
+<ul>
+<li>Wrap each approach in its own <code>using var transaction = connection.BeginTransaction();</code> /
+<code>transaction.Commit();</code> pair — a transaction per row would defeat the point of the comparison.</li>
+<li><code>Stopwatch.StartNew()</code> / <code>.Elapsed</code> is enough; you don't need a full benchmarking harness for
+this exercise.</li>
+</ul>
+<details>
+<summary>Solution</summary>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> System.Diagnostics;
+<span class="tok-kw">using</span> Jaunty.Attributes;
+
+[Table(&quot;products&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> BenchProduct
+{
+    [Key]
+    [Column(&quot;product_id&quot;)]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;product_name&quot;)]
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;unit_price&quot;)]
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [Column(&quot;discontinued&quot;)]
+    <span class="tok-kw">public</span> bool Discontinued { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-kw">var</span> loopBatch = Enumerable.Range(<span class="tok-num">1</span>, <span class="tok-num">500</span>)
+    .Select(i =&gt; <span class="tok-kw">new</span> BenchProduct { Name = $&quot;Loop Item {i}&quot;, Price = i * <span class="tok-num">1.5m</span>, Discontinued = <span class="tok-kw">false</span> })
+    .ToList();
+
+<span class="tok-kw">var</span> bulkBatch = Enumerable.Range(<span class="tok-num">1</span>, <span class="tok-num">500</span>)
+    .Select(i =&gt; <span class="tok-kw">new</span> BenchProduct { Name = $&quot;Bulk Item {i}&quot;, Price = i * <span class="tok-num">1.5m</span>, Discontinued = <span class="tok-kw">false</span> })
+    .ToList();
+
+<span class="tok-kw">var</span> loopStopwatch = Stopwatch.StartNew();
+<span class="tok-kw">using</span> (<span class="tok-kw">var</span> transaction = connection.BeginTransaction())
+{
+    <span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> product <span class="tok-kw">in</span> loopBatch)
+        connection.Insert(product, CommandOptions.WithTransaction(transaction));
+
+    transaction.Commit();
+}
+loopStopwatch.Stop();
+
+<span class="tok-kw">var</span> bulkStopwatch = Stopwatch.StartNew();
+<span class="tok-kw">using</span> (<span class="tok-kw">var</span> transaction = connection.BeginTransaction())
+{
+    connection.BulkInsert(bulkBatch, CommandOptions.WithTransaction(transaction));
+    transaction.Commit();
+}
+bulkStopwatch.Stop();
+
+Console.WriteLine($&quot;Loop insert (<span class="tok-num">500</span> rows, one transaction): {loopStopwatch.ElapsedMilliseconds} ms&quot;);
+Console.WriteLine($&quot;BulkInsert (<span class="tok-num">500</span> rows, one transaction): {bulkStopwatch.ElapsedMilliseconds} ms&quot;);
+</code></pre>
+</div>
+<p>On SQLite specifically, <code>BulkInsert</code> doesn't have a native bulk-copy API to fall back on (unlike
+SQL Server's <code>SqlBulkCopy</code> or Postgres's binary <code>COPY</code>), so the gap you see here is smaller than
+you'd get on those providers — but batching everything into a single transaction is still faster
+than committing per row. Try the same comparison against SQL Server or PostgreSQL if you have one
+available, and see the root README's &quot;Native Bulk Copy Performance&quot; table for measured numbers
+per database.</p>
+</details>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="08-learn-README.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">README</span>
+</a><span></span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty Hybrid Fast-Path Design — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty Hybrid Fast-Path Design</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html" class="active" aria-current="page">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty Hybrid Fast-Path Design</nav>
+        <article>
+<h1 id="jaunty-hybrid-fast-path-design">Jaunty Hybrid Fast-Path Design</h1>
+<p>This document outlines the strategy for &quot;piercing the interface ceiling&quot; by shifting Jaunty's internal execution from <code>IDbCommand</code> to <code>DbCommand</code> while maintaining database agnosticism and <code>IDbConnection</code> compatibility.</p>
+<h2 id="goal">Goal</h2>
+<p>To achieve &quot;Absolute Maximum Speed&quot; by eliminating boxing of value types, reducing virtual method dispatch overhead, and enabling zero-allocation parameter binding.</p>
+<h2 id="architecture-fast-path-vs.slow-path">Architecture: Fast Path vs. Slow Path</h2>
+<p>All public extension methods will continue to accept <code>IDbConnection</code>. Internally, Jaunty will branch based on the underlying type:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql)
+{
+    <span class="tok-kw">if</span> (connection <span class="tok-kw">is</span> DbConnection dbConn)
+        <span class="tok-kw">return</span> QueryFastPath&lt;T&gt;(dbConn, sql); <span class="tok-com">// Uses DbCommand, GetFieldValue&lt;T&gt;, and Parameter Reuse</span>
+
+    <span class="tok-kw">return</span> QueryLegacyPath&lt;T&gt;(connection, sql); <span class="tok-com">// Current interface-based logic</span>
+}
+</code></pre>
+</div>
+<h2 id="optimization-pillars">Optimization Pillars</h2>
+<h3 id="parameter-template-cloning">1. Parameter Template Cloning</h3>
+<p>Instead of calling <code>CreateParameter()</code> and setting <code>ParameterName</code> in a loop, we cache an array of &quot;Template Parameters&quot; for a given SQL string.</p>
+<ul>
+<li><strong>The Gain</strong>: No string allocations for names, no internal provider dictionary lookups.</li>
+<li><strong>The Risk</strong>: <code>DbParameter</code> instances are not thread-safe.</li>
+<li><strong>The Fix</strong>: Use <code>((ICloneable)template).Clone()</code> or a specialized <code>FastClone</code> method to create local copies for the command.</li>
+</ul>
+<h3 id="zero-boxing-row-mapping">2. Zero-Boxing Row Mapping</h3>
+<p>Shift from <code>IDataRecord.GetValue(i)</code> (returns <code>object</code>) to <code>DbDataReader.GetFieldValue&lt;T&gt;(i)</code>.</p>
+<ul>
+<li><strong>The Gain</strong>: Primitives (int, long, Guid, DateTime) are read directly into CPU registers without heap allocation.</li>
+<li><strong>The Risk</strong>: Throws if the database type doesn't perfectly match <code>T</code>.</li>
+<li><strong>The Fix</strong>: Optimized expression trees will attempt <code>GetFieldValue&lt;T&gt;</code> first, falling back to <code>GetValue</code> + <code>Convert</code> only when necessary.</li>
+</ul>
+<h3 id="native-async-execution">3. Native Async Execution</h3>
+<p>Use <code>DbCommand.ExecuteReaderAsync</code> directly.</p>
+<ul>
+<li><strong>The Gain</strong>: Avoids the overhead of interface-dispatch wrappers and provides better integration with the JIT's async machinery.</li>
+</ul>
+<hr />
+<h2 id="risk-assessment">Risk Assessment</h2>
+<h3 id="the-wrapper-problem">1. The Wrapper Problem</h3>
+<p><strong>Scenario</strong>: A user is using a logging or profiling tool that wraps <code>IDbConnection</code> but does not inherit from <code>DbConnection</code>.</p>
+<ul>
+<li><strong>Consequence</strong>: <code>connection is DbConnection</code> returns <code>false</code>.</li>
+<li><strong>Mitigation</strong>: The &quot;Slow Path&quot; fallback ensures the library still works, just at the current (interface-limited) speed.</li>
+</ul>
+<h3 id="thread-safety-and-parameter-pooling">2. Thread Safety and Parameter Pooling</h3>
+<p><strong>Scenario</strong>: Two threads execute the same query simultaneously and try to use the same cached parameter instances.</p>
+<ul>
+<li><strong>Consequence</strong>: One query's parameters overwrite the other's, leading to incorrect data or crashes.</li>
+<li><strong>Mitigation</strong>: We must NEVER reuse the actual instance. We reuse the <em>metadata</em> to pre-size and pre-configure a new parameter array, or we use <code>ThreadStatic</code> storage.</li>
+</ul>
+<h3 id="provider-specific-behavior">3. Provider-Specific Behavior</h3>
+<p><strong>Scenario</strong>: <code>Microsoft.Data.Sqlite</code> vs <code>System.Data.SqlClient</code> have different rules for when <code>DbType</code> must be set.</p>
+<ul>
+<li><strong>Consequence</strong>: Inconsistent behavior across databases.</li>
+<li><strong>Mitigation</strong>: Rely on the provider's own <code>DbCommand.CreateParameter()</code> logic for the templates to ensure the base parameter is &quot;native&quot; to that provider.</li>
+</ul>
+<h2 id="implementation-roadmap">Implementation Roadmap</h2>
+<ol>
+<li><strong>Phase 1</strong>: Update <code>MetadataCache&lt;T&gt;</code> to generate two versions of setters: <code>ObjectSetter</code> (legacy) and <code>GenericSetter</code> (using <code>GetFieldValue&lt;T&gt;</code>).</li>
+<li><strong>Phase 2</strong>: Refactor <code>QueryCore</code> and <code>ExecuteReader</code> to support <code>DbConnection</code> branching.</li>
+<li><strong>Phase 3</strong>: Implement the <code>ParameterTemplate</code> system in <code>WriteParameterCache&lt;T&gt;</code> to avoid <code>CreateParameter</code> calls in INSERT/UPDATE loops.</li>
+<li><strong>Phase 4</strong>: Verification via <code>BenchmarkDotNet</code> to prove the allocation reduction.</li>
+</ol>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="03-development-file-naming-convention.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">File naming convention</span>
+</a><a class="pn-next" href="03-development-limitations.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Limitations</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

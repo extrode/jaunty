@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Visual Guide — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Architecture Visual Guide</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html" class="active" aria-current="page">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Architecture Visual Guide</nav>
+        <article>
+<h1 id="architecture-visual-guide">Architecture Visual Guide</h1>
+<p>Visual diagrams and illustrations for understanding Jaunty's architecture.</p>
+<hr />
+<h2 id="system-architecture-overview">System Architecture Overview</h2>
+<div class="mermaid">flowchart TB
+    subgraph User["User Code"]
+        UC["IDbConnection.Query&lt;T>()"]
+    end
+    
+    subgraph API["Public API Layer"]
+        A1["Query&lt;T>()"]
+        A2["QueryPartial&lt;T>()"]
+        A3["Insert&lt;T>()"]
+        A4["Update&lt;T>()"]
+        A5["Delete&lt;T>()"]
+    end
+    
+    subgraph Core["Core Execution"]
+        C1["QueryCore"]
+        C2["ExecuteReader"]
+        C3["DrDispatcher"]
+    end
+    
+    subgraph Metadata["Metadata System"]
+        M1["MetadataCache&lt;T>"]
+        M2["MetadataBuilder"]
+        M3["Compiled Setters"]
+    end
+    
+    subgraph Params["Parameter System"]
+        P1["SqlParameterParser"]
+        P2["ParameterBinder"]
+        P3["ParameterCache"]
+    end
+    
+    subgraph DB["Database"]
+        D1["DbConnection"]
+        D2["DbCommand"]
+        D3["DbDataReader"]
+    end
+    
+    UC --> API
+    API --> Core
+    Core --> Metadata
+    Core --> Params
+    Core --> DB
+    
+    style User fill:#9cf
+    style API fill:#e1f5ff
+    style Core fill:#fff4e1
+    style Metadata fill:#f0e1ff
+    style Params fill:#e1ffe1
+    style DB fill:#ffe1e1
+</div>
+<hr />
+<h2 id="query-execution-lifecycle">Query Execution Lifecycle</h2>
+<div class="mermaid">sequenceDiagram
+    participant User
+    participant API
+    participant Core
+    participant Meta
+    participant Param
+    participant DB
+    
+    User->>API: Query&lt;Product>(sql, params)
+    
+    Note over API: Validate arguments&lt;br/>Check connection
+    
+    API->>Core: QueryCore&lt;T>(sql, params)
+    
+    Note over Core: Manage connection state&lt;br/>Open if closed
+    
+    Core->>Param: Extract &amp; bind parameters
+    
+    Note over Param: Parse SQL for @params&lt;br/>Bind to DbCommand
+    
+    Param->>DB: ExecuteReader()
+    
+    Note over DB: Execute SQL&lt;br/>Return DataReader
+    
+    DB->>Core: IDataReader
+    
+    Core->>Meta: DrDispatcher.Resolve&lt;T>()
+    
+    Note over Meta: Check custom mapper&lt;br/>Check special types&lt;br/>Build from MetadataCache
+    
+    Meta->>Core: Func&lt;IDataReader, T>
+    
+    Core->>Core: while reader.Read()&lt;br/>map(reader)
+    
+    Core->>API: List&lt;T>
+    
+    API->>User: List&lt;T>
+    
+    Note over User: Receive mapped entities
+</div>
+<hr />
+<h2 id="metadata-initialization-flow">Metadata Initialization Flow</h2>
+<div class="mermaid">flowchart TD
+    Start["First Query&lt;Product>()"] --> Check{"MetadataCache&lt;br/>initialized?"}
+    
+    Check -->|No| Static["Static constructor runs"]
+    Check -->|Yes| Use["Use cached metadata"]
+    
+    Static --> Build["MetadataBuilder.Build&lt;T>()"]
+    Build --> Attr["Read [Table], [Column] attributes"]
+    Attr --> Config["Apply JauntyConfig resolvers"]
+    Config --> Entity["Create EntityMetadata"]
+    
+    Entity --> Loop["For each property"]
+    Loop --> Expr["Build expression tree"]
+    Expr --> Compile["Compile to delegate"]
+    Compile --> Context["Create PropertyContext&lt;T>"]
+    Context --> Dict["Add to ColumnToIndex"]
+    Dict --> More{"More properties?"}
+    More -->|Yes| Loop
+    More --> Freeze
+    
+    Freeze{"NET8_0_OR_GREATER?"} -->|Yes| Frozen["ToFrozenDictionary()"]
+    Freeze -->|No| Dict2["ToDictionary()"]
+    
+    Frozen --> Complete["MetadataCache&lt;T> ready"]
+    Dict2 --> Complete
+    
+    Complete --> Use
+    
+    Use --> Query["Execute query"]
+    Query --> Return["Return List&lt;T>"]
+    
+    style Start fill:#9cf
+    style Complete fill:#9f9
+    style Return fill:#9cf
+    style Expr fill:#ff9
+    style Compile fill:#ff9
+</div>
+<hr />
+<h2 id="parameter-binding-flow">Parameter Binding Flow</h2>
+<div class="mermaid">flowchart LR
+    SQL["SQL with @params"] --> Parse["SqlParameterParser"]
+    
+    subgraph Parse ["Extraction"]
+        P1["State machine&lt;br/>Skip comments, strings"]
+        P2["Extract @param names"]
+        P3["Deduplicate"]
+    end
+    
+    Parse --> Cache["SqlParameterParserCache"]
+    Cache --> Validate{"Validate count"}
+    
+    Validate -->|Mismatch| Throw["Throw ArgumentException"]
+    Validate -->|Match| Bind["ParameterBinder"]
+    
+    Bind --> Props["Get object properties"]
+    Props --> Loop["For each property"]
+    Loop --> Create["Create DbParameter"]
+    Create --> SetVal["Set Value or DBNull"]
+    SetVal --> Add["Add to DbCommand"]
+    
+    Add --> Exec["Execute command"]
+    Throw --> Error["Error returned"]
+    
+    style SQL fill:#9cf
+    style Parse fill:#ff9
+    style Cache fill:#ff9
+    style Bind fill:#f96
+    style Exec fill:#9f9
+    style Throw fill:#f99
+</div>
+<hr />
+<h2 id="connection-state-management">Connection State Management</h2>
+<div class="mermaid">stateDiagram-v2
+    [*] --> CheckState
+    
+    state CheckState {
+        [*] --> WasClosed: connection.State
+        WasClosed --> OpenIfNeeded: true
+        WasClosed --> ExecuteDirect: false
+    }
+    
+    OpenIfNeeded --> Open: connection.Open()
+    Open --> Execute
+    
+    ExecuteDirect --> Execute
+    
+    state Execute {
+        [*] --> CreateCommand
+        CreateCommand --> BindParams
+        BindParams --> ExecuteReader
+        ExecuteReader --> ReadResults
+        ReadResults --> [*]
+    }
+    
+    Execute --> CheckClose
+    
+    state CheckClose {
+        [*] --> ShouldClose: wasClosed &amp;&amp; stillOpen
+        ShouldClose --> Close: true
+        ShouldClose --> LeaveOpen: false
+    }
+    
+    Close --> [*]: connection.Close()
+    LeaveOpen --> [*]
+    
+    note right of CheckState
+        Jaunty respects connection state:
+        - Opens if closed
+        - Closes if it opened
+        - Leaves open if already open
+    end note
+</div>
+<hr />
+<h2 id="mapper-resolution-priority">Mapper Resolution Priority</h2>
+<div class="mermaid">flowchart TD
+    Start["DrDispatcher.Resolve&lt;T>()"] --> Check1{"options.Mapper&lt;br/>not null?"}
+    
+    Check1 -->|Yes| UseOpt["Use options.Mapper"]
+    Check1 -->|No| Check2{"Special type?&lt;br/>Dictionary, ExpandoObject"}
+    
+    Check2 -->|Yes| UseSpec["Use special mapper"]
+    Check2 -->|No| Check3{"MappedCache&lt;T>.Mapper&lt;br/>not null?"}
+    
+    Check3 -->|Yes| UseIMapped["Use IMapped&lt;T> mapper"]
+    Check3 -->|No| Check4{"MetadataCache&lt;T>&lt;br/>available?"}
+    
+    Check4 -->|Yes| Build["Build from MetadataCache"]
+    Check4 -->|No| Error["Throw: no mapper available"]
+    
+    Build --> GetSetters["MetadataCache&lt;T>.GetSetters()"]
+    GetSetters --> CreateFunc["Create mapper function"]
+    
+    UseOpt --> Return["Return Func&lt;IDataReader, T>"]
+    UseSpec --> Return
+    UseIMapped --> Return
+    CreateFunc --> Return
+    
+    style Start fill:#9cf
+    style Return fill:#9f9
+    style Error fill:#f99
+    style Check1 fill:#ff9
+    style Check2 fill:#ff9
+    style Check3 fill:#ff9
+</div>
+<hr />
+<h2 id="performance-hot-paths">Performance Hot Paths</h2>
+<div class="mermaid">flowchart LR
+    subgraph Cold["Cold Path (One-time)"]
+        C1["Metadata build"]
+        C2["Expression compilation"]
+        C3["Dictionary creation"]
+    end
+    
+    subgraph Hot["Hot Path (Per-query)"]
+        H1["Dictionary lookup O(1)"]
+        H2["Delegate invocation"]
+        H3["Property setting"]
+    end
+    
+    subgraph Allocations["Allocations"]
+        A1["Entity instances"]
+        A2["List&lt;T>"]
+        A3["Minimal (cached rest)"]
+    end
+    
+    Cold --> Hot
+    Hot --> Allocations
+    
+    style Cold fill:#ff9
+    style Hot fill:#9f9
+    style Allocations fill:#9cf
+</div>
+<p><strong>Cold Path</strong> (runs once per type):</p>
+<ul>
+<li>Metadata building: ~1-5ms</li>
+<li>Expression compilation: ~1-10ms</li>
+<li>Dictionary creation: ~0.1-1ms</li>
+</ul>
+<p><strong>Hot Path</strong> (runs per query):</p>
+<ul>
+<li>Dictionary lookup: ~10ns</li>
+<li>Delegate invocation: ~50ns</li>
+<li>Property setting: ~100ns per property</li>
+</ul>
+<hr />
+<h2 id="error-flow">Error Flow</h2>
+<div class="mermaid">flowchart TD
+    Start["Query execution"] --> Error{"Error type?"}
+    
+    Error --> ArgNull["ArgumentNullException"]
+    Error --> ArgInvalid["ArgumentException"]
+    Error --> InvalidOp["InvalidOperationException"]
+    Error --> DbEx["DbException"]
+    
+    ArgNull --> Msg1["Null required argument"]
+    ArgInvalid --> Msg2["Parameter mismatch&lt;br/>Invalid parameter type"]
+    InvalidOp --> Msg3["Strict mapping failure&lt;br/>No results / Multiple results&lt;br/>NULL to non-nullable"]
+    DbEx --> Msg4["Database error&lt;br/>SQL syntax error"]
+    
+    Msg1 --> Format["Format error message&lt;br/>with context"]
+    Msg2 --> Format
+    Msg3 --> Format
+    Msg4 --> PassThrough["Pass through as-is"]
+    
+    Format --> Throw["Throw exception"]
+    PassThrough --> Throw
+    
+    style Start fill:#9cf
+    style Throw fill:#f99
+    style Format fill:#ff9
+    style PassThrough fill:#ff9
+</div>
+<hr />
+<h2 id="multi-targeting-architecture">Multi-Targeting Architecture</h2>
+<div class="mermaid">flowchart TB
+    Source["Source Code"] --> Check{"#if NET8_0_OR_GREATER?"}
+    
+    Check -->|Yes| Modern["Modern APIs"]
+    Check -->|No| Compat["Compatible APIs"]
+    
+    subgraph Modern ["net8.0 Optimizations"]
+        M1["FrozenDictionary&lt;K,V>"]
+        M2["ValueTask&lt;T>"]
+        M3["string.Create()"]
+        M4["Span&lt;T>/ReadOnlySpan&lt;T>"]
+        M5["SearchValues&lt;T>"]
+    end
+    
+    subgraph Compat ["netstandard2.0 Compatibility"]
+        C1["Dictionary&lt;K,V>"]
+        C2["Task&lt;T>"]
+        C3["String concatenation"]
+        C4["Substring()"]
+        C5["Manual character search"]
+    end
+    
+    Modern --> Build8["Build net8.0"]
+    Compat --> BuildStd["Build netstandard2.0"]
+    
+    Build8 --> Pkg8["Jaunty.dll (net8.0)"]
+    BuildStd --> PkgStd["Jaunty.dll (netstandard2.0)"]
+    
+    Pkg8 --> NuGet["Beparey.Jaunty NuGet package"]
+    PkgStd --> NuGet
+    
+    style Source fill:#9cf
+    style Check fill:#ff9
+    style Modern fill:#9f9
+    style Compat fill:#ff9
+    style NuGet fill:#9cf
+</div>
+<hr />
+<h2 id="see-also">See Also</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="02-architecture-architecture-specification.html"><code>architecture-specification.md</code></a></td>
+<td>Complete architecture spec</td>
+</tr>
+<tr>
+<td><a href="02-architecture-metadata-system-spec.html"><code>metadata-system-spec.md</code></a></td>
+<td>Metadata system details</td>
+</tr>
+<tr>
+<td><a href="02-architecture-parameter-binding-spec.html"><code>parameter-binding-spec.md</code></a></td>
+<td>Parameter binding details</td>
+</tr>
+<tr>
+<td><a href="02-architecture-performance-spec.html"><code>performance-spec.md</code></a></td>
+<td>Performance guide</td>
+</tr>
+</tbody>
+</table>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="02-architecture-architecture-specification.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Architecture specification</span>
+</a><a class="pn-next" href="02-architecture-bulk-copy-architecture.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Bulk copy architecture</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bulk Copy Architecture — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Bulk Copy Architecture</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html" class="active" aria-current="page">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Bulk Copy Architecture</nav>
+        <article>
+<h1 id="bulk-copy-architecture">Bulk Copy Architecture</h1>
+<h2 id="overview">Overview</h2>
+<p>Jaunty's bulk copy architecture provides high-performance data loading for large datasets by leveraging database-specific native bulk copy APIs. The architecture is designed to:</p>
+<ol>
+<li><strong>Automatically use native bulk copy</strong> when beneficial (100+ rows by default)</li>
+<li><strong>Maintain zero external dependencies</strong> through reflection-based provider access</li>
+<li><strong>Provide consistent API</strong> across all supported database dialects</li>
+<li><strong>Fall back gracefully</strong> to standard INSERT operations when native bulk copy is unavailable</li>
+</ol>
+<h2 id="architecture-components">Architecture Components</h2>
+<h3 id="core-interfaces">Core Interfaces</h3>
+<h4 id="ibulkcopyprovider"><code>IBulkCopyProvider</code></h4>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">interface</span> IBulkCopyProvider
+{
+    bool IsSupported { <span class="tok-kw">get</span>; }
+    int CopyToServer(IDbConnection connection, string tableName, IDataReader data, BulkCopyOptions options);
+    ValueTask&lt;int&gt; CopyToServerAsync(DbConnection connection, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken);
+}
+</code></pre>
+</div>
+<p><strong>Purpose</strong>: Abstracts database-specific bulk copy implementations.</p>
+<p><strong>Implementations</strong>:</p>
+<ul>
+<li><code>SqlServerBulkCopyProvider</code> - Uses <code>SqlBulkCopy</code></li>
+<li><code>PostgreSqlBulkCopyProvider</code> - Uses <code>NpgsqlBinaryImporter</code> (COPY BINARY)</li>
+<li><code>MySqlBulkCopyProvider</code> - Chunked multi-row parameterized INSERT</li>
+<li>SQLite - no provider: BulkInsert routes to the core prepared-loop path</li>
+</ul>
+<h3 id="entity-adapter">Entity Adapter</h3>
+<h4 id="entitydatareadert"><code>EntityDataReader&lt;T&gt;</code></h4>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> EntityDataReader&lt;T&gt; : IDataReader
+</code></pre>
+</div>
+<p><strong>Purpose</strong>: Adapts <code>IEnumerable&lt;T&gt;</code> to <code>IDataReader</code> for bulk copy APIs.</p>
+<p><strong>Key Features</strong>:</p>
+<ul>
+<li>Uses compiled expression trees for property access (no reflection during iteration)</li>
+<li>Getters cached per type in <code>EntityDataReaderCache&lt;T&gt;</code> (thread-safe lazy initialization)</li>
+<li>Streams entities without buffering entire dataset</li>
+<li>Handles null values correctly (converts to <code>DBNull.Value</code>)</li>
+<li>Implements full <code>IDataReader</code> interface for compatibility</li>
+</ul>
+<p><strong>Thread Safety</strong>:
+Getters are initialized once per type using double-check locking pattern:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> EntityDataReaderCache&lt;TEntity&gt; <span class="tok-kw">where</span> TEntity : <span class="tok-kw">new</span>()
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">void</span> Initialize(ColumnMetadata[] columns)
+    {
+        <span class="tok-kw">if</span> (_getters <span class="tok-kw">is</span> <span class="tok-kw">null</span>)
+        {
+            lock (columns)
+            {
+                <span class="tok-kw">if</span> (_getters <span class="tok-kw">is</span> <span class="tok-kw">null</span>)
+                    _getters = BuildGetters(columns);
+            }
+        }
+    }
+}
+</code></pre>
+</div>
+<p><strong>Usage</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> entities = GetEntities();
+<span class="tok-kw">var</span> metadata = MetadataCache&lt;T&gt;.Metadata;
+<span class="tok-kw">var</span> reader = <span class="tok-kw">new</span> EntityDataReader&lt;T&gt;(entities, metadata);
+<span class="tok-com">// Pass reader to bulk copy provider</span>
+</code></pre>
+</div>
+<h3 id="configuration">Configuration</h3>
+<h4 id="bulkcopyconfiguration-global"><code>BulkCopyConfiguration</code> (Global)</h4>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> BulkCopyConfiguration
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> int DefaultBatchSize { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">10000</span>;
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> int DefaultTimeout { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">30</span>;
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> BulkCopyIdentityMode DefaultIdentityMode { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> bool DefaultCheckConstraints { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">false</span>;
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> int MinimumRowsForNativeBulkCopy { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">100</span>;
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> bool EnableNativeBulkCopy { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">true</span>;
+}
+</code></pre>
+</div>
+<p><strong>Purpose</strong>: Global configuration for bulk copy behavior.</p>
+<p><strong>Important</strong>: Configure at application startup before executing bulk operations.</p>
+<h4 id="bulkcopyoptions-per-operation"><code>BulkCopyOptions</code> (Per-Operation)</h4>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> BulkCopyOptions
+{
+    <span class="tok-kw">public</span> int BatchSize { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">10000</span>;
+    <span class="tok-kw">public</span> int Timeout { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-num">30</span>;
+    <span class="tok-kw">public</span> BulkCopyIdentityMode IdentityMode { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> bool CheckConstraints { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> TableLockOption TableLock { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> bool EnableStreaming { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = <span class="tok-kw">true</span>;
+    <span class="tok-kw">public</span> IDbTransaction? Transaction { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<p><strong>Purpose</strong>: Per-operation configuration overrides.</p>
+<h3 id="enums">Enums</h3>
+<h4 id="bulkcopyidentitymode"><code>BulkCopyIdentityMode</code></h4>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Default</code></td>
+<td>Provider default behavior</td>
+</tr>
+<tr>
+<td><code>KeepIdentity</code></td>
+<td>Preserve identity values from entities</td>
+</tr>
+<tr>
+<td><code>AutoGenerate</code></td>
+<td>Let database generate identities</td>
+</tr>
+</tbody>
+</table>
+<h4 id="tablelockoption"><code>TableLockOption</code></h4>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Default</code></td>
+<td>Provider default locking</td>
+</tr>
+<tr>
+<td><code>BulkLock</code></td>
+<td>Acquire bulk update lock (SQL Server: TABLOCK)</td>
+</tr>
+<tr>
+<td><code>NoLock</code></td>
+<td>No table lock</td>
+</tr>
+</tbody>
+</table>
+<h2 id="database-specific-implementations">Database-Specific Implementations</h2>
+<h3 id="sql-server">SQL Server</h3>
+<p><strong>Provider</strong>: <code>SqlServerBulkCopyProvider</code></p>
+<p><strong>Technology</strong>: <code>SqlBulkCopy</code> (via reflection)</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Native bulk copy API</li>
+<li>Supports transactions</li>
+<li>Configurable batch size</li>
+<li>Identity column handling</li>
+<li>Table locking options</li>
+</ul>
+<p><strong>Reflection Strategy</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Dynamically load from Microsoft.Data.SqlClient or System.Data.SqlClient</span>
+<span class="tok-kw">private</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> Type? SqlBulkCopyType = Type.GetType(&quot;Microsoft.Data.SqlClient.SqlBulkCopy, Microsoft.Data.SqlClient&quot;)
+    ?? Type.GetType(&quot;System.Data.SqlClient.SqlBulkCopy, System.Data&quot;);
+</code></pre>
+</div>
+<p><strong>Performance</strong>: 10-100x faster than INSERT for 10K+ rows</p>
+<h3 id="postgresql">PostgreSQL</h3>
+<p><strong>Provider</strong>: <code>PostgreSqlBulkCopyProvider</code></p>
+<p><strong>Technology</strong>: <code>NpgsqlBinaryImporter</code> (COPY BINARY format)</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>Binary COPY protocol</li>
+<li>Very high throughput</li>
+<li>Automatic type conversion</li>
+</ul>
+<p><strong>COPY Command</strong>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql">COPY table_name (col1, col2, ...) <span class="tok-kw">FROM</span> STDIN BINARY
+</code></pre>
+</div>
+<p><strong>Performance</strong>: 15-25x faster than INSERT for 10K+ rows</p>
+<h3 id="mysql-mariadb">MySQL / MariaDB</h3>
+<p><strong>Provider</strong>: <code>MySqlBulkCopyProvider</code></p>
+<p><strong>Technology</strong>: Chunked multi-row parameterized INSERT
+(2,000-parameter budget per statement, chunk size adapts to column count)</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>No LOAD DATA / <code>local_infile</code> server or connection-string requirement</li>
+<li>One reused command for full chunks, separate tail command</li>
+<li>Sync and async paths; own or caller-supplied transaction</li>
+</ul>
+<p><strong>Process</strong>:</p>
+<ol>
+<li>Buffer rows up to the per-statement parameter budget</li>
+<li>Bind and execute the reused full-chunk INSERT</li>
+<li>Execute a tail INSERT for the remainder</li>
+</ol>
+<p><strong>Performance</strong>: 12.9-16.1x faster than a transactional loop (measured 2026-07-04)</p>
+<h3 id="sqlite">SQLite</h3>
+<p><strong>Provider</strong>: none (PROD-120: the former <code>SQLiteBulkCopyProvider</code> was removed)</p>
+<p><strong>Technology</strong>: <code>BulkInsert</code> detects SQLite dialects (including the
+Extensions.Reflection wrapper) and routes to the core prepared-loop path:
+one prepared command, one transaction. Multi-row VALUES is avoided because
+parameter binding is quadratic in Microsoft.Data.Sqlite.</p>
+<p><strong>Note</strong>: SQLite has no native bulk copy API.</p>
+<p><strong>Performance</strong>: parity with hand-coded ADO.NET (measured 2026-07-04)</p>
+<h2 id="integration-with-bulkinsert">Integration with BulkInsert</h2>
+<p>The bulk copy providers are automatically integrated with <code>BulkInsert&lt;T&gt;()</code>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">private</span> <span class="tok-kw">static</span> int BulkInsertCore&lt;T&gt;(...)
+{
+    <span class="tok-com">// ... validation ...</span>
+    
+    ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+    
+    <span class="tok-com">// Use native bulk copy if:</span>
+    <span class="tok-com">// 1. Provider supports it</span>
+    <span class="tok-com">// 2. Enabled in configuration</span>
+    <span class="tok-com">// 3. Row count &gt;= threshold</span>
+    <span class="tok-kw">if</span> (dialect.SupportsNativeBulkCopy &amp;&amp; 
+        BulkCopyConfiguration.EnableNativeBulkCopy &amp;&amp;
+        entityList.Count &gt;= BulkCopyConfiguration.MinimumRowsForNativeBulkCopy)
+    {
+        <span class="tok-kw">var</span> bulkProvider = dialect.CreateBulkCopyProvider();
+        <span class="tok-kw">var</span> dataReader = <span class="tok-kw">new</span> EntityDataReader&lt;T&gt;(entityList, cached.Metadata);
+        <span class="tok-kw">return</span> bulkProvider.CopyToServer(connection, tableName, dataReader, options);
+    }
+    
+    <span class="tok-com">// Fallback to existing multi-row/loop logic</span>
+    <span class="tok-com">// ...</span>
+}
+</code></pre>
+</div>
+<h2 id="performance-characteristics">Performance Characteristics</h2>
+<h3 id="when-native-bulk-copy-is-used">When Native Bulk Copy Is Used</h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rows &lt; threshold</td>
+<td>Standard multi-row INSERT</td>
+</tr>
+<tr>
+<td>Rows &gt;= threshold</td>
+<td>Native bulk copy</td>
+</tr>
+<tr>
+<td>Provider unsupported</td>
+<td>Standard INSERT</td>
+</tr>
+<tr>
+<td><code>EnableNativeBulkCopy = false</code></td>
+<td>Standard INSERT</td>
+</tr>
+</tbody>
+</table>
+<h3 id="expected-performance-gains">Expected Performance Gains</h3>
+<table>
+<thead>
+<tr>
+<th>Database</th>
+<th>1K Rows</th>
+<th>10K Rows</th>
+<th>100K Rows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL Server</td>
+<td>5x</td>
+<td>15x</td>
+<td>50x</td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td>8x</td>
+<td>20x</td>
+<td>60x</td>
+</tr>
+<tr>
+<td>MySQL</td>
+<td>3x</td>
+<td>10x</td>
+<td>30x</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>1.5x</td>
+<td>2x</td>
+<td>3x</td>
+</tr>
+</tbody>
+</table>
+<p><em>Compared to standard multi-row INSERT</em></p>
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="transaction-rollback">Transaction Rollback</h3>
+<p>All bulk copy providers support transaction rollback:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.BeginTransaction();
+<span class="tok-kw">try</span>
+{
+    connection.BulkInsert(entities, CommandOptions.WithTransaction(transaction));
+    transaction.Commit();
+}
+<span class="tok-kw">catch</span>
+{
+    transaction.Rollback();
+    <span class="tok-kw">throw</span>;
+}
+</code></pre>
+</div>
+<h3 id="provider-specific-errors">Provider-Specific Errors</h3>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Cause</th>
+<th>Handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>InvalidOperationException</code></td>
+<td>Provider not available</td>
+<td>Fallback to INSERT</td>
+</tr>
+<tr>
+<td><code>ArgumentException</code></td>
+<td>Invalid connection type</td>
+<td>Throw immediately</td>
+</tr>
+<tr>
+<td>Database errors</td>
+<td>Constraint violations, etc.</td>
+<td>Throw with database error</td>
+</tr>
+</tbody>
+</table>
+<h2 id="nativeaot-compatibility">NativeAOT Compatibility</h2>
+<h3 id="current-status">Current Status</h3>
+<p><strong>Bulk copy providers use reflection</strong> to access database-specific APIs without hard dependencies. This approach:</p>
+<p> Maintains zero external dependencies
+ Requires reflection permissions (not fully NativeAOT-safe)</p>
+<h3 id="future-enhancement">Future Enhancement</h3>
+<p>For full NativeAOT compatibility, consider:</p>
+<ol>
+<li><strong>Source-generated providers</strong> - Generate provider code at compile time</li>
+<li><strong>Extension packages</strong> - Move bulk copy to <code>Jaunty.Providers.*</code> packages</li>
+<li><strong>Direct references</strong> - Add optional direct package references with trimming support</li>
+</ol>
+<h2 id="testing-strategy">Testing Strategy</h2>
+<h3 id="unit-tests">Unit Tests</h3>
+<ul>
+<li><code>BulkCopyConfigurationTests</code> - Configuration options</li>
+<li><code>EntityDataReaderTests</code> - Entity-to-data reader adaptation</li>
+</ul>
+<h3 id="integration-tests">Integration Tests</h3>
+<ul>
+<li><code>BulkCopyProviderTests</code> - Provider-specific tests per dialect</li>
+<li>Tests verify data integrity, null handling, transaction support</li>
+</ul>
+<h3 id="performance-tests">Performance Tests</h3>
+<p>See <code>benchmarks/Jaunty.Benchmarks/Benchmarks/BulkCopyBenchmarks.cs</code></p>
+<h2 id="extensibility">Extensibility</h2>
+<h3 id="adding-new-providers">Adding New Providers</h3>
+<ol>
+<li>Implement <code>IBulkCopyProvider</code></li>
+<li>Add <code>SupportsNativeBulkCopy</code> property to dialect</li>
+<li>Add <code>CreateBulkCopyProvider()</code> method to dialect</li>
+<li>Add integration tests</li>
+</ol>
+<h3 id="example-oracle-provider">Example: Oracle Provider</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">sealed</span> <span class="tok-kw">class</span> OracleBulkCopyProvider : IBulkCopyProvider
+{
+    <span class="tok-kw">public</span> bool IsSupported =&gt; OracleBulkCopyType != <span class="tok-kw">null</span>;
+    
+    <span class="tok-kw">public</span> int CopyToServer(...)
+    {
+        <span class="tok-com">// Use OracleBulkCopy via reflection</span>
+    }
+}
+</code></pre>
+</div>
+<h2 id="configuration-examples">Configuration Examples</h2>
+<h3 id="application-startup">Application Startup</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// In Program.cs or Startup.cs</span>
+BulkCopyConfiguration.DefaultBatchSize = <span class="tok-num">5000</span>;
+BulkCopyConfiguration.DefaultTimeout = <span class="tok-num">60</span>;
+BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = <span class="tok-num">50</span>; <span class="tok-com">// Use native for 50+ rows</span>
+BulkCopyConfiguration.EnableNativeBulkCopy = <span class="tok-kw">true</span>;
+</code></pre>
+</div>
+<h3 id="per-operation-override">Per-Operation Override</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> options = <span class="tok-kw">new</span> BulkCopyOptions
+{
+    BatchSize = <span class="tok-num">1000</span>,
+    Timeout = <span class="tok-num">120</span>,
+    IdentityMode = BulkCopyIdentityMode.KeepIdentity,
+    TableLock = TableLockOption.BulkLock,
+    Transaction = transaction
+};
+
+<span class="tok-com">// Use options with bulk copy provider directly</span>
+<span class="tok-kw">var</span> provider = dialect.CreateBulkCopyProvider();
+provider.CopyToServer(connection, &quot;MyTable&quot;, reader, options);
+</code></pre>
+</div>
+<h2 id="limitations">Limitations</h2>
+<ol>
+<li><strong>SQL Server</strong>: Requires <code>Microsoft.Data.SqlClient</code> or <code>System.Data.SqlClient</code></li>
+<li><strong>PostgreSQL</strong>: Requires <code>Npgsql</code></li>
+<li><strong>MySQL</strong>: Requires <code>MySql.Data</code> or <code>MySqlConnector</code></li>
+<li><strong>SQLite</strong>: No true bulk copy, only optimized INSERT</li>
+<li><strong>Reflection overhead</strong>: Small performance cost for provider access</li>
+<li><strong>NativeAOT</strong>: Not fully compatible due to reflection usage</li>
+</ol>
+<h2 id="future-enhancements">Future Enhancements</h2>
+<ol>
+<li><strong>Source-generated providers</strong> for NativeAOT</li>
+<li><strong>Streaming support</strong> for very large datasets</li>
+<li><strong>Progress reporting</strong> callbacks</li>
+<li><strong>Column mapping</strong> configuration</li>
+<li><strong>Error row handling</strong> (skip bad rows vs fail fast)</li>
+<li><strong>Parallel bulk copy</strong> for multi-file loads</li>
+</ol>
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlbulkcopy">SQL Server SqlBulkCopy</a></li>
+<li><a href="https://www.npgsql.org/doc/copy.html">Npgsql Binary Import</a></li>
+<li><a href="https://dev.mysql.com/doc/refman/8.0/en/load-data.html">MySQL LOAD DATA</a></li>
+<li><a href="https://www.sqlite.org/np1queryprob.html">SQLite Performance</a></li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="02-architecture-architecture-visuals.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Architecture visuals</span>
+</a><a class="pn-next" href="02-architecture-design-philosophy.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Design philosophy</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

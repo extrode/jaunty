@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stored Procedures — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Stored Procedures</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html" class="active" aria-current="page">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Stored Procedures</nav>
+        <article>
+<h1 id="stored-procedures">Stored Procedures</h1>
+<h2 id="overview">Overview</h2>
+<p>Jaunty provides comprehensive support for executing stored procedures with various parameter types including input, output, and return parameters. The stored procedure methods work with both synchronous and asynchronous operations.</p>
+<h2 id="executing-stored-procedures">Executing Stored Procedures</h2>
+<h3 id="executestoredproceduretstring-procedurename">ExecuteStoredProcedure&lt;T&gt;(string procedureName)</h3>
+<p>Executes a stored procedure and returns the results as a list of entities using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; ExecuteStoredProcedure&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Type Parameters:</strong></p>
+<ul>
+<li><code>T</code>: The entity type to map results to (must have a parameterless constructor)</li>
+</ul>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>procedureName</code>: The name of the stored procedure to execute</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>List&lt;T&gt;</code>: A list of entities of type T mapped from the result set</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.ExecuteStoredProcedure&lt;Product&gt;(&quot;GetActiveProducts&quot;);
+</code></pre>
+</div>
+<h3 id="executestoredproceduretstring-procedurename-object-parameters">ExecuteStoredProcedure&lt;T&gt;(string procedureName, object? parameters)</h3>
+<p>Executes a stored procedure with parameters and returns the results as a list of entities using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; ExecuteStoredProcedure&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>procedureName</code>: The name of the stored procedure to execute</li>
+<li><code>parameters</code>: Parameters to pass to the stored procedure</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>List&lt;T&gt;</code>: A list of entities of type T mapped from the result set</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.ExecuteStoredProcedure&lt;Product&gt;(
+    &quot;GetProductsByCategory&quot;, 
+    <span class="tok-kw">new</span> { CategoryId = <span class="tok-num">1</span> });
+</code></pre>
+</div>
+<h3 id="executestoredproceduretstring-procedurename-object-parameters-commandoptionst-options">ExecuteStoredProcedure&lt;T&gt;(string procedureName, object? parameters, CommandOptions&lt;T&gt; options)</h3>
+<p>Executes a stored procedure with parameters and command options, returning the results as a list of entities using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; ExecuteStoredProcedure&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>procedureName</code>: The name of the stored procedure to execute</li>
+<li><code>parameters</code>: Parameters to pass to the stored procedure</li>
+<li><code>options</code>: Command options (transaction, timeout, custom mapper)</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>List&lt;T&gt;</code>: A list of entities of type T mapped from the result set</li>
+</ul>
+<h2 id="single-result-stored-procedure-methods">Single Result Stored Procedure Methods</h2>
+<h3 id="executestoredprocedurefirsttstring-procedurename">ExecuteStoredProcedureFirst&lt;T&gt;(string procedureName)</h3>
+<p>Executes a stored procedure and returns the first result from the result set using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureFirst&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>procedureName</code>: The name of the stored procedure to execute</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T</code>: The first entity of type T from the result set</li>
+</ul>
+<p><strong>Exceptions:</strong></p>
+<ul>
+<li><code>InvalidOperationException</code>: If the result set is empty</li>
+</ul>
+<h3 id="executestoredprocedurefirsttstring-procedurename-object-parameters">ExecuteStoredProcedureFirst&lt;T&gt;(string procedureName, object? parameters)</h3>
+<p>Executes a parameterized stored procedure and returns the first result from the result set using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureFirst&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="executestoredprocedurefirsttstring-procedurename-object-parameters-commandoptionst-options">ExecuteStoredProcedureFirst&lt;T&gt;(string procedureName, object? parameters, CommandOptions&lt;T&gt; options)</h3>
+<p>Executes a parameterized stored procedure with command options and returns the first result from the result set using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureFirst&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> product = connection.ExecuteStoredProcedureFirst&lt;Product&gt;(&quot;GetTopProduct&quot;, <span class="tok-kw">new</span> { CategoryId = <span class="tok-num">1</span> });
+</code></pre>
+</div>
+<h2 id="first-or-default-stored-procedure-methods">First or Default Stored Procedure Methods</h2>
+<h3 id="executestoredprocedurefirstordefaulttstring-procedurename">ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(string procedureName)</h3>
+<p>Executes a stored procedure and returns the first result from the result set or the default value if the result set is empty, using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T? ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>procedureName</code>: The name of the stored procedure to execute</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T?</code>: The first entity of type T from the result set, or null if the result set is empty</li>
+</ul>
+<h3 id="executestoredprocedurefirstordefaulttstring-procedurename-object-parameters">ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(string procedureName, object? parameters)</h3>
+<p>Executes a parameterized stored procedure and returns the first result or default value using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T? ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="executestoredprocedurefirstordefaulttstring-procedurename-object-parameters-commandoptionst-options">ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(string procedureName, object? parameters, CommandOptions&lt;T&gt; options)</h3>
+<p>Executes a parameterized stored procedure with command options and returns the first result or default value using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T? ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> product = connection.ExecuteStoredProcedureFirstOrDefault&lt;Product&gt;(&quot;GetTopProduct&quot;, <span class="tok-kw">new</span> { CategoryId = <span class="tok-num">1</span> });
+</code></pre>
+</div>
+<h2 id="scalar-stored-procedure-methods">Scalar Stored Procedure Methods</h2>
+<h3 id="executestoredprocedurescalartstring-procedurename">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName)</h3>
+<p>Executes a stored procedure and returns a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName)
+</code></pre>
+</div>
+<p><strong>Type Parameters:</strong></p>
+<ul>
+<li><code>T</code>: The type of the scalar value to return</li>
+</ul>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>procedureName</code>: The name of the stored procedure to execute</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T</code>: The scalar value returned by the stored procedure</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> count = connection.ExecuteStoredProcedureScalar&lt;int&gt;(&quot;GetProductCount&quot;);
+</code></pre>
+</div>
+<h3 id="executestoredprocedurescalartstring-procedurename-object-parameters">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, object? parameters)</h3>
+<p>Executes a parameterized stored procedure and returns a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> count = connection.ExecuteStoredProcedureScalar&lt;int&gt;(&quot;GetProductCountByCategory&quot;, <span class="tok-kw">new</span> { CategoryId = <span class="tok-num">1</span> });
+</code></pre>
+</div>
+<h3 id="executestoredprocedurescalartstring-procedurename-object-parameters-commandoptions-options">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, object? parameters, CommandOptions options)</h3>
+<p>Executes a parameterized stored procedure with command options and returns a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions options)
+</code></pre>
+</div>
+<h2 id="non-query-stored-procedure-methods">Non-Query Stored Procedure Methods</h2>
+<h3 id="executestoredprocedurenonquerystring-procedurename">ExecuteStoredProcedureNonQuery(string procedureName)</h3>
+<p>Executes a stored procedure that does not return results (such as INSERT, UPDATE, DELETE operations) and returns the number of affected rows.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> int ExecuteStoredProcedureNonQuery(<span class="tok-kw">this</span> IDbConnection connection, string procedureName)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>procedureName</code>: The name of the stored procedure to execute</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>int</code>: The number of rows affected by the stored procedure</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> rowsAffected = connection.ExecuteStoredProcedureNonQuery(&quot;UpdateProductPrices&quot;);
+</code></pre>
+</div>
+<h3 id="executestoredprocedurenonquerystring-procedurename-object-parameters">ExecuteStoredProcedureNonQuery(string procedureName, object? parameters)</h3>
+<p>Executes a parameterized stored procedure that does not return results and returns the number of affected rows.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> int ExecuteStoredProcedureNonQuery(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters)
+</code></pre>
+</div>
+<h3 id="executestoredprocedurenonquerystring-procedurename-object-parameters-commandoptions-options">ExecuteStoredProcedureNonQuery(string procedureName, object? parameters, CommandOptions options)</h3>
+<p>Executes a parameterized stored procedure with command options that does not return results and returns the number of affected rows.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> int ExecuteStoredProcedureNonQuery(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions options)
+</code></pre>
+</div>
+<h2 id="async-stored-procedure-methods">Async Stored Procedure Methods</h2>
+<h3 id="executestoredprocedureasynctstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a stored procedure and returns the results as a list of entities using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="executestoredprocedureasynctstring-procedurename-object-parameters-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, object? parameters, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a parameterized stored procedure and returns the results as a list of entities using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="executestoredprocedureasynctstring-procedurename-object-parameters-commandoptionst-options-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, object? parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a parameterized stored procedure with command options and returns the results as a list of entities using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = <span class="tok-kw">await</span> connection.ExecuteStoredProcedureAsync&lt;Product&gt;(
+    &quot;GetProductsByCategory&quot;, <span class="tok-kw">new</span> { CategoryId = <span class="tok-num">1</span> }, cancellationToken);
+</code></pre>
+</div>
+<h3 id="executestoredprocedurefirstasynctstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureFirstAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a stored procedure and returns the first result from the result set using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; ExecuteStoredProcedureFirstAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="executestoredprocedurefirstordefaultasynctstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a stored procedure and returns the first result or default value using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T?&gt; ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="executestoredprocedurescalarasynctstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a stored procedure and returns a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; ExecuteStoredProcedureScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="executestoredprocedurescalarasynctstring-procedurename-object-parameters-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, object? parameters, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a parameterized stored procedure and returns a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; ExecuteStoredProcedureScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="executestoredprocedurenonqueryasyncstring-procedurename-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(string procedureName, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a stored procedure that does not return results and returns the number of affected rows.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="executestoredprocedurenonqueryasyncstring-procedurename-object-parameters-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(string procedureName, object? parameters, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a parameterized stored procedure that does not return results and returns the number of affected rows.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="executestoredprocedurenonqueryasyncstring-procedurename-object-parameters-commandoptions-options-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a parameterized stored procedure with command options that does not return results and returns the number of affected rows.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h2 id="working-with-output-parameters">Working with Output Parameters</h2>
+<p>Jaunty provides the <code>SpParameters</code> class for working with stored procedure parameters including input, output, and return parameters.</p>
+<h3 id="creating-spparameters">Creating SpParameters</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> parameters = <span class="tok-kw">new</span> SpParameters()
+    .AddInput(&quot;CategoryId&quot;, <span class="tok-num">1</span>)
+    .AddOutput(&quot;TotalProducts&quot;, DbType.Int32)
+    .AddInputOutput(&quot;LastUpdated&quot;, DateTime.Now, DbType.DateTime)
+    .AddReturnValue(&quot;ReturnCode&quot;, DbType.Int32);
+</code></pre>
+</div>
+<h3 id="executestoredproceduretstring-procedurename-spparameters-parameters-commandoptionst-options-default">ExecuteStoredProcedure&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default)</h3>
+<p>Executes a stored procedure with output parameters and returns the results as a list of entities. Output parameter values can be retrieved from the <code>SpParameters</code> object after execution.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; ExecuteStoredProcedure&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>procedureName</code>: The name of the stored procedure to execute</li>
+<li><code>parameters</code>: The stored procedure parameters including input, output, and return parameters</li>
+<li><code>options</code>: Command options (transaction, timeout, custom mapper)</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>List&lt;T&gt;</code>: A list of entities of type T mapped from the result set</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> spParams = <span class="tok-kw">new</span> SpParameters()
+    .AddInput(&quot;CategoryId&quot;, <span class="tok-num">1</span>)
+    .AddOutput(&quot;ProductCount&quot;, DbType.Int32);
+
+<span class="tok-kw">var</span> products = connection.ExecuteStoredProcedure&lt;Product&gt;(&quot;GetProductsByCategory&quot;, spParams);
+
+<span class="tok-com">// Retrieve output parameter value after execution</span>
+<span class="tok-kw">var</span> productCount = spParams.Get&lt;int&gt;(&quot;ProductCount&quot;);
+</code></pre>
+</div>
+<h3 id="executestoredprocedurefirsttstring-procedurename-spparameters-parameters-commandoptionst-options-default">ExecuteStoredProcedureFirst&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default)</h3>
+<p>Executes a stored procedure with output parameters and returns the first result from the result set. Output parameter values can be retrieved after execution.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureFirst&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="executestoredprocedurefirstordefaulttstring-procedurename-spparameters-parameters-commandoptionst-options-default">ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default)</h3>
+<p>Executes a stored procedure with output parameters and returns the first result or default value. Output parameter values can be retrieved after execution.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T? ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="executestoredprocedurescalartstring-procedurename-spparameters-parameters-commandoptions-options-default">ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions options = default)</h3>
+<p>Executes a stored procedure with output parameters and returns a scalar value. Output parameter values can be retrieved after execution.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T ExecuteStoredProcedureScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="executestoredprocedurenonquerythis-idbconnection-connection-string-procedurename-spparameters-parameters-commandoptions-options-default">ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default)</h3>
+<p>Executes a stored procedure with output parameters that does not return results. Output parameter values can be retrieved after execution.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> int ExecuteStoredProcedureNonQuery(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h2 id="async-methods-with-output-parameters">Async Methods with Output Parameters</h2>
+<h3 id="executestoredprocedureasynctstring-procedurename-spparameters-parameters-commandoptionst-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a stored procedure with output parameters and returns the results as a list of entities. Output parameter values can be retrieved from the <code>SpParameters</code> object after execution.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="executestoredprocedurefirstasynctstring-procedurename-spparameters-parameters-commandoptionst-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureFirstAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a stored procedure with output parameters and returns the first result from the result set. Output parameter values can be retrieved after execution.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; ExecuteStoredProcedureFirstAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="executestoredprocedurefirstordefaultasynctstring-procedurename-spparameters-parameters-commandoptionst-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a stored procedure with output parameters and returns the first result or default value. Output parameter values can be retrieved after execution.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T?&gt; ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="executestoredprocedurescalarasynctstring-procedurename-spparameters-parameters-commandoptions-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a stored procedure with output parameters and returns a scalar value. Output parameter values can be retrieved after execution.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; ExecuteStoredProcedureScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="executestoredprocedurenonqueryasyncthis-idbconnection-connection-string-procedurename-spparameters-parameters-commandoptions-options-default-cancellationtoken-cancellationtoken-default">ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a stored procedure with output parameters that does not return results. Output parameter values can be retrieved after execution.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(<span class="tok-kw">this</span> IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h2 id="spparameters-class">SpParameters Class</h2>
+<p>The <code>SpParameters</code> class provides methods for defining stored procedure parameters:</p>
+<h3 id="addinputstring-name-object-value">AddInput(string name, object? value)</h3>
+<p>Adds an input parameter to the stored procedure call.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> SpParameters AddInput(string name, object? value)
+</code></pre>
+</div>
+<h3 id="addinputstring-name-object-value-dbtype-dbtype-int-size-null">AddInput(string name, object? value, DbType dbType, int? size = null)</h3>
+<p>Adds an input parameter with explicit database type and optional size.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> SpParameters AddInput(string name, object? value, DbType dbType, int? size = <span class="tok-kw">null</span>)
+</code></pre>
+</div>
+<h3 id="addoutputstring-name-dbtype-dbtype-int-size-null">AddOutput(string name, DbType dbType, int? size = null)</h3>
+<p>Adds an output parameter to the stored procedure call.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> SpParameters AddOutput(string name, DbType dbType, int? size = <span class="tok-kw">null</span>)
+</code></pre>
+</div>
+<h3 id="addinputoutputstring-name-object-value-dbtype-dbtype-int-size-null">AddInputOutput(string name, object? value, DbType dbType, int? size = null)</h3>
+<p>Adds an input/output parameter to the stored procedure call.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> SpParameters AddInputOutput(string name, object? value, DbType dbType, int? size = <span class="tok-kw">null</span>)
+</code></pre>
+</div>
+<h3 id="addreturnvaluestring-name-return_value-dbtype-dbtype-dbtype.int32">AddReturnValue(string name = &quot;RETURN_VALUE&quot;, DbType dbType = DbType.Int32)</h3>
+<p>Adds a return value parameter to the stored procedure call.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> SpParameters AddReturnValue(string name = &quot;RETURN_VALUE&quot;, DbType dbType = DbType.Int32)
+</code></pre>
+</div>
+<h3 id="gettstring-name">Get&lt;T&gt;(string name)</h3>
+<p>Retrieves the value of an output or input/output parameter after the stored procedure has executed.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> T? Get&lt;T&gt;(string name)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>name</code>: The parameter name</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T?</code>: The parameter value converted to the specified type</li>
+</ul>
+<h3 id="getreturnvalue">GetReturnValue()</h3>
+<p>Retrieves the return value after the stored procedure has executed.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> int GetReturnValue()
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>int</code>: The return value (typically an integer)</li>
+</ul>
+<h3 id="hasvaluestring-name">HasValue(string name)</h3>
+<p>Checks if a parameter exists and has a non-null value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> bool HasValue(string name)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>name</code>: The parameter name</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>bool</code>: True if the parameter exists and has a non-null, non-DBNull value</li>
+</ul>
+<h2 id="important-notes">Important Notes</h2>
+<div class="callout callout-warn"><ul>
+<li><strong>Command Type</strong>: Stored procedure methods automatically set the command type to <code>CommandType.StoredProcedure</code></li>
+<li><strong>Parameter Format</strong>: Parameter names should not include the <code>@</code> prefix when using <code>SpParameters</code></li>
+<li><strong>Output Parameters</strong>: Use <code>SpParameters</code> class to define and retrieve output parameter values</li>
+<li><strong>Async Requirements</strong>: Async operations require a <code>DbConnection</code> rather than just <code>IDbConnection</code></li>
+<li><strong>Transaction Support</strong>: All stored procedure methods support transactions via <code>CommandOptions</code></li>
+<li><strong>Timeout Support</strong>: All stored procedure methods support command timeout via <code>CommandOptions</code></li>
+<li><strong>Return Values</strong>: Non-query methods return the number of affected rows; scalar methods return the scalar value; query methods return mapped entities</li>
+<li><strong>Mapping Mode</strong>: All stored procedure query methods use strict mapping mode by default</li>
+</ul></div>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-single-result-methods.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Single result methods</span>
+</a><a class="pn-next" href="01-api-reference-streaming-methods.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Streaming methods</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

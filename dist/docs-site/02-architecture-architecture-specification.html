@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty Architecture Specification — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty Architecture Specification</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html" class="active" aria-current="page">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty Architecture Specification</nav>
+        <article>
+<h1 id="jaunty-architecture-specification">Jaunty Architecture Specification</h1>
+<p><strong>Version</strong>: 2026.02.19<br />
+<strong>Status</strong>: Active<br />
+<strong>Maintainer</strong>: Project Team</p>
+<blockquote>
+<p>This document provides a complete architectural specification of the Jaunty micro-ORM, including system overview, component specifications, data flows, and performance characteristics.</p>
+</blockquote>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#system-overview">System Overview</a></li>
+<li><a href="#architectural-layers">Architectural Layers</a></li>
+<li><a href="#component-specifications">Component Specifications</a></li>
+<li><a href="#data-flow">Data Flow</a></li>
+<li><a href="#performance-architecture">Performance Architecture</a></li>
+<li><a href="#threading-model">Threading Model</a></li>
+<li><a href="#multi-targeting-strategy">Multi-Targeting Strategy</a></li>
+<li><a href="#extension-points">Extension Points</a></li>
+</ol>
+<hr />
+<h2 id="system-overview">System Overview</h2>
+<h3 id="purpose">Purpose</h3>
+<p>Jaunty is a lightweight, high-performance micro-ORM for .NET that:</p>
+<ul>
+<li>Executes raw SQL and maps results to objects</li>
+<li>Uses strict mapping by default (catches bugs early)</li>
+<li>Has zero external dependencies (framework-only)</li>
+<li>Targets <code>netstandard2.0</code> and <code>net8.0</code></li>
+</ul>
+<h3 id="design-goals">Design Goals</h3>
+<div class="mermaid">quadrantChart
+    title Jaunty Design Goal Priorities
+    x-axis "Low Priority" --> "High Priority"
+    y-axis "Easy" --> "Critical"
+    "Performance": [0.95, 0.95]
+    "Correctness": [0.90, 0.90]
+    "Simplicity": [0.85, 0.80]
+    "Compatibility": [0.80, 0.75]
+    "Extensibility": [0.60, 0.50]
+</div>
+<table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Priority</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Performance</strong></td>
+<td>Critical</td>
+<td>Minimal allocations, compiled delegates, cached metadata</td>
+</tr>
+<tr>
+<td><strong>Correctness</strong></td>
+<td>Critical</td>
+<td>Strict mapping by default, clear error messages</td>
+</tr>
+<tr>
+<td><strong>Simplicity</strong></td>
+<td>High</td>
+<td>No magic, explicit SQL, predictable behavior</td>
+</tr>
+<tr>
+<td><strong>Compatibility</strong></td>
+<td>High</td>
+<td>Support netstandard2.0 and net8.0</td>
+</tr>
+<tr>
+<td><strong>Extensibility</strong></td>
+<td>Medium</td>
+<td>Custom mappers, configuration, dialects</td>
+</tr>
+</tbody>
+</table>
+<h3 id="non-goals-what-jaunty-does-not-do">Non-Goals (What Jaunty Does NOT Do)</h3>
+<div class="mermaid">block-beta
+    columns 3
+    space:1
+    block:nonGoals[" Jaunty Does NOT Do"]
+        columns 1
+        qb["Query Building"]
+        linq["LINQ Translation"]
+        ct["Change Tracking"]
+        ul["Unit of Work"]
+        mig["Migrations"]
+        cp["Connection Pooling"]
+    end
+    space:1
+    
+    style nonGoals fill:#fee
+    style qb fill:#fcc
+    style linq fill:#fcc
+    style ct fill:#fcc
+    style ul fill:#fcc
+    style mig fill:#fcc
+    style cp fill:#fcc
+</div>
+<hr />
+<h2 id="architectural-layers">Architectural Layers</h2>
+<h3 id="layer-diagram">Layer Diagram</h3>
+<div class="mermaid">flowchart TD
+    subgraph API["Public API Layer"]
+        A1["Query&lt;T>()"]
+        A2["QueryPartial&lt;T>()"]
+        A3["Insert&lt;T>()"]
+        A4["Update&lt;T>()"]
+        A5["Delete&lt;T>()"]
+        A6["QueryMultiple()"]
+    end
+    
+    subgraph CORE["Core Execution Layer"]
+        C1["QueryCore / QueryCoreAsync"]
+        C2["ExecuteReader / ExecuteReaderAsync"]
+        C3["DrDispatcher"]
+        C4["ExecuteQueryMultiple"]
+    end
+    
+    subgraph META["Metadata Layer"]
+        M1["MetadataCache&lt;T>"]
+        M2["MetadataBuilder"]
+        M3["EntityMetadata"]
+        M4["MappedCache&lt;T>"]
+    end
+    
+    subgraph PARAM["Parameter Layer"]
+        P1["SqlParameterParser"]
+        P2["ParameterBinder"]
+        P3["ParameterCache"]
+        P4["SqlParameterParserCache"]
+    end
+    
+    subgraph SQL["SQL Generation Layer"]
+        S1["CrudSqlCache&lt;T>"]
+        S2["CachedCrudSql"]
+        S3["ISqlDialect"]
+    end
+    
+    API --> CORE
+    CORE --> META
+    CORE --> PARAM
+    CORE --> SQL
+    
+    style API fill:#e1f5ff
+    style CORE fill:#fff4e1
+    style META fill:#f0e1ff
+    style PARAM fill:#e1ffe1
+    style SQL fill:#ffe1e1
+</div>
+<h3 id="layer-responsibilities">Layer Responsibilities</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Components</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Public API</strong></td>
+<td>Extension methods on <code>IDbConnection</code></td>
+<td>User-facing API, parameter validation, options handling</td>
+</tr>
+<tr>
+<td><strong>Core Execution</strong></td>
+<td><code>QueryCore</code>, <code>ExecuteReader</code>, <code>DrDispatcher</code></td>
+<td>Command execution, connection management, mapper resolution</td>
+</tr>
+<tr>
+<td><strong>Metadata</strong></td>
+<td><code>MetadataCache&lt;T&gt;</code>, <code>MetadataBuilder</code></td>
+<td>Entity metadata caching, compiled expression trees</td>
+</tr>
+<tr>
+<td><strong>Parameter</strong></td>
+<td><code>SqlParameterParser</code>, <code>ParameterBinder</code></td>
+<td>SQL parameter extraction, object-to-parameter binding</td>
+</tr>
+<tr>
+<td><strong>SQL Generation</strong></td>
+<td><code>CrudSqlCache&lt;T&gt;</code>, <code>ISqlDialect</code></td>
+<td>CRUD SQL generation, database-specific syntax</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="component-specifications">Component Specifications</h2>
+<h3 id="public-api-layer">1. Public API Layer</h3>
+<p><strong>Location</strong>: <code>src/Jaunty/Read/</code>, <code>src/Jaunty/Write/</code>, <code>src/Jaunty/Multiple/</code>, etc.</p>
+<p><strong>Pattern</strong>: Extension methods on <code>IDbConnection</code> using C# 13 extension syntax.</p>
+<div class="mermaid">classDiagram
+    class Jaunty {
+        &lt;&lt;static partial>>
+        +Query&lt;T>(sql, params, options) List&lt;T>
+        +QueryPartial&lt;T>(sql, params, options) List&lt;T>
+        +QueryFirst&lt;T>(sql, params, options) T
+        +QueryFirstOrDefault&lt;T>(sql, params, options) T?
+        +QuerySingle&lt;T>(sql, params, options) T
+        +QuerySingleOrDefault&lt;T>(sql, params, options) T?
+        +QueryScalar&lt;T>(sql, params, options) T
+        +Insert&lt;T>(entity) long
+        +Update&lt;T>(entity) int
+        +Delete&lt;T>(entityOrId) int
+        +QueryMultiple(sql, params) GridReader
+    }
+    
+    class IDbConnection {
+        &lt;&lt;interface>>
+        +Open()
+        +Close()
+        +CreateCommand()
+        +BeginTransaction()
+    }
+    
+    Jaunty --|> IDbConnection : extends
+</div>
+<p><strong>Key Characteristics</strong>:</p>
+<ul>
+<li>All methods are extension methods</li>
+<li>Consistent parameter ordering: <code>sql</code>, <code>parameters</code>, <code>options</code>, <code>cancellationToken</code></li>
+<li><code>where T : new()</code> constraint for entity types</li>
+<li>Sync uses <code>IDbConnection</code>, async uses <code>DbConnection</code></li>
+</ul>
+<hr />
+<h3 id="core-execution-layer">2. Core Execution Layer</h3>
+<h4 id="querycore-flow">QueryCore Flow</h4>
+<div class="mermaid">sequenceDiagram
+    participant User
+    participant QueryCore
+    participant ExecuteReader
+    participant DrDispatcher
+    participant Handler
+    
+    User->>QueryCore: Query&lt;T>(sql, params)
+    QueryCore->>ExecuteReader: ExecuteReader(sql, params, handler)
+    
+    ExecuteReader->>ExecuteReader: Manage connection state
+    ExecuteReader->>ExecuteReader: Create command
+    ExecuteReader->>ExecuteReader: Bind parameters
+    ExecuteReader->>ExecuteReader: ExecuteReader()
+    
+    ExecuteReader->>DrDispatcher: Resolve mapper
+    DrDispatcher->>DrDispatcher: Check options.Mapper
+    DrDispatcher->>DrDispatcher: Check special types
+    DrDispatcher->>DrDispatcher: Check MappedCache&lt;T>
+    DrDispatcher->>DrDispatcher: Build from MetadataCache&lt;T>
+    DrDispatcher-->ExecuteReader: Func&lt;IDataReader, T>
+    
+    ExecuteReader->>Handler: handler(reader)
+    Handler->>Handler: while reader.Read()
+    Handler->>Handler: map(reader)
+    Handler-->ExecuteReader: List&lt;T>
+    ExecuteReader-->QueryCore: List&lt;T>
+    QueryCore-->User: List&lt;T>
+</div>
+<h4 id="connection-state-management">Connection State Management</h4>
+<div class="mermaid">stateDiagram-v2
+    [*] --> CheckState
+    CheckState --> OpenConnection: wasClosed = true
+    CheckState --> Execute: wasClosed = false
+    
+    OpenConnection --> Execute: connection.Open()
+    Execute --> CloseConnection: wasClosed &amp;&amp; stillOpen
+    Execute --> [*]: wasClosed = false
+    
+    CloseConnection --> [*]: connection.Close()
+    
+    note right of CheckState
+        Connection state is preserved:
+        - If closed: open, execute, close
+        - If open: execute, leave open
+    end note
+</div>
+<hr />
+<h3 id="metadata-layer">3. Metadata Layer</h3>
+<h4 id="metadatacache-initialization">MetadataCache<T> Initialization</h4>
+<div class="mermaid">flowchart TD
+    Start["static MetadataCache&lt;T>()"] --> Build["MetadataBuilder.Build&lt;T>()"]
+    Build --> Columns["Get Columns from Metadata"]
+    Columns --> Loop["For each column"]
+    
+    Loop --> CreateSetter["CreateSetter(property)"]
+    CreateSetter --> Expression["Build expression tree"]
+    Expression --> Compile["Compile to delegate"]
+    Compile --> Context["Create PropertyContext&lt;T>"]
+    
+    Context --> AddToDict["Add to ColumnToIndex dictionary"]
+    AddToDict --> MoreCols{"More columns?"}
+    MoreCols -->|Yes| Loop
+    MoreCols -->|No| Freeze
+    
+    Freeze{"NET8_0_OR_GREATER?"} -->|Yes| Frozen["ToFrozenDictionary()"]
+    Freeze -->|No| Dict["ToDictionary()"]
+    
+    Frozen --> Done["MetadataCache initialized"]
+    Dict --> Done
+    
+    style Start fill:#9f9
+    style Done fill:#9f9
+    style Expression fill:#ff9
+    style Compile fill:#ff9
+</div>
+<h4 id="metadata-resolution-priority">Metadata Resolution Priority</h4>
+<div class="mermaid">flowchart LR
+    Prop["Property"] --> CheckColumn["Has [Column] attribute?"]
+    CheckColumn -->|Yes| ColumnName["Use [Column] name"]
+    CheckColumn -->|No| CheckConfig["JauntyConfig.ColumnNameResolver?"]
+    CheckConfig -->|Yes| ResolverName["Use resolver result"]
+    CheckConfig -->|No| PropName["Use property name"]
+    
+    ColumnName --> Final["Final column name"]
+    ResolverName --> Final
+    PropName --> Final
+    
+    style CheckColumn fill:#ff9
+    style CheckConfig fill:#ff9
+    style Final fill:#9f9
+</div>
+<hr />
+<h3 id="parameter-layer">4. Parameter Layer</h3>
+<h4 id="sqlparameterparser-state-machine">SqlParameterParser State Machine</h4>
+<div class="mermaid">stateDiagram-v2
+    [*] --> Normal
+    
+    Normal --> SingleLineComment: --
+    Normal --> BlockComment: /*
+    Normal --> StringLiteral: '
+    Normal --> QuotedIdentifier: " or [
+    Normal --> ExtractParam: @
+    Normal --> [*]: End of SQL
+    
+    SingleLineComment --> Normal: \n
+    BlockComment --> Normal: */
+    StringLiteral --> Normal: ' (unescaped)
+    QuotedIdentifier --> Normal: " or ]
+    ExtractParam --> Normal: After parameter name
+    
+    note right of Normal
+        In Normal state:
+        - Look for @param
+        - Skip comments
+        - Skip string literals
+        - Skip quoted identifiers
+    end note
+    
+    note right of ExtractParam
+        Extract parameter name:
+        - Start after @
+        - Continue while letter/digit/_
+        - Add to HashSet (deduplicates)
+    end note
+</div>
+<h4 id="parameter-binding-flow">Parameter Binding Flow</h4>
+<div class="mermaid">sequenceDiagram
+    participant Caller
+    participant ParameterBinder
+    participant ParameterCache
+    participant DbCommand
+    participant DbParameter
+    
+    Caller->>ParameterBinder: Bind(command, parameters)
+    ParameterBinder->>ParameterCache: GetProperties(type)
+    ParameterCache-->>ParameterBinder: PropertyInfo[]
+    
+    loop For each property
+        ParameterBinder->>ParameterBinder: prop.GetValue(parameters)
+        ParameterBinder->>DbCommand: CreateParameter()
+        DbCommand-->>DbParameter: new DbParameter
+        ParameterBinder->>DbParameter: ParameterName = prop.Name
+        ParameterBinder->>DbParameter: Value = value ?? DBNull.Value
+        ParameterBinder->>DbCommand: Parameters.Add(param)
+    end
+</div>
+<hr />
+<h3 id="sql-generation-layer">5. SQL Generation Layer</h3>
+<h4 id="crud-sql-generation">CRUD SQL Generation</h4>
+<div class="mermaid">flowchart TD
+    Start["CrudSqlCache&lt;T> static constructor"] --> Meta["Get MetadataCache&lt;T>.Metadata"]
+    Meta --> KeyProp["Find key property"]
+    KeyProp --> NonKeyProps["Get non-key properties"]
+    
+    NonKeyProps --> BuildInsert["Build INSERT SQL"]
+    BuildInsert --> InsertCols["Column names"]
+    BuildInsert --> InsertVals["Parameter placeholders"]
+    InsertCols --> InsertSQL["INSERT INTO table (cols) VALUES (params)"]
+    
+    NonKeyProps --> BuildUpdate["Build UPDATE SQL"]
+    BuildUpdate --> SetClause["SET col = @param"]
+    BuildUpdate --> WhereClause["WHERE key = @key"]
+    SetClause --> UpdateSQL["UPDATE table SET ... WHERE ..."]
+    
+    KeyProp --> BuildDelete["Build DELETE SQL"]
+    BuildDelete --> DeleteSQL["DELETE FROM table WHERE key = @key"]
+    
+    InsertSQL --> Cache["Store in static fields"]
+    UpdateSQL --> Cache
+    DeleteSQL --> Cache
+    Cache --> Done["SQL cached for lifetime"]
+    
+    style Start fill:#9f9
+    style Done fill:#9f9
+    style InsertSQL fill:#ff9
+    style UpdateSQL fill:#ff9
+    style DeleteSQL fill:#ff9
+</div>
+<hr />
+<h2 id="data-flow">Data Flow</h2>
+<h3 id="query-execution-flow">Query Execution Flow</h3>
+<div class="mermaid">flowchart TD
+    User["User calls Query&lt;T>()"] --> ParamBind["Parameter Binding"]
+    
+    subgraph ParamBind
+        PB1["SqlParameterParser&lt;br/>Extract @params from SQL"]
+        PB2["SqlParameterParserCache&lt;br/>Cache parsed params"]
+        PB3["ParameterBinder&lt;br/>Bind to DbCommand"]
+    end
+    
+    ParamBind --> MetaResolve["Metadata Resolution"]
+    
+    subgraph MetaResolve
+        MR1["MetadataCache&lt;T>&lt;br/>Static cache"]
+        MR2["MetadataBuilder&lt;br/>Build from attributes"]
+        MR3["Compiled setters&lt;br/>Expression trees"]
+    end
+    
+    MetaResolve --> Exec["Command Execution"]
+    
+    subgraph Exec
+        E1["ExecuteReader&lt;br/>Connection mgmt"]
+        E2["DbCommand.ExecuteReader&lt;br/>Execute SQL"]
+        E3["IDataReader&lt;br/>Result set"]
+    end
+    
+    Exec --> MapResolve["Mapper Resolution"]
+    
+    subgraph MapResolve
+        MR4["DrDispatcher&lt;br/>Resolve mapper"]
+        MR5["MappedCache&lt;T>&lt;br/>IMapped&lt;T>"]
+        MR6["Special types&lt;br/>Dictionary, etc."]
+        MR7["Compiled delegates&lt;br/>Property setters"]
+    end
+    
+    MapResolve --> Map["Result Mapping"]
+    
+    subgraph Map
+        M1["while reader.Read()"]
+        M2["map(reader)"]
+        M3["Add to List&lt;T>"]
+    end
+    
+    Map --> Return["Return List&lt;T>"]
+    
+    style User fill:#9cf
+    style Return fill:#9cf
+    style PB1 fill:#ff9
+    style MR1 fill:#f9f
+    style E1 fill:#9ff
+    style MR4 fill:#f9f
+    style M1 fill:#ff9
+</div>
+<h3 id="insert-execution-flow">Insert Execution Flow</h3>
+<div class="mermaid">flowchart TD
+    User["User calls Insert&lt;T>(entity)"] --> Meta["Metadata Resolution"]
+    
+    subgraph Meta
+        M1["MetadataCache&lt;T>&lt;br/>Get entity metadata"]
+        M2["Find key property&lt;br/>For WHERE clause"]
+        M3["Get identity property&lt;br/>For RETURNING"]
+    end
+    
+    Meta --> SqlGen["SQL Generation"]
+    
+    subgraph SqlGen
+        S1["CrudSqlCache&lt;T>&lt;br/>Get cached INSERT SQL"]
+        S2["Build: INSERT INTO table&lt;br/>(cols) VALUES (params)"]
+        S3["Add: SELECT identity&lt;br/>(dialect-specific)"]
+    end
+    
+    SqlGen --> ParamBind["Parameter Binding"]
+    
+    subgraph ParamBind
+        P1["Bind entity properties&lt;br/>to DbCommand.Parameters"]
+        P2["Skip identity columns&lt;br/>Database generates"]
+    end
+    
+    ParamBind --> Exec["Command Execution"]
+    
+    subgraph Exec
+        E1["ExecuteReader&lt;br/>Connection mgmt"]
+        E2["command.ExecuteReader()"]
+        E3["reader.Read()"]
+        E4["reader.GetValue(0)&lt;br/>Get identity"]
+    end
+    
+    Exec --> Return["Return identity (long)"]
+    
+    style User fill:#9cf
+    style Return fill:#9cf
+    style M1 fill:#f9f
+    style S1 fill:#ff9
+    style P1 fill:#f96
+    style E1 fill:#9ff
+</div>
+<hr />
+<h2 id="performance-architecture">Performance Architecture</h2>
+<h3 id="caching-strategy">Caching Strategy</h3>
+<div class="mermaid">flowchart LR
+    subgraph Caches["Cache Hierarchy"]
+        direction TB
+        
+        MC["MetadataCache&lt;T>&lt;br/>Per type&lt;br/>Application lifetime"]
+        PC["ParameterCache&lt;T>&lt;br/>Per type&lt;br/>Application lifetime"]
+        SPC["SqlParameterParserCache&lt;br/>Per SQL string&lt;br/>Application lifetime"]
+        CC["CrudSqlCache&lt;T>&lt;br/>Per type&lt;br/>Application lifetime"]
+        MCT["MappedCache&lt;T>&lt;br/>Per type&lt;br/>Application lifetime"]
+    end
+    
+    MC --> Access["Read-only after init&lt;br/>Thread-safe&lt;br/>Zero locks"]
+    PC --> Access
+    SPC --> Access
+    CC --> Access
+    MCT --> Access
+    
+    style MC fill:#9f9
+    style PC fill:#9f9
+    style SPC fill:#ff9
+    style CC fill:#9f9
+    style MCT fill:#9f9
+</div>
+<h3 id="allocation-optimization">Allocation Optimization</h3>
+<div class="mermaid">pie title Allocation Reduction Techniques
+    "Pre-sized collections" : 25
+    "Span&lt;T> slicing" : 20
+    "FrozenDictionary" : 15
+    "Compiled delegates" : 25
+    "readonly struct" : 5
+    "ValueTask&lt;T>" : 10
+</div>
+<h3 id="performance-comparison">Performance Comparison</h3>
+<div class="mermaid">xychart-beta
+    title "Query Performance: Reflection vs Compiled Delegates"
+    x-axis "Rows" [1, 10, 100, 1000, 10000]
+    y-axis "Time (ms)" 0 --> 100
+    line "Reflection (PropertyInfo.SetValue)" [0.5, 3, 25, 200, 1800]
+    line "Compiled Delegates" [0.1, 0.5, 3, 25, 200]
+</div>
+<hr />
+<h2 id="threading-model">Threading Model</h2>
+<h3 id="thread-safety-guarantees">Thread Safety Guarantees</h3>
+<div class="mermaid">flowchart TD
+    subgraph ThreadSafe[" Thread-Safe"]
+        TS1["Public API methods"]
+        TS2["Static caches&lt;br/>(MetadataCache, ParameterCache)"]
+        TS3["Compiled delegates"]
+        TS4["FrozenDictionary"]
+    end
+    
+    subgraph NotThreadSafe[" Not Thread-Safe"]
+        NS1["DbConnection&lt;br/>(user responsibility)"]
+        NS2["DbCommand&lt;br/>(created per operation)"]
+        NS3["DbTransaction&lt;br/>(user responsibility)"]
+    end
+    
+    style ThreadSafe fill:#9f9
+    style NotThreadSafe fill:#f99
+</div>
+<h3 id="static-initialization-sequence">Static Initialization Sequence</h3>
+<div class="mermaid">sequenceDiagram
+    participant CLR
+    participant Thread1
+    participant Thread2
+    participant MetadataCache
+    
+    Thread1->>CLR: Access MetadataCache&lt;Product>
+    CLR->>MetadataCache: Run static constructor
+    Note over MetadataCache: Thread-safe by CLR guarantee
+    
+    Thread2->>CLR: Access MetadataCache&lt;Product>
+    CLR->>Thread2: Wait for constructor
+    
+    MetadataCache->>MetadataCache: Build metadata
+    MetadataCache->>MetadataCache: Compile setters
+    MetadataCache->>MetadataCache: Create FrozenDictionary
+    
+    MetadataCache-->CLR: Constructor complete
+    CLR-->Thread1: Return initialized cache
+    CLR-->Thread2: Return initialized cache
+    
+    Note over Thread1,Thread2: All subsequent accesses&lt;br/>are lock-free reads
+</div>
+<hr />
+<h2 id="multi-targeting-strategy">Multi-Targeting Strategy</h2>
+<h3 id="framework-feature-matrix">Framework Feature Matrix</h3>
+<div class="mermaid">quadrantChart
+    title ".NET 8.0 Optimizations"
+    x-axis "netstandard2.0" --> "net8.0"
+    y-axis "Compatibility" --> "Performance"
+    "FrozenDictionary": [0.95, 0.90]
+    "ValueTask&lt;T>": [0.85, 0.80]
+    "string.Create": [0.90, 0.85]
+    "Span&lt;T>": [0.80, 0.75]
+    "SearchValues&lt;T>": [0.95, 0.95]
+</div>
+<h3 id="conditional-compilation-pattern">Conditional Compilation Pattern</h3>
+<div class="mermaid">flowchart TD
+    Check{"#if NET8_0_OR_GREATER?"} -->|Yes| Modern["Use modern APIs"]
+    Check -->|No| Fallback["Use compatible APIs"]
+    
+    Modern --> M1["FrozenDictionary&lt;K,V>"]
+    Modern --> M2["ValueTask&lt;T>"]
+    Modern --> M3["string.Create()"]
+    Modern --> M4["Span&lt;T>/ReadOnlySpan&lt;T>"]
+    
+    Fallback --> F1["Dictionary&lt;K,V>"]
+    Fallback --> F2["Task&lt;T>"]
+    Fallback --> F3["String concatenation"]
+    Fallback --> F4["Substring()"]
+    
+    style Check fill:#ff9
+    style Modern fill:#9f9
+    style Fallback fill:#ff9
+</div>
+<hr />
+<h2 id="extension-points">Extension Points</h2>
+<h3 id="custom-mapper-registration">Custom Mapper Registration</h3>
+<div class="mermaid">flowchart TD
+    User["User implements IMapped&lt;T>"] --> Static["MappedCache&lt;T>.Mapper set"]
+    Static --> DrDisp["DrDispatcher.Resolve&lt;T>()"]
+    DrDisp --> Check{"MappedCache&lt;T>.Mapper&lt;br/>not null?"}
+    Check -->|Yes| UseCustom["Use custom mapper"]
+    Check -->|No| Fallback["Fallback to MetadataCache"]
+    
+    UseCustom --> FastPath["Skip metadata reflection"]
+    Fallback --> SlowPath["Use compiled delegates"]
+    
+    style User fill:#9cf
+    style UseCustom fill:#9f9
+    style FastPath fill:#9f9
+</div>
+<h3 id="configuration-extension">Configuration Extension</h3>
+<div class="mermaid">flowchart LR
+    subgraph Config["JauntyConfig"]
+        CNR["ColumnNameResolver&lt;br/>Func&lt;string,string>"]
+        TNR["TableNameResolver&lt;br/>Func&lt;Type,string>"]
+        SNR["SchemaNameResolver&lt;br/>Func&lt;Type,string>"]
+    end
+    
+    Config --> MB["MetadataBuilder.Build&lt;T>()"]
+    MB --> Resolve["Resolve names at startup"]
+    Resolve --> Cache["Cache in MetadataCache&lt;T>"]
+    
+    style Config fill:#9cf
+    style MB fill:#ff9
+    style Cache fill:#9f9
+</div>
+<hr />
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="exception-hierarchy">Exception Hierarchy</h3>
+<div class="mermaid">flowchart TD
+    subgraph Jaunty["Jaunty Exceptions"]
+        IO["InvalidOperationException&lt;br/>Strict mapping, no results,&lt;br/>multiple results"]
+        AE["ArgumentException&lt;br/>Parameter mismatch,&lt;br/>invalid parameter"]
+        ANE["ArgumentNullException&lt;br/>Null required argument"]
+    end
+    
+    subgraph PassThrough["Pass-Through Exceptions"]
+        DBE["DbException&lt;br/>Database errors"]
+        SQL["SqlException&lt;br/>SQL syntax errors"]
+    end
+    
+    style IO fill:#f96
+    style AE fill:#f96
+    style ANE fill:#f96
+    style DBE fill:#9cf
+    style SQL fill:#9cf
+</div>
+<h3 id="error-message-format">Error Message Format</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│ Strict mapping failed: property 'Price' on type 'Product'      │
+│ has no matching column.                                         │
+│                                                                 │
+│ SQL columns: [id, name, category_id]                           │
+│ Missing: [Price]                                                │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ Parameter count mismatch: SQL contains 2 unique parameter(s),  │
+│ but 3 value(s) provided.                                        │
+│                                                                 │
+│ SQL parameters: [@CategoryId, @MinPrice]                       │
+│ Provided: [1, 100, 200]                                         │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr />
+<h2 id="see-also">See Also</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="02-architecture-design-philosophy.html"><code>design-philosophy.md</code></a></td>
+<td>Design philosophy and trade-offs</td>
+</tr>
+<tr>
+<td><a href="02-architecture-metadata-system-spec.html"><code>metadata-system-spec.md</code></a></td>
+<td>Metadata caching system details</td>
+</tr>
+<tr>
+<td><a href="02-architecture-parameter-binding-spec.html"><code>parameter-binding-spec.md</code></a></td>
+<td>Parameter binding details</td>
+</tr>
+<tr>
+<td><a href="02-architecture-performance-spec.html"><code>performance-spec.md</code></a></td>
+<td>Performance optimization guide</td>
+</tr>
+<tr>
+<td><a href="../../01-api-reference/README.md"><code>../../01-api-reference/README.md</code></a></td>
+<td>API documentation</td>
+</tr>
+<tr>
+<td><a href="../../the coding standards"><code>../../the coding standards</code></a></td>
+<td>Development guidelines</td>
+</tr>
+</tbody>
+</table>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="02-architecture-ARCHITECTURE-DECISIONS.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">ARCHITECTURE DECISIONS</span>
+</a><a class="pn-next" href="02-architecture-architecture-visuals.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Architecture visuals</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

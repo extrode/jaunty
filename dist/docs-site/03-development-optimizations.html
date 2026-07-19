@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty Optimization Roadmap — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty Optimization Roadmap</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html" class="active" aria-current="page">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty Optimization Roadmap</nav>
+        <article>
+<h1 id="jaunty-optimization-roadmap">Jaunty Optimization Roadmap</h1>
+<p>This document outlines the prioritized tasks for improving the performance, memory utilization, and code quality of the Jaunty micro-ORM.</p>
+<h2 id="phase-1-critical-hot-path-optimizations-high-impact">Phase 1: Critical Hot-Path Optimizations (High Impact)</h2>
+<h3 id="task-1-eliminate-reflection-in-write-operations">Task 1: Eliminate Reflection in Write Operations</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Write/InsertCore.cs</code>, <code>UpdateCore.cs</code></li>
+<li><strong>Context</strong>: <code>BindInsertParameters</code> and <code>BindUpdateParameters</code> currently call <code>PropertyInfo.GetValue(entity)</code> in a loop for every row.</li>
+<li><strong>Implementation</strong>: Create an internal <code>WriteParameterCache&lt;T&gt;</code> that compiles and caches a single <code>Action&lt;IDbCommand, T&gt;</code> delegate for each entity type. This delegate should perform direct property access and add parameters to the command.</li>
+<li><strong>Goal</strong>: Zero reflection and zero boxing during INSERT/UPDATE parameter binding.</li>
+</ul>
+<h3 id="task-2-optimize-entity-id-population">Task 2: Optimize Entity ID Population</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Write/InsertCore.cs</code> (<code>PopulateEntityId</code> method)</li>
+<li><strong>Context</strong>: Currently uses <code>GetProperty(&quot;Id&quot;)</code> and <code>SetValue</code> on every successful insert.</li>
+<li><strong>Implementation</strong>: Move the ID-property resolution logic to <code>MetadataBuilder</code>. Store a compiled <code>Action&lt;T, long&gt;?</code> setter in <code>EntityMetadata</code>.</li>
+<li><strong>Goal</strong>: Replace runtime reflection with a cached, compiled delegate call.</li>
+</ul>
+<h3 id="task-3-refactor-collection-parameter-expansion">Task 3: Refactor Collection Parameter Expansion</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Parameters/ParameterBinder.cs</code> (<code>IsCollection</code> and <code>ExpandCollectionParameters</code>)</li>
+<li><strong>Context</strong>: <code>IsCollection</code> currently allocates a <code>new List&lt;object?&gt;</code> and iterates the source <code>IEnumerable</code>, causing boxing for value types (e.g., <code>int</code> IDs).</li>
+<li><strong>Implementation</strong>: Implement specialized checks for common types (e.g., <code>int[]</code>, <code>List&lt;int&gt;</code>, <code>string[]</code>). Use a non-allocating iteration pattern or <code>ArrayPool&lt;object&gt;</code> for heterogeneous collections.</li>
+<li><strong>Goal</strong>: Reduce heap allocations and boxing during <code>WHERE IN @Ids</code> query preparation.</li>
+</ul>
+<hr />
+<h2 id="phase-2-execution-engine-refinement-medium-high-impact">Phase 2: Execution Engine Refinement (Medium-High Impact)</h2>
+<h3 id="task-4-high-performance-expression-tree-setters">Task 4: High-Performance Expression Tree Setters</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Entity/MetadataCache.cs</code> (<code>CreateSetter</code> method)</li>
+<li><strong>Context</strong>: Currently uses <code>Convert.ChangeType</code> for all assignments.</li>
+<li><strong>Implementation</strong>: Update the expression generator to check for primitive types. Emit direct casts or calls to <code>IDataRecord.GetInt32</code>, <code>GetString</code>, etc., for common types. Fall back to <code>Convert.ChangeType</code> only for complex conversions.</li>
+<li><strong>Goal</strong>: Reduce the CPU overhead of mapping database values to entity properties.</li>
+</ul>
+<h3 id="task-5-implement-multi-entity-mapper-caching">Task 5: Implement Multi-Entity Mapper Caching</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/MultiEntityMapper.cs</code>, <code>src/Jaunty/Internals/QueryCore.cs</code></li>
+<li><strong>Context</strong>: <code>MultiEntityMapper&lt;T1, T2&gt;.Build(reader)</code> compiles expression trees every time a multi-entity query (tuples) is executed.</li>
+<li><strong>Implementation</strong>: Introduce a <code>ConcurrentDictionary</code> in <code>MultiEntityMapper</code> to cache the mapping strategy. The key should be a combination of the column names and their ordinals from the <code>IDataReader</code>.</li>
+<li><strong>Goal</strong>: Avoid expensive expression compilation on every multi-entity query.</li>
+</ul>
+<hr />
+<h2 id="phase-3-memory-efficiency-modernization-medium-impact">Phase 3: Memory Efficiency &amp; Modernization (Medium Impact)</h2>
+<h3 id="task-6-zero-allocation-sql-parameter-parsing.net-8">Task 6: Zero-Allocation SQL Parameter Parsing (.NET 8+)</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Parameters/SqlParameterParser.cs</code></li>
+<li><strong>Context</strong>: Uses <code>string.Substring</code> when extracting parameter names.</li>
+<li><strong>Implementation</strong>: Use <code>#if NET8_0_OR_GREATER</code> to utilize <code>ReadOnlySpan&lt;char&gt;</code> for parsing. Use <code>string.Intern</code> or a small internal pool for frequently seen parameter names if applicable.</li>
+<li><strong>Goal</strong>: Eliminate temporary string allocations during the SQL parsing phase.</li>
+</ul>
+<h3 id="task-7-cache-column-to-property-mapping-signatures">Task 7: Cache Column-to-Property Mapping Signatures</h3>
+<ul>
+<li><strong>Target Files</strong>: <code>src/Jaunty/Internals/Entity/MetadataCache.cs</code> (<code>GetSetters</code> method)</li>
+<li><strong>Context</strong>: Returns a <code>new PropertySetter&lt;T&gt;[]</code> array on every execution.</li>
+<li><strong>Implementation</strong>: For common queries (like <code>SELECT *</code>), cache the <code>PropertySetter&lt;T&gt;[]</code> array based on the <code>reader.FieldCount</code> and a hash of column names.</li>
+<li><strong>Goal</strong>: Reduce per-query array allocations.</li>
+</ul>
+<hr />
+<h2 id="validation-strategy">Validation Strategy</h2>
+<ol>
+<li><strong>Benchmarks</strong>: Use <code>BenchmarkDotNet</code> to verify performance gains.</li>
+<li><strong>Regression</strong>: Run existing integration tests (<code>dotnet test</code>) to ensure mapping logic remains &quot;Strict&quot; and correct.</li>
+<li><strong>Memory</strong>: Use a profiler or <code>GC.GetTotalAllocatedBytes</code> checks in tests to confirm reduced allocations.</li>
+</ol>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="03-development-optimization-checklist.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Optimization checklist</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

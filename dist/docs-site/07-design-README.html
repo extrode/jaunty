@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07-design — Visual Design Source — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">07-design — Visual Design Source</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html" class="active" aria-current="page">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">07-design — Visual Design Source</nav>
+        <article>
+<h1 id="design-visual-design-source">07-design — Visual Design Source</h1>
+<p>This directory contains the authoritative visual design for the Jaunty documentation site.</p>
+<h2 id="files">Files</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Jaunty Docs App.dc.html</code></td>
+<td><strong>Primary design</strong> — full docs app layout: header bar, collapsible sidebar, content pane, code blocks, prev/next nav, status bar. This is the authoritative target.</td>
+</tr>
+<tr>
+<td><code>Jaunty Docs.dc.html</code></td>
+<td>Secondary / alternate page design for additional reference.</td>
+</tr>
+<tr>
+<td><code>support.js</code></td>
+<td>Design-tool runtime (custom <code>&lt;x-dc&gt;</code> / <code>&lt;sc-*&gt;</code> component renderer). Required by the browser to display the <code>.dc.html</code> files. Not used by the generated site.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="viewing-the-designs">Viewing the designs</h2>
+<p>Open either <code>.dc.html</code> file in a browser from this directory (both files and <code>support.js</code> must be co-located). The design tool renders <code>&lt;x-dc&gt;</code> markup client-side; it does not require a build step.</p>
+<h2 id="design-tokens-dark-theme">Design tokens (dark theme)</h2>
+<p>Extracted from <code>Jaunty Docs App.dc.html</code> and implemented in <code>tools/Jaunty.DocsGenerator</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Value</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--bg</code></td>
+<td><code>#0e0e10</code></td>
+<td>Page background</td>
+</tr>
+<tr>
+<td><code>--bg2</code></td>
+<td><code>#0a0a0c</code></td>
+<td>Header / status bar background</td>
+</tr>
+<tr>
+<td><code>--panel</code></td>
+<td><code>#141419</code></td>
+<td>Sidebar panels, callout backgrounds</td>
+</tr>
+<tr>
+<td><code>--border</code></td>
+<td><code>#1e1e23</code></td>
+<td>Primary border</td>
+</tr>
+<tr>
+<td><code>--border2</code></td>
+<td><code>#26262c</code></td>
+<td>Secondary border</td>
+</tr>
+<tr>
+<td><code>--tx</code></td>
+<td><code>#e6e6e2</code></td>
+<td>Primary text</td>
+</tr>
+<tr>
+<td><code>--tx2</code></td>
+<td><code>#b9b9bd</code></td>
+<td>Secondary text / body prose</td>
+</tr>
+<tr>
+<td><code>--mut</code></td>
+<td><code>#8d8d95</code></td>
+<td>Muted text, nav group labels</td>
+</tr>
+<tr>
+<td><code>--dim</code></td>
+<td><code>#63636b</code></td>
+<td>Dimmed text, breadcrumbs, code lang labels</td>
+</tr>
+<tr>
+<td><code>--faint</code></td>
+<td><code>#4a4a52</code></td>
+<td>Placeholder text, filter icons</td>
+</tr>
+<tr>
+<td><code>--hi</code></td>
+<td><code>#ffffff</code></td>
+<td>High-emphasis text, page title</td>
+</tr>
+<tr>
+<td><code>--hov</code></td>
+<td><code>#15151a</code></td>
+<td>Hover background</td>
+</tr>
+<tr>
+<td><code>--code-bg</code></td>
+<td><code>#101013</code></td>
+<td>Code block background</td>
+</tr>
+<tr>
+<td><code>--code-hd</code></td>
+<td><code>#121215</code></td>
+<td>Code block header background</td>
+</tr>
+<tr>
+<td><code>--code-bd</code></td>
+<td><code>#232329</code></td>
+<td>Code block border</td>
+</tr>
+<tr>
+<td><code>--code-tx</code></td>
+<td><code>#d6d6d2</code></td>
+<td>Code block text</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Font:</strong> <code>JetBrains Mono</code> (400/500/600 weight, italic variants) via Google Fonts — used for everything: prose, nav, code.</p>
+<p><strong>Layout:</strong> CSS grid <code>grid-template-rows: 46px 1fr 26px; height: 100vh</code> — header / body / status bar. Body uses a 240 px sidebar + fluid content column.</p>
+<h2 id="implementation">Implementation</h2>
+<p><code>tools/Jaunty.DocsGenerator</code> is the console app that implements this design as a static site generator. Run it with:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">dotnet run --project tools/Jaunty.DocsGenerator -- &lt;input-dir&gt; &lt;output-dir&gt;
+# Example:
+dotnet run --project tools/Jaunty.DocsGenerator -- docs/ dist/docs-site/
+</code></pre>
+</div>
+<p>See <code>tools/Jaunty.DocsGenerator/Program.cs</code> for the CSS and JS implementation of these tokens.</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="06-releases-pricing.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Pricing</span>
+</a><a class="pn-next" href="08-learn-README.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">README</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

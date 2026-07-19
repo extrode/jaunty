@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Release Runbook — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Release Runbook</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html" class="active" aria-current="page">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Release Runbook</nav>
+        <article>
+<h1 id="release-runbook">Release Runbook</h1>
+<p>How to ship a Jaunty release, starting with <code>v1.0.0-rc.1</code>. The pipeline is
+fully wired: pushing a version tag is the release action. Everything else
+here is verification around that one step.</p>
+<h2 id="how-the-pipeline-works">How the pipeline works</h2>
+<p><code>.github/workflows/release.yml</code> triggers on any tag matching <code>v*</code>:</p>
+<ol>
+<li>Derives the package version from the tag (<code>v1.0.0-rc.1</code> -&gt; <code>1.0.0-rc.1</code>)
+and injects it via <code>-p:Version=...</code> — the <code>&lt;Version&gt;</code> in
+<code>src/Directory.Build.props</code> is the dev-time baseline only; the tag wins.</li>
+<li>Builds <code>Jaunty.slnx</code> in Release, runs the full test suite, packs the 7
+shippable packages (benchmarks/samples/SourceGenerator are IsPackable=false).</li>
+<li>Pushes <code>.nupkg</code>s to <strong>GitHub Packages</strong>
+(<code>https://nuget.pkg.github.com/beparey/index.json</code>) using the workflow's
+own <code>GITHUB_TOKEN</code> — no secrets to manage.</li>
+<li>Creates a GitHub Release with the <code>.nupkg</code> + <code>.snupkg</code> files attached
+(GitHub Packages has no symbol server; symbols ship on the Release).</li>
+</ol>
+<p>Package validation (<code>EnablePackageValidation</code>) runs during pack, so a
+ns2.0/net8.0 public-API divergence fails the release instead of shipping.</p>
+<h2 id="shipping-v1.0.0-rc.1">Shipping v1.0.0-rc.1</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash"># 0. Everything releasable is merged to dev and pushed; tree clean
+git checkout dev &amp;&amp; git pull
+
+# 1. Full gate on the exact commit you will ship
+dotnet build -c Release -warnaserror
+dotnet test                       # both Jaunty.Tests TFMs run sequentially now
+
+# 2. Fast-forward main to the release commit (main = what customers see)
+git checkout main
+git merge --ff-only dev
+git push origin main
+
+# 3. Tag main and push the tag — THIS is the release trigger
+git tag v1.0.0-rc.1
+git push origin v1.0.0-rc.1
+</code></pre>
+</div>
+<p>Then watch the run: <code>gh run watch</code> (or Actions tab). On success verify:</p>
+<ul>
+<li><code>gh release view v1.0.0-rc.1</code> shows the Release with nupkg + snupkg assets.</li>
+<li>Packages appear at github.com/beparey?tab=packages (7 packages, version
+1.0.0-rc.1, marked pre-release by NuGet clients automatically because of
+the <code>-rc.1</code> suffix).</li>
+<li>Smoke-consume from a scratch project (see next section).</li>
+</ul>
+<h2 id="consuming-you-a-trial-customer-or-a-paying-customer">Consuming (you, a trial customer, or a paying customer)</h2>
+<p>GitHub Packages NuGet feeds are never anonymous — every consumer needs a PAT
+with <code>read:packages</code> (fine-grained: &quot;Packages: read&quot;). This is the access
+lever the commercial flow relies on (see COMMERCIAL-DISTRIBUTION-FLOW.md).</p>
+<p><code>nuget.config</code> next to the consumer's solution:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">XML</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="xml"><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;configuration&gt;
+  &lt;packageSources&gt;
+    &lt;add key=&quot;jaunty&quot; value=&quot;https://nuget.pkg.github.com/beparey/index.json&quot; /&gt;
+  &lt;/packageSources&gt;
+  &lt;packageSourceCredentials&gt;
+    &lt;jaunty&gt;
+      &lt;add key=&quot;Username&quot; value=&quot;%JAUNTY_FEED_USER%&quot; /&gt;
+      &lt;add key=&quot;ClearTextPassword&quot; value=&quot;%JAUNTY_FEED_TOKEN%&quot; /&gt;
+    &lt;/jaunty&gt;
+  &lt;/packageSourceCredentials&gt;
+&lt;/configuration&gt;
+</code></pre>
+</div>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">dotnet add package Jaunty --version 1.0.0-rc.1
+</code></pre>
+</div>
+<h2 id="if-something-goes-wrong">If something goes wrong</h2>
+<ul>
+<li><strong>Workflow failed before publish</strong>: fix on dev, delete the local+remote
+tag (<code>git tag -d v1.0.0-rc.1 &amp;&amp; git push origin :refs/tags/v1.0.0-rc.1</code>),
+re-merge main, re-tag. Nothing shipped, so reusing the version is fine.</li>
+<li><strong>Bad package already published</strong>: do NOT reuse the version. GitHub
+Packages allows deleting versions (repo Packages page or
+<code>gh api -X DELETE</code>), but any consumer may have cached it — ship
+<code>v1.0.0-rc.2</code> instead and delete/deprecate the bad one.</li>
+<li>A GitHub Release can be deleted independently of the tag; the tag
+independently of the package. Clean up all three when retracting.</li>
+</ul>
+<h2 id="promoting-rc-to-stable">Promoting rc to stable</h2>
+<p>When rc.N has soaked: bump <code>&lt;Version&gt;</code> in <code>src/Directory.Build.props</code> to
+<code>1.0.0</code> on dev (keeps dev builds honest), merge to main, tag <code>v1.0.0</code>.
+Same pipeline, no other changes. After that, SemVer discipline per
+CHANGELOG.md: breaking = major, additive = minor, fixes = patch.</p>
+<h2 id="pre-release-todo-tracked">Pre-release TODO (tracked)</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> <strong>Branch protection for <code>main</code></strong> — blocked on GitHub Free for private
+repos. Decide: GitHub Pro (~$4/mo), Team org, or accept unprotected until
+the repo goes public/org. (Deferred 2026-07-04.)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Delete leftover local container <code>jaunty-mssql3</code> when no longer needed.</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">COMMERCIAL DISTRIBUTION FLOW</span>
+</a><a class="pn-next" href="06-releases-continuity-rider-template.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Continuity rider template</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

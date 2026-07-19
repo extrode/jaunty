@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attributes — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Attributes</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html" class="active" aria-current="page">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Attributes</nav>
+        <article>
+<h1 id="attributes">Attributes</h1>
+<h2 id="overview">Overview</h2>
+<p>Jaunty provides several attributes for customizing entity mapping behavior. These attributes offer fine-grained control over how entities and their properties are mapped to database tables and columns.</p>
+<h2 id="table-attribute">Table Attribute</h2>
+<h3 id="tablestring-name-string-schema-null">[Table(string name, string? schema = null)]</h3>
+<p>Maps an entity class to a specific database table and schema.</p>
+<p><strong>Usage:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;products&quot;, Schema = &quot;inventory&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string ProductName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = string.Empty;
+}
+</code></pre>
+</div>
+<p><strong>Constructor Parameters:</strong></p>
+<ul>
+<li><code>name</code>: The name of the database table</li>
+<li><code>schema</code>: Optional schema name (defaults to null)</li>
+</ul>
+<p><strong>Properties:</strong></p>
+<ul>
+<li><code>Name</code>: Gets the table name</li>
+<li><code>Schema</code>: Gets the optional schema name</li>
+</ul>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Takes precedence over <code>JauntyConfig.TableNameResolver</code></li>
+<li>If schema is not specified, the default schema will be used</li>
+<li>Attribute takes highest priority in naming resolution</li>
+</ul>
+<h2 id="column-attribute">Column Attribute</h2>
+<h3 id="columnstring-name">[Column(string name)]</h3>
+<p>Maps a property to a specific database column name.</p>
+<p><strong>Usage:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    [Column(&quot;product_id&quot;)]
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    [Column(&quot;product_name&quot;)]
+    <span class="tok-kw">public</span> string ProductName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = string.Empty;
+}
+</code></pre>
+</div>
+<p><strong>Constructor Parameters:</strong></p>
+<ul>
+<li><code>name</code>: The name of the database column</li>
+</ul>
+<p><strong>Properties:</strong></p>
+<ul>
+<li><code>Name</code>: Gets the column name</li>
+</ul>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Takes precedence over <code>JauntyConfig.ColumnNameResolver</code></li>
+<li>Attribute takes highest priority in naming resolution</li>
+<li>Only applies to properties of entity classes</li>
+</ul>
+<h2 id="ignore-attribute">Ignore Attribute</h2>
+<h3 id="ignore">[Ignore]</h3>
+<p>Excludes a property from database mapping operations.</p>
+<p><strong>Usage:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string ProductName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = string.Empty;
+    
+    [Ignore]
+    <span class="tok-kw">public</span> string? ComputedProperty { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }  <span class="tok-com">// Won't be mapped from database</span>
+}
+</code></pre>
+</div>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Properties marked with <code>[Ignore]</code> are not included in mapping operations</li>
+<li>Useful for computed properties or properties that don't exist in the database</li>
+<li>Takes precedence over all other mapping configurations</li>
+</ul>
+<h2 id="key-attribute">Key Attribute</h2>
+<h3 id="key">[Key]</h3>
+<p>Marks a property as a primary key for update and delete operations.</p>
+<p><strong>Usage:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    [Key]
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    <span class="tok-kw">public</span> string ProductName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = string.Empty;
+}
+</code></pre>
+</div>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Used by update and delete operations to identify the record to modify</li>
+<li>Multiple properties can be marked as <code>[Key]</code> for composite primary keys</li>
+<li>Required for proper functioning of Update and Delete operations</li>
+<li>If no property is marked with <code>[Key]</code>, Jaunty will try to infer the primary key based on naming conventions</li>
+</ul>
+<h2 id="databasegenerated-attribute">DatabaseGenerated Attribute</h2>
+<h3 id="databasegenerateddatabasegeneratedoption-option">[DatabaseGenerated(DatabaseGeneratedOption option)]</h3>
+<p>Specifies how a property's value is generated by the database.</p>
+<p><strong>Usage:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    <span class="tok-kw">public</span> string ProductName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = string.Empty;
+    
+    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+    <span class="tok-kw">public</span> DateTime DateModified { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<p><strong>Constructor Parameters:</strong></p>
+<ul>
+<li><code>option</code>: The database generation option</li>
+</ul>
+<p><strong>DatabaseGeneratedOption Enum Values:</strong></p>
+<ul>
+<li><code>None</code>: The database does not generate values</li>
+<li><code>Identity</code>: The database provides an identity value (auto-increment)</li>
+<li><code>Computed</code>: The database computes the value (e.g., timestamp, computed column)</li>
+</ul>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Used primarily for insert operations to handle identity columns</li>
+<li>Identity values are returned by Insert operations and can be automatically populated</li>
+<li>Computed columns are typically read-only in insert/update operations</li>
+</ul>
+<h2 id="enumstorage-attribute">EnumStorage Attribute</h2>
+<h3 id="enumstorageenumstorage-storage">[EnumStorage(EnumStorage storage)]</h3>
+<p>Overrides how a single enum-typed property is stored in the database, taking precedence over the global <code>JauntyConfig.DefaultEnumStorage</code> setting (see <a href="01-api-reference-configuration.html">Configuration</a>).</p>
+<p><strong>Usage:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Order
+{
+    [Key]
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    <span class="tok-com">// Uses the global default (JauntyConfig.DefaultEnumStorage), numeric unless changed</span>
+    <span class="tok-kw">public</span> OrderStatus Status { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    <span class="tok-com">// Stored as the string name, overriding the global default</span>
+    [EnumStorage(EnumStorage.String)]
+    <span class="tok-kw">public</span> OrderPriority Priority { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-kw">public</span> <span class="tok-kw">enum</span> OrderStatus { Pending = <span class="tok-num">0</span>, Completed = <span class="tok-num">1</span> }
+<span class="tok-kw">public</span> <span class="tok-kw">enum</span> OrderPriority { Low = <span class="tok-num">0</span>, High = <span class="tok-num">1</span> }
+</code></pre>
+</div>
+<p><strong>Constructor Parameters:</strong></p>
+<ul>
+<li><code>storage</code>: The enum storage strategy (<code>EnumStorage.Numeric</code> or <code>EnumStorage.String</code>)</li>
+</ul>
+<p><strong>Properties:</strong></p>
+<ul>
+<li><code>Storage</code>: Gets the configured enum storage strategy</li>
+</ul>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Only applicable to enum-typed properties; has no effect otherwise</li>
+<li>Takes precedence over <code>JauntyConfig.DefaultEnumStorage</code></li>
+<li>Applies to both the read path (mapping a database value into the enum) and the write path (parameter binding for insert/update)</li>
+</ul>
+<h2 id="attribute-priority">Attribute Priority</h2>
+<p>Jaunty uses the following priority order for mapping configuration:</p>
+<ol>
+<li><strong>Attributes</strong> (<code>[Table]</code>, <code>[Column]</code>, <code>[Ignore]</code>, <code>[Key]</code>, <code>[DatabaseGenerated]</code>) - Highest priority</li>
+<li><strong>JauntyConfig resolvers</strong> (<code>SchemaNameResolver</code>, <code>TableNameResolver</code>, <code>ColumnNameResolver</code>) - Medium priority</li>
+<li><strong>Default behavior</strong> (property/type names) - Lowest priority</li>
+</ol>
+<h2 id="examples">Examples</h2>
+<h3 id="complete-entity-with-multiple-attributes">Complete Entity with Multiple Attributes</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;products&quot;, Schema = &quot;inventory&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    [Key]
+    [Column(&quot;product_id&quot;)]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    [Column(&quot;product_name&quot;)]
+    <span class="tok-kw">public</span> string ProductName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = string.Empty;
+    
+    [Column(&quot;category_id&quot;)]
+    <span class="tok-kw">public</span> int CategoryId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    [Column(&quot;unit_price&quot;)]
+    <span class="tok-kw">public</span> decimal UnitPrice { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    [Ignore]
+    <span class="tok-kw">public</span> string? ComputedDisplayName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    <span class="tok-kw">public</span> string? Description { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }  <span class="tok-com">// Will map to &quot;Description&quot; column</span>
+}
+</code></pre>
+</div>
+<h3 id="composite-primary-key-example">Composite Primary Key Example</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;product_category_mapping&quot;)]
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> ProductCategoryMapping
+{
+    [Key]
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    [Key]
+    <span class="tok-kw">public</span> int CategoryId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    <span class="tok-kw">public</span> DateTime CreatedAt { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<h3 id="using-attributes-with-configuration">Using Attributes with Configuration</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Global configuration</span>
+JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+
+<span class="tok-com">// Entity with attribute override</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    [Column(&quot;product_id&quot;)]  <span class="tok-com">// This takes precedence over the global resolver</span>
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    <span class="tok-kw">public</span> string ProductName { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }  <span class="tok-com">// This will use snake_case: &quot;product_name&quot;</span>
+}
+</code></pre>
+</div>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="use-attributes-for-specific-overrides">1. Use Attributes for Specific Overrides</h3>
+<p>Use attributes when you need specific column or table names that differ from conventions:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Table(&quot;tbl_products&quot;)]  <span class="tok-com">// Specific table name</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    [Column(&quot;pk_product_id&quot;)]  <span class="tok-com">// Specific column name</span>
+    [Key]  <span class="tok-com">// Mark as primary key</span>
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]  <span class="tok-com">// Identity column</span>
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<h3 id="combine-with-global-configuration">2. Combine with Global Configuration</h3>
+<p>Use attributes for exceptions and global configuration for general conventions:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Global configuration for snake_case</span>
+JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+
+<span class="tok-com">// Specific override for this property</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    [Column(&quot;legacy_product_id&quot;)]  <span class="tok-com">// Override the global convention</span>
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<h3 id="mark-computed-properties-as-ignored">3. Mark Computed Properties as Ignored</h3>
+<p>Always mark properties that are computed or don't exist in the database as <code>[Ignore]</code>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    <span class="tok-kw">public</span> int ProductId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal UnitPrice { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> int Quantity { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    [Ignore]  <span class="tok-com">// Computed property, not in database</span>
+    <span class="tok-kw">public</span> decimal TotalValue =&gt; UnitPrice * Quantity;
+}
+</code></pre>
+</div>
+<h3 id="properly-mark-primary-keys">4. Properly Mark Primary Keys</h3>
+<p>Ensure primary key properties are properly marked for update/delete operations:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Order
+{
+    [Key]  <span class="tok-com">// Required for Update/Delete operations</span>
+    <span class="tok-kw">public</span> int OrderId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    
+    <span class="tok-kw">public</span> DateTime OrderDate { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal TotalAmount { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+</code></pre>
+</div>
+<h2 id="important-notes">Important Notes</h2>
+<div class="callout callout-warn"><ul>
+<li><strong>Attribute Precedence</strong>: Attributes take precedence over global configuration</li>
+<li><strong>Primary Key Importance</strong>: Update and Delete operations require properly marked primary keys</li>
+<li><strong>Identity Handling</strong>: Identity columns should be marked with <code>[DatabaseGenerated(DatabaseGeneratedOption.Identity)]</code></li>
+<li><strong>Composite Keys</strong>: Multiple properties can be marked as <code>[Key]</code> for composite primary keys</li>
+<li><strong>Performance</strong>: Attributes are processed once during metadata caching and have minimal runtime impact</li>
+<li><strong>Compatibility</strong>: All attributes work with both sync and async operations</li>
+<li><strong>Mapping Modes</strong>: Attributes work with both strict and partial mapping modes</li>
+<li><strong>Fluent API</strong>: Attributes are respected by the Fluent API as well as direct method calls</li>
+</ul></div>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-api-summary.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Api summary</span>
+</a><a class="pn-next" href="01-api-reference-bulk-copy-methods.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Bulk copy methods</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>
