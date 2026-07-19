@@ -81,4 +81,18 @@ public class ParquetFileSourceTests
         var source = new ParquetFileSource("t", "f.parquet", typeof(object));
         Assert.Null(source.GenerateCopyToOptions());
     }
+
+    [Fact]
+    public void IsPromotedToTable_CanBeSet()
+    {
+        var source = new ParquetFileSource("t", "f.parquet", typeof(object)) { IsPromotedToTable = true };
+        Assert.True(source.IsPromotedToTable);
+    }
+
+    [Fact]
+    public void IsPreloaded_CanBeSet()
+    {
+        var source = new ParquetFileSource("t", "f.parquet", typeof(object)) { IsPreloaded = true };
+        Assert.True(source.IsPreloaded);
+    }
 }
