@@ -70,6 +70,9 @@ public static partial class Jaunty
     /// See <see cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/> for
     /// the identity-population caveat: only the loop-based insert path populates entity IDs back.
     /// </remarks>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling (e.g., SQL Server).
+    /// </exception>
     public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -91,6 +94,9 @@ public static partial class Jaunty
     /// See <see cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/> for
     /// the identity-population caveat: only the loop-based insert path populates entity IDs back.
     /// </remarks>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if the database provider doesn't support foreign key toggling.
+    /// </exception>
     public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
