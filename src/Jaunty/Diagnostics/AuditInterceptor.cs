@@ -92,6 +92,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
             CommandText = context.CommandText,
             CommandType = context.CommandType,
             Database = context.Connection.Database,
+            ConnectionState = context.Connection.State,
             ElapsedMilliseconds = context.Elapsed.TotalMilliseconds,
             Phase = AuditPhase.Executed,
             Success = true
@@ -113,6 +114,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
             CommandText = context.CommandText,
             CommandType = context.CommandType,
             Database = context.Connection.Database,
+            ConnectionState = context.Connection.State,
             ElapsedMilliseconds = context.Elapsed.TotalMilliseconds,
             Phase = AuditPhase.Failed,
             Success = false,

@@ -258,7 +258,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
                     else
                     {
                         var val = reader.GetValue(0);
-                        result = (T)Convert.ChangeType(val, typeof(T));
+                        result = (T)Convert.ChangeType(val, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
                     }
                 }
                 catch (Exception ex) when (ex is InvalidCastException or NullReferenceException or IndexOutOfRangeException)
@@ -270,7 +270,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
                     if (!reader.IsDBNull(0))
                     {
                         var rawValue = reader.GetValue(0);
-                        result = (T)Convert.ChangeType(rawValue, typeof(T));
+                        result = (T)Convert.ChangeType(rawValue, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
                     }
                 }
             }
@@ -522,7 +522,7 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
                     if (!await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
                     {
                         var rawValue = dbReader.GetValue(0);
-                        result = (T)Convert.ChangeType(rawValue, typeof(T));
+                        result = (T)Convert.ChangeType(rawValue, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
                     }
                 }
             }
