@@ -261,7 +261,6 @@ public static partial class Jaunty
         }
     }
 
-#if ASYNC_ENUMERABLE_SUPPORT
     private static async IAsyncEnumerable<T> QueryStreamCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
     {
         var wasClosed = dbConnection.State == ConnectionState.Closed;
@@ -316,54 +315,6 @@ public static partial class Jaunty
             }
         }
     }
-#else
-    private static async ValueTask<IEnumerable<T>> QueryStreamCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken = default) where T : new()
-    {
-        var results = new List<T>(JauntyConfig.QueryResultCapacity);
-        var wasClosed = dbConnection.State == ConnectionState.Closed;
-
-        try
-        {
-            if (wasClosed)
-                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-            using var command = dbConnection.CreateCommand();
-            command.CommandText = sql;
-
-            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
-                command.CommandType = options.CommandType;
-
-            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
-
-            if (options.CommandTimeout.HasValue)
-                command.CommandTimeout = options.CommandTimeout.Value;
-
-            if (parameters is not null)
-                ParameterBinder.Bind(command, parameters);
-
-            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
-
-            using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-            var map = DrDispatcher.Resolve(reader, options, mode);
-
-            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                results.Add(map(reader));
-        }
-        finally
-        {
-            if (wasClosed && dbConnection.State != ConnectionState.Closed)
-            {
-#if NET8_0_OR_GREATER
-                await dbConnection.CloseAsync().ConfigureAwait(false);
-#else
-                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
-#endif
-            }
-        }
-
-        return results;
-    }
-#endif
 
     #region Multi-Entity Async Core Methods
 
