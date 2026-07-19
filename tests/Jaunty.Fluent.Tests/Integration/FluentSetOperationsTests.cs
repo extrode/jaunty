@@ -286,13 +286,16 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public async Task Intersect_SelectAsync_ReturnsResults()
     {
+        // Same non-vacuous filter as Intersect_TwoQueries_ReturnsOnlyCommonRows above -
+        // reorder_level is always NULL in the seed data, so "ReorderLevel > 0" would
+        // silently match zero rows and this test would pass over an empty result set.
         var results = await _fixture.Connection.From<Product>()
             .Where(p => p.CategoryId == 1)
-            .Intersect(_fixture.Connection.From<Product>().Where(p => p.ReorderLevel > 0))
+            .Intersect(_fixture.Connection.From<Product>().Where(p => p.UnitsInStock < 50))
             .SelectAsync();
 
-        // Results may be empty if no intersection, but should not throw
-        Assert.NotNull(results);
+        Assert.NotEmpty(results);
+        Assert.All(results, p => Assert.True(p.CategoryId == 1 && p.UnitsInStock < 50));
     }
 
     // ==========================================

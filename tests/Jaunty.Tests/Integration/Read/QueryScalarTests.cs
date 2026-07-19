@@ -116,8 +116,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
                 : "SELECT region FROM customers WHERE customer_id = @Id",
             new { Id = "ALFKI" });
 
-        // Region can be null for some customers
-        // This tests that null handling works
-        Assert.True(result == null || result is string);
+        // ALFKI's Region is NULL in the seed data - verifies QueryScalar actually returns
+        // null for a NULL database value rather than an empty string or throwing.
+        Assert.Null(result);
     }
 }
