@@ -54,6 +54,8 @@ public static partial class Jaunty
                         if (parameters is not null)
                             ParameterBinder.Bind(command, parameters);
 
+                        JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
                         result = command.ExecuteNonQuery();
                         return result;
                     }
@@ -154,6 +156,8 @@ public static partial class Jaunty
                             if (parameters is not null)
                                 ParameterBinder.Bind(command, parameters);
 
+                            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
                             result = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                         }
                         else
@@ -177,6 +181,8 @@ public static partial class Jaunty
 
                             if (parameters is not null)
                                 ParameterBinder.Bind(command, parameters);
+
+                            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
                             result = command.ExecuteNonQuery();
                         }

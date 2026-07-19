@@ -58,6 +58,8 @@ public static partial class Jaunty
                         if (parameters is not null)
                             ParameterBinder.Bind(command, parameters);
 
+                        JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
                         using IDataReader reader = command.ExecuteReader();
                         result = handler(reader);
                         return result;
@@ -151,6 +153,8 @@ public static partial class Jaunty
                         if (parameters is not null)
                             ParameterBinder.Bind(command, parameters);
 
+                        JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
                         using DbDataReader reader = command.ExecuteReader();
                         result = handler(reader);
                         return result;
@@ -240,6 +244,8 @@ public static partial class Jaunty
 
                         if (parameters is not null)
                             ParameterBinder.Bind(command, parameters);
+
+                        JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
                         using DbDataReader reader = command.ExecuteReader();
                         result = handler(reader);
