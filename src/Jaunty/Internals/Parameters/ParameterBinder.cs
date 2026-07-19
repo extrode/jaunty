@@ -337,20 +337,103 @@ internal static class ParameterBinder
         return (result, expandedParams, expandedOriginalNames);
     }
 
+    // Literal/comment-aware prefix detection. Walks the SQL using the same tokenization rules as
+    // ReplaceParametersLiteralAware (skipping string literals, quoted identifiers, comments,
+    // dollar-quoted strings, and @@ system variables) so a '$'/'@' inside a literal or comment
+    // earlier in the SQL than the real placeholders is never mistaken for the parameter prefix.
     private static string DetectParameterPrefix(string sql)
     {
-        // Detect parameter prefix from the SQL text (@ or $)
-        for (int i = 0; i < sql.Length; i++)
+        int len = sql.Length;
+        int i = 0;
+
+        while (i < len)
         {
-            var c = sql[i];
+            char c = sql[i];
+
+            if (c == '-' && i + 1 < len && sql[i + 1] == '-')
+            {
+                i += 2;
+                while (i < len && sql[i] is not ('\n' or '\r')) i++;
+                continue;
+            }
+
+            if (c == '/' && i + 1 < len && sql[i + 1] == '*')
+            {
+                i += 2;
+                while (i + 1 < len && !(sql[i] == '*' && sql[i + 1] == '/')) i++;
+                i = i + 1 < len ? i + 2 : len;
+                continue;
+            }
+
+            if (c is '\'' or '"' or '[')
+            {
+                char terminator = c == '[' ? ']' : c;
+                i++;
+                while (i < len)
+                {
+                    if (sql[i] == terminator)
+                    {
+                        if (i + 1 < len && sql[i + 1] == terminator) { i += 2; continue; }
+                        i++;
+                        break;
+                    }
+                    i++;
+                }
+                continue;
+            }
+
+            if (c == '@' && i + 1 < len && sql[i + 1] == '@')
+            {
+                i += 2;
+                while (i < len && IsParameterChar(sql[i])) i++;
+                continue;
+            }
+
+            if (c == '$')
+            {
+                int dollarQuoteEnd = TrySkipDollarQuotedString(sql, i, len);
+                if (dollarQuoteEnd >= 0)
+                {
+                    i = dollarQuoteEnd;
+                    continue;
+                }
+            }
+
             if (c is '@' or '$')
             {
                 // Check that next char is a valid parameter name start
-                if (i + 1 < sql.Length && IsParameterChar(sql[i + 1]))
+                if (i + 1 < len && IsParameterChar(sql[i + 1]))
                     return c.ToString();
             }
+
+            i++;
         }
+
         return "@"; // default
+    }
+
+    // A dollar-quote opening tag is '$' + zero-or-more identifier chars + '$' (e.g. "$$" or
+    // "$tag$"); mirrors SqlParameterParser.TrySkipDollarQuotedClassic. Returns the index just
+    // past the closing delimiter, or -1 if 'sql[dollarPos]' is not the start of a dollar-quote.
+    private static int TrySkipDollarQuotedString(string sql, int dollarPos, int len)
+    {
+        int tagEnd = dollarPos + 1;
+        while (tagEnd < len && IsParameterChar(sql[tagEnd]))
+            tagEnd++;
+
+        if (tagEnd >= len || sql[tagEnd] != '$')
+            return -1;
+
+        int delimLen = tagEnd + 1 - dollarPos;
+        int searchFrom = tagEnd + 1;
+        while (searchFrom + delimLen <= len)
+        {
+            if (string.CompareOrdinal(sql, searchFrom, sql, dollarPos, delimLen) == 0)
+                return searchFrom + delimLen;
+            searchFrom++;
+        }
+
+        return len;
     }
 
     // Literal/comment-aware placeholder rewrite. Walks the SQL using the same tokenization rules as
@@ -419,6 +502,19 @@ internal static class ParameterBinder
                 while (i < len && IsParameterChar(sql[i])) i++;
                 sb.Append(sql, start, i - start);
                 continue;
+            }
+
+            // PostgreSQL/DuckDB dollar-quoted string ($$...$$ or $tag$...$tag$): copy verbatim,
+            // never a bindable parameter.
+            if (c == '$')
+            {
+                int dollarQuoteEnd = TrySkipDollarQuotedString(sql, i, len);
+                if (dollarQuoteEnd >= 0)
+                {
+                    sb.Append(sql, i, dollarQuoteEnd - i);
+                    i = dollarQuoteEnd;
+                    continue;
+                }
             }
 
             // Genuine parameter placeholder
@@ -571,6 +667,23 @@ internal static class ParameterBinder
             else
             {
                 throw new ArgumentException($"No value found in dictionary for SQL parameter '@{sqlName}'.", nameof(dictParams));
+            }
+        }
+
+        // Validate unused, mirroring BuildTemplate's strictness for object-based binding: fail
+        // fast on a dictionary key the SQL never references, instead of silently ignoring it.
+        if (dictParams.Count > bound.Count)
+        {
+            List<string>? unused = null;
+            foreach (string key in dictParams.Keys)
+            {
+                if (!bound.Contains(key))
+                    (unused ??= new List<string>()).Add(key);
+            }
+
+            if (unused is not null)
+            {
+                throw new ArgumentException($"Unused parameter keys in dictionary: {string.Join(", ", unused)}. SQL contains no matching parameters.", nameof(dictParams));
             }
         }
     }
