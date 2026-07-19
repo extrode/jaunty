@@ -95,4 +95,27 @@ public class ScalarConverterTests
 
         Assert.Equal(dto, result);
     }
+
+    // AUD-R6: TimeSpan doesn't implement IConvertible, so System.Convert.ChangeType cannot
+    // produce it from a string - a provider (e.g. SQLite) returning a "time" column as text
+    // previously threw InvalidCastException here instead of parsing correctly.
+    [Fact]
+    public void Convert_TimeSpanFromString_Parses()
+    {
+        var ts = new TimeSpan(1, 2, 3, 4);
+
+        var result = ScalarConverter<TimeSpan>.Convert(ts.ToString("c", System.Globalization.CultureInfo.InvariantCulture));
+
+        Assert.Equal(ts, result);
+    }
+
+    [Fact]
+    public void Convert_NullableTimeSpanFromString_Parses()
+    {
+        var ts = new TimeSpan(1, 2, 3, 4);
+
+        var result = ScalarConverter<TimeSpan?>.Convert(ts.ToString("c", System.Globalization.CultureInfo.InvariantCulture));
+
+        Assert.Equal(ts, result);
+    }
 }
