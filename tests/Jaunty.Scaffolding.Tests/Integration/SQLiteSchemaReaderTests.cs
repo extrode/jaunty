@@ -12,8 +12,11 @@ public class SQLiteSchemaReaderTests : IDisposable
 
     public SQLiteSchemaReaderTests()
     {
-        // Use in-memory database with shared cache so it persists across connections
-        _connectionString = "Data Source=InMemorySchemaTest;Mode=Memory;Cache=Shared";
+        // Use in-memory database with shared cache so it persists across connections.
+        // GUID-suffixed per instance so a future test-method-level-parallelism change (or a
+        // constructor failure that skips Dispose) can't cause two instances to collide on the
+        // same shared-cache name.
+        _connectionString = $"Data Source=InMemorySchemaTest_{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
         _connection = new SqliteConnection(_connectionString);
         _connection.Open();
 
