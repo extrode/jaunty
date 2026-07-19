@@ -7,6 +7,7 @@ using System.Reflection;
 using Jaunty.Configuration;
 using Jaunty.TypeHandlers;
 using Jaunty.Attributes;
+using Jaunty.Dialects;
 
 namespace Jaunty.Internals.Parameters;
 
@@ -76,7 +77,7 @@ internal static class ParameterBinder
         }
 
         // Check for collection parameters and expand SQL if needed
-        (string? expandedSql, Dictionary<string, object?>? expandedParams, HashSet<string>? expandedOriginalNames) = ExpandCollectionParameters(sql, sqlParamNames, propertyLookup, parameters);
+        (string? expandedSql, Dictionary<string, object?>? expandedParams, HashSet<string>? expandedOriginalNames) = ExpandCollectionParameters(sql, sqlParamNames, propertyLookup, parameters, command.Connection);
 
         if (expandedSql is not null)
         {
@@ -246,11 +247,13 @@ internal static class ParameterBinder
             string sql,
             string[] sqlParamNames,
             Dictionary<string, ParameterMetadata> propertyLookup,
-            object parameters)
+            object parameters,
+            IDbConnection? connection)
     {
         // First pass: find collection parameters (deduplicated)
         var seen = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         List<CollectionExpansion>? expansions = null;
+        int totalExpandedCount = 0;
 
         foreach (var sqlName in sqlParamNames)
         {
@@ -268,11 +271,26 @@ internal static class ParameterBinder
             {
                 expansions ??= new List<CollectionExpansion>(2);
                 expansions.Add(new CollectionExpansion(sqlName, items, count));
+                totalExpandedCount += count;
             }
         }
 
         if (expansions is null)
             return (null, null, null);
+
+        // Fail fast with a clear error instead of letting the provider reject SQL that
+        // exceeds its parameter limit with an opaque driver-level exception.
+        if (connection is not null)
+        {
+            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+            if (totalExpandedCount > dialect.MaxParametersPerStatement)
+            {
+                throw new InvalidOperationException(
+                    $"Collection parameter expansion produces {totalExpandedCount} parameters, exceeding the " +
+                    $"{connection.GetType().Name} provider's maximum of {dialect.MaxParametersPerStatement} parameters " +
+                    "per statement. Consider batching the query into smaller chunks.");
+            }
+        }
 
         // Second pass: build replacements and expanded params
         // Detect parameter prefix from the SQL (@ or $)
