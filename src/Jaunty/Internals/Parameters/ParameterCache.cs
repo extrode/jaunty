@@ -31,7 +31,11 @@ internal static class ParameterCache
     /// </summary>
     /// <param name="type">The entity type to get parameter metadata for.</param>
     /// <returns>An array of parameter metadata for all public properties.</returns>
-    public static ParameterMetadata[] Get(Type type)
+    public static ParameterMetadata[] Get(
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+#endif
+        Type type)
     {
         return Cache.GetOrAdd(type, BuildMetadata);
     }
@@ -42,7 +46,7 @@ internal static class ParameterCache
     /// <param name="type">The entity type to build metadata for.</param>
     /// <returns>An array of parameter metadata, one per public property.</returns>
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Used for anonymous types whose properties are always preserved by the compiler.")]
+    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Parameters object properties may be trimmed under NativeAOT if the type isn't otherwise rooted; this is called for any named or anonymous parameters type passed to Query/Execute APIs, not just anonymous types. Suppressed pending a source-generated parameter-binding path (see MappedCache.cs's analogous ReadEntity limitation); callers using NativeAOT publish today must ensure their parameter POCOs are otherwise rooted until that lands.")]
 #endif
     private static ParameterMetadata[] BuildMetadata(
 #if NET5_0_OR_GREATER
