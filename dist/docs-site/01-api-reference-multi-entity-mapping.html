@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Entity Mapping — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Multi-Entity Mapping</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html" class="active" aria-current="page">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Multi-Entity Mapping</nav>
+        <article>
+<h1 id="multi-entity-mapping">Multi-Entity Mapping</h1>
+<h2 id="overview">Overview</h2>
+<p>Jaunty can map a single row from a joined query into two or more entity instances at once, without requiring a <code>SplitOn</code> column name like Dapper does. Instead, Jaunty uses <strong>left-to-right ordinal claiming</strong>: each type in the generic parameter list claims the result columns that match its own properties, in order, and later types can only claim columns not already claimed by an earlier type.</p>
+<p>Multi-entity mapping is supported for arities <code>T1..T2</code> through <code>T1..T7</code> via <code>Query</code>, <code>QueryFirst</code>, <code>QueryFirstOrDefault</code>, <code>QuerySingle</code>, <code>QuerySingleOrDefault</code>, and <code>QueryStream</code>, mirroring the single-entity method set.</p>
+<h2 id="how-ordinal-claiming-works">How Ordinal Claiming Works</h2>
+<p>For <code>Query&lt;T1, T2, ..., TN&gt;</code>, Jaunty resolves setters for each type in order:</p>
+<ol>
+<li><code>T1</code> claims every result-set column ordinal that matches one of its mapped properties.</li>
+<li><code>T2</code> claims from the <strong>remaining</strong> (unclaimed) ordinals only — any column already claimed by <code>T1</code> is invisible to <code>T2</code>, even if <code>T2</code> also has a same-named property.</li>
+<li>This repeats left-to-right through <code>T3, T4, ..., TN</code>.</li>
+</ol>
+<p>This means column order in the <code>SELECT</code> list does not matter, but property name overlap across types does: whichever type appears first in the generic parameter list &quot;wins&quot; a shared column name.</p>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Author { <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = &quot;&quot;; }
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Book   { <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } <span class="tok-kw">public</span> int AuthorId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = &quot;&quot;; }
+
+<span class="tok-kw">const</span> string sql = @&quot;
+    SELECT a.id, a.name, b.id, b.author_id, b.name
+    FROM authors a JOIN books b ON b.author_id = a.id&quot;;
+
+<span class="tok-kw">var</span> results = connection.Query&lt;Author, Book&gt;(sql);
+<span class="tok-com">// Author claims the first &quot;id&quot; and &quot;name&quot; ordinals it finds a match for;</span>
+<span class="tok-com">// Book's &quot;id&quot; and &quot;name&quot; columns are claimed next since Author already took the first pair.</span>
+</code></pre>
+</div>
+<h2 id="resolving-ambiguous-column-names">Resolving Ambiguous Column Names</h2>
+<p>When two types share a property name (e.g. both <code>Author</code> and <code>Book</code> have <code>Name</code>) and the query aliases columns so they are distinguishable, use the existing <code>[Column(&quot;name&quot;)]</code> attribute (see <a href="01-api-reference-attributes.html">Attributes</a>) to pin each property to its exact column, removing any ambiguity from claiming order:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Author
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    [Column(&quot;author_name&quot;)]
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = &quot;&quot;;
+}
+
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Book
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> int AuthorId { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    [Column(&quot;book_name&quot;)]
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = &quot;&quot;;
+}
+</code></pre>
+</div>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">SQL</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="sql"><code class="language-sql"><span class="tok-kw">SELECT</span> a.id, a.name <span class="tok-kw">AS</span> author_name, b.id, b.author_id, b.name <span class="tok-kw">AS</span> book_name
+<span class="tok-kw">FROM</span> authors a <span class="tok-kw">JOIN</span> books b <span class="tok-kw">ON</span> b.author_id = a.id
+</code></pre>
+</div>
+<p>No separate &quot;split on&quot; mechanism is needed — <code>[Column]</code> is sufficient because ordinal claiming resolves by column name/ordinal match per type, not by position boundaries.</p>
+<h2 id="query-methods">Query Methods</h2>
+<h3 id="queryt1-t2-and-t3.t7">Query&lt;T1, T2&gt; (and T3..T7)</h3>
+<p><strong>Signature (arity 2, representative of all arities):</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;(T1, T2)&gt; Query&lt;T1, T2&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql)
+    <span class="tok-kw">where</span> T1 : <span class="tok-kw">new</span>() <span class="tok-kw">where</span> T2 : <span class="tok-kw">new</span>()
+
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;(T1, T2)&gt; Query&lt;T1, T2&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters)
+    <span class="tok-kw">where</span> T1 : <span class="tok-kw">new</span>() <span class="tok-kw">where</span> T2 : <span class="tok-kw">new</span>()
+
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;(T1, T2)&gt; Query&lt;T1, T2&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions&lt;(T1, T2)&gt; options)
+    <span class="tok-kw">where</span> T1 : <span class="tok-kw">new</span>() <span class="tok-kw">where</span> T2 : <span class="tok-kw">new</span>()
+
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;(T1, T2)&gt; Query&lt;T1, T2&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, MultiEntityCommandOptions&lt;T1, T2&gt; options)
+    <span class="tok-kw">where</span> T1 : <span class="tok-kw">new</span>() <span class="tok-kw">where</span> T2 : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p>Each arity from 3 through 7 (<code>Query&lt;T1,T2,T3&gt;</code> ... <code>Query&lt;T1,T2,T3,T4,T5,T6,T7&gt;</code>) exposes the same overload shape, returning a <code>List&lt;(T1, T2, ..., TN)&gt;</code> of value tuples.</p>
+<p><strong>Related methods</strong> (same overload shape, same arities 2-7):</p>
+<ul>
+<li><code>QueryFirst&lt;T1,...,TN&gt;</code> — returns the first tuple, throws if the result set is empty.</li>
+<li><code>QueryFirstOrDefault&lt;T1,...,TN&gt;</code> — returns the first tuple, or <code>default</code> if the result set is empty.</li>
+<li><code>QuerySingle&lt;T1,...,TN&gt;</code> — returns the only tuple, throws if zero or more than one row.</li>
+<li><code>QuerySingleOrDefault&lt;T1,...,TN&gt;</code> — returns the only tuple, or <code>default</code> if empty; throws if more than one row.</li>
+<li><code>QueryStream&lt;T1,...,TN&gt;</code> — returns <code>IEnumerable&lt;(T1,...,TN)&gt;</code>, lazily streaming one row at a time (see <a href="01-api-reference-streaming-methods.html">Streaming Methods</a> for the single-entity equivalent).</li>
+</ul>
+<h2 id="per-position-custom-mapper-delegates">Per-Position Custom Mapper Delegates</h2>
+<p><code>MultiEntityCommandOptions&lt;T1,...,TN&gt;</code> lets you supply a mapper delegate for any individual position. A type with a custom mapper is <strong>excluded entirely from ordinal claiming</strong> — it neither claims columns for itself nor blocks other positions from claiming columns it reads. This is Jaunty's own mechanism for the cases Dapper covers with <code>SplitOn</code> plus a custom mapper, and it also supports keyless/projection-only trailing types.</p>
+<p><strong>Signature (arity 3, representative):</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">readonly</span> <span class="tok-kw">struct</span> MultiEntityCommandOptions&lt;T1, T2, T3&gt;
+    <span class="tok-kw">where</span> T1 : <span class="tok-kw">new</span>() <span class="tok-kw">where</span> T2 : <span class="tok-kw">new</span>() <span class="tok-kw">where</span> T3 : <span class="tok-kw">new</span>()
+{
+    <span class="tok-kw">public</span> MultiEntityCommandOptions(
+        Func&lt;IDataReader, T1&gt;? mapper1 = <span class="tok-kw">null</span>,
+        Func&lt;IDataReader, T2&gt;? mapper2 = <span class="tok-kw">null</span>,
+        Func&lt;IDataReader, T3&gt;? mapper3 = <span class="tok-kw">null</span>,
+        IDbTransaction? transaction = <span class="tok-kw">null</span>,
+        int? commandTimeout = <span class="tok-kw">null</span>,
+        CommandType commandType = CommandType.Text);
+}
+</code></pre>
+</div>
+<p>Every arity 3-7 has a matching <code>MultiEntityCommandOptions&lt;T1,...,TN&gt;</code> with one <code>mapperN</code> parameter per position, plus <code>Transaction</code>, <code>CommandTimeout</code>, and <code>CommandType</code>.</p>
+<p><strong>Example — keyless projection-only trailing type:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Author { <span class="tok-kw">public</span> long Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } }
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Book   { <span class="tok-kw">public</span> long Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } }
+
+<span class="tok-com">// Intentionally keyless - has no properties Jaunty could auto-map, so it must</span>
+<span class="tok-com">// opt in via a custom mapper delegate rather than participating in ordinal claiming.</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Metadata
+{
+    <span class="tok-kw">public</span> string Description { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; } = string.Empty;
+}
+
+<span class="tok-kw">var</span> options = <span class="tok-kw">new</span> MultiEntityCommandOptions&lt;Author, Book, Metadata&gt;(
+    mapper1: <span class="tok-kw">null</span>,
+    mapper2: <span class="tok-kw">null</span>,
+    mapper3: reader =&gt; <span class="tok-kw">new</span> Metadata { Description = reader[&quot;description&quot;]?.ToString() ?? string.Empty }
+);
+
+<span class="tok-kw">var</span> results = connection.Query&lt;Author, Book, Metadata&gt;(sql, options);
+</code></pre>
+</div>
+<p>Leaving <code>mapper1</code>/<code>mapper2</code> as <code>null</code> means <code>Author</code> and <code>Book</code> still participate in automatic ordinal claiming as usual; only the position with a supplied delegate is handled manually.</p>
+<h2 id="mapping-modes">Mapping Modes</h2>
+<p>Internally, multi-entity mapping always resolves individual entity property setters in <code>MappingMode.Projection</code> (each type maps only the columns it can claim, rather than requiring every property to have a matching column). The public <code>Query&lt;T1,...,TN&gt;</code> surface always operates this way — there is no separate strict/partial toggle for multi-entity queries, since ordinal claiming already implies a projection over the full result set.</p>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="order-generic-type-parameters-to-match-column-order">1. Order generic type parameters to match column order</h3>
+<p>Since ordinal claiming is left-to-right, list your generic type parameters in the same left-to-right order as the columns appear in your <code>SELECT</code> list to avoid surprises when two types share property names.</p>
+<h3 id="use-column-for-any-shared-property-names">2. Use <code>[Column]</code> for any shared property names</h3>
+<p>If two mapped types share a property name (e.g. both have <code>Name</code> or <code>CreatedAt</code>), alias the columns distinctly in SQL and use <code>[Column(&quot;...&quot;)]</code> on at least one of the properties so claiming is unambiguous.</p>
+<h3 id="use-a-custom-mapper-for-keyless-or-computed-trailing-types">3. Use a custom mapper for keyless or computed trailing types</h3>
+<p>If a type in your tuple has no properties that map cleanly to columns (e.g. an aggregate or projection-only DTO), supply a <code>mapperN</code> delegate via <code>MultiEntityCommandOptions&lt;...&gt;</code> rather than trying to force it through ordinal claiming.</p>
+<h2 id="important-notes">Important Notes</h2>
+<div class="callout callout-warn"><ul>
+<li><strong>No SplitOn</strong>: Jaunty does not implement Dapper's <code>splitOn</code> parameter. Ambiguous column names are resolved with <code>[Column]</code>; keyless/projection types are resolved with per-position mapper delegates.</li>
+<li><strong>Left-to-right claiming</strong>: <code>T1</code> always claims before <code>T2</code>, <code>T2</code> before <code>T3</code>, and so on — order of generic type parameters is significant.</li>
+<li><strong>Custom mappers opt out of claiming</strong>: a position with a supplied <code>mapperN</code> delegate does not claim any ordinals, so it never blocks other positions from reading the same columns.</li>
+<li><strong>Arity range</strong>: <code>T1</code> through <code>T7</code> are supported (2 to 7 total types per row).</li>
+<li><strong>Performance</strong>: <code>Query&lt;T1,...,TN&gt;</code> uses the same <code>DbConnection</code>/<code>DbDataReader</code> fast path as single-entity queries when the connection is a concrete <code>DbConnection</code>, and <code>QueryStream&lt;T1,...,TN&gt;</code> streams lazily rather than materializing a list.</li>
+</ul></div>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-get-and-execute-operations.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Get and execute operations</span>
+</a><a class="pn-next" href="01-api-reference-multiple-result-sets.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Multiple result sets</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

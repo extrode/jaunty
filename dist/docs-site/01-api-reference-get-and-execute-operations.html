@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get, GetAll, and Execute Operations — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Get, GetAll, and Execute Operations</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html" class="active" aria-current="page">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Get, GetAll, and Execute Operations</nav>
+        <article>
+<h1 id="get-getall-and-execute-operations">Get, GetAll, and Execute Operations</h1>
+<h2 id="overview">Overview</h2>
+<p>This page documents key-based single-entity retrieval (<code>Get</code>), whole-table retrieval (<code>GetAll</code>), and raw non-query SQL execution (<code>Execute</code>, <code>ExecuteBatch</code>).</p>
+<h2 id="get-operations">Get Operations</h2>
+<h3 id="gettobject-id">Get&lt;T&gt;(object id)</h3>
+<p>Retrieves an entity by its primary key value. Requires <code>T</code> to have a single <code>[Key]</code> property (or one inferred by convention).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T? Get&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, object id) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Returns:</strong> The entity if found; otherwise <code>null</code>. Throws <code>InvalidOperationException</code> if <code>T</code> has no single primary key.</p>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> product = connection.Get&lt;Product&gt;(<span class="tok-num">42</span>);
+</code></pre>
+</div>
+<h3 id="gettobject-id-commandoptionst-options">Get&lt;T&gt;(object id, CommandOptions&lt;T&gt; options)</h3>
+<p>Same as above, with <code>CommandOptions&lt;T&gt;</code> for transaction, timeout, or a custom mapper.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T? Get&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, object id, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="gett-tidtid-id">Get&lt;T, TId&gt;(TId id)</h3>
+<p>Typed-key overload for entities implementing <code>IEntity&lt;TId&gt;</code>, avoiding the <code>object</code> boxing of the primary key value.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T? Get&lt;T, TId&gt;(<span class="tok-kw">this</span> IDbConnection connection, TId id) <span class="tok-kw">where</span> T : IEntity&lt;TId&gt;, <span class="tok-kw">new</span>()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> T? Get&lt;T, TId&gt;(<span class="tok-kw">this</span> IDbConnection connection, TId id, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : IEntity&lt;TId&gt;, <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="getrequiredtobject-id-getrequiredt-tidtid-id">GetRequired&lt;T&gt;(object id) / GetRequired&lt;T, TId&gt;(TId id)</h3>
+<p>Same as <code>Get</code>, but throws <code>InvalidOperationException</code> instead of returning <code>null</code> when no matching entity exists. Available with and without <code>CommandOptions&lt;T&gt;</code>, and with and without the typed-key <code>TId</code> overload.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T GetRequired&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, object id) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> T GetRequired&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, object id, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> T GetRequired&lt;T, TId&gt;(<span class="tok-kw">this</span> IDbConnection connection, TId id) <span class="tok-kw">where</span> T : IEntity&lt;TId&gt;, <span class="tok-kw">new</span>()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> T GetRequired&lt;T, TId&gt;(<span class="tok-kw">this</span> IDbConnection connection, TId id, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : IEntity&lt;TId&gt;, <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="getasync-getrequiredasync">GetAsync / GetRequiredAsync</h3>
+<p>Async equivalents of every <code>Get</code>/<code>GetRequired</code> overload above. Require a concrete <code>DbConnection</code> (or subclass) — an <code>ArgumentException</code> is thrown otherwise.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T?&gt; GetAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, object id, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T?&gt; GetAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, object id, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T?&gt; GetAsync&lt;T, TId&gt;(<span class="tok-kw">this</span> IDbConnection connection, TId id, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : IEntity&lt;TId&gt;, <span class="tok-kw">new</span>()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;T?&gt; GetAsync&lt;T, TId&gt;(<span class="tok-kw">this</span> IDbConnection connection, TId id, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : IEntity&lt;TId&gt;, <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> product = <span class="tok-kw">await</span> connection.GetAsync&lt;Product&gt;(<span class="tok-num">42</span>);
+</code></pre>
+</div>
+<h2 id="getall-operations">GetAll Operations</h2>
+<h3 id="getallt">GetAll&lt;T&gt;()</h3>
+<p>Retrieves every row from the table mapped to <code>T</code> as a materialized <code>List&lt;T&gt;</code>.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; GetAll&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; GetAll&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> allProducts = connection.GetAll&lt;Product&gt;();
+</code></pre>
+</div>
+<h3 id="getallasynct">GetAllAsync&lt;T&gt;()</h3>
+<p>Async equivalent; requires a concrete <code>DbConnection</code>.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;List&lt;T&gt;&gt; GetAllAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;List&lt;T&gt;&gt; GetAllAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="getallstreamt-getallstreamasynct">GetAllStream&lt;T&gt;() / GetAllStreamAsync&lt;T&gt;()</h3>
+<p>Lazily streams rows one at a time via <code>IEnumerable&lt;T&gt;</code> (or <code>IAsyncEnumerable&lt;T&gt;</code> on target frameworks with async-enumerable support) instead of materializing a full list. Prefer this for large tables. See <a href="01-api-reference-streaming-methods.html">Streaming Methods</a> for the equivalent on parameterized queries.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IEnumerable&lt;T&gt; GetAllStream&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> IEnumerable&lt;T&gt; GetAllStream&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, CommandOptions&lt;T&gt; options) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; GetAllStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> IAsyncEnumerable&lt;T&gt; GetAllStreamAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Note:</strong> On .NET Framework (<code>netstandard2.0</code>, no async-enumerable support), the async streaming overloads instead return <code>ValueTask&lt;IEnumerable&lt;T&gt;&gt;</code> with fully buffered results.</p>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> product <span class="tok-kw">in</span> connection.GetAllStream&lt;Product&gt;())
+{
+    Process(product);
+}
+</code></pre>
+</div>
+<h2 id="execute-operations">Execute Operations</h2>
+<h3 id="executestring-sql">Execute(string sql)</h3>
+<p>Executes a non-query SQL command (INSERT/UPDATE/DELETE/DDL) and returns the number of rows affected.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> int Execute(<span class="tok-kw">this</span> IDbConnection connection, string sql)
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Execute(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters)
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Execute(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions options)
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Execute(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions options)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">int rowsAffected = connection.Execute(
+    &quot;UPDATE products SET price = @Price WHERE category_id = @CategoryId&quot;,
+    <span class="tok-kw">new</span> { Price = <span class="tok-num">9.99m</span>, CategoryId = <span class="tok-num">1</span> });
+</code></pre>
+</div>
+<h3 id="executebatchstring-sql-ienumerableobject-parametersets">ExecuteBatch(string sql, IEnumerable&lt;object&gt; parameterSets)</h3>
+<p>Executes the same SQL command once per item in <code>parameterSets</code>, on a single open connection/command, and returns the cumulative rows affected across all executions.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> int ExecuteBatch(<span class="tok-kw">this</span> IDbConnection connection, string sql, IEnumerable&lt;object&gt; parameterSets)
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int ExecuteBatch(<span class="tok-kw">this</span> IDbConnection connection, string sql, IEnumerable&lt;object&gt; parameterSets, CommandOptions options)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> updates = <span class="tok-kw">new</span>[]
+{
+    <span class="tok-kw">new</span> { Id = <span class="tok-num">1</span>, Price = <span class="tok-num">9.99m</span> },
+    <span class="tok-kw">new</span> { Id = <span class="tok-num">2</span>, Price = <span class="tok-num">14.99m</span> },
+    <span class="tok-kw">new</span> { Id = <span class="tok-num">3</span>, Price = <span class="tok-num">4.99m</span> },
+};
+
+int totalRowsAffected = connection.ExecuteBatch(
+    &quot;UPDATE products SET price = @Price WHERE id = @Id&quot;, updates);
+</code></pre>
+</div>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Reuses a single <code>IDbCommand</code> across all parameter sets, re-binding parameters each iteration — more efficient than calling <code>Execute</code> in a loop.</li>
+<li><code>null</code> entries in <code>parameterSets</code> are skipped.</li>
+<li>Wrap in a transaction (via <code>CommandOptions.WithTransaction(...)</code>) if the batch must be all-or-nothing.</li>
+</ul>
+<h3 id="executebatchasync">ExecuteBatchAsync</h3>
+<p>Async equivalent of <code>ExecuteBatch</code>. Requires a concrete <code>DbConnection</code> (or subclass) — throws <code>InvalidOperationException</code> otherwise.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; ExecuteBatchAsync(<span class="tok-kw">this</span> IDbConnection connection, string sql, IEnumerable&lt;object&gt; parameterSets, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> ValueTask&lt;int&gt; ExecuteBatchAsync(<span class="tok-kw">this</span> IDbConnection connection, string sql, IEnumerable&lt;object&gt; parameterSets, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h2 id="important-notes">Important Notes</h2>
+<div class="callout callout-warn"><ul>
+<li><strong>Single vs. composite keys</strong>: <code>Get&lt;T&gt;(object id)</code> requires exactly one <code>[Key]</code> property; entities with composite keys should use a normal <code>Query</code>/<code>QueryFirstOrDefault</code> with an explicit <code>WHERE</code> clause instead.</li>
+<li><strong>Async requires DbConnection</strong>: All async <code>Get*</code>/<code>GetAll*</code>/<code>ExecuteBatchAsync</code> overloads require a concrete <code>DbConnection</code> subclass, consistent with the rest of Jaunty's async surface.</li>
+<li><strong>Streaming keeps the connection open</strong>: <code>GetAllStream</code>/<code>GetAllStreamAsync</code> only fully close/read the connection once enumeration completes — dispose or fully enumerate promptly.</li>
+</ul></div>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-fluent-api.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Fluent api</span>
+</a><a class="pn-next" href="01-api-reference-multi-entity-mapping.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Multi entity mapping</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

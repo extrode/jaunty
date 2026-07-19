@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build and Test Guide — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Build and Test Guide</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html" class="active" aria-current="page">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Build and Test Guide</nav>
+        <article>
+<h1 id="build-and-test-guide">Build and Test Guide</h1>
+<h2 id="build-commands">Build Commands</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash"># Debug build (all targets)
+dotnet build
+
+# Release build
+dotnet build -c Release
+
+# Specific framework
+dotnet build -f net8.0
+dotnet build -f netstandard2.0
+
+# No restore (faster)
+dotnet build --no-restore
+
+# With warnings as errors
+dotnet build -warnaserror
+</code></pre>
+</div>
+<h2 id="test-commands">Test Commands</h2>
+<h3 id="run-all-tests">Run All Tests</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash"># All tests
+dotnet test
+
+# With output
+dotnet test -v n
+
+# No build (use existing binaries)
+dotnet test --no-build
+</code></pre>
+</div>
+<h3 id="filter-tests">Filter Tests</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash"># By category
+dotnet test --filter &quot;Category=Integration&quot;
+dotnet test --filter &quot;Category=Unit&quot;
+
+# By test class name
+dotnet test --filter &quot;FullyQualifiedName~QueryTests&quot;
+dotnet test --filter &quot;ClassName=ParameterBinderTests&quot;
+
+# By trait
+dotnet test --filter &quot;Priority=High&quot;
+
+# Combine filters
+dotnet test --filter &quot;Category=Integration&amp;FullyQualifiedName~Read&quot;
+</code></pre>
+</div>
+<h3 id="test-projects">Test Projects</h3>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Jaunty.Tests</code></td>
+<td>Main test suite (~600+ tests)</td>
+</tr>
+<tr>
+<td><code>Jaunty.Fluent.Tests</code></td>
+<td>Fluent API tests</td>
+</tr>
+<tr>
+<td><code>Jaunty.Scaffolding.Tests</code></td>
+<td>Scaffolding tests</td>
+</tr>
+</tbody>
+</table>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash"># Specific test project
+dotnet test tests/Jaunty.Tests
+dotnet test tests/Jaunty.Fluent.Tests
+</code></pre>
+</div>
+<h2 id="code-coverage">Code Coverage</h2>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash"># Collect coverage
+dotnet test --collect:&quot;XPlat Code Coverage&quot;
+
+# Coverage with filters
+dotnet test --collect:&quot;XPlat Code Coverage&quot; -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByAttribute=&quot;GeneratedCodeAttribute&quot;
+</code></pre>
+</div>
+<p>Coverage reports are generated in:</p>
+<ul>
+<li><code>TestResults/*/coverage.cobertura.xml</code></li>
+</ul>
+<p>See <a href="../05-quality/code-coverage/the coverage instructions"><code>../05-quality/code-coverage/the coverage instructions</code></a> for details.</p>
+<h2 id="test-infrastructure">Test Infrastructure</h2>
+<h3 id="database-setup">Database Setup</h3>
+<p>Tests use SQLite with the Northwind sample database:</p>
+<ul>
+<li>Location: <code>data/sqlite/Northwind.db</code></li>
+<li>Helper: <code>tests/Jaunty.Tests/Helpers/Database.cs</code></li>
+</ul>
+<h3 id="test-helpers">Test Helpers</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Database connection helper</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Database : IDisposable
+{
+    <span class="tok-kw">public</span> IDbConnection Connection { <span class="tok-kw">get</span>; }
+}
+
+<span class="tok-com">// Base class for integration tests</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> SQLiteTestBase : IDisposable
+{
+    <span class="tok-kw">protected</span> <span class="tok-kw">readonly</span> Database _db;
+}
+</code></pre>
+</div>
+<h2 id="cicd">CI/CD</h2>
+<h3 id="github-actions">GitHub Actions</h3>
+<p>Tests run automatically on:</p>
+<ul>
+<li>Pull requests</li>
+<li>Push to main branches</li>
+<li>Scheduled runs</li>
+</ul>
+<h3 id="local-pre-commit">Local Pre-commit</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash"># Build and test before commit
+dotnet build &amp;&amp; dotnet test
+</code></pre>
+</div>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="tests-fail-with-database-not-found">Tests Fail with &quot;Database not found&quot;</h3>
+<p>Ensure the SQLite database exists:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">ls data/sqlite/Northwind.db
+</code></pre>
+</div>
+<p>If missing, the test helper creates it from <code>data/sqlite/northwind.sql</code>.</p>
+<h3 id="tests-hang-on-sqlite-async">Tests Hang on SQLite Async</h3>
+<p>SQLite async has limitations. Some tests use <code>[SkipSQLiteAsync]</code> attribute.</p>
+<h3 id="build-fails-with-reference-not-found">Build Fails with &quot;Reference not found&quot;</h3>
+<p>Restore packages:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">dotnet restore
+dotnet build --no-incremental
+</code></pre>
+</div>
+<h2 id="performance-testing">Performance Testing</h2>
+<h3 id="benchmarkdotnet">BenchmarkDotNet</h3>
+<p>Benchmarks are in a separate project. Run with:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash">dotnet run -c Release --project benchmarks/Jaunty.Benchmarks
+</code></pre>
+</div>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="00-quick-start-README.html"><code>README.md</code></a> - Quick start guide</li>
+<li><a href="03-development-coding-conventions.html"><code>../03-development/coding-conventions.md</code></a> - Coding standards</li>
+<li><a href="../code-coverage/"><code>../code-coverage/</code></a> - Coverage documentation</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="00-quick-start-README.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">README</span>
+</a><a class="pn-next" href="00-quick-start-project-layout.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Project layout</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

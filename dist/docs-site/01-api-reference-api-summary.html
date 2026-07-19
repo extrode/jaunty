@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty API Reference Summary — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty API Reference Summary</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html" class="active" aria-current="page">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty API Reference Summary</nav>
+        <article>
+<h1 id="jaunty-api-reference-summary">Jaunty API Reference Summary</h1>
+<h2 id="complete-api-overview">Complete API Overview</h2>
+<p>This document provides a comprehensive summary of all public APIs available in Jaunty, organized by functionality.</p>
+<h2 id="query-methods">Query Methods</h2>
+<h3 id="basic-query-operations">Basic Query Operations</h3>
+<ul>
+<li><code>Query&lt;T&gt;(string sql)</code> - Execute query with strict mapping</li>
+<li><code>Query&lt;T&gt;(string sql, object parameters)</code> - Execute parameterized query with strict mapping</li>
+<li><code>Query&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)</code> - Execute query with options using strict mapping</li>
+<li><code>Query&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)</code> - Execute parameterized query with options using strict mapping</li>
+</ul>
+<h3 id="partial-query-operations">Partial Query Operations</h3>
+<ul>
+<li><code>QueryPartial&lt;T&gt;(string sql)</code> - Execute query with partial mapping</li>
+<li><code>QueryPartial&lt;T&gt;(string sql, object parameters)</code> - Execute parameterized query with partial mapping</li>
+<li><code>QueryPartial&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)</code> - Execute query with options using partial mapping</li>
+<li><code>QueryPartial&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)</code> - Execute parameterized query with options using partial mapping</li>
+</ul>
+<h3 id="single-result-query-operations">Single Result Query Operations</h3>
+<ul>
+<li><code>QueryFirst&lt;T&gt;(string sql)</code> - Get first result with strict mapping</li>
+<li><code>QueryFirstOrDefault&lt;T&gt;(string sql)</code> - Get first result or default with strict mapping</li>
+<li><code>QuerySingle&lt;T&gt;(string sql)</code> - Get single result with strict mapping</li>
+<li><code>QuerySingleOrDefault&lt;T&gt;(string sql)</code> - Get single result or default with strict mapping</li>
+</ul>
+<h3 id="scalar-query-operations">Scalar Query Operations</h3>
+<ul>
+<li><code>QueryScalar&lt;T&gt;(string sql)</code> - Get scalar value</li>
+<li><code>QueryScalar&lt;T&gt;(string sql, object parameters)</code> - Get scalar value from parameterized query</li>
+<li><code>QueryScalar&lt;T&gt;(string sql, CommandOptions options)</code> - Get scalar value with options</li>
+<li><code>QueryScalar&lt;T&gt;(string sql, object parameters, CommandOptions options)</code> - Get scalar value from parameterized query with options</li>
+</ul>
+<h2 id="async-query-methods">Async Query Methods</h2>
+<h3 id="async-basic-query-operations">Async Basic Query Operations</h3>
+<ul>
+<li><code>Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</code></li>
+<li><code>Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)</code></li>
+<li><code>Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</code></li>
+<li><code>Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)</code></li>
+</ul>
+<h3 id="async-single-result-operations">Async Single Result Operations</h3>
+<ul>
+<li><code>Task&lt;T&gt; QueryFirstAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</code></li>
+<li><code>Task&lt;T?&gt; QueryFirstOrDefaultAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</code></li>
+<li><code>Task&lt;T&gt; QuerySingleAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</code></li>
+<li><code>Task&lt;T?&gt; QuerySingleOrDefaultAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</code></li>
+</ul>
+<h3 id="async-scalar-operations">Async Scalar Operations</h3>
+<ul>
+<li><code>Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</code></li>
+<li><code>Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)</code></li>
+<li><code>Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(string sql, CommandOptions options, CancellationToken cancellationToken = default)</code></li>
+<li><code>Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)</code></li>
+</ul>
+<h2 id="streaming-methods">Streaming Methods</h2>
+<h3 id="synchronous-streaming">Synchronous Streaming</h3>
+<ul>
+<li><code>IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(string sql)</code> - Stream results with strict mapping</li>
+<li><code>IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(string sql, object parameters)</code> - Stream parameterized results with strict mapping</li>
+<li><code>IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)</code> - Stream results with options using strict mapping</li>
+<li><code>IEnumerable&lt;T&gt; QueryStream&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)</code> - Stream parameterized results with options using strict mapping</li>
+</ul>
+<h3 id="asynchronous-streaming">Asynchronous Streaming</h3>
+<ul>
+<li><code>IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(string sql, [EnumeratorCancellation] CancellationToken cancellationToken = default)</code> - Async stream results with strict mapping</li>
+<li><code>IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(string sql, object parameters, [EnumeratorCancellation] CancellationToken cancellationToken = default)</code> - Async stream parameterized results with strict mapping</li>
+<li><code>IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, [EnumeratorCancellation] CancellationToken cancellationToken = default)</code> - Async stream results with options using strict mapping</li>
+<li><code>IAsyncEnumerable&lt;T&gt; QueryStreamAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, [EnumeratorCancellation] CancellationToken cancellationToken = default)</code> - Async stream parameterized results with options using strict mapping</li>
+</ul>
+<h3 id="partial-streaming">Partial Streaming</h3>
+<ul>
+<li><code>IEnumerable&lt;T&gt; QueryPartialStream&lt;T&gt;(string sql)</code> - Stream results with partial mapping</li>
+<li><code>IAsyncEnumerable&lt;T&gt; QueryPartialStreamAsync&lt;T&gt;(string sql, [EnumeratorCancellation] CancellationToken cancellationToken = default)</code> - Async stream results with partial mapping</li>
+<li>(Similar overloads with parameters and options)</li>
+</ul>
+<h2 id="multiple-result-set-methods">Multiple Result Set Methods</h2>
+<h3 id="querymultiple">QueryMultiple</h3>
+<ul>
+<li><code>GridReader QueryMultiple(string sql)</code> - Execute multiple result sets</li>
+<li><code>GridReader QueryMultiple(string sql, object parameters)</code> - Execute multiple parameterized result sets</li>
+<li><code>GridReader QueryMultiple(string sql, CommandOptions options)</code> - Execute multiple result sets with options</li>
+<li><code>GridReader QueryMultiple(string sql, object parameters, CommandOptions options)</code> - Execute multiple parameterized result sets with options</li>
+</ul>
+<h3 id="async-querymultiple">Async QueryMultiple</h3>
+<ul>
+<li><code>Task&lt;GridReader&gt; QueryMultipleAsync(string sql, CancellationToken cancellationToken = default)</code> - Async multiple result sets</li>
+<li><code>Task&lt;GridReader&gt; QueryMultipleAsync(string sql, object parameters, CancellationToken cancellationToken = default)</code> - Async multiple parameterized result sets</li>
+<li><code>Task&lt;GridReader&gt; QueryMultipleAsync(string sql, CommandOptions options, CancellationToken cancellationToken = default)</code> - Async multiple result sets with options</li>
+<li><code>Task&lt;GridReader&gt; QueryMultipleAsync(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)</code> - Async multiple parameterized result sets with options</li>
+</ul>
+<h2 id="crud-operations">CRUD Operations</h2>
+<h3 id="insert-operations">Insert Operations</h3>
+<ul>
+<li><code>long Insert&lt;T&gt;(T entity)</code> - Insert entity and return identity</li>
+<li><code>long Insert&lt;T&gt;(T entity, CommandOptions options)</code> - Insert entity with options and return identity</li>
+<li><code>Task&lt;long&gt; InsertAsync&lt;T&gt;(T entity, CancellationToken cancellationToken = default)</code> - Async insert entity and return identity</li>
+<li><code>Task&lt;long&gt; InsertAsync&lt;T&gt;(T entity, CommandOptions options, CancellationToken cancellationToken = default)</code> - Async insert entity with options and return identity</li>
+</ul>
+<h3 id="update-operations">Update Operations</h3>
+<ul>
+<li><code>int Update&lt;T&gt;(T entity)</code> - Update entity</li>
+<li><code>int Update&lt;T&gt;(T entity, CommandOptions options)</code> - Update entity with options</li>
+<li><code>Task&lt;int&gt; UpdateAsync&lt;T&gt;(T entity, CancellationToken cancellationToken = default)</code> - Async update entity</li>
+<li><code>Task&lt;int&gt; UpdateAsync&lt;T&gt;(T entity, CommandOptions options, CancellationToken cancellationToken = default)</code> - Async update entity with options</li>
+</ul>
+<h3 id="delete-operations">Delete Operations</h3>
+<ul>
+<li><code>int Delete&lt;T&gt;(T entity)</code> - Delete entity by primary key</li>
+<li><code>int Delete&lt;T&gt;(T entity, CommandOptions options)</code> - Delete entity with options</li>
+<li><code>int Delete&lt;T&gt;(object id)</code> - Delete entity by ID</li>
+<li><code>int Delete&lt;T&gt;(object id, CommandOptions options)</code> - Delete entity by ID with options</li>
+<li><code>Task&lt;int&gt; DeleteAsync&lt;T&gt;(T entity, CancellationToken cancellationToken = default)</code> - Async delete entity</li>
+<li><code>Task&lt;int&gt; DeleteAsync&lt;T&gt;(T entity, CommandOptions options, CancellationToken cancellationToken = default)</code> - Async delete entity with options</li>
+<li><code>Task&lt;int&gt; DeleteAsync&lt;T&gt;(object id, CancellationToken cancellationToken = default)</code> - Async delete entity by ID</li>
+<li><code>Task&lt;int&gt; DeleteAsync&lt;T&gt;(object id, CommandOptions options, CancellationToken cancellationToken = default)</code> - Async delete entity by ID with options</li>
+</ul>
+<h3 id="upsert-operations">Upsert Operations</h3>
+<ul>
+<li><code>int Upsert&lt;T&gt;(T entity)</code> - Insert or update entity by key</li>
+<li><code>int Upsert&lt;T&gt;(T entity, CommandOptions options)</code> - Insert or update entity with options</li>
+<li><code>Task&lt;int&gt; UpsertAsync&lt;T&gt;(T entity, CancellationToken cancellationToken = default)</code> - Async insert or update entity</li>
+<li><code>Task&lt;int&gt; UpsertAsync&lt;T&gt;(T entity, CommandOptions options, CancellationToken cancellationToken = default)</code> - Async insert or update entity with options</li>
+</ul>
+<p>Upsert return values are provider-specific &quot;rows affected&quot; semantics:</p>
+<ul>
+<li>SQL Server and PostgreSQL typically return <code>1</code> for a successful insert or update.</li>
+<li>MariaDB/MySQL may return <code>2</code> for an update path (matched + changed rows), and may return <code>1</code> depending on server/client flags.</li>
+</ul>
+<p>For cross-provider code, treat any value <code>&gt; 0</code> as success instead of asserting an exact constant.</p>
+<h2 id="get-getall-and-execute-methods">Get, GetAll, and Execute Methods</h2>
+<p>See <a href="01-api-reference-get-and-execute-operations.html">Get and Execute Operations</a> for full details.</p>
+<ul>
+<li><code>T? Get&lt;T&gt;(object id)</code> / <code>Get&lt;T, TId&gt;(TId id)</code> - Retrieve entity by primary key</li>
+<li><code>T GetRequired&lt;T&gt;(object id)</code> / <code>GetRequired&lt;T, TId&gt;(TId id)</code> - Retrieve entity by primary key, throwing if not found</li>
+<li><code>List&lt;T&gt; GetAll&lt;T&gt;()</code> - Retrieve all rows for a mapped table</li>
+<li><code>IEnumerable&lt;T&gt; GetAllStream&lt;T&gt;()</code> - Lazily stream all rows</li>
+<li><code>GetAsync</code>, <code>GetRequiredAsync</code>, <code>GetAllAsync</code>, <code>GetAllStreamAsync</code> - Async equivalents (require <code>DbConnection</code>)</li>
+<li><code>int Execute(string sql, ...)</code> - Execute a non-query SQL command</li>
+<li><code>int ExecuteBatch(string sql, IEnumerable&lt;object&gt; parameterSets, ...)</code> - Execute the same SQL once per parameter set</li>
+<li><code>ExecuteAsync</code>, <code>ExecuteBatchAsync</code> - Async equivalents</li>
+</ul>
+<h2 id="multi-entity-mapping-methods">Multi-Entity Mapping Methods</h2>
+<p>See <a href="01-api-reference-multi-entity-mapping.html">Multi-Entity Mapping</a> for full details.</p>
+<ul>
+<li><code>List&lt;(T1,...,TN)&gt; Query&lt;T1,...,TN&gt;(string sql, ...)</code> for N = 2..7 - Map joined query rows into N entity types via left-to-right ordinal claiming</li>
+<li><code>QueryFirst&lt;T1,...,TN&gt;</code>, <code>QueryFirstOrDefault&lt;T1,...,TN&gt;</code>, <code>QuerySingle&lt;T1,...,TN&gt;</code>, <code>QuerySingleOrDefault&lt;T1,...,TN&gt;</code>, <code>QueryStream&lt;T1,...,TN&gt;</code> - Same arities, single-result and streaming variants</li>
+<li><code>MultiEntityCommandOptions&lt;T1,...,TN&gt;</code> - Per-position custom mapper delegates (<code>mapper1..mapperN</code>) to opt individual positions out of ordinal claiming</li>
+</ul>
+<h2 id="stored-procedure-methods">Stored Procedure Methods</h2>
+<h3 id="basic-stored-procedure-execution">Basic Stored Procedure Execution</h3>
+<ul>
+<li><code>List&lt;T&gt; ExecuteStoredProcedure&lt;T&gt;(string procedureName)</code> - Execute stored procedure and return results</li>
+<li><code>List&lt;T&gt; ExecuteStoredProcedure&lt;T&gt;(string procedureName, object? parameters)</code> - Execute parameterized stored procedure and return results</li>
+<li><code>List&lt;T&gt; ExecuteStoredProcedure&lt;T&gt;(string procedureName, object? parameters, CommandOptions&lt;T&gt; options)</code> - Execute parameterized stored procedure with options and return results</li>
+</ul>
+<h3 id="single-result-stored-procedure-methods">Single Result Stored Procedure Methods</h3>
+<ul>
+<li><code>T ExecuteStoredProcedureFirst&lt;T&gt;(string procedureName)</code> - Execute stored procedure and return first result</li>
+<li><code>T? ExecuteStoredProcedureFirstOrDefault&lt;T&gt;(string procedureName)</code> - Execute stored procedure and return first result or default</li>
+<li><code>T ExecuteStoredProcedureSingle&lt;T&gt;(string procedureName)</code> - Execute stored procedure and return single result</li>
+<li><code>T? ExecuteStoredProcedureSingleOrDefault&lt;T&gt;(string procedureName)</code> - Execute stored procedure and return single result or default</li>
+</ul>
+<h3 id="scalar-stored-procedure-methods">Scalar Stored Procedure Methods</h3>
+<ul>
+<li><code>T ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName)</code> - Execute stored procedure and return scalar value</li>
+<li><code>T ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, object? parameters)</code> - Execute parameterized stored procedure and return scalar value</li>
+<li><code>T ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, object? parameters, CommandOptions options)</code> - Execute parameterized stored procedure with options and return scalar value</li>
+</ul>
+<h3 id="non-query-stored-procedure-methods">Non-Query Stored Procedure Methods</h3>
+<ul>
+<li><code>int ExecuteStoredProcedureNonQuery(string procedureName)</code> - Execute stored procedure that doesn't return results</li>
+<li><code>int ExecuteStoredProcedureNonQuery(string procedureName, object? parameters)</code> - Execute parameterized stored procedure that doesn't return results</li>
+<li><code>int ExecuteStoredProcedureNonQuery(string procedureName, object? parameters, CommandOptions options)</code> - Execute parameterized stored procedure with options that doesn't return results</li>
+</ul>
+<h3 id="async-stored-procedure-methods">Async Stored Procedure Methods</h3>
+<ul>
+<li><code>Task&lt;List&lt;T&gt;&gt; ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</code> - Async stored procedure execution</li>
+<li><code>Task&lt;T&gt; ExecuteStoredProcedureFirstAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</code> - Async first result from stored procedure</li>
+<li><code>Task&lt;T?&gt; ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</code> - Async first result or default from stored procedure</li>
+<li><code>Task&lt;T&gt; ExecuteStoredProcedureSingleAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</code> - Async single result from stored procedure</li>
+<li><code>Task&lt;T?&gt; ExecuteStoredProcedureSingleOrDefaultAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</code> - Async single result or default from stored procedure</li>
+<li><code>Task&lt;T&gt; ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)</code> - Async scalar from stored procedure</li>
+<li><code>Task&lt;int&gt; ExecuteStoredProcedureNonQueryAsync(string procedureName, CancellationToken cancellationToken = default)</code> - Async non-query stored procedure</li>
+</ul>
+<h3 id="stored-procedure-methods-with-spparameters">Stored Procedure Methods with SpParameters</h3>
+<ul>
+<li>Methods supporting input, output, and return parameters using the <code>SpParameters</code> class</li>
+</ul>
+<h2 id="fluent-api">Fluent API</h2>
+<h3 id="entry-point">Entry Point</h3>
+<ul>
+<li><code>IFromClause&lt;T&gt; From&lt;T&gt;(this IDbConnection connection, string? alias = null)</code> - Start fluent query</li>
+</ul>
+<h3 id="fluent-query-methods">Fluent Query Methods</h3>
+<ul>
+<li><code>IWhereClause&lt;T&gt; Where(...)</code> - Add WHERE conditions</li>
+<li><code>IOrderByClause&lt;T&gt; OrderBy(...)</code> - Add ORDER BY clauses</li>
+<li><code>IJoinClause&lt;T, TJoin&gt; InnerJoin&lt;TJoin&gt;()</code> - Add INNER JOIN</li>
+<li><code>IJoinClause&lt;T, TJoin&gt; LeftJoin&lt;TJoin&gt;()</code> - Add LEFT JOIN</li>
+<li><code>IDistinctClause&lt;T&gt; Distinct()</code> - Add DISTINCT</li>
+<li><code>IFromClause&lt;T&gt; Take(int count)</code> - Add LIMIT/TOP</li>
+<li><code>IFromClause&lt;T&gt; Skip(int count)</code> - Add OFFSET</li>
+</ul>
+<h3 id="fluent-terminal-operations">Fluent Terminal Operations</h3>
+<ul>
+<li><code>List&lt;T&gt; Select()</code> - Execute query and return all results</li>
+<li><code>T SelectFirst()</code> - Execute query and return first result</li>
+<li><code>T? SelectFirstOrDefault()</code> - Execute query and return first result or default</li>
+<li><code>T SelectSingle()</code> - Execute query and return single result</li>
+<li><code>T? SelectSingleOrDefault()</code> - Execute query and return single result or default</li>
+<li><code>int Count()</code> - Execute query and return count</li>
+<li><code>TResult Sum&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector)</code> - Execute query and return sum</li>
+<li><code>Task&lt;List&lt;T&gt;&gt; SelectAsync(...)</code> - Async versions of all terminal operations</li>
+</ul>
+<h2 id="configuration">Configuration</h2>
+<h3 id="jauntyconfig-class">JauntyConfig Class</h3>
+<ul>
+<li><code>SchemaNameResolver</code> - Global schema name resolver</li>
+<li><code>TableNameResolver</code> - Global table name resolver</li>
+<li><code>ColumnNameResolver</code> - Global column name resolver</li>
+<li><code>DefaultEnumStorage</code> - Global default enum storage strategy (numeric or string)</li>
+<li><code>RegisterTypeHandler&lt;T&gt;(fromDb, toDb)</code> / <code>RegisterTypeHandler&lt;T&gt;(TypeHandler&lt;T&gt;)</code> - Register a custom type handler</li>
+<li><code>RemoveTypeHandler&lt;T&gt;()</code> - Remove a registered type handler</li>
+<li><code>Reset()</code> - Reset all configuration to defaults</li>
+</ul>
+<h3 id="commandoptions-struct">CommandOptions Struct</h3>
+<ul>
+<li><code>WithMapper(Func&lt;IDataReader, T&gt; mapper)</code> - Create options with custom mapper</li>
+<li><code>WithTransaction(IDbTransaction transaction)</code> - Create options with transaction</li>
+<li><code>WithTimeout(int seconds)</code> - Create options with timeout</li>
+</ul>
+<h2 id="attributes">Attributes</h2>
+<h3 id="available-attributes">Available Attributes</h3>
+<ul>
+<li><code>[Table(&quot;name&quot;, Schema = &quot;schema&quot;)]</code> - Map class to table</li>
+<li><code>[Column(&quot;name&quot;)]</code> - Map property to column</li>
+<li><code>[Ignore]</code> - Exclude property from mapping</li>
+<li><code>[Key]</code> - Mark property as primary key</li>
+<li><code>[DatabaseGenerated(DatabaseGeneratedOption option)]</code> - Specify database generation behavior</li>
+<li><code>[EnumStorage(EnumStorage storage)]</code> - Override enum storage strategy for a single property</li>
+</ul>
+<h2 id="gridreader-methods">GridReader Methods</h2>
+<h3 id="gridreader-read-methods">GridReader Read Methods</h3>
+<ul>
+<li><code>List&lt;T&gt; Read&lt;T&gt;()</code> - Read next result set with strict mapping</li>
+<li><code>List&lt;T&gt; ReadPartial&lt;T&gt;()</code> - Read next result set with partial mapping</li>
+<li><code>T ReadFirst&lt;T&gt;()</code> - Read first from next result set with strict mapping</li>
+<li><code>T? ReadFirstOrDefault&lt;T&gt;()</code> - Read first or default from next result set with strict mapping</li>
+<li><code>T ReadSingle&lt;T&gt;()</code> - Read single from next result set with strict mapping</li>
+<li><code>T? ReadSingleOrDefault&lt;T&gt;()</code> - Read single or default from next result set with strict mapping</li>
+<li><code>T? ReadScalar&lt;T&gt;()</code> - Read scalar from next result set</li>
+<li><code>IEnumerable&lt;T&gt; ReadStream&lt;T&gt;()</code> - Read next result set as stream with strict mapping</li>
+<li><code>IEnumerable&lt;T&gt; ReadPartialStream&lt;T&gt;()</code> - Read next result set as stream with partial mapping</li>
+</ul>
+<h3 id="async-gridreader-methods">Async GridReader Methods</h3>
+<ul>
+<li><code>Task&lt;List&lt;T&gt;&gt; ReadAsync&lt;T&gt;()</code> - Async read next result set with strict mapping</li>
+<li><code>Task&lt;T&gt; ReadFirstAsync&lt;T&gt;()</code> - Async read first from next result set with strict mapping</li>
+<li><code>Task&lt;T?&gt; ReadFirstOrDefaultAsync&lt;T&gt;()</code> - Async read first or default from next result set with strict mapping</li>
+<li><code>Task&lt;T&gt; ReadSingleAsync&lt;T&gt;()</code> - Async read single from next result set with strict mapping</li>
+<li><code>Task&lt;T?&gt; ReadSingleOrDefaultAsync&lt;T&gt;()</code> - Async read single or default from next result set with strict mapping</li>
+<li><code>Task&lt;T?&gt; ReadScalarAsync&lt;T&gt;()</code> - Async read scalar from next result set</li>
+<li><code>IAsyncEnumerable&lt;T&gt; ReadStreamAsync&lt;T&gt;()</code> - Async read next result set as stream with strict mapping</li>
+<li><code>IAsyncEnumerable&lt;T&gt; ReadPartialStreamAsync&lt;T&gt;()</code> - Async read next result set as stream with partial mapping</li>
+</ul>
+<h2 id="key-concepts">Key Concepts</h2>
+<h3 id="mapping-modes">Mapping Modes</h3>
+<ul>
+<li><strong>Strict Mode</strong> (default): All entity properties must have matching columns in result set</li>
+<li><strong>Partial Mode</strong>: Only map properties with matching columns, ignore missing ones</li>
+</ul>
+<h3 id="connection-requirements">Connection Requirements</h3>
+<ul>
+<li>Synchronous operations: <code>IDbConnection</code></li>
+<li>Asynchronous operations: <code>DbConnection</code> (required for async methods that access data reader)</li>
+</ul>
+<h3 id="error-handling">Error Handling</h3>
+<ul>
+<li>Jaunty provides descriptive error messages for mapping failures</li>
+<li>Strict mode fails fast with clear error messages</li>
+<li>Partial mode allows missing columns but maps only available ones</li>
+</ul>
+<h3 id="performance-considerations">Performance Considerations</h3>
+<ul>
+<li>Metadata is cached per-type for optimal performance</li>
+<li>Expression trees are compiled once and reused</li>
+<li>Connection state is respected (opens if closed, leaves open if already open)</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-README.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">README</span>
+</a><a class="pn-next" href="01-api-reference-attributes.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Attributes</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

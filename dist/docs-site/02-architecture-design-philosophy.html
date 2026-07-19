@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Philosophy — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Design Philosophy</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html" class="active" aria-current="page">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Design Philosophy</nav>
+        <article>
+<h1 id="design-philosophy">Design Philosophy</h1>
+<p>Jaunty's design is guided by clear principles that prioritize performance, correctness, and developer experience.</p>
+<h2 id="core-philosophy">Core Philosophy</h2>
+<h3 id="strict-mapping-by-default">1. Strict Mapping by Default</h3>
+<p><strong>Problem</strong>: Silent partial mapping causes bugs that surface far from their origin.</p>
+<p><strong>Solution</strong>: <code>Query&lt;T&gt;()</code> requires all entity properties to have matching columns.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> string Name { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-com">// This throws - missing 'Price' column</span>
+<span class="tok-kw">var</span> products = connection.Query&lt;Product&gt;(
+    &quot;SELECT id, name FROM products&quot;);
+<span class="tok-com">// InvalidOperationException: &quot;Strict mapping failed: property 'Price' has no matching column&quot;</span>
+</code></pre>
+</div>
+<p><strong>Benefit</strong>: Catches mismatches at development time, not in production.</p>
+<p><strong>Escape hatch</strong>: Use <code>QueryPartial&lt;T&gt;()</code> when you intentionally want partial data.</p>
+<h3 id="zero-reflection-at-runtime">2. Zero Reflection at Runtime</h3>
+<p><strong>Problem</strong>: Reflection is slow and allocates heavily.</p>
+<p><strong>Solution</strong>: Compile expression trees once, cache forever.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">internal</span> <span class="tok-kw">static</span> <span class="tok-kw">class</span> MetadataCache&lt;T&gt; <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+{
+    <span class="tok-kw">static</span> MetadataCache()
+    {
+        <span class="tok-com">// Build metadata once</span>
+        <span class="tok-com">// Compile setters once</span>
+        <span class="tok-com">// Cache forever</span>
+    }
+    
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">readonly</span> Action&lt;T, IDataRecord, int&gt;[] Setters;
+}
+</code></pre>
+</div>
+<p><strong>Benefit</strong>: Query execution has zero reflection overhead.</p>
+<h3 id="minimal-allocations">3. Minimal Allocations</h3>
+<p><strong>Problem</strong>: Allocations trigger GC, hurting performance.</p>
+<p><strong>Solution</strong>:</p>
+<ul>
+<li>Pre-size collections</li>
+<li>Use <code>Span&lt;T&gt;</code> for zero-allocation slicing</li>
+<li>Avoid LINQ in hot paths</li>
+<li>Cache everything possible</li>
+</ul>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Pre-size list</span>
+<span class="tok-kw">var</span> results = <span class="tok-kw">new</span> List&lt;T&gt;(expectedRows);
+
+<span class="tok-com">// Use Span for parsing</span>
+ReadOnlySpan&lt;char&gt; sqlSpan = sql.AsSpan();
+</code></pre>
+</div>
+<p><strong>Benefit</strong>: Reduced GC pressure, better throughput.</p>
+<h3 id="connection-state-respect">4. Connection State Respect</h3>
+<p><strong>Problem</strong>: ORMs that leave connections open or close unexpectedly cause issues.</p>
+<p><strong>Solution</strong>: Respect the initial connection state.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> wasClosed = connection.State == ConnectionState.Closed;
+<span class="tok-kw">try</span>
+{
+    <span class="tok-kw">if</span> (wasClosed) connection.Open();
+    <span class="tok-com">// Execute command</span>
+}
+<span class="tok-kw">finally</span>
+{
+    <span class="tok-kw">if</span> (wasClosed &amp;&amp; connection.State != ConnectionState.Closed)
+        connection.Close();
+}
+</code></pre>
+</div>
+<p><strong>Benefit</strong>: Predictable connection behavior.</p>
+<h3 id="clear-error-messages">5. Clear Error Messages</h3>
+<p><strong>Problem</strong>: Cryptic error messages waste debugging time.</p>
+<p><strong>Solution</strong>: Include contextual information in all exceptions.</p>
+<pre><code>Bad: &quot;Object reference not set to an instance of an object.&quot;
+
+Good: &quot;Strict mapping failed: property 'Price' on type 'Product' has no matching column. 
+       SQL columns: [id, name]. Missing: [Price].&quot;
+</code></pre>
+<p><strong>Benefit</strong>: Faster debugging.</p>
+<h2 id="api-design-principles">API Design Principles</h2>
+<h3 id="consistent-parameter-order">1. Consistent Parameter Order</h3>
+<p>All public extension methods follow a predictable parameter sequence:
+<code>connection, sql/entity, [parameters], [options], [cancellationToken]</code></p>
+<h3 id="explicit-return-types">2. Explicit Return Types</h3>
+<p>We choose return types that accurately reflect the underlying database operation while maximizing range:</p>
+<ul>
+<li><strong>Insert</strong>: Returns <code>long</code>. This accommodates 64-bit identity values (BigInt) common in modern databases (PostgreSQL, SQL Server).</li>
+<li><strong>Update/Delete</strong>: Returns <code>int</code>. These operations return affected row counts, which are extremely unlikely to exceed 2.1 billion in a single non-bulk execution.</li>
+<li><strong>Bulk Operations</strong>: Always return <code>int</code>. Bulk operations return the total count of processed rows.</li>
+</ul>
+<h2 id="what-jaunty-is-not">What Jaunty Is NOT</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Jaunty's Stance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Query Builder</td>
+<td> No - Write SQL explicitly</td>
+</tr>
+<tr>
+<td>LINQ Translation</td>
+<td> No - SQL is explicit</td>
+</tr>
+<tr>
+<td>Change Tracking</td>
+<td> No - You manage state</td>
+</tr>
+<tr>
+<td>Lazy Loading</td>
+<td> No - Explicit queries only</td>
+</tr>
+<tr>
+<td>Migrations</td>
+<td> No - Use separate tool</td>
+</tr>
+<tr>
+<td>Unit of Work</td>
+<td> No - Use transactions</td>
+</tr>
+</tbody>
+</table>
+<h2 id="what-jaunty-is">What Jaunty IS</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Jaunty's Approach</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL Execution</td>
+<td> Your SQL, executed fast</td>
+</tr>
+<tr>
+<td>Object Mapping</td>
+<td> Strict or partial, your choice</td>
+</tr>
+<tr>
+<td>Parameter Binding</td>
+<td> Named or positional</td>
+</tr>
+<tr>
+<td>Async Support</td>
+<td> Full async/await</td>
+</tr>
+<tr>
+<td>Multi-Mapping</td>
+<td> Tuple-based <code>Query&lt;T1, T2&gt;</code></td>
+</tr>
+<tr>
+<td>Multiple Result Sets</td>
+<td> <code>QueryMultiple</code> / <code>GridReader</code></td>
+</tr>
+<tr>
+<td>Bulk Operations</td>
+<td> <code>BulkInsert</code>, <code>BulkUpdate</code>, <code>BulkDelete</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="trade-offs">Trade-offs</h2>
+<h3 id="what-we-sacrifice">What We Sacrifice</h3>
+<ol>
+<li><strong>Convenience for Control</strong>: No automatic query generation - you write SQL</li>
+<li><strong>Magic for Predictability</strong>: No hidden behavior - everything is explicit</li>
+<li><strong>Features for Performance</strong>: No change tracking, no lazy loading</li>
+</ol>
+<h3 id="what-we-gain">What We Gain</h3>
+<ol>
+<li><strong>Performance</strong>: Compiled delegates, cached metadata</li>
+<li><strong>Predictability</strong>: No surprises - SQL executes as written</li>
+<li><strong>Debuggability</strong>: Clear error messages, no magic</li>
+<li><strong>Flexibility</strong>: Any valid SQL works</li>
+</ol>
+<h2 id="naming-conventions">Naming Conventions</h2>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Convention</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Strict methods</td>
+<td><code>Query*</code></td>
+<td><code>Query&lt;T&gt;</code>, <code>QueryFirst&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Partial methods</td>
+<td><code>QueryPartial*</code></td>
+<td><code>QueryPartial&lt;T&gt;</code>, <code>QueryPartialFirst&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Async methods</td>
+<td><code>*Async</code> suffix</td>
+<td><code>QueryAsync&lt;T&gt;</code>, <code>QueryFirstAsync&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Streaming methods</td>
+<td><code>*Stream</code></td>
+<td><code>QueryStream&lt;T&gt;</code>, <code>QueryPartialStream&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Scalar methods</td>
+<td><code>*Scalar</code></td>
+<td><code>QueryScalar&lt;T&gt;</code>, <code>ExecuteScalar&lt;T&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="configuration-philosophy">Configuration Philosophy</h2>
+<p><strong>Rule</strong>: Configure at startup, cache forever.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// At application startup</span>
+JauntyConfig.ColumnNameResolver = NamingConvention.ToSnakeCase;
+
+<span class="tok-com">// First query triggers caching</span>
+<span class="tok-kw">var</span> product = connection.Query&lt;Product&gt;(sql);
+<span class="tok-com">// MetadataCache&lt;Product&gt; is now initialized</span>
+
+<span class="tok-com">// Changing config after first use has NO EFFECT on cached types</span>
+JauntyConfig.ColumnNameResolver = <span class="tok-kw">null</span>;  <span class="tok-com">// Ignored for Product</span>
+</code></pre>
+</div>
+<p><strong>Why</strong>: Static generic caching is faster than per-call resolution.</p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="02-architecture-performance.html"><code>performance.md</code></a> - Performance optimizations</li>
+<li><a href="../../01-api-reference/configuration.md"><code>../../01-api-reference/configuration.md</code></a> - Configuration API</li>
+<li><a href="../../the coding standards"><code>../../the coding standards</code></a> - Development guidelines</li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="02-architecture-bulk-copy-architecture.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Bulk copy architecture</span>
+</a><a class="pn-next" href="02-architecture-metadata-system-spec.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Metadata system spec</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multiple Result Sets — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Multiple Result Sets</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html" class="active" aria-current="page">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Multiple Result Sets</nav>
+        <article>
+<h1 id="multiple-result-sets">Multiple Result Sets</h1>
+<h2 id="overview">Overview</h2>
+<p>Multiple result set methods allow executing a single command that returns multiple result sets and reading from each result set sequentially. This functionality is accessed through the <code>GridReader</code> class returned by <code>QueryMultiple</code> methods.</p>
+<h2 id="querymultiple-methods">QueryMultiple Methods</h2>
+<h3 id="querymultiplestring-sql">QueryMultiple(string sql)</h3>
+<p>Executes a command that returns multiple result sets and returns a <code>GridReader</code> for reading from each result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> GridReader QueryMultiple(<span class="tok-kw">this</span> IDbConnection connection, string sql)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>sql</code>: The SQL command containing multiple result sets (e.g., multiple SELECT statements separated by semicolons)</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>GridReader</code>: A reader for accessing multiple result sets</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> gridReader = connection.QueryMultiple(&quot;SELECT * FROM categories; SELECT * FROM products&quot;);
+<span class="tok-kw">var</span> categories = gridReader.Read&lt;Category&gt;().ToList();
+<span class="tok-kw">var</span> products = gridReader.Read&lt;Product&gt;().ToList();
+</code></pre>
+</div>
+<h3 id="querymultiplestring-sql-object-parameters">QueryMultiple(string sql, object parameters)</h3>
+<p>Executes a parameterized command that returns multiple result sets and returns a <code>GridReader</code> for reading from each result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> GridReader QueryMultiple(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters)
+</code></pre>
+</div>
+<h3 id="querymultiplestring-sql-commandoptions-options">QueryMultiple(string sql, CommandOptions options)</h3>
+<p>Executes a command with options that returns multiple result sets and returns a <code>GridReader</code> for reading from each result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> GridReader QueryMultiple(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions options)
+</code></pre>
+</div>
+<h3 id="querymultiplestring-sql-object-parameters-commandoptions-options">QueryMultiple(string sql, object parameters, CommandOptions options)</h3>
+<p>Executes a parameterized command with options that returns multiple result sets and returns a <code>GridReader</code> for reading from each result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> GridReader QueryMultiple(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions options)
+</code></pre>
+</div>
+<h2 id="async-querymultiple-methods">Async QueryMultiple Methods</h2>
+<h3 id="querymultipleasyncstring-sql-cancellationtoken-cancellationtoken-default">QueryMultipleAsync(string sql, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a command that returns multiple result sets and returns a <code>GridReader</code> for reading from each result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;GridReader&gt; QueryMultipleAsync(<span class="tok-kw">this</span> IDbConnection connection, string sql, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="querymultipleasyncstring-sql-object-parameters-cancellationtoken-cancellationtoken-default">QueryMultipleAsync(string sql, object parameters, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a parameterized command that returns multiple result sets and returns a <code>GridReader</code> for reading from each result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;GridReader&gt; QueryMultipleAsync(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="querymultipleasyncstring-sql-commandoptions-options-cancellationtoken-cancellationtoken-default">QueryMultipleAsync(string sql, CommandOptions options, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a command with options that returns multiple result sets and returns a <code>GridReader</code> for reading from each result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;GridReader&gt; QueryMultipleAsync(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="querymultipleasyncstring-sql-object-parameters-commandoptions-options-cancellationtoken-cancellationtoken-default">QueryMultipleAsync(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a parameterized command with options that returns multiple result sets and returns a <code>GridReader</code> for reading from each result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;GridReader&gt; QueryMultipleAsync(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">await</span> <span class="tok-kw">using</span> <span class="tok-kw">var</span> grid = <span class="tok-kw">await</span> connection.QueryMultipleAsync(
+    &quot;SELECT * FROM categories; SELECT * FROM products&quot;);
+<span class="tok-kw">var</span> categories = <span class="tok-kw">await</span> grid.ReadAsync&lt;Category&gt;();
+<span class="tok-kw">var</span> products = <span class="tok-kw">await</span> grid.ReadAsync&lt;Product&gt;();
+</code></pre>
+</div>
+<h2 id="gridreader-methods">GridReader Methods</h2>
+<p>The <code>GridReader</code> class provides methods to read from each result set in sequence.</p>
+<h3 id="readt">Read&lt;T&gt;()</h3>
+<p>Reads the current result set as a list of entities using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> List&lt;T&gt; Read&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>List&lt;T&gt;</code>: A list of entities of type T from the current result set</li>
+</ul>
+<h3 id="readpartialt">ReadPartial&lt;T&gt;()</h3>
+<p>Reads the current result set as a list of entities using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> List&lt;T&gt; ReadPartial&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>List&lt;T&gt;</code>: A list of entities of type T from the current result set</li>
+</ul>
+<h3 id="readfirstt">ReadFirst&lt;T&gt;()</h3>
+<p>Reads the first entity from the current result set using strict mapping mode. Throws an exception if the result set is empty.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> T ReadFirst&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T</code>: The first entity of type T from the current result set</li>
+</ul>
+<h3 id="readfirstordefaultt">ReadFirstOrDefault&lt;T&gt;()</h3>
+<p>Reads the first entity from the current result set or the default value if the result set is empty, using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> T? ReadFirstOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T?</code>: The first entity of type T from the current result set, or null if the result set is empty</li>
+</ul>
+<h3 id="readpartialfirstt">ReadPartialFirst&lt;T&gt;()</h3>
+<p>Reads the first entity from the current result set using partial mapping mode. Throws an exception if the result set is empty.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> T ReadPartialFirst&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T</code>: The first entity of type T from the current result set</li>
+</ul>
+<h3 id="readpartialfirstordefaultt">ReadPartialFirstOrDefault&lt;T&gt;()</h3>
+<p>Reads the first entity from the current result set or the default value if the result set is empty, using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> T? ReadPartialFirstOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T?</code>: The first entity of type T from the current result set, or null if the result set is empty</li>
+</ul>
+<h3 id="readsinglet">ReadSingle&lt;T&gt;()</h3>
+<p>Reads the single entity from the current result set using strict mapping mode. Throws an exception if the result set is empty or contains more than one element.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> T ReadSingle&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T</code>: The single entity of type T from the current result set</li>
+</ul>
+<h3 id="readsingleordefaultt">ReadSingleOrDefault&lt;T&gt;()</h3>
+<p>Reads the single entity from the current result set or the default value if the result set is empty, using strict mapping mode. Throws an exception if the result set contains more than one element.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> T? ReadSingleOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T?</code>: The single entity of type T from the current result set, or null if the result set is empty</li>
+</ul>
+<h3 id="readpartialsinglet">ReadPartialSingle&lt;T&gt;()</h3>
+<p>Reads the single entity from the current result set using partial mapping mode. Throws an exception if the result set is empty or contains more than one element.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> T ReadPartialSingle&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T</code>: The single entity of type T from the current result set</li>
+</ul>
+<h3 id="readpartialsingleordefaultt">ReadPartialSingleOrDefault&lt;T&gt;()</h3>
+<p>Reads the single entity from the current result set or the default value if the result set is empty, using partial mapping mode. Throws an exception if the result set contains more than one element.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> T? ReadPartialSingleOrDefault&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T?</code>: The single entity of type T from the current result set, or null if the result set is empty</li>
+</ul>
+<h3 id="readscalart">ReadScalar&lt;T&gt;()</h3>
+<p>Reads a scalar value (first column of first row) from the current result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> T? ReadScalar&lt;T&gt;(CommandOptions options = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T?</code>: The scalar value of type T from the current result set</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> grid = connection.QueryMultiple(&quot;SELECT * FROM products; SELECT COUNT(*) FROM products&quot;);
+<span class="tok-kw">var</span> products = grid.Read&lt;Product&gt;().ToList();
+<span class="tok-kw">var</span> total = grid.ReadScalar&lt;int&gt;();
+</code></pre>
+</div>
+<h2 id="async-gridreader-methods">Async GridReader Methods</h2>
+<h3 id="readasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously reads the current result set as a list of entities using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> Task&lt;List&lt;T&gt;&gt; ReadAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readpartialasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadPartialAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously reads the current result set as a list of entities using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> Task&lt;List&lt;T&gt;&gt; ReadPartialAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readfirstasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadFirstAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously reads the first entity from the current result set using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> Task&lt;T&gt; ReadFirstAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readfirstordefaultasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadFirstOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously reads the first entity from the current result set or the default value if the result set is empty, using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> Task&lt;T?&gt; ReadFirstOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readpartialfirstasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadPartialFirstAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously reads the first entity from the current result set using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> Task&lt;T&gt; ReadPartialFirstAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readpartialfirstordefaultasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadPartialFirstOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously reads the first entity from the current result set or the default value if the result set is empty, using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> Task&lt;T?&gt; ReadPartialFirstOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readsingleasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadSingleAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously reads the single entity from the current result set using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> Task&lt;T&gt; ReadSingleAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readsingleordefaultasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadSingleOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously reads the single entity from the current result set or the default value if the result set is empty, using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> Task&lt;T?&gt; ReadSingleOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readpartialsingleasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadPartialSingleAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously reads the single entity from the current result set using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> Task&lt;T&gt; ReadPartialSingleAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readpartialsingleordefaultasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadPartialSingleOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously reads the single entity from the current result set or the default value if the result set is empty, using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> Task&lt;T?&gt; ReadPartialSingleOrDefaultAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readscalarasynctcommandoptions-options-default-cancellationtoken-cancellationtoken-default">ReadScalarAsync&lt;T&gt;(CommandOptions options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously reads a scalar value (first column of first row) from the current result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> Task&lt;T?&gt; ReadScalarAsync&lt;T&gt;(CommandOptions options = <span class="tok-kw">default</span>, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h2 id="streaming-methods-in-gridreader">Streaming Methods in GridReader</h2>
+<h3 id="readstreamtcommandoptionst-options-default">ReadStream&lt;T&gt;(CommandOptions&lt;T&gt; options = default)</h3>
+<p>Returns an enumerable stream of entities from the current result set using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> IEnumerable&lt;T&gt; ReadStream&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readpartialstreamtcommandoptionst-options-default">ReadPartialStream&lt;T&gt;(CommandOptions&lt;T&gt; options = default)</h3>
+<p>Returns an enumerable stream of entities from the current result set using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> IEnumerable&lt;T&gt; ReadPartialStream&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readstreamasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadStreamAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously returns an async enumerable stream of entities from the current result set using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> IAsyncEnumerable&lt;T&gt; ReadStreamAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, [EnumeratorCancellation] CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="readpartialstreamasynctcommandoptionst-options-default-cancellationtoken-cancellationtoken-default">ReadPartialStreamAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously returns an async enumerable stream of entities from the current result set using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> IAsyncEnumerable&lt;T&gt; ReadPartialStreamAsync&lt;T&gt;(CommandOptions&lt;T&gt; options = <span class="tok-kw">default</span>, [EnumeratorCancellation] CancellationToken cancellationToken = <span class="tok-kw">default</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> grid = connection.QueryMultiple(&quot;SELECT * FROM categories; SELECT * FROM products&quot;);
+<span class="tok-kw">var</span> categories = grid.Read&lt;Category&gt;().ToList();
+<span class="tok-kw">foreach</span> (<span class="tok-kw">var</span> p <span class="tok-kw">in</span> grid.ReadStream&lt;Product&gt;())
+{
+    Console.WriteLine(p.ProductName);
+}
+</code></pre>
+</div>
+<h2 id="important-notes">Important Notes</h2>
+<div class="callout callout-warn"><ul>
+<li><strong>Sequential Access</strong>: Result sets must be read in sequence; you cannot go back to a previous result set</li>
+<li><strong>Resource Management</strong>: The <code>GridReader</code> implements <code>IDisposable</code> and should be disposed after use</li>
+<li><strong>Connection State</strong>: The underlying connection remains open while the <code>GridReader</code> is active</li>
+<li><strong>Database Support</strong>: Multiple result sets are supported by SQL Server, PostgreSQL, and MySQL but have limitations in SQLite</li>
+<li><strong>Mapping Mode</strong>: Each read method has both strict and partial mapping variants</li>
+<li><strong>Async Behavior</strong>: Async methods return completed tasks if the GridReader has already been consumed</li>
+<li><strong>Cancellation</strong>: Async methods support cancellation tokens for cooperative cancellation</li>
+</ul></div>
+<h2 id="pool-safety">Pool Safety</h2>
+<div class="callout callout-tip"><ul>
+<li>Dispose both the <code>DbConnection</code> and the <code>GridReader</code>.</li>
+<li>If either is leaked in high-concurrency code, connection pools can exhaust and fail with errors like PostgreSQL <code>too many clients</code>.</li>
+</ul></div>
+<p><strong>Recommended async pattern:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> connection = fixture.GetDbConnection(dialect);
+<span class="tok-kw">using</span> <span class="tok-kw">var</span> grid = <span class="tok-kw">await</span> connection.QueryMultipleAsync(
+    &quot;SELECT ...; SELECT ...;&quot;);
+
+<span class="tok-kw">var</span> first = <span class="tok-kw">await</span> grid.ReadAsync&lt;MyRow1&gt;();
+<span class="tok-kw">var</span> second = <span class="tok-kw">await</span> grid.ReadAsync&lt;MyRow2&gt;();
+</code></pre>
+</div>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-multi-entity-mapping.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Multi entity mapping</span>
+</a><a class="pn-next" href="01-api-reference-overview.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Overview</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

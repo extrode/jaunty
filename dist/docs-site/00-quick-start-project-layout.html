@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Layout — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Project Layout</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html" class="active" aria-current="page">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Project Layout</nav>
+        <article>
+<h1 id="project-layout">Project Layout</h1>
+<p>Guide to the Jaunty repository structure and organization.</p>
+<hr />
+<h2 id="root-directory-structure">Root Directory Structure</h2>
+<pre><code>C:\home\Beparey\code\jaunty.beparey.com\
+│
+├── Configuration Files
+│   ├── .editorconfig              # Editor configuration (formatting, naming)
+│   ├── .gitattributes             # Git line endings, merge strategies
+│   ├── .gitignore                 # Git ignore patterns
+│   └── Jaunty.slnx                # Solution file (opens all projects)
+│
+├── Documentation Files
+│   ├── README.md                  # Project overview and quick start
+│   ├── LICENSE.md                 # Project license
+│   ├── CONTRIBUTING.md            # How to contribute
+│
+├── Folders
+│   ├── .github/                   # GitHub configuration (workflows)
+│   ├── .idea/                     # JetBrains IDE settings
+│   ├── docs/                  # Specify tool configuration
+│   ├── .vs/                       # Visual Studio settings
+│   │
+│   ├── src/                       # Source code packages
+│   ├── tests/                     # Test projects
+│   ├── docs/                      # Documentation (Markdown source)
+│   │
+│   ├── benchmarks/                # Performance benchmarks
+│   ├── samples/                   # Sample projects
+│   ├── scripts/                   # Build and utility scripts
+│   ├── data/                      # Test data files
+│   └── dist/                      # Distribution artifacts (generated)
+</code></pre>
+<hr />
+<h2 id="folder-details">Folder Details</h2>
+<h3 id="core-folders">Core Folders</h3>
+<table>
+<thead>
+<tr>
+<th>Folder</th>
+<th>Purpose</th>
+<th>Key Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/</code></td>
+<td>Source code for all packages</td>
+<td><code>Jaunty/</code>, <code>Jaunty.FlatFiles/</code>, <code>Jaunty.Fluent/</code></td>
+</tr>
+<tr>
+<td><code>tests/</code></td>
+<td>Test projects</td>
+<td><code>Jaunty.Tests/</code>, <code>Jaunty.FlatFiles.Tests/</code></td>
+</tr>
+<tr>
+<td><code>docs/</code></td>
+<td>Documentation source</td>
+<td>Organized by topic (00-quick-start through 06-releases)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="development-folders">Development Folders</h3>
+<table>
+<thead>
+<tr>
+<th>Folder</th>
+<th>Purpose</th>
+<th>Key Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>benchmarks/</code></td>
+<td>Performance benchmarks</td>
+<td><code>Jaunty.Benchmarks/</code>, <code>Jaunty.FlatFiles.Benchmarks/</code></td>
+</tr>
+<tr>
+<td><code>samples/</code></td>
+<td>Sample projects</td>
+<td>NativeAOT examples, basic usage samples</td>
+</tr>
+<tr>
+<td><code>scripts/</code></td>
+<td>Build and utility scripts</td>
+<td><code>build.ps1</code>, <code>build-aot.ps1</code>, <code>Verify-NativeAOT.ps1</code></td>
+</tr>
+<tr>
+<td><code>data/</code></td>
+<td>Test data files</td>
+<td>CSV, JSON, Parquet test files</td>
+</tr>
+</tbody>
+</table>
+<h3 id="configuration-folders">Configuration Folders</h3>
+<table>
+<thead>
+<tr>
+<th>Folder</th>
+<th>Purpose</th>
+<th>Key Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.github/</code></td>
+<td>GitHub configuration</td>
+<td>Workflows</td>
+</tr>
+<tr>
+<td><code>.idea/</code></td>
+<td>JetBrains IDE settings</td>
+<td>Rider, ReSharper settings</td>
+</tr>
+<tr>
+<td><code>.vs/</code></td>
+<td>Visual Studio settings</td>
+<td>VS-specific configuration</td>
+</tr>
+<tr>
+<td><code>docs/</code></td>
+<td>Specify tool</td>
+<td>Architecture specification tool</td>
+</tr>
+</tbody>
+</table>
+<h3 id="distribution-folders">Distribution Folders</h3>
+<table>
+<thead>
+<tr>
+<th>Folder</th>
+<th>Purpose</th>
+<th>Key Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dist/</code></td>
+<td>Distribution artifacts</td>
+<td>Generated HTML docs, publish outputs</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="source-code-structure-src">Source Code Structure (src/)</h2>
+<pre><code>src/
+├── Jaunty/                        # Core micro-ORM
+│   ├── Read/                      # Query operations
+│   ├── Write/                     # CRUD operations
+│   ├── Internals/                 # Internal helpers
+│
+├── Jaunty.Fluent/                 # Fluent query API
+├── Jaunty.FlatFiles/              # Flat file support (interfaces)
+├── Jaunty.FlatFiles.DuckDB/       # DuckDB implementation
+├── Jaunty.Extensions.Reflection/  # Reflection-based mapping
+└── Jaunty.Scaffolding/            # Database scaffolding
+</code></pre>
+<hr />
+<h2 id="test-structure-tests">Test Structure (tests/)</h2>
+<pre><code>tests/
+├── Jaunty.Tests/                  # Core tests
+│   ├── Integration/               # Integration tests
+│   ├── Unit/                      # Unit tests
+│   └── Helpers/                   # Test helpers
+│
+├── Jaunty.Fluent.Tests/           # Fluent API tests
+├── Jaunty.FlatFiles.Tests/        # FlatFiles interface tests
+├── Jaunty.FlatFiles.DuckDB.Tests/ # DuckDB implementation tests
+└── Jaunty.Scaffolding.Tests/      # Scaffolding tests
+</code></pre>
+<p><strong>Test Organization Convention</strong>: Test folders mirror <code>src/</code> structure</p>
+<hr />
+<h2 id="documentation-structure-docs">Documentation Structure (docs/)</h2>
+<pre><code>docs/
+├── 00-quick-start/                # Getting started
+├── 01-api-reference/              # API documentation
+├── 02-architecture/               # Architecture docs
+├── 03-development/                # Development guides
+├── 04-extensions/                 # Extension docs
+├── 05-quality/                    # Quality &amp; testing
+├── 06-releases/                   # Release docs
+├── 99-archive/                    # Historical documents
+└── _assets/                       # Media assets (screenshots, diagrams)
+</code></pre>
+<p><strong>Documentation Convention</strong>: Numbered prefixes establish reading order</p>
+<hr />
+<h2 id="file-naming-conventions">File Naming Conventions</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Convention</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Documentation</td>
+<td><code>lowercase-with-hyphens.md</code></td>
+<td><code>api-design-guidelines.md</code></td>
+</tr>
+<tr>
+<td>Folders</td>
+<td><code>lowercase-with-hyphens/</code></td>
+<td><code>00-quick-start/</code></td>
+</tr>
+<tr>
+<td>Special</td>
+<td><code>_prefix/</code> sorts first</td>
+<td><code>_assets/</code></td>
+</tr>
+<tr>
+<td>Special</td>
+<td><code>99-prefix/</code> sorts last</td>
+<td><code>99-archive/</code></td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="03-development-file-naming-convention.html"><code>03-development/file-naming-convention.md</code></a> for the complete standard.</p>
+<hr />
+<h2 id="navigation-tips">Navigation Tips</h2>
+<h3 id="finding-source-code">Finding Source Code</h3>
+<table>
+<thead>
+<tr>
+<th>You Want</th>
+<th>Go To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Query methods</td>
+<td><code>src/Jaunty/Read/Query.cs</code></td>
+</tr>
+<tr>
+<td>CRUD operations</td>
+<td><code>src/Jaunty/Write/</code></td>
+</tr>
+<tr>
+<td>Flat file support</td>
+<td><code>src/Jaunty.FlatFiles.DuckDB/</code></td>
+</tr>
+<tr>
+<td>Fluent API</td>
+<td><code>src/Jaunty.Fluent/</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="finding-tests">Finding Tests</h3>
+<table>
+<thead>
+<tr>
+<th>You Want</th>
+<th>Go To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Integration tests</td>
+<td><code>tests/Jaunty.Tests/Integration/</code></td>
+</tr>
+<tr>
+<td>FlatFiles tests</td>
+<td><code>tests/Jaunty.FlatFiles.DuckDB.Tests/</code></td>
+</tr>
+<tr>
+<td>Performance tests</td>
+<td><code>tests/.../Performance/</code> folders</td>
+</tr>
+</tbody>
+</table>
+<h3 id="finding-documentation">Finding Documentation</h3>
+<table>
+<thead>
+<tr>
+<th>You Want</th>
+<th>Go To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API reference</td>
+<td><a href="01-api-reference-README.html"><code>docs/01-api-reference/</code></a></td>
+</tr>
+<tr>
+<td>Architecture</td>
+<td><a href="02-architecture-README.html"><code>docs/02-architecture/</code></a></td>
+</tr>
+<tr>
+<td>Development guides</td>
+<td><a href="03-development-README.html"><code>docs/03-development/</code></a></td>
+</tr>
+<tr>
+<td>Historical docs</td>
+<td><a href="99-archive-README.html"><code>docs/99-archive/</code></a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="build-and-scripts">Build and Scripts</h2>
+<h3 id="build-scripts">Build Scripts</h3>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>scripts/build.ps1</code></td>
+<td>Standard build</td>
+</tr>
+<tr>
+<td><code>scripts/build-aot.ps1</code></td>
+<td>NativeAOT build</td>
+</tr>
+<tr>
+<td><code>scripts/Verify-NativeAOT.ps1</code></td>
+<td>NativeAOT verification</td>
+</tr>
+</tbody>
+</table>
+<h3 id="running-tests">Running Tests</h3>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">bash</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="bash"><code class="language-bash"># All tests
+dotnet test
+
+# Specific test project
+dotnet test tests/Jaunty.Tests
+
+# With coverage
+dotnet test /p:CollectCoverage=true
+</code></pre>
+</div>
+<hr />
+<h2 id="related-documents">Related Documents</h2>
+<ul>
+<li><a href="../README.md"><code>README.md</code></a> - Project overview</li>
+<li><a href="../CONTRIBUTING.md"><code>CONTRIBUTING.md</code></a> - Contribution guide</li>
+<li><a href="../the coding standards"><code>the coding standards</code></a> - development guidelines</li>
+<li><a href="00-quick-start-build-and-test.html"><code>00-quick-start/build-and-test.md</code></a> - Build instructions</li>
+</ul>
+<hr />
+<p><strong>Last Updated</strong>: March 2026<br />
+<strong>Maintained By</strong>: Jaunty Contributors</p>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="00-quick-start-build-and-test.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Build and test</span>
+</a><a class="pn-next" href="00-quick-start-project-structure.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Project structure</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>
