@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Data;
 using System.Text;
 using System.Reflection;
@@ -14,6 +15,12 @@ internal static class ParameterBinder
     // Size-capped to prevent unbounded growth when callers embed literals instead of parameters
     // or generate SQL dynamically (each distinct SQL text would otherwise be a permanent key).
     private static readonly BoundedCache<(string Sql, Type ParamType, Type CommandType), CommandTemplate> TemplateCache = new();
+
+    // Caches the EnumStorageAttribute reflection lookup per property so ApplyTypeHandlerIfNeeded
+    // doesn't call PropertyInfo.GetCustomAttribute on every parameter bind. Bounded by the number
+    // of distinct properties across parameter types used by the application (not user input), so
+    // no size cap is needed here (unlike TemplateCache above).
+    private static readonly ConcurrentDictionary<PropertyInfo, EnumStorageAttribute?> EnumStorageAttributeCache = new();
 
     internal static void Bind(IDbCommand command, object parameters)
     {
@@ -626,7 +633,7 @@ internal static class ParameterBinder
     {
         if (property is not null)
         {
-            EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
+            EnumStorageAttribute? enumAttr = EnumStorageAttributeCache.GetOrAdd(property, static p => p.GetCustomAttribute<EnumStorageAttribute>());
             if (enumAttr is not null)
             {
                 return enumAttr.Storage;
