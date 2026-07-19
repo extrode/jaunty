@@ -19,11 +19,11 @@ internal static class FluentMetadataCache
                 ? sourceGenMetadata
                 : JauntyConfig.ReflectionTableMetadataResolver?.Invoke(typeof(T)) is EntityMetadata metadata
                     ? metadata
-                        : throw new InvalidOperationException(
-                        $"No metadata found for type '{typeof(T).Name}'. " +
-                        "Ensure the class has [Table] and is processed by the Jaunty source generator " +
-                        "(the class must be declared 'partial'), or call " +
-                        "Jaunty.Extensions.Reflection's UseReflectionMapping().");
+                    : throw new InvalidOperationException(
+                    $"No metadata found for type '{typeof(T).Name}'. " +
+                    "Ensure the class has [Table] and is processed by the Jaunty source generator " +
+                    "(the class must be declared 'partial'), or call " +
+                    "Jaunty.Extensions.Reflection's UseReflectionMapping().");
         });
     }
 
