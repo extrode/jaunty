@@ -1,8 +1,10 @@
 namespace Jaunty.FlatFiles.DuckDB.Tests.Helpers;
 
 /// <summary>
-/// Generates the persistent fixture files (under data/, not a temp directory) that
-/// ImportPipelineTests/MultiSourceTests/ParquetQueryTests/PreloadTests read by path.
+/// Exercises FixtureGenerator directly against the persistent data/ fixture paths. No other
+/// test class reads these generated files by path - ImportPipelineTests/MultiSourceTests/
+/// ParquetQueryTests/PreloadTests each generate their own fixtures into unique per-instance
+/// temp directories - so this class's only purpose is to keep FixtureGenerator itself covered.
 /// </summary>
 /// <remarks>
 /// Always regenerates rather than skipping when the file already exists - a run that only
