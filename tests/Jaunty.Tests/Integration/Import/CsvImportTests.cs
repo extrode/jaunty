@@ -1,6 +1,8 @@
 using System.Data.Common;
 using System.Data.SQLite;
+using System.Reflection;
 
+using Jaunty;
 using Jaunty.Tests.Helpers;
 using Jaunty.Tests.Helpers.Dialects;
 
@@ -186,6 +188,68 @@ public class CsvImportTests : IClassFixture<DialectFixture>
             importConn.Open();
             Assert.Equal(ExpectedRowCount, GetRowCount(importConn, DialectProvider.SystemSqlite));
             Assert.Equal("Alice Brown", GetFirstName(importConn, DialectProvider.SystemSqlite));
+        }
+        finally
+        {
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Fact]
+    public void ImportViaSqliteCli_DbPathWithQuote_IsRejected()
+    {
+        var csvPath = ResolveCsvPath();
+
+        // ExtractSqliteDbPath just parses "Data Source=..." out of the connection string as
+        // plain text and never opens a real file, so a quote character used to reach
+        // ImportViaSqliteCli unvalidated - it would break out of the quoted sqlite3 CLI process
+        // argument and let extra command-line switches be injected. Invoked directly via
+        // reflection (ImportViaSqliteCli is private) rather than through the public ImportCsv
+        // entry point, because System.Data.SQLite's own SQLiteConnection connection-string
+        // parser already rejects unbalanced quote characters before Jaunty's code ever runs -
+        // that's a property of this specific ADO.NET provider, not proof that Jaunty's own
+        // dbPath validation (defense-in-depth for other providers/programmatically-built
+        // connection strings) is doing anything.
+        MethodInfo method = typeof(CsvImportExtensions).GetMethod(
+            "ImportViaSqliteCli", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        var maliciousDbPath = Path.GetTempPath() + "jaunty_csv_sec\"evil.db";
+
+        var ex = Assert.Throws<TargetInvocationException>(() =>
+            method.Invoke(null, [maliciousDbPath, TableName, csvPath, new CsvImportOptions()]));
+        Assert.IsType<ArgumentException>(ex.InnerException);
+    }
+
+    [Fact]
+    public void ImportCsv_SqliteCli_KeywordTableName_ImportsSuccessfully()
+    {
+        // "GROUP" is a SQLite reserved keyword (SQLiteDialect.Keywords). ImportViaPreparedStatements
+        // already escapes it via the dialect; ImportViaSqliteCli's .import dot-command must match
+        // that behavior instead of embedding the bare keyword and failing with a syntax error.
+        const string keywordTableName = "GROUP";
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_kw_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using (var setup = new SQLiteConnection($"Data Source={tempDb}"))
+            {
+                setup.Open();
+                using var cmd = setup.CreateCommand();
+                cmd.CommandText = "CREATE TABLE \"GROUP\" (Name TEXT, Age INTEGER, City TEXT, Email TEXT);";
+                cmd.ExecuteNonQuery();
+            }
+
+            using var importConn = new SQLiteConnection($"Data Source={tempDb}");
+            long rows = importConn.ImportCsv(keywordTableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+
+            importConn.Open();
+            using var countCmd = importConn.CreateCommand();
+            countCmd.CommandText = "SELECT COUNT(*) FROM \"GROUP\"";
+            Assert.Equal((long)ExpectedRowCount, Convert.ToInt64(countCmd.ExecuteScalar()));
         }
         finally
         {
