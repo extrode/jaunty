@@ -167,9 +167,6 @@ public static partial class Jaunty
     ///     CommandOptions&lt;Product&gt;.WithTimeout(30));
     /// </code>
     /// </example>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set.
-    /// </exception>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="QueryPartial{T}(IDbConnection, string)"/>
     public static List<T> QueryPartial<T>(this IDbConnection connection, string sql, CommandOptions<T> options) where T : new()
