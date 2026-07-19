@@ -150,7 +150,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine($"namespace {namespaceName}");
         sb.AppendLine("{");
-        sb.AppendLine($"    public partial class {className} : IMapped<{className}>");
+        sb.AppendLine($"    public partial class {className} : IMapped<{className}>, IEntityMetadataSource");
         sb.AppendLine("    {");
         sb.AppendLine("        public readonly struct ColumnInfo");
         sb.AppendLine("        {");
@@ -470,6 +470,27 @@ public class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine($"            [\"{p.ColumnName}\"] = {ColumnInfoCtor(p)},");
         }
         sb.AppendLine("        };");
+
+        // IEntityMetadataSource - public, reflection-free metadata surface for Jaunty core.
+        // Explicit interface implementation for TableName/SchemaName since the public static
+        // properties of the same name already exist above (a class cannot have both a static
+        // and an instance member sharing one name).
+        string EntityColumnInfoCtor(PropertyMetadata p)
+            => $"new EntityColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, " +
+               $"typeof({p.TypeName}), e => (object?)(({className})e).{p.PropertyName}, (e, v) => (({className})e).{p.PropertyName} = ({p.TypeName})v!)";
+
+        sb.AppendLine();
+        sb.AppendLine("        public static System.Collections.Generic.IReadOnlyList<EntityColumnInfo> EntityColumns { get; }");
+        sb.AppendLine("            = new EntityColumnInfo[] {");
+        for (int i = 0; i < properties.Count; i++)
+        {
+            sb.AppendLine($"            {EntityColumnInfoCtor(properties[i])},");
+        }
+        sb.AppendLine("        };");
+        sb.AppendLine();
+        sb.AppendLine("        string IEntityMetadataSource.TableName => TableName;");
+        sb.AppendLine("        string? IEntityMetadataSource.SchemaName => SchemaName;");
+        sb.AppendLine("        System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;");
 
         sb.AppendLine("    }");
         sb.AppendLine("}");

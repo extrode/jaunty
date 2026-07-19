@@ -78,8 +78,8 @@ internal static class CrudSqlCache
 
     private static EntityMetadata? TryResolveMetadata<T>() where T : new()
     {
-        // 1. Source-generated static surface (TableName/SchemaName/ParameterMap) - reflection-free
-        if (SourceGeneratedMetadataResolver.TryBuild(typeof(T)) is EntityMetadata sourceGenMetadata)
+        // 1. Source-generated IEntityMetadataSource implementation - reflection-free
+        if (SourceGeneratedMetadataResolver.TryBuild<T>() is EntityMetadata sourceGenMetadata)
         {
             return sourceGenMetadata;
         }
