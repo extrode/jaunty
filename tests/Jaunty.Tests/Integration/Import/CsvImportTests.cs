@@ -362,15 +362,30 @@ public class CsvImportTests : IClassFixture<DialectFixture>
     [Fact]
     public void ImportCsv_ClosedConnection_OpensAndImports()
     {
+        // A private ":memory:" connection destroys its database on Close(), so reopening the
+        // same connection object would hit an empty database. A shared-cache in-memory database
+        // ("file::memory:?cache=shared") survives as long as at least one connection to it stays
+        // open - keepAlive holds that open connection for the test's duration while `connection`
+        // itself is closed and reopened, genuinely exercising ImportViaPreparedStatements' closed-
+        // connection auto-open path. Uses "FullUri=" rather than "Data Source=" because
+        // System.Data.SQLite path-validates a "Data Source" value (rejecting the colons in this
+        // URI on Windows); "FullUri" bypasses that and is parsed as a raw SQLite URI. ExtractSqliteDbPath
+        // (CsvImport.cs) only recognizes "Data Source=", so "FullUri=" also still correctly falls
+        // through to the prepared-statement path rather than the sqlite3 CLI path.
+        const string sharedCacheDataSource = "FullUri=file::memory:?cache=shared";
         var csvPath = ResolveCsvPath();
-        using var connection = new SQLiteConnection("Data Source=:memory:");
+        using var keepAlive = new SQLiteConnection(sharedCacheDataSource);
+        keepAlive.Open();
+        using var connection = new SQLiteConnection(sharedCacheDataSource);
         connection.Open();
         CreateTable(connection, DialectProvider.SystemSqlite);
-        // Connection is open — the in-memory fallback path handles open/close internally
+        connection.Close();
+        Assert.Equal(ConnectionState.Closed, connection.State);
 
         long rows = connection.ImportCsv(TableName, csvPath);
 
         Assert.Equal(ExpectedRowCount, rows);
+        Assert.Equal(ConnectionState.Closed, connection.State);
     }
 
     // =============================================
