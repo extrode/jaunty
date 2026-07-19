@@ -276,12 +276,19 @@ public class FluentGroupByTests : IClassFixture<FluentDatabaseFixture>
     [Fact]
     public async Task SelectAsync_GroupByWithHaving_FiltersGroupsCorrectly()
     {
+        // Fixture seed data has category 1 with 4 products, category 2 with 5, category 3
+        // with 2 - "> 5" (the original threshold) matches zero categories, which made
+        // Assert.All pass vacuously over an empty result. "> 3" actually splits the groups:
+        // categories 1 and 2 pass, category 3 is filtered out (mirrors the sync
+        // GroupBy_WithHaving_FiltersGroupsAfterGrouping fix).
         var results = await _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
-            .Having(g => g.Count() > 5)
+            .Having(g => g.Count() > 3)
             .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() });
 
-        Assert.All(results, r => Assert.True(r.Count > 5));
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.True(r.Count > 3));
+        Assert.DoesNotContain(results, r => r.CategoryId == 3);
     }
 
     [Fact]
