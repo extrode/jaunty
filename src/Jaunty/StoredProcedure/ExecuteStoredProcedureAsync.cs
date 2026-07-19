@@ -61,7 +61,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedure{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
-    public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteWithOutputParametersAsync(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
@@ -118,7 +118,7 @@ public static partial class Jaunty
     /// </exception>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureFirst{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
-    public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteWithOutputParametersAsync(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
@@ -172,7 +172,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefault{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
-    public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+    public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteWithOutputParametersAsync<T?>(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
@@ -220,7 +220,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureScalar{T}(IDbConnection, string, SpParameters, CommandOptions)"/>
-    public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
+    public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
         var spOptions = new CommandOptions(options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteScalarWithOutputParametersAsync<T>(connection, procedureName, parameters, spOptions, cancellationToken);
@@ -263,7 +263,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureNonQuery(IDbConnection, string, SpParameters, CommandOptions)"/>
-    public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
+    public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
     {
         var spOptions = new CommandOptions(options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteNonQueryWithOutputParametersAsync(connection, procedureName, parameters, spOptions, cancellationToken);
@@ -276,18 +276,20 @@ public static partial class Jaunty
     // cleanup below (which runs after the handler, not inside a finally block) with an
     // already-canceled token. Not reachable via the public API, whose handlers are fixed internal
     // lambdas.
-    internal static async ValueTask<TResult> ExecuteWithOutputParametersAsync<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
+    internal static async ValueTask<TResult> ExecuteWithOutputParametersAsync<TResult>(IDbConnection connection, string procedureName, SpParameters? parameters,
         CommandOptions options, Func<IDataReader, SpParameters, CancellationToken, Task<TResult>> handler, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        // A null literal binds to this overload over the object?-parameter overload (SpParameters
+        // is a more specific reference type), so treat null the same as "no parameters" instead of
+        // throwing - matches the zero-parameter convenience overload's behavior.
+        parameters ??= new SpParameters();
 
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
@@ -348,17 +350,16 @@ public static partial class Jaunty
         }
     }
 
-    private static async ValueTask<T> ExecuteScalarWithOutputParametersAsync<T>(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
+    private static async ValueTask<T> ExecuteScalarWithOutputParametersAsync<T>(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        parameters ??= new SpParameters();
 
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
@@ -409,17 +410,16 @@ public static partial class Jaunty
         }
     }
 
-    private static async ValueTask<int> ExecuteNonQueryWithOutputParametersAsync(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
+    private static async ValueTask<int> ExecuteNonQueryWithOutputParametersAsync(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
+        parameters ??= new SpParameters();
 
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
