@@ -72,6 +72,20 @@ internal static class SqlParameterParser
                 continue;
             }
 
+            // PostgreSQL/DuckDB dollar-quoted string ($$...$$ or $tag$...$tag$): must be
+            // recognized before generic parameter extraction below, or its body gets scanned
+            // as if it were ordinary SQL text and any identifier-shaped run inside it (e.g.
+            // "SELECT" in "$$SELECT 1$$") is mistaken for a parameter name.
+            if (c == '$')
+            {
+                int dollarQuoteEnd = TrySkipDollarQuoted(sql, i);
+                if (dollarQuoteEnd >= 0)
+                {
+                    i = dollarQuoteEnd;
+                    continue;
+                }
+            }
+
             // Found parameter (@ for SQL Server/SQLite, $ for DuckDB/PostgreSQL)
             if (c is '@' or '$')
             {
@@ -83,6 +97,33 @@ internal static class SqlParameterParser
         }
 
         return [.. names];
+    }
+
+    // A dollar-quote opening tag is '$' + zero-or-more identifier chars + '$' (e.g. "$$" or
+    // "$tag$"). A bare "$name" parameter reference never has a second unescaped '$' immediately
+    // after its name chars in that position, so probing for the closing '$' safely disambiguates
+    // the two without needing full context. Returns the index just past the closing delimiter,
+    // or -1 if 'sql[dollarPos]' is not the start of a dollar-quote.
+    private static int TrySkipDollarQuoted(ReadOnlySpan<char> sql, int dollarPos)
+    {
+        int len = sql.Length;
+        int tagEnd = dollarPos + 1;
+        while (tagEnd < len && IsParameterChar(sql[tagEnd]))
+            tagEnd++;
+
+        if (tagEnd >= len || sql[tagEnd] != '$')
+            return -1;
+
+        int delimLen = tagEnd + 1 - dollarPos;
+        int searchFrom = tagEnd + 1;
+        while (searchFrom + delimLen <= len)
+        {
+            if (sql.Slice(searchFrom, delimLen).SequenceEqual(sql.Slice(dollarPos, delimLen)))
+                return searchFrom + delimLen;
+            searchFrom++;
+        }
+
+        return len; // Unterminated dollar-quote: skip to end rather than mis-scan the remainder.
     }
 
     private static int SkipToEndOfLine(ReadOnlySpan<char> sql, int i)
@@ -194,6 +235,16 @@ internal static class SqlParameterParser
                 continue;
             }
 
+            if (c == '$')
+            {
+                int dollarQuoteEnd = TrySkipDollarQuotedClassic(sql, i, len);
+                if (dollarQuoteEnd >= 0)
+                {
+                    i = dollarQuoteEnd;
+                    continue;
+                }
+            }
+
             if (c is '@' or '$')
             {
                 i = ExtractAndAddParameterNameClassic(sql, i + 1, len, names);
@@ -204,6 +255,27 @@ internal static class SqlParameterParser
         }
 
         return [.. names];
+    }
+
+    private static int TrySkipDollarQuotedClassic(string sql, int dollarPos, int len)
+    {
+        int tagEnd = dollarPos + 1;
+        while (tagEnd < len && IsParameterChar(sql[tagEnd]))
+            tagEnd++;
+
+        if (tagEnd >= len || sql[tagEnd] != '$')
+            return -1;
+
+        int delimLen = tagEnd + 1 - dollarPos;
+        int searchFrom = tagEnd + 1;
+        while (searchFrom + delimLen <= len)
+        {
+            if (string.CompareOrdinal(sql, searchFrom, sql, dollarPos, delimLen) == 0)
+                return searchFrom + delimLen;
+            searchFrom++;
+        }
+
+        return len;
     }
 
     private static int SkipToEndOfLineClassic(string sql, int i, int len)
