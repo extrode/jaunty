@@ -196,8 +196,10 @@ public class FluentExistsTests : IClassFixture<FluentDatabaseFixture>
             .WhereNotExists<Product>((c, p) => c.CategoryId == p.CategoryId)
             .CountAsync();
 
-        // Count should be valid (>= 0)
-        Assert.True(count >= 0);
+        // Northwind's seed data has at least one product per category, so no category should
+        // satisfy WhereNotExists; a regression that inverted the clause (e.g. behaved like
+        // WhereExists) would return a non-zero count instead.
+        Assert.Equal(0, count);
     }
 
     // ==========================================

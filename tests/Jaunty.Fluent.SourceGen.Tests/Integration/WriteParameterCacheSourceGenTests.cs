@@ -63,14 +63,78 @@ public sealed class WriteParameterCacheSourceGenTests
     [Fact]
     public void UpdateValueSetter_SourceGeneratedEntity_ResolvesWithoutReflectionResolver()
     {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+
         Action<IDataParameterCollection, CrudSourceGenWidget>? setter = WriteParameterCache<CrudSourceGenWidget>.UpdateValueSetter;
         Assert.NotNull(setter);
+
+        CachedCrudSql cached = CrudSqlCache.GetSql<CrudSourceGenWidget>(connection);
+        IReadOnlyList<ColumnMetadata> updateColumns = cached.Metadata.UpdateColumns;
+        Assert.NotEmpty(updateColumns);
+
+        using IDbCommand command = connection.CreateCommand();
+        foreach (ColumnMetadata column in updateColumns)
+        {
+            IDbDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@" + column.ColumnName;
+            command.Parameters.Add(parameter);
+        }
+
+        var widget = new CrudSourceGenWidget { WidgetId = 7, Name = "Gadget", Price = 9.99m };
+        setter!(command.Parameters, widget);
+
+        Assert.Equal(updateColumns.Count, command.Parameters.Count);
+        for (int i = 0; i < updateColumns.Count; i++)
+        {
+            object? actual = ((IDbDataParameter)command.Parameters[i]!).Value;
+            object expected = updateColumns[i].PropertyName switch
+            {
+                nameof(CrudSourceGenWidget.WidgetId) => widget.WidgetId,
+                nameof(CrudSourceGenWidget.Name) => widget.Name,
+                nameof(CrudSourceGenWidget.Price) => widget.Price,
+                _ => throw new InvalidOperationException($"Unexpected update column '{updateColumns[i].PropertyName}'.")
+            };
+            Assert.Equal(expected, actual);
+        }
     }
 
     [Fact]
     public void DeleteValueSetter_SourceGeneratedEntity_ResolvesWithoutReflectionResolver()
     {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+
         Action<IDataParameterCollection, CrudSourceGenWidget>? setter = WriteParameterCache<CrudSourceGenWidget>.DeleteValueSetter;
         Assert.NotNull(setter);
+
+        CachedCrudSql cached = CrudSqlCache.GetSql<CrudSourceGenWidget>(connection);
+        IReadOnlyList<ColumnMetadata> deleteColumns = cached.Metadata.DeleteColumns;
+        Assert.NotEmpty(deleteColumns);
+
+        using IDbCommand command = connection.CreateCommand();
+        foreach (ColumnMetadata column in deleteColumns)
+        {
+            IDbDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@" + column.ColumnName;
+            command.Parameters.Add(parameter);
+        }
+
+        var widget = new CrudSourceGenWidget { WidgetId = 7, Name = "Gadget", Price = 9.99m };
+        setter!(command.Parameters, widget);
+
+        Assert.Equal(deleteColumns.Count, command.Parameters.Count);
+        for (int i = 0; i < deleteColumns.Count; i++)
+        {
+            object? actual = ((IDbDataParameter)command.Parameters[i]!).Value;
+            object expected = deleteColumns[i].PropertyName switch
+            {
+                nameof(CrudSourceGenWidget.WidgetId) => widget.WidgetId,
+                nameof(CrudSourceGenWidget.Name) => widget.Name,
+                nameof(CrudSourceGenWidget.Price) => widget.Price,
+                _ => throw new InvalidOperationException($"Unexpected delete column '{deleteColumns[i].PropertyName}'.")
+            };
+            Assert.Equal(expected, actual);
+        }
     }
 }
