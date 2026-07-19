@@ -225,8 +225,12 @@ public class ParameterBinderTests
     }
 
     [Fact]
-    public void Bind_EnumParameter_BindsAsUnderlyingType()
+    public void Bind_EnumParameter_WithDefaultNumericStorage_BindsUnconverted()
     {
+        // The default (EnumStorage.Numeric) path does NOT convert the value to its underlying
+        // numeric type at bind time - it binds the enum value unchanged and leaves any numeric
+        // conversion to the ADO.NET provider. (Contrast with EnumStorageTests.cs, which covers
+        // the String storage mode.)
         var command = new MockDbCommand("SELECT * FROM users WHERE status = @Status");
 
         ParameterBinder.Bind(command, new { Status = TestEnum.Active });
