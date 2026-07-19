@@ -80,9 +80,6 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
     /// <inheritdoc/>
     public ValueTask OnCommandExecutedAsync(CommandContext context, CancellationToken cancellationToken)
     {
-        if (!_logger.IsEnabled(_config.MinimumLogLevel))
-            return new ValueTask();
-
         var isSlow = _hasSlowQueryThreshold && context.Elapsed > _config.SlowQueryThreshold;
         var level = isSlow ? LogLevel.Warning : _config.MinimumLogLevel;
 
