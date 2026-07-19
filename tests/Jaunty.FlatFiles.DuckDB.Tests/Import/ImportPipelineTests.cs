@@ -13,7 +13,7 @@ namespace Jaunty.FlatFiles.DuckDB.Tests.Import;
 /// </summary>
 public class ImportPipelineTests : IDisposable
 {
-    private static readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_import_tests_{Guid.NewGuid():N}");
+    private readonly string DataDir = Path.Combine(Path.GetTempPath(), $"jaunty_import_tests_{Guid.NewGuid():N}");
     private readonly string _csvPath;
     private readonly string _parquetPath;
     private readonly DuckDb _db;

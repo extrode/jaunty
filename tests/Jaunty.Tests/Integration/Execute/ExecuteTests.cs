@@ -94,7 +94,7 @@ public class ExecuteTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public void Execute_WithTransaction_RollbackKeepsData(DialectInfo dialect)
+    public void Execute_WithTransaction_RollbackDiscardsData(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
         using var tx = ctx.Connection.BeginTransaction();

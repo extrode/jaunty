@@ -5,6 +5,13 @@ namespace Jaunty.Tests.Unit.Internals.BulkCopy;
 /// <summary>
 /// Unit tests for BulkCopyOptions and BulkCopyConfiguration.
 /// </summary>
+/// <remarks>
+/// Shares the "Write Operations" collection with <see cref="Jaunty.Tests.Integration.Write.BulkCopyIntegrationTests"/>
+/// (see <see cref="Jaunty.Tests.Integration.Write.WriteOperationsCollection"/>) because both mutate the same
+/// process-wide static <see cref="BulkCopyConfiguration"/> fields, and DisableParallelization on that collection
+/// forces them to run sequentially instead of racing on shared state.
+/// </remarks>
+[Collection("Write Operations")]
 public class BulkCopyConfigurationTests : IDisposable
 {
     [Fact]
