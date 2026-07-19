@@ -421,19 +421,47 @@ public class SqlDialectTests
     [Fact]
     public void SqlServer_GenerateCaseSensitiveLike_UsesCollate()
     {
-        Assert.Equal("col COLLATE Latin1_General_CS_AS LIKE @param ESCAPE '\\'", _sqlServer.GenerateCaseSensitiveLike("col", "@param", "\\"));
+        Assert.Equal("col LIKE @param COLLATE Latin1_General_CS_AS ESCAPE '\\'", _sqlServer.GenerateCaseSensitiveLike("col", "@param", "\\"));
     }
 
     [Fact]
     public void SqlServer_GenerateCaseInsensitiveLike_UsesCollate()
     {
-        Assert.Equal("col COLLATE Latin1_General_CI_AS LIKE @param ESCAPE '\\'", _sqlServer.GenerateCaseInsensitiveLike("col", "@param", "\\"));
+        Assert.Equal("col LIKE @param COLLATE Latin1_General_CI_AS ESCAPE '\\'", _sqlServer.GenerateCaseInsensitiveLike("col", "@param", "\\"));
     }
 
     [Fact]
     public void SqlServer_GenerateCaseInsensitiveEquals_UsesCollate()
     {
-        Assert.Equal("col COLLATE Latin1_General_CI_AS = @param", _sqlServer.GenerateCaseInsensitiveEquals("col", "@param"));
+        Assert.Equal("col = @param COLLATE Latin1_General_CI_AS", _sqlServer.GenerateCaseInsensitiveEquals("col", "@param"));
+    }
+
+    [Fact]
+    public void SqlServer_GenerateCaseSensitiveLike_DoesNotWrapColumnExpression()
+    {
+        // Regression: COLLATE must bind to the parameter, not the column, so the column
+        // reference stays a bare identifier and remains eligible for an index seek. Wrapping
+        // the column itself in "col COLLATE X" turns it into an expression, which disqualifies
+        // any index on that column from being seeked (forces a scan instead).
+        var result = _sqlServer.GenerateCaseSensitiveLike("col", "@param", "\\");
+        Assert.StartsWith("col LIKE", result);
+        Assert.DoesNotContain("col COLLATE", result);
+    }
+
+    [Fact]
+    public void SqlServer_GenerateCaseInsensitiveLike_DoesNotWrapColumnExpression()
+    {
+        var result = _sqlServer.GenerateCaseInsensitiveLike("col", "@param", "\\");
+        Assert.StartsWith("col LIKE", result);
+        Assert.DoesNotContain("col COLLATE", result);
+    }
+
+    [Fact]
+    public void SqlServer_GenerateCaseInsensitiveEquals_DoesNotWrapColumnExpression()
+    {
+        var result = _sqlServer.GenerateCaseInsensitiveEquals("col", "@param");
+        Assert.StartsWith("col =", result);
+        Assert.DoesNotContain("col COLLATE", result);
     }
 
     [Fact]

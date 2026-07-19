@@ -26,6 +26,17 @@ public static partial class Jaunty
     /// <para>
     /// <strong>Important:</strong> The connection remains open until the enumeration completes.
     /// </para>
+    /// <para>
+    /// <strong>Interceptor gap:</strong> streamed commands honor <see cref="CommandOptions{T}.CommandType"/>
+    /// and the simple <see cref="global::Jaunty.Configuration.JauntyConfig.Logger"/> callback, the same as
+    /// buffered queries, but they do NOT currently pass through the registered
+    /// <see cref="global::Jaunty.Interceptors.ICommandInterceptor"/> pipeline. Wiring pipeline interceptors into
+    /// a streaming path would require materializing the entire result set before the "command executed"
+    /// hook could fire, which would defeat the purpose of streaming, so this is intentionally left
+    /// unwired for now. Callers relying on interceptor-based auditing should not assume streamed
+    /// queries (<c>QueryStream</c>, <c>QueryPartialStream</c>, <c>QueryPartialUnbuffered</c>, and their
+    /// async equivalents) are observed by their interceptors.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
