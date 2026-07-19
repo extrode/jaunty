@@ -1012,6 +1012,62 @@ public class ParameterBinderTests
         Assert.Equal(1, calls);
     }
 
+    // AUD-R6: a dollar-quoted literal preceding a collection parameter must not be mistaken for a
+    // "$"-prefixed placeholder when detecting the real placeholder prefix. Before the fix, the
+    // identifier-shaped "note" text inside "$$note$$" made DetectParameterPrefix return "$" even
+    // though the real, later placeholder uses "@", corrupting expansion entirely.
+    [Fact]
+    public void Bind_DollarQuotedLiteralBeforeAtPrefixedCollectionParameter_ExpandsWithCorrectPrefix()
+    {
+        var command = new MockDbCommand("SELECT $$note$$, id FROM products WHERE id IN @Ids");
+
+        ParameterBinder.Bind(command, new { Ids = new[] { 1, 2, 3 } });
+
+        Assert.Equal(3, command.Parameters.Count);
+        Assert.Contains("$$note$$", command.CommandText);
+        Assert.Contains("(@Ids0, @Ids1, @Ids2)", command.CommandText);
+        Assert.Equal(1, command.Parameters[0].Value);
+        Assert.Equal(3, command.Parameters[2].Value);
+    }
+
+    // AUD-R6: a dollar-quoted literal's body must be copied verbatim (not corrupted) when it
+    // appears alongside a genuine "$"-prefixed collection parameter.
+    [Fact]
+    public void Bind_DollarQuotedLiteralBeforeDollarPrefixedCollectionParameter_ExpandsCorrectly()
+    {
+        var command = new MockDbCommand("SELECT $$literal text$$, id FROM products WHERE id IN $Ids");
+
+        ParameterBinder.Bind(command, new { Ids = new[] { 1, 2, 3 } });
+
+        Assert.Equal(3, command.Parameters.Count);
+        Assert.Contains("$$literal text$$", command.CommandText);
+        Assert.Contains("($Ids0, $Ids1, $Ids2)", command.CommandText);
+    }
+
+    // AUD-R6: a dictionary key with no matching SQL parameter must fail fast, mirroring
+    // BuildTemplate's strictness for object-based binding (unused property properties throw).
+    [Fact]
+    public void Bind_DictionaryWithUnusedKey_Throws()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE id = @Id");
+        var parameters = new Dictionary<string, object?> { ["Id"] = 1, ["Extra"] = "unused" };
+
+        var ex = Assert.Throws<ArgumentException>(() => ParameterBinder.Bind(command, parameters));
+        Assert.Contains("Extra", ex.Message);
+    }
+
+    // AUD-R6: every dictionary key matching a SQL parameter binds without throwing.
+    [Fact]
+    public void Bind_DictionaryWithAllKeysUsed_BindsWithoutThrowing()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE id = @Id AND name = @Name");
+        var parameters = new Dictionary<string, object?> { ["Id"] = 1, ["Name"] = "Alice" };
+
+        ParameterBinder.Bind(command, parameters);
+
+        Assert.Equal(2, command.Parameters.Count);
+    }
+
     #endregion
 
     #region Test Helpers
