@@ -71,20 +71,34 @@ public sealed class WriteParameterCacheSourceGenTests
 
         CachedCrudSql cached = CrudSqlCache.GetSql<CrudSourceGenWidget>(connection);
         IReadOnlyList<ColumnMetadata> updateColumns = cached.Metadata.UpdateColumns;
+        IReadOnlyList<ColumnMetadata> primaryKeys = cached.Metadata.PrimaryKeys;
         Assert.NotEmpty(updateColumns);
+        Assert.NotEmpty(primaryKeys);
 
         using IDbCommand command = connection.CreateCommand();
+        // Must mirror WriteParameterHelper.PrepareUpdateParameters's real production shape
+        // (SET columns, then the WHERE-clause primary key(s), in that order) - the setter's
+        // getters array is sized updateColumns.Count + primaryKeys.Count and does
+        // int count = Math.Min(getters.Length, pc.Count), so a parameter collection missing
+        // the PK silently truncates the loop before it ever reaches the PK getter, leaving
+        // the WHERE-clause value-setting logic untested (this was the round-4 finding here).
         foreach (ColumnMetadata column in updateColumns)
         {
             IDbDataParameter parameter = command.CreateParameter();
             parameter.ParameterName = "@" + column.ColumnName;
             command.Parameters.Add(parameter);
         }
+        foreach (ColumnMetadata key in primaryKeys)
+        {
+            IDbDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = "@" + key.ColumnName;
+            command.Parameters.Add(parameter);
+        }
 
         var widget = new CrudSourceGenWidget { WidgetId = 7, Name = "Gadget", Price = 9.99m };
         setter!(command.Parameters, widget);
 
-        Assert.Equal(updateColumns.Count, command.Parameters.Count);
+        Assert.Equal(updateColumns.Count + primaryKeys.Count, command.Parameters.Count);
         for (int i = 0; i < updateColumns.Count; i++)
         {
             object? actual = ((IDbDataParameter)command.Parameters[i]!).Value;
@@ -94,6 +108,18 @@ public sealed class WriteParameterCacheSourceGenTests
                 nameof(CrudSourceGenWidget.Name) => widget.Name,
                 nameof(CrudSourceGenWidget.Price) => widget.Price,
                 _ => throw new InvalidOperationException($"Unexpected update column '{updateColumns[i].PropertyName}'.")
+            };
+            Assert.Equal(expected, actual);
+        }
+        for (int i = 0; i < primaryKeys.Count; i++)
+        {
+            object? actual = ((IDbDataParameter)command.Parameters[updateColumns.Count + i]!).Value;
+            object expected = primaryKeys[i].PropertyName switch
+            {
+                nameof(CrudSourceGenWidget.WidgetId) => widget.WidgetId,
+                nameof(CrudSourceGenWidget.Name) => widget.Name,
+                nameof(CrudSourceGenWidget.Price) => widget.Price,
+                _ => throw new InvalidOperationException($"Unexpected primary key column '{primaryKeys[i].PropertyName}'.")
             };
             Assert.Equal(expected, actual);
         }
