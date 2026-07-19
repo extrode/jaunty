@@ -348,7 +348,10 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On("orders.order_id > 0")
             .Count();
 
-        Assert.True(count >= 0);
+        // Every product has a category/supplier (inner joins) and the left join's near-tautological
+        // "order_id > 0" condition matches every order row, so the joined result set is large;
+        // a broken join (e.g. one that dropped a table or miscounted) would return 0 or throw.
+        Assert.True(count > 0);
     }
 
     [Fact]
@@ -363,7 +366,9 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On("orders.order_id > 0")
             .LongCount();
 
-        Assert.True(count >= 0L);
+        // Same reasoning as FourTableJoin_Count_ReturnsNonNegativeInteger - the joined result
+        // set is large, so a broken join returning 0 must be caught, not just "not negative".
+        Assert.True(count > 0L);
     }
 
     // ------------------------------------------------------------------

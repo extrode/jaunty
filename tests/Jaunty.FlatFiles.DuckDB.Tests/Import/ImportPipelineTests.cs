@@ -234,7 +234,7 @@ public class ImportPipelineTests : IDisposable
         await _db.ImportIntoAsync<InventoryItem>(sqlite);
 
         // Second import should fail on duplicate primary key
-        await Assert.ThrowsAnyAsync<Exception>(async () =>
+        await Assert.ThrowsAsync<SqliteException>(async () =>
         {
             await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Error));
         });
@@ -487,7 +487,7 @@ public class ImportPipelineTests : IDisposable
         Assert.Equal(5, CountRows(sqlite, "inventory"));
 
         // 2. ConflictStrategy.Error — should throw on duplicate
-        await Assert.ThrowsAnyAsync<Exception>(async () =>
+        await Assert.ThrowsAsync<SqliteException>(async () =>
         {
             await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(onConflict: ConflictStrategy.Error));
         });

@@ -295,7 +295,7 @@ public class InterceptorPipelineTests
         var pipeline = new InterceptorPipeline(new[] { failingInterceptor });
 
         // Act - should not throw even though OnCommandFailed throws
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await pipeline.ExecuteWithInterceptionAsync(
                 "SELECT 1",
                 null,
@@ -304,7 +304,9 @@ public class InterceptorPipelineTests
                 () => throw new InvalidOperationException("Original exception"),
                 CancellationToken.None));
 
-        // The original exception should propagate, not the one from OnCommandFailed
+        // The original exception should propagate, not the one from OnCommandFailed (both are
+        // InvalidOperationException, so the message must be checked to actually distinguish them).
+        Assert.Equal("Original exception", ex.Message);
     }
 
     #endregion
