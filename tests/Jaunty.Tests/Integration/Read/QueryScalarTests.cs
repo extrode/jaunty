@@ -15,6 +15,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_ReturnsLong_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -29,6 +31,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_ReturnsString_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -44,6 +48,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_ReturnsDouble_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -59,6 +65,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_WithNamedParameter_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -75,6 +83,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_WithPositionalParameter_Success(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -91,6 +101,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_NoRows_ReturnsDefault(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -107,6 +119,8 @@ public class QueryScalarTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryScalar_NullValue_ReturnsDefault(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);

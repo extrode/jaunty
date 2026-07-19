@@ -17,6 +17,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_AllColumns_ReturnsEntities(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -35,6 +37,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_WithNamedParameter_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -53,6 +57,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_WithPositionalParameter_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -70,6 +76,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_WithMultiplePositionalParams_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -87,6 +95,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_StrictMode_MissingColumn_Throws(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -106,6 +116,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartial_MissingColumn_Allowed(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -124,6 +136,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartial_ExtraColumnsInResult_Ignored(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -141,6 +155,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_NoRows_ReturnsEmptyList(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -158,6 +174,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_NullableProperty_HandlesNull(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -175,6 +193,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Query_DuplicateParameterInSql_WorksCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -192,6 +212,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartial_WithOptions_ReturnsEntities(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
@@ -210,6 +232,8 @@ public class QueryTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void QueryPartial_WithParametersAndOptions_ReturnsFilteredEntities(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
