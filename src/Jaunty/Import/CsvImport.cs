@@ -108,14 +108,24 @@ public static class CsvImportExtensions
     {
         // Get the database file path from the connection string
         string? dbPath = ExtractSqliteDbPath(connection.ConnectionString);
-        if (dbPath is null or ":memory:")
+        if (dbPath is null || IsSqliteInMemoryDataSource(dbPath))
         {
-            // For in-memory databases, fall back to prepared statement insert
+            // For in-memory databases (including shared-cache forms like
+            // "file::memory:?cache=shared"), fall back to prepared statement insert - the
+            // sqlite3 CLI would otherwise treat the connection string as a real file path.
             return ImportViaPreparedStatements(connection, tableName, filePath, options);
         }
 
         // Use sqlite3 CLI for file-based databases
         return ImportViaSqliteCli(dbPath, tableName, filePath, options);
+    }
+
+    private static bool IsSqliteInMemoryDataSource(string dbPath)
+    {
+        // ":memory:" is a reserved SQLite keyword that can't legitimately appear in a real file
+        // path, so a substring match also catches shared-cache forms such as
+        // "file::memory:?cache=shared" that a literal ":memory:" comparison would miss.
+        return dbPath.IndexOf(":memory:", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static async ValueTask<long> ImportSqliteAsync(DbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken)
