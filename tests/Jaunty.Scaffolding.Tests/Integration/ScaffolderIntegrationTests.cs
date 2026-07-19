@@ -12,7 +12,10 @@ public class ScaffolderIntegrationTests : IDisposable
 
     public ScaffolderIntegrationTests()
     {
-        _connectionString = "Data Source=InMemoryScaffoldTest;Mode=Memory;Cache=Shared";
+        // GUID-suffixed to match the temp output directory below - a future test-method-level
+        // parallelism change (or a constructor failure that skips Dispose) can't cause two
+        // instances to collide on the same shared-cache name.
+        _connectionString = $"Data Source=InMemoryScaffoldTest_{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
         _connection = new SqliteConnection(_connectionString);
         _connection.Open();
 

@@ -75,6 +75,11 @@ public class BulkCopyIntegrationTests : IClassFixture<DialectFixture>, IDisposab
         Assert.Equal(100, inserted);
         Assert.Equal(100, GetRowCount(connection));
 
+        // Wall-clock threshold against a real, possibly network-backed database: a useful
+        // canary on a developer machine, pure noise on shared/contended CI runners.
+        if (Environment.GetEnvironmentVariable("CI") == "true")
+            return;
+
         // Native bulk copy should be much faster than standard INSERT
         // For 100 rows, should complete in under 1 second
         Assert.True(elapsed.TotalSeconds < 1.0, $"Bulk insert took too long: {elapsed.TotalSeconds}s");
@@ -111,6 +116,11 @@ public class BulkCopyIntegrationTests : IClassFixture<DialectFixture>, IDisposab
         // Assert
         Assert.Equal(100, inserted);
         Assert.Equal(100, GetRowCount(connection));
+
+        // Wall-clock threshold against a real, possibly network-backed database: a useful
+        // canary on a developer machine, pure noise on shared/contended CI runners.
+        if (Environment.GetEnvironmentVariable("CI") == "true")
+            return;
 
         // Native bulk copy should be much faster than standard INSERT
         Assert.True(elapsed.TotalSeconds < 1.0, $"Bulk insert took too long: {elapsed.TotalSeconds}s");

@@ -69,6 +69,21 @@ public class QueryNullParameterTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public void Query_WhitespaceSql_ThrowsArgumentException(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var ex = Assert.Throws<ArgumentException>(() =>
+            connection.Query<Category>("   \t\n  "));
+
+        Assert.Contains("sql", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public async Task QueryAsync_NullSql_ThrowsArgumentNullException(DialectInfo dialect)
     {
         using var connection = _fixture.GetDbConnection(dialect);
