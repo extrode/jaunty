@@ -148,14 +148,20 @@ public class FluentGroupByTests : IClassFixture<FluentDatabaseFixture>
         // A closed-over local (not a literal) on the right-hand side of a HAVING
         // comparison compiles to a MemberExpression over a compiler-generated
         // closure class, not a ConstantExpression - this must still translate.
-        var minCount = 5;
+        // Per the fixture seed data, category counts are 4/5/2 - "> 5" (the original threshold)
+        // matches zero categories, which is why the prior Assert.All-only version passed
+        // vacuously over an empty result (same anti-pattern as the sibling test above). "> 3"
+        // actually splits the groups: categories 1 and 2 pass, category 3 is filtered out.
+        var minCount = 3;
 
         var results = _fixture.Connection.From<Product>()
             .GroupBy(p => p.CategoryId)
             .Having(g => g.Count() > minCount)
             .Select(g => new { CategoryId = g.Key, Count = g.Count() });
 
+        Assert.NotEmpty(results);
         Assert.All(results, r => Assert.True(r.Count > minCount));
+        Assert.DoesNotContain(results, r => r.CategoryId == 3);
     }
 
     // --- GROUP BY with Composite Key Tests ---
