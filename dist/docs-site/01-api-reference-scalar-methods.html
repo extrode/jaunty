@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scalar Methods — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Scalar Methods</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html" class="active" aria-current="page">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Scalar Methods</nav>
+        <article>
+<h1 id="scalar-methods">Scalar Methods</h1>
+<h2 id="overview">Overview</h2>
+<p>Scalar methods execute SQL commands and return single scalar values (typically the first column of the first row). These methods are useful for aggregate functions like COUNT, SUM, AVG, etc.</p>
+<h2 id="methods">Methods</h2>
+<h3 id="queryscalartstring-sql">QueryScalar&lt;T&gt;(string sql)</h3>
+<p>Executes a query and returns the first column of the first row as a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T QueryScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>sql</code>: The SQL query to execute</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T</code>: The scalar value of type T</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> count = connection.QueryScalar&lt;long&gt;(&quot;SELECT COUNT(*) FROM products&quot;);
+</code></pre>
+</div>
+<h3 id="queryscalartstring-sql-object-parameters">QueryScalar&lt;T&gt;(string sql, object parameters)</h3>
+<p>Executes a parameterized query and returns the first column of the first row as a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T QueryScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>sql</code>: The SQL query to execute</li>
+<li><code>parameters</code>: Parameters for the query</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T</code>: The scalar value of type T</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> price = connection.QueryScalar&lt;decimal&gt;(
+    &quot;SELECT MAX(price) FROM products WHERE category_id = @CategoryId&quot;, 
+    <span class="tok-kw">new</span> { CategoryId = <span class="tok-num">1</span> });
+</code></pre>
+</div>
+<h3 id="queryscalartstring-sql-commandoptions-options">QueryScalar&lt;T&gt;(string sql, CommandOptions options)</h3>
+<p>Executes a query with command options and returns the first column of the first row as a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T QueryScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions options)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>sql</code>: The SQL query to execute</li>
+<li><code>options</code>: Command options (transaction, timeout)</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T</code>: The scalar value of type T</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> count = connection.QueryScalar&lt;long&gt;(
+    &quot;SELECT COUNT(*) FROM products&quot;,
+    CommandOptions.WithTimeout(<span class="tok-num">30</span>));
+</code></pre>
+</div>
+<h3 id="queryscalartstring-sql-object-parameters-commandoptions-options">QueryScalar&lt;T&gt;(string sql, object parameters, CommandOptions options)</h3>
+<p>Executes a parameterized query with command options and returns the first column of the first row as a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> T QueryScalar&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions options)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>sql</code>: The SQL query to execute</li>
+<li><code>parameters</code>: Parameters for the query</li>
+<li><code>options</code>: Command options (transaction, timeout)</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>T</code>: The scalar value of type T</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">using</span> <span class="tok-kw">var</span> transaction = connection.BeginTransaction();
+<span class="tok-kw">var</span> count = connection.QueryScalar&lt;long&gt;(
+    &quot;SELECT COUNT(*) FROM products WHERE category_id = @CategoryId&quot;, 
+    <span class="tok-kw">new</span> { CategoryId = <span class="tok-num">1</span> },
+    CommandOptions&lt;long&gt;.WithTransaction(transaction));
+</code></pre>
+</div>
+<h2 id="provider-specific-behavior-count-return-type">Provider-specific behavior: COUNT(*) return type</h2>
+<p><code>COUNT(*)</code> return type can differ by provider:</p>
+<ul>
+<li>SQL Server commonly returns <code>Int32</code> (<code>int</code>)</li>
+<li>PostgreSQL, MariaDB/MySQL, and SQLite commonly return <code>Int64</code> (<code>long</code>)</li>
+</ul>
+<p>For cross-dialect code, prefer <code>QueryScalar&lt;long&gt;</code> / <code>ExecuteScalar&lt;long&gt;</code> for aggregate counts.</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> count = connection.QueryScalar&lt;long&gt;(&quot;SELECT COUNT(*) FROM products&quot;);
+</code></pre>
+</div>
+<h2 id="async-variants">Async Variants</h2>
+<h3 id="queryscalarasynctstring-sql-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a query and returns the first column of the first row as a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>sql</code>: The SQL query to execute</li>
+<li><code>cancellationToken</code>: Cancellation token</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> count = <span class="tok-kw">await</span> connection.QueryScalarAsync&lt;long&gt;(&quot;SELECT COUNT(*) FROM products&quot;);
+</code></pre>
+</div>
+<h3 id="queryscalarasynctstring-sql-object-parameters-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a parameterized query and returns the first column of the first row as a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>sql</code>: The SQL query to execute</li>
+<li><code>parameters</code>: Parameters for the query</li>
+<li><code>cancellationToken</code>: Cancellation token</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
+</ul>
+<h3 id="queryscalarasynctstring-sql-commandoptions-options-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, CommandOptions options, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a query with command options and returns the first column of the first row as a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>sql</code>: The SQL query to execute</li>
+<li><code>options</code>: Command options (transaction, timeout)</li>
+<li><code>cancellationToken</code>: Cancellation token</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
+</ul>
+<h3 id="queryscalarasynctstring-sql-object-parameters-commandoptions-options-cancellationtoken-cancellationtoken-default">QueryScalarAsync&lt;T&gt;(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)</h3>
+<p>Asynchronously executes a parameterized query with command options and returns the first column of the first row as a scalar value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;T&gt; QueryScalarAsync&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>sql</code>: The SQL query to execute</li>
+<li><code>parameters</code>: Parameters for the query</li>
+<li><code>options</code>: Command options (transaction, timeout)</li>
+<li><code>cancellationToken</code>: Cancellation token</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>Task&lt;T&gt;</code>: A task that resolves to the scalar value of type T</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> count = <span class="tok-kw">await</span> connection.QueryScalarAsync&lt;long&gt;(
+    &quot;SELECT COUNT(*) FROM products WHERE category_id &gt; @MinCategory&quot;, 
+    <span class="tok-kw">new</span> { MinCategory = <span class="tok-num">5</span> },
+    CommandOptions.WithTimeout(<span class="tok-num">30</span>),
+    cancellationToken);
+</code></pre>
+</div>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-query-methods.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Query methods</span>
+</a><a class="pn-next" href="01-api-reference-single-result-methods.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Single result methods</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

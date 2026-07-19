@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluent API — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Fluent API</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html" class="active" aria-current="page">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Fluent API</nav>
+        <article>
+<h1 id="fluent-api">Fluent API</h1>
+<h2 id="overview">Overview</h2>
+<p>The Jaunty Fluent API provides a type-safe, LINQ-like query builder that enables constructing SQL queries using method chaining. This API offers compile-time validation and IntelliSense support for building complex queries.</p>
+<h2 id="getting-started">Getting Started</h2>
+<h3 id="fromtidbconnection-connection-string-alias-null">From&lt;T&gt;(IDbConnection connection, string? alias = null)</h3>
+<p>Entry point for the fluent query API. Creates a query builder for the specified entity type.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> IFromClause&lt;T&gt; From&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string? alias = <span class="tok-kw">null</span>) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Type Parameters:</strong></p>
+<ul>
+<li><code>T</code>: The entity type to query (must have a parameterless constructor)</li>
+</ul>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>connection</code>: The database connection</li>
+<li><code>alias</code>: Optional alias for the table (useful for joins with string-based conditions)</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>IFromClause&lt;T&gt;</code>: A query builder for chaining WHERE, ORDER BY, JOIN, and SELECT operations</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Basic query</span>
+<span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .Select();
+
+<span class="tok-com">// With alias for joins</span>
+<span class="tok-kw">var</span> products = connection.From&lt;Product&gt;(&quot;p&quot;)
+    .InnerJoin&lt;Category&gt;(&quot;c&quot;)
+    .On(&quot;p.category_id&quot;, &quot;c.id&quot;)
+    .Select();
+</code></pre>
+</div>
+<h2 id="query-building-methods">Query Building Methods</h2>
+<h3 id="where-clauses">WHERE Clauses</h3>
+<h4 id="wherestring-column-object-value">Where(string column, object? value)</h4>
+<p>Adds a WHERE condition comparing a column to a value using equality.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; Where(string column, object? value)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .Where(&quot;category_id&quot;, <span class="tok-num">1</span>)
+    .Select();
+</code></pre>
+</div>
+<h4 id="whereexpressionfunct-bool-predicate">Where(Expression&lt;Func&lt;T, bool&gt;&gt; predicate)</h4>
+<p>Adds a WHERE condition using a strongly-typed expression predicate.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; Where(Expression&lt;Func&lt;T, bool&gt;&gt; predicate)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .Where(p =&gt; p.CategoryId == <span class="tok-num">1</span>)
+    .Select();
+</code></pre>
+</div>
+<h4 id="whererawstring-rawsql">WhereRaw(string rawSql)</h4>
+<p>Adds a raw SQL WHERE condition without parameterization (use with caution).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; WhereRaw(string rawSql)
+</code></pre>
+</div>
+<h4 id="whererawstring-rawsql-object-parameters">WhereRaw(string rawSql, object parameters)</h4>
+<p>Adds a raw SQL WHERE condition with parameters.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; WhereRaw(string rawSql, object parameters)
+</code></pre>
+</div>
+<h3 id="andor-conditions">AND/OR Conditions</h3>
+<h4 id="andstring-column-object-value">And(string column, object? value)</h4>
+<p>Adds an AND condition to the existing WHERE clause.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; And(string column, object? value)
+</code></pre>
+</div>
+<h4 id="andexpressionfunct-bool-predicate">And(Expression&lt;Func&lt;T, bool&gt;&gt; predicate)</h4>
+<p>Adds an AND condition using a strongly-typed expression.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; And(Expression&lt;Func&lt;T, bool&gt;&gt; predicate)
+</code></pre>
+</div>
+<h4 id="orstring-column-object-value">Or(string column, object? value)</h4>
+<p>Adds an OR condition to the existing WHERE clause.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; Or(string column, object? value)
+</code></pre>
+</div>
+<h4 id="orexpressionfunct-bool-predicate">Or(Expression&lt;Func&lt;T, bool&gt;&gt; predicate)</h4>
+<p>Adds an OR condition using a strongly-typed expression.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; Or(Expression&lt;Func&lt;T, bool&gt;&gt; predicate)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .Where(p =&gt; p.CategoryId == <span class="tok-num">1</span>)
+    .And(p =&gt; p.Price &gt; <span class="tok-num">50m</span>)
+    .Or(p =&gt; p.CategoryId == <span class="tok-num">2</span>)
+    .Select();
+</code></pre>
+</div>
+<h3 id="collection-based-filtering">Collection-Based Filtering</h3>
+<h4 id="whereintvalueexpressionfunct-tvalue-selector-ienumerabletvalue-values">WhereIn&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, IEnumerable&lt;TValue&gt; values)</h4>
+<p>Filters results where the selected property value is in the specified collection.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; WhereIn&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, IEnumerable&lt;TValue&gt; values)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .WhereIn(p =&gt; p.CategoryId, <span class="tok-kw">new</span>[] { <span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span> })
+    .Select();
+</code></pre>
+</div>
+<h4 id="wherenotintvalueexpressionfunct-tvalue-selector-ienumerabletvalue-values">WhereNotIn&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, IEnumerable&lt;TValue&gt; values)</h4>
+<p>Filters results where the selected property value is NOT in the specified collection.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; WhereNotIn&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, IEnumerable&lt;TValue&gt; values)
+</code></pre>
+</div>
+<h4 id="andintvalueexpressionfunct-tvalue-selector-ienumerabletvalue-values">AndIn&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, IEnumerable&lt;TValue&gt; values)</h4>
+<p>Adds an AND condition where the selected property value is in the specified collection.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; AndIn&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, IEnumerable&lt;TValue&gt; values)
+</code></pre>
+</div>
+<h4 id="orintvalueexpressionfunct-tvalue-selector-ienumerabletvalue-values">OrIn&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, IEnumerable&lt;TValue&gt; values)</h4>
+<p>Adds an OR condition where the selected property value is in the specified collection.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; OrIn&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, IEnumerable&lt;TValue&gt; values)
+</code></pre>
+</div>
+<h3 id="range-filtering">Range Filtering</h3>
+<h4 id="wherebetweentvalueexpressionfunct-tvalue-selector-tvalue-from-tvalue-to">WhereBetween&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, TValue from, TValue to)</h4>
+<p>Filters results where the selected property value is between the specified range (inclusive).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; WhereBetween&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, TValue from, TValue to)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .WhereBetween(p =&gt; p.Price, <span class="tok-num">10m</span>, <span class="tok-num">100m</span>)
+    .Select();
+</code></pre>
+</div>
+<h4 id="wherenotbetweentvalueexpressionfunct-tvalue-selector-tvalue-from-tvalue-to">WhereNotBetween&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, TValue from, TValue to)</h4>
+<p>Filters results where the selected property value is NOT between the specified range.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IWhereClause&lt;T&gt; WhereNotBetween&lt;TValue&gt;(Expression&lt;Func&lt;T, TValue&gt;&gt; selector, TValue from, TValue to)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .WhereNotBetween(p =&gt; p.Price, <span class="tok-num">10m</span>, <span class="tok-num">100m</span>)
+    .Select();
+</code></pre>
+</div>
+<h3 id="order-by-clauses">ORDER BY Clauses</h3>
+<h4 id="orderbyexpressionfunct-object-keyselector">OrderBy(Expression&lt;Func&lt;T, object?&gt;&gt; keySelector)</h4>
+<p>Orders the results by the specified property in ascending order.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IOrderByClause&lt;T&gt; OrderBy(Expression&lt;Func&lt;T, object?&gt;&gt; keySelector)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .OrderBy(p =&gt; p.ProductName)
+    .Select();
+</code></pre>
+</div>
+<h4 id="orderbydescendingexpressionfunct-object-keyselector">OrderByDescending(Expression&lt;Func&lt;T, object?&gt;&gt; keySelector)</h4>
+<p>Orders the results by the specified property in descending order.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IOrderByClause&lt;T&gt; OrderByDescending(Expression&lt;Func&lt;T, object?&gt;&gt; keySelector)
+</code></pre>
+</div>
+<h4 id="orderbystring-column">OrderBy(string column)</h4>
+<p>Orders the results by the specified column name in ascending order.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IOrderByClause&lt;T&gt; OrderBy(string column)
+</code></pre>
+</div>
+<h4 id="orderbydescendingstring-column">OrderByDescending(string column)</h4>
+<p>Orders the results by the specified column name in descending order.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IOrderByClause&lt;T&gt; OrderByDescending(string column)
+</code></pre>
+</div>
+<h3 id="join-operations">JOIN Operations</h3>
+<h4 id="innerjointjoinstring-alias-null">InnerJoin&lt;TJoin&gt;(string? alias = null)</h4>
+<p>Adds an INNER JOIN to another table.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IJoinClause&lt;T, TJoin&gt; InnerJoin&lt;TJoin&gt;(string? alias = <span class="tok-kw">null</span>) <span class="tok-kw">where</span> TJoin : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .InnerJoin&lt;Category&gt;()
+    .On((p, c) =&gt; p.CategoryId == c.Id)
+    .Select();
+</code></pre>
+</div>
+<h4 id="leftjointjoinstring-alias-null">LeftJoin&lt;TJoin&gt;(string? alias = null)</h4>
+<p>Adds a LEFT JOIN to another table.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IJoinClause&lt;T, TJoin&gt; LeftJoin&lt;TJoin&gt;(string? alias = <span class="tok-kw">null</span>) <span class="tok-kw">where</span> TJoin : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h4 id="rightjointjoinstring-alias-null">RightJoin&lt;TJoin&gt;(string? alias = null)</h4>
+<p>Adds a RIGHT JOIN to another table.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IJoinClause&lt;T, TJoin&gt; RightJoin&lt;TJoin&gt;(string? alias = <span class="tok-kw">null</span>) <span class="tok-kw">where</span> TJoin : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .RightJoin&lt;Category&gt;()
+    .On((p, c) =&gt; p.CategoryId == c.Id)
+    .Select();
+</code></pre>
+</div>
+<h3 id="join-conditions">JOIN Conditions</h3>
+<h4 id="ontleftkey-trightkeyexpressionfunct-tleftkey-leftkey-expressionfunctjoin-trightkey-rightkey">On&lt;TLeftKey, TRightKey&gt;(Expression&lt;Func&lt;T, TLeftKey&gt;&gt; leftKey, Expression&lt;Func&lt;TJoin, TRightKey&gt;&gt; rightKey)</h4>
+<p>Specifies the join condition using strongly-typed expressions for the keys.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IJoinedQuery&lt;T, TJoin&gt; On&lt;TLeftKey, TRightKey&gt;(Expression&lt;Func&lt;T, TLeftKey&gt;&gt; leftKey, Expression&lt;Func&lt;TJoin, TRightKey&gt;&gt; rightKey)
+</code></pre>
+</div>
+<h4 id="onexpressionfunct-tjoin-bool-predicate">On(Expression&lt;Func&lt;T, TJoin, bool&gt;&gt; predicate)</h4>
+<p>Specifies the join condition using a strongly-typed expression predicate.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IJoinedQuery&lt;T, TJoin&gt; On(Expression&lt;Func&lt;T, TJoin, bool&gt;&gt; predicate)
+</code></pre>
+</div>
+<h4 id="oncolumnsstring-leftcolumn-string-rightcolumn">OnColumns(string leftColumn, string rightColumn)</h4>
+<p>Specifies the join condition using column names.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IJoinedQuery&lt;T, TJoin&gt; OnColumns(string leftColumn, string rightColumn)
+</code></pre>
+</div>
+<h4 id="onrawstring-condition">OnRaw(string condition)</h4>
+<p>Specifies the join condition using raw SQL.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IJoinedQuery&lt;T, TJoin&gt; OnRaw(string condition)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;(&quot;p&quot;)
+    .InnerJoin&lt;Category&gt;(&quot;c&quot;)
+    .OnColumns(&quot;category_id&quot;, &quot;id&quot;)
+    .Select();
+</code></pre>
+</div>
+<h3 id="distinct">DISTINCT</h3>
+<h4 id="distinct-1">Distinct()</h4>
+<p>Applies DISTINCT to the query results.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IDistinctClause&lt;T&gt; Distinct()
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> categories = connection.From&lt;Product&gt;()
+    .Distinct()
+    .SelectPartial(p =&gt; p.CategoryId);
+</code></pre>
+</div>
+<h3 id="pagination">Pagination</h3>
+<h4 id="takeint-count">Take(int count)</h4>
+<p>Limits the number of results returned (equivalent to LIMIT/TOP).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IFromClause&lt;T&gt; Take(int count)
+</code></pre>
+</div>
+<h4 id="skipint-count">Skip(int count)</h4>
+<p>Skips the specified number of results (equivalent to OFFSET).</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IFromClause&lt;T&gt; Skip(int count)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Get products 11-20 (pagination)</span>
+<span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .Skip(<span class="tok-num">10</span>)
+    .Take(<span class="tok-num">10</span>)
+    .OrderBy(p =&gt; p.ProductId)
+    .Select();
+</code></pre>
+</div>
+<h2 id="terminal-operations-sync">Terminal Operations (Sync)</h2>
+<h3 id="select-methods">Select Methods</h3>
+<h4 id="select">Select()</h4>
+<p>Executes the query and returns all results as a list of entities using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">List&lt;T&gt; Select()
+</code></pre>
+</div>
+<h4 id="selectpartialparams-string-columns">SelectPartial(params string[] columns)</h4>
+<p>Executes the query and returns results with only the specified columns mapped using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">List&lt;T&gt; SelectPartial(<span class="tok-kw">params</span> string[] columns)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .SelectPartial(&quot;ProductId&quot;, &quot;ProductName&quot;, &quot;Price&quot;);
+</code></pre>
+</div>
+<h4 id="selectpartialparams-expressionfunct-object-columns">SelectPartial(params Expression&lt;Func&lt;T, object?&gt;&gt;[] columns)</h4>
+<p>Executes the query and returns results with only the specified properties mapped using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">List&lt;T&gt; SelectPartial(<span class="tok-kw">params</span> Expression&lt;Func&lt;T, object?&gt;&gt;[] columns)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;()
+    .SelectPartial(p =&gt; p.ProductId, p =&gt; p.ProductName, p =&gt; p.Price);
+</code></pre>
+</div>
+<h3 id="single-result-methods">Single Result Methods</h3>
+<h4 id="selectfirst">SelectFirst()</h4>
+<p>Returns the first result from the query. Throws an exception if the result set is empty.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">T SelectFirst()
+</code></pre>
+</div>
+<h4 id="selectfirstordefault">SelectFirstOrDefault()</h4>
+<p>Returns the first result from the query or the default value if the result set is empty.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">T? SelectFirstOrDefault()
+</code></pre>
+</div>
+<h4 id="selectsingle">SelectSingle()</h4>
+<p>Returns the single result from the query. Throws an exception if the result set is empty or contains more than one element.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">T SelectSingle()
+</code></pre>
+</div>
+<h4 id="selectsingleordefault">SelectSingleOrDefault()</h4>
+<p>Returns the single result from the query or the default value if the result set is empty. Throws an exception if the result set contains more than one element.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">T? SelectSingleOrDefault()
+</code></pre>
+</div>
+<h3 id="aggregate-methods">Aggregate Methods</h3>
+<h4 id="count">Count()</h4>
+<p>Returns the count of records in the result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">int Count()
+</code></pre>
+</div>
+<h4 id="longcount">LongCount()</h4>
+<p>Returns the count of records in the result set as a long value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">long LongCount()
+</code></pre>
+</div>
+<h4 id="counttresultexpressionfunct-tresult-selector">Count&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector)</h4>
+<p>Returns the count of records for the specified property.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">int Count&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector)
+</code></pre>
+</div>
+<h4 id="sumtresultexpressionfunct-tresult-selector">Sum&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector)</h4>
+<p>Returns the sum of the specified property values.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">TResult Sum&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector)
+</code></pre>
+</div>
+<h4 id="avgtresultexpressionfunct-tresult-selector">Avg&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector)</h4>
+<p>Returns the average of the specified property values.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">double Avg&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector)
+</code></pre>
+</div>
+<h4 id="mintresultexpressionfunct-tresult-selector">Min&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector)</h4>
+<p>Returns the minimum value of the specified property.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">TResult Min&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector)
+</code></pre>
+</div>
+<h4 id="maxtresultexpressionfunct-tresult-selector">Max&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector)</h4>
+<p>Returns the maximum value of the specified property.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">TResult Max&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> query = connection.From&lt;Product&gt;().Where(p =&gt; p.CategoryId == <span class="tok-num">1</span>);
+<span class="tok-kw">var</span> totalValue = query.Sum(p =&gt; p.Price);
+<span class="tok-kw">var</span> averagePrice = query.Avg(p =&gt; p.Price);
+<span class="tok-kw">var</span> mostExpensive = query.Max(p =&gt; p.Price);
+</code></pre>
+</div>
+<h2 id="terminal-operations-async">Terminal Operations (Async)</h2>
+<h3 id="selectasync-methods">SelectAsync Methods</h3>
+<h4 id="selectasynccancellationtoken-cancellationtoken-default">SelectAsync(CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously executes the query and returns all results as a list of entities using strict mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;List&lt;T&gt;&gt; SelectAsync(CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h4 id="selectpartialasyncstring-columns-cancellationtoken-cancellationtoken-default">SelectPartialAsync(string[] columns, CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously executes the query and returns results with only the specified columns mapped using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;List&lt;T&gt;&gt; SelectPartialAsync(string[] columns, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h4 id="selectpartialasyncexpressionfunct-object-columns-cancellationtoken-cancellationtoken-default">SelectPartialAsync(Expression&lt;Func&lt;T, object?&gt;&gt;[] columns, CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously executes the query and returns results with only the specified properties mapped using partial mapping mode.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;List&lt;T&gt;&gt; SelectPartialAsync(Expression&lt;Func&lt;T, object?&gt;&gt;[] columns, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="async-single-result-methods">Async Single Result Methods</h3>
+<h4 id="selectfirstasynccancellationtoken-cancellationtoken-default">SelectFirstAsync(CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously returns the first result from the query. Throws an exception if the result set is empty.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;T&gt; SelectFirstAsync(CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h4 id="selectfirstordefaultasynccancellationtoken-cancellationtoken-default">SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously returns the first result from the query or the default value if the result set is empty.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;T?&gt; SelectFirstOrDefaultAsync(CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h4 id="selectsingleasynccancellationtoken-cancellationtoken-default">SelectSingleAsync(CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously returns the single result from the query. Throws an exception if the result set is empty or contains more than one element.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;T&gt; SelectSingleAsync(CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h4 id="selectsingleordefaultasynccancellationtoken-cancellationtoken-default">SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously returns the single result from the query or the default value if the result set is empty. Throws an exception if the result set contains more than one element.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;T?&gt; SelectSingleOrDefaultAsync(CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="async-aggregate-methods">Async Aggregate Methods</h3>
+<h4 id="countasynccancellationtoken-cancellationtoken-default">CountAsync(CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously returns the count of records in the result set.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;int&gt; CountAsync(CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h4 id="longcountasynccancellationtoken-cancellationtoken-default">LongCountAsync(CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously returns the count of records in the result set as a long value.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;long&gt; LongCountAsync(CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h4 id="countasynctresultexpressionfunct-tresult-selector-cancellationtoken-cancellationtoken-default">CountAsync&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector, CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously returns the count of records for the specified property.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;int&gt; CountAsync&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h4 id="sumasynctresultexpressionfunct-tresult-selector-cancellationtoken-cancellationtoken-default">SumAsync&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector, CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously returns the sum of the specified property values.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;TResult&gt; SumAsync&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h4 id="avgasynctresultexpressionfunct-tresult-selector-cancellationtoken-cancellationtoken-default">AvgAsync&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector, CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously returns the average of the specified property values.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;double&gt; AvgAsync&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h4 id="minasynctresultexpressionfunct-tresult-selector-cancellationtoken-cancellationtoken-default">MinAsync&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector, CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously returns the minimum value of the specified property.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;TResult&gt; MinAsync&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h4 id="maxasynctresultexpressionfunct-tresult-selector-cancellationtoken-cancellationtoken-default">MaxAsync&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector, CancellationToken cancellationToken = default)</h4>
+<p>Asynchronously returns the maximum value of the specified property.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">Task&lt;TResult&gt; MaxAsync&lt;TResult&gt;(Expression&lt;Func&lt;T, TResult&gt;&gt; selector, CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> query = connection.From&lt;Product&gt;().Where(p =&gt; p.CategoryId == <span class="tok-num">1</span>);
+<span class="tok-kw">var</span> totalValue = <span class="tok-kw">await</span> query.SumAsync(p =&gt; p.Price, cancellationToken);
+<span class="tok-kw">var</span> mostExpensive = <span class="tok-kw">await</span> query.MaxAsync(p =&gt; p.Price, cancellationToken);
+</code></pre>
+</div>
+<h2 id="sql-generation-methods">SQL Generation Methods</h2>
+<h4 id="tosql">ToSql()</h4>
+<p>Generates the SQL string for the current query without executing it.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">string ToSql()
+</code></pre>
+</div>
+<h4 id="tosqlparams-string-columns">ToSql(params string[] columns)</h4>
+<p>Generates the SQL string for the current query with the specified columns.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">string ToSql(<span class="tok-kw">params</span> string[] columns)
+</code></pre>
+</div>
+<h4 id="tosqlparams-expressionfunct-object-columns">ToSql(params Expression&lt;Func&lt;T, object?&gt;&gt;[] columns)</h4>
+<p>Generates the SQL string for the current query with the specified properties.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">string ToSql(<span class="tok-kw">params</span> Expression&lt;Func&lt;T, object?&gt;&gt;[] columns)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> sql = connection.From&lt;Product&gt;()
+    .Where(p =&gt; p.CategoryId == <span class="tok-num">1</span>)
+    .OrderBy(p =&gt; p.ProductName)
+    .ToSql();
+<span class="tok-com">// Returns: &quot;SELECT * FROM products WHERE category_id = @p0 ORDER BY product_name&quot;</span>
+</code></pre>
+</div>
+<h2 id="advanced-features">Advanced Features</h2>
+<h3 id="group-by-operations">GROUP BY Operations</h3>
+<h4 id="groupbytkeyexpressionfunct-tkey-keyselector">GroupBy&lt;TKey&gt;(Expression&lt;Func&lt;T, TKey&gt;&gt; keySelector)</h4>
+<p>Groups results by the specified key.</p>
+<p><strong>Signature:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">IGroupedQuery&lt;T, TKey&gt; GroupBy&lt;TKey&gt;(Expression&lt;Func&lt;T, TKey&gt;&gt; keySelector)
+</code></pre>
+</div>
+<p><strong>Example:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> groupedProducts = connection.From&lt;Product&gt;()
+    .GroupBy(p =&gt; p.CategoryId)
+    .Select(g =&gt; <span class="tok-kw">new</span> { g.Key, Count = g.Count(), AveragePrice = g.Average(p =&gt; p.Price) });
+</code></pre>
+</div>
+<h2 id="kitchen-sink-example">Kitchen Sink Example</h2>
+<p>A single query combining a join, multi-condition filtering, ordering, and pagination:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">var</span> products = connection.From&lt;Product&gt;(&quot;p&quot;)
+    .InnerJoin&lt;Category&gt;(&quot;c&quot;)
+    .On((p, c) =&gt; p.CategoryId == c.Id)
+    .WhereIn(p =&gt; p.CategoryId, <span class="tok-kw">new</span>[] { <span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">3</span> })
+    .And(p =&gt; p.Price &gt;= <span class="tok-num">10m</span>)
+    .WhereBetween(p =&gt; p.Price, <span class="tok-num">10m</span>, <span class="tok-num">250m</span>)
+    .OrderBy(p =&gt; p.ProductName)
+    .Skip(<span class="tok-num">20</span>)
+    .Take(<span class="tok-num">10</span>)
+    .Select();
+</code></pre>
+</div>
+<h2 id="important-notes">Important Notes</h2>
+<div class="callout callout-warn"><ul>
+<li><strong>Type Safety</strong>: The fluent API provides compile-time validation of property names</li>
+<li><strong>SQL Generation</strong>: The API automatically generates appropriate SQL for different database providers</li>
+<li><strong>Parameterization</strong>: All values are automatically parameterized to prevent SQL injection</li>
+<li><strong>Async Support</strong>: All operations have both synchronous and asynchronous variants</li>
+<li><strong>Mapping Mode</strong>: All query operations use strict mapping by default</li>
+<li><strong>Performance</strong>: The fluent API builds SQL dynamically but still leverages Jaunty's performance optimizations</li>
+<li><strong>Database Compatibility</strong>: The API works with all supported database providers (SQL Server, SQLite, PostgreSQL, MySQL)</li>
+<li><strong>Method Chaining</strong>: All methods (except terminal operations) return interfaces that allow further method chaining</li>
+<li><strong>IntelliSense</strong>: Full IntelliSense support for property names and method chaining</li>
+<li><strong>Alias Support</strong>: Table aliases can be used for complex queries with joins</li>
+</ul></div>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="01-api-reference-crud-operations.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Crud operations</span>
+</a><a class="pn-next" href="01-api-reference-get-and-execute-operations.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Get and execute operations</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

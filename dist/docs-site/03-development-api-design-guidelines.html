@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty API Design Guidelines — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty API Design Guidelines</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html" class="active" aria-current="page">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty API Design Guidelines</nav>
+        <article>
+<h1 id="jaunty-api-design-guidelines">Jaunty API Design Guidelines</h1>
+<p>This document establishes guidelines for designing and evolving the Jaunty API. These guidelines ensure consistency, usability, and maintainability.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#naming-conventions">Naming Conventions</a></li>
+<li><a href="#method-signatures">Method Signatures</a></li>
+<li><a href="#error-handling">Error Handling</a></li>
+<li><a href="#async-design">Async Design</a></li>
+<li><a href="#extension-methods">Extension Methods</a></li>
+<li><a href="#generic-type-constraints">Generic Type Constraints</a></li>
+<li><a href="#linq-usage-policy">LINQ Usage Policy</a></li>
+<li><a href="#documentation-standards">Documentation Standards</a></li>
+</ul>
+<hr />
+<h2 id="naming-conventions">Naming Conventions</h2>
+<h3 id="method-names">Method Names</h3>
+<p>Use clear, descriptive names that indicate what the method does:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Good: Clear action + entity</span>
+connection.Query&lt;Product&gt;(sql);
+connection.Insert(product);
+connection.Delete&lt;Product&gt;(id);
+
+<span class="tok-com">// Avoid: Unclear or abbreviated</span>
+connection.GetProducts(sql);
+connection.Add(product);
+connection.Remove&lt;Product&gt;(id);
+</code></pre>
+</div>
+<h3 id="async-method-suffix">Async Method Suffix</h3>
+<p>Always suffix async methods with <code>Async</code>:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Sync</span>
+List&lt;T&gt; Query&lt;T&gt;(string sql);
+
+<span class="tok-com">// Async</span>
+Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = <span class="tok-kw">default</span>);
+</code></pre>
+</div>
+<h3 id="command-pattern">Command Pattern</h3>
+<p>Use consistent parameter ordering across all methods:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Standard order: connection, sql, parameters, options, cancellationToken</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(
+    <span class="tok-kw">this</span> IDbConnection connection, 
+    string sql, 
+    object? parameters = <span class="tok-kw">null</span>, 
+    CommandOptions&lt;T&gt;? options = <span class="tok-kw">null</span>)
+
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(
+    <span class="tok-kw">this</span> IDbConnection connection, 
+    string sql, 
+    object? parameters = <span class="tok-kw">null</span>, 
+    CommandOptions&lt;T&gt;? options = <span class="tok-kw">null</span>,
+    CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<hr />
+<h2 id="method-signatures">Method Signatures</h2>
+<h3 id="optional-parameters">Optional Parameters</h3>
+<p>Use optional parameters for backward compatibility and ease of use:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Good: Optional parameters with defaults</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; QueryPartial&lt;T&gt;(
+    <span class="tok-kw">this</span> IDbConnection connection, 
+    string sql, 
+    object? parameters = <span class="tok-kw">null</span>, 
+    CommandOptions&lt;T&gt;? options = <span class="tok-kw">null</span>)
+</code></pre>
+</div>
+<h3 id="overload-organization">Overload Organization</h3>
+<p>Organize overloads from simplest to most complex:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// 1. Simplest: Just SQL</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql)
+
+<span class="tok-com">// 2. With parameters</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters)
+
+<span class="tok-com">// 3. With options</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, CommandOptions&lt;T&gt; options)
+
+<span class="tok-com">// 4. Full: Parameters + options</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql, object parameters, CommandOptions&lt;T&gt; options)
+</code></pre>
+</div>
+<h3 id="return-types">Return Types</h3>
+<p>Choose return types based on semantics:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Return Type</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Query (multiple)</td>
+<td><code>List&lt;T&gt;</code></td>
+<td>Collection of results</td>
+</tr>
+<tr>
+<td>QueryFirst</td>
+<td><code>T</code></td>
+<td>Single entity</td>
+</tr>
+<tr>
+<td>QueryFirstOrDefault</td>
+<td><code>T?</code></td>
+<td>Single entity or null</td>
+</tr>
+<tr>
+<td>QuerySingle</td>
+<td><code>T</code></td>
+<td>Exactly one entity</td>
+</tr>
+<tr>
+<td>Insert</td>
+<td><code>long</code></td>
+<td>Identity value (supports bigint)</td>
+</tr>
+<tr>
+<td>Update/Delete</td>
+<td><code>int</code></td>
+<td>Row count (never exceeds int.MaxValue)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="exception-types">Exception Types</h3>
+<p>Use specific exception types:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Good: Specific exceptions</span>
+<span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentNullException(nameof(connection));
+<span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentException(&quot;Invalid SQL&quot;, nameof(sql));
+<span class="tok-kw">throw</span> <span class="tok-kw">new</span> InvalidOperationException(&quot;Connection <span class="tok-kw">is</span> <span class="tok-kw">not</span> open&quot;);
+
+<span class="tok-com">// Avoid: Generic exceptions</span>
+<span class="tok-kw">throw</span> <span class="tok-kw">new</span> Exception(&quot;Something went wrong&quot;);
+</code></pre>
+</div>
+<h3 id="error-messages">Error Messages</h3>
+<p>Include helpful context in error messages:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Good: Includes type name and available options</span>
+<span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentException(
+    $&quot;No property found on type <span class="tok-str">'{type.Name}'</span> matching SQL parameter <span class="tok-str">'@{sqlName}'</span>. &quot; +
+    $&quot;Available properties: {string.Join(&quot;, &quot;, propertyLookup.Keys)}&quot;);
+
+<span class="tok-com">// Avoid: Vague messages</span>
+<span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentException(&quot;Property <span class="tok-kw">not</span> found&quot;);
+</code></pre>
+</div>
+<h3 id="parameter-validation">Parameter Validation</h3>
+<p>Validate parameters at method entry:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">#<span class="tok-kw">if</span> NET8_0_OR_GREATER
+ArgumentNullException.ThrowIfNull(connection);
+ArgumentNullException.ThrowIfNull(entity);
+#<span class="tok-kw">else</span>
+<span class="tok-kw">if</span> (connection <span class="tok-kw">is</span> <span class="tok-kw">null</span>) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentNullException(nameof(connection));
+<span class="tok-kw">if</span> (entity <span class="tok-kw">is</span> <span class="tok-kw">null</span>) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> ArgumentNullException(nameof(entity));
+#endif
+</code></pre>
+</div>
+<hr />
+<h2 id="async-design">Async Design</h2>
+<h3 id="cancellationtoken">CancellationToken</h3>
+<p>Always provide CancellationToken with default value:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">async</span> Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(
+    <span class="tok-kw">this</span> IDbConnection connection, 
+    string sql, 
+    CancellationToken cancellationToken = <span class="tok-kw">default</span>)
+</code></pre>
+</div>
+<h3 id="configureawait">ConfigureAwait</h3>
+<p>Use <code>ConfigureAwait(false)</code> for library code:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">async</span> Task&lt;List&lt;T&gt;&gt; QueryAsync&lt;T&gt;(...)
+{
+    <span class="tok-kw">var</span> result = <span class="tok-kw">await</span> SomeOperationAsync().ConfigureAwait(<span class="tok-kw">false</span>);
+    <span class="tok-kw">return</span> result;
+}
+</code></pre>
+</div>
+<h3 id="async-all-the-way">Async All the Way</h3>
+<p>Don't mix sync and async:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Good: Fully async</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">async</span> Task&lt;int&gt; InsertAsync&lt;T&gt;(...)
+{
+    <span class="tok-kw">return</span> <span class="tok-kw">await</span> InsertCoreAsync(...).ConfigureAwait(<span class="tok-kw">false</span>);
+}
+
+<span class="tok-com">// Avoid: Blocking on async</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> int Insert&lt;T&gt;(...)
+{
+    <span class="tok-kw">return</span> InsertAsync(...).Result; <span class="tok-com">// Deadlock risk!</span>
+}
+</code></pre>
+</div>
+<hr />
+<h2 id="extension-methods">Extension Methods</h2>
+<h3 id="when-to-use">When to Use</h3>
+<p>Use extension methods for:</p>
+<ul>
+<li>Operations that work on existing types (IDbConnection)</li>
+<li>Fluent API patterns</li>
+<li>Adding functionality without inheritance</li>
+</ul>
+<h3 id="organization">Organization</h3>
+<p>Group extension methods by functionality:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Read operations</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">partial</span> <span class="tok-kw">class</span> Jaunty
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(...) { }
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> T QueryFirst&lt;T&gt;(...) { }
+}
+
+<span class="tok-com">// Write operations</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> <span class="tok-kw">partial</span> <span class="tok-kw">class</span> Jaunty
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> long Insert&lt;T&gt;(...) { }
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> int Update&lt;T&gt;(...) { }
+    <span class="tok-kw">public</span> <span class="tok-kw">static</span> int Delete&lt;T&gt;(...) { }
+}
+</code></pre>
+</div>
+<h3 id="this-parameter">this Parameter</h3>
+<p>Always use <code>this</code> for the primary parameter:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Good: Extension on IDbConnection</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql)
+
+<span class="tok-com">// Avoid: Not an extension method</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(IDbConnection connection, string sql)
+</code></pre>
+</div>
+<hr />
+<h2 id="generic-type-constraints">Generic Type Constraints</h2>
+<h3 id="when-to-use-1">When to Use</h3>
+<p>Use constraints to enforce requirements:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Good: Clear constraints</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(...) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> long Insert&lt;T&gt;(...) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="constraint-organization">Constraint Organization</h3>
+<p>Order constraints: <code>class</code> first, then <code>new()</code>, then interface constraints:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Good: Ordered constraints</span>
+<span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, IEntity, <span class="tok-kw">new</span>()
+
+<span class="tok-com">// Avoid: Unordered</span>
+<span class="tok-kw">where</span> T : <span class="tok-kw">new</span>(), <span class="tok-kw">class</span>, IEntity
+</code></pre>
+</div>
+<h3 id="query-vs-write-constraints">Query vs Write Constraints</h3>
+<p><strong>Query methods</strong>: Only <code>new()</code> (supports value types like ValueTuple)</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(...) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<p><strong>Write methods</strong>: <code>class, new()</code> (requires reference type for entity tracking)</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">static</span> long Insert&lt;T&gt;(...) <span class="tok-kw">where</span> T : <span class="tok-kw">class</span>, <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<hr />
+<h2 id="linq-usage-policy">LINQ Usage Policy</h2>
+<h3 id="performance-considerations">Performance Considerations</h3>
+<p>Jaunty is designed for high performance and low allocations. LINQ, while expressive, often introduces unnecessary heap allocations (enumerators, closures, delegate instances) that can degrade performance in hot paths.</p>
+<h3 id="prohibited-usage">Prohibited Usage</h3>
+<p><strong>Do NOT use LINQ in high-frequency execution paths:</strong></p>
+<ul>
+<li>Inside <code>while(reader.Read())</code> loops (result mapping)</li>
+<li>Inside <code>foreach(var entity in entities)</code> loops (bulk operations)</li>
+<li>Inside parameter binding loops</li>
+<li>In metadata resolution that happens per-query</li>
+</ul>
+<h3 id="permitted-usage">Permitted Usage</h3>
+<p><strong>LINQ is acceptable in the following scenarios:</strong></p>
+<ul>
+<li><strong>One-time Initialization</strong>: Building cached SQL statements, parsing type metadata for the first time.</li>
+<li><strong>Exception Messages</strong>: Formatting error details (where allocation is expected and non-critical).</li>
+<li><strong>Public API Surface</strong>: Returning <code>IEnumerable&lt;T&gt;</code> or <code>IAsyncEnumerable&lt;T&gt;</code> where users expect LINQ compatibility.</li>
+</ul>
+<h3 id="preferred-alternatives">Preferred Alternatives</h3>
+<p>Use structured loops on concrete collections to minimize overhead:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Good: Minimal allocation</span>
+<span class="tok-kw">for</span> (int i = <span class="tok-num">0</span>; i &lt; list.Count; i++)
+{
+    <span class="tok-kw">var</span> item = list[i];
+    <span class="tok-com">// process</span>
+}
+
+<span class="tok-com">// Avoid: Allocates enumerator and potential closures</span>
+<span class="tok-kw">var</span> results = list.Where(x =&gt; x.IsActive).Select(x =&gt; x.Name);
+</code></pre>
+</div>
+<hr />
+<h2 id="documentation-standards">Documentation Standards</h2>
+<h3 id="xml-documentation">XML Documentation</h3>
+<p>All public APIs must have XML documentation:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;summary&gt;</span>
+<span class="tok-com">/// Executes a SQL query and returns all results mapped to entities.</span>
+<span class="tok-com">/// &lt;/summary&gt;</span>
+<span class="tok-com">/// &lt;typeparam name=&quot;T&quot;&gt;The entity type to map results to.&lt;/typeparam&gt;</span>
+<span class="tok-com">/// &lt;param name=&quot;connection&quot;&gt;The database connection.&lt;/param&gt;</span>
+<span class="tok-com">/// &lt;param name=&quot;sql&quot;&gt;The SQL query to execute.&lt;/param&gt;</span>
+<span class="tok-com">/// &lt;returns&gt;A list of entities.&lt;/returns&gt;</span>
+<span class="tok-com">/// &lt;exception cref=&quot;ArgumentNullException&quot;&gt;Thrown when connection is null.&lt;/exception&gt;</span>
+<span class="tok-kw">public</span> <span class="tok-kw">static</span> List&lt;T&gt; Query&lt;T&gt;(<span class="tok-kw">this</span> IDbConnection connection, string sql) <span class="tok-kw">where</span> T : <span class="tok-kw">new</span>()
+</code></pre>
+</div>
+<h3 id="required-elements">Required Elements</h3>
+<p>Include these elements in documentation:</p>
+<ul>
+<li><code>&lt;summary&gt;</code>: What the method does</li>
+<li><code>&lt;typeparam&gt;</code>: Type parameter descriptions</li>
+<li><code>&lt;param&gt;</code>: Parameter descriptions</li>
+<li><code>&lt;returns&gt;</code>: Return value description</li>
+<li><code>&lt;exception&gt;</code>: Exceptions that may be thrown</li>
+<li><code>&lt;seealso&gt;</code>: Related methods</li>
+</ul>
+<h3 id="examples">Examples</h3>
+<p>Include practical examples:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">/// &lt;example&gt;</span>
+<span class="tok-com">/// &lt;code&gt;</span>
+<span class="tok-com">/// var products = connection.Query&amp;lt;Product&amp;gt;(</span>
+<span class="tok-com">///     &quot;SELECT * FROM products WHERE category_id = @CategoryId&quot;,</span>
+<span class="tok-com">///     new { CategoryId = 5 });</span>
+<span class="tok-com">/// &lt;/code&gt;</span>
+<span class="tok-com">/// &lt;/example&gt;</span>
+</code></pre>
+</div>
+<hr />
+<h2 id="versioning">Versioning</h2>
+<h3 id="breaking-changes">Breaking Changes</h3>
+<p>Avoid breaking changes. When necessary:</p>
+<ol>
+<li>Mark old API as <code>[Obsolete]</code> with migration guidance</li>
+<li>Keep old API for at least one major version</li>
+<li>Document breaking changes in release notes</li>
+</ol>
+<h3 id="adding-features">Adding Features</h3>
+<p>When adding new features:</p>
+<ol>
+<li>Add new overloads (don't change existing signatures)</li>
+<li>Use optional parameters for backward compatibility</li>
+<li>Document new features clearly</li>
+</ol>
+<hr />
+<h2 id="testing-api-changes">Testing API Changes</h2>
+<h3 id="api-surface-tests">API Surface Tests</h3>
+<p>Consider adding tests that verify API surface:</p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp">[Fact]
+<span class="tok-kw">public</span> <span class="tok-kw">void</span> QueryAsync_HasCancellationTokenParameter()
+{
+    <span class="tok-kw">var</span> method = <span class="tok-kw">typeof</span>(Jaunty).GetMethod(
+        nameof(Jaunty.QueryAsync), 
+        <span class="tok-kw">new</span>[] { <span class="tok-kw">typeof</span>(IDbConnection), <span class="tok-kw">typeof</span>(string), <span class="tok-kw">typeof</span>(CancellationToken) });
+    
+    Assert.NotNull(method);
+}
+</code></pre>
+</div>
+<hr />
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions">Microsoft C# Coding Conventions</a></li>
+<li><a href="https://learn.microsoft.com/en-us/dotnet/standard/design-guidelines/">Framework Design Guidelines</a></li>
+<li><a href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/xmldoc/">XML Documentation Comments</a></li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="03-development-README.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">README</span>
+</a><a class="pn-next" href="03-development-code-review-checklist.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Code review checklist</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>

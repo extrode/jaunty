@@ -157,8 +157,9 @@ ehthumbs.db
 # Benchmark artifacts (benchmark code stays, results don't)
 /benchmarks/results/
 
-# Distribution artifacts
-/dist/
+# Distribution artifacts (docs-site is committed as the published doc site)
+/dist/*
+!/dist/docs-site/
 
 # Bulk/generated test data (tpch.db is 1 GB, TPC-H CSVs are hundreds of MB)
 /data/**/*.db

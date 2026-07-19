@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en" class="jt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaunty ORM: Feature Gap Analysis &amp; Roadmap — jaunty docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body class="jt">
+<div class="jt-shell">
+
+  <!-- ===== header ===== -->
+  <header class="jt-header">
+    <button class="hamburger" aria-label="Toggle navigation" onclick="toggleNav()">&#9776;</button>
+    <div class="header-brand">
+      <span class="brand-name">jaunty</span>
+      <span class="brand-crumb">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</span>
+    </div>
+    <div class="header-spacer"></div>
+  </header>
+
+  <!-- ===== body ===== -->
+  <div class="jt-body">
+
+    <!-- sidebar backdrop (mobile) -->
+    <div class="nav-backdrop" id="nav-backdrop" onclick="toggleNav()"></div>
+
+    <!-- sidebar -->
+    <nav class="jt-sidebar" id="jt-sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-filter">
+        <span class="filter-icon">/</span>
+        <input type="text" id="nav-filter" placeholder="filter nav" oninput="filterNav(this.value)" autocomplete="off">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">Overview</span>
+  </div>
+  <div class="nav-group-items">      <a href="constitution.html">Constitution</a>  <a href="conventions.html">Conventions</a>        <a href="jaunty-torture-test-results.html">Jaunty torture test results</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quick-start</span>
+  </div>
+  <div class="nav-group-items">  <a href="00-quick-start-README.html">README</a>  <a href="00-quick-start-build-and-test.html">Build and test</a>  <a href="00-quick-start-project-layout.html">Project layout</a>  <a href="00-quick-start-project-structure.html">Project structure</a>  <a href="00-quick-start-why-jaunty.html">Why jaunty</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">api-reference</span>
+  </div>
+  <div class="nav-group-items">  <a href="01-api-reference-README.html">README</a>  <a href="01-api-reference-api-summary.html">Api summary</a>  <a href="01-api-reference-attributes.html">Attributes</a>  <a href="01-api-reference-bulk-copy-methods.html">Bulk copy methods</a>  <a href="01-api-reference-configuration.html">Configuration</a>  <a href="01-api-reference-crud-operations.html">Crud operations</a>  <a href="01-api-reference-fluent-api.html">Fluent api</a>  <a href="01-api-reference-get-and-execute-operations.html">Get and execute operations</a>  <a href="01-api-reference-multi-entity-mapping.html">Multi entity mapping</a>  <a href="01-api-reference-multiple-result-sets.html">Multiple result sets</a>  <a href="01-api-reference-overview.html">Overview</a>  <a href="01-api-reference-query-methods.html">Query methods</a>  <a href="01-api-reference-scalar-methods.html">Scalar methods</a>  <a href="01-api-reference-single-result-methods.html">Single result methods</a>  <a href="01-api-reference-stored-procedures.html">Stored procedures</a>  <a href="01-api-reference-streaming-methods.html">Streaming methods</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">architecture</span>
+  </div>
+  <div class="nav-group-items">  <a href="02-architecture-README.html">README</a>  <a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE DECISIONS</a>  <a href="02-architecture-architecture-specification.html">Architecture specification</a>  <a href="02-architecture-architecture-visuals.html">Architecture visuals</a>  <a href="02-architecture-bulk-copy-architecture.html">Bulk copy architecture</a>  <a href="02-architecture-design-philosophy.html">Design philosophy</a>  <a href="02-architecture-metadata-system-spec.html">Metadata system spec</a>  <a href="02-architecture-parameter-binding-spec.html">Parameter binding spec</a>  <a href="02-architecture-performance-spec.html">Performance spec</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">development</span>
+  </div>
+  <div class="nav-group-items">  <a href="03-development-README.html">README</a>  <a href="03-development-api-design-guidelines.html">Api design guidelines</a>  <a href="03-development-code-review-checklist.html">Code review checklist</a>  <a href="03-development-di-integration-design.html">Di integration design</a>  <a href="03-development-file-naming-convention.html">File naming convention</a>  <a href="03-development-hybrid-design.html">Hybrid design</a>  <a href="03-development-limitations.html">Limitations</a>  <a href="03-development-optimization-checklist.html">Optimization checklist</a>  <a href="03-development-optimizations.html">Optimizations</a>    <a href="03-development-xml-documentation-style.html">Xml documentation style</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">extensions</span>
+  </div>
+  <div class="nav-group-items">  <a href="04-extensions-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">quality</span>
+  </div>
+  <div class="nav-group-items">  <a href="05-quality-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group data-open="true">
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">releases</span>
+  </div>
+  <div class="nav-group-items">  <a href="06-releases-README.html">README</a>  <a href="06-releases-COMMERCIAL-ANALYSIS-REPORT.html">COMMERCIAL ANALYSIS REPORT</a>  <a href="06-releases-COMMERCIAL-DISTRIBUTION-FLOW.html">COMMERCIAL DISTRIBUTION FLOW</a>  <a href="06-releases-RELEASE-RUNBOOK.html">RELEASE RUNBOOK</a>  <a href="06-releases-continuity-rider-template.html">Continuity rider template</a>  <a href="06-releases-feature-gap-analysis.html" class="active" aria-current="page">Feature gap analysis</a>  <a href="06-releases-order-form-template.html">Order form template</a>  <a href="06-releases-pricing.html">Pricing</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">design</span>
+  </div>
+  <div class="nav-group-items">  <a href="07-design-README.html">README</a>  </div>
+</div>
+<div class="nav-group" data-group>
+  <div class="nav-group-header" onclick="toggleGroup(this)">
+    <span class="nav-chev">›</span>
+    <span class="nav-group-label">learn</span>
+  </div>
+  <div class="nav-group-items">  <a href="08-learn-README.html">README</a>  <a href="08-learn-exercises.html">Exercises</a>  </div>
+</div>
+
+      </div>
+    </nav>
+
+    <!-- content -->
+    <main class="jt-content" id="jt-content">
+      <div class="content-inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</nav>
+        <article>
+<h1 id="jaunty-orm-feature-gap-analysis-roadmap">Jaunty ORM: Feature Gap Analysis &amp; Roadmap</h1>
+<p><strong>Last Updated:</strong> 2026-03-11
+<strong>Status:</strong> Draft - For Discussion</p>
+<hr />
+<h2 id="part-1-completed-features-production-ready">Part 1: Completed Features (Production-Ready)</h2>
+<h3 id="core-query-operations">1.1 Core Query Operations</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Location</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Query&lt;T&gt;()</code> - Strict mapping</td>
+<td><code>src/Jaunty/Read/Query.cs</code></td>
+<td> Complete</td>
+<td>All properties must have matching columns</td>
+</tr>
+<tr>
+<td><code>QueryPartial&lt;T&gt;()</code> - Partial mapping</td>
+<td><code>src/Jaunty/Read/QueryPartial.cs</code></td>
+<td> Complete</td>
+<td>Maps only existing columns</td>
+</tr>
+<tr>
+<td><code>QueryFirst&lt;T&gt;()</code> / <code>QueryFirstOrDefault&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Read/QueryFirst.cs</code></td>
+<td> Complete</td>
+<td>Returns single or default</td>
+</tr>
+<tr>
+<td><code>QuerySingle&lt;T&gt;()</code> / <code>QuerySingleOrDefault&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Read/QuerySingle.cs</code></td>
+<td> Complete</td>
+<td>Validates exactly one result</td>
+</tr>
+<tr>
+<td><code>QueryScalar&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Read/QueryScalar.cs</code></td>
+<td> Complete</td>
+<td>First column of first row</td>
+</tr>
+<tr>
+<td><code>QueryStream&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Streaming/QueryStream.cs</code></td>
+<td> Complete</td>
+<td>Unbuffered streaming</td>
+</tr>
+<tr>
+<td><code>QueryAsync&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Read/QueryAsync.cs</code></td>
+<td> Complete</td>
+<td>Async all operations</td>
+</tr>
+<tr>
+<td><code>QueryMultiple&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Multiple/QueryMultiple.cs</code></td>
+<td> Complete</td>
+<td>Multiple result sets via GridReader</td>
+</tr>
+</tbody>
+</table>
+<h3 id="write-operations-crud">1.2 Write Operations (CRUD)</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Location</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Insert&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Write/Insert.cs</code></td>
+<td> Complete</td>
+<td>Returns identity value (long)</td>
+</tr>
+<tr>
+<td><code>Update&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Write/Update.cs</code></td>
+<td> Complete</td>
+<td>Updates by primary key</td>
+</tr>
+<tr>
+<td><code>Delete&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Write/Delete.cs</code></td>
+<td> Complete</td>
+<td>Deletes by primary key or ID</td>
+</tr>
+<tr>
+<td><code>Upsert&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Write/Upsert.cs</code></td>
+<td> Complete</td>
+<td>Dialect-specific upsert</td>
+</tr>
+<tr>
+<td><code>BulkInsert&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Write/BulkInsert.cs</code></td>
+<td> Complete</td>
+<td>Multi-row or native bulk copy</td>
+</tr>
+<tr>
+<td><code>BulkUpdate&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Write/BulkUpdate.cs</code></td>
+<td> Complete</td>
+<td>Batched updates</td>
+</tr>
+<tr>
+<td><code>BulkDelete&lt;T&gt;()</code></td>
+<td><code>src/Jaunty/Write/BulkDelete.cs</code></td>
+<td> Complete</td>
+<td>Batched deletes</td>
+</tr>
+</tbody>
+</table>
+<h3 id="parameter-handling">1.3 Parameter Handling</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Location</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Named parameters</td>
+<td><code>src/Jaunty/Internals/Parameters/ParameterBinder.cs</code></td>
+<td> Complete</td>
+<td>Anonymous types, dictionaries</td>
+</tr>
+<tr>
+<td>Positional parameters</td>
+<td><code>src/Jaunty/Internals/Parameters/ParameterBinder.cs</code></td>
+<td> Complete</td>
+<td>Scalar value binding</td>
+</tr>
+<tr>
+<td>Collection/IN expansion</td>
+<td><code>src/Jaunty/Internals/Parameters/ParameterBinder.cs</code></td>
+<td> Complete</td>
+<td><code>WHERE id IN @Ids</code> → <code>(@p0,@p1,@p2)</code></td>
+</tr>
+<tr>
+<td>Empty collection handling</td>
+<td><code>src/Jaunty/Internals/Parameters/ParameterBinder.cs</code></td>
+<td> Complete</td>
+<td>Converts to <code>WHERE 1=0</code></td>
+</tr>
+<tr>
+<td>Parameter validation</td>
+<td><code>src/Jaunty/Internals/Parameters/ParameterBinder.cs</code></td>
+<td> Complete</td>
+<td>Count mismatch detection</td>
+</tr>
+<tr>
+<td>SQL parsing (comments/strings)</td>
+<td><code>src/Jaunty/Internals/Parameters/SqlParameterParser.cs</code></td>
+<td> Complete</td>
+<td>Skips literals and comments</td>
+</tr>
+<tr>
+<td>Stored procedure parameters</td>
+<td><code>src/Jaunty/StoredProcedure/SpParameters.cs</code></td>
+<td> Complete</td>
+<td>Input, output, return value</td>
+</tr>
+</tbody>
+</table>
+<h3 id="caching-internal">1.4 Caching (Internal)</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Location</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL template caching</td>
+<td><code>src/Jaunty/Internals/Parameters/ParameterBinder.cs</code></td>
+<td> Complete</td>
+<td><code>CommandTemplate</code> per (SQL, Type)</td>
+</tr>
+<tr>
+<td>Parameter metadata caching</td>
+<td><code>src/Jaunty/Internals/Parameters/ParameterCache.cs</code></td>
+<td> Complete</td>
+<td>Compiled property getters</td>
+</tr>
+<tr>
+<td>Entity metadata caching</td>
+<td><code>src/Jaunty/Internals/Read/MappedCache.cs</code></td>
+<td> Complete</td>
+<td>Column mappings per type</td>
+</tr>
+<tr>
+<td>CRUD SQL caching</td>
+<td><code>src/Jaunty/Internals/Write/CrudSqlCache.cs</code></td>
+<td> Complete</td>
+<td>Generated INSERT/UPDATE/DELETE</td>
+</tr>
+<tr>
+<td>Parameter parser caching</td>
+<td><code>src/Jaunty/Internals/Parameters/SqlParameterParserCache.cs</code></td>
+<td> Complete</td>
+<td>Parsed parameter names</td>
+</tr>
+</tbody>
+</table>
+<h3 id="database-dialect-support">1.5 Database Dialect Support</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Location</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL Server dialect</td>
+<td><code>src/Jaunty/Dialects/SqlServerDialect.cs</code></td>
+<td> Complete</td>
+<td>MERGE, OFFSET/FETCH, SCOPE_IDENTITY</td>
+</tr>
+<tr>
+<td>PostgreSQL dialect</td>
+<td><code>src/Jaunty/Dialects/PostgreSqlDialect.cs</code></td>
+<td> Complete</td>
+<td>RETURNING, COPY</td>
+</tr>
+<tr>
+<td>MySQL/MariaDB dialect</td>
+<td><code>src/Jaunty/Dialects/MySqlDialect.cs</code></td>
+<td> Complete</td>
+<td>ON DUPLICATE KEY, LAST_INSERT_ID</td>
+</tr>
+<tr>
+<td>SQLite dialect</td>
+<td><code>src/Jaunty/Dialects/SQLiteDialect.cs</code></td>
+<td> Complete</td>
+<td>INSERT OR REPLACE, last_insert_rowid</td>
+</tr>
+<tr>
+<td>Identifier escaping</td>
+<td><code>src/Jaunty/Dialects/*.cs</code></td>
+<td> Complete</td>
+<td>Keyword-based escaping</td>
+</tr>
+<tr>
+<td>Case-sensitive LIKE</td>
+<td><code>src/Jaunty/Dialects/*.cs</code></td>
+<td> Complete</td>
+<td>COLLATE-based for SQL Server/Postgres</td>
+</tr>
+<tr>
+<td>Paging SQL generation</td>
+<td><code>src/Jaunty/Dialects/*.cs</code></td>
+<td> Complete</td>
+<td>OFFSET/FETCH or LIMIT</td>
+</tr>
+<tr>
+<td>Upsert SQL generation</td>
+<td><code>src/Jaunty/Dialects/*.cs</code></td>
+<td> Complete</td>
+<td>Dialect-specific syntax</td>
+</tr>
+</tbody>
+</table>
+<h3 id="attributes-mapping">1.6 Attributes &amp; Mapping</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Location</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[Table]</code> attribute</td>
+<td><code>src/Jaunty/Attributes/TableAttribute.cs</code></td>
+<td> Complete</td>
+<td>Table name and schema</td>
+</tr>
+<tr>
+<td><code>[Column]</code> attribute</td>
+<td><code>src/Jaunty/Attributes/ColumnAttribute.cs</code></td>
+<td> Complete</td>
+<td>Column name override</td>
+</tr>
+<tr>
+<td><code>[Key]</code> attribute</td>
+<td><code>src/Jaunty/Attributes/KeyAttribute.cs</code></td>
+<td> Complete</td>
+<td>Primary key designation</td>
+</tr>
+<tr>
+<td><code>[DatabaseGenerated]</code></td>
+<td><code>src/Jaunty/Attributes/DatabaseGeneratedAttribute.cs</code></td>
+<td> Complete</td>
+<td>Identity, Computed options</td>
+</tr>
+<tr>
+<td><code>[Ignore]</code> attribute</td>
+<td><code>src/Jaunty/Attributes/IgnoreAttribute.cs</code></td>
+<td> Complete</td>
+<td>Exclude from mapping</td>
+</tr>
+<tr>
+<td>Source generator</td>
+<td><code>src/Jaunty.SourceGenerator/</code></td>
+<td> Complete</td>
+<td>Compile-time metadata</td>
+</tr>
+</tbody>
+</table>
+<h3 id="configuration">1.7 Configuration</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Location</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Global config</td>
+<td><code>src/Jaunty/Configuration/JauntyConfig.cs</code></td>
+<td> Complete</td>
+<td>Static configuration class</td>
+</tr>
+<tr>
+<td>Naming resolvers</td>
+<td><code>src/Jaunty/Configuration/JauntyConfig.cs</code></td>
+<td> Complete</td>
+<td>Table/column name resolvers</td>
+</tr>
+<tr>
+<td>Logger hook</td>
+<td><code>src/Jaunty/Configuration/JauntyConfig.cs</code></td>
+<td> Complete</td>
+<td><code>Action&lt;string, object&gt;</code></td>
+</tr>
+<tr>
+<td>Capacity settings</td>
+<td><code>src/Jaunty/Configuration/JauntyConfig.cs</code></td>
+<td> Complete</td>
+<td>Buffer sizing options</td>
+</tr>
+<tr>
+<td>Bulk copy config</td>
+<td><code>src/Jaunty/Configuration/BulkCopyConfiguration.cs</code></td>
+<td> Complete</td>
+<td>Batch size, timeout</td>
+</tr>
+</tbody>
+</table>
+<h3 id="command-options">1.8 Command Options</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Location</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Transaction support</td>
+<td><code>src/Jaunty/Core/CommandOptions.cs</code></td>
+<td> Complete</td>
+<td><code>CommandOptions.WithTransaction()</code></td>
+</tr>
+<tr>
+<td>Timeout support</td>
+<td><code>src/Jaunty/Core/CommandOptions.cs</code></td>
+<td> Complete</td>
+<td><code>CommandOptions.WithTimeout()</code></td>
+</tr>
+<tr>
+<td>Custom mapper</td>
+<td><code>src/Jaunty/Core/CommandOptions.cs</code></td>
+<td> Complete</td>
+<td><code>CommandOptions.WithMapper()</code></td>
+</tr>
+<tr>
+<td>Command type</td>
+<td><code>src/Jaunty/Core/CommandOptions.cs</code></td>
+<td> Complete</td>
+<td>Text, StoredProcedure</td>
+</tr>
+<tr>
+<td>Expected row count</td>
+<td><code>src/Jaunty/Core/CommandOptions.cs</code></td>
+<td> Complete</td>
+<td>List pre-sizing hint</td>
+</tr>
+</tbody>
+</table>
+<h3 id="multi-entity-mapping">1.9 Multi-Entity Mapping</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Location</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>QueryMultiEntity&lt;T1,T2&gt;()</code></td>
+<td><code>src/Jaunty/Read/QueryMultiEntity.cs</code></td>
+<td> Complete</td>
+<td>JOIN result mapping to tuple</td>
+</tr>
+<tr>
+<td><code>QueryMultiEntityAsync&lt;T1,T2&gt;()</code></td>
+<td><code>src/Jaunty/Read/QueryMultiEntityAsync.cs</code></td>
+<td> Complete</td>
+<td>Async tuple mapping</td>
+</tr>
+<tr>
+<td><code>MultiEntityMapper&lt;T1,T2&gt;</code></td>
+<td><code>src/Jaunty/Internals/Read/MultiEntityMapper.cs</code></td>
+<td> Complete</td>
+<td>Column range mapping</td>
+</tr>
+</tbody>
+</table>
+<h3 id="csv-import">1.10 CSV Import</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Location</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CSV reading</td>
+<td><code>src/Jaunty/Import/CsvImport.cs</code></td>
+<td> Complete</td>
+<td>RFC 4180 compliant</td>
+</tr>
+<tr>
+<td>CSV options</td>
+<td><code>src/Jaunty/Import/CsvImportOptions.cs</code></td>
+<td> Complete</td>
+<td>Delimiter, headers, encoding</td>
+</tr>
+<tr>
+<td>NULL value mapping</td>
+<td><code>src/Jaunty/Import/CsvImportOptions.cs</code></td>
+<td> Complete</td>
+<td>Custom NULL string</td>
+</tr>
+</tbody>
+</table>
+<h3 id="logging-and-diagnostics">1.11 Logging and Diagnostics</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Location</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LoggingInterceptor</code></td>
+<td><code>src/Jaunty/Interceptors/LoggingInterceptor.cs</code></td>
+<td> Complete</td>
+<td>ILogger integration with slow query detection</td>
+</tr>
+<tr>
+<td><code>AuditInterceptor</code></td>
+<td><code>src/Jaunty/Diagnostics/AuditInterceptor.cs</code></td>
+<td> Complete</td>
+<td>In-memory audit trail</td>
+</tr>
+<tr>
+<td><code>ICommandInterceptor</code></td>
+<td><code>src/Jaunty/Interceptors/ICommandInterceptor.cs</code></td>
+<td> Complete</td>
+<td>Interceptor interface</td>
+</tr>
+<tr>
+<td><code>InterceptorPipeline</code></td>
+<td><code>src/Jaunty/Interceptors/InterceptorPipeline.cs</code></td>
+<td> Complete</td>
+<td>Multi-interceptor orchestration</td>
+</tr>
+<tr>
+<td><code>DiagnosticSource</code> events</td>
+<td><code>src/Jaunty/Diagnostics/JauntyDiagnosticListener.cs</code></td>
+<td> Complete</td>
+<td>OpenTelemetry/App Insights integration</td>
+</tr>
+<tr>
+<td><code>LoggingConfiguration</code></td>
+<td><code>src/Jaunty/Configuration/LoggingConfiguration.cs</code></td>
+<td> Complete</td>
+<td>Log levels, sensitivity, thresholds</td>
+</tr>
+<tr>
+<td>DI registration</td>
+<td><code>src/Jaunty/JauntyLoggingExtensions.cs</code></td>
+<td> Complete</td>
+<td><code>IServiceCollection</code> extensions</td>
+</tr>
+</tbody>
+</table>
+<h3 id="extensions-separate-packages">1.12 Extensions (Separate Packages)</h3>
+<table>
+<thead>
+<tr>
+<th>Extension</th>
+<th>Package</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fluent Query API</td>
+<td><code>Jaunty.Fluent</code></td>
+<td> Complete</td>
+<td>WHERE, JOIN, ORDER BY, CTEs, window functions</td>
+</tr>
+<tr>
+<td>Reflection Mapping</td>
+<td><code>Jaunty.Extensions.Reflection</code></td>
+<td> Complete</td>
+<td>Runtime mapping fallback</td>
+</tr>
+<tr>
+<td>Native Bulk Copy</td>
+<td><code>Jaunty.Extensions.Reflection</code></td>
+<td> Complete</td>
+<td>SqlBulkCopy, NpgsqlBinaryImporter</td>
+</tr>
+<tr>
+<td>Scaffolding</td>
+<td><code>Jaunty.Scaffolding</code></td>
+<td> Complete</td>
+<td>Reverse engineer entities</td>
+</tr>
+<tr>
+<td>Flat Files</td>
+<td><code>Jaunty.FlatFiles</code></td>
+<td> Complete</td>
+<td>CSV/TSV file operations</td>
+</tr>
+<tr>
+<td>DuckDB Integration</td>
+<td><code>Jaunty.FlatFiles.DuckDB</code></td>
+<td> Complete</td>
+<td>DuckDB dialect with bulk copy</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="part-2-missing-features-discussion-required">Part 2: Missing Features - Discussion Required</h2>
+<h3 id="priority-p0-critical-for-production-adoption">Priority P0: Critical for Production Adoption</h3>
+<h4 id="dependency-injection-integration">2.1.1 Dependency Injection Integration</h4>
+<p><strong>Status:</strong> Partially Complete - <code>AddJauntyLogging()</code> and <code>ApplyJauntyInterceptors()</code> extensions available</p>
+<p><strong>Problem:</strong> Limited DI integration. Manual interceptor registration required.</p>
+<p><strong>Proposed Solutions:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A: Simple Registration</strong></td>
+<td><code>services.AddJaunty(connectionString)</code></td>
+<td>Simple, minimal</td>
+<td>Limited flexibility</td>
+</tr>
+<tr>
+<td><strong>B: Factory-Based</strong></td>
+<td><code>IDbConnectionFactory</code> registration</td>
+<td>Testable, flexible</td>
+<td>More abstraction</td>
+</tr>
+<tr>
+<td><strong>C: Named Connections</strong></td>
+<td>Multiple named connections</td>
+<td>Multi-database support</td>
+<td>More complex config</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decision Required:</strong></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Support for multiple named connections?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Connection factory abstraction or direct registration?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Options pattern (<code>IOptions&lt;JauntyOptions&gt;</code>) or fluent config?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Should connection pooling be managed?</li>
+</ul>
+<p><strong>Proposed API:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Simple</span>
+services.AddJaunty&lt;SqlConnection&gt;(&quot;connection-string&quot;);
+
+<span class="tok-com">// Named connections</span>
+services.AddJaunty(options =&gt; {
+    options.AddConnection&lt;SqlConnection&gt;(&quot;<span class="tok-kw">default</span>&quot;, &quot;conn1&quot;);
+    options.AddConnection&lt;SqlConnection&gt;(&quot;analytics&quot;, &quot;conn2&quot;);
+});
+
+<span class="tok-com">// Factory-based</span>
+services.AddScoped&lt;IDbConnectionFactory, MyConnectionFactory&gt;();
+</code></pre>
+</div>
+<hr />
+<h4 id="query-result-caching">2.1.2 Query Result Caching</h4>
+<p><strong>Problem:</strong> No second-level cache. Every query hits the database.</p>
+<p><strong>Proposed Solutions:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A: MemoryCache</strong></td>
+<td>Built-in <code>IMemoryCache</code> integration</td>
+<td>Simple, no dependencies</td>
+<td>Single-node only</td>
+</tr>
+<tr>
+<td><strong>B: Distributed Cache</strong></td>
+<td><code>IDistributedCache</code> (Redis)</td>
+<td>Multi-node support</td>
+<td>External dependency</td>
+</tr>
+<tr>
+<td><strong>C: Provider Abstraction</strong></td>
+<td><code>ICacheProvider</code> interface</td>
+<td>Pluggable, flexible</td>
+<td>More abstraction</td>
+</tr>
+<tr>
+<td><strong>D: No Built-in Cache</strong></td>
+<td>Extension point only</td>
+<td>Keeps core minimal</td>
+<td>Users must implement</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decision Required:</strong></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Should caching be in core or extension?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Cache invalidation strategy? (Time-based, write-through, manual)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Per-query cache configuration?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Cache key generation strategy?</li>
+</ul>
+<p><strong>Proposed API:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Per-query caching</span>
+<span class="tok-kw">var</span> products = connection.Query&lt;Product&gt;(
+    sql,
+    cache: CacheOptions.For(&quot;products:all&quot;, TimeSpan.FromMinutes(<span class="tok-num">5</span>)));
+
+<span class="tok-com">// Global configuration</span>
+services.AddJaunty(config =&gt; {
+    config.UseCacheProvider(<span class="tok-kw">new</span> RedisCacheProvider(...));
+    config.DefaultCacheDuration = TimeSpan.FromMinutes(<span class="tok-num">1</span>);
+});
+</code></pre>
+</div>
+<hr />
+<h3 id="priority-p1-high-value-additions">Priority P1: High-Value Additions</h3>
+<h4 id="resilience-retry-policies">2.2.1 Resilience &amp; Retry Policies</h4>
+<p><strong>Problem:</strong> No built-in retry for transient failures.</p>
+<p><strong>Proposed Solutions:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A: Polly Integration</strong></td>
+<td>Built-in Polly support</td>
+<td>Mature, feature-rich</td>
+<td>External dependency</td>
+</tr>
+<tr>
+<td><strong>B: Simple Retry</strong></td>
+<td>Built-in retry with configurable attempts</td>
+<td>No dependencies</td>
+<td>Limited features</td>
+</tr>
+<tr>
+<td><strong>C: Abstraction Layer</strong></td>
+<td><code>IResilienceProvider</code> interface</td>
+<td>Pluggable</td>
+<td>More work</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decision Required:</strong></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Use Polly or build simple retry?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Which exceptions trigger retry? (Timeout, connection errors, deadlocks)</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Exponential backoff configuration?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Circuit breaker pattern needed?</li>
+</ul>
+<p><strong>Proposed API:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Simple retry</span>
+services.AddJaunty(config =&gt; {
+    config.UseRetryPolicy(retry =&gt; {
+        retry.MaxAttempts(<span class="tok-num">3</span>);
+        retry.OnException&lt;SqlException&gt;();
+        retry.ExponentialBackoff(TimeSpan.FromSeconds(<span class="tok-num">1</span>));
+    });
+});
+
+<span class="tok-com">// Polly integration</span>
+services.AddJaunty(config =&gt; {
+    config.UsePollyPolicy(myResiliencePipeline);
+});
+</code></pre>
+</div>
+<hr />
+<h4 id="optimistic-concurrency">2.2.2 Optimistic Concurrency</h4>
+<p><strong>Problem:</strong> No automatic concurrency token handling.</p>
+<p><strong>Proposed Solutions:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A: RowVersion Attribute</strong></td>
+<td><code>[ConcurrencyCheck]</code> or <code>[RowVersion]</code></td>
+<td>Explicit, clear</td>
+<td>Requires schema support</td>
+</tr>
+<tr>
+<td><strong>B: Timestamp Columns</strong></td>
+<td>Automatic <code>UpdatedAt</code> handling</td>
+<td>Common pattern</td>
+<td>Application-level only</td>
+</tr>
+<tr>
+<td><strong>C: Comparison-Based</strong></td>
+<td>WHERE clause with original values</td>
+<td>Works everywhere</td>
+<td>Manual setup</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decision Required:</strong></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Which concurrency strategy to support?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Should <code>Update()</code> throw on concurrency violation?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Return affected rows or throw exception?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Support composite concurrency tokens?</li>
+</ul>
+<p><strong>Proposed API:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    [Key]
+    <span class="tok-kw">public</span> int Id { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    [RowVersion]  <span class="tok-com">// SQL Server rowversion/timestamp</span>
+    <span class="tok-kw">public</span> byte[] RowVersion { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+
+    <span class="tok-com">// OR</span>
+
+    [ConcurrencyCheck]  <span class="tok-com">// Compare original value</span>
+    <span class="tok-kw">public</span> decimal Price { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-com">// Usage</span>
+<span class="tok-kw">try</span>
+{
+    connection.Update(product);  <span class="tok-com">// Throws DbConcurrencyException</span>
+}
+<span class="tok-kw">catch</span> (DbConcurrencyException ex)
+{
+    <span class="tok-com">// Handle conflict</span>
+}
+</code></pre>
+</div>
+<hr />
+<h4 id="soft-delete-support">2.2.3 Soft Delete Support</h4>
+<p><strong>Problem:</strong> No automatic soft delete filtering.</p>
+<p><strong>Proposed Solutions:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A: Attribute-Based</strong></td>
+<td><code>[SoftDelete]</code> attribute</td>
+<td>Explicit, per-entity</td>
+<td>Requires convention</td>
+</tr>
+<tr>
+<td><strong>B: Global Filter</strong></td>
+<td>Configurable global filter</td>
+<td>Flexible</td>
+<td>More complex</td>
+</tr>
+<tr>
+<td><strong>C: Extension Method</strong></td>
+<td><code>.WithSoftDelete&lt;T&gt;()</code></td>
+<td>Opt-in, explicit</td>
+<td>Manual per-query</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decision Required:</strong></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Automatic filtering or opt-in?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Support for <code>Delete&lt;T&gt;()</code> conversion to soft delete?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Include deleted entities option?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Multiple deletion timestamp strategies?</li>
+</ul>
+<p><strong>Proposed API:</strong></p>
+<div class="code-block">
+  <div class="code-header">
+    <span class="code-lang">C#</span>
+    <button class="copy-btn" onclick="copyCode(this)">copy</button>
+  </div>
+  <pre data-lang="csharp"><code class="language-csharp"><span class="tok-com">// Attribute approach</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> Product
+{
+    [SoftDelete(ColumnName = &quot;DeletedAt&quot;)]
+    <span class="tok-kw">public</span> DateTime? DeletedAt { <span class="tok-kw">get</span>; <span class="tok-kw">set</span>; }
+}
+
+<span class="tok-com">// Query automatically filters: WHERE DeletedAt IS NULL</span>
+connection.Query&lt;Product&gt;(&quot;SELECT * FROM Products&quot;);
+
+<span class="tok-com">// Include deleted</span>
+connection.Query&lt;Product&gt;(&quot;SELECT * FROM Products&quot;, includeSoftDeleted: <span class="tok-kw">true</span>);
+
+<span class="tok-com">// Actual delete</span>
+connection.HardDelete(product);  <span class="tok-com">// Actual DELETE</span>
+connection.Delete(product);      <span class="tok-com">// Sets DeletedAt</span>
+</code></pre>
+</div>
+<hr />
+<h3 id="priority-p2-developer-experience">Priority P2: Developer Experience</h3>
+<h4 id="linq-provider">2.3.1 LINQ Provider</h4>
+<p><strong>Problem:</strong> No LINQ support. Users must write raw SQL.</p>
+<p><strong>Decision Required:</strong></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Is LINQ support aligned with Jaunty's philosophy?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Full LINQ or limited subset?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Translation to raw SQL or expression-based builder?</li>
+</ul>
+<p><strong>Note:</strong> This is a significant architectural decision. May warrant a separate ADR.</p>
+<hr />
+<h4 id="change-tracking-unit-of-work">2.3.2 Change Tracking / Unit of Work</h4>
+<p><strong>Problem:</strong> No identity map or change tracking.</p>
+<p><strong>Proposed Solutions:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A: Lightweight Tracker</strong></td>
+<td>Simple identity map</td>
+<td>Low overhead</td>
+<td>Limited features</td>
+</tr>
+<tr>
+<td><strong>B: Unit of Work</strong></td>
+<td><code>IUnitOfWork</code> abstraction</td>
+<td>Familiar pattern</td>
+<td>More abstraction</td>
+</tr>
+<tr>
+<td><strong>C: No Built-in</strong></td>
+<td>Extension point only</td>
+<td>Keeps core minimal</td>
+<td>Users implement</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decision Required:</strong></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Should Jaunty support change tracking at all?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Scope of tracking (per-connection, per-unit-of-work)?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Auto-detect changes or explicit marking?</li>
+</ul>
+<hr />
+<h4 id="migration-framework">2.3.3 Migration Framework</h4>
+<p><strong>Problem:</strong> No code-first migrations.</p>
+<p><strong>Proposed Solutions:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A: SQL-Based Migrations</strong></td>
+<td>Execute SQL scripts</td>
+<td>Simple, database-agnostic</td>
+<td>Manual script writing</td>
+</tr>
+<tr>
+<td><strong>B: Code-First DSL</strong></td>
+<td>C#-based migration definitions</td>
+<td>Type-safe, refactorable</td>
+<td>Complex implementation</td>
+</tr>
+<tr>
+<td><strong>C: Integration Only</strong></td>
+<td>Execute external migration tools</td>
+<td>Leverage existing tools</td>
+<td>External dependency</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decision Required:</strong></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Build migrations or integrate with existing tools?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Support rollback/down migrations?</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Migration history tracking?</li>
+</ul>
+<hr />
+<h3 id="priority-p3-nice-to-have-features">Priority P3: Nice-to-Have Features</h3>
+<h4 id="advanced-parameter-features">2.4.1 Advanced Parameter Features</h4>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Table-Valued Parameters</td>
+<td>SQL Server TVP support</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>JSON Parameter Binding</td>
+<td>Auto-serialize to JSON columns</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Parameter Size/Precision</td>
+<td>Specify DbType, size, precision</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Bulk Parameter Binding</td>
+<td>Optimized for large parameter lists</td>
+<td>Low</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h4 id="audit-compliance">2.4.2 Audit &amp; Compliance</h4>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Automatic Timestamps</td>
+<td>CreatedAt/ModifiedAt population</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Entity History</td>
+<td>Change history tracking</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Audit Logging</td>
+<td>Who changed what and when</td>
+<td>Medium</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h4 id="special-type-support">2.4.3 Special Type Support</h4>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JSON/JSONB Columns</td>
+<td>Native JSON type mapping</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Geometry/Geography</td>
+<td>Spatial type support</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Arrays (Postgres)</td>
+<td>Native array type support</td>
+<td>Low</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="part-3-decision-log">Part 3: Decision Log</h2>
+<p>Use this section to record decisions made during discussion.</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Decision</th>
+<th>Date</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ILogger Integration</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>DI Integration</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Query Caching</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Resilience/Retry</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Optimistic Concurrency</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Soft Delete</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>LINQ Provider</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Change Tracking</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Migrations</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="part-4-implementation-roadmap-post-decision">Part 4: Implementation Roadmap (Post-Decision)</h2>
+<h3 id="phase-1-foundation-p0-items">Phase 1: Foundation (P0 Items)</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> ILogger Integration</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> DI Integration</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Command Interception</li>
+</ul>
+<h3 id="phase-2-reliability-p1-items">Phase 2: Reliability (P1 Items)</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Resilience/Retry Policies</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Query Result Caching</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Optimistic Concurrency</li>
+</ul>
+<h3 id="phase-3-developer-experience-p2-items">Phase 3: Developer Experience (P2 Items)</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Soft Delete Support</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Migration Framework (decision pending)</li>
+</ul>
+<h3 id="phase-4-advanced-features-p3-items">Phase 4: Advanced Features (P3 Items)</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Table-Valued Parameters</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> JSON Type Mapping</li>
+<li class="task-list-item"><input disabled="disabled" type="checkbox" /> Audit Features</li>
+</ul>
+<hr />
+<h2 id="appendix-a-related-documentation">Appendix A: Related Documentation</h2>
+<ul>
+<li><a href="02-architecture-ARCHITECTURE-DECISIONS.html">ARCHITECTURE-DECISIONS.md</a></li>
+<li><a href="02-architecture-design-philosophy.html">Design Philosophy</a></li>
+<li><a href="03-development-limitations.html">Known Limitations</a></li>
+</ul>
+
+        </article>
+        <div class="page-nav" id="page-nav">
+          <div class="prev-next"><a class="pn-prev" href="06-releases-continuity-rider-template.html">
+  <span class="pn-label">&#8592; prev</span>
+  <span class="pn-title">Continuity rider template</span>
+</a><a class="pn-next" href="06-releases-order-form-template.html">
+  <span class="pn-label">next &#8594;</span>
+  <span class="pn-title">Order form template</span>
+</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== status bar ===== -->
+  <footer class="jt-statusbar">
+    <span class="status-dot">&#9679; jaunty docs</span>
+  </footer>
+</div>
+<script src="nav.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", fontFamily: "JetBrains Mono, monospace" });
+</script>
+</body>
+</html>
