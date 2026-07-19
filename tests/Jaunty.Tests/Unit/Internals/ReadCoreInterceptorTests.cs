@@ -12,6 +12,13 @@ namespace Jaunty.Tests.Unit.Internals;
 /// <see cref="ICommandInterceptor"/> pipeline, the same way <c>QueryCore</c>/<c>QueryCoreAsync</c>
 /// already did before this fix.
 /// </summary>
+/// <remarks>
+/// Shares the "Logging Extensions" collection with <see cref="Jaunty.Tests.Unit.Interceptors.JauntyLoggingExtensionsTests"/>
+/// and <see cref="Jaunty.Tests.Configuration.JauntyConfigInterceptorTests"/> — all three mutate
+/// the same process-wide <see cref="JauntyConfig.InterceptorPipeline"/> static state and must run
+/// serialized against each other.
+/// </remarks>
+[Collection("Logging Extensions")]
 public class ReadCoreInterceptorTests : IDisposable
 {
     private readonly SQLiteConnection _connection;
@@ -32,8 +39,9 @@ public class ReadCoreInterceptorTests : IDisposable
 
     public void Dispose()
     {
-        // No other test in the suite currently registers interceptors via JauntyConfig
-        // (see JauntyConfigInterceptorTests), so it is safe to fully clear the pipeline here.
+        // Other tests in the "Logging Extensions" collection also register interceptors via
+        // JauntyConfig, but the [Collection] attribute serializes them against this class, so
+        // it's safe to fully clear the pipeline here.
         JauntyConfig.ClearInterceptors();
         _connection.Dispose();
         GC.SuppressFinalize(this);
