@@ -212,7 +212,12 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
             var parts = new string[columnCount + 1];
             parts[0] = columnCount.ToString();
             for (int i = 0; i < columnCount; i++) parts[i + 1] = columns[i].ColumnName ?? string.Empty;
-            return string.Join("", parts);
+            // Unit Separator (0x1F) prevents adjacent column names from colliding when concatenated
+            // (e.g. ["ab","c"] and ["a","bc"] would otherwise both key to "2abc") - mirrors
+            // MultiRowInsertCache.BuildLayoutKey in Internals/Write/MultiRowInsertCache.cs. Uses the
+            // \x1F escape (not a raw embedded byte) so the separator is visible in source and to
+            // tooling, after two separate audit rounds mistook the byte for a missing separator.
+            return string.Join("\x1F", parts);
         }
 
         private static Func<TEntity, object?>[] BuildGetters(ColumnMetadata[] columns)
