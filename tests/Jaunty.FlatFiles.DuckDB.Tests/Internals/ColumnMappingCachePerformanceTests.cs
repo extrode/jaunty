@@ -58,6 +58,11 @@ public class ColumnMappingCachePerformanceTests
     [Fact]
     public void Caching_ImprovesPerformance()
     {
+        // Wall-clock threshold: a useful canary on a developer machine,
+        // pure noise on shared CI runners.
+        if (Environment.GetEnvironmentVariable("CI") == "true")
+            Assert.Skip("Wall-clock performance thresholds are unreliable on shared CI runners.");
+
         // Arrange
         var entityType = typeof(SalesRecord);
 
