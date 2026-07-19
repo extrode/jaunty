@@ -14,6 +14,7 @@ namespace Jaunty.Tests.Unit.Internals;
 /// 3. IMapped&lt;T&gt; (cached in MappedCache)
 /// 4. Metadata reflection fallback
 /// </summary>
+[Collection("Type Handler Operations")]
 public class DrDispatcherTests : IDisposable
 {
     private readonly SQLiteConnection _connection;

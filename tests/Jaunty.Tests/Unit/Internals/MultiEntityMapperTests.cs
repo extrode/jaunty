@@ -12,6 +12,7 @@ namespace Jaunty.Tests.Unit.Internals;
 /// T1 has priority when columns match both types.
 /// Uses real SQLite in-memory connections to produce IDataReader instances.
 /// </summary>
+[Collection("Multi-Entity Mapper Reflection Resolver")]
 public class MultiEntityMapperTests : IDisposable
 {
     private readonly SQLiteConnection _connection;
