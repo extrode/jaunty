@@ -59,6 +59,30 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public void BulkInsert_IEntityImplementation_PopulatesIdsViaLoopPath(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        // A single-entity list always routes through the loop-based insert path (the multi-row
+        // path requires entityList.Count > 1), which is the only BulkInsert path that can
+        // populate identity values back onto entities (see BulkInsert.cs's BulkInsertLoop remarks).
+        var entities = new List<IEntityTestEntity>
+        {
+            new() { Name = "IdPopulationTest", Value = 42 }
+        };
+
+        int inserted = connection.BulkInsert(entities);
+
+        Assert.Equal(1, inserted);
+        Assert.NotEqual(0, entities[0].Id);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void BulkInsert_EmptyCollection_ReturnsZero(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);

@@ -394,7 +394,7 @@ public static partial class Jaunty
                 ? default(T) is null
                     ? default!
                     : throw new InvalidOperationException("Scalar result is null but expected a non-nullable value.")
-                : (T)Convert.ChangeType(result, typeof(T));
+                : ScalarConverter<T>.Convert(result);
         }
         finally
         {
