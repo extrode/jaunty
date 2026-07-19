@@ -137,7 +137,18 @@ public static class CsvImportExtensions
 
     private static long ImportViaSqliteCli(string dbPath, string tableName, string filePath, CsvImportOptions options)
     {
-        // tableName is already validated by ValidateIdentifier in the public entry point.
+        // dbPath comes from the connection's own connection string ("Data Source=..."), unvalidated,
+        // and is interpolated directly into the sqlite3 CLI process's command-line arguments; a quote
+        // would let it break out of the quoted argument and inject additional CLI switches.
+        if (dbPath.IndexOfAny(SqliteCliUnsafeChars) >= 0)
+            throw new ArgumentException($"Database path contains characters that are not supported by the sqlite3 CLI: {dbPath}", nameof(dbPath));
+
+        // tableName is already validated by ValidateIdentifier in the public entry point, but still
+        // needs dialect escaping/quoting here to match ImportViaPreparedStatements' behavior for
+        // keyword-collision table names (e.g. "GROUP") - the sqlite3 CLI's dot-command tokenizer
+        // accepts double-quoted arguments the same way ImportViaPreparedStatements' SQL does.
+        string escapedTableName = new SQLiteDialect().EscapeTableName(null, tableName);
+
         // filePath comes from the caller and is embedded verbatim in the sqlite3 CLI's dot-command
         // script (piped over stdin); a quote or newline would let it break out of the quoted argument
         // and inject arbitrary dot-commands (e.g. ".system") into the sqlite3 CLI process.
@@ -152,9 +163,9 @@ public static class CsvImportExtensions
             commands.AppendLine($".separator \"{options.Delimiter}\"");
 
         if (options.HasHeader)
-            commands.AppendLine($".import --skip 1 \"{filePath.Replace("\\", "/")}\" {tableName}");
+            commands.AppendLine($".import --skip 1 \"{filePath.Replace("\\", "/")}\" {escapedTableName}");
         else
-            commands.AppendLine($".import \"{filePath.Replace("\\", "/")}\" {tableName}");
+            commands.AppendLine($".import \"{filePath.Replace("\\", "/")}\" {escapedTableName}");
 
         var psi = new ProcessStartInfo
         {
