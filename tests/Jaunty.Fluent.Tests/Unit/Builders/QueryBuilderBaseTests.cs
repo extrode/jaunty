@@ -71,9 +71,10 @@ public class QueryBuilderBaseTests : IClassFixture<FluentDatabaseFixture>
             .On("p.category_id", "c.category_id")
             .ToSql();
 
-        // alias "p" must appear after the table name in the FROM clause
-        Assert.Contains(" p", sql);
-        Assert.Contains(" c", sql);
+        // BuildFromAndJoinClause emits "<table> <alias>" verbatim after the table name in
+        // FROM/JOIN, so these substrings only appear if the alias was actually applied.
+        Assert.Contains("products p", sql);
+        Assert.Contains("categories c", sql);
     }
 
     // ------------------------------------------------------------------
