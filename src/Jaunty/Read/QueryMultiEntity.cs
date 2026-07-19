@@ -1399,6 +1399,12 @@ public static partial class Jaunty
         return QueryStreamCore<T1, T2>(connection, sql, parameters, options);
     }
 
+    // Eagerly validates (connection/sql) rather than deferring to first enumeration: a
+    // yield-return method only executes its body once enumerated, so a check placed there would
+    // silently never run for a caller who discards the returned IEnumerable<(T1, T2)> (or breaks
+    // out of a foreach early) without enumerating it. Splitting into a thin eager wrapper plus a
+    // private iterator ensures misuse (e.g. a null connection) is caught immediately at call time
+    // instead of being deferred to whenever/if enumeration happens.
     private static IEnumerable<(T1, T2)> QueryStreamCore<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions options) where T1 : new() where T2 : new()
     {
 #if NET8_0_OR_GREATER
@@ -1409,6 +1415,11 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
+        return QueryStreamCoreIterator<T1, T2>(connection, sql, parameters, options);
+    }
+
+    private static IEnumerable<(T1, T2)> QueryStreamCoreIterator<T1, T2>(IDbConnection connection, string sql, object? parameters, CommandOptions options) where T1 : new() where T2 : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         IDbCommand? command = null;
