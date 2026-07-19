@@ -190,6 +190,33 @@ public class JauntyDiagnosticListenerTests : IDisposable
     }
 
     [Fact]
+    public void CommandExecutingPayload_ConnectionId_IsStableForSameConnection()
+    {
+        var context1 = new CommandContext("SELECT 1", null, _connection, CommandType.Text);
+        var context2 = new CommandContext("SELECT 2", null, _connection, CommandType.Text);
+
+        var payload1 = new CommandExecutingPayload(context1);
+        var payload2 = new CommandExecutingPayload(context2);
+
+        Assert.Equal(payload1.ConnectionId, payload2.ConnectionId);
+    }
+
+    [Fact]
+    public void CommandExecutingPayload_ConnectionId_IsUniquePerConnectionInstance()
+    {
+        // Regression test: ConnectionId used to be Connection.GetHashCode().ToString(), which is
+        // not guaranteed unique and can be reused across different instances once one is GC'd.
+        var otherConnection = new TestDbConnection();
+        var context1 = new CommandContext("SELECT 1", null, _connection, CommandType.Text);
+        var context2 = new CommandContext("SELECT 1", null, otherConnection, CommandType.Text);
+
+        var payload1 = new CommandExecutingPayload(context1);
+        var payload2 = new CommandExecutingPayload(context2);
+
+        Assert.NotEqual(payload1.ConnectionId, payload2.ConnectionId);
+    }
+
+    [Fact]
     public void CommandExecutedPayload_InitializesProperties()
     {
         // Arrange
