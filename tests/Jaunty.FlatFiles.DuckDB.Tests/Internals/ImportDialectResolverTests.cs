@@ -103,8 +103,13 @@ public class ImportDialectResolverTests
         ImportDialectResolver.Register("OverwriteTestKey", first);
         ImportDialectResolver.Register("OverwriteTestKey", second);
 
-        // No exception — overwrite is allowed (dictionary semantics)
-        Assert.True(true);
+        using var conn = new OverwriteTestKeyConnection();
+        var resolved = ImportDialectResolver.Resolve(conn, null);
+
+        // The second registration must win, proving Register() overwrites the existing
+        // entry for the key instead of ignoring the second call.
+        Assert.Same(second, resolved);
+        Assert.NotSame(first, resolved);
     }
 
     // ------------------------------------------------------------------
@@ -156,6 +161,30 @@ public class ImportDialectResolverTests
     /// Does NOT contain "UnknownDb" in its name to avoid matching the custom registration test.
     /// </summary>
     private sealed class FallbackDbConnection : DbConnection
+    {
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public override string ConnectionString { get; set; } = string.Empty;
+        public override string Database => string.Empty;
+        public override string DataSource => string.Empty;
+        public override string ServerVersion => string.Empty;
+        public override ConnectionState State => ConnectionState.Closed;
+
+        public override void ChangeDatabase(string databaseName) { }
+        public override void Close() { }
+        public override void Open() { }
+
+        protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
+            => throw new NotSupportedException();
+
+        protected override DbCommand CreateDbCommand()
+            => throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// A DbConnection whose type name contains "OverwriteTestKey" - used to verify
+    /// that a second Register() call for the same key replaces the first registration.
+    /// </summary>
+    private sealed class OverwriteTestKeyConnection : DbConnection
     {
         [System.Diagnostics.CodeAnalysis.AllowNull]
         public override string ConnectionString { get; set; } = string.Empty;
