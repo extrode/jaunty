@@ -123,28 +123,10 @@ public static class JauntyLoggingExtensions
             // Guard against duplicate registration: calling this method more than once (e.g. an
             // accidental repeat call, or re-running startup in tests) must not append the same
             // interceptor instance to the process-wide JauntyConfig pipeline a second time.
-            if (!IsAlreadyRegistered(interceptor))
-                JauntyConfig.AddInterceptor(interceptor);
+            // AddInterceptorIfNotPresent does the presence check and the add atomically under one
+            // lock, so concurrent callers can't both observe "not yet registered" and both append.
+            JauntyConfig.AddInterceptorIfNotPresent(interceptor);
         }
-    }
-
-    /// <summary>
-    /// Checks whether <paramref name="interceptor"/> (by reference) is already present in the
-    /// current <see cref="JauntyConfig.InterceptorPipeline"/>.
-    /// </summary>
-    private static bool IsAlreadyRegistered(ICommandInterceptor interceptor)
-    {
-        IEnumerable<ICommandInterceptor>? existing = JauntyConfig.InterceptorPipeline?.GetInterceptors();
-        if (existing is null)
-            return false;
-
-        foreach (ICommandInterceptor existingInterceptor in existing)
-        {
-            if (ReferenceEquals(existingInterceptor, interceptor))
-                return true;
-        }
-
-        return false;
     }
 
     /// <summary>
