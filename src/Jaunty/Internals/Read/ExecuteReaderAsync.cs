@@ -66,6 +66,8 @@ public static partial class Jaunty
                             if (parameters is not null)
                                 ParameterBinder.Bind(command, parameters);
 
+                            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
+
 #if NET8_0_OR_GREATER
                             DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
                             await using var readerDisposer = reader.ConfigureAwait(false);
@@ -94,6 +96,8 @@ public static partial class Jaunty
 
                             if (parameters is not null)
                                 ParameterBinder.Bind(command, parameters);
+
+                            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
                             using IDataReader reader = command.ExecuteReader();
                             result = await handler(reader, cancellationToken).ConfigureAwait(false);
