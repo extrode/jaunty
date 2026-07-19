@@ -307,10 +307,19 @@ public static partial class Jaunty
 
                 DbParameterCollection pCollection = command.Parameters;
 
+                // Set first entity values before Prepare() so providers can infer parameter types.
+                // Prepare() is a best-effort optimization; some providers (e.g. SQL Server on .NET Framework)
+                // require explicit DbType on all parameters, which we can't guarantee here.
+                bool isFirst = true;
                 foreach (T? entity in entityList)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     valueSetter(pCollection, entity);
+                    if (isFirst)
+                    {
+                        try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
+                        isFirst = false;
+                    }
                     totalUpdated += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                 }
 
