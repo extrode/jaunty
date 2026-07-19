@@ -52,16 +52,21 @@ public class ExpressionCachingTests : IDisposable
             File.Delete(_testCsvPath);
     }
 
+    // AUD-R7: this test's name and premise ("...CachesCompiledDelegates") were wrong.
+    // ExpressionTranslator.EvaluateExpression deliberately does NOT cache compiled delegates -
+    // its own source comment explains why: a string-keyed cache would return a stale delegate
+    // for closure-captured variables (e.g. `x => x.Age > someLocalVar`), since two calls with
+    // different captured values stringify identically. There is nothing to inspect a cache for.
+    // What's actually worth regression-testing here is that repeated evaluation of the same
+    // expression instance recompiles correctly and consistently each time.
     [Fact]
-    public void EvaluateExpression_CachesCompiledDelegates()
+    public void EvaluateExpression_ConstantExpression_EvaluatesConsistentlyAcrossRepeatedCalls()
     {
         // Arrange
         var constantExpr = Expression.Constant(42);
 
-        // Act - First evaluation
+        // Act
         var result1 = InvokeEvaluateExpression(constantExpr);
-
-        // Act - Second evaluation (should use cache)
         var result2 = InvokeEvaluateExpression(constantExpr);
 
         // Assert
