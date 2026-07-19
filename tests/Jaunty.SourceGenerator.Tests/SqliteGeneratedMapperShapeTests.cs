@@ -132,6 +132,59 @@ public sealed class SqliteGeneratedMapperShapeTests : IDisposable
     }
 
     [Fact]
+    public void CreateRowMapper_SameShapeAcrossRows_MapsEachRowCorrectly()
+    {
+        using SqliteCommand cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT product_id, product_name, unit_price, discontinued FROM gen_products ORDER BY product_id";
+
+        using SqliteDataReader reader = cmd.ExecuteReader();
+        Func<IDataReader, GenProduct> mapper = GenProduct.CreateRowMapper(reader);
+
+        var rows = new List<GenProduct>();
+        while (reader.Read())
+            rows.Add(mapper(reader));
+
+        Assert.Equal(3, rows.Count);
+        Assert.Equal("Chai", rows[0].ProductName);
+        Assert.Equal(18.0m, rows[0].UnitPrice);
+        Assert.True(rows[1].Discontinued);
+        Assert.Null(rows[2].UnitPrice);
+    }
+
+    [Fact]
+    public void CreateRowMapper_ReaderShapeChangesUnderStaleDelegate_FallsBackToReadEntity()
+    {
+        using SqliteCommand cmd = _connection.CreateCommand();
+        cmd.CommandText = """
+            SELECT product_id, product_name, unit_price, discontinued FROM gen_products WHERE product_id = 1;
+            SELECT 42 AS noise, discontinued, unit_price, product_name, product_id FROM gen_products WHERE product_id = 2;
+            """;
+
+        using SqliteDataReader reader = cmd.ExecuteReader();
+
+        Assert.True(reader.Read());
+        // Mapper is created once against the first result set's 4-column shape, simulating a
+        // caller that (incorrectly) keeps reusing the same delegate across NextResult() instead
+        // of calling CreateRowMapper again per result set.
+        Func<IDataReader, GenProduct> staleMapper = GenProduct.CreateRowMapper(reader);
+        GenProduct first = staleMapper(reader);
+        Assert.Equal(1, first.ProductId);
+        Assert.Equal("Chai", first.ProductName);
+
+        Assert.True(reader.NextResult());
+        Assert.True(reader.Read());
+        // The second result set has 5 columns (noise + reordered) vs. the first's 4, so the
+        // mapper's FieldCount guard must trip and fall back to ReadEntity's full ordinal
+        // resolution instead of reusing the first result set's cached column positions - which
+        // would otherwise silently misread "noise" or the wrong column into each property.
+        GenProduct second = staleMapper(reader);
+        Assert.Equal(2, second.ProductId);
+        Assert.Equal("Chang", second.ProductName);
+        Assert.Equal(19.0m, second.UnitPrice);
+        Assert.True(second.Discontinued);
+    }
+
+    [Fact]
     public void ReadEntity_InterleavedReaders_DoNotCrossContaminate()
     {
         using SqliteCommand cmdA = _connection.CreateCommand();
