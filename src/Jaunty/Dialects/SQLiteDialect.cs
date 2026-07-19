@@ -32,7 +32,7 @@ internal sealed class SQLiteDialect : ISqlDialect
 
     public string GetDefaultSchema() => string.Empty; // SQLite doesn't support schemas
 
-    public bool IsKeyword(string identifier) => Keywords.Contains(identifier);
+    public bool IsKeyword(string identifier) => identifier is not null && Keywords.Contains(identifier);
 
     public string EscapeTableName(string? schemaName, string tableName)
     {

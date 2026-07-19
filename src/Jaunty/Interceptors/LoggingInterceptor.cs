@@ -89,20 +89,6 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
         if (!IsEnabledAtLevel(level))
             return new ValueTask();
 
-        var message = new StringBuilder();
-        message.Append("Completed ");
-        message.Append(GetCommandTypeDescription(context.CommandType));
-        message.Append(" in ");
-        message.Append(context.Elapsed.TotalMilliseconds.ToString("F2"));
-        message.Append("ms");
-
-        if (isSlow)
-        {
-            message.Append(" (SLOW - exceeded ");
-            message.Append(_config.SlowQueryThreshold.TotalMilliseconds);
-            message.Append("ms threshold)");
-        }
-
         _logger.Log(
             level,
             "Completed {CommandType} in {ElapsedMilliseconds:F2}ms{SlowQueryIndicator}",
