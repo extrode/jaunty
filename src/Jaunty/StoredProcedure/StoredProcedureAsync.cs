@@ -555,6 +555,8 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureNonQueryAsync(IDbConnection, string, CancellationToken)"/>
     public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = default)
     {
-        return ExecuteNonQueryCoreAsync(connection, procedureName, parameters, options, CommandType.StoredProcedure, cancellationToken);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : ExecuteNonQueryCoreAsync(dbConnection, procedureName, parameters, options, CommandType.StoredProcedure, cancellationToken);
     }
 }

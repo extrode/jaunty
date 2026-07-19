@@ -56,7 +56,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetAllCoreAsync<T>(dbConnection, default, cancellationToken);
     }
 
@@ -76,7 +76,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetAllCoreAsync<T>(dbConnection, options, cancellationToken);
     }
 
@@ -129,7 +129,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetAllStreamCoreAsync<T>(dbConnection, default, cancellationToken);
     }
 
@@ -149,7 +149,7 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
 #endif
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetAllStreamCoreAsync<T>(dbConnection, options, cancellationToken);
     }
 #else
@@ -165,7 +165,7 @@ public static partial class Jaunty
     {
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetAllStreamCoreAsync<T>(dbConnection, default, cancellationToken);
     }
 
@@ -182,7 +182,7 @@ public static partial class Jaunty
     {
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (connection is not DbConnection dbConnection)
-            throw new ArgumentException("DbConnection required for async", nameof(connection));
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetAllStreamCoreAsync<T>(dbConnection, options, cancellationToken);
     }
 #endif
