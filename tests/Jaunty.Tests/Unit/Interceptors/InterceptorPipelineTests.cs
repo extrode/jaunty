@@ -305,7 +305,6 @@ public class InterceptorPipelineTests
                 CancellationToken.None));
 
         // The original exception should propagate, not the one from OnCommandFailed
-        Assert.True(true, "Should not throw additional exceptions from OnCommandFailed");
     }
 
     #endregion
