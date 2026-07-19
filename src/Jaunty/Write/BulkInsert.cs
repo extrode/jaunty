@@ -14,6 +14,15 @@ public static partial class Jaunty
     /// <summary>
     /// Inserts multiple entities into the database in a single transaction.
     /// </summary>
+    /// <remarks>
+    /// Identity values are populated back onto entities only when the row count and provider
+    /// combination routes through the loop-based insert path (one command per entity). The
+    /// multi-row VALUES and native bulk-copy paths - used automatically for larger batches on
+    /// providers that support them - do not populate identity values, since there is no
+    /// provider-agnostic way to map a single "last inserted id" back to individual rows within a
+    /// batched or native bulk statement. Callers that need populated IDs should use single-row
+    /// <see cref="Insert{T}(IDbConnection, T)"/> in a loop, or query the inserted rows back afterward.
+    /// </remarks>
     public static int BulkInsert<T>(this IDbConnection connection, IEnumerable<T> entities) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -29,6 +38,10 @@ public static partial class Jaunty
     /// <summary>
     /// Inserts multiple entities into the database in a single transaction with command options.
     /// </summary>
+    /// <remarks>
+    /// See <see cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/> for the identity-population
+    /// caveat: only the loop-based insert path populates entity IDs back.
+    /// </remarks>
     public static int BulkInsert<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -44,6 +57,10 @@ public static partial class Jaunty
     /// <summary>
     /// Inserts multiple entities into the database, bypassing foreign key constraint checks.
     /// </summary>
+    /// <remarks>
+    /// See <see cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/> for the identity-population
+    /// caveat: only the loop-based insert path populates entity IDs back.
+    /// </remarks>
     public static int BulkInsertIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -59,6 +76,10 @@ public static partial class Jaunty
     /// <summary>
     /// Inserts multiple entities into the database, bypassing foreign key constraint checks, with command options.
     /// </summary>
+    /// <remarks>
+    /// See <see cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/> for the identity-population
+    /// caveat: only the loop-based insert path populates entity IDs back.
+    /// </remarks>
     public static int BulkInsertIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -295,9 +316,15 @@ public static partial class Jaunty
     /// </summary>
     private static int BulkInsertLoop<T>(IDbConnection connection, IList<T> entityList, CachedCrudSql cached, IDbTransaction? transaction, CommandOptions options, Action<IDataParameterCollection, T> valueSetter) where T : new()
     {
+        // One command per entity, so - unlike the MultiRow/Native paths - per-row identity
+        // retrieval is feasible here: use InsertCommandText (INSERT + identity-retrieval SQL)
+        // and ExecuteScalar when the entity has an identity key, mirroring InsertCore's behavior,
+        // so BulkInsert populates entity IDs the same way single-row Insert does.
+        Action<T, long>? idSetter = cached.HasIdentityKey ? WriteParameterCache<T>.IdSetter : null;
+
         using IDbCommand command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = cached.InsertSql;
+        command.CommandText = idSetter is not null ? cached.InsertCommandText : cached.InsertSql;
 
         if (options.CommandTimeout.HasValue)
             command.CommandTimeout = options.CommandTimeout.Value;
@@ -311,15 +338,28 @@ public static partial class Jaunty
         valueSetter(pCollection, entityList[0]);
         try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
 
-        int totalInserted = command.ExecuteNonQuery();
+        int totalInserted = ExecuteInsertAndSetId(command, entityList[0], idSetter);
 
         for (int i = 1; i < entityList.Count; i++)
         {
             valueSetter(pCollection, entityList[i]);
-            totalInserted += command.ExecuteNonQuery();
+            totalInserted += ExecuteInsertAndSetId(command, entityList[i], idSetter);
         }
 
         return totalInserted;
+    }
+
+    private static int ExecuteInsertAndSetId<T>(IDbCommand command, T entity, Action<T, long>? idSetter)
+    {
+        if (idSetter is null)
+            return command.ExecuteNonQuery();
+
+        object? result = command.ExecuteScalar();
+        long id = result is null or DBNull ? 0 : Convert.ToInt64(result);
+        if (id > 0)
+            idSetter(entity, id);
+
+        return 1;
     }
     private static bool IsSqliteDialect(ISqlDialect dialect)
         => dialect is SQLiteDialect || dialect.GetType().Name.Contains("SQLite", StringComparison.OrdinalIgnoreCase);

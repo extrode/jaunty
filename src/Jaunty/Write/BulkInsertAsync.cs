@@ -18,6 +18,16 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database in a single transaction.
     /// </summary>
+    /// <remarks>
+    /// Identity values are populated back onto entities only when the row count and provider
+    /// combination routes through the loop-based insert path (one command per entity). The
+    /// multi-row VALUES and native bulk-copy paths - used automatically for larger batches on
+    /// providers that support them - do not populate identity values, since there is no
+    /// provider-agnostic way to map a single "last inserted id" back to individual rows within a
+    /// batched or native bulk statement. Callers that need populated IDs should use single-row
+    /// <see cref="InsertAsync{T}(IDbConnection, T, CancellationToken)"/> in a loop, or query the
+    /// inserted rows back afterward.
+    /// </remarks>
     public static ValueTask<int> BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -35,6 +45,10 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database in a single transaction with command options.
     /// </summary>
+    /// <remarks>
+    /// See <see cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/> for
+    /// the identity-population caveat: only the loop-based insert path populates entity IDs back.
+    /// </remarks>
     public static ValueTask<int> BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -52,6 +66,10 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database, bypassing foreign key constraint checks.
     /// </summary>
+    /// <remarks>
+    /// See <see cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/> for
+    /// the identity-population caveat: only the loop-based insert path populates entity IDs back.
+    /// </remarks>
     public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -69,6 +87,10 @@ public static partial class Jaunty
     /// <summary>
     /// Asynchronously inserts multiple entities into the database, bypassing foreign key constraint checks, with command options.
     /// </summary>
+    /// <remarks>
+    /// See <see cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/> for
+    /// the identity-population caveat: only the loop-based insert path populates entity IDs back.
+    /// </remarks>
     public static ValueTask<int> BulkInsertIgnoreConstraintsAsync<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options, CancellationToken cancellationToken = default) where T : new()
     {
 #if NET8_0_OR_GREATER
@@ -337,6 +359,12 @@ public static partial class Jaunty
         Action<IDataParameterCollection, T> valueSetter,
         CancellationToken cancellationToken) where T : new()
     {
+        // One command per entity, so - unlike the MultiRow/Native paths - per-row identity
+        // retrieval is feasible here: use InsertCommandText (INSERT + identity-retrieval SQL)
+        // and ExecuteScalarAsync when the entity has an identity key, mirroring InsertCoreAsync's
+        // behavior, so BulkInsertAsync populates entity IDs the same way single-row InsertAsync does.
+        Action<T, long>? idSetter = cached.HasIdentityKey ? WriteParameterCache<T>.IdSetter : null;
+
 #if NET8_0_OR_GREATER
         DbCommand command = connection.CreateCommand();
         await using var commandDisposer = command.ConfigureAwait(false);
@@ -344,7 +372,7 @@ public static partial class Jaunty
         using DbCommand command = connection.CreateCommand();
 #endif
         command.Transaction = transaction;
-        command.CommandText = cached.InsertSql;
+        command.CommandText = idSetter is not null ? cached.InsertCommandText : cached.InsertSql;
 
         if (options.CommandTimeout.HasValue)
             command.CommandTimeout = options.CommandTimeout.Value;
@@ -358,16 +386,29 @@ public static partial class Jaunty
         valueSetter(pCollection, entityList[0]);
         try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
 
-        int totalInserted = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        int totalInserted = await ExecuteInsertAndSetIdAsync(command, entityList[0], idSetter, cancellationToken).ConfigureAwait(false);
 
         for (int i = 1; i < entityList.Count; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             valueSetter(pCollection, entityList[i]);
-            totalInserted += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            totalInserted += await ExecuteInsertAndSetIdAsync(command, entityList[i], idSetter, cancellationToken).ConfigureAwait(false);
         }
 
         return totalInserted;
+    }
+
+    private static async ValueTask<int> ExecuteInsertAndSetIdAsync<T>(DbCommand command, T entity, Action<T, long>? idSetter, CancellationToken cancellationToken)
+    {
+        if (idSetter is null)
+            return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+        object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        long id = result is null or DBNull ? 0 : Convert.ToInt64(result);
+        if (id > 0)
+            idSetter(entity, id);
+
+        return 1;
     }
 
     /// <summary>
