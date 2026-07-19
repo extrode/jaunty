@@ -170,7 +170,8 @@ public interface ISqlDialect
 
     /// <summary>
     /// Generates SQL for trimming whitespace.
-    /// Most dialects use TRIM, older SQL Server uses LTRIM(RTRIM(...)).
+    /// All dialects, including SQL Server, use TRIM (SQL Server 2017+ syntax) - there is no
+    /// LTRIM(RTRIM(...)) fallback for older SQL Server versions.
     /// </summary>
     /// <param name="expression">The SQL expression for the string.</param>
     /// <returns>Dialect-specific trim SQL expression.</returns>

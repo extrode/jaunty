@@ -31,6 +31,27 @@ public class GridReaderTests : IClassFixture<DialectFixture>
         Assert.All(categories, c => Assert.NotNull(c.CategoryName));
     }
 
+    // AUD-R6: GridReader.ReadCore ignored CommandOptions<T>.ExpectedRowCount and always hardcoded
+    // new List<T>(16), unlike the main Query<T> path which honors it. Read<T> returns List<T>
+    // directly, so the pre-sized capacity is directly observable here.
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_Read_WithExpectedRowCount_PreSizesListCapacity(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple(
+            FullCategorySql(dialect, 2));
+
+        List<Category> categories = gridReader.Read(CommandOptions<Category>.WithExpectedRowCount(500));
+
+        Assert.Equal(2, categories.Count);
+        Assert.True(categories.Capacity >= 500);
+    }
+
     [Theory]
     [SqlServer]
     [Postgres]
