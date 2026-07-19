@@ -118,4 +118,28 @@ public class ScalarConverterTests
 
         Assert.Equal(ts, result);
     }
+
+    // AUD-R7: the fallback System.Convert.ChangeType call didn't pass CultureInfo.InvariantCulture,
+    // so decimal/numeric conversion depended on the executing thread's current culture. Under a
+    // comma-decimal culture (e.g. de-DE), a "." in a string-typed decimal value could be
+    // misinterpreted as a thousands separator instead of a decimal point, silently corrupting
+    // the value instead of parsing it as 1.5.
+    [Fact]
+    public void Convert_DecimalFromString_IsCultureInvariant()
+    {
+        var original = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("de-DE");
+
+            var result = ScalarConverter<decimal>.Convert("1.5");
+
+            Assert.Equal(1.5m, result);
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = original;
+        }
+    }
+
 }
