@@ -12,6 +12,15 @@ public static partial class Jaunty
     /// <returns>A list of dictionaries, each representing a row with column names as keys.</returns>
     public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
         return QueryCoreList(connection, sql, null);
     }
 
@@ -26,6 +35,15 @@ public static partial class Jaunty
     /// <returns>A list of dictionaries, each representing a row with column names as keys.</returns>
     public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql, object parameters)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
+#endif
         return QueryCoreList(connection, sql, parameters);
     }
 
