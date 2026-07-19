@@ -145,6 +145,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     {
         // Get the first category
         var firstCategory = _fixture.Connection.From<Category>()
+            .OrderBy(c => c.CategoryId)
             .Take(1)
             .SelectFirst();
 
@@ -220,6 +221,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     {
         // Get first category
         var firstCategory = _fixture.Connection.From<Category>()
+            .OrderBy(c => c.CategoryId)
             .Take(1)
             .SelectFirst();
 
@@ -244,6 +246,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     {
         // Get first two categories
         var categories = _fixture.Connection.From<Category>()
+            .OrderBy(c => c.CategoryId)
             .Take(2)
             .Select();
 
@@ -271,6 +274,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
     {
         // Get first category
         var firstCategory = _fixture.Connection.From<Category>()
+            .OrderBy(c => c.CategoryId)
             .Take(1)
             .SelectFirst();
 

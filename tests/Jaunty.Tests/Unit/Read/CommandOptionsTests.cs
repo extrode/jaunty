@@ -1,3 +1,4 @@
+using System.Data;
 using Jaunty.Core;
 
 namespace Jaunty.Tests.Unit;
@@ -34,18 +35,24 @@ public class CommandOptionsTests
     [Fact]
     public void WithTransaction_SetsTransactionOnly()
     {
-        // Can't easily test with real transaction here, just verify method exists
-        // and returns CommandOptions
-        var method = typeof(CommandOptions).GetMethod("WithTransaction");
-        Assert.NotNull(method);
+        var transaction = new TestDbTransaction();
+
+        var options = CommandOptions.WithTransaction(transaction);
+
+        Assert.Same(transaction, options.Transaction);
+        Assert.Null(options.CommandTimeout);
+        Assert.Equal(CommandType.Text, options.CommandType);
     }
 
     [Fact]
     public void With_SetsBothValues()
     {
-        // Can't easily test with real transaction here
-        var method = typeof(CommandOptions).GetMethod("With");
-        Assert.NotNull(method);
+        var transaction = new TestDbTransaction();
+
+        var options = CommandOptions.With(transaction, 45);
+
+        Assert.Same(transaction, options.Transaction);
+        Assert.Equal(45, options.CommandTimeout);
     }
 
     [Fact]
@@ -57,5 +64,14 @@ public class CommandOptionsTests
         // Verify it's readonly by checking the fields
         var fields = type.GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
         Assert.All(fields, f => Assert.True(f.IsInitOnly || !f.IsPublic));
+    }
+
+    private class TestDbTransaction : IDbTransaction
+    {
+        public IsolationLevel IsolationLevel => IsolationLevel.ReadCommitted;
+        public IDbConnection? Connection { get; set; }
+        public void Commit() { }
+        public void Rollback() { }
+        public void Dispose() { }
     }
 }

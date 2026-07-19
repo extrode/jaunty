@@ -488,14 +488,14 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
     [SystemSqlite]
     public async Task GridReader_DisposeAsync_ClosesReader(DialectInfo dialect)
     {
-        using var connection = _fixture.GetDbConnection(dialect);
+        using var connection = _fixture.GetClosedDbConnection(dialect);
         var gridReader = await connection.QueryMultipleAsync(FullCategorySql(dialect, 1));
 
         await gridReader.ReadFirstAsync<Category>();
         await gridReader.DisposeAsync();
 
-        // After DisposeAsync, the reader should be marked as consumed
-        // Verify no exception is thrown and reader is properly disposed
+        // GridReader self-opened the connection, so DisposeAsync should close it again.
+        Assert.Equal(ConnectionState.Closed, connection.State);
     }
 #endif
 
