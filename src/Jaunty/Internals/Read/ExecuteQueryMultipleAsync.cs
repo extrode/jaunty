@@ -1,7 +1,9 @@
 using System.Data;
 using System.Data.Common;
 
+using Jaunty.Configuration;
 using Jaunty.Core;
+using Jaunty.Interceptors;
 using Jaunty.Internals.Parameters;
 
 namespace Jaunty;
@@ -18,6 +20,28 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentNullException(nameof(sql));
 #endif
 
+        // Use InterceptorPipeline if registered, otherwise execute directly. Unlike streaming,
+        // ExecuteReaderAsync() here fully executes the command against the database in one round
+        // trip (the multiple result sets are already available); GridReader only lazily walks rows
+        // the caller already has. So wrapping just command-creation-through-ExecuteReaderAsync() is
+        // safe and matches the interceptor semantics used by the other Query*Async cores, without
+        // requiring the grid's result sets to be materialized upfront.
+        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        {
+            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+                sql,
+                parameters,
+                connection,
+                options.CommandType,
+                () => ExecuteQueryMultipleDirectAsync(connection, sql, parameters, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await ExecuteQueryMultipleDirectAsync(connection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<GridReader> ExecuteQueryMultipleDirectAsync(DbConnection connection, string sql, object? parameters, CommandOptions options, CancellationToken cancellationToken)
+    {
         var wasClosed = connection.State == ConnectionState.Closed;
 
         if (wasClosed)
@@ -40,6 +64,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             // Do NOT use 'using' — the GridReader owns the reader and disposes it.
             DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);

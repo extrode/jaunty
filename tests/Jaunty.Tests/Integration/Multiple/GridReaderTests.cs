@@ -669,6 +669,29 @@ public class GridReaderTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void GridReader_ReadStream_AfterAllResultSetsConsumed_ThrowsImmediatelyWithoutEnumeration(DialectInfo dialect)
+    {
+        // Regression: ReadStream returns an IEnumerable<T> backed by a yield-return iterator.
+        // Before the fix, EnsureNotConsumed() lived inside that iterator, so misuse (calling
+        // ReadStream again on an already-consumed grid) only threw once the caller actually
+        // enumerated the result - a caller who merely obtained the enumerable (e.g. assigned it
+        // to a variable, or passed it around) without enumerating would not observe the failure
+        // at the point of misuse. ReadStream now validates eagerly, before returning.
+        using var connection = _fixture.GetConnection(dialect);
+        using var gridReader = connection.QueryMultiple("SELECT 1");
+
+        gridReader.ReadScalar<int>();
+
+        var ex = Assert.Throws<InvalidOperationException>(() => gridReader.ReadStream<Category>());
+        Assert.Contains("consumed", ex.Message.ToLower());
+    }
+
+    [Theory]
     [MicrosoftSqlite]
     [SystemSqlite]
     public void GridReader_ReadScalar_ConversionFailure_PropagatesException(DialectInfo dialect)

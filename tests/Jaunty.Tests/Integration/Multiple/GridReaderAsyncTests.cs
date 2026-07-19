@@ -827,6 +827,30 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
         Assert.Contains("consumed", ex.Message.ToLower());
     }
 
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GridReader_ReadStreamAsync_AfterAllResultSetsConsumed_ThrowsImmediatelyWithoutEnumeration(DialectInfo dialect)
+    {
+        // Regression: ReadStreamAsync returns an IAsyncEnumerable<T>. Before the fix, the
+        // validation (EnsureNotConsumed, the DbDataReader guard) lived inside the async-iterator
+        // body, so misuse (calling ReadStreamAsync again on an already-consumed grid) only threw
+        // once the caller actually enumerated the result - a caller who merely obtained the
+        // enumerable without enumerating would not observe the failure at the point of misuse.
+        // ReadStreamAsync now validates eagerly, synchronously, before returning the enumerable -
+        // no await/enumeration required to observe the throw.
+        using var connection = _fixture.GetDbConnection(dialect);
+        using var gridReader = await connection.QueryMultipleAsync("SELECT 1");
+
+        await gridReader.ReadScalarAsync<int>();
+
+        var ex = Assert.Throws<InvalidOperationException>(() => gridReader.ReadStreamAsync<Category>());
+        Assert.Contains("consumed", ex.Message.ToLower());
+    }
+
     private static string FullCategorySql(DialectInfo dialect, int top, bool orderById = false) =>
         dialect.Provider == DialectProvider.SqlServer
             ? $"SELECT TOP ({top}) CategoryId, CategoryName, Description FROM Categories{(orderById ? " ORDER BY CategoryId" : string.Empty)}"

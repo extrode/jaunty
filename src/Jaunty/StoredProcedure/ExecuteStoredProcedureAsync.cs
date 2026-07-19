@@ -289,90 +289,60 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
 #endif
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
-        var dbConnection = connection as DbConnection;
+        if (connection is not DbConnection dbConnection)
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
+
+        bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
-            if (dbConnection is not null)
-            {
-                if (wasClosed)
-                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            if (wasClosed)
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-                DbCommand command = dbConnection.CreateCommand();
-                await using var commandDisposer = command.ConfigureAwait(false);
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
 #else
-                using DbCommand command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = procedureName;
+            command.CommandType = CommandType.StoredProcedure;
 
-                command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
 
-                BindSpParameters(command, parameters);
+            BindSpParameters(command, parameters);
 
 #if NET8_0_OR_GREATER
-                DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-                await using var readerDisposer = reader.ConfigureAwait(false);
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
 #else
-                using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
-                TResult result = await handler(reader, parameters, cancellationToken).ConfigureAwait(false);
+            TResult result = await handler(reader, parameters, cancellationToken).ConfigureAwait(false);
 
-                // Close reader before reading output parameters
+            // Close reader before reading output parameters
 #if NET8_0_OR_GREATER
-                await reader.CloseAsync().ConfigureAwait(false);
+            await reader.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => reader.Close()).ConfigureAwait(false);
+            await Task.Run(() => reader.Close()).ConfigureAwait(false);
 #endif
 
-                // Read output parameter values
-                ReadOutputParameters(parameters);
+            // Read output parameter values
+            ReadOutputParameters(parameters);
 
-                return result;
-            }
-            else
-            {
-                // Fallback for non-DbConnection
-                if (wasClosed)
-                    connection.Open();
-
-                using IDbCommand command = connection.CreateCommand();
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
-
-                if (options.Transaction is not null)
-                    command.Transaction = options.Transaction;
-
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
-
-                BindSpParameters(command, parameters);
-
-                using IDataReader reader = command.ExecuteReader();
-                TResult result = await handler(reader, parameters, cancellationToken).ConfigureAwait(false);
-
-                reader.Close();
-                ReadOutputParameters(parameters);
-
-                return result;
-            }
+            return result;
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                if (dbConnection is not null)
-                    await dbConnection.CloseAsync().ConfigureAwait(false);
-                else
-                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
@@ -390,82 +360,50 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
 #endif
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
-        var dbConnection = connection as DbConnection;
+        if (connection is not DbConnection dbConnection)
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
+
+        bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
-            if (dbConnection is not null)
-            {
-                if (wasClosed)
-                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            if (wasClosed)
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-                DbCommand command = dbConnection.CreateCommand();
-                await using var commandDisposer = command.ConfigureAwait(false);
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
 #else
-                using DbCommand command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = procedureName;
+            command.CommandType = CommandType.StoredProcedure;
 
-                command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
 
-                BindSpParameters(command, parameters);
+            BindSpParameters(command, parameters);
 
-                object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
-                ReadOutputParameters(parameters);
+            ReadOutputParameters(parameters);
 
-                return result is null || result == DBNull.Value
-                    ? default(T) is null
-                        ? default!
-                        : throw new InvalidOperationException("Scalar result is null but expected a non-nullable value.")
-                    : (T)Convert.ChangeType(result, typeof(T));
-            }
-            else
-            {
-                // Fallback for non-DbConnection
-                if (wasClosed)
-                    connection.Open();
-
-                using IDbCommand command = connection.CreateCommand();
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
-
-                if (options.Transaction is not null)
-                    command.Transaction = options.Transaction;
-
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
-
-                BindSpParameters(command, parameters);
-
-                object? result = command.ExecuteScalar();
-
-                ReadOutputParameters(parameters);
-
-                return result is null || result == DBNull.Value
-                    ? default(T) is null
-                        ? default!
-                        : throw new InvalidOperationException("Scalar result is null but expected a non-nullable value.")
-                    : (T)Convert.ChangeType(result, typeof(T));
-            }
+            return result is null || result == DBNull.Value
+                ? default(T) is null
+                    ? default!
+                    : throw new InvalidOperationException("Scalar result is null but expected a non-nullable value.")
+                : (T)Convert.ChangeType(result, typeof(T));
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                if (dbConnection is not null)
-                    await dbConnection.CloseAsync().ConfigureAwait(false);
-                else
-                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
@@ -483,74 +421,46 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException(nameof(procedureName));
 #endif
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
-        var dbConnection = connection as DbConnection;
+        if (connection is not DbConnection dbConnection)
+            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
+
+        bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
         try
         {
-            if (dbConnection is not null)
-            {
-                if (wasClosed)
-                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            if (wasClosed)
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
 #if NET8_0_OR_GREATER
-                DbCommand command = dbConnection.CreateCommand();
-                await using var commandDisposer = command.ConfigureAwait(false);
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
 #else
-                using DbCommand command = dbConnection.CreateCommand();
+            using DbCommand command = dbConnection.CreateCommand();
 #endif
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = procedureName;
+            command.CommandType = CommandType.StoredProcedure;
 
-                command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
+            if (options.CommandTimeout.HasValue)
+                command.CommandTimeout = options.CommandTimeout.Value;
 
-                BindSpParameters(command, parameters);
+            BindSpParameters(command, parameters);
 
-                int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
-                ReadOutputParameters(parameters);
+            ReadOutputParameters(parameters);
 
-                return rowsAffected;
-            }
-            else
-            {
-                // Fallback for non-DbConnection
-                if (wasClosed)
-                    connection.Open();
-
-                using IDbCommand command = connection.CreateCommand();
-                command.CommandText = procedureName;
-                command.CommandType = CommandType.StoredProcedure;
-
-                if (options.Transaction is not null)
-                    command.Transaction = options.Transaction;
-
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
-
-                BindSpParameters(command, parameters);
-
-                int rowsAffected = command.ExecuteNonQuery();
-
-                ReadOutputParameters(parameters);
-
-                return rowsAffected;
-            }
+            return rowsAffected;
         }
         finally
         {
-            if (wasClosed && connection.State != ConnectionState.Closed)
+            if (wasClosed && dbConnection.State != ConnectionState.Closed)
             {
 #if NET8_0_OR_GREATER
-                if (dbConnection is not null)
-                    await dbConnection.CloseAsync().ConfigureAwait(false);
-                else
-                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => connection.Close()).ConfigureAwait(false);
+                await Task.Run(() => dbConnection.Close()).ConfigureAwait(false);
 #endif
             }
         }
