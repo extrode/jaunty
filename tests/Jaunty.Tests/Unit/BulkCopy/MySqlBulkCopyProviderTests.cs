@@ -140,5 +140,20 @@ public class MySqlBulkCopyProviderTests
 
         Assert.Equal(0, Count(conn, "bulk_mysql_txn"));
     }
+
+    [Fact]
+    public void CopyToServer_InvalidTableName_ThrowsArgumentException()
+    {
+        // Regression test (AUD-R11): BuildChunkCommand used to interpolate tableName/columnName
+        // via EscapeIdentifier (backtick-doubling) without validating them first, unlike
+        // PostgreSqlBulkCopyProvider.BuildCopyCommand, which validates via SqlIdentifierValidator
+        // before escaping. A backtick can't break out of MySQL's own backtick-doubling escape,
+        // but this still closes the gap so both providers enforce the same identifier contract.
+        using var conn = OpenOrSkip();
+
+        using var reader = MakeTable(1).CreateDataReader();
+        Assert.Throws<ArgumentException>(() => new MySqlBulkCopyProvider().CopyToServer(
+            conn, "products; DROP TABLE users; --", reader, new BulkCopyOptions()));
+    }
 }
 #endif
