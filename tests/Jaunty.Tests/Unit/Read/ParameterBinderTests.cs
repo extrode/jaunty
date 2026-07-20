@@ -583,6 +583,19 @@ public class ParameterBinderTests
     }
 
     [Fact]
+    public void Bind_CollectionWithExtraUnusedProperty_ThrowsArgumentException()
+    {
+        var command = new MockDbCommand("SELECT * FROM products WHERE id IN @Ids");
+        var ids = new[] { 1, 2, 3 };
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            ParameterBinder.Bind(command, new { Ids = ids, TypoName = "x" }));
+
+        Assert.Contains("Unused parameter properties", ex.Message);
+        Assert.Contains("TypoName", ex.Message);
+    }
+
+    [Fact]
     public void Bind_StringParameter_NotExpandedAsCollection()
     {
         var command = new MockDbCommand("SELECT * FROM users WHERE name = @Name");

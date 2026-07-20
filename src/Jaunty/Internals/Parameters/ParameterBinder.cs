@@ -170,6 +170,23 @@ internal static class ParameterBinder
                 throw new ArgumentException($"No property found on type '{type.Name}' matching SQL parameter '@{sqlName}'. Available properties: {string.Join(", ", propertyLookup.Keys)}");
             }
         }
+
+        // Validate unused. A property that was collection-expanded (e.g. Ids -> @Ids0, @Ids1, ...)
+        // no longer appears verbatim in 'bound' (which reflects the expanded SQL's placeholder
+        // names), so it's checked against 'expandedOriginalNames' instead of being misreported.
+        var unused = new List<string>(JauntyConfig.ParameterParsingCapacity);
+        for (int i = 0; i < meta.Length; i++)
+        {
+            string name = meta[i].Name;
+            if (bound.Contains(name)) continue;
+            if (expandedOriginalNames is not null && expandedOriginalNames.Contains(name)) continue;
+            unused.Add(name);
+        }
+
+        if (unused.Count > 0)
+        {
+            throw new ArgumentException($"Unused parameter properties on type '{type.Name}': {string.Join(", ", unused)}. SQL contains no matching parameters.");
+        }
     }
 
     private class CommandTemplate(TemplateItem[] items)
