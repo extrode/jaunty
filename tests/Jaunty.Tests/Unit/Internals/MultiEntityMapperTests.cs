@@ -519,13 +519,13 @@ public class MultiEntityMapperTests : IDisposable
         // query would silently reuse the first query's cached mapper.
         //
         // The outer cache under test lives in Jaunty.Internals.Read.MultiEntityMapperN.
-        // The inner Jaunty.Extensions.Reflection resolver has its own, separately
-        // scoped (currently unfixed) cache with the same structural bug, which would
-        // otherwise also collide on this exact scenario and mask what's being tested.
-        // To isolate the outer cache, this test installs a resolver stub that rebuilds
-        // appliers fresh on every call (no caching of its own). Any stale/wrong
-        // mapping observed here can therefore only come from the outer BuildSchemaKey
-        // cache under test.
+        // The inner Jaunty.Extensions.Reflection resolver has its own, separately scoped
+        // cache with the same structural bug shape - fixed independently in AUD-R9-002-
+        // CORRECTION (commit ab5272e), see Build_ReflectionLayerArity3_... below for direct
+        // coverage of that cache. To isolate the outer cache here regardless, this test
+        // installs a resolver stub that rebuilds appliers fresh on every call (no caching
+        // of its own). Any stale/wrong mapping observed here can therefore only come from
+        // the outer BuildSchemaKey cache under test.
         Func<Type[], IDataReader, Action<object, IDataRecord>[]>? originalResolver =
             JauntyConfig.ReflectionMultiMapperResolverN;
 
@@ -583,6 +583,80 @@ public class MultiEntityMapperTests : IDisposable
         }
     }
 
+    #endregion
+
+    #region Build - Reflection-Layer Arity-3 Schema Key Collision (AUD-R9-002-CORRECTION regression)
+
+    // Entities scoped to this scenario so their generic MultiEntityMapper<...> static cache
+    // (Jaunty.Extensions.Reflection's, not the outer Jaunty.Internals.Read cache tested above)
+    // can't be warmed by any other test in the suite.
+    public class ReflSchemaKeyColA
+    {
+        public int? A { get; set; }
+    }
+
+    public class ReflSchemaKeyColBC
+    {
+        public int? BC { get; set; }
+    }
+
+    public class ReflSchemaKeyColC
+    {
+        public int? C { get; set; }
+    }
+
+    [Fact]
+    public void Build_ReflectionLayerArity3_DifferentColumnSets_SameFieldCount_DoNotCollide()
+    {
+        // AUD-R9-002-CORRECTION regression, direct Reflection-layer coverage: BuildSchemaKey
+        // in Jaunty.Extensions.Reflection.MultiEntityMapper<T1,T2,T3> (and arities 4-7, same
+        // shape) used to join reader column names with a truly empty separator, so field
+        // count 2 with columns ["A","BC"] and ["AB","C"] both produced cache key "2ABC".
+        // Fixed to join with the U+001F unit separator (commit ab5272e). Unlike the arity-3
+        // test above, which stubs this cache out to isolate the outer
+        // Jaunty.Internals.Read cache, this test calls Build() on the Reflection-layer
+        // cache directly - no stubbing needed since it has no external resolver dependency.
+        using var cmdA = _connection.CreateCommand();
+        cmdA.CommandText = "SELECT 1 AS A, 2 AS BC";
+        using var readerA = cmdA.ExecuteReader();
+        readerA.Read();
+
+        var mapperA = global::Jaunty.Extensions.Reflection.MultiEntityMapper<ReflSchemaKeyColA, ReflSchemaKeyColBC, ReflSchemaKeyColC>.Build(readerA);
+        var a1 = new ReflSchemaKeyColA();
+        var bc1 = new ReflSchemaKeyColBC();
+        var c1 = new ReflSchemaKeyColC();
+        mapperA.ApplyT1(a1, readerA);
+        mapperA.ApplyT2(bc1, readerA);
+        mapperA.ApplyT3(c1, readerA);
+
+        Assert.Equal(1, a1.A);
+        Assert.Equal(2, bc1.BC);
+        Assert.Null(c1.C);
+
+        using var cmdB = _connection.CreateCommand();
+        cmdB.CommandText = "SELECT 100 AS AB, 200 AS C";
+        using var readerB = cmdB.ExecuteReader();
+        readerB.Read();
+
+        var mapperB = global::Jaunty.Extensions.Reflection.MultiEntityMapper<ReflSchemaKeyColA, ReflSchemaKeyColBC, ReflSchemaKeyColC>.Build(readerB);
+        var a2 = new ReflSchemaKeyColA();
+        var bc2 = new ReflSchemaKeyColBC();
+        var c2 = new ReflSchemaKeyColC();
+        mapperB.ApplyT1(a2, readerB);
+        mapperB.ApplyT2(bc2, readerB);
+        mapperB.ApplyT3(c2, readerB);
+
+        // With the collision bug, mapperB would be the SAME cached instance as mapperA
+        // (schema key "2ABC" for both), so ApplyT1 would blindly bind ordinal 0 to A
+        // (reading readerB's "AB" value = 100) instead of correctly recognizing there is
+        // no "A" column in readerB.
+        Assert.Null(a2.A);
+        Assert.Null(bc2.BC);
+        Assert.Equal(200, c2.C);
+    }
+
+    #endregion
+
     private static Action<object, IDataRecord> BuildLiveApplier(Type type, IDataReader reader)
     {
         var matches = new List<(System.Reflection.PropertyInfo Property, int Ordinal)>();
@@ -621,6 +695,4 @@ public class MultiEntityMapperTests : IDisposable
 
         return -1;
     }
-
-    #endregion
 }
