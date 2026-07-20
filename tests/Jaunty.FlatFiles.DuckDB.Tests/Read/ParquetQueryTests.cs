@@ -1,5 +1,6 @@
 using DuckDB.NET.Data;
 
+using Jaunty.FlatFiles.DuckDB.Dialects;
 using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 using Jaunty.Fluent;
 
@@ -176,11 +177,14 @@ public class ParquetQueryTests : IDisposable
     [Fact]
     public void Parquet_HivePartitioning_CanBeConfigured()
     {
-        // Verify that HivePartitioning option is passed through to the SQL
         var source = new ParquetFileSource("test_hive", _parquetPath, typeof(InventoryItem))
         {
             HivePartitioning = true
         };
+
+        // Verify HivePartitioning is passed through to the generated CREATE VIEW SQL.
+        var sql = DuckDbDialect.Instance.GenerateCreateViewSql(source);
+        Assert.Contains("hive_partitioning = true", sql);
 
         var options = new FlatFileOptions();
         options.Sources.Add(source);

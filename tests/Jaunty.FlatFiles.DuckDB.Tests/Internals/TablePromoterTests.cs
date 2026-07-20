@@ -40,11 +40,13 @@ public class TablePromoterTests : IDisposable
         // Assert
         Assert.True(source.IsPromotedToTable);
 
-        // Verify it's now a table, not a view
+        // Verify it's now a table, not a view. information_schema.tables in DuckDB lists both
+        // tables and views (distinguished by table_type), so the type must be checked explicitly
+        // rather than just checking for a matching row.
         using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "SELECT table_name FROM information_schema.tables WHERE table_name = 'test_view'";
+        cmd.CommandText = "SELECT table_type FROM information_schema.tables WHERE table_name = 'test_view'";
         var result = cmd.ExecuteScalar();
-        Assert.NotNull(result);
+        Assert.Equal("BASE TABLE", result);
     }
 
     [Fact]
@@ -58,6 +60,12 @@ public class TablePromoterTests : IDisposable
 
         // Assert
         Assert.True(source.IsPromotedToTable);
+
+        // No promotion SQL should have run: test_view must still be a view, not a table.
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT table_type FROM information_schema.tables WHERE table_name = 'test_view'";
+        var result = cmd.ExecuteScalar();
+        Assert.Equal("VIEW", result);
     }
 
     [Fact]
@@ -78,6 +86,14 @@ public class TablePromoterTests : IDisposable
 
         // Assert
         Assert.True(source.IsPromotedToTable);
+
+        // Verify it's now a table, not a view. information_schema.tables in DuckDB lists both
+        // tables and views (distinguished by table_type), so the type must be checked explicitly
+        // rather than just checking for a matching row.
+        using var checkCmd = _connection.CreateCommand();
+        checkCmd.CommandText = "SELECT table_type FROM information_schema.tables WHERE table_name = 'test_view2'";
+        var result = checkCmd.ExecuteScalar();
+        Assert.Equal("BASE TABLE", result);
     }
 
     [Fact]
@@ -91,6 +107,12 @@ public class TablePromoterTests : IDisposable
 
         // Assert
         Assert.True(source.IsPromotedToTable);
+
+        // No promotion SQL should have run: test_view must still be a view, not a table.
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT table_type FROM information_schema.tables WHERE table_name = 'test_view'";
+        var result = cmd.ExecuteScalar();
+        Assert.Equal("VIEW", result);
     }
 
     private sealed class TestFileSource : IFileSource
