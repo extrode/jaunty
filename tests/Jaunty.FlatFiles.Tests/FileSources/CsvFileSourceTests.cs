@@ -112,10 +112,28 @@ public class CsvFileSourceTests
     [Fact]
     public void GenerateReadFunction_WithQuoteChar_IncludesQuoteParam()
     {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { QuoteChar = '"' };
+        var fn = source.GenerateReadFunction("'f.csv'");
+
+        Assert.Contains("quote = '\"'", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithQuoteCharAsSingleQuote_Escapes()
+    {
         var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { QuoteChar = '\'' };
         var fn = source.GenerateReadFunction("'f.csv'");
 
-        Assert.Contains("quote = '''", fn);
+        Assert.Contains("quote = ''''", fn);
+    }
+
+    [Fact]
+    public void GenerateReadFunction_WithDelimiterAsSingleQuote_Escapes()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { Delimiter = '\'' };
+        var fn = source.GenerateReadFunction("'f.csv'");
+
+        Assert.Contains("delim = ''''", fn);
     }
 
     [Fact]
