@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.SQLite;
 
 using Jaunty.Attributes;
+using Jaunty.Core;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
@@ -84,5 +85,457 @@ public class QueryMultiEntityN7Tests : IClassFixture<DialectFixture>
         Assert.NotNull(result);
         var (e1, e2, e3, e4, e5, e6, e7) = result.Value;
         Assert.Equal(7, e7.Id);
+    }
+
+    // ---------------------------------------------------------------------------
+    // CommandOptions<(T1..T7)> / MultiEntityCommandOptions<T1..T7> overload coverage, plus
+    // QueryFirst/QuerySingle/QuerySingleOrDefault/QueryStream at every overload, and the
+    // remaining QueryFirstOrDefault overloads (AUD-R11 batch-01: previously untested at arity 7).
+    // ---------------------------------------------------------------------------
+
+    private const string JoinSql = @"
+            SELECT t1.id id1, t2.id id2, t3.id id3, t4.id id4, t5.id id5, t6.id id6, t7.id id7
+            FROM multimap7_t1 t1
+            CROSS JOIN multimap7_t2 t2
+            CROSS JOIN multimap7_t3 t3
+            CROSS JOIN multimap7_t4 t4
+            CROSS JOIN multimap7_t5 t5
+            CROSS JOIN multimap7_t6 t6
+            CROSS JOIN multimap7_t7 t7";
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_SevenEntities_WithCommandOptions_UsesTransaction(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        using var txn = connection.BeginTransaction();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.Transaction = txn;
+            cmd.CommandText = "UPDATE multimap7_t1 SET id = 100 WHERE id = 1";
+            cmd.ExecuteNonQuery();
+        }
+
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>(transaction: txn);
+        var results = connection.Query<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options);
+
+        Assert.Single(results);
+        Assert.Equal(100, results[0].Item1.Id);
+
+        txn.Rollback();
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_SevenEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>();
+
+        var results = connection.Query<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 }, options);
+
+        Assert.Single(results);
+        Assert.Equal(1, results[0].Item1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_SevenEntities_WithMultiEntityCommandOptions_UsesTransaction(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        using var txn = connection.BeginTransaction();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.Transaction = txn;
+            cmd.CommandText = "UPDATE multimap7_t1 SET id = 100 WHERE id = 1";
+            cmd.ExecuteNonQuery();
+        }
+
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>(transaction: txn);
+        var results = connection.Query<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options);
+
+        Assert.Single(results);
+        Assert.Equal(100, results[0].Item1.Id);
+
+        txn.Rollback();
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_SevenEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>();
+
+        var results = connection.Query<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 }, options);
+
+        Assert.Single(results);
+        Assert.Equal(1, results[0].Item1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_SevenEntities_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (e1, _, _, _, _, _, e7) = connection.QueryFirst<E1, E2, E3, E4, E5, E6, E7>(JoinSql);
+
+        Assert.Equal(1, e1.Id);
+        Assert.Equal(7, e7.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_SevenEntities_WithParameters_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (e1, _, _, _, _, _, _) = connection.QueryFirst<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 });
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_SevenEntities_WithCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>();
+
+        var (e1, _, _, _, _, _, _) = connection.QueryFirst<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_SevenEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>();
+
+        var (e1, _, _, _, _, _, _) = connection.QueryFirst<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 }, options);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_SevenEntities_WithMultiEntityCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>();
+
+        var (e1, _, _, _, _, _, _) = connection.QueryFirst<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_SevenEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>();
+
+        var (e1, _, _, _, _, _, _) = connection.QueryFirst<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 }, options);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_SevenEntities_WithParameters_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var result = connection.QueryFirstOrDefault<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = -999 });
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_SevenEntities_WithCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>();
+
+        var result = connection.QueryFirstOrDefault<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Value.Item1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_SevenEntities_WithParametersAndCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>();
+
+        var result = connection.QueryFirstOrDefault<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = -999 }, options);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_SevenEntities_WithMultiEntityCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>();
+
+        var result = connection.QueryFirstOrDefault<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Value.Item1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_SevenEntities_WithParametersAndMultiEntityCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>();
+
+        var result = connection.QueryFirstOrDefault<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = -999 }, options);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_SevenEntities_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (e1, _, _, _, _, _, e7) = connection.QuerySingle<E1, E2, E3, E4, E5, E6, E7>(JoinSql);
+
+        Assert.Equal(1, e1.Id);
+        Assert.Equal(7, e7.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_SevenEntities_WithParameters_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (e1, _, _, _, _, _, _) = connection.QuerySingle<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 });
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_SevenEntities_WithCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>();
+
+        var (e1, _, _, _, _, _, _) = connection.QuerySingle<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_SevenEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>();
+
+        var (e1, _, _, _, _, _, _) = connection.QuerySingle<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 }, options);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_SevenEntities_WithMultiEntityCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>();
+
+        var (e1, _, _, _, _, _, _) = connection.QuerySingle<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_SevenEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>();
+
+        var (e1, _, _, _, _, _, _) = connection.QuerySingle<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 }, options);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_SevenEntities_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var result = connection.QuerySingleOrDefault<E1, E2, E3, E4, E5, E6, E7>(JoinSql);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Value.Item1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_SevenEntities_WithParameters_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var result = connection.QuerySingleOrDefault<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = -999 });
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_SevenEntities_WithCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>();
+
+        var result = connection.QuerySingleOrDefault<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Value.Item1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_SevenEntities_WithParametersAndCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>();
+
+        var result = connection.QuerySingleOrDefault<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = -999 }, options);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_SevenEntities_WithMultiEntityCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>();
+
+        var result = connection.QuerySingleOrDefault<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Value.Item1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_SevenEntities_WithParametersAndMultiEntityCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>();
+
+        var result = connection.QuerySingleOrDefault<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = -999 }, options);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_SevenEntities_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var results = connection.QueryStream<E1, E2, E3, E4, E5, E6, E7>(JoinSql).ToList();
+
+        Assert.Single(results);
+        Assert.Equal(1, results[0].Item1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_SevenEntities_WithParameters_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var results = connection.QueryStream<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 }).ToList();
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_SevenEntities_WithCommandOptions_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>();
+
+        var results = connection.QueryStream<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options).ToList();
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_SevenEntities_WithParametersAndCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(E1, E2, E3, E4, E5, E6, E7)>();
+
+        var results = connection.QueryStream<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 }, options).ToList();
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_SevenEntities_WithMultiEntityCommandOptions_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>();
+
+        var results = connection.QueryStream<E1, E2, E3, E4, E5, E6, E7>(JoinSql, options).ToList();
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_SevenEntities_WithParametersAndMultiEntityCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<E1, E2, E3, E4, E5, E6, E7>();
+
+        var results = connection.QueryStream<E1, E2, E3, E4, E5, E6, E7>(
+            $"{JoinSql} WHERE t1.id = @Id", new { Id = 1 }, options).ToList();
+
+        Assert.Single(results);
     }
 }
