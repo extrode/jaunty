@@ -85,6 +85,22 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return columnNames;
     }
 
+    /// <summary>
+    /// Escapes caller-supplied raw column-name strings (e.g. SelectPartial(params string[])),
+    /// matching the Where(string column, ...) overload's convention - unlike ResolveColumns()/
+    /// GetAllColumnNames(), these strings come straight from the caller and aren't pre-escaped
+    /// by CachedDialectMetadata.
+    /// </summary>
+    private string[] EscapeColumns(string[] columns)
+    {
+        var escaped = new string[columns.Length];
+        for (int i = 0; i < columns.Length; i++)
+        {
+            escaped[i] = _dialect.EscapeColumnName(columns[i]);
+        }
+        return escaped;
+    }
+
     #region WHERE clause
 
     public IWhereClause<T> Where(string column, object? value)
@@ -645,7 +661,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     public List<T> SelectPartial(params string[] columns)
     {
-        var sql = BuildSelectSql(columns.Length > 0 ? columns : GetAllColumnNames());
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         return _connection.QueryPartial<T>(sql, _parameters.ToParameterObject()!);
     }
 
@@ -653,7 +669,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var original = _take;
         _take = 1;
-        var sql = BuildSelectSql(columns.Length > 0 ? columns : GetAllColumnNames());
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
         return _connection.QueryPartialFirst<T>(sql, _parameters.ToParameterObject()!);
     }
@@ -662,7 +678,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var original = _take;
         _take = 1;
-        var sql = BuildSelectSql(columns.Length > 0 ? columns : GetAllColumnNames());
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
         return _connection.QueryPartialFirstOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
@@ -671,7 +687,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var original = _take;
         _take = 2;
-        var sql = BuildSelectSql(columns.Length > 0 ? columns : GetAllColumnNames());
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
         return _connection.QueryPartialSingle<T>(sql, _parameters.ToParameterObject()!);
     }
@@ -680,7 +696,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var original = _take;
         _take = 2;
-        var sql = BuildSelectSql(columns.Length > 0 ? columns : GetAllColumnNames());
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
         return _connection.QueryPartialSingleOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
@@ -868,7 +884,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     public async Task<List<T>> SelectPartialAsync(string[] columns, CancellationToken cancellationToken = default)
     {
-        var sql = BuildSelectSql(columns.Length > 0 ? columns : GetAllColumnNames());
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         if (_connection is DbConnection dbConn)
             return await dbConn.QueryPartialAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
         return SelectPartial(columns);
@@ -878,7 +894,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var original = _take;
         _take = 1;
-        var sql = BuildSelectSql(columns.Length > 0 ? columns : GetAllColumnNames());
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
         if (_connection is DbConnection dbConn)
             return await dbConn.QueryPartialFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -889,7 +905,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var original = _take;
         _take = 1;
-        var sql = BuildSelectSql(columns.Length > 0 ? columns : GetAllColumnNames());
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
         if (_connection is DbConnection dbConn)
             return await dbConn.QueryPartialFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -900,7 +916,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var original = _take;
         _take = 2;
-        var sql = BuildSelectSql(columns.Length > 0 ? columns : GetAllColumnNames());
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
         if (_connection is DbConnection dbConn)
             return await dbConn.QueryPartialSingleAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -911,7 +927,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var original = _take;
         _take = 2;
-        var sql = BuildSelectSql(columns.Length > 0 ? columns : GetAllColumnNames());
+        var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
         if (_connection is DbConnection dbConn)
             return await dbConn.QueryPartialSingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -1083,7 +1099,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public string ToSql() => BuildSelectSql(GetAllColumnNames());
 
     public string ToSql(params string[] columns)
-        => BuildSelectSql(columns.Length > 0 ? columns : GetAllColumnNames());
+        => BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
 
     public string ToSql(params Expression<Func<T, object?>>[] columns)
     {
