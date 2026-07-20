@@ -317,6 +317,42 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.DoesNotContain("// existing content", content);
     }
 
+    [Fact]
+    public async Task ScaffoldAsync_CollidingClassNames_FailsBeforeWritingAnyFile()
+    {
+        // "product" and "products" both singularize to the class name "Product".
+        using (var cmd = _connection.CreateCommand())
+        {
+            cmd.CommandText = @"
+                CREATE TABLE product (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL
+                )";
+            cmd.ExecuteNonQuery();
+        }
+
+        var scaffolder = new Scaffolder();
+        var options = new ScaffoldOptions
+        {
+            ConnectionString = _connectionString,
+            Provider = DatabaseProvider.SQLite,
+            OutputDirectory = _tempOutputDir,
+            Namespace = "Test.Entities",
+            IncludeTables = ["product", "products"],
+            Singularize = true
+        };
+
+        var result = await scaffolder.ScaffoldAsync(options);
+
+        Assert.False(result.Success);
+        Assert.Contains("Product", result.Error);
+        Assert.Contains("product", result.Error);
+        Assert.Contains("products", result.Error);
+
+        // Detected up front - neither colliding table's file should have been written.
+        Assert.False(File.Exists(Path.Combine(_tempOutputDir, "Product.cs")));
+    }
+
     public void Dispose()
     {
         _connection.Close();
