@@ -8,8 +8,8 @@ namespace Jaunty.Tests.Unit.Read;
 
 /// <remarks>
 /// Shares the "Type Handler Operations" collection with
-/// <see cref="Jaunty.Tests.TypeHandlers.EnumStorageTests"/>,
-/// <see cref="Jaunty.Tests.TypeHandlers.TypeHandlerRegistryTests"/>, and
+/// <see cref="Jaunty.Tests.Unit.TypeHandlers.EnumStorageTests"/>,
+/// <see cref="Jaunty.Tests.Unit.TypeHandlers.TypeHandlerRegistryTests"/>, and
 /// <see cref="Jaunty.Tests.Integration.TypeHandlers.TypeHandlerRoundTripTests"/> —
 /// <see cref="Bind_WhenTypeHandlerThrows_PropagatesAsInvalidOperationException"/> mutates the same
 /// process-wide type-handler registry static state and must run serialized against them.

@@ -121,13 +121,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
         using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = TablesSql;
 
-        // MySQL doesn't have a separate schema concept - TABLE_SCHEMA is the database name,
-        // and this reader only ever queries the single database the connection is currently
-        // attached to (via DATABASE()). IncludeSchemas can therefore only accept or reject
-        // that one database; it can't enumerate tables across multiple MySQL databases in one
-        // pass the way SQL Server/PostgreSQL schema filtering does.
-        if (options.IncludeSchemas?.Count > 0 &&
-            !options.IncludeSchemas.Contains(connection.Database, StringComparer.OrdinalIgnoreCase))
+        if (ShouldSkipDatabase(options, connection.Database))
             return tables;
 
         using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -148,6 +142,17 @@ public sealed class MySqlSchemaReader : ISchemaReader
 
         return tables;
     }
+
+    /// <summary>
+    /// MySQL doesn't have a separate schema concept - TABLE_SCHEMA is the database name,
+    /// and this reader only ever queries the single database the connection is currently
+    /// attached to (via DATABASE()). IncludeSchemas can therefore only accept or reject
+    /// that one database; it can't enumerate tables across multiple MySQL databases in one
+    /// pass the way SQL Server/PostgreSQL schema filtering does.
+    /// </summary>
+    internal static bool ShouldSkipDatabase(SchemaReaderOptions options, string databaseName)
+        => options.IncludeSchemas?.Count > 0 &&
+           !options.IncludeSchemas.Contains(databaseName, StringComparer.OrdinalIgnoreCase);
 
     private static async Task<TableSchema> ReadTableSchemaAsync(
         DbConnection connection,
