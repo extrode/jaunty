@@ -16,7 +16,7 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
-            var list = new List<T>(JauntyConfig.QueryResultCapacity);
+            var list = new List<T>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
             if (reader is DbDataReader dbReader)
             {
                 Func<DbDataReader, T> map = DrDispatcher.Resolve(dbReader, options, mode);
@@ -324,7 +324,7 @@ public static partial class Jaunty
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity);
+            var results = new List<(T1, T2)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
             if (reader is DbDataReader dbReader)
             {
