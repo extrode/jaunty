@@ -143,6 +143,22 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
         Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
     }
 
+    [Fact]
+    public void InnerJoin_WhereColumnValue_QualifiedKeywordColumn_EscapesBareColumnOnly()
+    {
+        // "order" is a reserved SQLite keyword: EscapeColumnName quotes it, and the fix must
+        // only quote the bare column segment ("order"), leaving the "p." alias prefix as-is
+        // rather than either skipping escaping entirely or quoting the whole "p.order" string.
+        var sql = _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .Where("p.order", 1)
+            .ToSql();
+
+        Assert.Contains("p.\"order\"", sql);
+        Assert.DoesNotContain("\"p.order\"", sql);
+    }
+
     // ==========================================
     // And / Or expression predicates
     // ==========================================
@@ -216,6 +232,76 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
             .SelectFirstOrDefault();
 
         Assert.Null(product);
+    }
+
+    // ==========================================
+    // SelectSingle / SelectSingleOrDefault (AUD-R11)
+    // ==========================================
+
+    [Fact]
+    public void InnerJoin_SelectSingle_OneMatch_ReturnsProduct()
+    {
+        var product = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == 1)
+            .SelectSingle();
+
+        Assert.NotNull(product);
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Fact]
+    public void InnerJoin_SelectSingle_NoResults_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(() => _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == -999)
+            .SelectSingle());
+    }
+
+    [Fact]
+    public void InnerJoin_SelectSingle_MultipleResults_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(() => _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectSingle());
+    }
+
+    [Fact]
+    public void InnerJoin_SelectSingleOrDefault_OneMatch_ReturnsProduct()
+    {
+        var product = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == 1)
+            .SelectSingleOrDefault();
+
+        Assert.NotNull(product);
+        Assert.Equal(1, product!.ProductId);
+    }
+
+    [Fact]
+    public void InnerJoin_SelectSingleOrDefault_NoResults_ReturnsNull()
+    {
+        var product = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == -999)
+            .SelectSingleOrDefault();
+
+        Assert.Null(product);
+    }
+
+    [Fact]
+    public void InnerJoin_SelectSingleOrDefault_MultipleResults_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(() => _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .SelectSingleOrDefault());
     }
 
     // ==========================================

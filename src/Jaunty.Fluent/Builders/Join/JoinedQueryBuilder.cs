@@ -1,5 +1,4 @@
 using System.Data;
-using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -380,7 +379,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
             object value = reader.GetValue(ordinal);
             Type propertyType = col.PropertyType;
             Type targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-            object convertedValue = ConvertColumnValue(value, targetType);
+            object convertedValue = GroupedJoinedResultMapper.ConvertColumnValue(value, targetType);
 
             if (col.Setter is { } setter)
                 setter(entity!, convertedValue);
@@ -408,28 +407,5 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         }
 
         return map;
-    }
-
-    /// <summary>
-    /// Converts a raw ADO.NET value to the target property type. <see cref="Convert.ChangeType(object, Type)"/>
-    /// cannot target enum types (always throws <see cref="InvalidCastException"/>) or <see cref="Guid"/>/<see cref="char"/>
-    /// from an arbitrary source string, so those are special-cased before falling back to it.
-    /// </summary>
-    private static object ConvertColumnValue(object value, Type targetType)
-    {
-        if (targetType.IsEnum)
-        {
-            return value is string enumString
-                ? Enum.Parse(targetType, enumString, ignoreCase: true)
-                : Enum.ToObject(targetType, Convert.ChangeType(value, Enum.GetUnderlyingType(targetType), CultureInfo.InvariantCulture));
-        }
-
-        if (targetType == typeof(Guid))
-            return value is Guid guid ? guid : Guid.Parse(value.ToString()!);
-
-        if (targetType == typeof(char) && value is string charString)
-            return charString.Length > 0 ? charString[0] : '\0';
-
-        return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
     }
 }

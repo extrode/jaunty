@@ -32,9 +32,24 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     public IJoinedQuery<TFrom, TJoin> Where(string column, object value)
     {
         string paramName = $"{_dialect.ParameterPrefix}{column.Replace(".", "_")}";
-        _conditions.Add(WhereCondition.Column($"{column} = {paramName}", LogicalOperator.None));
+        string escapedColumn = EscapeQualifiedColumn(column);
+        _conditions.Add(WhereCondition.Column($"{escapedColumn} = {paramName}", LogicalOperator.None));
         _parameters.Add(paramName, value);
         return this;
+    }
+
+    // Mirrors JoinExpressionVisitor's BuildColumnReference: only the bare column name is dialect-
+    // escaped, the alias prefix (if any) is passed through as-is, matching how the expression-based
+    // Where(Expression) overload builds qualified column references for the same join.
+    private string EscapeQualifiedColumn(string column)
+    {
+        int dotIndex = column.IndexOf('.');
+        if (dotIndex < 0)
+            return _dialect.EscapeColumnName(column);
+
+        string alias = column.Substring(0, dotIndex);
+        string columnName = column.Substring(dotIndex + 1);
+        return $"{alias}.{_dialect.EscapeColumnName(columnName)}";
     }
 
     public IJoinedQuery<TFrom, TJoin> And(Expression<Func<TFrom, TJoin, bool>> predicate)

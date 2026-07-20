@@ -108,7 +108,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     public ICteQueryClause<T> Where(string column, object? value)
     {
-        var paramName = $"@cte_p{_parameters.Count}";
+        var paramName = $"{_dialect.ParameterPrefix}cte_p{_parameters.Count}";
         _parameters.Add(paramName, value);
         var sql = $"{_dialect.EscapeColumnName(column)} = {paramName}";
         LogicalOperator op = _whereConditions.Count == 0 ? LogicalOperator.None : LogicalOperator.And;
