@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Configuration;
@@ -304,8 +305,17 @@ public static partial class Jaunty
             command.CommandText = procedureName;
             command.CommandType = CommandType.StoredProcedure;
 
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring GetByIdSimpleCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
             if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            {
+                command.Transaction = connection is DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -352,8 +362,17 @@ public static partial class Jaunty
             command.CommandText = procedureName;
             command.CommandType = CommandType.StoredProcedure;
 
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring GetByIdSimpleCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
             if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            {
+                command.Transaction = connection is DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
@@ -400,8 +419,17 @@ public static partial class Jaunty
             command.CommandText = procedureName;
             command.CommandType = CommandType.StoredProcedure;
 
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring GetByIdSimpleCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
             if (options.Transaction is not null)
-                command.Transaction = options.Transaction;
+            {
+                command.Transaction = connection is DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
