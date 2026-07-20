@@ -55,13 +55,16 @@ public sealed class IcebergFileSource : IFileSource
     /// Creates a new Iceberg file source from multiple paths.
     /// </summary>
     /// <param name="tableName">The logical table name for SQL queries.</param>
-    /// <param name="filePaths">The paths to the Iceberg table directories or metadata files.</param>
+    /// <param name="filePaths">The paths to the Iceberg table directories or metadata files. Must contain
+    /// exactly one path; DuckDB's <c>iceberg_scan</c> function only accepts a single table location, unlike
+    /// <c>read_csv</c>/<c>read_parquet</c>/<c>read_json</c>, which accept a list.</param>
     /// <param name="entityType">The entity type to map rows to.</param>
     public IcebergFileSource(string tableName, string[] filePaths, Type entityType)
     {
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         if (filePaths is null) throw new ArgumentNullException(nameof(filePaths));
         if (filePaths.Length == 0) throw new ArgumentException("At least one file path is required.", nameof(filePaths));
+        if (filePaths.Length > 1) throw new ArgumentException("IcebergFileSource does not support multiple paths: DuckDB's iceberg_scan function only accepts a single table location.", nameof(filePaths));
         if (filePaths[0] is null) throw new ArgumentNullException(nameof(filePaths), "File path must not be null.");
         FilePaths = filePaths;
         FilePath = filePaths[0];

@@ -48,13 +48,16 @@ public sealed class DeltaLakeFileSource : IFileSource
     /// Creates a new Delta Lake file source from multiple paths.
     /// </summary>
     /// <param name="tableName">The logical table name for SQL queries.</param>
-    /// <param name="filePaths">The paths to the Delta Lake table directories.</param>
+    /// <param name="filePaths">The paths to the Delta Lake table directories. Must contain exactly one path;
+    /// DuckDB's <c>delta_scan</c> function only accepts a single table location, unlike <c>read_csv</c>/
+    /// <c>read_parquet</c>/<c>read_json</c>, which accept a list.</param>
     /// <param name="entityType">The entity type to map rows to.</param>
     public DeltaLakeFileSource(string tableName, string[] filePaths, Type entityType)
     {
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         if (filePaths is null) throw new ArgumentNullException(nameof(filePaths));
         if (filePaths.Length == 0) throw new ArgumentException("At least one file path is required.", nameof(filePaths));
+        if (filePaths.Length > 1) throw new ArgumentException("DeltaLakeFileSource does not support multiple paths: DuckDB's delta_scan function only accepts a single table location.", nameof(filePaths));
         if (filePaths[0] is null) throw new ArgumentNullException(nameof(filePaths), "File path must not be null.");
         FilePaths = filePaths;
         FilePath = filePaths[0];
