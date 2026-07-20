@@ -42,6 +42,39 @@ public class ScaffolderTests
     }
 
     [Fact]
+    public void DetectProvider_NpgsqlHostWithUserIdAlias_DetectsPostgreSql()
+    {
+        // Npgsql accepts "User Id=" as an alias for its canonical "Username=" - this combined
+        // with "Host=" and "Database=" is otherwise identical in shape to the SQL Server
+        // Server=/Database=/User Id= pattern, so "Host=" must still route to PostgreSql.
+        var result = Scaffolder.DetectProvider("Host=pg.example.com;Database=app;User Id=x;Password=y;");
+        Assert.Equal(DatabaseProvider.PostgreSql, result);
+    }
+
+    [Fact]
+    public void DetectProvider_NpgsqlServerAliasWithDefaultPort_DetectsPostgreSql()
+    {
+        // Npgsql also accepts "Server=" as an alias for "Host=", which makes this string
+        // indistinguishable from a SQL Server connection string by key names alone - the
+        // Postgres default port 5432 is the disambiguating signal here.
+        var result = Scaffolder.DetectProvider("Server=pg.example.com;Port=5432;Database=app;User Id=x;Password=y;");
+        Assert.Equal(DatabaseProvider.PostgreSql, result);
+    }
+
+    [Theory]
+    [InlineData("Server=.;Database=Foo;Trusted_Connection=True;")]
+    [InlineData("Data Source=.;Database=Foo;User Id=sa;Password=x;")]
+    public void DetectProvider_AmbiguousSqlServerStringsWithoutPostgresSignals_StillDetectSqlServer(string connectionString)
+    {
+        // Guards the Postgres-detection reorder above: a genuine SQL Server connection string
+        // using the common Server=/Database=/User Id= shape must not be reclassified just
+        // because it shares keys with Npgsql - only an explicit "Host=" key or the Postgres
+        // default port should tip it toward PostgreSql.
+        var result = Scaffolder.DetectProvider(connectionString);
+        Assert.Equal(DatabaseProvider.SqlServer, result);
+    }
+
+    [Fact]
     public void DetectProvider_MySqlConnectionString_DetectsMySql()
     {
         var result = Scaffolder.DetectProvider("Server=localhost;Database=app;Uid=root;Pwd=x;");
