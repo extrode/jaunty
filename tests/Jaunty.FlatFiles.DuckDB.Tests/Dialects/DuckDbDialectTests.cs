@@ -530,4 +530,63 @@ public class DuckDbDialectTests
 
         Assert.Contains("FORMAT JSON", result);
     }
+
+    [Fact]
+    public void GenerateCopyToSql_DeltaFormat_ThrowsNotSupportedException()
+    {
+        // Delta Lake is read-only via delta_scan(); DuckDB's COPY TO does not support it as a
+        // write target, and the format string must not be interpolated unvalidated (AUD-R9).
+        var ex = Assert.Throws<NotSupportedException>(
+            () => _dialect.GenerateCopyToSql("sales", "/output/sales.delta", FileFormats.DeltaLake));
+
+        Assert.Contains("DELTA", ex.Message);
+    }
+
+    [Fact]
+    public void GenerateCopyToSql_IcebergFormat_ThrowsNotSupportedException()
+    {
+        var ex = Assert.Throws<NotSupportedException>(
+            () => _dialect.GenerateCopyToSql("sales", "/output/sales.iceberg", FileFormats.Iceberg));
+
+        Assert.Contains("ICEBERG", ex.Message);
+    }
+
+    [Fact]
+    public void GenerateCopyToSql_UnknownCustomFormat_ThrowsNotSupportedException()
+    {
+        // A caller-supplied format that isn't on the allowlist must be rejected instead of being
+        // interpolated raw into the generated SQL's FORMAT clause.
+        var ex = Assert.Throws<NotSupportedException>(
+            () => _dialect.GenerateCopyToSql("sales", "/output/sales.bin", "CSV) ; DROP TABLE sales; --"));
+
+        Assert.Contains("not supported", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void GenerateCopyToSql_SourceOverload_DeltaLakeSource_ThrowsNotSupportedException()
+    {
+        var source = new DeltaLakeFileSource("orders", "/data/orders_delta", typeof(object));
+
+        Assert.Throws<NotSupportedException>(
+            () => _dialect.GenerateCopyToSql("orders", "/output/orders.delta", source));
+    }
+
+    [Fact]
+    public void GenerateCopyToSql_SourceOverload_IcebergSource_ThrowsNotSupportedException()
+    {
+        var source = new IcebergFileSource("orders", "/data/orders_iceberg", typeof(object));
+
+        Assert.Throws<NotSupportedException>(
+            () => _dialect.GenerateCopyToSql("orders", "/output/orders.iceberg", source));
+    }
+
+    [Fact]
+    public void GenerateCopyToSql_SourceOverload_CsvSource_StillWorks()
+    {
+        var source = new CsvFileSource("sales", "/data/sales.csv", typeof(object));
+
+        var result = _dialect.GenerateCopyToSql("sales", "/output/sales.csv", source);
+
+        Assert.Contains("FORMAT CSV", result);
+    }
 }

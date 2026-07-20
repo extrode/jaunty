@@ -13,6 +13,17 @@ public sealed partial class DuckDb
     /// <inheritdoc />
     public int Insert<T>(T entity) where T : class, new()
     {
+        return InsertCore(entity, default);
+    }
+
+    /// <inheritdoc />
+    public int Insert<T>(T entity, CommandOptions options) where T : class, new()
+    {
+        return InsertCore(entity, options);
+    }
+
+    private int InsertCore<T>(T entity, CommandOptions options) where T : class, new()
+    {
         ArgumentNullException.ThrowIfNull(entity);
 
         IFileSource source = GetSourceOrThrow<T>();
@@ -34,19 +45,24 @@ public sealed partial class DuckDb
         }
 
         var sql = $"INSERT INTO \"{source.TableName}\" ({columns}) VALUES ({values})";
-        var result = NonQueryExecutor.Execute(_connection, sql, parameters);
+        var result = NonQueryExecutor.Execute(_connection, sql, parameters, options);
         _modified.TryAdd(typeof(T), true);
         return result;
     }
 
     /// <inheritdoc />
-    public int Insert<T>(T entity, CommandOptions options) where T : class, new()
+    public int Insert<T>(IEnumerable<T> entities) where T : class, new()
     {
-        return Insert(entity);
+        return InsertCore(entities, default);
     }
 
     /// <inheritdoc />
-    public int Insert<T>(IEnumerable<T> entities) where T : class, new()
+    public int Insert<T>(IEnumerable<T> entities, CommandOptions options) where T : class, new()
+    {
+        return InsertCore(entities, options);
+    }
+
+    private int InsertCore<T>(IEnumerable<T> entities, CommandOptions options) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(entities);
 
@@ -63,44 +79,51 @@ public sealed partial class DuckDb
         TablePromoter.EnsurePromotedToTable(_connection, source, _dialect);
 
         IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(typeof(T));
-        var columns = new StringBuilder(mappings.Count * 20);
         var mappingList = mappings.Values.ToList();
+
+        var columns = new StringBuilder(mappings.Count * 20);
         for (int i = 0; i < mappingList.Count; i++)
         {
             if (i > 0) columns.Append(", ");
             columns.Append($"\"{mappingList[i].ColumnName}\"");
         }
+        var columnsSql = columns.ToString();
 
-        var sb = new StringBuilder(entityList.Count * mappings.Count * 10);
-        var parameters = new List<DuckDBParameter>(entityList.Count * mappings.Count);
-        var paramCounter = 0;
+        // Chunk the batch so each generated multi-row INSERT stays under the dialect's
+        // MaxParametersPerStatement limit (32768 for DuckDB) instead of building one enormous
+        // statement for the whole collection.
+        int rowsPerChunk = Math.Max(1, _dialect.MaxParametersPerStatement / mappingList.Count);
+        var totalInserted = 0;
 
-        for (int row = 0; row < entityList.Count; row++)
+        for (int chunkStart = 0; chunkStart < entityList.Count; chunkStart += rowsPerChunk)
         {
-            if (row > 0) sb.Append(", ");
-            sb.Append('(');
-            T entity = entityList[row];
+            int chunkCount = Math.Min(rowsPerChunk, entityList.Count - chunkStart);
 
-            for (int col = 0; col < mappingList.Count; col++)
+            var sb = new StringBuilder(chunkCount * mappingList.Count * 10);
+            var parameters = new List<DuckDBParameter>(chunkCount * mappingList.Count);
+            var paramCounter = 0;
+
+            for (int row = 0; row < chunkCount; row++)
             {
-                if (col > 0) sb.Append(", ");
-                paramCounter++;
-                sb.Append($"${paramCounter}");
-                parameters.Add(new DuckDBParameter { Value = mappingList[col].Getter(entity) ?? DBNull.Value });
-            }
-            sb.Append(')');
-        }
+                if (row > 0) sb.Append(", ");
+                sb.Append('(');
+                T entity = entityList[chunkStart + row];
 
-        var sql = $"INSERT INTO \"{source.TableName}\" ({columns}) VALUES {sb}";
-        var totalInserted = NonQueryExecutor.Execute(_connection, sql, parameters);
+                for (int col = 0; col < mappingList.Count; col++)
+                {
+                    if (col > 0) sb.Append(", ");
+                    paramCounter++;
+                    sb.Append($"${paramCounter}");
+                    parameters.Add(new DuckDBParameter { Value = mappingList[col].Getter(entity) ?? DBNull.Value });
+                }
+                sb.Append(')');
+            }
+
+            var sql = $"INSERT INTO \"{source.TableName}\" ({columnsSql}) VALUES {sb}";
+            totalInserted += NonQueryExecutor.Execute(_connection, sql, parameters, options);
+        }
 
         if (totalInserted > 0) _modified.TryAdd(typeof(T), true);
         return totalInserted;
-    }
-
-    /// <inheritdoc />
-    public int Insert<T>(IEnumerable<T> entities, CommandOptions options) where T : class, new()
-    {
-        return Insert(entities);
     }
 }

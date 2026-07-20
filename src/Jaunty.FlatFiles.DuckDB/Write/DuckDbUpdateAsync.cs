@@ -13,6 +13,17 @@ public sealed partial class DuckDb
     /// <inheritdoc />
     public async ValueTask<int> UpdateAsync<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CancellationToken cancellationToken = default) where T : class, new()
     {
+        return await UpdateCoreAsync(predicate, column, value, default, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<int> UpdateAsync<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        return await UpdateCoreAsync(predicate, column, value, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<int> UpdateCoreAsync<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CommandOptions options, CancellationToken cancellationToken) where T : class, new()
+    {
         ArgumentNullException.ThrowIfNull(predicate);
         ArgumentNullException.ThrowIfNull(column);
 
@@ -28,15 +39,9 @@ public sealed partial class DuckDb
         allParams.AddRange(whereParams);
 
         var sql = $"UPDATE \"{source.TableName}\" SET \"{columnName}\" = $1 WHERE {whereSql}";
-        var result = await NonQueryExecutor.ExecuteAsync(_connection, sql, allParams, cancellationToken).ConfigureAwait(false);
+        var result = await NonQueryExecutor.ExecuteAsync(_connection, sql, allParams, options, cancellationToken).ConfigureAwait(false);
 
         if (result > 0) _modified.TryAdd(typeof(T), true);
         return result;
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<int> UpdateAsync<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> column, object value, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
-    {
-        return await UpdateAsync(predicate, column, value, cancellationToken).ConfigureAwait(false);
     }
 }

@@ -50,6 +50,25 @@ public class FlatFileTests
     }
 
     [Fact]
+    public void Open_LegacyXlsExtension_ThrowsWithHelpfulMessage()
+    {
+        // Legacy binary .xls is intentionally not registered: ExcelFileSource reads via DuckDB's
+        // read_xlsx, which only supports the modern .xlsx format (AUD-R9).
+        var tempFile = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid():N}.xls");
+        File.WriteAllText(tempFile, "not a real xls file");
+        try
+        {
+            var ex = Assert.Throws<ArgumentException>(() => FlatFile.Open(tempFile));
+            Assert.Contains(".xls", ex.Message);
+            Assert.Contains(".xlsx", ex.Message);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
     public void Open_NonexistentFile_Throws()
     {
         Assert.Throws<FileNotFoundException>(() =>
