@@ -172,16 +172,22 @@ public sealed class Scaffolder
             (lower.Contains("data source=") && !lower.Contains("initial catalog=") && !lower.Contains("database=")))
             return DatabaseProvider.SQLite;
 
+        // PostgreSQL detection - checked before SQL Server because Npgsql accepts "Server="
+        // and "User Id=" as aliases for its canonical "Host="/"Username=" keys, so a valid
+        // Npgsql connection string can otherwise satisfy the SQL Server heuristic below.
+        // "Host=" is Npgsql's unambiguous canonical key; port 5432 is Postgres's default and
+        // not used by SQL Server, so either signal is safe to check ahead of SQL Server without
+        // reclassifying genuine "Server=/Database=/User Id=" SQL Server connection strings
+        // (which carry neither "host=" nor "port=5432").
+        if (lower.Contains("database=") && (lower.Contains("username=") || lower.Contains("user id=")) &&
+            (lower.Contains("host=") || lower.Contains("port=5432")))
+            return DatabaseProvider.PostgreSql;
+
         // SQL Server detection
         if ((lower.Contains("server=") || lower.Contains("data source=")) &&
             (lower.Contains("initial catalog=") || lower.Contains("database=")) &&
             (lower.Contains("trusted_connection=") || lower.Contains("user id=") || lower.Contains("integrated security=")))
             return DatabaseProvider.SqlServer;
-
-        // PostgreSQL detection
-        if (lower.Contains("host=") && lower.Contains("database=") &&
-            (lower.Contains("username=") || lower.Contains("user id=")))
-            return DatabaseProvider.PostgreSql;
 
         // MySQL detection (after SQL Server since both can have server= and database=)
         if (lower.Contains("server=") && lower.Contains("database=") &&
