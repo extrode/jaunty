@@ -36,7 +36,8 @@ public static class FlatFileImporter
 
         // Use the registry to create a source with the correct entity type
         IFileSource source = FlatFile.CreateSourceFromExtension(extension, tableName, fullPath, typeof(T));
-        using IFlatFile db = FlatFile.Open(opts => opts.AddSource(source));
+        IFlatFile db = FlatFile.Open(opts => opts.AddSource(source));
+        await using var dbDisposer = db.ConfigureAwait(false);
 
         return await db.ImportIntoAsync<T>(targetConnection, options, cancellationToken).ConfigureAwait(false);
     }
@@ -56,7 +57,9 @@ public static class FlatFileImporter
         ArgumentNullException.ThrowIfNull(configureSource);
         ArgumentNullException.ThrowIfNull(targetConnection);
 
-        using IFlatFile db = FlatFile.Open(configureSource);
+        IFlatFile db = FlatFile.Open(configureSource);
+        await using var dbDisposer = db.ConfigureAwait(false);
+
         return await db.ImportIntoAsync<T>(targetConnection, options, cancellationToken).ConfigureAwait(false);
     }
 }

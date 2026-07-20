@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Data.Common;
 
 using Jaunty.FlatFiles.Import;
@@ -12,7 +13,7 @@ namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 /// </summary>
 internal static class ImportDialectResolver
 {
-    private static readonly Dictionary<string, IImportDialect> _registry = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, IImportDialect> _registry = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Registers a custom import dialect for a connection type name (or substring).
@@ -51,7 +52,9 @@ internal static class ImportDialectResolver
             return SqliteImportDialect.Instance;
         if (typeName.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
             return PostgreSqlImportDialect.Instance;
-        if (typeName.Contains("SqlConnection", StringComparison.OrdinalIgnoreCase) ||
+        // Match the SqlClient "SqlConnection" type precisely (preceded by a namespace dot) so
+        // "MySql.Data.MySqlClient.MySqlConnection" doesn't false-positive on the "SqlConnection" substring.
+        if (typeName.EndsWith(".SqlConnection", StringComparison.OrdinalIgnoreCase) ||
             typeName.Contains("Microsoft.Data.SqlClient", StringComparison.OrdinalIgnoreCase))
             return SqlServerImportDialect.Instance;
 

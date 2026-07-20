@@ -156,22 +156,36 @@ internal static class ExpressionTranslator
     private static string HandleStringContains(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
-        parameters.Add(new DuckDBParameter { Value = $"%{value}%" });
-        return $"\"{columnName}\" LIKE ${paramIndex}";
+        parameters.Add(new DuckDBParameter { Value = $"%{EscapeLikeValue(value)}%" });
+        return $"\"{columnName}\" LIKE ${paramIndex} ESCAPE '\\'";
     }
 
     private static string HandleStringStartsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
-        parameters.Add(new DuckDBParameter { Value = $"{value}%" });
-        return $"\"{columnName}\" LIKE ${paramIndex}";
+        parameters.Add(new DuckDBParameter { Value = $"{EscapeLikeValue(value)}%" });
+        return $"\"{columnName}\" LIKE ${paramIndex} ESCAPE '\\'";
     }
 
     private static string HandleStringEndsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
-        parameters.Add(new DuckDBParameter { Value = $"%{value}" });
-        return $"\"{columnName}\" LIKE ${paramIndex}";
+        parameters.Add(new DuckDBParameter { Value = $"%{EscapeLikeValue(value)}" });
+        return $"\"{columnName}\" LIKE ${paramIndex} ESCAPE '\\'";
+    }
+
+    /// <summary>
+    /// Escapes LIKE wildcard characters (<c>%</c>, <c>_</c>) and the escape character itself
+    /// (<c>\</c>) in a value so it matches literally rather than as a wildcard pattern, when
+    /// combined with an <c>ESCAPE '\'</c> clause.
+    /// </summary>
+    private static string EscapeLikeValue(object? value)
+    {
+        var text = value?.ToString() ?? string.Empty;
+        return text
+            .Replace("\\", "\\\\")
+            .Replace("%", "\\%")
+            .Replace("_", "\\_");
     }
 
     private static string HandleInClause(MethodCallExpression method, List<DuckDBParameter> parameters, int paramOffset)
@@ -205,16 +219,31 @@ internal static class ExpressionTranslator
             ?? throw new NotSupportedException("IN clause requires an enumerable collection.");
 
         var sb = new StringBuilder();
-        sb.Append($"\"{columnName}\" IN (");
         var first = true;
         foreach (var item in collection)
         {
-            if (!first) sb.Append(", ");
+            if (first)
+            {
+                sb.Append($"\"{columnName}\" IN (");
+                first = false;
+            }
+            else
+            {
+                sb.Append(", ");
+            }
+
             var paramIndex = paramOffset + parameters.Count + 1;
             parameters.Add(new DuckDBParameter { Value = item });
             sb.Append($"${paramIndex}");
-            first = false;
         }
+
+        if (first)
+        {
+            // Empty collection: no value can ever match, so the clause must always be false
+            // rather than emitting the invalid SQL `"col" IN ()`.
+            return "1 = 0";
+        }
+
         sb.Append(')');
         return sb.ToString();
     }
