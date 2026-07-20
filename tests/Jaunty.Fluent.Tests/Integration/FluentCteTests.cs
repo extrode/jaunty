@@ -175,6 +175,26 @@ public class FluentCteTests : IClassFixture<FluentDatabaseFixture>
             Assert.True(p.UnitPrice > 100 && (p.CategoryId == 1 || p.CategoryId == 2)));
     }
 
+    [Fact]
+    public void Cte_ChainedWithOrAnd_AppliesCorrectPrecedence()
+    {
+        // Chained: Where(...).Or(...).And(...) - regression test for AND/OR precedence
+        // (round 10): must evaluate as (CategoryId == 1 OR CategoryId == 2) AND UnitPrice > 10,
+        // not CategoryId == 1 OR (CategoryId == 2 AND UnitPrice > 10) per SQL's native
+        // AND-before-OR precedence. Seed data has a CategoryId == 1 row with UnitPrice == 5,
+        // which the buggy unparenthesized form would incorrectly let through.
+        var products = _fixture.Connection.Cte<Product>("ChainedOrAnd")
+            .As(q => q.Where(p => p.UnitsInStock >= 0))
+            .Where(p => p.CategoryId == 1)
+            .Or(p => p.CategoryId == 2)
+            .And(p => p.UnitPrice > 10)
+            .Select();
+
+        Assert.NotEmpty(products);
+        Assert.All(products, p =>
+            Assert.True((p.CategoryId == 1 || p.CategoryId == 2) && p.UnitPrice > 10));
+    }
+
     #endregion
 
     #region CTE with SelectFirst/SelectFirstOrDefault
