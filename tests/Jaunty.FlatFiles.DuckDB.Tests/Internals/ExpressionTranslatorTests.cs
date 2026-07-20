@@ -156,6 +156,80 @@ public class ExpressionTranslatorTests
     }
 
     [Fact]
+    public void Translate_StringContains_EscapesLikeClauseAndAddsEscapeKeyword()
+    {
+        // Arrange
+        Expression<Func<SalesRecord, bool>> predicate = x => x.ProductName.Contains("100%_off");
+
+        // Act
+        var (sql, parameters) = ExpressionTranslator.Translate(predicate);
+
+        // Assert
+        Assert.Contains("ESCAPE '\\'", sql);
+        Assert.Single(parameters);
+        // The literal % and _ in the value must be escaped so they match literally rather than
+        // acting as LIKE wildcards.
+        Assert.Equal("%100\\%\\_off%", parameters[0].Value);
+    }
+
+    [Fact]
+    public void Translate_StringStartsWith_EscapesLikeClauseAndAddsEscapeKeyword()
+    {
+        // Arrange
+        Expression<Func<SalesRecord, bool>> predicate = x => x.ProductName.StartsWith("50%_discount");
+
+        // Act
+        var (sql, parameters) = ExpressionTranslator.Translate(predicate);
+
+        // Assert
+        Assert.Contains("ESCAPE '\\'", sql);
+        Assert.Equal("50\\%\\_discount%", parameters[0].Value);
+    }
+
+    [Fact]
+    public void Translate_StringEndsWith_EscapesLikeClauseAndAddsEscapeKeyword()
+    {
+        // Arrange
+        Expression<Func<SalesRecord, bool>> predicate = x => x.ProductName.EndsWith("a_b%c");
+
+        // Act
+        var (sql, parameters) = ExpressionTranslator.Translate(predicate);
+
+        // Assert
+        Assert.Contains("ESCAPE '\\'", sql);
+        Assert.Equal("%a\\_b\\%c", parameters[0].Value);
+    }
+
+    [Fact]
+    public void Translate_StringContains_EscapesLiteralBackslash()
+    {
+        // Arrange
+        Expression<Func<SalesRecord, bool>> predicate = x => x.ProductName.Contains(@"C:\temp");
+
+        // Act
+        var (sql, parameters) = ExpressionTranslator.Translate(predicate);
+
+        // Assert
+        Assert.Equal(@"%C:\\temp%", parameters[0].Value);
+    }
+
+    [Fact]
+    public void Translate_InClause_EmptyCollection_GeneratesAlwaysFalseInsteadOfInvalidSql()
+    {
+        // Arrange
+        var ids = Array.Empty<int>();
+        Expression<Func<SalesRecord, bool>> predicate = x => ids.Contains(x.Id);
+
+        // Act
+        var (sql, parameters) = ExpressionTranslator.Translate(predicate);
+
+        // Assert
+        Assert.Equal("1 = 0", sql);
+        Assert.Empty(parameters);
+        Assert.DoesNotContain("IN ()", sql);
+    }
+
+    [Fact]
     public void ResolveColumnName_RespectsColumnAttribute()
     {
         // Arrange

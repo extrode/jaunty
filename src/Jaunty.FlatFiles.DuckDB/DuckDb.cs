@@ -77,12 +77,22 @@ public sealed partial class DuckDb : IFlatFile
         if (options.AutoOpen)
             _connection.Open();
 
-        foreach (IFileSource source in options.Sources)
+        try
         {
-            if (options.PreloadIntoMemory && !source.IsPreloaded)
-                source.IsPreloaded = true;
+            foreach (IFileSource source in options.Sources)
+            {
+                if (options.PreloadIntoMemory && !source.IsPreloaded)
+                    source.IsPreloaded = true;
 
-            RegisterSource(source);
+                RegisterSource(source);
+            }
+        }
+        catch
+        {
+            // A source registration can fail partway through; without this, _connection would
+            // leak because the constructor never returns an instance the caller could Dispose.
+            _connection.Dispose();
+            throw;
         }
     }
 
@@ -106,7 +116,7 @@ public sealed partial class DuckDb : IFlatFile
     public async ValueTask RegisterSourceAsync(IFileSource source, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(source);
-        string sql = GenerateRegistrationSql(source);
+        string sql = await GenerateRegistrationSqlAsync(source, cancellationToken).ConfigureAwait(false);
 
         DuckDBCommand cmd = _connection.CreateCommand();
         await using var cmdDisposer = cmd.ConfigureAwait(false);
@@ -114,7 +124,7 @@ public sealed partial class DuckDb : IFlatFile
         await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
         if (_options.ValidateSchema && source.EntityType != typeof(object))
-            ValidateSchema(source);
+            await ValidateSchemaAsync(source, cancellationToken).ConfigureAwait(false);
 
         _sources[source.EntityType] = source;
     }
@@ -153,6 +163,21 @@ public sealed partial class DuckDb : IFlatFile
 
             if (HasDateTimeColumns(mappings))
                 return GenerateViewSqlWithDateTimeCasts(source, mappings);
+        }
+
+        return source.IsPreloaded
+            ? _dialect.GenerateCreateTableAsSql(source)
+            : _dialect.GenerateCreateViewSql(source);
+    }
+
+    private async ValueTask<string> GenerateRegistrationSqlAsync(IFileSource source, CancellationToken cancellationToken)
+    {
+        if (source.EntityType != typeof(object))
+        {
+            IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(source.EntityType);
+
+            if (HasDateTimeColumns(mappings))
+                return await GenerateViewSqlWithDateTimeCastsAsync(source, mappings, cancellationToken).ConfigureAwait(false);
         }
 
         return source.IsPreloaded
@@ -205,6 +230,46 @@ public sealed partial class DuckDb : IFlatFile
         return $"CREATE OR REPLACE {keyword} \"{source.TableName}\" AS SELECT {sb} FROM {readFunction}";
     }
 
+    private async ValueTask<string> GenerateViewSqlWithDateTimeCastsAsync(IFileSource source, IReadOnlyDictionary<string, ColumnMapping> mappings, CancellationToken cancellationToken)
+    {
+        string readFunction = DuckDbDialect.GenerateReadFunction(source);
+        HashSet<string> dateTimeColumns = GetDateTimeColumnNamesFromMappings(mappings);
+        List<string> fileColumns;
+
+        DuckDBCommand cmd = _connection.CreateCommand();
+        await using (cmd.ConfigureAwait(false))
+        {
+            cmd.CommandText = $"SELECT * FROM {readFunction} LIMIT 0";
+            DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using (reader.ConfigureAwait(false))
+            {
+                fileColumns = new List<string>(reader.FieldCount);
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    fileColumns.Add(reader.GetName(i));
+                }
+            }
+        }
+
+        var sb = new StringBuilder();
+
+        for (int i = 0; i < fileColumns.Count; i++)
+        {
+            if (i > 0) sb.Append(", ");
+
+            string col = fileColumns[i];
+
+            if (dateTimeColumns.Contains(col))
+                sb.Append($"CAST(\"{col}\" AS TIMESTAMP) AS \"{col}\"");
+            else
+                sb.Append($"\"{col}\"");
+        }
+
+        string keyword = source.IsPreloaded ? "TABLE" : "VIEW";
+
+        return $"CREATE OR REPLACE {keyword} \"{source.TableName}\" AS SELECT {sb} FROM {readFunction}";
+    }
+
     private static HashSet<string> GetDateTimeColumnNamesFromMappings(IReadOnlyDictionary<string, ColumnMapping> mappings)
     {
         var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -225,6 +290,36 @@ public sealed partial class DuckDb : IFlatFile
         var fileColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         while (reader.Read())
+        {
+            string colName = reader.GetString(0);
+            string colType = reader.GetString(1);
+            fileColumns[colName] = colType;
+        }
+
+        foreach (ColumnMapping mapping in ColumnMappingCache.Get(source.EntityType).Values)
+        {
+            if (!fileColumns.ContainsKey(mapping.ColumnName))
+            {
+                throw new InvalidOperationException(
+                    $"Schema validation failed for '{source.TableName}': Entity property '{mapping.Property.Name}' " +
+                    $"maps to column '{mapping.ColumnName}' which does not exist in the file. " +
+                    $"Available columns: {string.Join(", ", fileColumns.Keys)}");
+            }
+        }
+    }
+
+    private async ValueTask ValidateSchemaAsync(IFileSource source, CancellationToken cancellationToken)
+    {
+        DuckDBCommand cmd = _connection.CreateCommand();
+        await using var cmdDisposer = cmd.ConfigureAwait(false);
+        cmd.CommandText = $"DESCRIBE \"{source.TableName}\"";
+
+        DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        await using var readerDisposer = reader.ConfigureAwait(false);
+
+        var fileColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             string colName = reader.GetString(0);
             string colType = reader.GetString(1);

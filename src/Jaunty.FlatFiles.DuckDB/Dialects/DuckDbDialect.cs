@@ -322,10 +322,32 @@ public sealed class DuckDbDialect : IFlatFileDialect
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Formats that DuckDB's <c>COPY ... TO</c> statement natively supports as a write target.
+    /// Table formats such as Delta Lake and Iceberg are read-only via DuckDB's scan functions
+    /// and cannot be used as a COPY TO format.
+    /// </summary>
+    private static readonly HashSet<string> _supportedCopyToFormats = new(StringComparer.OrdinalIgnoreCase)
+    {
+        FileFormats.Csv,
+        FileFormats.Tsv,
+        FileFormats.Parquet,
+        FileFormats.Json,
+        FileFormats.Excel,
+    };
+
     /// <inheritdoc />
     public string GenerateCopyToSql(string tableName, string outputPath, string format)
     {
         ArgumentNullException.ThrowIfNull(format);
+
+        if (!_supportedCopyToFormats.Contains(format))
+        {
+            throw new NotSupportedException(
+                $"Format '{format}' is not supported by DuckDB's COPY TO statement. " +
+                $"Supported formats: {string.Join(", ", _supportedCopyToFormats.OrderBy(f => f))}. " +
+                "Table formats such as Delta Lake and Iceberg are read-only and cannot be written via COPY TO.");
+        }
 
         var escapedPath = outputPath.Replace("'", "''");
 
@@ -337,7 +359,7 @@ public sealed class DuckDbDialect : IFlatFileDialect
             "PARQUET" => "PARQUET",
             "JSON" => "JSON",
             "XLSX" => "XLSX",
-            _ => format.ToUpperInvariant() // Pass through for custom formats
+            _ => format.ToUpperInvariant()
         };
 
         var sb = new StringBuilder();
@@ -358,6 +380,16 @@ public sealed class DuckDbDialect : IFlatFileDialect
     /// <inheritdoc />
     public string GenerateCopyToSql(string tableName, string outputPath, IFileSource source)
     {
+        ArgumentNullException.ThrowIfNull(source);
+
+        if (!_supportedCopyToFormats.Contains(source.DuckDbFormatName))
+        {
+            throw new NotSupportedException(
+                $"Format '{source.DuckDbFormatName}' (source format '{source.Format}') is not supported by DuckDB's COPY TO statement. " +
+                $"Supported formats: {string.Join(", ", _supportedCopyToFormats.OrderBy(f => f))}. " +
+                "Table formats such as Delta Lake and Iceberg are read-only and cannot be written via COPY TO.");
+        }
+
         var escapedPath = outputPath.Replace("'", "''");
 
         var sb = new StringBuilder();

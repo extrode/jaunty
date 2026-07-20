@@ -105,49 +105,12 @@ internal static class ImportExecutor
         DbTransaction transaction = await targetConnection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using (transaction.ConfigureAwait(false))
         {
-            DbCommand cmd = targetConnection.CreateCommand();
-            await using (cmd.ConfigureAwait(false))
-            {
-                cmd.CommandText = insertSql;
-                cmd.Transaction = transaction;
-
-                // Pre-create parameters
-                var paramArray = new DbParameter[mappings.Count];
-                for (int i = 0; i < mappings.Count; i++)
-                {
-                    DbParameter param = cmd.CreateParameter();
-                    param.ParameterName = $"@p{i}";
-                    cmd.Parameters.Add(param);
-                    paramArray[i] = param;
-                }
-
-                // Prepare the command for better performance
-                cmd.Prepare();
-
-                int batchCount = 0;
-                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    // Set parameter values from reader
-                    for (int i = 0; i < mappingList.Count; i++)
-                    {
-                        var value = reader.GetValue(readerColumnMap[i]);
-                        paramArray[i].Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappingList[i].PropertyType);
-                    }
-
-                    await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                    totalImported++;
-                    batchCount++;
-
-                    // Report progress per batch
-                    if (batchCount >= batchSize)
-                    {
-                        onProgress?.Invoke(totalImported, null);
-                        batchCount = 0;
-                    }
-                }
-            }
+            // Prefer ADO.NET command batching (DbBatch) when the target provider supports it, so a
+            // batch of rows is sent as a single round-trip instead of one ExecuteNonQueryAsync per
+            // row. Providers that don't support DbBatch fall back to the single-command path below.
+            totalImported = targetConnection.CanCreateBatch
+                ? await ImportUsingDbBatchAsync(reader, targetConnection, transaction, insertSql, mappingList, readerColumnMap, batchSize, onProgress, cancellationToken).ConfigureAwait(false)
+                : await ImportUsingSingleCommandAsync(reader, targetConnection, transaction, insertSql, mappingList, readerColumnMap, batchSize, onProgress, cancellationToken).ConfigureAwait(false);
 
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -156,6 +119,129 @@ internal static class ImportExecutor
         if (onProgress is not null)
         {
             onProgress(totalImported, totalImported);
+        }
+
+        return totalImported;
+    }
+
+    /// <summary>
+    /// Imports rows one <see cref="DbCommand"/> execution per row, using a single prepared,
+    /// reused command. Used when the target provider does not support <see cref="DbBatch"/>.
+    /// </summary>
+    private static async ValueTask<long> ImportUsingSingleCommandAsync(
+        DbDataReader reader, DbConnection targetConnection, DbTransaction transaction, string insertSql,
+        List<ColumnMapping> mappingList, int[] readerColumnMap, int batchSize, Action<long, long?>? onProgress,
+        CancellationToken cancellationToken)
+    {
+        long totalImported = 0;
+
+        DbCommand cmd = targetConnection.CreateCommand();
+        await using (cmd.ConfigureAwait(false))
+        {
+            cmd.CommandText = insertSql;
+            cmd.Transaction = transaction;
+
+            // Pre-create parameters
+            var paramArray = new DbParameter[mappingList.Count];
+            for (int i = 0; i < mappingList.Count; i++)
+            {
+                DbParameter param = cmd.CreateParameter();
+                param.ParameterName = $"@p{i}";
+                cmd.Parameters.Add(param);
+                paramArray[i] = param;
+            }
+
+            // Prepare the command for better performance
+            cmd.Prepare();
+
+            int batchCount = 0;
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Set parameter values from reader
+                for (int i = 0; i < mappingList.Count; i++)
+                {
+                    var value = reader.GetValue(readerColumnMap[i]);
+                    paramArray[i].Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappingList[i].PropertyType);
+                }
+
+                await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                totalImported++;
+                batchCount++;
+
+                // Report progress per batch
+                if (batchCount >= batchSize)
+                {
+                    onProgress?.Invoke(totalImported, null);
+                    batchCount = 0;
+                }
+            }
+        }
+
+        return totalImported;
+    }
+
+    /// <summary>
+    /// Imports rows using <see cref="DbBatch"/>: up to <paramref name="batchSize"/> single-row
+    /// INSERT commands are grouped into one <see cref="DbBatch"/> and executed as a single
+    /// round-trip, instead of one <c>ExecuteNonQueryAsync</c> call per row.
+    /// </summary>
+    private static async ValueTask<long> ImportUsingDbBatchAsync(
+        DbDataReader reader, DbConnection targetConnection, DbTransaction transaction, string insertSql,
+        List<ColumnMapping> mappingList, int[] readerColumnMap, int batchSize, Action<long, long?>? onProgress,
+        CancellationToken cancellationToken)
+    {
+        long totalImported = 0;
+        int rowsBuffered = 0;
+
+        // DbBatchCommand does not expose its own parameter factory, so a throwaway DbCommand on
+        // the same connection is used purely to manufacture provider-correct DbParameter instances
+        // (it is never executed).
+        DbCommand parameterFactory = targetConnection.CreateCommand();
+        await using var parameterFactoryDisposer = parameterFactory.ConfigureAwait(false);
+
+        DbBatch batch = targetConnection.CreateBatch();
+        await using (batch.ConfigureAwait(false))
+        {
+            batch.Transaction = transaction;
+
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                DbBatchCommand batchCommand = batch.CreateBatchCommand();
+                batchCommand.CommandText = insertSql;
+
+                for (int i = 0; i < mappingList.Count; i++)
+                {
+                    var value = reader.GetValue(readerColumnMap[i]);
+                    DbParameter param = parameterFactory.CreateParameter();
+                    param.ParameterName = $"@p{i}";
+                    param.Value = value is DBNull ? DBNull.Value : ConvertValue(value, mappingList[i].PropertyType);
+                    batchCommand.Parameters.Add(param);
+                }
+
+                batch.BatchCommands.Add(batchCommand);
+                rowsBuffered++;
+
+                if (rowsBuffered >= batchSize)
+                {
+                    await batch.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    totalImported += rowsBuffered;
+                    onProgress?.Invoke(totalImported, null);
+
+                    batch.BatchCommands.Clear();
+                    rowsBuffered = 0;
+                }
+            }
+
+            if (rowsBuffered > 0)
+            {
+                await batch.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                totalImported += rowsBuffered;
+                onProgress?.Invoke(totalImported, null);
+            }
         }
 
         return totalImported;
