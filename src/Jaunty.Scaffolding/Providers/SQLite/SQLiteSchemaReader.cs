@@ -136,29 +136,42 @@ public sealed class SQLiteSchemaReader : ISchemaReader
     {
         var columns = new List<ColumnSchema>();
 
-        // Get the CREATE TABLE statement to check for AUTOINCREMENT
+        // Get the CREATE TABLE statement to check for WITHOUT ROWID, which suppresses
+        // rowid aliasing for INTEGER PRIMARY KEY columns.
         var createSql = await GetCreateTableSqlAsync(connection, tableName, cancellationToken).ConfigureAwait(false);
-        var hasAutoIncrement = createSql != null &&
-            createSql.Contains("AUTOINCREMENT", StringComparison.OrdinalIgnoreCase);
+        var isWithoutRowId = createSql != null &&
+            Regex.IsMatch(createSql, @"\)\s*WITHOUT\s+ROWID\s*;?\s*$", RegexOptions.IgnoreCase);
 
         // Use PRAGMA table_info to get column information
         using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = $"PRAGMA table_info('{tableName.Replace("'", "''")}')";
 
-        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        var rows = new List<(string ColumnName, string DataType, bool NotNull, string? DefaultValue, bool IsPk)>();
+        using (DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
         {
-            // PRAGMA table_info returns: cid, name, type, notnull, dflt_value, pk
-            var columnName = reader.GetString(1);
-            var dataType = reader.IsDBNull(2) ? "TEXT" : reader.GetString(2);
-            var notNull = reader.GetInt32(3) != 0;
-            var defaultValue = reader.IsDBNull(4) ? null : reader.GetString(4);
-            var isPk = reader.GetInt32(5) != 0;
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                // PRAGMA table_info returns: cid, name, type, notnull, dflt_value, pk
+                var columnName = reader.GetString(1);
+                var dataType = reader.IsDBNull(2) ? "TEXT" : reader.GetString(2);
+                var notNull = reader.GetInt32(3) != 0;
+                var defaultValue = reader.IsDBNull(4) ? null : reader.GetString(4);
+                var isPk = reader.GetInt32(5) != 0;
+                rows.Add((columnName, dataType, notNull, defaultValue, isPk));
+            }
+        }
 
-            // Check if this is an INTEGER PRIMARY KEY (which is an alias for ROWID)
+        var pkColumnCount = rows.Count(r => r.IsPk);
+
+        foreach ((string columnName, string dataType, bool notNull, string? defaultValue, bool isPk) in rows)
+        {
+            // A single-column INTEGER PRIMARY KEY is an alias for the SQLite rowid and is
+            // always auto-generated, regardless of whether AUTOINCREMENT was specified.
+            // Composite primary keys and WITHOUT ROWID tables don't get rowid aliasing.
             var isIdentity = isPk &&
+                pkColumnCount == 1 &&
                 dataType.Equals("INTEGER", StringComparison.OrdinalIgnoreCase) &&
-                hasAutoIncrement;
+                !isWithoutRowId;
 
             columns.Add(new ColumnSchema
             {

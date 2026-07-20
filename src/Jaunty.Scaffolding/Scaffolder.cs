@@ -55,6 +55,34 @@ public sealed class Scaffolder
                 return ScaffoldResult.Failed("No tables found matching the specified criteria.");
             }
 
+            // Detect table-name collisions up front (e.g. "Product" and "Products" both
+            // singularizing to "Product") before writing anything, rather than either
+            // silently overwriting the first file (--force) or failing mid-run (File.Exists).
+            var tablesByClassName = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (TableSchema table in schema.Tables)
+            {
+                var className = GetClassName(table.TableName, options);
+                if (!tablesByClassName.TryGetValue(className, out List<string>? tableNames))
+                {
+                    tableNames = [];
+                    tablesByClassName[className] = tableNames;
+                }
+                tableNames.Add(table.TableName);
+            }
+
+            List<string> collisions = tablesByClassName
+                .Where(kvp => kvp.Value.Count > 1)
+                .Select(kvp => $"{kvp.Key} <- [{string.Join(", ", kvp.Value)}]")
+                .ToList();
+
+            if (collisions.Count > 0)
+            {
+                return ScaffoldResult.Failed(
+                    "Multiple tables map to the same generated class name: " +
+                    string.Join("; ", collisions) +
+                    ". Use ClassPrefix/ClassSuffix, disable Singularize, or exclude one of the tables.");
+            }
+
             // Generate code
             var codeGenerator = new EntityCodeGenerator(typeMapper);
             CodeGeneratorOptions codeGenOptions = MapToCodeGenOptions(options);
@@ -135,13 +163,13 @@ public sealed class Scaffolder
             throw new ArgumentException("Namespace is required.", nameof(options));
     }
 
-    private static DatabaseProvider DetectProvider(string connectionString)
+    internal static DatabaseProvider DetectProvider(string connectionString)
     {
         var lower = connectionString.ToLowerInvariant();
 
         // SQLite detection
         if (lower.Contains(".db") || lower.Contains(".sqlite") ||
-            (lower.Contains("data source=") && !lower.Contains("initial catalog=")))
+            (lower.Contains("data source=") && !lower.Contains("initial catalog=") && !lower.Contains("database=")))
             return DatabaseProvider.SQLite;
 
         // SQL Server detection

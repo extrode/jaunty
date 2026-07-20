@@ -31,7 +31,8 @@ public sealed class MySqlSchemaReader : ISchemaReader
             NUMERIC_PRECISION AS `Precision`,
             NUMERIC_SCALE AS Scale,
             COLUMN_DEFAULT AS DefaultValue,
-            ORDINAL_POSITION AS OrdinalPosition
+            ORDINAL_POSITION AS OrdinalPosition,
+            COLUMN_TYPE AS ColumnType
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @TableName
         ORDER BY ORDINAL_POSITION";
@@ -120,6 +121,15 @@ public sealed class MySqlSchemaReader : ISchemaReader
         using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = TablesSql;
 
+        // MySQL doesn't have a separate schema concept - TABLE_SCHEMA is the database name,
+        // and this reader only ever queries the single database the connection is currently
+        // attached to (via DATABASE()). IncludeSchemas can therefore only accept or reject
+        // that one database; it can't enumerate tables across multiple MySQL databases in one
+        // pass the way SQL Server/PostgreSQL schema filtering does.
+        if (options.IncludeSchemas?.Count > 0 &&
+            !options.IncludeSchemas.Contains(connection.Database, StringComparer.OrdinalIgnoreCase))
+            return tables;
+
         using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
@@ -170,7 +180,8 @@ public sealed class MySqlSchemaReader : ISchemaReader
                         Precision = col.Precision,
                         Scale = col.Scale,
                         DefaultValue = col.DefaultValue,
-                        OrdinalPosition = col.OrdinalPosition
+                        OrdinalPosition = col.OrdinalPosition,
+                        ColumnType = col.ColumnType
                     };
                 }
             }
@@ -215,7 +226,8 @@ public sealed class MySqlSchemaReader : ISchemaReader
                 Precision = reader.IsDBNull(6) ? null : ToClampedInt32(reader.GetValue(6)),
                 Scale = reader.IsDBNull(7) ? null : ToClampedInt32(reader.GetValue(7)),
                 DefaultValue = reader.IsDBNull(8) ? null : reader.GetString(8),
-                OrdinalPosition = ToClampedInt32(reader.GetValue(9))
+                OrdinalPosition = ToClampedInt32(reader.GetValue(9)),
+                ColumnType = reader.IsDBNull(10) ? null : reader.GetString(10)
             });
         }
 

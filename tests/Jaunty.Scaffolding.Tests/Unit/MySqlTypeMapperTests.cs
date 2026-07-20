@@ -9,14 +9,16 @@ public class MySqlTypeMapperTests
 {
     private readonly MySqlTypeMapper _mapper = new();
 
-    private static ColumnSchema CreateColumn(string dataType, bool isNullable = false, int? maxLength = null) =>
+    private static ColumnSchema CreateColumn(
+        string dataType, bool isNullable = false, int? maxLength = null, string? columnType = null) =>
         new()
         {
             ColumnName = "test_column",
             DataType = dataType,
             IsNullable = isNullable,
             OrdinalPosition = 1,
-            MaxLength = maxLength
+            MaxLength = maxLength,
+            ColumnType = columnType
         };
 
     // ------------------------------------------------------------------
@@ -34,30 +36,42 @@ public class MySqlTypeMapperTests
     }
 
     [Theory]
-    [InlineData("bit")]
-    [InlineData("tinyint")]
-    public void MapToCSharpType_MaxLengthOneBooleanConvention_ReturnsBool(string sqlType)
+    [InlineData("bit", "bit(1)")]
+    [InlineData("tinyint", "tinyint(1)")]
+    [InlineData("tinyint", "tinyint(1) unsigned")]
+    public void MapToCSharpType_ColumnTypeDisplayWidthOne_ReturnsBool(string sqlType, string columnType)
     {
-        // MySQL's tinyint(1)/bit(1) boolean convention - depends on the nullable MaxLength
-        // comparison, a common source of off-by-one/null-handling bugs.
-        var result = _mapper.MapToCSharpType(CreateColumn(sqlType, maxLength: 1));
+        // MySQL's tinyint(1)/bit(1) boolean convention is only observable via COLUMN_TYPE's
+        // display width. INFORMATION_SCHEMA.COLUMNS.CHARACTER_MAXIMUM_LENGTH (ColumnSchema's
+        // MaxLength) is always NULL for numeric columns, so it can never carry this signal.
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType, columnType: columnType));
         Assert.Equal("bool", result.TypeName);
         Assert.True(result.IsValueType);
     }
 
     [Fact]
-    public void MapToCSharpType_BitWithoutMaxLengthOne_ReturnsUlong()
+    public void MapToCSharpType_MaxLengthOneWithoutColumnType_DoesNotReturnBool()
     {
-        var result = _mapper.MapToCSharpType(CreateColumn("bit", maxLength: 8));
+        // Regression guard: MaxLength alone must NOT trigger the bool convention, since a real
+        // MySqlSchemaReader read never populates MaxLength for tinyint/bit columns (only
+        // ColumnType carries the display-width signal).
+        var result = _mapper.MapToCSharpType(CreateColumn("tinyint", maxLength: 1));
+        Assert.Equal("sbyte", result.TypeName);
+    }
+
+    [Fact]
+    public void MapToCSharpType_BitWithWiderColumnType_ReturnsUlong()
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn("bit", columnType: "bit(8)"));
         Assert.Equal("ulong", result.TypeName);
         Assert.True(result.IsValueType);
     }
 
     [Fact]
-    public void MapToCSharpType_TinyintWithoutMaxLength_ReturnsSbyte()
+    public void MapToCSharpType_TinyintWithoutColumnType_ReturnsSbyte()
     {
-        // No MaxLength at all (null) must NOT be treated as the MaxLength==1 boolean case.
-        var result = _mapper.MapToCSharpType(CreateColumn("tinyint", maxLength: null));
+        // No ColumnType at all must NOT be treated as the tinyint(1) boolean case.
+        var result = _mapper.MapToCSharpType(CreateColumn("tinyint"));
         Assert.Equal("sbyte", result.TypeName);
         Assert.True(result.IsValueType);
     }

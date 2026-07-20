@@ -34,8 +34,11 @@ public sealed class PostgreSqlTypeMapper : ITypeMapper
             "numeric" or "decimal" => new CSharpTypeInfo { TypeName = "decimal", IsValueType = true },
             "money" => new CSharpTypeInfo { TypeName = "decimal", IsValueType = true },
 
-            // String types
-            "char" or "character" or "varchar" or "character varying" or "text" or "name" =>
+            // String types.
+            // The reader supplies udt_name (not the multi-word information_schema.data_type
+            // spelling), so "bpchar" is the real wire value for fixed-length CHAR(n)/CHARACTER(n)
+            // columns - without it those columns fall through to the "object" catch-all below.
+            "char" or "character" or "bpchar" or "varchar" or "character varying" or "text" or "name" =>
                 new CSharpTypeInfo { TypeName = "string", IsValueType = false },
 
             // Date/Time types

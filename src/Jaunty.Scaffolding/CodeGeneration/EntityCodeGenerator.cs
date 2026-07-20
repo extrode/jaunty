@@ -53,15 +53,22 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         sb.AppendLine($"{indent}public {partialModifier}class {className}");
         sb.AppendLine($"{indent}{{");
 
-        // Properties
+        // Properties. Track generated property names (seeded with the class name itself) so
+        // a column whose PascalCased name collides with the class name (CS0542) or with
+        // another column's PascalCased name (duplicate member) gets disambiguated instead of
+        // emitting code that won't compile.
         string propIndent = options.UseFileScopedNamespace ? "    " : "        ";
+        var usedPropertyNames = new HashSet<string>(StringComparer.Ordinal) { className };
         bool isFirst = true;
         foreach (ColumnSchema column in table.Columns)
         {
             if (!isFirst)
                 sb.AppendLine();
             isFirst = false;
-            AppendProperty(sb, column, options, propIndent);
+
+            var propertyName = ResolvePropertyName(column.ColumnName, usedPropertyNames);
+            usedPropertyNames.Add(propertyName);
+            AppendProperty(sb, column, options, propIndent, propertyName);
         }
 
         sb.AppendLine($"{indent}}}");
@@ -115,16 +122,16 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         if (needsTableAttr)
         {
             if (!string.IsNullOrEmpty(table.SchemaName))
-                sb.AppendLine($"{indent}[Table(\"{table.TableName}\", \"{table.SchemaName}\")]");
+                sb.AppendLine($"{indent}[Table(\"{EscapeStringLiteral(table.TableName)}\", \"{EscapeStringLiteral(table.SchemaName)}\")]");
             else
-                sb.AppendLine($"{indent}[Table(\"{table.TableName}\")]");
+                sb.AppendLine($"{indent}[Table(\"{EscapeStringLiteral(table.TableName)}\")]");
         }
     }
 
-    private void AppendProperty(StringBuilder sb, ColumnSchema column, CodeGeneratorOptions options, string indent)
+    private void AppendProperty(
+        StringBuilder sb, ColumnSchema column, CodeGeneratorOptions options, string indent, string propertyName)
     {
         CSharpTypeInfo typeInfo = _typeMapper.MapToCSharpType(column);
-        var propertyName = GetPropertyName(column.ColumnName);
         var attrs = new List<string>();
 
         // [Key] attribute
@@ -144,7 +151,7 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         if (options.GenerateColumnAttribute &&
             !column.ColumnName.Equals(propertyName, StringComparison.OrdinalIgnoreCase))
         {
-            attrs.Add($"[Column(\"{column.ColumnName}\")]");
+            attrs.Add($"[Column(\"{EscapeStringLiteral(column.ColumnName)}\")]");
         }
 
         // Data annotations
@@ -206,5 +213,37 @@ public sealed class EntityCodeGenerator : ICodeGenerator
     {
         var propertyName = NamingHelper.ToPascalCase(columnName);
         return NamingHelper.EscapeIdentifier(propertyName);
+    }
+
+    /// <summary>
+    /// Resolves a column's generated property name, disambiguating it against
+    /// <paramref name="usedNames"/> (which is seeded with the class name so a property that
+    /// would otherwise collide with its enclosing type - CS0542 - is also caught) by appending
+    /// an incrementing numeric suffix until the name is unique.
+    /// </summary>
+    private static string ResolvePropertyName(string columnName, HashSet<string> usedNames)
+    {
+        var baseName = GetPropertyName(columnName);
+        if (!usedNames.Contains(baseName))
+            return baseName;
+
+        var suffix = 1;
+        string candidate;
+        do
+        {
+            candidate = baseName + suffix;
+            suffix++;
+        } while (usedNames.Contains(candidate));
+
+        return candidate;
+    }
+
+    /// <summary>
+    /// Escapes backslashes and double quotes so an arbitrary database identifier can be safely
+    /// embedded in a generated C# string literal (e.g. inside [Table("...")]/[Column("...")]).
+    /// </summary>
+    private static string EscapeStringLiteral(string value)
+    {
+        return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
     }
 }
