@@ -37,6 +37,18 @@ public class StoredProcedureAsyncTests : IClassFixture<DialectFixture>
             ? new { p_ProductId = id }
             : new { ProductId = id };
 
+    private static SpParameters CategorySpParam(DialectInfo dialect, int id) =>
+        new SpParameters().AddInput(
+            dialect.Provider == DialectProvider.Postgres ? "p_category_id" :
+            dialect.Provider == DialectProvider.MariaDb ? "p_CategoryId" : "CategoryId",
+            id);
+
+    private static SpParameters ProductSpParam(DialectInfo dialect, int id) =>
+        new SpParameters().AddInput(
+            dialect.Provider == DialectProvider.Postgres ? "p_product_id" :
+            dialect.Provider == DialectProvider.MariaDb ? "p_ProductId" : "ProductId",
+            id);
+
     private static object UpdatePriceParam(DialectInfo dialect, int productId, decimal newPrice) =>
         dialect.Provider == DialectProvider.Postgres
             ? new { p_product_id = productId, p_new_price = newPrice }
@@ -221,6 +233,57 @@ public class StoredProcedureAsyncTests : IClassFixture<DialectFixture>
         {
             transaction.Rollback();
         }
+    }
+
+    #endregion
+
+    #region SpParameters (List/First/FirstOrDefault)
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureAsync_SpParametersOverload_ReturnsFilteredResults(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var products = await connection.ExecuteStoredProcedureAsync<Product>(
+            SpName("GetProductsByCategory", dialect),
+            CategorySpParam(dialect, 1));
+
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureFirstAsync_SpParametersOverload_ReturnsFirst(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var product = await connection.ExecuteStoredProcedureFirstAsync<Product>(
+            SpName("GetProductById", dialect),
+            ProductSpParam(dialect, 1));
+
+        Assert.NotNull(product);
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureFirstOrDefaultAsync_SpParametersOverload_NoResults_ReturnsNull(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var product = await connection.ExecuteStoredProcedureFirstOrDefaultAsync<Product>(
+            SpName("GetProductById", dialect),
+            ProductSpParam(dialect, -1));
+
+        Assert.Null(product);
     }
 
     #endregion
