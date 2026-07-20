@@ -46,6 +46,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     private readonly List<WhereCondition> _conditions = new();
     private readonly List<OrderByColumn> _orderByColumns = new();
     private readonly ParameterCollection _parameters = new();
+    private readonly Dictionary<string, int> _whereParamCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<SetColumn> _setColumns = new();
     private bool _distinct;
     private int? _take;
@@ -105,7 +106,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     public IWhereClause<T> Where(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
         _parameters.AddRange(parameters);
@@ -144,7 +145,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     public IWhereClause<T> And(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
         _parameters.AddRange(parameters);
@@ -183,7 +184,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     public IWhereClause<T> Or(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
         _parameters.AddRange(parameters);
@@ -400,7 +401,12 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IOrderByClause<T> IFromClause<T>.OrderBy(Expression<Func<T, object?>> keySelector)
     {
         var propertyName = PropertyExtractor.ExtractOrderByProperty(keySelector);
-        var columnName = GetColumnNameFromProperty(propertyName);
+        // Raw (unescaped) column name: _orderByColumns also receives raw strings from the
+        // string-overload OrderBy(string) methods below, and BuildSelectSql/
+        // BuildSelectSqlWithProjection escape every entry exactly once at render time. Using
+        // the dialect-escaped GetColumnNameFromProperty here would double-escape (and, for a
+        // keyword-named column, throw in SqlIdentifierValidator on the second pass).
+        var columnName = GetColumnNameFromMetadata(_metadata, propertyName);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: false));
         return this;
     }
@@ -408,7 +414,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IOrderByClause<T> IFromClause<T>.OrderByDescending(Expression<Func<T, object?>> keySelector)
     {
         var propertyName = PropertyExtractor.ExtractOrderByProperty(keySelector);
-        var columnName = GetColumnNameFromProperty(propertyName);
+        // Raw (unescaped) column name - see comment in the OrderBy(ascending) overload above.
+        var columnName = GetColumnNameFromMetadata(_metadata, propertyName);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: true));
         return this;
     }
@@ -428,7 +435,12 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IOrderByClause<T> IWhereClause<T>.OrderBy(Expression<Func<T, object?>> keySelector)
     {
         var propertyName = PropertyExtractor.ExtractOrderByProperty(keySelector);
-        var columnName = GetColumnNameFromProperty(propertyName);
+        // Raw (unescaped) column name: _orderByColumns also receives raw strings from the
+        // string-overload OrderBy(string) methods below, and BuildSelectSql/
+        // BuildSelectSqlWithProjection escape every entry exactly once at render time. Using
+        // the dialect-escaped GetColumnNameFromProperty here would double-escape (and, for a
+        // keyword-named column, throw in SqlIdentifierValidator on the second pass).
+        var columnName = GetColumnNameFromMetadata(_metadata, propertyName);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: false));
         return this;
     }
@@ -436,7 +448,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IOrderByClause<T> IWhereClause<T>.OrderByDescending(Expression<Func<T, object?>> keySelector)
     {
         var propertyName = PropertyExtractor.ExtractOrderByProperty(keySelector);
-        var columnName = GetColumnNameFromProperty(propertyName);
+        // Raw (unescaped) column name - see comment in the OrderBy(ascending) overload above.
+        var columnName = GetColumnNameFromMetadata(_metadata, propertyName);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: true));
         return this;
     }
@@ -456,7 +469,12 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IOrderByClause<T> IDistinctClause<T>.OrderBy(Expression<Func<T, object?>> keySelector)
     {
         var propertyName = PropertyExtractor.ExtractOrderByProperty(keySelector);
-        var columnName = GetColumnNameFromProperty(propertyName);
+        // Raw (unescaped) column name: _orderByColumns also receives raw strings from the
+        // string-overload OrderBy(string) methods below, and BuildSelectSql/
+        // BuildSelectSqlWithProjection escape every entry exactly once at render time. Using
+        // the dialect-escaped GetColumnNameFromProperty here would double-escape (and, for a
+        // keyword-named column, throw in SqlIdentifierValidator on the second pass).
+        var columnName = GetColumnNameFromMetadata(_metadata, propertyName);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: false));
         return this;
     }
@@ -464,7 +482,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IOrderByClause<T> IDistinctClause<T>.OrderByDescending(Expression<Func<T, object?>> keySelector)
     {
         var propertyName = PropertyExtractor.ExtractOrderByProperty(keySelector);
-        var columnName = GetColumnNameFromProperty(propertyName);
+        // Raw (unescaped) column name - see comment in the OrderBy(ascending) overload above.
+        var columnName = GetColumnNameFromMetadata(_metadata, propertyName);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: true));
         return this;
     }
@@ -484,7 +503,12 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public IOrderByClause<T> ThenBy(Expression<Func<T, object?>> keySelector)
     {
         var propertyName = PropertyExtractor.ExtractOrderByProperty(keySelector);
-        var columnName = GetColumnNameFromProperty(propertyName);
+        // Raw (unescaped) column name: _orderByColumns also receives raw strings from the
+        // string-overload OrderBy(string) methods below, and BuildSelectSql/
+        // BuildSelectSqlWithProjection escape every entry exactly once at render time. Using
+        // the dialect-escaped GetColumnNameFromProperty here would double-escape (and, for a
+        // keyword-named column, throw in SqlIdentifierValidator on the second pass).
+        var columnName = GetColumnNameFromMetadata(_metadata, propertyName);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: false));
         return this;
     }
@@ -492,7 +516,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public IOrderByClause<T> ThenByDescending(Expression<Func<T, object?>> keySelector)
     {
         var propertyName = PropertyExtractor.ExtractOrderByProperty(keySelector);
-        var columnName = GetColumnNameFromProperty(propertyName);
+        // Raw (unescaped) column name - see comment in the OrderBy(ascending) overload above.
+        var columnName = GetColumnNameFromMetadata(_metadata, propertyName);
         _orderByColumns.Add(new OrderByColumn(columnName, descending: true));
         return this;
     }
@@ -1113,11 +1138,12 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_distinct)
             sb.Append("DISTINCT ");
 
-        // Columns
+        // Columns - already dialect-escaped (callers pass ResolveColumns()/GetAllColumnNames(),
+        // both backed by the pre-escaped CachedDialectMetadata cache).
         for (int i = 0; i < columns.Length; i++)
         {
             if (i > 0) sb.Append(", ");
-            sb.Append(_dialect.EscapeColumnName(columns[i]));
+            sb.Append(columns[i]);
         }
 
         // FROM
@@ -1238,7 +1264,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         sb.Append("SELECT ");
         sb.Append(aggregateFunction);
         sb.Append('(');
-        sb.Append(_dialect.EscapeColumnName(columnName));
+        // columnName is already dialect-escaped - every call site passes the result of
+        // GetColumnNameFromSelector, which is backed by the pre-escaped CachedDialectMetadata.
+        sb.Append(columnName);
         sb.Append(')');
 
         // FROM
@@ -1295,8 +1323,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     private string BuildInClause<TValue>(Expression<Func<T, TValue>> selector, IEnumerable<TValue> values, bool negate)
     {
-        var columnName = GetColumnNameFromSelector(selector);
-        var escapedColumn = _dialect.EscapeColumnName(columnName);
+        // Already dialect-escaped - see comment in BuildAggregateSql.
+        var escapedColumn = GetColumnNameFromSelector(selector);
 
         IList<TValue> valueList = values as IList<TValue> ?? values.ToList();
         if (valueList.Count == 0)
@@ -1323,8 +1351,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     private string BuildBetweenClause<TValue>(Expression<Func<T, TValue>> selector, TValue from, TValue to, bool negate)
     {
-        var columnName = GetColumnNameFromSelector(selector);
-        var escapedColumn = _dialect.EscapeColumnName(columnName);
+        // Already dialect-escaped - see comment in BuildAggregateSql.
+        var escapedColumn = GetColumnNameFromSelector(selector);
 
         var fromParamName = $"{_dialect.ParameterPrefix}p_between_from_{_parameters.Count}";
         _parameters.Add(fromParamName, from);
@@ -1343,8 +1371,14 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         EntityMetadata subqueryMetadata = FluentMetadataCache.GetMetadata<TSubquery>();
         var subqueryTable = _dialect.EscapeTableName(subqueryMetadata.SchemaName, subqueryMetadata.TableName);
 
+        // Always alias the subquery table, even when TSubquery != T, so its columns can be
+        // unambiguously correlated against the outer table. Without this, a self-referencing
+        // EXISTS (TSubquery == T) would resolve both sides to the identical table prefix,
+        // making the correlation meaningless.
+        var subqueryAlias = $"{subqueryMetadata.TableName}_ex";
+
         // Use ExistsExpressionVisitor to translate the correlation predicate
-        var visitor = new ExistsExpressionVisitor<T, TSubquery>(_dialect, _metadata, subqueryMetadata);
+        var visitor = new ExistsExpressionVisitor<T, TSubquery>(_dialect, _metadata, subqueryMetadata, _alias, subqueryAlias, _whereParamCounts);
         (string? whereClause, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _parameters.AddRange(parameters);
 
@@ -1352,6 +1386,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         sb.Append(negate ? "NOT EXISTS" : "EXISTS");
         sb.Append(" (SELECT 1 FROM ");
         sb.Append(subqueryTable);
+        sb.Append(' ');
+        sb.Append(subqueryAlias);
         sb.Append(" WHERE ");
         sb.Append(whereClause);
         sb.Append(')');
@@ -1365,9 +1401,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         IQueryTerminal<TSubquery> subquery,
         bool negate) where TSubquery : new()
     {
-        // Get outer column name
-        var outerColumnName = GetColumnNameFromSelector(selector);
-        var escapedOuterColumn = _dialect.EscapeColumnName(outerColumnName);
+        // Get outer column name - already dialect-escaped, see comment in BuildAggregateSql.
+        var escapedOuterColumn = GetColumnNameFromSelector(selector);
 
         // Get subquery column name
         var subqueryPropertyName = PropertyExtractor.ExtractPropertyName(subquerySelector);
@@ -1591,10 +1626,11 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public ISetClause<T> Set<TValue>(Expression<Func<T, TValue>> selector, TValue value)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(selector);
+        // Already dialect-escaped - see comment in BuildAggregateSql.
         string columnName = GetColumnNameFromProperty(propertyName);
         string paramName = GetUniqueParamName(propertyName);
         _parameters.Add(paramName, value);
-        _setColumns.Add(new SetColumn(_dialect.EscapeColumnName(columnName), paramName));
+        _setColumns.Add(new SetColumn(columnName, paramName));
         return this;
     }
 
@@ -1628,10 +1664,11 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         foreach (PropertyInfo? prop in values.GetType().GetProperties())
         {
+            // Already dialect-escaped - see comment in BuildAggregateSql.
             string columnName = GetColumnNameFromProperty(prop.Name);
             string paramName = GetUniqueParamName(prop.Name);
             _parameters.Add(paramName, prop.GetValue(values));
-            _setColumns.Add(new SetColumn(_dialect.EscapeColumnName(columnName), paramName));
+            _setColumns.Add(new SetColumn(columnName, paramName));
         }
         return this;
     }
@@ -1644,10 +1681,11 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
         foreach (PropertyInfo? prop in values.GetType().GetProperties())
         {
+            // Already dialect-escaped - see comment in BuildAggregateSql.
             string columnName = GetColumnNameFromProperty(prop.Name);
             string paramName = GetUniqueParamName(prop.Name);
             _parameters.Add(paramName, prop.GetValue(values));
-            _setColumns.Add(new SetColumn(_dialect.EscapeColumnName(columnName), paramName));
+            _setColumns.Add(new SetColumn(columnName, paramName));
         }
         return this;
     }
@@ -1657,7 +1695,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     /// </summary>
     IUpdateWhereClause<T> ISetClause<T>.Where(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.None));
         _parameters.AddRange(parameters);
@@ -1728,7 +1766,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     /// </summary>
     IUpdateWhereClause<T> IUpdateWhereClause<T>.And(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
         _parameters.AddRange(parameters);
@@ -1779,7 +1817,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     /// </summary>
     IUpdateWhereClause<T> IUpdateWhereClause<T>.Or(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _conditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
         _parameters.AddRange(parameters);
