@@ -23,7 +23,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
     private const string ColumnsSql = @"
         SELECT
             c.name AS ColumnName,
-            TYPE_NAME(c.user_type_id) AS DataType,
+            TYPE_NAME(ty.system_type_id) AS DataType,
             c.is_nullable AS IsNullable,
             c.is_identity AS IsIdentity,
             c.is_computed AS IsComputed,
@@ -35,6 +35,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         FROM sys.columns c
         INNER JOIN sys.tables t ON c.object_id = t.object_id
         INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
+        INNER JOIN sys.types ty ON c.user_type_id = ty.user_type_id
         LEFT JOIN sys.default_constraints dc ON c.default_object_id = dc.object_id
         WHERE s.name = @SchemaName AND t.name = @TableName
         ORDER BY c.column_id";
