@@ -53,6 +53,7 @@ public static class CsvImportExtensions
         options ??= new CsvImportOptions();
 
         ValidateDelimiter(options.Delimiter);
+        ValidateQuote(options.Quote);
 
         ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
         return dialect switch
@@ -88,6 +89,7 @@ public static class CsvImportExtensions
         options ??= new CsvImportOptions();
 
         ValidateDelimiter(options.Delimiter);
+        ValidateQuote(options.Quote);
 
         ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
         return dialect switch
@@ -220,7 +222,7 @@ public static class CsvImportExtensions
         int columnCount;
         using (var reader = new StreamReader(filePath, options.Encoding))
         {
-            string? firstLine = reader.ReadLine();
+            string? firstLine = ReadCsvRecord(reader, options.Quote);
             if (firstLine == null)
                 return 0;
 
@@ -281,10 +283,10 @@ public static class CsvImportExtensions
 
             // Skip header
             if (options.HasHeader)
-                streamReader.ReadLine();
+                ReadCsvRecord(streamReader, options.Quote);
 
             string? line;
-            while ((line = streamReader.ReadLine()) != null)
+            while ((line = ReadCsvRecord(streamReader, options.Quote)) != null)
             {
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
@@ -623,6 +625,18 @@ public static class CsvImportExtensions
             throw new ArgumentException($"Delimiter '{delimiter}' is not supported; it conflicts with SQL/CLI quoting.", nameof(delimiter));
     }
 
+    // Unlike Delimiter, Quote legitimately needs to allow '\'' (EscapeSqlCharLiteral doubles it)
+    // and '"' (the default). A backslash reaches ImportMySql/ImportSqlServer/BuildPostgresCopyExtraOptions
+    // as an unescaped single-quoted SQL string literal char; under MySQL's default sql_mode
+    // (backslash escaping active unless NO_BACKSLASH_ESCAPES is set), the backslash escapes the
+    // literal's closing quote instead of terminating it, breaking the generated statement. \r/\n
+    // would break the single-quoted literal outright.
+    private static void ValidateQuote(char quote)
+    {
+        if (quote is '\\' or '\r' or '\n')
+            throw new ArgumentException($"Quote character '{quote}' is not supported; it conflicts with SQL quoting.", nameof(quote));
+    }
+
     // Doubles a single-quote so a single character can be embedded in a single-quoted SQL string
     // literal (e.g. QUOTE '''' for a literal apostrophe quote character); any other character is
     // already safe to embed as-is.
@@ -665,6 +679,41 @@ public static class CsvImportExtensions
             }
         }
         return null;
+    }
+
+    // RFC 4180 allows a quoted field to contain embedded newlines. Reading physical lines with
+    // StreamReader.ReadLine() and parsing each independently (as ImportViaPreparedStatements used
+    // to) silently splits such a field across two "rows" instead of one, corrupting the imported
+    // data. This joins consecutive physical lines with '\n' as long as the accumulated text has an
+    // odd number of quote characters (RFC 4180's doubled "" escape always contributes quote chars
+    // in pairs, so an odd running total means we are still inside an open quoted field), so a
+    // logical record spanning multiple physical lines is read - and later parsed - as one.
+    private static string? ReadCsvRecord(StreamReader reader, char quote)
+    {
+        string? line = reader.ReadLine();
+        if (line is null)
+            return null;
+
+        while (!HasEvenQuoteCount(line, quote) && !reader.EndOfStream)
+        {
+            string? next = reader.ReadLine();
+            if (next is null)
+                break;
+            line += "\n" + next;
+        }
+
+        return line;
+    }
+
+    private static bool HasEvenQuoteCount(string line, char quote)
+    {
+        int count = 0;
+        for (int i = 0; i < line.Length; i++)
+        {
+            if (line[i] == quote)
+                count++;
+        }
+        return count % 2 == 0;
     }
 
     private static long CountCsvRows(string filePath, bool hasHeader)
