@@ -6,10 +6,9 @@ using Jaunty.Fluent.Tests.Helpers;
 namespace Jaunty.Fluent.Tests.Unit.Builders;
 
 /// <summary>
-/// Tests for QueryBuilderBase via the public fluent API surface.
-/// QueryBuilderBase is internal/abstract; its behaviour is exercised through
-/// concrete builders (From&lt;T&gt;) that inherit from it.  All assertions target
-/// observable SQL output (ToSql) or query results on an in-memory SQLite DB.
+/// Tests for query-builder FROM/JOIN/WHERE/ORDER BY clause construction via the
+/// public fluent API surface (From&lt;T&gt;). All assertions target observable
+/// SQL output (ToSql) or query results on an in-memory SQLite DB.
 /// </summary>
 public class QueryBuilderBaseTests : IClassFixture<FluentDatabaseFixture>
 {
