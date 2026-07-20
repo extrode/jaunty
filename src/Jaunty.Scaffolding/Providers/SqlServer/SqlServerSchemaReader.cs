@@ -234,14 +234,16 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
+            string dataType = reader.GetString(1);
+
             columns.Add(new ColumnSchema
             {
                 ColumnName = reader.GetString(0),
-                DataType = reader.GetString(1),
+                DataType = dataType,
                 IsNullable = reader.GetBoolean(2),
                 IsIdentity = reader.GetBoolean(3),
                 IsComputed = reader.GetBoolean(4),
-                MaxLength = reader.IsDBNull(5) ? null : reader.GetInt16(5),
+                MaxLength = NormalizeMaxLength(dataType, reader.IsDBNull(5) ? null : reader.GetInt16(5)),
                 Precision = reader.IsDBNull(6) ? null : reader.GetByte(6),
                 Scale = reader.IsDBNull(7) ? null : reader.GetByte(7),
                 DefaultValue = reader.IsDBNull(8) ? null : reader.GetString(8),
@@ -250,6 +252,22 @@ public sealed class SqlServerSchemaReader : ISchemaReader
         }
 
         return columns;
+    }
+
+    /// <summary>
+    /// <c>sys.columns.max_length</c> is reported in bytes. For unicode character types
+    /// (<c>nchar</c>/<c>nvarchar</c>/<c>ntext</c>) SQL Server stores 2 bytes per character, so the
+    /// raw value must be halved to get the actual character length; <c>-1</c> (the MAX sentinel) is
+    /// left untouched.
+    /// </summary>
+    internal static short? NormalizeMaxLength(string dataType, short? maxLength)
+    {
+        if (maxLength is null or -1)
+            return maxLength;
+
+        return dataType is "nchar" or "nvarchar" or "ntext"
+            ? (short)(maxLength.Value / 2)
+            : maxLength;
     }
 
     private static async Task<PrimaryKeyInfo?> ReadPrimaryKeyAsync(
