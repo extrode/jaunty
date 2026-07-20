@@ -24,13 +24,15 @@ public class DeltaLakeFileSourceTests
     }
 
     [Fact]
-    public void Constructor_MultiplePaths_SetsAllPaths()
+    public void Constructor_MultiplePaths_Throws()
     {
+        // AUD-R11 batch-07: DuckDB's delta_scan function only accepts a single table location
+        // (unlike read_csv/read_parquet/read_json, which accept a list); registering a
+        // multi-path source used to build invalid SQL that failed at query time instead of
+        // construction time.
         var paths = new[] { "/lake/part1", "/lake/part2" };
-        var source = new DeltaLakeFileSource("t", paths, typeof(DeltaRow));
 
-        Assert.Equal(2, source.FilePaths.Count);
-        Assert.Equal("/lake/part1", source.FilePath);
+        Assert.Throws<ArgumentException>(() => new DeltaLakeFileSource("t", paths, typeof(DeltaRow)));
     }
 
     // ------------------------------------------------------------------
