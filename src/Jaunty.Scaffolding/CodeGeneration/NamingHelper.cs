@@ -7,6 +7,32 @@ namespace Jaunty.Scaffolding.CodeGeneration;
 /// </summary>
 public static class NamingHelper
 {
+    // Common irregular plurals. Static so Singularize doesn't allocate/populate a
+    // fresh dictionary on every call.
+    private static readonly Dictionary<string, string> IrregularPlurals = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["People"] = "Person",
+        ["Children"] = "Child",
+        ["Men"] = "Man",
+        ["Women"] = "Woman",
+        ["Teeth"] = "Tooth",
+        ["Feet"] = "Foot",
+        ["Mice"] = "Mouse",
+        ["Geese"] = "Goose",
+        ["Analyses"] = "Analysis",
+        ["Diagnoses"] = "Diagnosis",
+        ["Theses"] = "Thesis",
+        ["Crises"] = "Crisis",
+        ["Phenomena"] = "Phenomenon",
+        ["Criteria"] = "Criterion",
+        ["Data"] = "Datum",
+        ["Media"] = "Medium",
+        ["Indices"] = "Index",
+        ["Appendices"] = "Appendix",
+        ["Matrices"] = "Matrix",
+        ["Vertices"] = "Vertex",
+    };
+
     /// <summary>
     /// Converts snake_case or kebab-case to PascalCase.
     /// If the name has no delimiters, capitalizes the first letter and preserves the rest.
@@ -79,32 +105,7 @@ public static class NamingHelper
         if (string.IsNullOrEmpty(word))
             return word;
 
-        // Common irregular plurals
-        var irregulars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["People"] = "Person",
-            ["Children"] = "Child",
-            ["Men"] = "Man",
-            ["Women"] = "Woman",
-            ["Teeth"] = "Tooth",
-            ["Feet"] = "Foot",
-            ["Mice"] = "Mouse",
-            ["Geese"] = "Goose",
-            ["Analyses"] = "Analysis",
-            ["Diagnoses"] = "Diagnosis",
-            ["Theses"] = "Thesis",
-            ["Crises"] = "Crisis",
-            ["Phenomena"] = "Phenomenon",
-            ["Criteria"] = "Criterion",
-            ["Data"] = "Datum",
-            ["Media"] = "Medium",
-            ["Indices"] = "Index",
-            ["Appendices"] = "Appendix",
-            ["Matrices"] = "Matrix",
-            ["Vertices"] = "Vertex",
-        };
-
-        if (irregulars.TryGetValue(word, out var singular))
+        if (IrregularPlurals.TryGetValue(word, out var singular))
             return singular;
 
         // Rules in order of specificity
