@@ -1,6 +1,7 @@
 using System.Data;
 using System.Linq.Expressions;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
@@ -49,34 +50,44 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         IWhereClause<T> result = queryBuilder(innerQuery);
 
         // Get the SQL from the inner query (without executing)
-        _cteDefinitionSql = ((IWhereClause<T>)result).ToSql();
+        var sql = ((IWhereClause<T>)result).ToSql();
 
-        // Copy parameters from inner query
+        // Copy parameters from inner query, renamed to a unique prefix so they can never
+        // collide with a name this CteBuilder's own Where/And/Or calls generate later
+        // (see RenameParameters).
         if (result is QueryBuilder<T> qb)
         {
             ParameterCollection innerParams = qb.GetParameters();
-            foreach ((string Name, object? Value) param in innerParams.GetAll())
+            (sql, ParameterCollection renamedParams) = RenameParameters(sql, innerParams, "cte_src");
+            foreach ((string Name, object? Value) param in renamedParams.GetAll())
             {
                 _parameters.Add(param.Name, param.Value);
             }
         }
+
+        _cteDefinitionSql = sql;
 
         return this;
     }
 
     public ICteQueryClause<T> As(IWhereClause<T> query)
     {
-        _cteDefinitionSql = query.ToSql();
+        var sql = query.ToSql();
 
-        // Copy parameters from the query
+        // Copy parameters from the query, renamed to a unique prefix so they can never
+        // collide with a name this CteBuilder's own Where/And/Or calls generate later
+        // (see RenameParameters).
         if (query is QueryBuilder<T> qb)
         {
             ParameterCollection innerParams = qb.GetParameters();
-            foreach ((string Name, object? Value) param in innerParams.GetAll())
+            (sql, ParameterCollection renamedParams) = RenameParameters(sql, innerParams, "cte_src");
+            foreach ((string Name, object? Value) param in renamedParams.GetAll())
             {
                 _parameters.Add(param.Name, param.Value);
             }
         }
+
+        _cteDefinitionSql = sql;
 
         return this;
     }
@@ -255,6 +266,41 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
     }
 
     private string GetColumnNameFromProperty(string propertyName) => _cache.GetColumnName(propertyName);
+
+    /// <summary>
+    /// Renames every parameter in an inner query's SQL/ParameterCollection with a unique
+    /// prefix. The inner query (built independently via its own WhereExpressionVisitor and
+    /// _whereParamCounts) has no knowledge of this CteBuilder's own parameter names, so
+    /// without renaming, a column filtered by both the inner query and this CteBuilder's own
+    /// Where/And/Or (e.g. same-column filters on both sides of the CTE) can generate the same
+    /// "first use" parameter name (e.g. "@unit_price") on both sides, causing an
+    /// ArgumentException when the two are merged into one ParameterCollection. Mirrors
+    /// SetOperationBuilder&lt;T&gt;.RenameParameters, which solves the identical problem for
+    /// UNION/EXCEPT/INTERSECT.
+    /// </summary>
+    private static (string Sql, ParameterCollection Parameters) RenameParameters(
+        string sql,
+        ParameterCollection parameters,
+        string prefix)
+    {
+        var renamedParams = new ParameterCollection();
+        var renamedSql = sql;
+
+        foreach ((string? name, object? value) in parameters.GetAll())
+        {
+            var paramPrefix = name.Length > 0 && name[0] is '@' or '$' ? name[0].ToString() : "@";
+            var baseName = name.TrimStart('@').TrimStart('$');
+            var newName = $"{paramPrefix}{prefix}_{baseName}";
+
+            // Replace in SQL - use word boundary to avoid partial matches
+            var pattern = $@"{Regex.Escape(paramPrefix)}{Regex.Escape(baseName)}(?![a-zA-Z0-9_])";
+            renamedSql = Regex.Replace(renamedSql, pattern, newName);
+
+            renamedParams.Add(newName, value);
+        }
+
+        return (renamedSql, renamedParams);
+    }
 
     #endregion
 }
