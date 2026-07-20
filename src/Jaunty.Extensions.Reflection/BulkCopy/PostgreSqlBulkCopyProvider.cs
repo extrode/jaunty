@@ -31,6 +31,10 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
     // NpgsqlBinaryImporter.Write<T>(T value) is generic — we need to use MakeGenericMethod per type
     private static readonly MethodInfo? WriteGenericMethod = FindWriteGenericMethod();
 
+    // NpgsqlBinaryImporter.WriteAsync<T>(T value, CancellationToken) — the async counterpart to
+    // WriteGenericMethod above, required for the async copy path (see CopyToServerAsync).
+    private static readonly MethodInfo? WriteAsyncGenericMethod = FindWriteAsyncGenericMethod();
+
     // Async methods available in Npgsql 6+
     private static readonly MethodInfo? BeginBinaryImportAsyncMethod = FindAsyncMethod("BeginBinaryImportAsync");
     private static readonly MethodInfo? StartRowAsyncMethod = NpgsqlBinaryImporterType?.GetMethod("StartRowAsync", new[] { typeof(CancellationToken) });
@@ -106,7 +110,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
             throw new InvalidOperationException("NpgsqlBinaryImporter is not available. Ensure Npgsql is installed.");
 
         // If native async methods are not available, fall back to sync
-        if (BeginBinaryImportAsyncMethod == null || StartRowAsyncMethod == null)
+        if (BeginBinaryImportAsyncMethod == null || StartRowAsyncMethod == null || WriteAsyncGenericMethod == null)
             return CopyToServer(connection, tableName, data, options);
 
         var copyCommand = BuildCopyCommand(tableName, data);
@@ -145,9 +149,16 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
                     }
                     else
                     {
-                        // Use Write<T> with the actual runtime type
-                        MethodInfo? writeMethod = WriteGenericMethod?.MakeGenericMethod(value.GetType());
-                        writeMethod?.Invoke(importer, new[] { value });
+                        // Use WriteAsync<T> with the actual runtime type. Calling the
+                        // synchronous Write<T> here (as opposed to WriteAsync<T>) corrupts
+                        // NpgsqlBinaryImporter's internal state machine when mixed with the
+                        // async StartRowAsync/WriteNullAsync/CompleteAsync calls around it,
+                        // and hangs indefinitely against a real server instead of throwing
+                        // (AUD-R11 batch-06: caught via coverage testing - this path had no
+                        // test at all before, sync or async, so the deadlock was undetected).
+                        MethodInfo writeMethod = WriteAsyncGenericMethod!.MakeGenericMethod(value.GetType());
+                        if (writeMethod.Invoke(importer, new[] { value, cancellationToken }) is Task writeTask)
+                            await writeTask.ConfigureAwait(false);
                     }
                 }
 
@@ -156,7 +167,16 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 
             if (CompleteAsyncMethod != null)
             {
-                if (CompleteAsyncMethod.Invoke(importer, new object[] { cancellationToken }) is Task completeTask) await completeTask.ConfigureAwait(false);
+                // CompleteAsync returns ValueTask<ulong> (a struct), not Task - awaiting only on
+                // an "is Task" match silently dropped this await entirely, invoking Complete but
+                // never waiting for it to finish before the importer got disposed below (AUD-R11
+                // batch-06: this fire-and-forget completion was the actual cause of the hang
+                // caught by coverage testing, on top of the separate sync-Write-in-async-path bug).
+                object? completeResult = CompleteAsyncMethod.Invoke(importer, new object[] { cancellationToken });
+                if (completeResult is ValueTask<ulong> completeValueTask)
+                    await completeValueTask.ConfigureAwait(false);
+                else if (completeResult is Task completeTask)
+                    await completeTask.ConfigureAwait(false);
             }
             else
             {
@@ -214,6 +234,31 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
             {
                 ParameterInfo[] parameters = method.GetParameters();
                 if (parameters.Length == 1)
+                    return method;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Finds the generic WriteAsync&lt;T&gt;(T value, CancellationToken) method on NpgsqlBinaryImporter.
+    /// </summary>
+    private static MethodInfo? FindWriteAsyncGenericMethod()
+    {
+        if (NpgsqlBinaryImporterType == null) return null;
+
+        // Look for WriteAsync<T>(T value, CancellationToken cancellationToken) specifically —
+        // NpgsqlBinaryImporter also has WriteAsync<T>(T, NpgsqlDbType, CancellationToken) and
+        // WriteAsync<T>(T, string, CancellationToken) overloads with 3 parameters, so the
+        // 2-parameter check below is what disambiguates the plain overload from those.
+
+        foreach (MethodInfo? method in NpgsqlBinaryImporterType.GetMethods())
+        {
+            if (method.Name == "WriteAsync" && method.IsGenericMethodDefinition)
+            {
+                ParameterInfo[] parameters = method.GetParameters();
+                if (parameters.Length == 2 && parameters[1].ParameterType == typeof(CancellationToken))
                     return method;
             }
         }
