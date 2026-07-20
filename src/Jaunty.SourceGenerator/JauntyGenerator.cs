@@ -85,8 +85,27 @@ public class JauntyGenerator : IIncrementalGenerator
                 continue;
 
             var source = GenerateMapper(classSymbol);
-            context.AddSource($"{classSymbol.Name}.JauntyMapper.g.cs", SourceText.From(source, Encoding.UTF8));
+            context.AddSource($"{GetHintName(classSymbol)}.JauntyMapper.g.cs", SourceText.From(source, Encoding.UTF8));
         }
+    }
+
+    /// <summary>
+    /// Builds a collision-resistant hint name for the generated source file from the entity's
+    /// fully-qualified type name, so two <c>[Table]</c> classes with the same simple name in
+    /// different namespaces don't produce a duplicate hint name (which fails the build).
+    /// </summary>
+    /// <param name="classSymbol">The entity class symbol.</param>
+    private static string GetHintName(INamedTypeSymbol classSymbol)
+    {
+        var fullName = classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        if (fullName.StartsWith("global::", StringComparison.Ordinal))
+            fullName = fullName.Substring("global::".Length);
+
+        var sb = new StringBuilder(fullName.Length);
+        foreach (char c in fullName)
+            sb.Append(char.IsLetterOrDigit(c) || c == '_' ? c : '_');
+
+        return sb.ToString();
     }
 
     /// <summary>
@@ -99,6 +118,7 @@ public class JauntyGenerator : IIncrementalGenerator
     static string GenerateMapper(INamedTypeSymbol classSymbol)
     {
         var namespaceName = classSymbol.ContainingNamespace.ToDisplayString();
+        var isGlobalNamespace = classSymbol.ContainingNamespace.IsGlobalNamespace;
         var className = classSymbol.Name;
 
         var allProperties = classSymbol.GetMembers().OfType<IPropertySymbol>()
@@ -132,7 +152,14 @@ public class JauntyGenerator : IIncrementalGenerator
                 isIdentity = true;
             }
 
-            properties.Add(new PropertyMetadata(prop.Name, columnName, isKey, isIdentity, prop.Type.ToDisplayString()));
+            // FullyQualifiedFormat (global::-prefixed for non-special types) avoids a subtle
+            // ambiguity: a bare ToDisplayString() for a property type declared in a namespace
+            // whose leading segment collides with a type name elsewhere in the compilation
+            // (e.g. a "Jaunty.*" entity namespace colliding with the "Jaunty" extension-methods
+            // class) resolves the leading segment as that type instead of the namespace,
+            // producing a CS0426 in the generated code. Built-in/special types (int, string,
+            // decimal?, etc.) are unaffected - FullyQualifiedFormat keeps their keyword form.
+            properties.Add(new PropertyMetadata(prop.Name, columnName, isKey, isIdentity, prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
         }
 
         (var tableName, var schemaName) = GetTableNameAndSchema(classSymbol);
@@ -148,8 +175,11 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("using System.Runtime.CompilerServices;");
         sb.AppendLine("using Jaunty.Interfaces;");
         sb.AppendLine();
-        sb.AppendLine($"namespace {namespaceName}");
-        sb.AppendLine("{");
+        if (!isGlobalNamespace)
+        {
+            sb.AppendLine($"namespace {namespaceName}");
+            sb.AppendLine("{");
+        }
         sb.AppendLine($"    public partial class {className} : IMapped<{className}>, IEntityMetadataSource");
         sb.AppendLine("    {");
         sb.AppendLine("        public readonly struct ColumnInfo");
@@ -219,7 +249,10 @@ public class JauntyGenerator : IIncrementalGenerator
         {
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
-            var getter = typeInfo.Getter;
+            // IDataReader has no generic GetFieldValue<T>; GetValue returns object, so an
+            // explicit cast to the property type is required or the generated code doesn't
+            // compile (CS0266) for TimeSpan/DateTimeOffset/enum/other GetValue-fallback types.
+            var getter = typeInfo.Getter == "reader.GetValue" ? $"({p.TypeName})reader.GetValue" : typeInfo.Getter;
             var needsNullCheck = typeInfo.NeedsNullCheck;
 
             // Fallback IDataReader path
@@ -291,7 +324,7 @@ public class JauntyGenerator : IIncrementalGenerator
         {
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
-            var getter = typeInfo.Getter;
+            var getter = typeInfo.Getter == "reader.GetValue" ? $"({p.TypeName})reader.GetValue" : typeInfo.Getter;
             if (typeInfo.NeedsNullCheck)
             {
                 sb.AppendLine($"                if (!reader.IsDBNull(ord[{i}]))");
@@ -313,7 +346,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            var p = command.Parameters;");
         foreach (PropertyMetadata p in properties.Where(x => !x.IsIdentity))
         {
-            sb.AppendLine($"            AddParam(command, p, \"@{p.ColumnName}\", entity.{p.PropertyName});");
+            sb.AppendLine($"            AddParam(command, p, \"@{EscapeStringLiteral(p.ColumnName)}\", entity.{p.PropertyName});");
         }
         sb.AppendLine("        }");
 
@@ -323,11 +356,11 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            var p = command.Parameters;");
         foreach (PropertyMetadata p in properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity))
         {
-            sb.AppendLine($"            AddParam(command, p, \"@{p.ColumnName}\", entity.{p.PropertyName});");
+            sb.AppendLine($"            AddParam(command, p, \"@{EscapeStringLiteral(p.ColumnName)}\", entity.{p.PropertyName});");
         }
         foreach (PropertyMetadata p in properties.Where(x => x.IsPrimaryKey))
         {
-            sb.AppendLine($"            AddParam(command, p, \"@{p.ColumnName}\", entity.{p.PropertyName});");
+            sb.AppendLine($"            AddParam(command, p, \"@{EscapeStringLiteral(p.ColumnName)}\", entity.{p.PropertyName});");
         }
         sb.AppendLine("        }");
 
@@ -337,7 +370,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            var p = command.Parameters;");
         foreach (PropertyMetadata p in properties.Where(x => x.IsPrimaryKey))
         {
-            sb.AppendLine($"            AddParam(command, p, \"@{p.ColumnName}\", entity.{p.PropertyName});");
+            sb.AppendLine($"            AddParam(command, p, \"@{EscapeStringLiteral(p.ColumnName)}\", entity.{p.PropertyName});");
         }
         sb.AppendLine("        }");
 
@@ -369,7 +402,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"                var ords = new int[{properties.Count}];");
         for (int i = 0; i < properties.Count; i++)
         {
-            sb.AppendLine($"                ords[{i}] = reader.GetOrdinal(\"{properties[i].ColumnName}\");");
+            sb.AppendLine($"                ords[{i}] = reader.GetOrdinal(\"{EscapeStringLiteral(properties[i].ColumnName)}\");");
         }
         sb.AppendLine("                var entry = new CacheEntry(reader, ords);");
         sb.AppendLine("                _cache.Remove(reader);");
@@ -405,7 +438,7 @@ public class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine($"                    var ord{i} = Ordinals[{i}];");
             sb.AppendLine($"                    if ((uint)ord{i} >= (uint)reader.FieldCount)");
             sb.AppendLine("                        return false;");
-            sb.AppendLine($"                    if (!string.Equals(reader.GetName(ord{i}), \"{properties[i].ColumnName}\", StringComparison.OrdinalIgnoreCase))");
+            sb.AppendLine($"                    if (!string.Equals(reader.GetName(ord{i}), \"{EscapeStringLiteral(properties[i].ColumnName)}\", StringComparison.OrdinalIgnoreCase))");
             sb.AppendLine("                        return false;");
             sb.AppendLine();
         }
@@ -415,13 +448,13 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        }");
 
         sb.AppendLine();
-        sb.AppendLine($"        public static string TableName {{ get; }} = \"{tableName}\";");
-        sb.AppendLine($"        public static string? SchemaName {{ get; }} = {(schemaName is null ? "null" : $"\"{schemaName}\"")};");
+        sb.AppendLine($"        public static string TableName {{ get; }} = \"{EscapeStringLiteral(tableName)}\";");
+        sb.AppendLine($"        public static string? SchemaName {{ get; }} = {(schemaName is null ? "null" : $"\"{EscapeStringLiteral(schemaName)}\"")};");
         sb.AppendLine("        public static System.Collections.Generic.IReadOnlyList<string> PrimaryKeyColumnNames { get; }");
         sb.AppendLine("            = new string[] {");
         foreach (var pkColumnName in primaryKeyColumnNames)
         {
-            sb.AppendLine($"            \"{pkColumnName}\",");
+            sb.AppendLine($"            \"{EscapeStringLiteral(pkColumnName)}\",");
         }
         sb.AppendLine("        };");
 
@@ -430,7 +463,7 @@ public class JauntyGenerator : IIncrementalGenerator
         var deleteProps = properties.Where(x => x.IsPrimaryKey).ToList();
 
         string ColumnInfoCtor(PropertyMetadata p)
-            => $"new ColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, " +
+            => $"new ColumnInfo(\"{EscapeStringLiteral(p.ColumnName)}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, " +
                $"typeof({p.TypeName}), e => (object?)(({className})e).{p.PropertyName}, (e, v) => (({className})e).{p.PropertyName} = ({p.TypeName})v!)";
 
         sb.AppendLine();
@@ -467,7 +500,7 @@ public class JauntyGenerator : IIncrementalGenerator
         for (int i = 0; i < properties.Count; i++)
         {
             PropertyMetadata p = properties[i];
-            sb.AppendLine($"            [\"{p.ColumnName}\"] = {ColumnInfoCtor(p)},");
+            sb.AppendLine($"            [\"{EscapeStringLiteral(p.ColumnName)}\"] = {ColumnInfoCtor(p)},");
         }
         sb.AppendLine("        };");
 
@@ -476,7 +509,7 @@ public class JauntyGenerator : IIncrementalGenerator
         // properties of the same name already exist above (a class cannot have both a static
         // and an instance member sharing one name).
         string EntityColumnInfoCtor(PropertyMetadata p)
-            => $"new EntityColumnInfo(\"{p.ColumnName}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, " +
+            => $"new EntityColumnInfo(\"{EscapeStringLiteral(p.ColumnName)}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, " +
                $"typeof({p.TypeName}), e => (object?)(({className})e).{p.PropertyName}, (e, v) => (({className})e).{p.PropertyName} = ({p.TypeName})v!)";
 
         sb.AppendLine();
@@ -493,7 +526,8 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        System.Collections.Generic.IReadOnlyList<EntityColumnInfo> IEntityMetadataSource.Columns => EntityColumns;");
 
         sb.AppendLine("    }");
-        sb.AppendLine("}");
+        if (!isGlobalNamespace)
+            sb.AppendLine("}");
 
         return sb.ToString();
     }
@@ -515,6 +549,16 @@ public class JauntyGenerator : IIncrementalGenerator
     /// <param name="attributeName">The simple attribute class name (e.g. <c>"ColumnAttribute"</c>).</param>
     private static AttributeData? GetAttribute(ISymbol symbol, string attributeName)
         => symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == attributeName);
+
+    /// <summary>
+    /// Escapes a value for safe interpolation inside a generated C# string literal, doubling
+    /// backslashes and escaping embedded double quotes so a table/column name (sourced from a
+    /// [Table]/[Column] attribute, not a compiler-validated identifier) cannot break out of the
+    /// literal and produce invalid or semantically different generated code.
+    /// </summary>
+    /// <param name="value">The raw value to escape.</param>
+    private static string EscapeStringLiteral(string value)
+        => value.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
     /// <summary>
     /// Resolves the table name and optional schema name for an entity class from its
@@ -569,10 +613,10 @@ public class JauntyGenerator : IIncrementalGenerator
             "float" or "Single" or "System.Single" => new("reader.GetFloat", "float", false),
             "short" or "Int16" or "System.Int16" => new("reader.GetInt16", "short", false),
             "byte" or "Byte" or "System.Byte" => new("reader.GetByte", "byte", false),
-            "Guid" or "System.Guid" => new("reader.GetGuid", "Guid", false),
-            "DateTime" or "System.DateTime" => new("reader.GetDateTime", "DateTime", false),
-            "TimeSpan" or "System.TimeSpan" => new("reader.GetValue", "object", false),
-            "DateTimeOffset" or "System.DateTimeOffset" => new("reader.GetValue", "object", false),
+            "Guid" or "System.Guid" or "global::System.Guid" => new("reader.GetGuid", "Guid", false),
+            "DateTime" or "System.DateTime" or "global::System.DateTime" => new("reader.GetDateTime", "DateTime", false),
+            "TimeSpan" or "System.TimeSpan" or "global::System.TimeSpan" => new("reader.GetValue", "TimeSpan", false),
+            "DateTimeOffset" or "System.DateTimeOffset" or "global::System.DateTimeOffset" => new("reader.GetValue", "DateTimeOffset", false),
 
             // Nullable value types - needs null check
             "int?" or "Int32?" => new("reader.GetInt32", "int", true),
@@ -583,16 +627,19 @@ public class JauntyGenerator : IIncrementalGenerator
             "float?" or "Single?" => new("reader.GetFloat", "float", true),
             "short?" or "Int16?" => new("reader.GetInt16", "short", true),
             "byte?" or "Byte?" => new("reader.GetByte", "byte", true),
-            "Guid?" or "System.Guid?" => new("reader.GetGuid", "Guid", true),
-            "DateTime?" or "System.DateTime?" => new("reader.GetDateTime", "DateTime", true),
-            "TimeSpan?" or "System.TimeSpan?" => new("reader.GetValue", "object", true),
-            "DateTimeOffset?" or "System.DateTimeOffset?" => new("reader.GetValue", "object", true),
+            "Guid?" or "System.Guid?" or "global::System.Guid?" => new("reader.GetGuid", "Guid", true),
+            "DateTime?" or "System.DateTime?" or "global::System.DateTime?" => new("reader.GetDateTime", "DateTime", true),
+            "TimeSpan?" or "System.TimeSpan?" or "global::System.TimeSpan?" => new("reader.GetValue", "TimeSpan", true),
+            "DateTimeOffset?" or "System.DateTimeOffset?" or "global::System.DateTimeOffset?" => new("reader.GetValue", "DateTimeOffset", true),
 
             // Reference types - needs null check
             "string" or "String" or "string?" or "String?" or "System.String" => new("reader.GetString", "string", true),
 
-            // Unknown types - needs null check, fall back to GetValue
-            _ => new("reader.GetValue", "object", true)
+            // Unknown types (enums, byte[], etc.) - needs null check, fall back to GetValue.
+            // TypeForGetFieldValue must be the actual (non-nullable-suffixed) type so the
+            // DbDataReader fast path's GetFieldValue<T> call is directly assignable to the
+            // property without an invalid cast from object (CS0266).
+            _ => new("reader.GetValue", typeName.TrimEnd('?'), true)
         };
     }
 
