@@ -64,6 +64,13 @@ internal static class ExpressionTranslator
         return attr?.Name ?? prop.Name;
     }
 
+    // AUD-R12-127: mirrors DuckDbDialect's private QuoteIdentifier escaping. Callers of
+    // ResolveColumnName/ResolveColumnFromMember outside this file (e.g. DuckDbUpdate.cs) escape
+    // the raw name themselves via _dialect.EscapeColumnName, so this helper is applied only at
+    // this file's own SQL-interpolation sites rather than folded into GetColumnName - doing the
+    // latter would double-escape those external callers.
+    private static string EscapeColumnName(string columnName) => columnName.Replace("\"", "\"\"");
+
     private static MemberExpression? ExtractMemberExpression(Expression expression)
     {
         return expression switch
@@ -89,7 +96,7 @@ internal static class ExpressionTranslator
     private static string VisitBoolMember(MemberExpression member)
     {
         var columnName = ResolveColumnFromMember(member);
-        return $"\"{columnName}\" = true";
+        return $"\"{EscapeColumnName(columnName)}\" = true";
     }
 
     private static string VisitBinary(BinaryExpression binary, List<DuckDBParameter> parameters, int paramOffset)
@@ -107,7 +114,7 @@ internal static class ExpressionTranslator
         if (value is null)
         {
             var nullOp = binary.NodeType == ExpressionType.Equal ? "IS NULL" : "IS NOT NULL";
-            return $"\"{columnName}\" {nullOp}";
+            return $"\"{EscapeColumnName(columnName!)}\" {nullOp}";
         }
 
         var sqlOp = binary.NodeType switch
@@ -123,7 +130,7 @@ internal static class ExpressionTranslator
 
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = value });
-        return $"\"{columnName}\" {sqlOp} ${paramIndex}";
+        return $"\"{EscapeColumnName(columnName!)}\" {sqlOp} ${paramIndex}";
     }
 
     private static string VisitMethodCall(MethodCallExpression method, List<DuckDBParameter> parameters, int paramOffset)
@@ -157,21 +164,21 @@ internal static class ExpressionTranslator
     {
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = $"%{EscapeLikeValue(value)}%" });
-        return $"\"{columnName}\" LIKE ${paramIndex} ESCAPE '\\'";
+        return $"\"{EscapeColumnName(columnName)}\" LIKE ${paramIndex} ESCAPE '\\'";
     }
 
     private static string HandleStringStartsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = $"{EscapeLikeValue(value)}%" });
-        return $"\"{columnName}\" LIKE ${paramIndex} ESCAPE '\\'";
+        return $"\"{EscapeColumnName(columnName)}\" LIKE ${paramIndex} ESCAPE '\\'";
     }
 
     private static string HandleStringEndsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = $"%{EscapeLikeValue(value)}" });
-        return $"\"{columnName}\" LIKE ${paramIndex} ESCAPE '\\'";
+        return $"\"{EscapeColumnName(columnName)}\" LIKE ${paramIndex} ESCAPE '\\'";
     }
 
     /// <summary>
@@ -224,7 +231,7 @@ internal static class ExpressionTranslator
         {
             if (first)
             {
-                sb.Append($"\"{columnName}\" IN (");
+                sb.Append($"\"{EscapeColumnName(columnName)}\" IN (");
                 first = false;
             }
             else

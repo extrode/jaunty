@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 
 using DuckDB.NET.Data;
 
+using Jaunty.Attributes;
 using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
 
@@ -9,6 +10,21 @@ namespace Jaunty.FlatFiles.DuckDB.Tests.Internals;
 
 public class ExpressionTranslatorTests
 {
+    // AUD-R12-127: entity scoped to this file's column-name-escaping regression tests. The
+    // embedded double quote in each [Column] name is the exact character ExpressionTranslator's
+    // WHERE-clause interpolation used to fail to double, unlike DuckDbDialect.EscapeColumnName.
+    public class ColumnEscapingEntity
+    {
+        [Column("bad\"name")]
+        public int? BadName { get; set; }
+
+        [Column("bad\"flag")]
+        public bool BadFlag { get; set; }
+
+        [Column("bad\"text")]
+        public string? BadText { get; set; }
+    }
+
     [Fact]
     public void Translate_EqualsOperator_GeneratesEqualsSql()
     {
@@ -240,5 +256,71 @@ public class ExpressionTranslatorTests
 
         // Assert
         Assert.Equal("product_name", columnName);
+    }
+
+    [Fact]
+    public void Translate_EqualsOperator_ColumnNameWithEmbeddedQuote_EscapesColumnName()
+    {
+        // Arrange
+        Expression<Func<ColumnEscapingEntity, bool>> predicate = x => x.BadName == 1;
+
+        // Act
+        var (sql, _) = ExpressionTranslator.Translate(predicate);
+
+        // Assert
+        Assert.Contains("\"bad\"\"name\" = $1", sql);
+    }
+
+    [Fact]
+    public void Translate_NullCheck_ColumnNameWithEmbeddedQuote_EscapesColumnName()
+    {
+        // Arrange
+        Expression<Func<ColumnEscapingEntity, bool>> predicate = x => x.BadText == null;
+
+        // Act
+        var (sql, _) = ExpressionTranslator.Translate(predicate);
+
+        // Assert
+        Assert.Contains("\"bad\"\"text\" IS NULL", sql);
+    }
+
+    [Fact]
+    public void Translate_BoolMember_ColumnNameWithEmbeddedQuote_EscapesColumnName()
+    {
+        // Arrange
+        Expression<Func<ColumnEscapingEntity, bool>> predicate = x => x.BadFlag;
+
+        // Act
+        var (sql, _) = ExpressionTranslator.Translate(predicate);
+
+        // Assert
+        Assert.Contains("\"bad\"\"flag\" = true", sql);
+    }
+
+    [Fact]
+    public void Translate_StringStartsWith_ColumnNameWithEmbeddedQuote_EscapesColumnName()
+    {
+        // Arrange
+        Expression<Func<ColumnEscapingEntity, bool>> predicate = x => x.BadText!.StartsWith("W");
+
+        // Act
+        var (sql, _) = ExpressionTranslator.Translate(predicate);
+
+        // Assert
+        Assert.Contains("\"bad\"\"text\" LIKE", sql);
+    }
+
+    [Fact]
+    public void Translate_InClause_ColumnNameWithEmbeddedQuote_EscapesColumnName()
+    {
+        // Arrange
+        var ids = new List<int?> { 1, 2, 3 };
+        Expression<Func<ColumnEscapingEntity, bool>> predicate = x => ids.Contains(x.BadName);
+
+        // Act
+        var (sql, _) = ExpressionTranslator.Translate(predicate);
+
+        // Assert
+        Assert.Contains("\"bad\"\"name\" IN (", sql);
     }
 }
