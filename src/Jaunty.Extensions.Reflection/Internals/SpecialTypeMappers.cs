@@ -204,15 +204,9 @@ public static class SpecialTypeMappers
 
                 for (int i = 0; i < fieldCount; i++)
                 {
-                    object? value;
-
-                    if (r.IsDBNull(i))
-                        value = valueType.IsValueType ? Activator.CreateInstance(valueType) : null;
-                    else
-                    {
-                        object raw = r.GetValue(i);
-                        value = ConvertValue(raw, valueType);
-                    }
+                    object? value = r.IsDBNull(i)
+                        ? GetDefault(valueType, columnNames[i])
+                        : ConvertValue(r.GetValue(i), valueType);
                     dict[columnNames[i]] = value;
                 }
 

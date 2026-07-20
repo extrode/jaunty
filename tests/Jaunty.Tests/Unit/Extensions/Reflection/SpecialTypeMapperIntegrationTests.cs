@@ -306,6 +306,31 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
         Assert.Null(row[priceKey]);
     }
 
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_DictionaryStringDecimal_NonNullableWithNullValue_Throws(DialectInfo dialect)
+    {
+        // Regression test (AUD-R11): CreateDictionaryMapper used to silently coerce a NULL
+        // column into default(TValue) (e.g. 0m) for a non-nullable Dictionary<string, TValue>
+        // value type instead of throwing, contradicting GetDefault's own design intent (which
+        // throws for NULL into a non-nullable value type everywhere else in this class).
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = dialect.Provider switch
+        {
+            DialectProvider.SqlServer => "SELECT TOP (1) CategoryId, CAST(NULL AS DECIMAL(10,2)) AS Price FROM Categories ORDER BY CategoryId",
+            DialectProvider.Postgres => @"SELECT category_id AS CategoryId, CAST(NULL AS NUMERIC(10,2)) AS Price FROM categories ORDER BY category_id LIMIT 1",
+            DialectProvider.MariaDb => "SELECT category_id AS CategoryId, CAST(NULL AS DECIMAL(10,2)) AS Price FROM categories ORDER BY category_id LIMIT 1",
+            _ => "SELECT category_id AS CategoryId, CAST(NULL AS DECIMAL(10,2)) AS Price FROM categories ORDER BY category_id LIMIT 1"
+        };
+
+        Assert.Throws<InvalidOperationException>(() => connection.Query<Dictionary<string, decimal>>(sql));
+    }
+
     #endregion
 
     #region ValueTuple Edge Cases
