@@ -1,5 +1,6 @@
 using System.Data.SQLite;
 
+using Jaunty.Core;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
@@ -136,5 +137,479 @@ public class QueryMultiEntityN5Tests : IClassFixture<DialectFixture>
 
         Assert.Equal(1L, metadata.MetadataId);
         Assert.Equal("A great work", metadata.Description);
+    }
+
+    // ---------------------------------------------------------------------------
+    // CommandOptions<(T1..T5)> / MultiEntityCommandOptions<T1..T5> overload coverage, plus
+    // QueryFirst/QueryFirstOrDefault/QuerySingle/QuerySingleOrDefault/QueryStream at every
+    // overload (AUD-R11 batch-01: all previously untested at arity 5).
+    // ---------------------------------------------------------------------------
+
+    private const string JoinSql = @"
+            SELECT
+                a.author_id      AS AuthorId,
+                a.author_name    AS AuthorName,
+                b.book_id        AS BookId,
+                b.author_id      AS BookAuthorId,
+                b.book_title     AS BookTitle,
+                c.chapter_id     AS ChapterId,
+                c.book_id        AS ChapterBookId,
+                c.chapter_title  AS ChapterTitle,
+                s.section_id     AS SectionId,
+                s.chapter_id     AS SectionChapterId,
+                s.section_title  AS SectionTitle,
+                m.metadata_id    AS MetadataId,
+                m.description    AS Description
+            FROM multimap5_authors a
+            CROSS JOIN multimap5_books b
+            CROSS JOIN multimap5_chapters c
+            CROSS JOIN multimap5_sections s
+            CROSS JOIN multimap5_metadata m";
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_FiveEntities_WithCommandOptions_UsesTransaction(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        using var txn = connection.BeginTransaction();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.Transaction = txn;
+            cmd.CommandText = "UPDATE multimap5_authors SET author_name = 'TXN-SENTINEL' WHERE author_id = 1";
+            cmd.ExecuteNonQuery();
+        }
+
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>(transaction: txn);
+        var results = connection.Query<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options);
+
+        Assert.Single(results);
+        Assert.Equal("TXN-SENTINEL", results[0].Item1.AuthorName);
+
+        txn.Rollback();
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_FiveEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>();
+
+        var results = connection.Query<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Single(results);
+        Assert.Equal("Ada Lovelace", results[0].Item1.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_FiveEntities_WithMultiEntityCommandOptions_UsesTransaction(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        using var txn = connection.BeginTransaction();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.Transaction = txn;
+            cmd.CommandText = "UPDATE multimap5_authors SET author_name = 'TXN-SENTINEL' WHERE author_id = 1";
+            cmd.ExecuteNonQuery();
+        }
+
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(transaction: txn);
+        var results = connection.Query<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options);
+
+        Assert.Single(results);
+        Assert.Equal("TXN-SENTINEL", results[0].Item1.AuthorName);
+
+        txn.Rollback();
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_FiveEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>();
+
+        var results = connection.Query<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Single(results);
+        Assert.Equal("Ada Lovelace", results[0].Item1.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_FiveEntities_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (author, _, _, _, _) = connection.QueryFirst<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_FiveEntities_WithParameters_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (author, _, _, _, metadata) = connection.QueryFirst<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 });
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+        Assert.Equal("A great work", metadata.Description);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_FiveEntities_WithCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>();
+
+        var (author, _, _, _, _) = connection.QueryFirst<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_FiveEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>();
+
+        var (author, _, _, _, _) = connection.QueryFirst<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_FiveEntities_WithMultiEntityCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>();
+
+        var (author, _, _, _, _) = connection.QueryFirst<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_FiveEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>();
+
+        var (author, _, _, _, _) = connection.QueryFirst<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_FiveEntities_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var result = connection.QueryFirstOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_FiveEntities_WithParameters_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var result = connection.QueryFirstOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 });
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_FiveEntities_WithCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>();
+
+        var result = connection.QueryFirstOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_FiveEntities_WithParametersAndCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>();
+
+        var result = connection.QueryFirstOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_FiveEntities_WithMultiEntityCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>();
+
+        var result = connection.QueryFirstOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_FiveEntities_WithParametersAndMultiEntityCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>();
+
+        var result = connection.QueryFirstOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_FiveEntities_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (author, _, _, _, _) = connection.QuerySingle<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_FiveEntities_WithParameters_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (author, _, _, _, _) = connection.QuerySingle<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 });
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_FiveEntities_WithCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>();
+
+        var (author, _, _, _, _) = connection.QuerySingle<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_FiveEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>();
+
+        var (author, _, _, _, _) = connection.QuerySingle<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_FiveEntities_WithMultiEntityCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>();
+
+        var (author, _, _, _, _) = connection.QuerySingle<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_FiveEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>();
+
+        var (author, _, _, _, _) = connection.QuerySingle<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_FiveEntities_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var result = connection.QuerySingleOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_FiveEntities_WithParameters_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var result = connection.QuerySingleOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 });
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_FiveEntities_WithCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>();
+
+        var result = connection.QuerySingleOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_FiveEntities_WithParametersAndCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>();
+
+        var result = connection.QuerySingleOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_FiveEntities_WithMultiEntityCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>();
+
+        var result = connection.QuerySingleOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_FiveEntities_WithParametersAndMultiEntityCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>();
+
+        var result = connection.QuerySingleOrDefault<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_FiveEntities_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var results = connection.QueryStream<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql).ToList();
+
+        Assert.Single(results);
+        Assert.Equal("Ada Lovelace", results[0].Item1.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_FiveEntities_WithParameters_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var results = connection.QueryStream<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }).ToList();
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_FiveEntities_WithCommandOptions_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>();
+
+        var results = connection.QueryStream<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options).ToList();
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_FiveEntities_WithParametersAndCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>();
+
+        var results = connection.QueryStream<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options).ToList();
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_FiveEntities_WithMultiEntityCommandOptions_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>();
+
+        var results = connection.QueryStream<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options).ToList();
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryStream_FiveEntities_WithParametersAndMultiEntityCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>();
+
+        var results = connection.QueryStream<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options).ToList();
+
+        Assert.Single(results);
     }
 }

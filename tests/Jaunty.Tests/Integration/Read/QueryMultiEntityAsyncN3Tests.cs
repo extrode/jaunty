@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.SQLite;
 
 using Jaunty.Attributes;
+using Jaunty.Core;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
@@ -142,5 +143,409 @@ public class QueryMultiEntityAsyncN3Tests : IClassFixture<DialectFixture>
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => connection.QuerySingleAsync<Am3Author, Am3Book, Am3Tag>(Sql).AsTask());
+    }
+
+    // ---------------------------------------------------------------------------
+    // CommandOptions<(T1,T2,T3)> / MultiEntityCommandOptions<T1,T2,T3> overload coverage for
+    // every async method, plus full coverage for QueryFirstAsync/QueryStreamAsync (previously
+    // untested at any overload). AUD-R11 batch-01.
+    // ---------------------------------------------------------------------------
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryAsync_ThreeEntities_WithCommandOptions_UsesTransaction(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        using var txn = connection.BeginTransaction();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.Transaction = txn;
+            cmd.CommandText = "UPDATE amultimap3_authors SET author_name = 'TXN-SENTINEL' WHERE author_id = 1";
+            cmd.ExecuteNonQuery();
+        }
+
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>(transaction: txn);
+        var results = await connection.QueryAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None);
+
+        Assert.Single(results);
+        Assert.Equal("TXN-SENTINEL", results[0].Item1.Name);
+
+        txn.Rollback();
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryAsync_ThreeEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>();
+
+        var results = await connection.QueryAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryAsync_ThreeEntities_WithMultiEntityCommandOptions_UsesTransaction(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        using var txn = connection.BeginTransaction();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.Transaction = txn;
+            cmd.CommandText = "UPDATE amultimap3_authors SET author_name = 'TXN-SENTINEL' WHERE author_id = 1";
+            cmd.ExecuteNonQuery();
+        }
+
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>(transaction: txn);
+        var results = await connection.QueryAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None);
+
+        Assert.Single(results);
+        Assert.Equal("TXN-SENTINEL", results[0].Item1.Name);
+
+        txn.Rollback();
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryAsync_ThreeEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>();
+
+        var results = await connection.QueryAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_ThreeEntities_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (author, _, _) = await connection.QueryFirstAsync<Am3Author, Am3Book, Am3Tag>(Sql);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_ThreeEntities_WithParameters_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var (author, _, tag) = await connection.QueryFirstAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 });
+
+        Assert.Equal("Ada Lovelace", author.Name);
+        Assert.Equal("history", tag.Label);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_ThreeEntities_WithCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>();
+
+        var (author, _, _) = await connection.QueryFirstAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_ThreeEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>();
+
+        var (author, _, _) = await connection.QueryFirstAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_ThreeEntities_WithMultiEntityCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>();
+
+        var (author, _, _) = await connection.QueryFirstAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_ThreeEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>();
+
+        var (author, _, _) = await connection.QueryFirstAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstOrDefaultAsync_ThreeEntities_WithCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstOrDefaultAsync_ThreeEntities_WithParametersAndCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options, CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstOrDefaultAsync_ThreeEntities_WithMultiEntityCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstOrDefaultAsync_ThreeEntities_WithParametersAndMultiEntityCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options, CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleAsync_ThreeEntities_WithCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>();
+
+        var (author, _, _) = await connection.QuerySingleAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleAsync_ThreeEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>();
+
+        var (author, _, _) = await connection.QuerySingleAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleAsync_ThreeEntities_WithMultiEntityCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>();
+
+        var (author, _, _) = await connection.QuerySingleAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleAsync_ThreeEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>();
+
+        var (author, _, _) = await connection.QuerySingleAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleOrDefaultAsync_ThreeEntities_WithCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleOrDefaultAsync_ThreeEntities_WithParametersAndCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options, CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleOrDefaultAsync_ThreeEntities_WithMultiEntityCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleOrDefaultAsync_ThreeEntities_WithParametersAndMultiEntityCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options, CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_ThreeEntities_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var seen = new List<(Am3Author, Am3Book, Am3Tag)>();
+        await foreach (var row in connection.QueryStreamAsync<Am3Author, Am3Book, Am3Tag>(Sql))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
+        Assert.Equal("Ada Lovelace", seen[0].Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_ThreeEntities_WithParameters_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var seen = new List<(Am3Author, Am3Book, Am3Tag)>();
+        await foreach (var row in connection.QueryStreamAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_ThreeEntities_WithCommandOptions_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>();
+
+        var seen = new List<(Am3Author, Am3Book, Am3Tag)>();
+        await foreach (var row in connection.QueryStreamAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_ThreeEntities_WithParametersAndCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Am3Author, Am3Book, Am3Tag)>();
+
+        var seen = new List<(Am3Author, Am3Book, Am3Tag)>();
+        await foreach (var row in connection.QueryStreamAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_ThreeEntities_WithMultiEntityCommandOptions_StreamsAllRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>();
+
+        var seen = new List<(Am3Author, Am3Book, Am3Tag)>();
+        await foreach (var row in connection.QueryStreamAsync<Am3Author, Am3Book, Am3Tag>(Sql, options, CancellationToken.None))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_ThreeEntities_WithParametersAndMultiEntityCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Am3Author, Am3Book, Am3Tag>();
+
+        var seen = new List<(Am3Author, Am3Book, Am3Tag)>();
+        await foreach (var row in connection.QueryStreamAsync<Am3Author, Am3Book, Am3Tag>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
     }
 }
