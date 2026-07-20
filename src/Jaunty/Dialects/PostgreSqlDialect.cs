@@ -90,9 +90,17 @@ internal sealed class PostgreSqlDialect : ISqlDialect
         return $"LOWER({columnName}) = LOWER({parameterName})";
     }
 
-    public string FormatContainsPattern(string value) => $"%{value}%";
-    public string FormatStartsWithPattern(string value) => $"{value}%";
-    public string FormatEndsWithPattern(string value) => $"%{value}";
+    public string FormatContainsPattern(string value) => $"%{EscapeLikeWildcards(value)}%";
+    public string FormatStartsWithPattern(string value) => $"{EscapeLikeWildcards(value)}%";
+    public string FormatEndsWithPattern(string value) => $"%{EscapeLikeWildcards(value)}";
+
+    // GenerateCaseSensitiveLike/GenerateCaseInsensitiveLike declare ESCAPE '\', so literal
+    // occurrences of the escape char and LIKE wildcard chars (%, _) must be escaped in the
+    // value or they change query semantics instead of matching literally.
+    private static string EscapeLikeWildcards(string value) => value
+        .Replace("\\", "\\\\")
+        .Replace("%", "\\%")
+        .Replace("_", "\\_");
 
     // PostgreSQL: session_replication_role = 'replica' disables all triggers including FK constraints
     // This is a session-level setting that affects all tables
