@@ -40,13 +40,32 @@ public class QueryMultiEntityCommandOptionsTests : IClassFixture<DialectFixture>
     {
         using var connection = _fixture.GetConnection(dialect);
         using var txn = connection.BeginTransaction();
+
+        // Mutate product 1's name inside the transaction, via the same transaction.
+        connection.Execute(
+            "UPDATE products SET product_name = @Name WHERE product_id = @Id",
+            new { Name = "TXN-SENTINEL", Id = 1 },
+            new CommandOptions(transaction: txn));
+
         var options = new MultiEntityCommandOptions<ProductInfo, CategoryInfo>(transaction: txn);
 
         var results = connection.Query<ProductInfo, CategoryInfo>(
-            $"SELECT {TopPrefix(dialect, 3)}{JoinSql}{LimitSuffix(dialect, 3)}", options);
+            $"SELECT {JoinSql} WHERE p.product_id = 1", options);
 
-        Assert.Equal(3, results.Count);
+        // If MultiEntityCommandOptions silently dropped the transaction when converting to the
+        // underlying CommandOptions, this read would run outside the pending transaction and would
+        // not observe the uncommitted UPDATE above (or would throw, on providers that reject a
+        // command with no Transaction set while the connection has a pending transaction).
+        Assert.Single(results);
+        Assert.Equal("TXN-SENTINEL", results[0].Item1.ProductName);
+
         txn.Rollback();
+
+        using var verifyConnection = _fixture.GetConnection(dialect);
+        var stillSentinel = verifyConnection.QueryScalar<long>(
+            "SELECT COUNT(*) FROM products WHERE product_id = 1 AND product_name = @Name",
+            new { Name = "TXN-SENTINEL" });
+        Assert.Equal(0, stillSentinel);
     }
 
     [Theory]
