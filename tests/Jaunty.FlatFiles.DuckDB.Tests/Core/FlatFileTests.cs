@@ -1,4 +1,8 @@
+using System.Reflection;
+
 using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
+using Jaunty.FlatFiles.FileSources;
+using Jaunty.FlatFiles.Interfaces;
 using Jaunty.Fluent;
 
 namespace Jaunty.FlatFiles.DuckDB.Tests.Core;
@@ -207,5 +211,183 @@ public class FlatFileTests
 
         Assert.NotEmpty(results);
         Assert.All(results, r => Assert.True(r.Revenue > 10000m));
+    }
+
+    // ==========================================
+    // AUD-R11 batch-07: RegisterExtension coverage
+    // ==========================================
+
+    [Fact]
+    public void RegisterExtension_NullExtension_Throws()
+        => Assert.Throws<ArgumentNullException>(() =>
+            FlatFile.RegisterExtension(null!, (_, path, type) => new CsvFileSource("t", path, type)));
+
+    [Fact]
+    public void RegisterExtension_NullFactory_Throws()
+        => Assert.Throws<ArgumentNullException>(() => FlatFile.RegisterExtension(".myfmt", null!));
+
+    [Fact]
+    public void RegisterExtension_ExtensionWithoutLeadingDot_IsNormalized()
+    {
+        // FlatFile.RegisterExtension prefixes a missing leading dot before storing the key, so
+        // both "myfmt2" and ".myfmt2" registrations must resolve for a ".myfmt2" file.
+        FlatFile.RegisterExtension("myfmt2", (tableName, path, type) => new CsvFileSource(tableName, path, type));
+
+        IFileSource source = FlatFile.CreateSourceFromExtension(".myfmt2", "t", "irrelevant.myfmt2", typeof(object));
+
+        Assert.IsType<CsvFileSource>(source);
+    }
+
+    [Fact]
+    public void RegisterExtension_CustomFactory_OpenUsesRegisteredFactory()
+    {
+        // Round-trips a custom extension end-to-end through FlatFile.Open: register ".myfmt" as a
+        // CSV-backed format, then open a real file with that extension and confirm the registered
+        // factory (not the "unsupported extension" error) is what handles it.
+        FlatFile.RegisterExtension(".myfmt", (tableName, path, type) => new CsvFileSource(tableName, path, type));
+
+        var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
+        var customPath = Path.Combine(Path.GetTempPath(), $"jaunty_flatfile_custom_{Guid.NewGuid():N}.myfmt");
+        File.Copy(csvPath, customPath);
+        try
+        {
+            using var db = FlatFile.Open(customPath);
+
+            using var cmd = db.Connection.CreateCommand();
+            cmd.CommandText = $"SELECT COUNT(*) FROM \"{Path.GetFileNameWithoutExtension(customPath)}\"";
+            Assert.Equal(10, Convert.ToInt32(cmd.ExecuteScalar()));
+        }
+        finally
+        {
+            File.Delete(customPath);
+        }
+    }
+
+    // ==========================================
+    // AUD-R11 batch-07: Open() glob pattern coverage
+    // ==========================================
+
+    [Fact]
+    public void Open_GlobPattern_MatchesMultipleFilesAndUnionsRows()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"jaunty_flatfile_glob_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            File.WriteAllText(Path.Combine(tempDir, "part1.csv"), "id,name\n1,Alice\n2,Bob\n");
+            File.WriteAllText(Path.Combine(tempDir, "part2.csv"), "id,name\n3,Carol\n");
+
+            var globPath = Path.Combine(tempDir, "part*.csv");
+            using var db = FlatFile.Open(globPath);
+
+            using var cmd = db.Connection.CreateCommand();
+            cmd.CommandText = "SELECT COUNT(*) FROM \"part\"";
+            Assert.Equal(3, Convert.ToInt32(cmd.ExecuteScalar()));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Open_GlobPatternWithNoExtension_Throws()
+    {
+        // InferExtensionFromGlob strips glob characters before inferring the extension; a pattern
+        // with no literal extension left over (e.g. "data/*") can't be mapped to a file format.
+        var ex = Assert.Throws<ArgumentException>(() => FlatFile.Open("data/*"));
+        Assert.Contains("Cannot infer file format", ex.Message);
+    }
+
+    // ==========================================
+    // AUD-R11 batch-07: Open() remote URI scheme coverage
+    // ==========================================
+
+    [Fact]
+    public void Open_DisallowedUriScheme_ThrowsWithAllowedSchemesListed()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => FlatFile.Open("ftp://example.com/data.csv"));
+        Assert.Contains("ftp://", ex.Message);
+        Assert.Contains("s3://", ex.Message);
+        Assert.Contains("https://", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("http")]
+    [InlineData("https")]
+    [InlineData("s3")]
+    [InlineData("s3a")]
+    [InlineData("s3n")]
+    [InlineData("az")]
+    [InlineData("abfss")]
+    [InlineData("r2")]
+    [InlineData("gs")]
+    [InlineData("hf")]
+    [InlineData("file")]
+    public void AllowedSchemes_ContainsExpectedScheme(string scheme)
+    {
+        // Verified via the private _allowedSchemes set directly rather than a real FlatFile.Open()
+        // call, which would require actual network access (httpfs/S3 credentials, DNS resolution)
+        // for a remote scheme to get past DuckDB's own file-open step - not something a unit test
+        // should depend on.
+        var allowedSchemes = (System.Collections.Generic.HashSet<string>)typeof(FlatFile)
+            .GetField("_allowedSchemes", BindingFlags.NonPublic | BindingFlags.Static)!
+            .GetValue(null)!;
+
+        Assert.Contains(scheme, allowedSchemes);
+    }
+
+    // ==========================================
+    // AUD-R11 batch-07: private URI/glob helper unit coverage
+    // ==========================================
+
+    private static object? InvokePrivateStatic(string methodName, object?[] args)
+    {
+        MethodInfo method = typeof(FlatFile).GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Static)!;
+        return method.Invoke(null, args);
+    }
+
+    [Theory]
+    [InlineData("s3://bucket/file.csv", true, "s3")]
+    [InlineData("https://example.com/data.json", true, "https")]
+    [InlineData("data/sales.csv", false, "")]
+    [InlineData("C:\\data\\sales.csv", false, "")]
+    public void IsRemoteUri_DetectsSchemeCorrectly(string path, bool expectedIsRemote, string expectedScheme)
+    {
+        var args = new object?[] { path, null };
+        var result = (bool)InvokePrivateStatic("IsRemoteUri", args)!;
+
+        Assert.Equal(expectedIsRemote, result);
+        Assert.Equal(expectedScheme, (string)args[1]!);
+    }
+
+    [Theory]
+    [InlineData("s3://bucket/path/file.csv", "file.csv")]
+    [InlineData("https://example.com/data/customers.json?token=abc", "customers.json")]
+    [InlineData("s3://bucket/onlyfile.parquet", "onlyfile.parquet")]
+    public void GetFileNameFromUri_ExtractsFileName(string uri, string expected)
+    {
+        var result = (string)InvokePrivateStatic("GetFileNameFromUri", [uri])!;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("data/*.csv", true)]
+    [InlineData("data/file?.csv", true)]
+    [InlineData("data/sales.csv", false)]
+    public void IsGlobPattern_DetectsWildcards(string path, bool expected)
+    {
+        var result = (bool)InvokePrivateStatic("IsGlobPattern", [path])!;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("data/*.csv", ".csv")]
+    [InlineData("logs/**/*.json", ".json")]
+    [InlineData("data/file?.parquet", ".parquet")]
+    public void InferExtensionFromGlob_InfersExtension(string glob, string expected)
+    {
+        var result = (string)InvokePrivateStatic("InferExtensionFromGlob", [glob])!;
+        Assert.Equal(expected, result);
     }
 }
