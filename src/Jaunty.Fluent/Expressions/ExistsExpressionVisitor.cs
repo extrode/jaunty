@@ -17,25 +17,54 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
     private readonly ISqlDialect _dialect;
     private readonly EntityMetadata _outerMetadata;
     private readonly EntityMetadata _subqueryMetadata;
+    private readonly string? _outerAlias;
+    private readonly string _subqueryAlias;
     private readonly StringBuilder _sql = new();
     private readonly List<(string Name, object? Value)> _parameters = new();
-    private readonly Dictionary<string, int> _parameterCounts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _parameterCounts;
 
     private ParameterExpression? _outerParam;
     private ParameterExpression? _subqueryParam;
 
-    public ExistsExpressionVisitor(ISqlDialect dialect, EntityMetadata outerMetadata, EntityMetadata subqueryMetadata)
+    /// <summary>
+    /// Creates the visitor. See <paramref name="outerAlias"/>/<paramref name="subqueryAlias"/>
+    /// remarks below for why both are required for correct correlation.
+    /// </summary>
+    /// <param name="dialect">The SQL dialect used to escape identifiers.</param>
+    /// <param name="outerMetadata">Entity metadata for the outer query's entity type.</param>
+    /// <param name="subqueryMetadata">Entity metadata for the correlated subquery's entity type.</param>
+    /// <param name="outerAlias">
+    /// The alias the outer query's FROM clause was created with (e.g. via <c>db.From&lt;T&gt;("c")</c>),
+    /// or <c>null</c> to fall back to the escaped table name. Outer column references must use this
+    /// alias rather than the raw table name, or the generated SQL is invalid when the outer query
+    /// itself uses an alias.
+    /// </param>
+    /// <param name="subqueryAlias">
+    /// The alias assigned to the correlated subquery's FROM clause. Always required (even when
+    /// <typeparamref name="TOuter"/> and <typeparamref name="TSubquery"/> differ) so a
+    /// self-referencing EXISTS (TOuter == TSubquery) doesn't resolve both sides to the identical
+    /// table prefix, which would make the correlation meaningless.
+    /// </param>
+    /// <param name="parameterCounts">
+    /// Shared parameter-name counter, when supplied, so multiple correlated EXISTS clauses on
+    /// the same outer query (e.g. <c>.WhereExists(...).AndExists(...)</c>) don't each generate
+    /// an identically-named "@p_exists" parameter for their captured/constant operands. Omit
+    /// (or pass null) for a standalone translation.
+    /// </param>
+    public ExistsExpressionVisitor(ISqlDialect dialect, EntityMetadata outerMetadata, EntityMetadata subqueryMetadata, string? outerAlias, string subqueryAlias, Dictionary<string, int>? parameterCounts = null)
     {
         _dialect = dialect;
         _outerMetadata = outerMetadata;
         _subqueryMetadata = subqueryMetadata;
+        _outerAlias = outerAlias;
+        _subqueryAlias = subqueryAlias;
+        _parameterCounts = parameterCounts ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     }
 
     public (string Sql, List<(string Name, object? Value)> Parameters) Translate(Expression<Func<TOuter, TSubquery, bool>> predicate)
     {
         _sql.Clear();
         _parameters.Clear();
-        _parameterCounts.Clear();
 
         // Extract parameters from lambda
         _outerParam = predicate.Parameters[0];
@@ -78,6 +107,28 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         // Handle comparison operators - need to determine which side is outer vs subquery
         (bool IsColumn, string Sql, object? Value) leftInfo = AnalyzeExpression(node.Left);
         (bool IsColumn, string Sql, object? Value) rightInfo = AnalyzeExpression(node.Right);
+
+        // Handle null comparisons: emit IS NULL / IS NOT NULL instead of binding a NULL
+        // parameter, since SQL's three-valued logic means "col = @p" with @p bound to NULL
+        // never matches (same fix pattern as WhereExpressionVisitor.IsNullConstant).
+        if (node.NodeType is ExpressionType.Equal or ExpressionType.NotEqual)
+        {
+            if (leftInfo.IsColumn && !rightInfo.IsColumn && rightInfo.Value is null)
+            {
+                _sql.Append(leftInfo.Sql);
+                _sql.Append(node.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
+                _sql.Append(')');
+                return node;
+            }
+
+            if (rightInfo.IsColumn && !leftInfo.IsColumn && leftInfo.Value is null)
+            {
+                _sql.Append(rightInfo.Sql);
+                _sql.Append(node.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
+                _sql.Append(')');
+                return node;
+            }
+        }
 
         if (leftInfo.IsColumn)
         {
@@ -172,16 +223,15 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
             if (root == _outerParam)
             {
                 var columnName = GetColumnName(member, _outerMetadata);
-                var outerTable = _dialect.EscapeTableName(_outerMetadata.SchemaName, _outerMetadata.TableName);
-                return (true, $"{outerTable}.{_dialect.EscapeColumnName(columnName)}", null);
+                var outerPrefix = _outerAlias ?? _dialect.EscapeTableName(_outerMetadata.SchemaName, _outerMetadata.TableName);
+                return (true, $"{outerPrefix}.{_dialect.EscapeColumnName(columnName)}", null);
             }
 
             // Check if it's a member access on the subquery parameter
             if (root == _subqueryParam)
             {
                 var columnName = GetColumnName(member, _subqueryMetadata);
-                var subqueryTable = _dialect.EscapeTableName(_subqueryMetadata.SchemaName, _subqueryMetadata.TableName);
-                return (true, $"{subqueryTable}.{_dialect.EscapeColumnName(columnName)}", null);
+                return (true, $"{_subqueryAlias}.{_dialect.EscapeColumnName(columnName)}", null);
             }
 
             // It's a captured variable - evaluate it

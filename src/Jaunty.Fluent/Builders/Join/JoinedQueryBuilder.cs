@@ -1,4 +1,5 @@
 using System.Data;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -363,33 +364,72 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     {
         var entity = new TEntity();
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
+        Dictionary<string, int> ordinals = BuildOrdinalLookup(reader);
 
         for (int i = 0; i < columns.Count; i++)
         {
             ColumnMetadata col = columns[i];
             string aliasName = $"{prefix}{col.ColumnName}";
 
-            try
-            {
-                var ordinal = reader.GetOrdinal(aliasName);
-                if (!reader.IsDBNull(ordinal))
-                {
-                    object? value = reader.GetValue(ordinal);
-                    Type propertyType = col.PropertyType;
-                    Type targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-                    object? convertedValue = Convert.ChangeType(value, targetType);
-                    if (col.Setter is { } setter)
-                        setter(entity!, convertedValue);
-                    else
-                        col.Property!.SetValue(entity, convertedValue);
-                }
-            }
-            catch (IndexOutOfRangeException)
-            {
-                // Column not found, skip
-            }
+            if (!ordinals.TryGetValue(aliasName, out int ordinal))
+                continue; // Column not found, skip
+
+            if (reader.IsDBNull(ordinal))
+                continue;
+
+            object value = reader.GetValue(ordinal);
+            Type propertyType = col.PropertyType;
+            Type targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+            object convertedValue = ConvertColumnValue(value, targetType);
+
+            if (col.Setter is { } setter)
+                setter(entity!, convertedValue);
+            else
+                col.Property!.SetValue(entity, convertedValue);
         }
 
         return entity;
+    }
+
+    /// <summary>
+    /// Builds a per-call ordinal lookup for the reader's current column set, avoiding the
+    /// exception-driven IndexOutOfRangeException-per-missing-column pattern that
+    /// <see cref="IDataRecord.GetOrdinal(string)"/> relies on when a column isn't present.
+    /// </summary>
+    private static Dictionary<string, int> BuildOrdinalLookup(IDataReader reader)
+    {
+        var map = new Dictionary<string, int>(reader.FieldCount, StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < reader.FieldCount; i++)
+        {
+            string name = reader.GetName(i);
+            if (!map.ContainsKey(name))
+                map[name] = i;
+        }
+
+        return map;
+    }
+
+    /// <summary>
+    /// Converts a raw ADO.NET value to the target property type. <see cref="Convert.ChangeType(object, Type)"/>
+    /// cannot target enum types (always throws <see cref="InvalidCastException"/>) or <see cref="Guid"/>/<see cref="char"/>
+    /// from an arbitrary source string, so those are special-cased before falling back to it.
+    /// </summary>
+    private static object ConvertColumnValue(object value, Type targetType)
+    {
+        if (targetType.IsEnum)
+        {
+            return value is string enumString
+                ? Enum.Parse(targetType, enumString, ignoreCase: true)
+                : Enum.ToObject(targetType, Convert.ChangeType(value, Enum.GetUnderlyingType(targetType), CultureInfo.InvariantCulture));
+        }
+
+        if (targetType == typeof(Guid))
+            return value is Guid guid ? guid : Guid.Parse(value.ToString()!);
+
+        if (targetType == typeof(char) && value is string charString)
+            return charString.Length > 0 ? charString[0] : '\0';
+
+        return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
     }
 }
