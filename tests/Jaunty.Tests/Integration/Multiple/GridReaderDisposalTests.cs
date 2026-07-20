@@ -1,6 +1,8 @@
 using System.Data;
 using System.Data.SQLite;
 
+using Jaunty.Core;
+using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers;
 
 namespace Jaunty.Tests.Integration.Multiple;
@@ -67,5 +69,24 @@ public class GridReaderDisposalTests : IDisposable
         Assert.NotNull(wrapper.LastCommand);
         Assert.True(wrapper.LastCommand!.Disposed);
         Assert.Equal(ConnectionState.Closed, realConnection.State);
+    }
+
+    [Fact]
+    public void Read_ThrowingDuringRowMapping_StillDisposesUnderlyingCommand()
+    {
+        // Regression test (round 10): GridReader.ReadCore (and its ReadStream/async siblings)
+        // called Advance() unconditionally after the read loop instead of in a finally block.
+        // A row-mapping failure mid-loop would propagate past Advance() entirely, leaving the
+        // underlying command/reader undisposed - a resource leak on top of the mapping error.
+        using var wrapper = new IDbConnectionWrapper(_connection);
+
+        GridReader gridReader = wrapper.QueryMultiple(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories");
+
+        var options = CommandOptions<Category>.WithMapper(_ => throw new InvalidOperationException("boom"));
+
+        Assert.Throws<InvalidOperationException>(() => gridReader.Read(options));
+
+        Assert.True(wrapper.LastCommand!.Disposed);
     }
 }
