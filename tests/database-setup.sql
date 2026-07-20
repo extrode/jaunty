@@ -11,6 +11,7 @@ IF OBJECT_ID('dbo.GetProductCount', 'P') IS NOT NULL DROP PROCEDURE dbo.GetProdu
 IF OBJECT_ID('dbo.GetProductCountByCategory', 'P') IS NOT NULL DROP PROCEDURE dbo.GetProductCountByCategory;
 IF OBJECT_ID('dbo.UpdateProductPrice', 'P') IS NOT NULL DROP PROCEDURE dbo.UpdateProductPrice;
 IF OBJECT_ID('dbo.GetProductCountWithOutput', 'P') IS NOT NULL DROP PROCEDURE dbo.GetProductCountWithOutput;
+IF OBJECT_ID('dbo.GetProductCountWithReturnValue', 'P') IS NOT NULL DROP PROCEDURE dbo.GetProductCountWithReturnValue;
 IF OBJECT_ID('dbo.GetNoResults', 'P') IS NOT NULL DROP PROCEDURE dbo.GetNoResults;
 GO
 
