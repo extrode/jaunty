@@ -109,6 +109,35 @@ public class AuditInterceptorTests
         Assert.True(interceptor.RecordCount <= 5);
     }
 
+    // AUD-R12: the trim-then-enqueue sequence was not atomic - concurrent callers could each
+    // observe Count < maxRecords, then all enqueue, letting the queue temporarily exceed
+    // maxRecords. Hammer the interceptor from many threads at once and assert the bound holds.
+    [Fact]
+    public async Task OnCommandExecutingAsync_ConcurrentCalls_NeverExceedsMaxRecords()
+    {
+        // Arrange
+        var interceptor = new AuditInterceptor(10);
+        var context = new CommandContext(
+            "SELECT 1",
+            null,
+            CreateMockConnection(),
+            CommandType.Text);
+
+        // Act - hammer from many concurrent tasks
+        var tasks = Enumerable.Range(0, 200)
+            .Select(_ => Task.Run(async () =>
+            {
+                for (int i = 0; i < 50; i++)
+                {
+                    await interceptor.OnCommandExecutingAsync(context, CancellationToken.None);
+                }
+            }));
+        await Task.WhenAll(tasks);
+
+        // Assert - bound must hold exactly, not just approximately
+        Assert.Equal(10, interceptor.RecordCount);
+    }
+
     #endregion
 
     #region OnCommandExecutedAsync Tests
