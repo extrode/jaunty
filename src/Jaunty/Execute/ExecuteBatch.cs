@@ -68,6 +68,7 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
+            bool prepared = false;
             foreach (var parameters in parameterSets)
             {
                 if (parameters is null)
@@ -75,6 +76,15 @@ public static partial class Jaunty
 
                 command.Parameters.Clear();
                 ParameterBinder.Bind(command, parameters);
+
+                // Best-effort optimization, mirroring BulkInsertLoop: Prepare() once the first
+                // parameter set has established the command's parameter shape, so providers that
+                // cache a compiled plan for repeated CommandText don't recompile it every row.
+                if (!prepared)
+                {
+                    try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
+                    prepared = true;
+                }
 
                 totalRowsAffected += command.ExecuteNonQuery();
             }
@@ -134,6 +144,7 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
+            bool prepared = false;
             foreach (var parameters in parameterSets)
             {
                 if (parameters is null)
@@ -141,6 +152,15 @@ public static partial class Jaunty
 
                 command.Parameters.Clear();
                 ParameterBinder.Bind(command, parameters);
+
+                // Best-effort optimization, mirroring BulkInsertLoop: Prepare() once the first
+                // parameter set has established the command's parameter shape, so providers that
+                // cache a compiled plan for repeated CommandText don't recompile it every row.
+                if (!prepared)
+                {
+                    try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
+                    prepared = true;
+                }
 
                 totalRowsAffected += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
             }
