@@ -19,6 +19,12 @@ internal static class BulkCopyDialectFactory
         _enabled = true;
     }
 
+    // _enabled is a one-way switch in production (UseNativeBulkCopy() calls Enable() once at
+    // startup and it's never meant to turn back off). This reset exists solely so tests that
+    // call Enable() don't leave process-wide state on for every other test that resolves a
+    // dialect afterward - see BulkCopyDialectFactoryTests.
+    internal static void ResetForTests() => _enabled = false;
+
     /// <summary>
     /// Gets a dialect with bulk copy support if enabled.
     /// </summary>

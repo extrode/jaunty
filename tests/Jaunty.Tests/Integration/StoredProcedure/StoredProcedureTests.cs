@@ -47,6 +47,18 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
             ? new { p_ProductId = id }
             : new { ProductId = id };
 
+    private static SpParameters CategorySpParam(DialectInfo dialect, int id) =>
+        new SpParameters().AddInput(
+            dialect.Provider == DialectProvider.Postgres ? "p_category_id" :
+            dialect.Provider == DialectProvider.MariaDb ? "p_CategoryId" : "CategoryId",
+            id);
+
+    private static SpParameters ProductSpParam(DialectInfo dialect, int id) =>
+        new SpParameters().AddInput(
+            dialect.Provider == DialectProvider.Postgres ? "p_product_id" :
+            dialect.Provider == DialectProvider.MariaDb ? "p_ProductId" : "ProductId",
+            id);
+
     /// <summary>
     /// Creates parameters for UpdateProductPrice. PostgreSQL/MariaDB use p_ prefix with different casing.
     /// </summary>
@@ -241,6 +253,57 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
         {
             transaction.Rollback();
         }
+    }
+
+    #endregion
+
+    #region SpParameters (List/First/FirstOrDefault)
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void ExecuteStoredProcedure_SpParametersOverload_ReturnsFilteredResults(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var products = connection.ExecuteStoredProcedure<Product>(
+            SpName("GetProductsByCategory", dialect),
+            CategorySpParam(dialect, 1));
+
+        Assert.NotEmpty(products);
+        Assert.All(products, p => Assert.Equal((short)1, p.CategoryId));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void ExecuteStoredProcedureFirst_SpParametersOverload_ReturnsFirst(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var product = connection.ExecuteStoredProcedureFirst<Product>(
+            SpName("GetProductById", dialect),
+            ProductSpParam(dialect, 1));
+
+        Assert.NotNull(product);
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void ExecuteStoredProcedureFirstOrDefault_SpParametersOverload_NoResults_ReturnsNull(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var product = connection.ExecuteStoredProcedureFirstOrDefault<Product>(
+            SpName("GetProductById", dialect),
+            ProductSpParam(dialect, -1));
+
+        Assert.Null(product);
     }
 
     #endregion
