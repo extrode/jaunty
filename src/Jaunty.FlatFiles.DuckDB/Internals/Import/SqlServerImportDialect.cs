@@ -83,7 +83,7 @@ internal sealed class SqlServerImportDialect : IImportDialect
         string keyColumnName)
     {
         var sb = new StringBuilder();
-        sb.Append($"MERGE {QuoteIdentifier(tableName)} AS target USING (SELECT ");
+        sb.Append($"MERGE {QuoteIdentifier(tableName)} WITH (HOLDLOCK) AS target USING (SELECT ");
 
         for (int i = 0; i < parameterNames.Count; i++)
         {
