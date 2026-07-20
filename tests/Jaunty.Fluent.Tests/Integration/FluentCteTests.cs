@@ -195,6 +195,37 @@ public class FluentCteTests : IClassFixture<FluentDatabaseFixture>
             Assert.True((p.CategoryId == 1 || p.CategoryId == 2) && p.UnitPrice > 10));
     }
 
+    [Fact]
+    public void Cte_SameColumnFilteredInsideAndOutside_DoesNotCollideParameterNames()
+    {
+        // Regression test (round 10): the inner .As(q => q.Where(...)) query and the CTE's
+        // own outer .Where()/.And() both filter UnitPrice, so both independently generate a
+        // "first use" parameter named "@unit_price" for the column. Before the fix, CteBuilder
+        // copied the inner query's parameters into its own ParameterCollection without
+        // reserving that name, so the outer WhereExpressionVisitor (seeded with an empty
+        // count dictionary) regenerated the same name and threw
+        // ArgumentException: "A parameter named '@unit_price' has already been added."
+        var products = _fixture.Connection.Cte<Product>("SameColumnFilter")
+            .As(q => q.Where(p => p.UnitPrice > 0))
+            .Where(p => p.CategoryId == 1)
+            .And(p => p.UnitPrice > 10)
+            .Select();
+
+        Assert.All(products, p => Assert.True(p.CategoryId == 1 && p.UnitPrice > 10));
+    }
+
+    [Fact]
+    public void Cte_AsIWhereClause_SameColumnFilteredInsideAndOutside_DoesNotCollideParameterNames()
+    {
+        // Same collision as above, but through the As(IWhereClause<T>) overload.
+        var products = _fixture.Connection.Cte<Product>("SameColumnFilterIWhere")
+            .As(_fixture.Connection.From<Product>().Where(p => p.UnitPrice > 0))
+            .Where(p => p.UnitPrice > 10)
+            .Select();
+
+        Assert.All(products, p => Assert.True(p.UnitPrice > 10));
+    }
+
     #endregion
 
     #region CTE with SelectFirst/SelectFirstOrDefault
