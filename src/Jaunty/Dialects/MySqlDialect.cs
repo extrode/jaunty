@@ -187,6 +187,18 @@ internal sealed class MySqlDialect : ISqlDialect
 
         sb.Append(") ON DUPLICATE KEY UPDATE ");
 
+        if (updateColumns.Length == 0)
+        {
+            // MySQL's ON DUPLICATE KEY UPDATE clause requires at least one assignment; unlike
+            // Postgres/SQLite's DO NOTHING, there is no no-op syntax here. A key-only entity (no
+            // non-key updatable columns) has nothing meaningful to set, so self-assign the first
+            // key column as a harmless no-op that still satisfies the grammar.
+            sb.Append(keyColumns[0]);
+            sb.Append(" = ");
+            sb.Append(keyColumns[0]);
+            return sb.ToString();
+        }
+
         for (int i = 0; i < updateColumns.Length; i++)
         {
             if (i > 0) sb.Append(", ");
