@@ -62,6 +62,25 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return BuildSelectSql(selector);
     }
 
+    /// <summary>
+    /// Folds WHERE conditions left-to-right, wrapping each step in parentheses so the
+    /// generated SQL evaluates in the same order the fluent Where/And/Or chain was built,
+    /// instead of relying on SQL's AND-before-OR operator precedence.
+    /// </summary>
+    private static string BuildWhereExpression(List<WhereCondition> conditions)
+    {
+        var expr = conditions[0].Sql;
+
+        for (var i = 1; i < conditions.Count; i++)
+        {
+            var condition = conditions[i];
+            var op = condition.Operator == LogicalOperator.Or ? "OR" : "AND";
+            expr = $"({expr} {op} {condition.Sql})";
+        }
+
+        return expr;
+    }
+
     private string BuildSelectSql<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
     {
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
@@ -85,15 +104,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         if (_whereConditions.Count > 0)
         {
             sb.Append(" WHERE ");
-            for (int i = 0; i < _whereConditions.Count; i++)
-            {
-                WhereCondition condition = _whereConditions[i];
-                if (i > 0)
-                {
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_whereConditions));
         }
 
         // GROUP BY
