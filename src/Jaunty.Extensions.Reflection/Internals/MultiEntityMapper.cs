@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Runtime.CompilerServices;
 
 using Jaunty.Configuration;
 
@@ -18,6 +19,14 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
 {
     private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2>> Cache = new(StringComparer.OrdinalIgnoreCase);
 
+    // Per-reader-instance memoization: GetTypedMultiMapper's delegate calls Get(reader) on every
+    // row of a result set, and the same IDataReader instance is passed for every row of that
+    // set. Without this, each row paid the schema-key string allocation/join even on a cache
+    // hit; a ConditionalWeakTable keyed by the reader object gives an O(1) hit from the second
+    // row onward while still going through the schema-key Cache (and thus reusing mappers
+    // across different reader instances with the same column shape) on the first row.
+    private static readonly ConditionalWeakTable<IDataReader, MultiEntityMapper<T1, T2>> ReaderCache = new();
+
     private readonly PropertySetter<T1>[] _t1Setters;
     private readonly PropertySetter<T2>[] _t2Setters;
 
@@ -29,8 +38,11 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
 
     public static MultiEntityMapper<T1, T2> Get(IDataReader reader)
     {
-        string schemaKey = BuildSchemaKey(reader);
-        return Cache.GetOrAdd(schemaKey, _ => Create(reader));
+        return ReaderCache.GetValue(reader, r =>
+        {
+            string schemaKey = BuildSchemaKey(r);
+            return Cache.GetOrAdd(schemaKey, _ => Create(r));
+        });
     }
 
     /// <summary>Alias for Get — builds or retrieves a cached mapper for the reader schema.</summary>
