@@ -343,4 +343,117 @@ public class EntityCodeGeneratorTests
 
         Assert.Contains("using Jaunty.Attributes;", code);
     }
+
+    // ------------------------------------------------------------------
+    // String literal escaping
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void GenerateEntity_TableNameWithQuote_EscapesTableAttribute()
+    {
+        var table = new TableSchema
+        {
+            SchemaName = "dbo",
+            TableName = "weird\"table",
+            Columns =
+            [
+                new ColumnSchema { ColumnName = "id", DataType = "int", IsPrimaryKey = true, OrdinalPosition = 1 }
+            ]
+        };
+
+        var code = _generator.GenerateEntity(table, _defaultOptions);
+
+        Assert.Contains("[Table(\"weird\\\"table\", \"dbo\")]", code);
+    }
+
+    [Fact]
+    public void GenerateEntity_TableNameWithBackslash_EscapesTableAttribute()
+    {
+        var table = new TableSchema
+        {
+            SchemaName = "",
+            TableName = @"weird\table",
+            Columns =
+            [
+                new ColumnSchema { ColumnName = "id", DataType = "int", IsPrimaryKey = true, OrdinalPosition = 1 }
+            ]
+        };
+
+        var code = _generator.GenerateEntity(table, _defaultOptions);
+
+        Assert.Contains("[Table(\"weird\\\\table\")]", code);
+    }
+
+    [Fact]
+    public void GenerateEntity_ColumnNameWithQuote_EscapesColumnAttribute()
+    {
+        var table = new TableSchema
+        {
+            SchemaName = "",
+            TableName = "products",
+            Columns =
+            [
+                new ColumnSchema { ColumnName = "id", DataType = "int", IsPrimaryKey = true, OrdinalPosition = 1 },
+                new ColumnSchema { ColumnName = "weird\"column", DataType = "int", OrdinalPosition = 2 }
+            ]
+        };
+
+        var code = _generator.GenerateEntity(table, _defaultOptions);
+
+        Assert.Contains("[Column(\"weird\\\"column\")]", code);
+    }
+
+    // ------------------------------------------------------------------
+    // Member name collision handling
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void GenerateEntity_ColumnNameEqualsClassName_DisambiguatesProperty()
+    {
+        // Table "Product" with a column literally named "Product" would otherwise generate
+        // "public int Product { get; set; }" inside "class Product" - CS0542.
+        var table = new TableSchema
+        {
+            SchemaName = "",
+            TableName = "Product",
+            Columns =
+            [
+                new ColumnSchema { ColumnName = "Product", DataType = "int", IsPrimaryKey = true, OrdinalPosition = 1 },
+                new ColumnSchema { ColumnName = "Name", DataType = "nvarchar", OrdinalPosition = 2 }
+            ]
+        };
+        var options = new CodeGeneratorOptions { Namespace = "Test.Entities", Singularize = false };
+
+        var code = _generator.GenerateEntity(table, options);
+
+        Assert.Contains("public class Product", code);
+        Assert.DoesNotContain("public int Product { get; set; }", code);
+        Assert.Contains("public int Product1 { get; set; }", code);
+        Assert.Contains("[Column(\"Product\")]", code);
+    }
+
+    [Fact]
+    public void GenerateEntity_TwoColumnsNormalizeToSameName_DisambiguatesSecondProperty()
+    {
+        // "order_id" and "OrderId" both PascalCase to "OrderId".
+        var table = new TableSchema
+        {
+            SchemaName = "",
+            TableName = "orders",
+            Columns =
+            [
+                new ColumnSchema { ColumnName = "order_id", DataType = "int", IsPrimaryKey = true, OrdinalPosition = 1 },
+                new ColumnSchema { ColumnName = "OrderId", DataType = "int", OrdinalPosition = 2 }
+            ]
+        };
+        var options = new CodeGeneratorOptions { Namespace = "Test.Entities", Singularize = false };
+
+        var code = _generator.GenerateEntity(table, options);
+
+        Assert.Contains("[Column(\"order_id\")]", code);
+        Assert.Contains("public int OrderId { get; set; }", code);
+
+        Assert.Contains("[Column(\"OrderId\")]", code);
+        Assert.Contains("public int OrderId1 { get; set; }", code);
+    }
 }
