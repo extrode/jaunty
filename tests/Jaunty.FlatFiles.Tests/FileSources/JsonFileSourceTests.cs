@@ -108,4 +108,18 @@ public class JsonFileSourceTests
         var source = new JsonFileSource("t", "f.json", typeof(object));
         Assert.Null(source.GenerateCopyToOptions());
     }
+
+    [Fact]
+    public void IsPromotedToTable_CanBeSet()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object)) { IsPromotedToTable = true };
+        Assert.True(source.IsPromotedToTable);
+    }
+
+    [Fact]
+    public void IsPreloaded_CanBeSet()
+    {
+        var source = new JsonFileSource("t", "f.json", typeof(object)) { IsPreloaded = true };
+        Assert.True(source.IsPreloaded);
+    }
 }

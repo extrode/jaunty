@@ -22,6 +22,12 @@ public class TableNameResolverTests
         public int Id { get; set; }
     }
 
+    [System.ComponentModel.DataAnnotations.Schema.Table("da_products")]
+    public class EntityWithDataAnnotationsTableAttribute
+    {
+        public int Id { get; set; }
+    }
+
     [Fact]
     public void Resolve_WithTableAttribute_ReturnsAttributeName()
     {
@@ -49,5 +55,12 @@ public class TableNameResolverTests
     {
         var name = TableNameResolver.Resolve(typeof(EntityWithTableAttribute));
         Assert.Equal("custom_name", name);
+    }
+
+    [Fact]
+    public void Resolve_WithDataAnnotationsTableAttribute_ReturnsAttributeName()
+    {
+        var name = TableNameResolver.Resolve<EntityWithDataAnnotationsTableAttribute>();
+        Assert.Equal("da_products", name);
     }
 }
