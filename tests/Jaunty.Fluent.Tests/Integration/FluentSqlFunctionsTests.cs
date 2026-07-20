@@ -121,6 +121,25 @@ public class FluentSqlFunctionsTests : IClassFixture<FluentDatabaseFixture>
 
         Assert.Contains("NULLIF", sql);
         Assert.Contains("units_in_stock", sql);
+
+        // A comparison against a null literal must translate to IS NOT NULL, not "<> NULL": SQL's
+        // three-valued logic means "<> NULL"/"= NULL" is always UNKNOWN, never matching, even for
+        // non-null values on the other side.
+        Assert.Contains("IS NOT NULL", sql);
+        Assert.DoesNotContain("<> NULL", sql);
+        Assert.DoesNotContain("!= NULL", sql);
+    }
+
+    [Fact]
+    public void NullIf_ToSql_EqualsNull_GeneratesIsNull()
+    {
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => Sql.NullIf(p.UnitsInStock, (short?)0) == null)
+            .ToSql();
+
+        Assert.Contains("NULLIF", sql);
+        Assert.Contains("IS NULL", sql);
+        Assert.DoesNotContain("= NULL", sql);
     }
 
     [Fact]
@@ -133,6 +152,7 @@ public class FluentSqlFunctionsTests : IClassFixture<FluentDatabaseFixture>
             .Select();
 
         // Products where UnitsInStock is not 0 and not null
+        Assert.NotEmpty(products);
         Assert.All(products, p =>
             Assert.True(p.UnitsInStock != null && p.UnitsInStock != 0));
     }

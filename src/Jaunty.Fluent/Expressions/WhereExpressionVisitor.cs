@@ -68,6 +68,29 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
 
         if (columnName is null)
         {
+            // Neither side is a plain column (e.g. a Sql.* function call on one side, such as
+            // Sql.NullIf(...) != null). SQL's three-valued logic means "expr <> NULL"/"expr = NULL"
+            // never matches (always UNKNOWN) even when expr is non-null, so a comparison against a
+            // literal null must still become IS NULL/IS NOT NULL rather than a naive operator.
+            if (node.NodeType is ExpressionType.Equal or ExpressionType.NotEqual)
+            {
+                if (IsNullConstant(node.Right))
+                {
+                    Visit(node.Left);
+                    _sql.Append(node.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
+                    _sql.Append(')');
+                    return node;
+                }
+
+                if (IsNullConstant(node.Left))
+                {
+                    Visit(node.Right);
+                    _sql.Append(node.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
+                    _sql.Append(')');
+                    return node;
+                }
+            }
+
             // Both sides are values or neither is a column - fall back to evaluating
             Visit(node.Left);
             _sql.Append(GetOperator(node.NodeType));
@@ -608,6 +631,14 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         }
 
         return (null, null, false);
+    }
+
+    private static bool IsNullConstant(Expression expression)
+    {
+        if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            expression = unary.Operand;
+
+        return expression is ConstantExpression { Value: null };
     }
 
     private bool TryGetColumnName(Expression expression, out string? columnName)
