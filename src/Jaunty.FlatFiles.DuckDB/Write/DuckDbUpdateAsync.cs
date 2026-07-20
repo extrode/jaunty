@@ -38,7 +38,7 @@ public sealed partial class DuckDb
         var allParams = new List<DuckDBParameter>(whereParams.Count + 1) { setParam };
         allParams.AddRange(whereParams);
 
-        var sql = $"UPDATE \"{source.TableName}\" SET \"{columnName}\" = $1 WHERE {whereSql}";
+        var sql = $"UPDATE {_dialect.EscapeTableName(null, source.TableName)} SET {_dialect.EscapeColumnName(columnName)} = $1 WHERE {whereSql}";
         var result = await NonQueryExecutor.ExecuteAsync(_connection, sql, allParams, options, cancellationToken).ConfigureAwait(false);
 
         if (result > 0) _modified.TryAdd(typeof(T), true);
