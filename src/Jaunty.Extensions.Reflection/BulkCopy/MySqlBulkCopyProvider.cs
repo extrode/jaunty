@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Jaunty;
 using Jaunty.Configuration;
 
 namespace Jaunty.Extensions.Reflection.BulkCopy;
@@ -116,7 +117,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
     public async ValueTask<int> CopyToServerAsync(DbConnection connection, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
-        DbTransaction? transaction = options.Transaction as DbTransaction;
+        DbTransaction? transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
         bool ownTransaction = options.Transaction is null;
 
         try
