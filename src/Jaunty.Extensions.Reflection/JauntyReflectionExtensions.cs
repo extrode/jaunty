@@ -235,14 +235,7 @@ public static class JauntyReflectionExtensions
         // Check if there's a registered type handler
         if (TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(valueType, out ITypeHandler? handler) && handler is not null)
         {
-            try
-            {
-                return handler.ToDbValue(value);
-            }
-            catch
-            {
-                // Fall through to enum handling
-            }
+            return handler.ToDbValue(value);
         }
 
         // Handle enums based on storage strategy
@@ -278,7 +271,8 @@ public static class JauntyReflectionExtensions
     {
         return (cmd, entityObj) =>
         {
-            if (entityObj is not T entity) return;
+            if (entityObj is not T entity)
+                throw new InvalidOperationException($"Expected an instance of '{typeof(T).Name}' but received '{entityObj?.GetType().Name ?? "null"}'.");
             EntityMetadata meta = MetadataCache<T>.Metadata;
 
             foreach (ColumnMetadata col in meta.InsertColumns)
@@ -297,7 +291,8 @@ public static class JauntyReflectionExtensions
     {
         return (cmd, entityObj) =>
         {
-            if (entityObj is not T entity) return;
+            if (entityObj is not T entity)
+                throw new InvalidOperationException($"Expected an instance of '{typeof(T).Name}' but received '{entityObj?.GetType().Name ?? "null"}'.");
             EntityMetadata meta = MetadataCache<T>.Metadata;
 
             foreach (ColumnMetadata col in meta.UpdateColumns)
@@ -324,7 +319,8 @@ public static class JauntyReflectionExtensions
     {
         return (cmd, entityObj) =>
         {
-            if (entityObj is not T entity) return;
+            if (entityObj is not T entity)
+                throw new InvalidOperationException($"Expected an instance of '{typeof(T).Name}' but received '{entityObj?.GetType().Name ?? "null"}'.");
             EntityMetadata meta = MetadataCache<T>.Metadata;
 
             foreach (ColumnMetadata col in meta.DeleteColumns)
@@ -343,7 +339,8 @@ public static class JauntyReflectionExtensions
     {
         return (t1, t2, record) =>
         {
-            if (record is not IDataReader reader) return;
+            if (record is not IDataReader reader)
+                throw new InvalidOperationException($"Multi-entity mapping requires an '{nameof(IDataReader)}', but received '{record?.GetType().Name ?? "null"}'.");
             MultiEntityMapper<T1, T2> mapper = MultiEntityMapper<T1, T2>.Get(reader);
             mapper.Map(t1, t2, record);
         };

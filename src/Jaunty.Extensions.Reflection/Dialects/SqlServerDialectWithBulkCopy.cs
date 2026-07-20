@@ -10,7 +10,12 @@ namespace Jaunty.Extensions.Reflection.Dialects;
 /// </summary>
 internal sealed class SqlServerDialectWithBulkCopy : ISqlDialect
 {
-    private readonly SqlServerDialect _inner = new();
+    private readonly SqlServerDialect _inner;
+
+    public SqlServerDialectWithBulkCopy(SqlServerDialect? inner = null)
+    {
+        _inner = inner ?? new SqlServerDialect();
+    }
 
     public bool SupportsNativeBulkCopy => true;
 

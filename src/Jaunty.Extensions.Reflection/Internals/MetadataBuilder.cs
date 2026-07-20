@@ -44,7 +44,7 @@ internal static class MetadataBuilder
         TableAttribute? tableAttr = type.GetCustomAttribute<TableAttribute>();
         if (tableAttr is not null)
         {
-            tableName = tableAttr.Name;
+            if (!string.IsNullOrEmpty(tableAttr.Name)) tableName = tableAttr.Name;
             if (tableAttr.Schema is not null) schemaName = tableAttr.Schema;
         }
         else

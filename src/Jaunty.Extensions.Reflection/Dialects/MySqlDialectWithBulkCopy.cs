@@ -10,7 +10,12 @@ namespace Jaunty.Extensions.Reflection.Dialects;
 /// </summary>
 internal sealed class MySqlDialectWithBulkCopy : ISqlDialect
 {
-    private readonly MySqlDialect _inner = new();
+    private readonly MySqlDialect _inner;
+
+    public MySqlDialectWithBulkCopy(MySqlDialect? inner = null)
+    {
+        _inner = inner ?? new MySqlDialect();
+    }
 
     public bool SupportsNativeBulkCopy => true;
 
