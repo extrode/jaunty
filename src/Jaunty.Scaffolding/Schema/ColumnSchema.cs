@@ -59,4 +59,11 @@ public sealed class ColumnSchema
     /// The ordinal position of the column in the table (1-based).
     /// </summary>
     public int OrdinalPosition { get; init; }
+
+    /// <summary>
+    /// The full raw database-reported column type, including type modifiers/display width
+    /// where the provider exposes them (e.g. MySQL's COLUMN_TYPE "tinyint(1)", "bit(1)").
+    /// Null when the schema reader doesn't provide this level of detail.
+    /// </summary>
+    public string? ColumnType { get; init; }
 }

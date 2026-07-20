@@ -117,6 +117,16 @@ public class PostgreSqlTypeMapperTests
         Assert.False(result.IsValueType);
     }
 
+    [Fact]
+    public void MapToCSharpType_Bpchar_ReturnsString()
+    {
+        // The schema reader supplies udt_name, not information_schema.data_type - "bpchar" is
+        // the real wire value for fixed-length CHAR(n)/CHARACTER(n) columns.
+        var result = _mapper.MapToCSharpType(CreateColumn("bpchar"));
+        Assert.Equal("string", result.TypeName);
+        Assert.False(result.IsValueType);
+    }
+
     // ------------------------------------------------------------------
     // Date/Time types
     // ------------------------------------------------------------------
