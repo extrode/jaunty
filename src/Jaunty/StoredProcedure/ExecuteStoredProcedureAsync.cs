@@ -391,10 +391,12 @@ public static partial class Jaunty
 
             ReadOutputParameters(parameters);
 
+            // Matches QueryScalarCoreAsync's null-handling (src/Jaunty/Internals/Read/QueryCoreAsync.cs)
+            // so the SpParameters and object-parameters overloads of ExecuteStoredProcedureScalarAsync<T>
+            // behave identically for a NULL/no-row scalar result instead of one throwing and the
+            // other silently returning default(T).
             return result is null || result == DBNull.Value
-                ? default(T) is null
-                    ? default!
-                    : throw new InvalidOperationException("Scalar result is null but expected a non-nullable value.")
+                ? default!
                 : ScalarConverter<T>.Convert(result);
         }
         finally
