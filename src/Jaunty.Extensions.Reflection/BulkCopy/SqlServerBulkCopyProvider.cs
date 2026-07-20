@@ -21,6 +21,9 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static readonly Type? SqlBulkCopyOptionsType = Type.GetType("Microsoft.Data.SqlClient.SqlBulkCopyOptions, Microsoft.Data.SqlClient")
         ?? Type.GetType("System.Data.SqlClient.SqlBulkCopyOptions, System.Data");
 
+    private static readonly Type? SqlConnectionType = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient")
+        ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data");
+
     private static readonly PropertyInfo? BatchSizeProperty = SqlBulkCopyType?.GetProperty("BatchSize");
     private static readonly PropertyInfo? BulkCopyTimeoutProperty = SqlBulkCopyType?.GetProperty("BulkCopyTimeout");
     private static readonly PropertyInfo? DestinationTableNameProperty = SqlBulkCopyType?.GetProperty("DestinationTableName");
@@ -38,8 +41,10 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
 
-        DbConnection sqlConnection = connection as DbConnection
-            ?? throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
+        if (SqlConnectionType == null || !SqlConnectionType.IsInstanceOfType(connection))
+            throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
+
+        DbConnection sqlConnection = (DbConnection)connection;
 
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
         object? bulkCopyOptions = MapBulkCopyOptions(options);
@@ -68,6 +73,9 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     {
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
+
+        if (SqlConnectionType == null || !SqlConnectionType.IsInstanceOfType(connection))
+            throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
 
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
         object? bulkCopyOptions = MapBulkCopyOptions(options);
