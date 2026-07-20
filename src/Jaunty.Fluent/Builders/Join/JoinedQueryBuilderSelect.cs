@@ -69,6 +69,20 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
+    public TFrom SelectSingle()
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+        return _connection.QueryPartialSingle<TFrom>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public TFrom? SelectSingleOrDefault()
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+        return _connection.QueryPartialSingleOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
+    }
+
     public T SelectFirst<T>() where T : new()
     {
         if (typeof(T) == typeof(TFrom))
