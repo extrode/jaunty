@@ -41,7 +41,7 @@ internal static class ImportExecutor
         }
 
         // Validate schema alignment — check that the target table exists and has compatible columns
-        ValidateTargetSchema(targetConnection, tableName, mappings, options.CreateTableIfMissing);
+        await ValidateTargetSchemaAsync(targetConnection, tableName, mappings, options.CreateTableIfMissing, cancellationToken).ConfigureAwait(false);
 
         // Read all rows from DuckDB source
         DbCommand sourceCmd = (sourceConnection as DbConnection)!.CreateCommand();
@@ -221,7 +221,7 @@ internal static class ImportExecutor
         }
     }
 
-    private static void ValidateTargetSchema(DbConnection targetConnection, string tableName, IReadOnlyDictionary<string, ColumnMapping> mappings, bool createTableIfMissing)
+    private static async ValueTask ValidateTargetSchemaAsync(DbConnection targetConnection, string tableName, IReadOnlyDictionary<string, ColumnMapping> mappings, bool createTableIfMissing, CancellationToken cancellationToken)
     {
         // Check if the table exists in the target by querying it with a WHERE 0=1 (no rows).
         // Different database providers throw different exception types for "table not found":
@@ -232,9 +232,11 @@ internal static class ImportExecutor
         // "table not found" errors specifically, while letting non-database errors propagate.
         try
         {
-            using DbCommand cmd = targetConnection.CreateCommand();
-            cmd.CommandText = $"SELECT * FROM \"{tableName}\" WHERE 0=1";
-            using DbDataReader reader = cmd.ExecuteReader();
+            DbCommand cmd = targetConnection.CreateCommand();
+            await using var cmdDisposer = cmd.ConfigureAwait(false);
+            cmd.CommandText = $"SELECT * FROM \"{tableName.Replace("\"", "\"\"")}\" WHERE 0=1";
+            DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
 
             // Table exists — validate columns
             var targetColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
