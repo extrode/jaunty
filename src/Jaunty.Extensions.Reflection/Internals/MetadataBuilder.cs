@@ -172,17 +172,14 @@ internal static class MetadataBuilder
     /// </summary>
     private static object? GetNamedArgument(CustomAttributeData attributeData, string argumentName)
     {
-        var namedArg = new CustomAttributeNamedArgument();
-
         foreach (CustomAttributeNamedArgument Arg in attributeData.NamedArguments)
         {
             if (Arg.MemberName == argumentName)
             {
-                namedArg = Arg;
-                break;
+                return Arg.TypedValue.Value;
             }
         }
 
-        return namedArg.TypedValue.Value;
+        return null;
     }
 }
