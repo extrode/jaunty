@@ -10,7 +10,12 @@ namespace Jaunty.Extensions.Reflection.Dialects;
 /// </summary>
 internal sealed class PostgreSqlDialectWithBulkCopy : ISqlDialect
 {
-    private readonly PostgreSqlDialect _inner = new();
+    private readonly PostgreSqlDialect _inner;
+
+    public PostgreSqlDialectWithBulkCopy(PostgreSqlDialect? inner = null)
+    {
+        _inner = inner ?? new PostgreSqlDialect();
+    }
 
     public bool SupportsNativeBulkCopy => true;
 
