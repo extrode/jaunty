@@ -36,7 +36,7 @@ internal sealed class ScaffoldCommand : Command
         // Table filtering
         var tablesOption = new Option<string[]>("--tables")
         {
-            Description = "Only scaffold these tables (comma-separated)",
+            Description = "Only scaffold these tables (space-separated)",
             AllowMultipleArgumentsPerToken = true
         };
 
