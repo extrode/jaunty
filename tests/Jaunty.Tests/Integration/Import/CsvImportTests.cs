@@ -636,6 +636,66 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         }
     }
 
+    // AUD-R12: CsvImportOptions.Quote had no validation equivalent to ValidateDelimiter. A
+    // caller-supplied Quote = '\\' reached ImportMySql/ImportSqlServer/BuildPostgresCopyExtraOptions
+    // as an unescaped single-quoted SQL string literal char; under MySQL's default sql_mode, the
+    // backslash escapes the literal's closing quote instead of terminating it, breaking the
+    // generated statement. ValidateQuote runs before any dialect dispatch, so an unopened
+    // connection is enough to reach it.
+    [Fact]
+    public void ImportCsv_BackslashQuote_ThrowsArgumentException()
+    {
+        var csvPath = ResolveCsvPath();
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        var options = new CsvImportOptions { Quote = '\\' };
+
+        Assert.Throws<ArgumentException>(() => connection.ImportCsv(TableName, csvPath, options));
+    }
+
+    [Fact]
+    public async Task ImportCsvAsync_BackslashQuote_ThrowsArgumentException()
+    {
+        var csvPath = ResolveCsvPath();
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        var options = new CsvImportOptions { Quote = '\\' };
+
+        await Assert.ThrowsAsync<ArgumentException>(() => connection.ImportCsvAsync(TableName, csvPath, options).AsTask());
+    }
+
+    // AUD-R12: ImportViaPreparedStatements (the fallback path for in-memory SQLite connections)
+    // read the CSV with StreamReader.ReadLine() and parsed each physical line independently, so a
+    // quoted field containing an embedded newline was silently split across two "rows" instead of
+    // being read as one field, corrupting the imported data without any error or warning.
+    [Fact]
+    public void ImportCsv_QuotedFieldWithEmbeddedNewline_ImportsAsSingleRow()
+    {
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        connection.Open();
+        CreateTable(connection, DialectProvider.SystemSqlite);
+
+        var csv =
+            "Name,Age,City,Email\n" +
+            "\"Alice\nSmith\",30,NYC,alice@example.com\n" +
+            "Bob,25,LA,bob@example.com\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            long rows = connection.ImportCsv(TableName, path);
+
+            // Without the fix, the embedded newline splits Alice's row into two: 3 rows instead of 2.
+            Assert.Equal(2L, rows);
+            Assert.Equal(2L, GetRowCount(connection, DialectProvider.SystemSqlite));
+
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT Name FROM csv_import_test WHERE City = 'NYC'";
+            Assert.Equal("Alice\nSmith", cmd.ExecuteScalar());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public void ImportCsv_NoHeader_TreatsFirstRowAsDataNotHeaders()
     {
