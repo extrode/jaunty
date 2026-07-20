@@ -33,9 +33,13 @@ public sealed partial class DuckDb
         using DuckDBCommand cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
 
-        foreach ((string _, object? value) in parameters)
+        foreach ((string name, object? value) in parameters)
         {
             DbParameter param = cmd.CreateParameter();
+            // Callers may pass either the bare name ("region", matching a "$region" placeholder)
+            // or the placeholder text itself including its "$" prefix ("$1", matching "$1") - strip
+            // a leading "$" so both forms bind to the DuckDB ADO.NET parameter name, which excludes it.
+            param.ParameterName = name.Length > 0 && name[0] == '$' ? name[1..] : name;
             param.Value = value ?? DBNull.Value;
             cmd.Parameters.Add(param);
         }

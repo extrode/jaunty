@@ -348,6 +348,49 @@ public class ImportPipelineTests : IDisposable
         Assert.Equal(5, lastReported);
     }
 
+    [Fact]
+    public async Task ImportIntoAsync_LargeSource_ImportsAllRowsAcrossMultipleBatches()
+    {
+        // Regression test for AUD-R9: ImportBatchesAsync previously executed one
+        // ExecuteNonQueryAsync round-trip per row regardless of BatchSize. This forces several
+        // batch boundaries (small batchSize, many rows) through the real import pipeline —
+        // including the DbBatch grouping path, since Microsoft.Data.Sqlite supports DbBatch — and
+        // asserts every row still lands in the target with correct data.
+        const int rowCount = 2500;
+        var newItems = new InventoryItem[rowCount];
+        for (int i = 0; i < rowCount; i++)
+        {
+            newItems[i] = new InventoryItem
+            {
+                ItemId = 10_000 + i,
+                ItemName = $"BulkImportItem{i}",
+                Category = "BulkImport",
+                StockQuantity = i,
+                UnitPrice = 2.50m,
+                InStock = i % 2 == 0
+            };
+        }
+        _db.Insert(newItems);
+
+        using var sqlite = CreateSqliteConnection();
+        CreateInventoryTable(sqlite);
+
+        var progressCallCount = 0;
+        var count = await _db.ImportIntoAsync<InventoryItem>(sqlite, new ImportOptions(batchSize: 100, onProgress: (_, _) =>
+        {
+            progressCallCount++;
+        }));
+
+        Assert.Equal(rowCount + 5, count); // 5 original fixture rows + the bulk-inserted rows
+        Assert.Equal(rowCount + 5, CountRows(sqlite, "inventory"));
+        Assert.True(progressCallCount >= rowCount / 100,
+            $"Expected at least {rowCount / 100} progress calls for batchSize 100, got {progressCallCount}");
+
+        using var verifyCmd = sqlite.CreateCommand();
+        verifyCmd.CommandText = "SELECT \"ItemName\" FROM \"inventory\" WHERE \"ItemId\" = 12499";
+        Assert.Equal("BulkImportItem2499", verifyCmd.ExecuteScalar());
+    }
+
     // ==========================================
     // T069 / T075 — Progress reporting
     // ==========================================

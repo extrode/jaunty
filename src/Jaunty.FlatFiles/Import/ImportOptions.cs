@@ -7,10 +7,19 @@ namespace Jaunty.FlatFiles.Import;
 /// </summary>
 public readonly struct ImportOptions
 {
+    // Backing field is nullable so that default(ImportOptions) — which bypasses the constructor
+    // and zero-initializes all value-type fields — can still be distinguished from an explicit
+    // batchSize: 0. BatchSize below falls back to 1000 only when this is null (unset).
+    private readonly int? _batchSize;
+
     /// <summary>
-    /// Gets or sets the number of rows per batch during import. Default: 1000.
+    /// Gets the number of rows per batch during import. Default: 1000.
     /// </summary>
-    public readonly int BatchSize;
+    /// <remarks>
+    /// Falls back to 1000 even for <c>default(ImportOptions)</c>, since a struct's parameterless
+    /// default-initialization bypasses the constructor and zero-initializes value-type fields.
+    /// </remarks>
+    public int BatchSize => _batchSize ?? 1000;
 
     /// <summary>
     /// Gets or sets how primary key conflicts are handled. Default: <see cref="ConflictStrategy.Error"/>.
@@ -47,7 +56,7 @@ public readonly struct ImportOptions
     /// <param name="dialect">An optional custom import dialect for database-specific SQL generation.</param>
     public ImportOptions(int batchSize = 1000, ConflictStrategy onConflict = ConflictStrategy.Error, bool createTableIfMissing = false, Action<long, long?>? onProgress = null, IImportDialect? dialect = null)
     {
-        BatchSize = batchSize;
+        _batchSize = batchSize;
         OnConflict = onConflict;
         CreateTableIfMissing = createTableIfMissing;
         OnProgress = onProgress;

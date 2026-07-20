@@ -22,19 +22,36 @@ internal static class TargetDdlGenerator
     }
 
     /// <summary>
-    /// Gets the key column name(s) for the entity type.
+    /// Gets the key column name for the entity type.
     /// </summary>
+    /// <exception cref="NotSupportedException">
+    /// Thrown when the entity type has more than one <c>[Key]</c> property. Composite keys are not
+    /// currently supported for import conflict resolution (ON CONFLICT / MERGE) or PRIMARY KEY DDL
+    /// generation; silently using only the first key column would produce incorrect upsert matching.
+    /// </exception>
     public static string? GetKeyColumnName(Type entityType)
     {
+        PropertyInfo? keyProperty = null;
+        string? keyColumnName = null;
+
         foreach (PropertyInfo prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            if (prop.GetCustomAttribute<KeyAttribute>() is not null)
+            if (prop.GetCustomAttribute<KeyAttribute>() is null) continue;
+
+            if (keyProperty is not null)
             {
-                ColumnAttribute? colAttr = prop.GetCustomAttribute<ColumnAttribute>();
-                return colAttr?.Name ?? prop.Name;
+                throw new NotSupportedException(
+                    $"Entity type '{entityType.Name}' has more than one [Key] property " +
+                    $"('{keyProperty.Name}' and '{prop.Name}'). Composite keys are not currently " +
+                    "supported for import conflict resolution or PRIMARY KEY DDL generation.");
             }
+
+            keyProperty = prop;
+            ColumnAttribute? colAttr = prop.GetCustomAttribute<ColumnAttribute>();
+            keyColumnName = colAttr?.Name ?? prop.Name;
         }
-        return null;
+
+        return keyColumnName;
     }
 
     internal static List<(string Name, Type ClrType, bool IsPrimaryKey, bool IsNullable)> GetColumnDefinitions(Type entityType)
@@ -64,9 +81,15 @@ internal static class TargetDdlGenerator
         return result;
     }
 
+    // NullabilityInfoContext caches per-module/per-type nullability metadata internally, so
+    // allocating one per property is wasteful. It is not documented as thread-safe, so each
+    // thread gets its own cached instance instead of sharing one across threads.
+    [ThreadStatic]
+    private static NullabilityInfoContext? t_nullabilityContext;
+
     private static bool IsNullableReferenceType(PropertyInfo prop)
     {
-        var context = new NullabilityInfoContext();
+        NullabilityInfoContext context = t_nullabilityContext ??= new NullabilityInfoContext();
         NullabilityInfo nullabilityInfo = context.Create(prop);
         return nullabilityInfo.WriteState == NullabilityState.Nullable;
     }

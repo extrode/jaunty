@@ -71,22 +71,31 @@ public sealed partial class DuckDb
     private async ValueTask<GridReader> ExecuteQueryMultipleAsync(string sql, object? parameters, CancellationToken cancellationToken)
     {
         DuckDBCommand cmd = _connection.CreateCommand();
-        cmd.CommandText = sql;
-
-        if (parameters != null)
+        try
         {
-            // DuckDB uses positional parameters ($1, $2, ...)
-            // For simplicity, we'll use named parameters and let DuckDB handle the binding
-            foreach (PropertyInfo prop in parameters.GetType().GetProperties())
-            {
-                DbParameter param = cmd.CreateParameter();
-                param.ParameterName = prop.Name;
-                param.Value = prop.GetValue(parameters) ?? DBNull.Value;
-                cmd.Parameters.Add(param);
-            }
-        }
+            cmd.CommandText = sql;
 
-        DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        return new GridReader(reader, _connection, false);
+            if (parameters != null)
+            {
+                // DuckDB uses positional parameters ($1, $2, ...)
+                // For simplicity, we'll use named parameters and let DuckDB handle the binding
+                foreach (PropertyInfo prop in GetCachedParameterProperties(parameters.GetType()))
+                {
+                    DbParameter param = cmd.CreateParameter();
+                    param.ParameterName = prop.Name;
+                    param.Value = prop.GetValue(parameters) ?? DBNull.Value;
+                    cmd.Parameters.Add(param);
+                }
+            }
+
+            DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            // The GridReader takes ownership of cmd from here on and disposes it alongside the reader.
+            return new GridReader(reader, _connection, false, cmd);
+        }
+        catch
+        {
+            await cmd.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
     }
 }
