@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -49,11 +48,10 @@ internal static class MetadataCache<T>
             ColumnMetadata column = columns[i];
             PropertyInfo property = column.Property!;
             Action<T, IDataRecord, int> setter = CreateSetter(property);
-            Action<T, DbDataReader, int> fastSetter = CreateFastSetter(property);
             Func<T, object?> getter = CreateGetter(property);
             bool isNonNullable = IsNonNullableType(property.PropertyType);
 
-            contexts.Add(new PropertyContext<T>(property, setter, fastSetter, getter, column.PropertyName, column.ColumnName, isNonNullable));
+            contexts.Add(new PropertyContext<T>(property, setter, getter, column.PropertyName, column.ColumnName, isNonNullable));
 
             nameToIndex[column.ColumnName] = i;
 
@@ -212,10 +210,10 @@ internal static class MetadataCache<T>
                             property.SetValue(target, convertedValue);
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // If handler fails, try default conversion or leave property unset
-                        property.SetValue(target, dbValue);
+                        throw new InvalidOperationException(
+                            $"Type handler '{handler.GetType().Name}' failed to parse value for property '{property.Name}' on type '{typeof(T).Name}'.", ex);
                     }
                 }
 
@@ -262,9 +260,10 @@ internal static class MetadataCache<T>
                                 var numValue = Convert.ChangeType(dbValue, Enum.GetUnderlyingType(underlyingType));
                                 convertedValue = Enum.ToObject(underlyingType, numValue);
                             }
-                            catch
+                            catch (Exception ex)
                             {
-                                convertedValue = Activator.CreateInstance(underlyingType);
+                                throw new InvalidOperationException(
+                                    $"Cannot convert value '{strValue}' to enum type '{underlyingType.Name}' for property '{property.Name}' on type '{typeof(T).Name}'.", ex);
                             }
                         }
                     }
@@ -293,12 +292,6 @@ internal static class MetadataCache<T>
 
         BinaryExpression assign = Expression.Assign(Expression.Property(target, property), valueExpression);
         return Expression.Lambda<Action<T, IDataRecord, int>>(assign, target, record, index).Compile();
-    }
-
-    private static Action<T, DbDataReader, int> CreateFastSetter(PropertyInfo property)
-    {
-        Action<T, IDataRecord, int> standard = CreateSetter(property);
-        return (target, reader, index) => standard(target, reader, index);
     }
 
     private static Func<T, object?> CreateGetter(PropertyInfo property)
@@ -370,12 +363,11 @@ public readonly struct PropertyContext<T>
     /// </summary>
     /// The  for the property this context describes.
     /// A delegate that sets the property value from an  using a column ordinal.
-    /// A delegate that sets the property value from a  using a column ordinal (optimized path).
     /// A delegate that gets the property value from the target instance.
     /// The CLR property name.
     /// The database column name mapped to the property.
     /// True if the property is non-nullable; false if the property accepts nulls.
-    public PropertyContext(PropertyInfo property, Action<T, IDataRecord, int> setter, Action<T, DbDataReader, int> fastSetter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
+    public PropertyContext(PropertyInfo property, Action<T, IDataRecord, int> setter, Func<T, object?> getter, string propertyName, string columnName, bool isNonNullable)
     {
         Property = property;
         Setter = setter;
