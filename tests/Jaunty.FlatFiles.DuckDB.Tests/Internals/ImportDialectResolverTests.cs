@@ -35,6 +35,80 @@ public class ImportDialectResolverTests
     }
 
     // ------------------------------------------------------------------
+    // Built-in detection: SQL Server (and the MySQL false-positive regression)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Resolve_SqlConnectionTypeName_ReturnsSqlServerDialect()
+    {
+        using var conn = new SqlConnection();
+        var dialect = ImportDialectResolver.Resolve(conn, null);
+
+        Assert.IsType<SqlServerImportDialect>(dialect);
+    }
+
+    [Fact]
+    public void Resolve_MySqlConnectionTypeName_DoesNotFalsePositiveAsSqlServer()
+    {
+        // "MySqlConnection" contains "SqlConnection" as a substring; the resolver must not
+        // match it to SqlServerImportDialect. With no MySql dialect registered, it falls back
+        // to the default SqliteImportDialect.
+        using var conn = new MySqlConnection();
+        var dialect = ImportDialectResolver.Resolve(conn, null);
+
+        Assert.IsNotType<SqlServerImportDialect>(dialect);
+        Assert.IsType<SqliteImportDialect>(dialect);
+    }
+
+    // ------------------------------------------------------------------
+    // Thread safety of the mutable registry
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Register_ConcurrentRegistrations_DoNotThrow()
+    {
+        var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+
+        Parallel.For(0, 50, i =>
+        {
+            try
+            {
+                ImportDialectResolver.Register($"ImportDialectResolverTestsConcurrentKey{i}", new StubImportDialect());
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
+        });
+
+        Assert.Empty(exceptions);
+    }
+
+    [Fact]
+    public void Resolve_ConcurrentWithRegister_DoesNotThrow()
+    {
+        var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+        using var conn = new SqliteConnection("Data Source=:memory:");
+
+        Parallel.For(0, 50, i =>
+        {
+            try
+            {
+                if (i % 2 == 0)
+                    ImportDialectResolver.Register($"ImportDialectResolverTestsConcurrentResolveKey{i}", new StubImportDialect());
+                else
+                    ImportDialectResolver.Resolve(conn, null);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
+        });
+
+        Assert.Empty(exceptions);
+    }
+
+    // ------------------------------------------------------------------
     // Explicit dialect always wins over auto-detection
     // ------------------------------------------------------------------
 
@@ -211,4 +285,56 @@ public class ImportDialectResolverTests
             => throw new NotSupportedException();
     }
 
+}
+
+/// <summary>
+/// A fake connection type named exactly "SqlConnection" (top-level, not nested) so its
+/// <c>GetType().FullName</c> ends with ".SqlConnection" — mirroring the real
+/// <c>System.Data.SqlClient.SqlConnection</c> / <c>Microsoft.Data.SqlClient.SqlConnection</c> shape
+/// that <see cref="ImportDialectResolver"/> detects.
+/// </summary>
+internal sealed class SqlConnection : DbConnection
+{
+    [System.Diagnostics.CodeAnalysis.AllowNull]
+    public override string ConnectionString { get; set; } = string.Empty;
+    public override string Database => string.Empty;
+    public override string DataSource => string.Empty;
+    public override string ServerVersion => string.Empty;
+    public override ConnectionState State => ConnectionState.Closed;
+
+    public override void ChangeDatabase(string databaseName) { }
+    public override void Close() { }
+    public override void Open() { }
+
+    protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
+        => throw new NotSupportedException();
+
+    protected override DbCommand CreateDbCommand()
+        => throw new NotSupportedException();
+}
+
+/// <summary>
+/// A fake connection type named "MySqlConnection" (top-level, not nested) so its
+/// <c>GetType().FullName</c> ends with "...MySqlConnection" — reproducing the real
+/// <c>MySql.Data.MySqlClient.MySqlConnection</c> shape whose type name contains "SqlConnection"
+/// as a substring without being preceded by a namespace dot.
+/// </summary>
+internal sealed class MySqlConnection : DbConnection
+{
+    [System.Diagnostics.CodeAnalysis.AllowNull]
+    public override string ConnectionString { get; set; } = string.Empty;
+    public override string Database => string.Empty;
+    public override string DataSource => string.Empty;
+    public override string ServerVersion => string.Empty;
+    public override ConnectionState State => ConnectionState.Closed;
+
+    public override void ChangeDatabase(string databaseName) { }
+    public override void Close() { }
+    public override void Open() { }
+
+    protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
+        => throw new NotSupportedException();
+
+    protected override DbCommand CreateDbCommand()
+        => throw new NotSupportedException();
 }
