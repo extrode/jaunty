@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 
+using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Tests.Entities;
 using Jaunty.Fluent.Tests.Helpers;
@@ -28,6 +29,46 @@ public class GroupByExpressionVisitorTests
         var column = Assert.Single(columns);
         Assert.Contains("[CategoryId]", column);
         Assert.Equal("Value", aliases[0]);
+    }
+
+    #endregion
+
+    #region Composite Key Projections
+
+    [Fact]
+    public void TranslateSelect_WithCompositeKey_BareKeyProjection_EmitsAllKeyColumns()
+    {
+        // Bare `g => g.Key` over a composite grouping key must emit every GROUP BY column,
+        // not silently drop all but the first (only the `g.Key.Property` form used to handle
+        // composite keys before this fix). Aliases are positional ("Key0", "Key1", ...) rather
+        // than the real property names ("CategoryId", "SupplierId"): no expression tree
+        // describes a bare `g.Key` access, so the real names aren't recoverable without
+        // reflection, which this project doesn't use outside Jaunty.Extensions.Reflection -
+        // matching the same convention already used for the single-column bare-`g.Key` case,
+        // which aliases as the generic placeholder "Value".
+        var (columns, aliases) = TranslateBareCompositeKey(
+            p => new { p.CategoryId, p.SupplierId },
+            new[] { "[category_id]", "[supplier_id]" },
+            _dialect);
+
+        Assert.Equal(2, columns.Length);
+        Assert.Contains("[category_id]", columns[0]);
+        Assert.Contains("[supplier_id]", columns[1]);
+        Assert.Equal(new[] { "Key0", "Key1" }, aliases);
+    }
+
+    /// <summary>
+    /// Translates a bare `g => g.Key` selector over a composite key built by
+    /// <paramref name="keySelector"/> - only used here as a type witness so TKey (an anonymous
+    /// type not otherwise nameable from a test) can be inferred at the call site.
+    /// </summary>
+    private static (string[] Columns, string[] Aliases) TranslateBareCompositeKey<TKey>(
+        Expression<Func<Product, TKey>> keySelector, string[] groupByColumns, ISqlDialect dialect)
+    {
+        _ = keySelector;
+        var visitor = new GroupByExpressionVisitor<Product, TKey>(dialect, groupByColumns);
+        Expression<Func<IGrouping<TKey, Product>, object>> selectExpr = g => g.Key;
+        return visitor.TranslateSelect(selectExpr);
     }
 
     #endregion

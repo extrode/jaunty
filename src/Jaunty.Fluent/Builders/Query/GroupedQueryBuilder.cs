@@ -24,6 +24,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     private readonly string[] _groupByColumns;
     private readonly Expression<Func<T, TKey>> _keySelector;
     private readonly List<string> _havingConditions = [];
+    private int _havingParamSeq;
 
     internal GroupedQueryBuilder(IDbConnection connection, ISqlDialect dialect, List<WhereCondition> whereConditions,
         ParameterCollection parameters, Expression<Func<T, TKey>> keySelector)
@@ -152,7 +153,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken)
     {
         if (_connection is not DbConnection dbConn)
-            return ExecuteQuery(sql, selector);
+            throw new NotSupportedException("Async operations require DbConnection.");
 
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
         (string[] _, string[]? aliases) = visitor.TranslateSelect(selector);
@@ -288,25 +289,54 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
     private string TranslateHavingPredicate(Expression<Func<IGrouping<TKey, T>, bool>> predicate)
     {
-        Expression body = predicate.Body;
-
-        if (body is BinaryExpression binary)
-        {
-            object left = TranslateHavingExpression(binary.Left);
-            object right = TranslateHavingExpression(binary.Right);
-            object op = GetSqlOperator(binary.NodeType);
-            return $"{left} {op} {right}";
-        }
-
-        throw new NotSupportedException($"HAVING predicate type '{body.NodeType}' is not supported.");
+        return TranslateHavingExpression(predicate.Body);
     }
 
+    /// <summary>
+    /// Recursively translates a HAVING predicate. Top-level and nested AndAlso/OrElse
+    /// combinators (e.g. <c>g => g.Count() > 5 &amp;&amp; g.Sum(x => x.Foo) > 10</c>) are handled
+    /// by translating both operands and joining them with the mapped SQL operator; comparison
+    /// operators bottom out in <see cref="TranslateHavingOperand"/> for each side.
+    /// </summary>
     private string TranslateHavingExpression(Expression expr)
     {
+        if (expr is UnaryExpression convert && convert.NodeType == ExpressionType.Convert)
+            expr = convert.Operand;
+
+        if (expr is BinaryExpression binary)
+        {
+            string op = GetSqlOperator(binary.NodeType);
+
+            if (binary.NodeType is ExpressionType.AndAlso or ExpressionType.OrElse)
+            {
+                string left = TranslateHavingExpression(binary.Left);
+                string right = TranslateHavingExpression(binary.Right);
+                return $"({left} {op} {right})";
+            }
+
+            string leftOperand = TranslateHavingOperand(binary.Left);
+            string rightOperand = TranslateHavingOperand(binary.Right);
+            return $"{leftOperand} {op} {rightOperand}";
+        }
+
+        return TranslateHavingOperand(expr);
+    }
+
+    /// <summary>
+    /// Translates one side of a HAVING comparison: an aggregate method call (COUNT/SUM/...), or
+    /// a value (literal constant, captured local, or method parameter) which is bound as a
+    /// query parameter rather than being inlined into the SQL text, matching how every WHERE
+    /// value in this codebase is parameterized.
+    /// </summary>
+    private string TranslateHavingOperand(Expression expr)
+    {
+        if (expr is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            expr = unary.Operand;
+
         // g.Count() > 5
         if (expr is MethodCallExpression methodCall)
         {
-            object methodName = methodCall.Method.Name;
+            string methodName = methodCall.Method.Name;
 
             return methodName switch
             {
@@ -322,20 +352,28 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
         // Constants
         if (expr is ConstantExpression constant)
-        {
-            return HavingExpressionHelpers.FormatLiteral(constant.Value);
-        }
+            return AddHavingParameter(constant.Value);
 
         // Captured local variables, method parameters, and other closed-over values
         // (e.g. `.Having(g => g.Count() > minFilms)`) compile to a MemberExpression
         // over a compiler-generated closure class, not a ConstantExpression. Evaluate
         // it the same way WhereExpressionVisitor/JoinExpressionVisitor/etc. already do.
         if (expr is MemberExpression or UnaryExpression)
-        {
-            return HavingExpressionHelpers.FormatLiteral(HavingExpressionHelpers.EvaluateExpression(expr));
-        }
+            return AddHavingParameter(HavingExpressionHelpers.EvaluateExpression(expr));
 
         throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
+    }
+
+    /// <summary>
+    /// Adds a HAVING operand value as a bound query parameter and returns its placeholder name,
+    /// instead of inlining it into the SQL text (which previously quote-doubled strings and
+    /// left the value vulnerable to injection/culture-formatting bugs).
+    /// </summary>
+    private string AddHavingParameter(object? value)
+    {
+        string name = $"{_dialect.ParameterPrefix}hp{_havingParamSeq++}";
+        _parameters.Add(name, value);
+        return name;
     }
 
     private string BuildHavingAggregate(string aggregate, Expression selectorExpr)
@@ -394,9 +432,21 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
             {
                 IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = kvp.Key;
-                p.Value = kvp.Value ?? DBNull.Value;
+                p.Value = NormalizeForBinding(kvp.Value) ?? DBNull.Value;
                 command.Parameters.Add(p);
             }
         }
     }
+
+    /// <summary>
+    /// Some ADO.NET providers (observed with System.Data.SQLite) don't correctly compare a
+    /// bound <see cref="decimal"/> parameter against a REAL/numeric column - the comparison
+    /// silently never matches regardless of value (e.g. a HAVING "SUM(price) > @p" with @p
+    /// bound as decimal 150m). SQLite's native numeric storage is INTEGER/REAL (double), so
+    /// normalize decimal values to double before binding. Unlike QueryBuilder/CteBuilder/
+    /// SetOperationBuilder, which execute through Jaunty's core Query&lt;T&gt;/ParameterBinder,
+    /// this builder binds parameters directly via raw ADO.NET (to support arbitrary projected
+    /// TResult shapes), so it doesn't benefit from any type handling that path may apply.
+    /// </summary>
+    private static object? NormalizeForBinding(object? value) => value is decimal d ? (double)d : value;
 }

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -38,6 +39,9 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
 
         Expression body = selector.Body;
 
+        while (body is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.Quote))
+            body = unary.Operand;
+
         if (body is NewExpression newExpr)
         {
             // Anonymous type: new { Key = g.Key, Count = g.Count() }
@@ -48,6 +52,19 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
             // DTO initialization: new ProductStats { CategoryId = g.Key, Count = g.Count() }
             TranslateMemberInit(memberInit);
         }
+        else if (IsKeyAccess(body) && _groupByColumns.Length > 1)
+        {
+            // Bare `g => g.Key` over a composite grouping key (e.g. `new { p.CategoryId, p.SupplierId }`).
+            // Emit every GROUP BY column instead of silently dropping all but the first - only the
+            // `g.Key.Property` form used to handle composite keys.
+            string[] aliases = GetCompositeKeyAliases();
+
+            for (int i = 0; i < _groupByColumns.Length; i++)
+            {
+                _selectColumns.Add($"{_groupByColumns[i]} AS {_dialect.EscapeColumnName(aliases[i])}");
+                _columnAliases.Add(aliases[i]);
+            }
+        }
         else
         {
             // Single expression: g.Key or g.Count()
@@ -57,6 +74,22 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
         }
 
         return (_selectColumns.ToArray(), _columnAliases.ToArray());
+    }
+
+    /// <summary>
+    /// Positional aliases for a composite grouping key's columns. TKey's real property names
+    /// aren't recoverable here without reflection (no expression tree describes a bare
+    /// <c>g.Key</c> access, unlike <c>g.Key.Property</c>), and this project doesn't use
+    /// reflection outside <c>Jaunty.Extensions.Reflection</c> - matching the same convention
+    /// already used for the single-column bare-<c>g.Key</c> case, which aliases as the generic
+    /// placeholder <c>"Value"</c> rather than attempting to recover a real property name.
+    /// </summary>
+    private string[] GetCompositeKeyAliases()
+    {
+        var aliases = new string[_groupByColumns.Length];
+        for (int i = 0; i < aliases.Length; i++)
+            aliases[i] = $"Key{i}";
+        return aliases;
     }
 
     private void TranslateNewExpression(NewExpression newExpr)

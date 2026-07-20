@@ -57,6 +57,10 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
 
         foreach (PropertyInfo? prop in values.GetType().GetProperties())
         {
+            // GetColumnNameFromProperty already returns the dialect-escaped column name (it's
+            // backed by CachedDialectMetadata, whose cached values are pre-escaped) - do not
+            // escape it again here, or a keyword-named column (e.g. "[Order]") fails
+            // SqlIdentifierValidator's plain-identifier check on the second pass.
             string columnName = GetColumnNameFromProperty(prop.Name);
 
             // Skip identity and computed columns
@@ -66,7 +70,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
 
             var paramName = $"{_dialect.ParameterPrefix}{prop.Name}";
             _parameters.Add(paramName, prop.GetValue(values));
-            _columns.Add(new InsertColumn(_dialect.EscapeColumnName(columnName), paramName));
+            _columns.Add(new InsertColumn(columnName, paramName));
         }
         return this;
     }
@@ -74,10 +78,11 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
     public IValuesClause<T> Value<TValue>(Expression<Func<T, TValue>> selector, TValue value)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(selector);
+        // Already escaped - see comment in Values(object) above.
         string columnName = GetColumnNameFromProperty(propertyName);
         var paramName = $"{_dialect.ParameterPrefix}{propertyName}";
         _parameters.Add(paramName, value);
-        _columns.Add(new InsertColumn(_dialect.EscapeColumnName(columnName), paramName));
+        _columns.Add(new InsertColumn(columnName, paramName));
         return this;
     }
 

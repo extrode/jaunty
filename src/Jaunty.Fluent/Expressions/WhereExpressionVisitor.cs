@@ -16,18 +16,28 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     private readonly ISqlDialect _dialect;
     private readonly StringBuilder _sql = new();
     private readonly List<(string Name, object? Value)> _parameters = new();
-    private readonly Dictionary<string, int> _parameterCounts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _parameterCounts;
 
-    public WhereExpressionVisitor(ISqlDialect dialect)
+    /// <summary>
+    /// Creates the visitor. <paramref name="parameterCounts"/>, when supplied, is shared across
+    /// every WhereExpressionVisitor a query builder creates for the same logical query (one new
+    /// instance per Where/And/Or call) so that filtering the same column more than once (e.g.
+    /// <c>.Where(x => x.CategoryId == 1).Or(x => x.CategoryId == 2)</c>) produces distinct
+    /// parameter names instead of two independently-numbered "@category_id" parameters that
+    /// collide when merged into the query's shared <see cref="ParameterCollection"/>. Omit it
+    /// (or pass null) for a standalone translation that doesn't need to coordinate names with
+    /// any other visitor.
+    /// </summary>
+    public WhereExpressionVisitor(ISqlDialect dialect, Dictionary<string, int>? parameterCounts = null)
     {
         _dialect = dialect;
+        _parameterCounts = parameterCounts ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     }
 
     public (string Sql, List<(string Name, object? Value)> Parameters) Translate(Expression<Func<T, bool>> predicate)
     {
         _sql.Clear();
         _parameters.Clear();
-        _parameterCounts.Clear();
 
         Visit(predicate.Body);
 

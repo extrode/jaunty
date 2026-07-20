@@ -20,6 +20,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
     private readonly CachedDialectMetadata _cache;
     private readonly string _cteName;
     private readonly ParameterCollection _parameters = new();
+    private readonly Dictionary<string, int> _whereParamCounts = new(StringComparer.OrdinalIgnoreCase);
 
     private string? _cteDefinitionSql;
     private readonly List<WhereCondition> _whereConditions = new();
@@ -86,7 +87,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     public ICteQueryClause<T> Where(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         LogicalOperator op = _whereConditions.Count == 0 ? LogicalOperator.None : LogicalOperator.And;
         _whereConditions.Add(WhereCondition.Expression(sql, op));
@@ -106,7 +107,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     public ICteQueryClause<T> And(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _whereConditions.Add(WhereCondition.Expression(sql, LogicalOperator.And));
         _parameters.AddRange(parameters);
@@ -115,7 +116,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     public ICteQueryClause<T> Or(Expression<Func<T, bool>> predicate)
     {
-        var visitor = new WhereExpressionVisitor<T>(_dialect);
+        var visitor = new WhereExpressionVisitor<T>(_dialect, _whereParamCounts);
         (string? sql, List<(string Name, object? Value)>? parameters) = visitor.Translate(predicate);
         _whereConditions.Add(WhereCondition.Expression(sql, LogicalOperator.Or));
         _parameters.AddRange(parameters);
@@ -125,16 +126,21 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
     public ICteQueryClause<T> OrderBy<TKey>(Expression<Func<T, TKey>> selector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(selector);
+        // Already dialect-escaped (GetColumnNameFromProperty is backed by the pre-escaped
+        // CachedDialectMetadata cache) - escaping again here would double-escape (and throw
+        // for a keyword-named column, since SqlIdentifierValidator rejects the bracketed/
+        // quoted text on the second pass).
         string columnName = GetColumnNameFromProperty(propertyName);
-        _orderByColumns.Add(new OrderByColumn(_dialect.EscapeColumnName(columnName), false));
+        _orderByColumns.Add(new OrderByColumn(columnName, false));
         return this;
     }
 
     public ICteQueryClause<T> OrderByDescending<TKey>(Expression<Func<T, TKey>> selector)
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(selector);
+        // Already dialect-escaped - see comment in the OrderBy(ascending) overload above.
         string columnName = GetColumnNameFromProperty(propertyName);
-        _orderByColumns.Add(new OrderByColumn(_dialect.EscapeColumnName(columnName), true));
+        _orderByColumns.Add(new OrderByColumn(columnName, true));
         return this;
     }
 
