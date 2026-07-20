@@ -84,11 +84,15 @@ internal static class NonQueryExecutor
 
     private static void ApplyOptions(DuckDBCommand cmd, CommandOptions options)
     {
-        // Assign through IDbCommand so any IDbTransaction implementation is accepted (matching the
-        // convention used by Jaunty's core CommandOptions handling elsewhere in the codebase);
-        // it must be a transaction obtained from this same connection.
+        // cmd.Transaction's own property type is the narrower DuckDBTransaction, so assigning
+        // through IDbCommand.Transaction (typed DbTransaction) is required to reach it generically.
+        // That setter still casts internally, so a non-DbTransaction IDbTransaction would otherwise
+        // throw an opaque InvalidCastException - validate via AsyncTransactionValidator first
+        // (mirroring Jaunty core's GetByIdSimpleCoreDirect) for a clear ArgumentException instead.
+        // The transaction must still be a DuckDBTransaction obtained from this same connection;
+        // DuckDB.NET itself enforces that when the value is assigned.
         if (options.Transaction is not null)
-            ((IDbCommand)cmd).Transaction = options.Transaction;
+            ((IDbCommand)cmd).Transaction = global::Jaunty.AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
         if (options.CommandTimeout.HasValue)
             cmd.CommandTimeout = options.CommandTimeout.Value;
