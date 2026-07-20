@@ -495,6 +495,37 @@ public class ImportPipelineTests : IDisposable
     }
 
     [Fact]
+    public async Task FlatFileImporter_ImportAsync_TableNameWithEmbeddedQuote_Succeeds()
+    {
+        // AUD-R12-127 regression: ImportExecutor.ExecuteAsync<T> built the source SELECT as
+        // $"SELECT * FROM \"{tableName}\"" without doubling embedded double quotes in tableName,
+        // unlike ValidateTargetSchemaAsync's structurally identical query in the same file. A
+        // [Table] name containing a literal double quote (tableName here comes straight from
+        // TableNameResolver.Resolve<T>(), same as the finding describes) broke the source read
+        // with a DuckDB syntax error even though the DuckDB-side view for this table name was
+        // created correctly (DuckDbDialect.EscapeTableName already escapes properly there).
+        using var sqlite = CreateSqliteConnection();
+        using (var cmd = sqlite.CreateCommand())
+        {
+            cmd.CommandText = @"
+                CREATE TABLE ""evil""""table"" (
+                    ""ItemId"" INTEGER PRIMARY KEY,
+                    ""ItemName"" TEXT NOT NULL,
+                    ""Category"" TEXT NOT NULL,
+                    ""StockQuantity"" INTEGER NOT NULL,
+                    ""UnitPrice"" REAL NOT NULL,
+                    ""InStock"" INTEGER NOT NULL
+                )";
+            cmd.ExecuteNonQuery();
+        }
+
+        var count = await FlatFileImporter.ImportAsync<EvilTableNameItem>(_csvPath, sqlite);
+
+        Assert.Equal(5, count);
+        Assert.Equal(5, CountRows(sqlite, "evil\"\"table"));
+    }
+
+    [Fact]
     public async Task FlatFileImporter_ImportAsync_ParquetToSqlite()
     {
         using var sqlite = CreateSqliteConnection();
