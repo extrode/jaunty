@@ -132,7 +132,15 @@ public static partial class Jaunty
         }
 
         bool wasClosed = connection.State == ConnectionState.Closed;
-        IDbTransaction? transaction = options.Transaction;
+
+        // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+        // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+        // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+        // AsyncTransactionValidator first (mirroring InsertCoreDirect) so an incompatible
+        // transaction gets Jaunty's clear ArgumentException instead.
+        IDbTransaction? transaction = connection is System.Data.Common.DbConnection
+            ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+            : options.Transaction;
         bool ownTransaction = transaction is null;
 
         try
@@ -218,7 +226,15 @@ public static partial class Jaunty
     private static int BulkInsertNativeCore<T>(IDbConnection connection, IList<T> entityList, CachedCrudSql cached, IBulkCopyProvider bulkProvider, CommandOptions options, bool ignoreConstraints) where T : new()
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
-        IDbTransaction? transaction = options.Transaction;
+
+        // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+        // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+        // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+        // AsyncTransactionValidator first (mirroring InsertCoreDirect) so an incompatible
+        // transaction gets Jaunty's clear ArgumentException instead.
+        IDbTransaction? transaction = connection is System.Data.Common.DbConnection
+            ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+            : options.Transaction;
         bool ownTransaction = transaction is null;
 
         try
