@@ -665,4 +665,224 @@ public class CsvImportTests : IClassFixture<DialectFixture>
             File.Delete(path);
         }
     }
+
+    // =============================================
+    // CsvImportOptions.NullValue / Quote coverage
+    // AUD-R11 batch-04: NullValue was silently ignored by every native import path except
+    // ImportViaPreparedStatements, and had zero test coverage anywhere. Native paths that can't
+    // honor it now throw NotSupportedException instead of silently importing the sentinel as
+    // literal text; paths that can honor it (sqlite3 CLI .nullvalue, Postgres COPY NULL/QUOTE,
+    // MySQL OPTIONALLY ENCLOSED BY, SQL Server FIELDQUOTE) now do.
+    // =============================================
+
+    [Fact]
+    public void ImportCsv_SqliteInMemory_NullValue_MapsToNull()
+    {
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        connection.Open();
+        CreateTable(connection, DialectProvider.SystemSqlite);
+
+        var csv =
+            "Name,Age,City,Email\n" +
+            "Alice,30,N/A,alice@example.com\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            var options = new CsvImportOptions { NullValue = "N/A" };
+            long rows = connection.ImportCsv(TableName, path, options);
+            Assert.Equal(1L, rows);
+
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT City FROM csv_import_test WHERE Name = 'Alice'";
+            var city = cmd.ExecuteScalar();
+
+            Assert.True(city is null || city == DBNull.Value);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ImportCsv_SqliteFileBased_NullValueSet_ThrowsNotSupportedException()
+    {
+        // A file-based (non-":memory:") data source routes through ImportViaSqliteCli rather than
+        // ImportViaPreparedStatements. The sqlite3 CLI's ".nullvalue" dot-command only affects
+        // output formatting, not ".import" (verified directly against the sqlite3 CLI), so there is
+        // no way to honor NullValue on this path - it must fail loudly instead of silently importing
+        // the sentinel as literal text.
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_nullval_{Guid.NewGuid():N}.db");
+        var csv =
+            "Name,Age,City,Email\n" +
+            "Alice,30,N/A,alice@example.com\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            using (var setup = new SQLiteConnection($"Data Source={tempDb}"))
+            {
+                setup.Open();
+                CreateTable(setup, DialectProvider.SystemSqlite);
+            }
+
+            using var connection = new SQLiteConnection($"Data Source={tempDb}");
+            var options = new CsvImportOptions { NullValue = "N/A" };
+
+            Assert.Throws<NotSupportedException>(() => connection.ImportCsv(TableName, path, options));
+        }
+        finally
+        {
+            File.Delete(path);
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
+    [Fact]
+    public void ImportViaSqliteCli_QuoteNotDoubleQuote_ThrowsNotSupportedException()
+    {
+        // sqlite3's CSV mode has no dot-command to override its quote character, unlike the other
+        // providers' native import commands. Invoked directly via reflection (same pattern as
+        // ImportViaSqliteCli_DbPathWithQuote_IsRejected) since the throw happens before any file
+        // or process I/O, so a real dbPath/filePath/table setup isn't needed to reach it.
+        var csvPath = ResolveCsvPath();
+        MethodInfo method = typeof(CsvImportExtensions).GetMethod(
+            "ImportViaSqliteCli", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        var dbPath = Path.Combine(Path.GetTempPath(), $"jaunty_csv_quote_{Guid.NewGuid():N}.db");
+        var options = new CsvImportOptions { Quote = '\'' };
+
+        var ex = Assert.Throws<TargetInvocationException>(() =>
+            method.Invoke(null, [dbPath, TableName, csvPath, options]));
+        Assert.IsType<NotSupportedException>(ex.InnerException);
+    }
+
+    [Fact]
+    public void ImportCsv_SqlServer_NullValueSet_ThrowsNotSupportedException()
+    {
+        // SQL Server's BULK INSERT has no clause for substituting an arbitrary string as NULL.
+        // ThrowIfNullValueUnsupported is the first statement in ImportSqlServer, before the
+        // connection is ever opened, so an unopened connection is enough to reach it.
+        var csvPath = ResolveCsvPath();
+        using var connection = new SqlConnection(TestConfiguration.SqlServerConnectionString);
+        var options = new CsvImportOptions { NullValue = "N/A" };
+
+        Assert.Throws<NotSupportedException>(() => connection.ImportCsv(TableName, csvPath, options));
+    }
+
+    [Fact]
+    public async Task ImportCsvAsync_SqlServer_NullValueSet_ThrowsNotSupportedException()
+    {
+        var csvPath = ResolveCsvPath();
+        using var connection = new SqlConnection(TestConfiguration.SqlServerConnectionString);
+        var options = new CsvImportOptions { NullValue = "N/A" };
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => connection.ImportCsvAsync(TableName, csvPath, options).AsTask());
+    }
+
+    [Fact]
+    public void ImportCsv_MySql_NullValueSet_ThrowsNotSupportedException()
+    {
+        // MySQL's LOAD DATA has no clause for substituting an arbitrary string as NULL.
+        var csvPath = ResolveCsvPath();
+        using var connection = new MySqlConnection(TestConfiguration.MariaDbConnectionString);
+        var options = new CsvImportOptions { NullValue = "N/A" };
+
+        Assert.Throws<NotSupportedException>(() => connection.ImportCsv(TableName, csvPath, options));
+    }
+
+    [Fact]
+    public async Task ImportCsvAsync_MySql_NullValueSet_ThrowsNotSupportedException()
+    {
+        var csvPath = ResolveCsvPath();
+        using var connection = new MySqlConnection(TestConfiguration.MariaDbConnectionString);
+        var options = new CsvImportOptions { NullValue = "N/A" };
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => connection.ImportCsvAsync(TableName, csvPath, options).AsTask());
+    }
+
+    [Theory]
+    [Postgres]
+    public void ImportCsv_Postgres_NullValueAndQuote_AppliedNatively(DialectInfo dialect)
+    {
+        using var connection = new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString);
+        connection.Open();
+        CreateTable(connection, DialectProvider.Postgres);
+
+        var csv =
+            "Name,Age,City,Email\n" +
+            "'Alice',30,N/A,alice@example.com\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            var options = new CsvImportOptions { NullValue = "N/A", Quote = '\'' };
+            long rows = connection.ImportCsv(TableName, path, options);
+            Assert.Equal(1L, rows);
+
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = @"SELECT ""Name"", ""City"" FROM csv_import_test";
+            using var reader = cmd.ExecuteReader();
+            Assert.True(reader.Read());
+            Assert.Equal("Alice", reader.GetString(0));
+            Assert.True(reader.IsDBNull(1));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [MariaDB]
+    public void ImportCsv_MariaDb_CustomQuote_AppliedNatively(DialectInfo dialect)
+    {
+        var connString = TestConfiguration.MariaDbConnectionString;
+        if (connString.IndexOf("AllowLoadLocalInfile", StringComparison.OrdinalIgnoreCase) < 0)
+            connString += ";AllowLoadLocalInfile=true";
+
+        using var connection = new MySqlConnection(connString);
+        connection.Open();
+        CreateTable(connection, DialectProvider.MariaDb);
+
+        var csv =
+            "Name,Age,City,Email\n" +
+            "'Alice',30,NYC,alice@example.com\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            var options = new CsvImportOptions { Quote = '\'' };
+            long rows = connection.ImportCsv(TableName, path, options);
+            Assert.Equal(1L, rows);
+            Assert.Equal("Alice", GetFirstName(connection, DialectProvider.MariaDb));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [SqlServer]
+    public void ImportCsv_SqlServer_CustomQuote_AppliedNatively(DialectInfo dialect)
+    {
+        using var connection = new SqlConnection(TestConfiguration.SqlServerConnectionString);
+        connection.Open();
+        CreateTable(connection, DialectProvider.SqlServer);
+
+        var csv =
+            "Name,Age,City,Email\n" +
+            "'Alice',30,NYC,alice@example.com\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            var options = new CsvImportOptions { Quote = '\'' };
+            long rows = connection.ImportCsv(TableName, path, options);
+            Assert.Equal(1L, rows);
+            Assert.Equal("Alice", GetFirstName(connection, DialectProvider.SqlServer));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }
