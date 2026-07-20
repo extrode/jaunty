@@ -379,4 +379,88 @@ public class AsyncTransactionValidatorWiringTests : IDisposable
         Assert.Contains("DbTransaction", ex.Message);
         realTransaction.Rollback();
     }
+
+    // R12 batch-2: BulkInsert/BulkUpdate/BulkDelete assigned options.Transaction to command.Transaction
+    // unconditionally, without the "connection is DbConnection" guard used by every sibling write path.
+
+    [Fact]
+    public void BulkInsert_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        var categories = new[] { new Category { CategoryName = "Condiments" } };
+        int rows = _connection.BulkInsert(categories, CommandOptions.WithTransaction(transaction));
+
+        Assert.Equal(1, rows);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public void BulkInsert_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var categories = new[] { new Category { CategoryName = "Condiments" } };
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _connection.BulkInsert(categories, CommandOptions.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    [Fact]
+    public void BulkUpdate_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        var categories = new[] { new Category { CategoryId = 1, CategoryName = "Beverages", Description = "Bulk updated" } };
+        int rows = _connection.BulkUpdate(categories, CommandOptions.WithTransaction(transaction));
+
+        Assert.Equal(1, rows);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public void BulkUpdate_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var categories = new[] { new Category { CategoryId = 1, CategoryName = "Beverages", Description = "Bulk updated" } };
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _connection.BulkUpdate(categories, CommandOptions.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    [Fact]
+    public void BulkDelete_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        var categories = new[] { new Category { CategoryId = 1, CategoryName = "Beverages" } };
+        int rows = _connection.BulkDelete(categories, CommandOptions.WithTransaction(transaction));
+
+        Assert.Equal(1, rows);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public void BulkDelete_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var categories = new[] { new Category { CategoryId = 1, CategoryName = "Beverages" } };
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _connection.BulkDelete(categories, CommandOptions.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
 }
