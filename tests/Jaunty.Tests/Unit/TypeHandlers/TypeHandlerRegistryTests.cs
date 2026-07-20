@@ -10,9 +10,9 @@ namespace Jaunty.Tests.Unit.TypeHandlers;
 /// </summary>
 /// <remarks>
 /// Shares the "Type Handler Operations" collection with
-/// <see cref="Jaunty.Tests.TypeHandlers.EnumStorageTests"/>,
+/// <see cref="Jaunty.Tests.Unit.TypeHandlers.EnumStorageTests"/>,
 /// <see cref="Jaunty.Tests.Integration.TypeHandlers.TypeHandlerRoundTripTests"/>, and
-/// <see cref="Jaunty.Tests.ParameterBinderTests"/> — all mutate the same process-wide
+/// <see cref="Jaunty.Tests.Unit.Read.ParameterBinderTests"/> — all mutate the same process-wide
 /// <see cref="JauntyConfig.DefaultEnumStorage"/>/type-handler registry static state and must run
 /// serialized against each other.
 /// </remarks>
