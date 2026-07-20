@@ -45,6 +45,7 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
         JOIN information_schema.key_column_usage kcu
             ON tc.constraint_name = kcu.constraint_name
             AND tc.table_schema = kcu.table_schema
+            AND tc.table_name = kcu.table_name
         WHERE tc.constraint_type = 'PRIMARY KEY'
           AND tc.table_schema = @SchemaName
           AND tc.table_name = @TableName
@@ -61,8 +62,10 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
         JOIN information_schema.key_column_usage kcu
             ON tc.constraint_name = kcu.constraint_name
             AND tc.table_schema = kcu.table_schema
+            AND tc.table_name = kcu.table_name
         JOIN information_schema.constraint_column_usage ccu
             ON tc.constraint_name = ccu.constraint_name
+            AND tc.table_schema = ccu.constraint_schema
         WHERE tc.constraint_type = 'FOREIGN KEY'
           AND tc.table_schema = @SchemaName
           AND tc.table_name = @TableName";

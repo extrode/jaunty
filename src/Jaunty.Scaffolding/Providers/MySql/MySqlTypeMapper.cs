@@ -13,14 +13,20 @@ public sealed class MySqlTypeMapper : ITypeMapper
     {
         var dataType = column.DataType.ToLowerInvariant().Trim();
 
+        // MySQL's tinyint(1)/bit(1) boolean convention is carried by the column's display
+        // width, which only appears in COLUMN_TYPE (e.g. "tinyint(1)", "bit(1) unsigned").
+        // MaxLength comes from CHARACTER_MAXIMUM_LENGTH, which INFORMATION_SCHEMA always
+        // reports as NULL for numeric columns, so it can never signal this convention.
+        bool isSingleBitOrTinyInt = IsSingleBitOrTinyInt(column.ColumnType);
+
         return dataType switch
         {
             // Boolean (MySQL uses tinyint(1) for bool)
-            "bit" when column.MaxLength == 1 => new CSharpTypeInfo { TypeName = "bool", IsValueType = true },
+            "bit" when isSingleBitOrTinyInt => new CSharpTypeInfo { TypeName = "bool", IsValueType = true },
             "bool" or "boolean" => new CSharpTypeInfo { TypeName = "bool", IsValueType = true },
 
             // Integer types
-            "tinyint" when column.MaxLength == 1 => new CSharpTypeInfo { TypeName = "bool", IsValueType = true },
+            "tinyint" when isSingleBitOrTinyInt => new CSharpTypeInfo { TypeName = "bool", IsValueType = true },
             "tinyint" => new CSharpTypeInfo { TypeName = "sbyte", IsValueType = true },
             "smallint" => new CSharpTypeInfo { TypeName = "short", IsValueType = true },
             "mediumint" or "int" or "integer" => new CSharpTypeInfo { TypeName = "int", IsValueType = true },
@@ -65,5 +71,15 @@ public sealed class MySqlTypeMapper : ITypeMapper
             // Default to object for unknown types
             _ => new CSharpTypeInfo { TypeName = "object", IsValueType = false }
         };
+    }
+
+    private static bool IsSingleBitOrTinyInt(string? columnType)
+    {
+        if (string.IsNullOrEmpty(columnType))
+            return false;
+
+        var normalized = columnType.ToLowerInvariant();
+        return normalized.StartsWith("tinyint(1)", StringComparison.Ordinal) ||
+               normalized.StartsWith("bit(1)", StringComparison.Ordinal);
     }
 }
