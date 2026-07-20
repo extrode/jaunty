@@ -433,6 +433,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureScalarAsync{T}(IDbConnection, string, CancellationToken)"/>
     public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureScalar<T>(connection, procedureName, (object?)null, default);
     }
 
@@ -463,6 +470,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureScalar{T}(IDbConnection, string, object?, CommandOptions{T})"/>
     public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, object? parameters)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteStoredProcedureScalar<T>(connection, procedureName, parameters, default);
     }
 
@@ -498,6 +512,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureScalar{T}(IDbConnection, string)"/>
     public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return connection.QueryScalar<T>(procedureName, parameters!, spOptions);
     }

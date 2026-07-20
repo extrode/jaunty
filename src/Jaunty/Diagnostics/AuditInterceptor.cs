@@ -28,6 +28,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
 {
     private readonly ConcurrentQueue<AuditRecord> _auditLog = new();
     private readonly int _maxRecords;
+    private readonly object _trimLock = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AuditInterceptor"/> class.
@@ -61,6 +62,19 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
         while (_auditLog.TryDequeue(out _)) { }
     }
 
+    // AUD-R12: trim-then-enqueue on a ConcurrentQueue is not atomic on its own - concurrent
+    // callers can each observe Count < _maxRecords, then all enqueue, letting the queue
+    // temporarily exceed _maxRecords. Serializing trim+enqueue behind a lock keeps the bound
+    // exact; contention is negligible since this only guards an O(1) dequeue/enqueue pair.
+    private void RecordAudit(AuditRecord record)
+    {
+        lock (_trimLock)
+        {
+            while (_auditLog.Count >= _maxRecords && _auditLog.TryDequeue(out _)) { }
+            _auditLog.Enqueue(record);
+        }
+    }
+
     /// <inheritdoc/>
     public ValueTask OnCommandExecutingAsync(CommandContext context, CancellationToken cancellationToken)
     {
@@ -76,9 +90,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
         };
 
         // Trim log if exceeding max records
-        while (_auditLog.Count >= _maxRecords && _auditLog.TryDequeue(out _)) { }
-
-        _auditLog.Enqueue(record);
+        RecordAudit(record);
 
         return new ValueTask();
     }
@@ -98,9 +110,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
             Success = true
         };
 
-        while (_auditLog.Count >= _maxRecords && _auditLog.TryDequeue(out _)) { }
-
-        _auditLog.Enqueue(record);
+        RecordAudit(record);
 
         return new ValueTask();
     }
@@ -122,9 +132,7 @@ public sealed class AuditInterceptor : ISyncCommandInterceptor
             ExceptionMessage = exception.Message
         };
 
-        while (_auditLog.Count >= _maxRecords && _auditLog.TryDequeue(out _)) { }
-
-        _auditLog.Enqueue(record);
+        RecordAudit(record);
 
         return new ValueTask();
     }

@@ -454,6 +454,29 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
         Assert.Equal(0, result);
     }
 
+    // AUD-R12: BindSpParameters bound SpParameters in caller-supplied order. SqlClient only
+    // captures a stored procedure's RETURN value correctly when the ReturnValue-direction
+    // parameter is the first one added to IDbCommand.Parameters - every SpParameters usage
+    // example in this codebase (and this test) calls .AddReturnValue() last, so binding in
+    // caller order silently produced a wrong/undefined GetReturnValue() result. SQL Server only:
+    // dbo.GetProductCountWithReturnValue (data/sqlserver/create-stored-procedures.sql) is the
+    // only fixture that returns its count via RETURN instead of an OUTPUT parameter.
+    [Theory]
+    [SqlServer]
+    public void ExecuteStoredProcedureNonQuery_SpParameters_ReturnValueAddedLast_StillCapturesCorrectReturnValue(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var parameters = new SpParameters()
+            .AddInput(OutputCategoryParamName(dialect), 1)
+            .AddReturnValue();
+
+        connection.ExecuteStoredProcedureNonQuery(SpName("GetProductCountWithReturnValue", dialect), parameters);
+
+        int returnValue = parameters.GetReturnValue();
+        Assert.True(returnValue > 0);
+    }
+
     #endregion
 
     #region Transaction guard (AUD-R11)
