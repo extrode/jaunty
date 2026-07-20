@@ -276,6 +276,25 @@ public class DuckDbDialectTests
         Assert.Contains("name = EXCLUDED.name", result);
     }
 
+    // AUD-R12: GenerateUpsertSql appended ") DO UPDATE SET " and then the joined updateColumns
+    // list with no guard for a zero-length array, producing a dangling clause (invalid SQL) for
+    // a key-only entity with no non-key updatable columns.
+    [Fact]
+    public void GenerateUpsertSql_NoUpdateColumns_GeneratesDoNothing()
+    {
+        var result = _dialect.GenerateUpsertSql(
+            "\"products\"",
+            new[] { "id" },
+            new[] { "@p0" },
+            Array.Empty<string>(),
+            Array.Empty<string>(),
+            new[] { "id" },
+            new[] { "@p0" });
+
+        Assert.Contains("ON CONFLICT (id) DO NOTHING", result);
+        Assert.DoesNotContain("DO UPDATE SET", result);
+    }
+
     // ==========================================
     // Multi-Row Insert
     // ==========================================
