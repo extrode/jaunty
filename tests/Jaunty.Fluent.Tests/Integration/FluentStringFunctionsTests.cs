@@ -45,6 +45,7 @@ public class FluentStringFunctionsTests : IClassFixture<FluentDatabaseFixture>
             .Where(p => p.ProductName.Length == 4)
             .Select();
 
+        Assert.NotEmpty(products);
         Assert.All(products, p => Assert.True(p.ProductName!.Length == 4));
     }
 

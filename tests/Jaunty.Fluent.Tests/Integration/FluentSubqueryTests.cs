@@ -209,6 +209,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
             .Select(c => c.CategoryId)
             .ToHashSet();
 
+        Assert.NotEmpty(products);
         Assert.All(products, p =>
         {
             Assert.Contains(p.CategoryId!.Value, validCategoryIds);
@@ -237,6 +238,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
                 subquery)
             .Select();
 
+        Assert.NotEmpty(products);
         Assert.All(products, p =>
             Assert.True(p.Discontinued == false && p.CategoryId != firstCategory.CategoryId));
     }
@@ -265,6 +267,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
                 subquery)
             .Select();
 
+        Assert.NotEmpty(products);
         Assert.All(products, p =>
             Assert.True(p.CategoryId == cat1Id || p.CategoryId == cat2Id));
     }
@@ -291,6 +294,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
                 subquery)
             .Select();
 
+        Assert.NotEmpty(products);
         Assert.All(products, p =>
             Assert.True(p.Discontinued == true || p.CategoryId != firstCategory.CategoryId));
     }
@@ -349,6 +353,7 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
             .OrderBy(p => p.ProductName)
             .Select();
 
+        Assert.NotEmpty(products);
         for (int i = 1; i < products.Count; i++)
         {
             Assert.True(string.Compare(products[i - 1].ProductName, products[i].ProductName) <= 0);
