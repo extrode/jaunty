@@ -12,7 +12,7 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
         _fixture = fixture;
     }
 
-    #region Single Positional Parameter
+    #region Single Named Parameter
 
     [Theory]
     [SqlServer]
@@ -63,7 +63,83 @@ public class QueryPositionalParameterTests : IClassFixture<DialectFixture>
 
     #endregion
 
-    #region Array Parameters
+    #region True Bare-Scalar Positional Parameters
+
+    // These exercise the actual positional-parameter feature (README: `connection.Query(sql, 1)`):
+    // a bare scalar value bound by ParameterBinder.BindScalar to the single @param the SQL text
+    // parses out, independent of the parameter's name. Everything above this region uses named
+    // anonymous objects (`new { Id = 1 }`), which is ordinary named-parameter binding instead.
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_BareIntScalar_BindsPositionally(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var categories = connection.Query<Category>(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description FROM categories WHERE category_id = @Id",
+            1);
+
+        Assert.Single(categories);
+        Assert.Equal(1, categories[0].CategoryId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_BareStringScalar_BindsPositionally(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var customers = connection.Query<Customer>(
+            @"SELECT customer_id AS CustomerId, company_name AS CompanyName, contact_name AS ContactName,
+              contact_title AS ContactTitle, address AS Address, city AS City, region AS Region,
+              postal_code AS PostalCode, country AS Country, phone AS Phone, fax AS Fax
+              FROM customers WHERE customer_id = @CustomerId",
+            "ALFKI");
+
+        Assert.Single(customers);
+        Assert.Equal("ALFKI", customers[0].CustomerId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void QueryScalar_BareScalar_IgnoresSqlParamName(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        // The SQL's parameter is named @WhateverName; BindScalar binds by position (the single
+        // distinct parameter in the SQL), not by matching the bare value to a property name.
+        var count = connection.QueryScalar<long>(
+            "SELECT COUNT(*) FROM categories WHERE category_id = @WhateverName",
+            1);
+
+        Assert.Equal(1, count);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_BareScalar_WithMultipleSqlParams_Throws(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var ex = Assert.Throws<ArgumentException>(() =>
+            connection.QueryScalar<long>(
+                "SELECT COUNT(*) FROM products WHERE category_id = @A AND supplier_id = @B",
+                1));
+
+        Assert.Contains("2 distinct parameters", ex.Message);
+        Assert.Contains("A", ex.Message);
+        Assert.Contains("B", ex.Message);
+    }
+
+    #endregion
+
+    #region Named Object Multi-Property Parameters
 
     [Theory]
     [SqlServer]
