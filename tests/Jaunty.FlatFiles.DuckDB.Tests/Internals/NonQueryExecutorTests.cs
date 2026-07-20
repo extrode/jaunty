@@ -2,6 +2,7 @@ using DuckDB.NET.Data;
 
 using Jaunty.Core;
 using Jaunty.FlatFiles.DuckDB.Internals;
+using Jaunty.FlatFiles.DuckDB.Tests.Helpers;
 
 namespace Jaunty.FlatFiles.DuckDB.Tests.Internals;
 
@@ -173,5 +174,35 @@ public class NonQueryExecutorTests : IDisposable
         var result = NonQueryExecutor.Execute(_connection, sql, parameters, options);
 
         Assert.Equal(1, result);
+    }
+
+    // ==========================================
+    // Transaction guard (AUD-R11)
+    // ==========================================
+
+    // ApplyOptions assigned options.Transaction to cmd via IDbCommand.Transaction unconditionally.
+    // DuckDBCommand's own Transaction setter (reached via the base DbCommand path) casts internally,
+    // so a non-DbTransaction IDbTransaction threw an opaque InvalidCastException instead of Jaunty's
+    // clear ArgumentException.
+
+    [Fact]
+    public void Execute_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+        var options = CommandOptions.WithTransaction(nonDbTransaction);
+
+        var sql = "INSERT INTO test (id, name) VALUES ($1, $2)";
+        var parameters = new List<DuckDBParameter>
+        {
+            new() { Value = 8 },
+            new() { Value = "ShouldNotInsert" }
+        };
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            NonQueryExecutor.Execute(_connection, sql, parameters, options));
+        Assert.Contains("DbTransaction", ex.Message);
+
+        realTransaction.Rollback();
     }
 }

@@ -185,6 +185,38 @@ public class FluentWriteOperationsTests : IDisposable
         Assert.NotNull(stillThere);
     }
 
+    // ExecuteNonQuery (the private helper backing Delete/DeleteAll) assigned options.Transaction
+    // to command.Transaction unconditionally. On a real DbConnection that setter casts internally,
+    // so a non-DbTransaction IDbTransaction threw an opaque InvalidCastException instead of
+    // Jaunty's clear ArgumentException. (AUD-R11)
+    [Fact]
+    public void Delete_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestDeleteNonDbTx",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 9.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
+
+        using var realTransaction = _db.Connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _db.Connection.From<Product>()
+                .Where(p => p.ProductId == (int)insertedId)
+                .Delete(CommandOptions.WithTransaction(nonDbTransaction)));
+        Assert.Contains("DbTransaction", ex.Message);
+
+        realTransaction.Rollback();
+    }
+
     [Fact]
     public async Task DeleteAsync_WithCommandOptionsTransaction_RollsBackWithTransaction()
     {

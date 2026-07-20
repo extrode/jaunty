@@ -1,6 +1,7 @@
 using Jaunty.Core;
 using Jaunty.StoredProcedure;
 using Jaunty.Tests.Entities;
+using Jaunty.Tests.Helpers;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.StoredProcedure;
@@ -368,6 +369,84 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
 
         Assert.True(parameters.HasValue(OutputCountParamName(dialect)));
     }
+
+    #endregion
+
+    #region Transaction guard (AUD-R11)
+
+    // ExecuteWithOutputParameters/ExecuteScalarWithOutputParameters/ExecuteNonQueryWithOutputParameters
+    // assigned options.Transaction to the shared IDbCommand unconditionally, without branching on
+    // "connection is DbConnection" like GetByIdSimpleCoreDirect (AUD-R6) already did. A non-DbTransaction
+    // IDbTransaction on a real DbConnection threw an opaque InvalidCastException instead of Jaunty's
+    // clear ArgumentException.
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void ExecuteStoredProcedure_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var realTransaction = connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var options = CommandOptions<Product>.WithTransaction(nonDbTransaction);
+        var ex = Assert.Throws<ArgumentException>(() =>
+            connection.ExecuteStoredProcedure<Product>(SpName("GetAllProducts", dialect), null, options));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void ExecuteStoredProcedureScalar_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var realTransaction = connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var parameters = new SpParameters().AddInput(CategoryParamNameForScalar(dialect), 1);
+        var options = CommandOptions<int>.WithTransaction(nonDbTransaction);
+        var ex = Assert.Throws<ArgumentException>(() =>
+            connection.ExecuteStoredProcedureScalar<int>(SpName("GetProductCount", dialect), parameters, options));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void ExecuteStoredProcedureNonQuery_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        using var realTransaction = connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var parameters = new SpParameters().AddInput(OutputCategoryParamName(dialect), 1);
+        if (UsesInOutForOutput(dialect))
+            parameters.AddInputOutput(OutputCountParamName(dialect), 0, DbType.Int32);
+        else
+            parameters.AddOutput(OutputCountParamName(dialect), DbType.Int32);
+
+        var options = CommandOptions.WithTransaction(nonDbTransaction);
+        var ex = Assert.Throws<ArgumentException>(() =>
+            connection.ExecuteStoredProcedureNonQuery(SpName("GetProductCountWithOutput", dialect), parameters, options));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    /// <summary>
+    /// Parameter name for GetProductCount(CategoryId). PostgreSQL/MariaDB use p_ prefix.
+    /// </summary>
+    private static string CategoryParamNameForScalar(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.Postgres ? "p_category_id" :
+        dialect.Provider == DialectProvider.MariaDb ? "p_CategoryId" : "CategoryId";
 
     #endregion
 }
