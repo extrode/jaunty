@@ -17,7 +17,9 @@ public static class FlatFile
         [".json"] = (tableName, fullPath, entityType) => new JsonFileSource(tableName, fullPath, entityType),
         [".ndjson"] = (tableName, fullPath, entityType) => new JsonFileSource(tableName, fullPath, entityType) { JsonFormat = JsonFileFormat.NewlineDelimited },
         [".xlsx"] = (tableName, fullPath, entityType) => new ExcelFileSource(tableName, fullPath, entityType),
-        [".xls"] = (tableName, fullPath, entityType) => new ExcelFileSource(tableName, fullPath, entityType),
+        // NOTE: ".xls" (legacy binary Excel) is intentionally NOT registered here. ExcelFileSource
+        // reads via DuckDB's read_xlsx, which only supports the modern ".xlsx" format. Opening a
+        // ".xls" file falls through to the "unsupported extension" error below.
     };
 
     /// <summary>
