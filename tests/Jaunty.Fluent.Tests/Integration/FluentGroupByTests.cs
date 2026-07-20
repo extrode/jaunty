@@ -111,6 +111,29 @@ public class FluentGroupByTests : IClassFixture<FluentDatabaseFixture>
         Assert.NotEmpty(results);
     }
 
+    [Fact]
+    public void GroupBy_WithChainedWhereOrAnd_FiltersBeforeGroupingWithCorrectPrecedence()
+    {
+        // Chained: Where(...).Or(...).And(...) - regression test for AND/OR precedence
+        // (round 10): the shared WHERE conditions must evaluate as
+        // (CategoryId == 1 OR CategoryId == 2) AND UnitPrice > 10 before grouping,
+        // not CategoryId == 1 OR (CategoryId == 2 AND UnitPrice > 10) per SQL's native
+        // AND-before-OR precedence. Seed data: category 1 has "Cheap Product" at
+        // UnitPrice 5 (3 of its 4 products pass UnitPrice > 10), category 2 has
+        // "Aniseed Syrup" at UnitPrice 10 (4 of its 5 products pass). The buggy
+        // unparenthesized form lets all 4 category-1 products through regardless of price.
+        var results = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Or(p => p.CategoryId == 2)
+            .And(p => p.UnitPrice > 10)
+            .GroupBy(p => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.Equal(2, results.Count);
+        Assert.Equal(3, results.Single(r => r.CategoryId == 1).Count);
+        Assert.Equal(4, results.Single(r => r.CategoryId == 2).Count);
+    }
+
     // --- GROUP BY with HAVING Tests ---
 
     [Fact]
