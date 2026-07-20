@@ -119,6 +119,15 @@ public class MetadataBuilderTests
         public string B { get; set; } = string.Empty;
     }
 
+    [System.ComponentModel.DataAnnotations.Schema.Table("da_table")]
+    public class DataAnnotationsTableWithoutSchemaEntity
+    {
+        public int Id { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Schema.Column]
+        public string Name { get; set; } = string.Empty;
+    }
+
     #endregion
 
     [Fact]
@@ -296,5 +305,17 @@ public class MetadataBuilderTests
     {
         Assert.Throws<ArgumentException>(() =>
             MetadataBuilder.Build<DuplicateColumnNameEntity>());
+    }
+
+    [Fact]
+    public void Build_DataAnnotationsTableWithoutSchema_DoesNotThrow()
+    {
+        var metadata = MetadataBuilder.Build<DataAnnotationsTableWithoutSchemaEntity>();
+
+        Assert.Equal("da_table", metadata.TableName);
+        Assert.Null(metadata.SchemaName);
+
+        var nameCol = metadata.Columns.First(c => c.Property.Name == "Name");
+        Assert.Equal("Name", nameCol.ColumnName);
     }
 }
