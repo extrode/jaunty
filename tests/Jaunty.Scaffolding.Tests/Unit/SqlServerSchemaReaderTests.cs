@@ -63,4 +63,42 @@ public class SqlServerSchemaReaderTests
 
         Assert.True(columns[0].IsPrimaryKey);
     }
+
+    [Theory]
+    [InlineData("nvarchar", (short)100, (short)50)]
+    [InlineData("nchar", (short)20, (short)10)]
+    [InlineData("ntext", (short)32, (short)16)]
+    public void NormalizeMaxLength_UnicodeCharacterTypes_HalvesByteLength(string dataType, short rawMaxLength, short expected)
+    {
+        short? result = SqlServerSchemaReader.NormalizeMaxLength(dataType, rawMaxLength);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("varchar", (short)100)]
+    [InlineData("char", (short)20)]
+    [InlineData("text", (short)32)]
+    public void NormalizeMaxLength_NonUnicodeCharacterTypes_LeavesByteLengthUnchanged(string dataType, short rawMaxLength)
+    {
+        short? result = SqlServerSchemaReader.NormalizeMaxLength(dataType, rawMaxLength);
+
+        Assert.Equal(rawMaxLength, result);
+    }
+
+    [Fact]
+    public void NormalizeMaxLength_UnicodeTypeWithMaxSentinel_LeavesMinusOneUnchanged()
+    {
+        short? result = SqlServerSchemaReader.NormalizeMaxLength("nvarchar", -1);
+
+        Assert.Equal((short)-1, result);
+    }
+
+    [Fact]
+    public void NormalizeMaxLength_NullMaxLength_ReturnsNull()
+    {
+        short? result = SqlServerSchemaReader.NormalizeMaxLength("nvarchar", null);
+
+        Assert.Null(result);
+    }
 }
