@@ -26,6 +26,8 @@ internal sealed class JoinedGroupByExpressionVisitor
     private readonly Dictionary<string, string> _keyPropertyToColumn;
     private readonly List<string> _selectColumns = new();
     private readonly List<string> _columnAliases = new();
+    private List<(string Name, object? Value)> _havingParameters = new();
+    private int _havingParamSeq;
 
     /// <param name="dialect">The SQL dialect, for column escaping.</param>
     /// <param name="metadata">Entity metadata, ordered index 0 = TFrom, index 1 = TJoin, etc.</param>
@@ -47,12 +49,17 @@ internal sealed class JoinedGroupByExpressionVisitor
 
     /// <summary>
     /// Translates a HAVING predicate (its single parameter is the IGroupingJoined{,3,4}
-    /// instance) to a SQL boolean expression. Reuses <see cref="HavingExpressionHelpers"/>
-    /// (the same closure-safety fix single-entity HAVING uses) and the same aggregate-column
-    /// resolution as <see cref="TranslateSelect"/>.
+    /// instance) to a SQL boolean expression plus the query parameters its comparison operands
+    /// were bound to (matching how <c>GroupedQueryBuilder.AddHavingParameter</c> parameterizes
+    /// the single-entity HAVING path instead of inlining literal text). Reuses
+    /// <see cref="HavingExpressionHelpers"/> (the same closure-safety fix single-entity HAVING
+    /// uses) and the same aggregate-column resolution as <see cref="TranslateSelect"/>. The
+    /// caller must add the returned parameters to its own parameter collection before binding
+    /// the command.
     /// </summary>
-    public string TranslateHavingPredicate(LambdaExpression predicate)
+    public (string Sql, List<(string Name, object? Value)> Parameters) TranslateHavingPredicate(LambdaExpression predicate)
     {
+        _havingParameters = new List<(string, object?)>();
         Expression body = predicate.Body;
 
         if (body is BinaryExpression binary)
@@ -60,7 +67,7 @@ internal sealed class JoinedGroupByExpressionVisitor
             string left = TranslateHavingExpression(binary.Left);
             string right = TranslateHavingExpression(binary.Right);
             string op = GetSqlOperator(binary.NodeType);
-            return $"{left} {op} {right}";
+            return ($"{left} {op} {right}", _havingParameters);
         }
 
         throw new NotSupportedException($"HAVING predicate type '{body.NodeType}' is not supported.");
@@ -87,7 +94,7 @@ internal sealed class JoinedGroupByExpressionVisitor
 
         if (expr is ConstantExpression constant)
         {
-            return HavingExpressionHelpers.FormatLiteral(constant.Value);
+            return AddHavingParameter(constant.Value);
         }
 
         // Captured local variables, method parameters, and other closed-over values compile
@@ -95,10 +102,22 @@ internal sealed class JoinedGroupByExpressionVisitor
         // ConstantExpression - evaluate it (gap #14's closure-safety fix).
         if (expr is MemberExpression or UnaryExpression)
         {
-            return HavingExpressionHelpers.FormatLiteral(HavingExpressionHelpers.EvaluateExpression(expr));
+            return AddHavingParameter(HavingExpressionHelpers.EvaluateExpression(expr));
         }
 
         throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
+    }
+
+    /// <summary>
+    /// Adds a HAVING comparison operand as a bound query parameter and returns its placeholder
+    /// name, instead of inlining it into the SQL text - matches
+    /// <c>GroupedQueryBuilder.AddHavingParameter</c>'s fix for the same anti-pattern.
+    /// </summary>
+    private string AddHavingParameter(object? value)
+    {
+        string name = $"{_dialect.ParameterPrefix}jhp{_havingParamSeq++}";
+        _havingParameters.Add((name, value));
+        return name;
     }
 
     private static string GetSqlOperator(ExpressionType nodeType) => nodeType switch
