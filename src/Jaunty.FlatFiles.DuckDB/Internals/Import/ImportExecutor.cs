@@ -47,7 +47,7 @@ internal static class ImportExecutor
         DbCommand sourceCmd = (sourceConnection as DbConnection)!.CreateCommand();
         await using (sourceCmd.ConfigureAwait(false))
         {
-            sourceCmd.CommandText = $"SELECT * FROM \"{tableName}\"";
+            sourceCmd.CommandText = $"SELECT * FROM \"{tableName.Replace("\"", "\"\"")}\"";
             DbDataReader reader = await sourceCmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             await using (reader.ConfigureAwait(false))
             {
