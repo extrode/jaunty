@@ -197,6 +197,20 @@ public class CsvFileSourceTests
         Assert.Equal("HEADER true", source.GenerateCopyToOptions());
     }
 
+    [Fact]
+    public void IsPromotedToTable_CanBeSet()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { IsPromotedToTable = true };
+        Assert.True(source.IsPromotedToTable);
+    }
+
+    [Fact]
+    public void IsPreloaded_CanBeSet()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { IsPreloaded = true };
+        Assert.True(source.IsPreloaded);
+    }
+
     // Minimal test entity
     private class SalesRecord { }
 }

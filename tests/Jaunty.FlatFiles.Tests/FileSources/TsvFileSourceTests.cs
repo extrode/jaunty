@@ -72,6 +72,15 @@ public class TsvFileSourceTests
     }
 
     [Fact]
+    public void GenerateReadFunction_WithHeaderFalse_IncludesHeaderFalse()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object)) { HasHeader = false };
+        var fn = source.GenerateReadFunction("'f.tsv'");
+
+        Assert.Contains("header = false", fn);
+    }
+
+    [Fact]
     public void GenerateReadFunction_WithNullString_IncludesNullstrParam()
     {
         var source = new TsvFileSource("t", "f.tsv", typeof(object)) { NullString = "NA" };
@@ -103,5 +112,19 @@ public class TsvFileSourceTests
     {
         var source = new TsvFileSource("t", "f.tsv", typeof(object));
         Assert.Equal("DELIMITER '\t', HEADER true", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void IsPromotedToTable_CanBeSet()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object)) { IsPromotedToTable = true };
+        Assert.True(source.IsPromotedToTable);
+    }
+
+    [Fact]
+    public void IsPreloaded_CanBeSet()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object)) { IsPreloaded = true };
+        Assert.True(source.IsPreloaded);
     }
 }
