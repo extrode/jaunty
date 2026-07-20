@@ -126,6 +126,8 @@ public static partial class Jaunty
         if (entityList.Count == 0)
             return 0;
 
+        BulkEntityValidator.ThrowIfAnyNull(entityList, nameof(entities));
+
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (string.IsNullOrEmpty(cached.InsertSql))
@@ -405,7 +407,7 @@ public static partial class Jaunty
         return totalInserted;
     }
 
-    private static async ValueTask<int> ExecuteInsertAndSetIdAsync<T>(DbCommand command, T entity, Action<T, long>? idSetter, CancellationToken cancellationToken)
+    internal static async ValueTask<int> ExecuteInsertAndSetIdAsync<T>(DbCommand command, T entity, Action<T, long>? idSetter, CancellationToken cancellationToken)
     {
         if (idSetter is null)
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -415,7 +417,7 @@ public static partial class Jaunty
         if (id > 0)
             idSetter(entity, id);
 
-        return 1;
+        return id > 0 ? 1 : 0;
     }
 
     /// <summary>
