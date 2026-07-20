@@ -14,7 +14,7 @@ namespace Jaunty.Tests.Unit.Internals;
 /// </summary>
 /// <remarks>
 /// Shares the "Logging Extensions" collection with <see cref="Jaunty.Tests.Unit.Interceptors.JauntyLoggingExtensionsTests"/>
-/// and <see cref="Jaunty.Tests.Configuration.JauntyConfigInterceptorTests"/> — all three mutate
+/// and <see cref="Jaunty.Tests.Unit.Configuration.JauntyConfigInterceptorTests"/> — all three mutate
 /// the same process-wide <see cref="JauntyConfig.InterceptorPipeline"/> static state and must run
 /// serialized against each other.
 /// </remarks>

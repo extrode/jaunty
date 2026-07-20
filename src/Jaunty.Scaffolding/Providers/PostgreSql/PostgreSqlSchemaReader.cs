@@ -36,7 +36,7 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
         WHERE c.table_schema = @SchemaName AND c.table_name = @TableName
         ORDER BY c.ordinal_position";
 
-    private const string PrimaryKeysSql = @"
+    internal const string PrimaryKeysSql = @"
         SELECT
             tc.constraint_name AS ConstraintName,
             kcu.column_name AS ColumnName,
@@ -51,7 +51,7 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
           AND tc.table_name = @TableName
         ORDER BY kcu.ordinal_position";
 
-    private const string ForeignKeysSql = @"
+    internal const string ForeignKeysSql = @"
         SELECT
             tc.constraint_name AS ConstraintName,
             kcu.column_name AS ForeignKeyColumn,

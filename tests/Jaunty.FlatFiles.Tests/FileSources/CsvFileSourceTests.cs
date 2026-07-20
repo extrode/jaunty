@@ -67,6 +67,20 @@ public class CsvFileSourceTests
         Assert.Throws<ArgumentNullException>(() => new CsvFileSource("t", "f.csv", null!));
     }
 
+    [Fact]
+    public void Constructor_MultiplePaths_SetsAllPaths()
+    {
+        var paths = new[] { "data/a.csv", "data/b.csv" };
+        var source = new CsvFileSource("t", paths, typeof(SalesRecord));
+
+        Assert.Equal(2, source.FilePaths.Count);
+        Assert.Equal("data/a.csv", source.FilePath);
+    }
+
+    [Fact]
+    public void Constructor_EmptyFilePaths_Throws()
+        => Assert.Throws<ArgumentException>(() => new CsvFileSource("t", Array.Empty<string>(), typeof(SalesRecord)));
+
     // ------------------------------------------------------------------
     // GenerateReadFunction
     // ------------------------------------------------------------------
