@@ -29,6 +29,11 @@ public static class SpecialTypeMappers
     /// Registers special type mappers with Jaunty configuration.
     /// Call this at application startup to enable Dictionary, KeyValuePair, ValueTuple, and ExpandoObject mapping.
     /// </summary>
+    /// <remarks>
+    /// Idempotent: if <see cref="JauntyConfig.SpecialTypeMapperResolver"/> is already set (by a
+    /// prior call to this method, or by a custom resolver configured directly), this call is a
+    /// silent no-op rather than overwriting it.
+    /// </remarks>
     public static void Register()
     {
         JauntyConfig.SpecialTypeMapperResolver ??= ResolveSpecialTypeMapper;
@@ -60,6 +65,15 @@ public static class SpecialTypeMappers
         if (type.IsValueType && type.FullName?.StartsWith("System.ValueTuple`") == true)
         {
             Type[] typeArgs = type.GetGenericArguments();
+
+            // ValueTuple`8's 8th type argument is always the nested "Rest" tuple (C# tuple
+            // syntax only ever nests beyond 7 elements), which this positional mapper treats
+            // as a single plain column instead of flattening - silently truncating/misbinding
+            // rather than mapping correctly. Fail fast instead.
+            if (typeArgs.Length >= 8)
+                throw new NotSupportedException(
+                    $"ValueTuple types with 8 or more elements (nested 'Rest' tuples) are not supported for query mapping; got '{type.Name}'.");
+
             return reader.FieldCount >= typeArgs.Length
                 ? CreateValueTupleMapper(type, reader, typeArgs)
                 : throw new InvalidOperationException(
@@ -77,8 +91,8 @@ public static class SpecialTypeMappers
 
         return new Func<IDataReader, object>(r =>
         {
-            object? key = r.IsDBNull(0) ? GetDefault(keyType) : ConvertValue(r.GetValue(0), keyType);
-            object? value = r.IsDBNull(1) ? GetDefault(valueType) : ConvertValue(r.GetValue(1), valueType);
+            object? key = r.IsDBNull(0) ? GetDefault(keyType, "Key") : ConvertValue(r.GetValue(0), keyType);
+            object? value = r.IsDBNull(1) ? GetDefault(valueType, "Value") : ConvertValue(r.GetValue(1), valueType);
             // Create KeyValuePair using reflection (it's a struct)
             object? kvp = Activator.CreateInstance(type, key, value);
 
@@ -95,7 +109,7 @@ public static class SpecialTypeMappers
             object?[] values = new object?[itemCount];
 
             for (int i = 0; i < itemCount; i++)
-                values[i] = r.IsDBNull(i) ? GetDefault(typeArgs[i]) : ConvertValue(r.GetValue(i), typeArgs[i]);
+                values[i] = r.IsDBNull(i) ? GetDefault(typeArgs[i], $"Item{i + 1}") : ConvertValue(r.GetValue(i), typeArgs[i]);
 
             // Create ValueTuple using Activator
             object? tuple = Activator.CreateInstance(type, values);
@@ -103,9 +117,18 @@ public static class SpecialTypeMappers
         });
     }
 
-    private static object? GetDefault(Type type)
+    /// <summary>
+    /// Returns the default value for a NULL column, matching the entity-mapping path
+    /// (<c>PropertySetter&lt;T&gt;.Set</c>) which throws for NULL into a non-nullable value type
+    /// instead of silently coercing it to <c>default(T)</c>.
+    /// </summary>
+    private static object? GetDefault(Type type, string elementName = "value")
     {
-        return type.IsValueType ? Activator.CreateInstance(type) : null;
+        if (type.IsValueType && Nullable.GetUnderlyingType(type) is null)
+            throw new InvalidOperationException(
+                $"Cannot assign NULL to non-nullable element '{elementName}' of type '{type.Name}'.");
+
+        return null;
     }
 
     private static object? ConvertValue(object? value, Type targetType)

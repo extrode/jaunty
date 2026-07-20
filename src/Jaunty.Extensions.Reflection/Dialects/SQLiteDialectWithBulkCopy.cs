@@ -9,7 +9,12 @@ namespace Jaunty.Extensions.Reflection.Dialects;
 /// </summary>
 internal sealed class SQLiteDialectWithBulkCopy : ISqlDialect
 {
-    private readonly SQLiteDialect _inner = new();
+    private readonly SQLiteDialect _inner;
+
+    public SQLiteDialectWithBulkCopy(SQLiteDialect? inner = null)
+    {
+        _inner = inner ?? new SQLiteDialect();
+    }
 
     public bool SupportsNativeBulkCopy => false; // SQLite has no true native bulk copy
 
