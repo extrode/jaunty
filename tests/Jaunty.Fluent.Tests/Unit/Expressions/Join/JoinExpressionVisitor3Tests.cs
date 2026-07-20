@@ -206,6 +206,24 @@ public class JoinExpressionVisitor3Tests
     }
 
     #endregion
+
+    #region Self-Join (Same Entity Type for Multiple Parameters)
+
+    [Fact]
+    public void Visit_SelfJoin_TwoParametersOfSameType_ResolveToDistinctAliases()
+    {
+        // T1 and T2 are both Product - parameters must be matched by reference/position, not
+        // by Type, or both p1.* and p2.* would resolve to the same (first) alias.
+        Expression<Func<Product, Product, Category, bool>> expr =
+            (p1, p2, c) => p1.SupplierId == p2.ProductId && p2.CategoryId == c.CategoryId;
+        var visitor = new JoinExpressionVisitor3<Product, Product, Category>(_dialect, "p1", "p2", "c");
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("p1.[supplier_id] = p2.[product_id]", sql);
+        Assert.Contains("p2.[category_id] = c.[category_id]", sql);
+    }
+
+    #endregion
 }
 
 /// <summary>
@@ -284,6 +302,24 @@ public class JoinExpressionVisitor4Tests
 
         Assert.Contains("AND", sql);
         Assert.Contains("OR", sql);
+    }
+
+    #endregion
+
+    #region Self-Join (Same Entity Type for Multiple Parameters)
+
+    [Fact]
+    public void Visit_SelfJoin_TwoParametersOfSameType_ResolveToDistinctAliases()
+    {
+        // T1 and T3 are both Product - parameters must be matched by reference/position, not
+        // by Type, or both p1.* and p3.* would resolve to the same (first) alias.
+        Expression<Func<Product, Category, Product, Order, bool>> expr =
+            (p1, c, p3, o) => p1.SupplierId == p3.ProductId && p3.CategoryId == c.CategoryId;
+        var visitor = new JoinExpressionVisitor4<Product, Category, Product, Order>(_dialect, "p1", "c", "p3", "o");
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("p1.[supplier_id] = p3.[product_id]", sql);
+        Assert.Contains("p3.[category_id] = c.[category_id]", sql);
     }
 
     #endregion

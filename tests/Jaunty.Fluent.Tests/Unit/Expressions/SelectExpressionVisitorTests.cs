@@ -369,5 +369,30 @@ public class SelectExpressionVisitorTests
         Assert.Equal("42", column.Sql);
     }
 
+    // FormatConstant previously used value.ToString() (culture-sensitive) for anything that
+    // wasn't string/bool/DateTime, so a decimal/double projection constant rendered with a
+    // comma decimal separator under a comma-decimal culture (e.g. de-DE), corrupting the
+    // generated SQL ("1,5" is two values in a SELECT list, not one).
+    [Fact]
+    public void Visit_ConstantDecimal_IsCultureInvariant()
+    {
+        var original = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("de-DE");
+
+            Expression<Func<Product, object>> expr = p => 1.5m;
+            var visitor = new SelectExpressionVisitor<Product>(_dialect);
+            var columns = visitor.Translate(expr);
+
+            var column = Assert.Single(columns);
+            Assert.Equal("1.5", column.Sql);
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = original;
+        }
+    }
+
     #endregion
 }
