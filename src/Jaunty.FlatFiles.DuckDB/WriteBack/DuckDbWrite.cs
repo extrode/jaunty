@@ -39,12 +39,12 @@ public sealed partial class DuckDb
         {
             if (i > 0) { columns.Append(", "); values.Append(", "); }
             ColumnMapping mapping = mappingList[i];
-            columns.Append($"\"{mapping.ColumnName}\"");
+            columns.Append(_dialect.EscapeColumnName(mapping.ColumnName));
             values.Append($"${i + 1}");
             parameters.Add(new DuckDBParameter { Value = mapping.Getter(entity) ?? DBNull.Value });
         }
 
-        var sql = $"INSERT INTO \"{source.TableName}\" ({columns}) VALUES ({values})";
+        var sql = $"INSERT INTO {_dialect.EscapeTableName(null, source.TableName)} ({columns}) VALUES ({values})";
         var result = NonQueryExecutor.Execute(_connection, sql, parameters, options);
         _modified.TryAdd(typeof(T), true);
         return result;
@@ -85,7 +85,7 @@ public sealed partial class DuckDb
         for (int i = 0; i < mappingList.Count; i++)
         {
             if (i > 0) columns.Append(", ");
-            columns.Append($"\"{mappingList[i].ColumnName}\"");
+            columns.Append(_dialect.EscapeColumnName(mappingList[i].ColumnName));
         }
         var columnsSql = columns.ToString();
 
@@ -119,7 +119,7 @@ public sealed partial class DuckDb
                 sb.Append(')');
             }
 
-            var sql = $"INSERT INTO \"{source.TableName}\" ({columnsSql}) VALUES {sb}";
+            var sql = $"INSERT INTO {_dialect.EscapeTableName(null, source.TableName)} ({columnsSql}) VALUES {sb}";
             totalInserted += NonQueryExecutor.Execute(_connection, sql, parameters, options);
         }
 
