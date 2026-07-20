@@ -196,6 +196,14 @@ internal sealed class SQLiteDialect : ISqlDialect
             sb.Append(keyColumns[i]);
         }
 
+        // A key-only entity (no non-key updatable columns) has nothing to set on conflict; DO
+        // NOTHING is the standard idiom instead of emitting "DO UPDATE SET " with nothing after it.
+        if (updateColumns.Length == 0)
+        {
+            sb.Append(") DO NOTHING");
+            return sb.ToString();
+        }
+
         sb.Append(") DO UPDATE SET ");
 
         for (int i = 0; i < updateColumns.Length; i++)
