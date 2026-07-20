@@ -40,8 +40,10 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
 
     public IGroupedJoinedQuery3<T1, T2, T3, TKey> Having(Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, bool>> predicate)
     {
-        var havingSql = _visitor.TranslateHavingPredicate(predicate);
+        (string havingSql, List<(string Name, object? Value)> parameters) = _visitor.TranslateHavingPredicate(predicate);
         _havingConditions.Add(havingSql);
+        foreach ((string name, object? value) in parameters)
+            _parent._parent.AddParameter(name, value);
         return this;
     }
 

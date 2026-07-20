@@ -35,8 +35,10 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
 
     public IGroupedJoinedQuery<TFrom, TJoin, TKey> Having(Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, bool>> predicate)
     {
-        var havingSql = _visitor.TranslateHavingPredicate(predicate);
+        (string havingSql, List<(string Name, object? Value)> parameters) = _visitor.TranslateHavingPredicate(predicate);
         _havingConditions.Add(havingSql);
+        foreach ((string name, object? value) in parameters)
+            _parent.AddParameter(name, value);
         return this;
     }
 

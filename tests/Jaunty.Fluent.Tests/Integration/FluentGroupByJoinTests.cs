@@ -143,6 +143,25 @@ public class FluentGroupByJoinTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public void GroupBy_Having_WithLiteral_BindsAsParameterInsteadOfInliningIntoSql()
+    {
+        // Regression test (round 10): HAVING comparison operands must be bound as query
+        // parameters instead of inlined as raw SQL text (previously
+        // HavingExpressionHelpers.FormatLiteral inlined them with only quote-doubling for
+        // strings - an injection-adjacent, culture-unsafe pattern already fixed for the
+        // single-entity GroupedQueryBuilder path via AddHavingParameter, now fixed here too).
+        var sql = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .GroupBy((p, c) => p.CategoryId)
+            .Having(g => g.Count() > 2)
+            .ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.DoesNotContain("> 2", sql);
+        Assert.Matches(@"HAVING COUNT\(\*\) > \S*jhp\d+", sql);
+    }
+
+    [Fact]
     public async Task GroupBy_SelectAsync_ReturnsGroupedResults()
     {
         var results = await _fixture.Connection.From<Product>()
