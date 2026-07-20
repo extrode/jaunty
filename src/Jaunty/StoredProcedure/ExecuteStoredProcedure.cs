@@ -226,7 +226,7 @@ public static partial class Jaunty
     /// </example>
     /// <seealso cref="SpParameters"/>
     /// <seealso cref="ExecuteStoredProcedureScalar{T}(IDbConnection, string, object?, CommandOptions{T})"/>
-    public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options = default)
+    public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default)
     {
         var spOptions = new CommandOptions(options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
         return ExecuteScalarWithOutputParameters<T>(connection, procedureName, parameters, spOptions);
