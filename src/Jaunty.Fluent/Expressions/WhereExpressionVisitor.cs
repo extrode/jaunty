@@ -760,14 +760,4 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         _parameters.Add((paramName, stringValue));
         return node;
     }
-
-    private static string EscapeLikePattern(string value)
-    {
-        // Escape LIKE wildcards and escape character
-        return value
-            .Replace("\\", "\\\\")
-            .Replace("%", "\\%")
-            .Replace("_", "\\_")
-            .Replace("[", "\\[");
-    }
 }
