@@ -155,6 +155,18 @@ public static class CsvImportExtensions
         if (filePath.IndexOfAny(SqliteCliUnsafeChars) >= 0)
             throw new ArgumentException($"File path contains characters that are not supported by the sqlite3 CLI import command: {filePath}", nameof(filePath));
 
+        // The sqlite3 CLI's csv mode always quotes with double-quote; there's no dot-command to
+        // override it, unlike the other providers' native import commands.
+        if (options.Quote != '"')
+            throw new NotSupportedException("CsvImportOptions.Quote is not supported by the sqlite3 CLI import path; the CLI's CSV mode always uses '\"' as the quote character.");
+
+        // The sqlite3 CLI's ".nullvalue STRING" dot-command only affects output formatting
+        // (e.g. how NULL is rendered by SELECT/.mode); ".import" does not consult it at all, so a
+        // matching field is imported as literal text rather than converted to NULL (verified against
+        // the sqlite3 CLI directly - see AUD-R11 batch-04). Fail loudly instead of silently
+        // importing the sentinel as literal text.
+        ThrowIfNullValueUnsupported(options, "sqlite3 CLI import");
+
         // Build sqlite3 commands
         var commands = new StringBuilder();
         commands.AppendLine(".mode csv");
@@ -328,7 +340,7 @@ public static class CsvImportExtensions
             string escapedTable = EscapeQualifiedTableName(dialect, tableName);
 
             // Use COPY ... FROM STDIN via raw SQL (works with all Npgsql versions)
-            string copyCommand = $"COPY {escapedTable} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
+            string copyCommand = $"COPY {escapedTable} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}'{BuildPostgresCopyExtraOptions(options)})";
 
             // Use reflection to call BeginTextImport on NpgsqlConnection
 
@@ -351,7 +363,7 @@ public static class CsvImportExtensions
 
             // Fallback: Use COPY FROM with file path (requires server access to file)
             using IDbCommand cmd = connection.CreateCommand();
-            cmd.CommandText = $"COPY {escapedTable} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
+            cmd.CommandText = $"COPY {escapedTable} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}'{BuildPostgresCopyExtraOptions(options)})";
             return cmd.ExecuteNonQuery();
         }
         finally
@@ -373,7 +385,7 @@ public static class CsvImportExtensions
             ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
             string escapedTable = EscapeQualifiedTableName(dialect, tableName);
 
-            string copyCommand = $"COPY {escapedTable} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
+            string copyCommand = $"COPY {escapedTable} FROM STDIN WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}'{BuildPostgresCopyExtraOptions(options)})";
 
             // AOT-SAFE: Npgsql feature probe on the runtime connection type; null (trimmed or non-Npgsql) falls back to server-side COPY FROM below
             MethodInfo? beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
@@ -393,7 +405,7 @@ public static class CsvImportExtensions
             }
 
             using DbCommand cmd = connection.CreateCommand();
-            cmd.CommandText = $"COPY {escapedTable} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}')";
+            cmd.CommandText = $"COPY {escapedTable} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}'{BuildPostgresCopyExtraOptions(options)})";
             return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -415,6 +427,8 @@ public static class CsvImportExtensions
 
     private static long ImportMySql(IDbConnection connection, string tableName, string filePath, CsvImportOptions options)
     {
+        ThrowIfNullValueUnsupported(options, "MySQL/MariaDB LOAD DATA");
+
         bool wasClosed = connection.State == ConnectionState.Closed;
         try
         {
@@ -425,10 +439,16 @@ public static class CsvImportExtensions
 
             using IDbCommand cmd = connection.CreateCommand();
             var sb = new StringBuilder();
-            sb.Append($"LOAD DATA LOCAL INFILE '{filePath.Replace("\\", "\\\\").Replace("'", "\\'")}' ");
+            // MySQL string literals treat backslash as an escape introducer unless the server's
+            // sql_mode includes NO_BACKSLASH_ESCAPES, and which mode is active isn't known here.
+            // Converting to forward slashes sidesteps the ambiguity entirely (matches ImportViaSqliteCli's
+            // filePath handling above): LOCAL INFILE reads the file client-side via the .NET file APIs,
+            // which accept '/' as a path separator on Windows too, so no OS-level meaning is lost. The
+            // remaining quote-doubling is SQL-standard escaping, safe under any sql_mode.
+            sb.Append($"LOAD DATA LOCAL INFILE '{filePath.Replace("\\", "/").Replace("'", "''")}' ");
             sb.Append($"INTO TABLE {escapedTable} ");
             sb.Append($"FIELDS TERMINATED BY '{options.Delimiter}' ");
-            sb.Append("OPTIONALLY ENCLOSED BY '\"' ");
+            sb.Append($"OPTIONALLY ENCLOSED BY '{EscapeSqlCharLiteral(options.Quote)}' ");
             sb.Append("LINES TERMINATED BY '\\n' ");
             if (options.HasHeader)
                 sb.Append("IGNORE 1 LINES");
@@ -444,6 +464,8 @@ public static class CsvImportExtensions
 
     private static async ValueTask<long> ImportMySqlAsync(DbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken)
     {
+        ThrowIfNullValueUnsupported(options, "MySQL/MariaDB LOAD DATA");
+
         bool wasClosed = connection.State == ConnectionState.Closed;
         try
         {
@@ -454,10 +476,16 @@ public static class CsvImportExtensions
 
             using DbCommand cmd = connection.CreateCommand();
             var sb = new StringBuilder();
-            sb.Append($"LOAD DATA LOCAL INFILE '{filePath.Replace("\\", "\\\\").Replace("'", "\\'")}' ");
+            // MySQL string literals treat backslash as an escape introducer unless the server's
+            // sql_mode includes NO_BACKSLASH_ESCAPES, and which mode is active isn't known here.
+            // Converting to forward slashes sidesteps the ambiguity entirely (matches ImportViaSqliteCli's
+            // filePath handling above): LOCAL INFILE reads the file client-side via the .NET file APIs,
+            // which accept '/' as a path separator on Windows too, so no OS-level meaning is lost. The
+            // remaining quote-doubling is SQL-standard escaping, safe under any sql_mode.
+            sb.Append($"LOAD DATA LOCAL INFILE '{filePath.Replace("\\", "/").Replace("'", "''")}' ");
             sb.Append($"INTO TABLE {escapedTable} ");
             sb.Append($"FIELDS TERMINATED BY '{options.Delimiter}' ");
-            sb.Append("OPTIONALLY ENCLOSED BY '\"' ");
+            sb.Append($"OPTIONALLY ENCLOSED BY '{EscapeSqlCharLiteral(options.Quote)}' ");
             sb.Append("LINES TERMINATED BY '\\n' ");
             if (options.HasHeader)
                 sb.Append("IGNORE 1 LINES");
@@ -484,6 +512,8 @@ public static class CsvImportExtensions
 
     private static long ImportSqlServer(IDbConnection connection, string tableName, string filePath, CsvImportOptions options)
     {
+        ThrowIfNullValueUnsupported(options, "SQL Server BULK INSERT");
+
         bool wasClosed = connection.State == ConnectionState.Closed;
         try
         {
@@ -501,7 +531,10 @@ public static class CsvImportExtensions
             sb.Append("TABLOCK, ");
             if (options.HasHeader)
                 sb.Append("FIRSTROW = 2, ");
-            sb.Append("FORMAT = 'CSV')");
+            sb.Append("FORMAT = 'CSV'");
+            if (options.Quote != '"')
+                sb.Append($", FIELDQUOTE = '{EscapeSqlCharLiteral(options.Quote)}'");
+            sb.Append(')');
 
             cmd.CommandText = sb.ToString();
             return cmd.ExecuteNonQuery();
@@ -514,6 +547,8 @@ public static class CsvImportExtensions
 
     private static async ValueTask<long> ImportSqlServerAsync(DbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken)
     {
+        ThrowIfNullValueUnsupported(options, "SQL Server BULK INSERT");
+
         bool wasClosed = connection.State == ConnectionState.Closed;
         try
         {
@@ -531,7 +566,10 @@ public static class CsvImportExtensions
             sb.Append("TABLOCK, ");
             if (options.HasHeader)
                 sb.Append("FIRSTROW = 2, ");
-            sb.Append("FORMAT = 'CSV')");
+            sb.Append("FORMAT = 'CSV'");
+            if (options.Quote != '"')
+                sb.Append($", FIELDQUOTE = '{EscapeSqlCharLiteral(options.Quote)}'");
+            sb.Append(')');
 
             cmd.CommandText = sb.ToString();
             return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -583,6 +621,36 @@ public static class CsvImportExtensions
     {
         if (delimiter is '\'' or '"' or '\\' or '\r' or '\n')
             throw new ArgumentException($"Delimiter '{delimiter}' is not supported; it conflicts with SQL/CLI quoting.", nameof(delimiter));
+    }
+
+    // Doubles a single-quote so a single character can be embedded in a single-quoted SQL string
+    // literal (e.g. QUOTE '''' for a literal apostrophe quote character); any other character is
+    // already safe to embed as-is.
+    private static string EscapeSqlCharLiteral(char c) => c == '\'' ? "''" : c.ToString();
+
+    // Postgres COPY's WITH (...) clause natively supports NULL '<value>' and QUOTE '<char>', unlike
+    // the other providers' native import commands, so these can be applied directly instead of
+    // silently ignored.
+    private static string BuildPostgresCopyExtraOptions(CsvImportOptions options)
+    {
+        var extra = new StringBuilder();
+        if (options.NullValue != null)
+            extra.Append($", NULL '{options.NullValue.Replace("'", "''")}'");
+        if (options.Quote != '"')
+            extra.Append($", QUOTE '{EscapeSqlCharLiteral(options.Quote)}'");
+
+        return extra.ToString();
+    }
+
+    // MySQL's LOAD DATA and SQL Server's BULK INSERT have no clause for substituting an arbitrary
+    // string as NULL (unlike Postgres COPY's NULL option or the sqlite3 CLI's .nullvalue), so rather
+    // than silently importing the sentinel as literal text, fail loudly if a caller configured one.
+    private static void ThrowIfNullValueUnsupported(CsvImportOptions options, string importMethodName)
+    {
+        if (options.NullValue != null)
+            throw new NotSupportedException(
+                $"CsvImportOptions.NullValue is not supported by the {importMethodName} import path. " +
+                "Leave NullValue unset, or import into an in-memory SQLite database (which uses the prepared-statement fallback and honors NullValue).");
     }
 
     private static string? ExtractSqliteDbPath(string connectionString)
