@@ -98,10 +98,10 @@ public sealed class CsvFileSource : IFileSource
             sb.Append($", header = {(HasHeader.Value ? "true" : "false")}");
 
         if (Delimiter.HasValue)
-            sb.Append($", delim = '{Delimiter.Value}'");
+            sb.Append($", delim = '{Delimiter.Value.ToString().Replace("'", "''")}'");
 
         if (QuoteChar.HasValue)
-            sb.Append($", quote = '{QuoteChar.Value}'");
+            sb.Append($", quote = '{QuoteChar.Value.ToString().Replace("'", "''")}'");
 
         if (NullString is not null)
             sb.Append($", nullstr = '{NullString.Replace("'", "''")}'");
