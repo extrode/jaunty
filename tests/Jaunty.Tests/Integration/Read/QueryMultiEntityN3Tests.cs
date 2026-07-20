@@ -1,6 +1,7 @@
 using System.Data.SQLite;
 
 using Jaunty.Attributes;
+using Jaunty.Core;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Read;
@@ -129,5 +130,355 @@ public class QueryMultiEntityN3Tests : IClassFixture<DialectFixture>
         Assert.Equal(1L, tag.TagId);
         Assert.Equal(1L, tag.TagBookId);
         Assert.Equal("history", tag.Label);
+    }
+
+    // ---------------------------------------------------------------------------
+    // CommandOptions<(T1,T2,T3)> / MultiEntityCommandOptions<T1,T2,T3> overload coverage
+    // (AUD-R11 batch-01: Query/QueryFirst/QuerySingle options overloads, and
+    // QueryFirstOrDefault/QuerySingleOrDefault at every overload, were previously untested).
+    // ---------------------------------------------------------------------------
+
+    private const string JoinSql = @"
+        SELECT
+            a.author_id     AS AuthorId,
+            a.author_name,
+            b.book_id       AS BookId,
+            b.author_id     AS BookAuthorId,
+            b.book_name,
+            t.tag_id        AS TagId,
+            t.book_id       AS TagBookId,
+            t.label         AS Label
+        FROM multimap3_authors a
+        JOIN multimap3_books  b ON b.author_id = a.author_id
+        JOIN multimap3_tags   t ON t.book_id   = b.book_id";
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_ThreeEntities_WithCommandOptions_UsesTransaction(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        using var txn = connection.BeginTransaction();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.Transaction = txn;
+            cmd.CommandText = "UPDATE multimap3_authors SET author_name = 'TXN-SENTINEL' WHERE author_id = 1";
+            cmd.ExecuteNonQuery();
+        }
+
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>(transaction: txn);
+        var results = connection.Query<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options);
+
+        Assert.Single(results);
+        Assert.Equal("TXN-SENTINEL", results[0].Item1.Name);
+
+        txn.Rollback();
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_ThreeEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>();
+
+        var results = connection.Query<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Single(results);
+        Assert.Equal("Ada Lovelace", results[0].Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_ThreeEntities_WithMultiEntityCommandOptions_UsesTransaction(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        using var txn = connection.BeginTransaction();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.Transaction = txn;
+            cmd.CommandText = "UPDATE multimap3_authors SET author_name = 'TXN-SENTINEL' WHERE author_id = 1";
+            cmd.ExecuteNonQuery();
+        }
+
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>(transaction: txn);
+        var results = connection.Query<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options);
+
+        Assert.Single(results);
+        Assert.Equal("TXN-SENTINEL", results[0].Item1.Name);
+
+        txn.Rollback();
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void Query_ThreeEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>();
+
+        var results = connection.Query<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Single(results);
+        Assert.Equal("Ada Lovelace", results[0].Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_ThreeEntities_WithCommandOptions_ReturnsFirstRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>();
+
+        var (author, _, _) = connection.QueryFirst<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_ThreeEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>();
+
+        var (author, _, tag) = connection.QueryFirst<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+        Assert.Equal("history", tag.Label);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_ThreeEntities_WithMultiEntityCommandOptions_ReturnsFirstRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>();
+
+        var (author, _, _) = connection.QueryFirst<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirst_ThreeEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>();
+
+        var (author, _, tag) = connection.QueryFirst<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+        Assert.Equal("history", tag.Label);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_ThreeEntities_WithCommandOptions_ReturnsSingleRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>();
+
+        var (author, book, _) = connection.QuerySingle<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+        Assert.Equal("Notes on the Analytical Engine", book.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_ThreeEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>();
+
+        var (author, _, _) = connection.QuerySingle<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_ThreeEntities_WithMultiEntityCommandOptions_ReturnsSingleRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>();
+
+        var (author, book, _) = connection.QuerySingle<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+        Assert.Equal("Notes on the Analytical Engine", book.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingle_ThreeEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>();
+
+        var (author, _, _) = connection.QuerySingle<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options);
+
+        Assert.Equal("Ada Lovelace", author.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_ThreeEntities_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var result = connection.QueryFirstOrDefault<Mm3Author, Mm3Book, Mm3Tag>(JoinSql);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_ThreeEntities_WithParameters_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var result = connection.QueryFirstOrDefault<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 });
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_ThreeEntities_WithCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>();
+
+        var result = connection.QueryFirstOrDefault<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_ThreeEntities_WithParametersAndCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>();
+
+        var result = connection.QueryFirstOrDefault<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_ThreeEntities_WithMultiEntityCommandOptions_ReturnsFirstTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>();
+
+        var result = connection.QueryFirstOrDefault<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QueryFirstOrDefault_ThreeEntities_WithParametersAndMultiEntityCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>();
+
+        var result = connection.QueryFirstOrDefault<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_ThreeEntities_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var result = connection.QuerySingleOrDefault<Mm3Author, Mm3Book, Mm3Tag>(JoinSql);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_ThreeEntities_WithParameters_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+
+        var result = connection.QuerySingleOrDefault<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 });
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_ThreeEntities_WithCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>();
+
+        var result = connection.QuerySingleOrDefault<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_ThreeEntities_WithParametersAndCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>();
+
+        var result = connection.QuerySingleOrDefault<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_ThreeEntities_WithMultiEntityCommandOptions_ReturnsSingleTuple(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>();
+
+        var result = connection.QuerySingleOrDefault<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options);
+
+        Assert.NotNull(result);
+        Assert.Equal("Ada Lovelace", result.Value.Item1.Name);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public void QuerySingleOrDefault_ThreeEntities_WithParametersAndMultiEntityCommandOptions_ReturnsNullWhenEmpty(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Mm3Author, Mm3Book, Mm3Tag>();
+
+        var result = connection.QuerySingleOrDefault<Mm3Author, Mm3Book, Mm3Tag>(
+            $"{JoinSql} WHERE a.author_id = @AuthorId", new { AuthorId = -999 }, options);
+
+        Assert.Null(result);
     }
 }
