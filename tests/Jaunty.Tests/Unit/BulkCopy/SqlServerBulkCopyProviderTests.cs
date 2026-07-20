@@ -139,5 +139,31 @@ public class SqlServerBulkCopyProviderTests
 
         Assert.Equal(0, Count(conn, "bulk_mssql_txn"));
     }
+
+    [Fact]
+    public void CopyToServer_NonSqlConnection_ThrowsArgumentException()
+    {
+        using var conn = new System.Data.SQLite.SQLiteConnection("Data Source=:memory:");
+        conn.Open();
+        using var reader = MakeTable(1).CreateDataReader();
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            new SqlServerBulkCopyProvider().CopyToServer(conn, "irrelevant", reader, new BulkCopyOptions()));
+
+        Assert.Contains("SqlConnection", ex.Message);
+    }
+
+    [Fact]
+    public async Task CopyToServerAsync_NonSqlConnection_ThrowsArgumentException()
+    {
+        using var conn = new System.Data.SQLite.SQLiteConnection("Data Source=:memory:");
+        conn.Open();
+        using var reader = MakeTable(1).CreateDataReader();
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            new SqlServerBulkCopyProvider().CopyToServerAsync(conn, "irrelevant", reader, new BulkCopyOptions(), CancellationToken.None).AsTask());
+
+        Assert.Contains("SqlConnection", ex.Message);
+    }
 }
 #endif
