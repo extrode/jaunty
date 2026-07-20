@@ -220,14 +220,14 @@ public sealed partial class DuckDb : IFlatFile
             string col = fileColumns[i];
 
             if (dateTimeColumns.Contains(col))
-                sb.Append($"CAST(\"{col}\" AS TIMESTAMP) AS \"{col}\"");
+                sb.Append($"CAST({_dialect.EscapeColumnName(col)} AS TIMESTAMP) AS {_dialect.EscapeColumnName(col)}");
             else
-                sb.Append($"\"{col}\"");
+                sb.Append(_dialect.EscapeColumnName(col));
         }
 
         string keyword = source.IsPreloaded ? "TABLE" : "VIEW";
 
-        return $"CREATE OR REPLACE {keyword} \"{source.TableName}\" AS SELECT {sb} FROM {readFunction}";
+        return $"CREATE OR REPLACE {keyword} {_dialect.EscapeTableName(null, source.TableName)} AS SELECT {sb} FROM {readFunction}";
     }
 
     private async ValueTask<string> GenerateViewSqlWithDateTimeCastsAsync(IFileSource source, IReadOnlyDictionary<string, ColumnMapping> mappings, CancellationToken cancellationToken)
@@ -260,14 +260,14 @@ public sealed partial class DuckDb : IFlatFile
             string col = fileColumns[i];
 
             if (dateTimeColumns.Contains(col))
-                sb.Append($"CAST(\"{col}\" AS TIMESTAMP) AS \"{col}\"");
+                sb.Append($"CAST({_dialect.EscapeColumnName(col)} AS TIMESTAMP) AS {_dialect.EscapeColumnName(col)}");
             else
-                sb.Append($"\"{col}\"");
+                sb.Append(_dialect.EscapeColumnName(col));
         }
 
         string keyword = source.IsPreloaded ? "TABLE" : "VIEW";
 
-        return $"CREATE OR REPLACE {keyword} \"{source.TableName}\" AS SELECT {sb} FROM {readFunction}";
+        return $"CREATE OR REPLACE {keyword} {_dialect.EscapeTableName(null, source.TableName)} AS SELECT {sb} FROM {readFunction}";
     }
 
     private static HashSet<string> GetDateTimeColumnNamesFromMappings(IReadOnlyDictionary<string, ColumnMapping> mappings)
@@ -284,7 +284,7 @@ public sealed partial class DuckDb : IFlatFile
     private void ValidateSchema(IFileSource source)
     {
         using DuckDBCommand cmd = _connection.CreateCommand();
-        cmd.CommandText = $"DESCRIBE \"{source.TableName}\"";
+        cmd.CommandText = $"DESCRIBE {_dialect.EscapeTableName(null, source.TableName)}";
 
         using DuckDBDataReader reader = cmd.ExecuteReader();
         var fileColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -312,7 +312,7 @@ public sealed partial class DuckDb : IFlatFile
     {
         DuckDBCommand cmd = _connection.CreateCommand();
         await using var cmdDisposer = cmd.ConfigureAwait(false);
-        cmd.CommandText = $"DESCRIBE \"{source.TableName}\"";
+        cmd.CommandText = $"DESCRIBE {_dialect.EscapeTableName(null, source.TableName)}";
 
         DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         await using var readerDisposer = reader.ConfigureAwait(false);
