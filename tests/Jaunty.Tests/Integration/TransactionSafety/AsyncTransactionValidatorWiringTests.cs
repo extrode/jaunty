@@ -235,4 +235,148 @@ public class AsyncTransactionValidatorWiringTests : IDisposable
         Assert.Contains("DbTransaction", ex.Message);
         realTransaction.Rollback();
     }
+
+    // AUD-R11: the sync *CoreDirect methods below assigned options.Transaction to the shared
+    // IDbCommand unconditionally, without branching on "connection is DbConnection" like
+    // GetByIdSimpleCoreDirect (AUD-R6) already did. Round 11's batch-3 audit caught
+    // Delete/Insert/Update/ExecuteNonQueryCore; this sweep found the same unguarded pattern in
+    // Upsert, ExecuteBatch, QueryScalarCore, ExecuteQueryMultipleDirect, and QueryCoreListDirect.
+
+    [Fact]
+    public void Upsert_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        var category = new Category { CategoryId = 1, CategoryName = "Beverages", Description = "Upserted" };
+        int rows = _connection.Upsert(category, CommandOptions.WithTransaction(transaction));
+
+        Assert.Equal(1, rows);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public void Upsert_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var category = new Category { CategoryId = 1, CategoryName = "Beverages", Description = "Upserted" };
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _connection.Upsert(category, CommandOptions.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    [Fact]
+    public void ExecuteBatch_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        int rows = _connection.ExecuteBatch(
+            "UPDATE categories SET description = @Description WHERE category_id = @CategoryId",
+            new[] { new { CategoryId = 1, Description = "Batched" } },
+            CommandOptions.WithTransaction(transaction));
+
+        Assert.Equal(1, rows);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public void ExecuteBatch_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _connection.ExecuteBatch(
+                "UPDATE categories SET description = @Description WHERE category_id = @CategoryId",
+                new[] { new { CategoryId = 1, Description = "Batched" } },
+                CommandOptions.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    [Fact]
+    public void ExecuteScalar_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        long count = _connection.ExecuteScalar<long>(
+            "SELECT COUNT(*) FROM categories",
+            CommandOptions<long>.WithTransaction(transaction));
+
+        Assert.Equal(1, count);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public void ExecuteScalar_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _connection.ExecuteScalar<long>(
+                "SELECT COUNT(*) FROM categories",
+                CommandOptions<long>.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    [Fact]
+    public void QueryMultiple_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        using GridReader reader = _connection.QueryMultiple(
+            "SELECT * FROM categories",
+            CommandOptions.WithTransaction(transaction));
+        List<Category> categories = reader.Read<Category>();
+
+        Assert.Single(categories);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public void QueryMultiple_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _connection.QueryMultiple("SELECT * FROM categories", CommandOptions.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    [Fact]
+    public void QueryPartialList_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        List<IDictionary<string, object?>> rows = _connection.QueryPartialList(
+            "SELECT * FROM categories",
+            CommandOptions.WithTransaction(transaction));
+
+        Assert.Single(rows);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public void QueryPartialList_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            _connection.QueryPartialList("SELECT * FROM categories", CommandOptions.WithTransaction(nonDbTransaction)));
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
 }
