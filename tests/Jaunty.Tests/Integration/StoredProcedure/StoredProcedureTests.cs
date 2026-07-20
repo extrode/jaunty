@@ -370,6 +370,27 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
         Assert.True(parameters.HasValue(OutputCountParamName(dialect)));
     }
 
+    [Theory]
+    [SqlServer]
+    [MariaDB]
+    public void ExecuteStoredProcedureScalar_SpParametersOverload_NoResultSet_ReturnsDefaultInsteadOfThrowing(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var parameters = new SpParameters()
+            .AddInput(OutputCategoryParamName(dialect), 1)
+            .AddOutput(OutputCountParamName(dialect), DbType.Int32);
+
+        // GetProductCountWithOutput returns its count via the OUTPUT parameter only (no SELECT
+        // result set), so ExecuteScalar() sees no rows here - this exercises the SpParameters
+        // overload of ExecuteStoredProcedureScalar<T>, which used to throw for a non-nullable T
+        // in this scenario while the object-parameters overload silently returned default(T)
+        // for the identical case (AUD-R11 consistency fix).
+        var result = connection.ExecuteStoredProcedureScalar<int>(SpName("GetProductCountWithOutput", dialect), parameters);
+
+        Assert.Equal(0, result);
+    }
+
     #endregion
 
     #region Transaction guard (AUD-R11)

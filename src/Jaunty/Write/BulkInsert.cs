@@ -105,6 +105,8 @@ public static partial class Jaunty
         if (entityList.Count == 0)
             return 0;
 
+        BulkEntityValidator.ThrowIfAnyNull(entityList, nameof(entities));
+
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (string.IsNullOrEmpty(cached.InsertSql))
@@ -364,7 +366,7 @@ public static partial class Jaunty
         return totalInserted;
     }
 
-    private static int ExecuteInsertAndSetId<T>(IDbCommand command, T entity, Action<T, long>? idSetter)
+    internal static int ExecuteInsertAndSetId<T>(IDbCommand command, T entity, Action<T, long>? idSetter)
     {
         if (idSetter is null)
             return command.ExecuteNonQuery();
@@ -374,7 +376,7 @@ public static partial class Jaunty
         if (id > 0)
             idSetter(entity, id);
 
-        return 1;
+        return id > 0 ? 1 : 0;
     }
     private static bool IsSqliteDialect(ISqlDialect dialect)
         => dialect is SQLiteDialect || dialect.GetType().Name.Contains("SQLite", StringComparison.OrdinalIgnoreCase);

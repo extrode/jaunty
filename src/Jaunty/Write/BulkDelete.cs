@@ -230,6 +230,8 @@ public static partial class Jaunty
         if (entityList.Count == 0)
             return 0;
 
+        BulkEntityValidator.ThrowIfAnyNull(entityList, nameof(entities));
+
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
 
         if (!cached.HasPrimaryKey)
