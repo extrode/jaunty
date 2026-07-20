@@ -11,6 +11,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Jaunty.Fluent.Tests/Jaunty.Fluent.Tests.csproj" />
+    <Project Path="tests/Jaunty.Scaffolding.Cli.Tests/Jaunty.Scaffolding.Cli.Tests.csproj" />
     <Project Path="tests/Jaunty.Scaffolding.Tests/Jaunty.Scaffolding.Tests.csproj" />
     <Project Path="tests/Jaunty.Tests/Jaunty.Tests.csproj" />
     <Project Path="tests/Jaunty.FlatFiles.Tests/Jaunty.FlatFiles.Tests.csproj" />
