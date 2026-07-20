@@ -358,12 +358,11 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
         return sb.ToString();
     }
 
-    internal static TEntity MapEntity<TEntity>(EntityMetadata metadata, IDataReader reader, string prefix)
+    internal static TEntity MapEntity<TEntity>(EntityMetadata metadata, IDataReader reader, string prefix, Dictionary<string, int> ordinals)
         where TEntity : new()
     {
         var entity = new TEntity();
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
-        Dictionary<string, int> ordinals = BuildOrdinalLookup(reader);
 
         for (int i = 0; i < columns.Count; i++)
         {
@@ -391,11 +390,17 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     }
 
     /// <summary>
-    /// Builds a per-call ordinal lookup for the reader's current column set, avoiding the
+    /// Builds an ordinal lookup for the reader's current column set, avoiding the
     /// exception-driven IndexOutOfRangeException-per-missing-column pattern that
     /// <see cref="IDataRecord.GetOrdinal(string)"/> relies on when a column isn't present.
     /// </summary>
-    private static Dictionary<string, int> BuildOrdinalLookup(IDataReader reader)
+    /// <remarks>
+    /// AUD-R12: ordinals are static for the lifetime of a result set, so callers must build this
+    /// once per reader before their row loop and reuse it across every <see cref="MapEntity{TEntity}"/>
+    /// call for that result set, instead of rebuilding it on every call (previously: once per
+    /// entity per row).
+    /// </remarks>
+    internal static Dictionary<string, int> BuildOrdinalLookup(IDataReader reader)
     {
         var map = new Dictionary<string, int>(reader.FieldCount, StringComparer.OrdinalIgnoreCase);
 
