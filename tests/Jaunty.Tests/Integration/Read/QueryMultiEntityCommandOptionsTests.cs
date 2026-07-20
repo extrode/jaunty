@@ -315,4 +315,39 @@ public class QueryMultiEntityCommandOptionsTests : IClassFixture<DialectFixture>
         Assert.NotEmpty(results);
         Assert.All(results, r => Assert.Equal(1, r.Item2.CategoryId));
     }
+
+    // AUD-R12: QueryMultiEntityCore<T1,T2>/QueryMultiEntityCoreAsync<T1,T2> hardcoded
+    // JauntyConfig.QueryResultCapacity for the results list instead of honoring
+    // options.ExpectedRowCount, unlike the single-entity Query<T> path.
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_TwoEntities_WithExpectedRowCount_PreSizesListCapacity(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = CommandOptions<(ProductInfo, CategoryInfo)>.WithExpectedRowCount(500);
+
+        var results = connection.Query<ProductInfo, CategoryInfo>(
+            $"SELECT {TopPrefix(dialect, 3)}{JoinSql}{LimitSuffix(dialect, 3)}", options);
+
+        Assert.Equal(3, results.Count);
+        Assert.True(results.Capacity >= 500);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryAsync_TwoEntities_WithExpectedRowCount_PreSizesListCapacity(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = CommandOptions<(ProductInfo, CategoryInfo)>.WithExpectedRowCount(500);
+
+        var results = await connection.QueryAsync<ProductInfo, CategoryInfo>(
+            $"SELECT {TopPrefix(dialect, 3)}{JoinSql}{LimitSuffix(dialect, 3)}", options, CancellationToken.None);
+
+        Assert.Equal(3, results.Count);
+        Assert.True(results.Capacity >= 500);
+    }
 }
