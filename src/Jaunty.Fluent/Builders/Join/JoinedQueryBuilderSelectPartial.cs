@@ -244,14 +244,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         if (_conditions.Count > 0)
         {
             sb.Append(" WHERE ");
-
-            for (var i = 0; i < _conditions.Count; i++)
-            {
-                WhereCondition condition = _conditions[i];
-                if (i > 0)
-                    sb.Append(condition.Operator == LogicalOperator.Or ? " OR " : " AND ");
-                sb.Append(condition.Sql);
-            }
+            sb.Append(BuildWhereExpression(_conditions));
         }
 
         if (_orderByColumns.Count > 0)
