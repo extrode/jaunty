@@ -85,6 +85,26 @@ public class QueryStreamMultiEntityCommandTypeTests : IDisposable
         Assert.NotNull(connection.LastCommand);
         Assert.Equal(CommandType.StoredProcedure, connection.LastCommand!.CommandType);
     }
+
+    // AUD-R12: the obsolete QueryStream<T1, T2>(connection, sql, parameters, CommandOptions)
+    // overload's QueryStreamCoreIterator only assigned command.Transaction when
+    // options.Transaction was already a System.Data.Common.DbTransaction, silently dropping any
+    // other IDbTransaction implementation instead of assigning or throwing.
+#pragma warning disable CS0618 // intentionally calling the obsolete QueryStream<T1, T2> overload
+    [Fact]
+    public void QueryStream_FallbackPath_ObsoleteOverload_WithNonDbTransaction_AssignsTransactionInsteadOfSilentlyDroppingIt()
+    {
+        var connection = new SpyConnection();
+        var transaction = new FakeTransaction();
+        var options = new CommandOptions(transaction: transaction);
+
+        var results = connection.QueryStream<OrderSummary, CategorySummary>("dbo.GetOrdersWithCategory", options: options).ToList();
+
+        Assert.Empty(results);
+        Assert.NotNull(connection.LastCommand);
+        Assert.Same(transaction, connection.LastCommand!.Transaction);
+    }
+#pragma warning restore CS0618
 }
 
 #region Minimal In-Memory Fakes For Direct CommandType Observation
@@ -137,6 +157,20 @@ internal sealed class SpyCommand : IDbCommand
     public IDataReader ExecuteReader(CommandBehavior behavior) => new EmptyDataReader();
     public object? ExecuteScalar() => null;
     public void Prepare() { }
+}
+
+/// <summary>
+/// A minimal <see cref="IDbTransaction"/> that is deliberately not a
+/// <see cref="System.Data.Common.DbTransaction"/>, so tests can prove Jaunty assigns it to
+/// <see cref="IDbCommand.Transaction"/> rather than silently dropping it.
+/// </summary>
+internal sealed class FakeTransaction : IDbTransaction
+{
+    public IDbConnection? Connection => null;
+    public IsolationLevel IsolationLevel => IsolationLevel.Unspecified;
+    public void Commit() { }
+    public void Rollback() { }
+    public void Dispose() { }
 }
 
 /// <summary>
