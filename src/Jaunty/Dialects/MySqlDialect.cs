@@ -104,9 +104,17 @@ internal sealed class MySqlDialect : ISqlDialect
         return $"{columnName} COLLATE utf8mb4_general_ci = {parameterName}";
     }
 
-    public string FormatContainsPattern(string value) => $"%{value}%";
-    public string FormatStartsWithPattern(string value) => $"{value}%";
-    public string FormatEndsWithPattern(string value) => $"%{value}";
+    public string FormatContainsPattern(string value) => $"%{EscapeLikeWildcards(value)}%";
+    public string FormatStartsWithPattern(string value) => $"{EscapeLikeWildcards(value)}%";
+    public string FormatEndsWithPattern(string value) => $"%{EscapeLikeWildcards(value)}";
+
+    // GenerateCaseSensitiveLike/GenerateCaseInsensitiveLike declare ESCAPE '\', so literal
+    // occurrences of the escape char and LIKE wildcard chars (%, _) must be escaped in the
+    // value or they change query semantics instead of matching literally.
+    private static string EscapeLikeWildcards(string value) => value
+        .Replace("\\", "\\\\")
+        .Replace("%", "\\%")
+        .Replace("_", "\\_");
 
     public string? GetDisableForeignKeyChecksSql() => "SET FOREIGN_KEY_CHECKS = 0";
 

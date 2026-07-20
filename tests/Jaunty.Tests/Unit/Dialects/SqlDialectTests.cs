@@ -835,6 +835,32 @@ public class SqlDialectTests
     }
 
     [Theory]
+    [InlineData("100%", "%100\\%%")]
+    [InlineData("a_b", "%a\\_b%")]
+    [InlineData("a\\b", "%a\\\\b%")]
+    [InlineData("a[b]c", "%a\\[b]c%")]
+    public void SqlServer_FormatContainsPattern_EscapesLikeWildcards(string value, string expected)
+    {
+        Assert.Equal(expected, _sqlServer.FormatContainsPattern(value));
+    }
+
+    [Theory]
+    [InlineData("100%", "100\\%%")]
+    [InlineData("a_b", "a\\_b%")]
+    public void SqlServer_FormatStartsWithPattern_EscapesLikeWildcards(string value, string expected)
+    {
+        Assert.Equal(expected, _sqlServer.FormatStartsWithPattern(value));
+    }
+
+    [Theory]
+    [InlineData("100%", "%100\\%")]
+    [InlineData("a_b", "%a\\_b")]
+    public void SqlServer_FormatEndsWithPattern_EscapesLikeWildcards(string value, string expected)
+    {
+        Assert.Equal(expected, _sqlServer.FormatEndsWithPattern(value));
+    }
+
+    [Theory]
     [InlineData("test", "%test%")]
     public void Postgres_FormatContainsPattern_WrapsWithPercent(string value, string expected)
     {
@@ -856,6 +882,15 @@ public class SqlDialectTests
     }
 
     [Theory]
+    [InlineData("100%", "%100\\%%")]
+    [InlineData("a_b", "%a\\_b%")]
+    [InlineData("a\\b", "%a\\\\b%")]
+    public void Postgres_FormatContainsPattern_EscapesLikeWildcards(string value, string expected)
+    {
+        Assert.Equal(expected, _postgres.FormatContainsPattern(value));
+    }
+
+    [Theory]
     [InlineData("test", "%test%")]
     public void MySql_FormatContainsPattern_WrapsWithPercent(string value, string expected)
     {
@@ -874,6 +909,15 @@ public class SqlDialectTests
     public void MySql_FormatEndsWithPattern_PrependsPercent(string value, string expected)
     {
         Assert.Equal(expected, _mySql.FormatEndsWithPattern(value));
+    }
+
+    [Theory]
+    [InlineData("100%", "%100\\%%")]
+    [InlineData("a_b", "%a\\_b%")]
+    [InlineData("a\\b", "%a\\\\b%")]
+    public void MySql_FormatContainsPattern_EscapesLikeWildcards(string value, string expected)
+    {
+        Assert.Equal(expected, _mySql.FormatContainsPattern(value));
     }
 
     #endregion
