@@ -73,6 +73,21 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             return node;
         }
 
+        // AUD-R12: a same-entity column-to-column comparison (e.g. p => p.CategoryId ==
+        // p.SupplierId) has an unbound ParameterExpression on whichever side ExtractColumnAndValue
+        // treats as "the value" - EvaluateExpression's Expression.Lambda(...).Compile() then
+        // throws InvalidOperationException at runtime instead of producing "category_id =
+        // supplier_id". Check both sides for a column reference first, mirroring how
+        // JoinExpressionVisitor already handles cross-entity column comparisons.
+        if (TryGetColumnName(node.Left, out var leftColumnName) && TryGetColumnName(node.Right, out var rightColumnName))
+        {
+            _sql.Append(_dialect.EscapeColumnName(leftColumnName!));
+            _sql.Append(GetOperator(node.NodeType));
+            _sql.Append(_dialect.EscapeColumnName(rightColumnName!));
+            _sql.Append(')');
+            return node;
+        }
+
         // Handle comparison operators
         (string? columnName, object? value, bool isLeftColumn) = ExtractColumnAndValue(node);
 

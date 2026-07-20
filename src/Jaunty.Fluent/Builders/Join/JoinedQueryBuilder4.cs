@@ -341,13 +341,14 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         try
         {
             using IDataReader reader = command.ExecuteReader();
+            Dictionary<string, int> ordinals = JoinedQueryBuilder<T1, T2>.BuildOrdinalLookup(reader);
 
             while (reader.Read())
             {
-                T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_");
-                T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_");
-                T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_");
-                T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, "t4_");
+                T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_", ordinals);
+                T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_", ordinals);
+                T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_", ordinals);
+                T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, "t4_", ordinals);
                 results.Add((t1, t2, t3, t4));
             }
         }
@@ -360,33 +361,18 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         return results;
     }
 
-    public T1 SelectFirst()
-    {
-        var results = Select();
-        return results.FirstOrDefault() ?? throw new InvalidOperationException("Sequence contains no elements");
-    }
+    // AUD-R12: these previously fetched the entire result set via Select() and took the
+    // first/only element in C#, instead of using SQL-level LIMIT/paging. _parent._parent (the
+    // 2-way JoinedQueryBuilder<T1,T2> that carries this query's T1 metadata/alias and every
+    // registered join, including T3's and T4's) already implements these efficiently via
+    // _dialect.GetPagingSql, so delegate to it directly.
+    public T1 SelectFirst() => _parent._parent.SelectFirst();
 
-    public T1? SelectFirstOrDefault()
-    {
-        var results = Select();
-        return results.FirstOrDefault();
-    }
+    public T1? SelectFirstOrDefault() => _parent._parent.SelectFirstOrDefault();
 
-    public T1 SelectSingle()
-    {
-        var results = Select();
-        if (results.Count == 0) throw new InvalidOperationException("Sequence contains no elements");
-        if (results.Count > 1) throw new InvalidOperationException("Sequence contains more than one element");
-        return results[0];
-    }
+    public T1 SelectSingle() => _parent._parent.SelectSingle();
 
-    public T1? SelectSingleOrDefault()
-    {
-        var results = Select();
-        if (results.Count == 0) return default;
-        if (results.Count > 1) throw new InvalidOperationException("Sequence contains more than one element");
-        return results[0];
-    }
+    public T1? SelectSingleOrDefault() => _parent._parent.SelectSingleOrDefault();
 
     public int Count()
     {
@@ -410,33 +396,15 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         return _parent._parent.Connection.QueryPartialList(sql, _parent._parent.GetParameters().ToParameterObject()!);
     }
 
-    public IDictionary<string, object?> SelectPartialFirst(string columns)
-    {
-        var results = SelectPartial(columns);
-        return results.FirstOrDefault() ?? throw new InvalidOperationException("Sequence contains no elements");
-    }
+    // AUD-R12: same fetch-all-then-take-first/single issue as the SelectFirst/SelectSingle
+    // family above - delegate to _parent._parent, which already applies GetPagingSql(0, 1)/(0, 2).
+    public IDictionary<string, object?> SelectPartialFirst(string columns) => _parent._parent.SelectPartialFirst(columns);
 
-    public IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns)
-    {
-        var results = SelectPartial(columns);
-        return results.FirstOrDefault();
-    }
+    public IDictionary<string, object?>? SelectPartialFirstOrDefault(string columns) => _parent._parent.SelectPartialFirstOrDefault(columns);
 
-    public IDictionary<string, object?> SelectPartialSingle(string columns)
-    {
-        var results = SelectPartial(columns);
-        if (results.Count == 0) throw new InvalidOperationException("Sequence contains no elements");
-        if (results.Count > 1) throw new InvalidOperationException("Sequence contains more than one element");
-        return results[0];
-    }
+    public IDictionary<string, object?> SelectPartialSingle(string columns) => _parent._parent.SelectPartialSingle(columns);
 
-    public IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns)
-    {
-        var results = SelectPartial(columns);
-        if (results.Count == 0) return null;
-        if (results.Count > 1) throw new InvalidOperationException("Sequence contains more than one element");
-        return results[0];
-    }
+    public IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns) => _parent._parent.SelectPartialSingleOrDefault(columns);
 
     // ==================== ASYNC ====================
 
@@ -476,13 +444,14 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         try
         {
             using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            Dictionary<string, int> ordinals = JoinedQueryBuilder<T1, T2>.BuildOrdinalLookup(reader);
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_");
-                T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_");
-                T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_");
-                T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, "t4_");
+                T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_", ordinals);
+                T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_", ordinals);
+                T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_", ordinals);
+                T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, "t4_", ordinals);
                 results.Add((t1, t2, t3, t4));
             }
         }
@@ -495,17 +464,11 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         return results;
     }
 
-    public async Task<T1> SelectFirstAsync(CancellationToken cancellationToken = default)
-    {
-        var results = await SelectAsync(cancellationToken).ConfigureAwait(false);
-        return results.FirstOrDefault() ?? throw new InvalidOperationException("Sequence contains no elements");
-    }
+    // AUD-R12: same fetch-all-then-take-first issue as the sync members above - delegate to
+    // _parent._parent, which already applies GetPagingSql(0, 1).
+    public Task<T1> SelectFirstAsync(CancellationToken cancellationToken = default) => _parent._parent.SelectFirstAsync(cancellationToken);
 
-    public async Task<T1?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
-    {
-        var results = await SelectAsync(cancellationToken).ConfigureAwait(false);
-        return results.FirstOrDefault();
-    }
+    public Task<T1?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default) => _parent._parent.SelectFirstOrDefaultAsync(cancellationToken);
 
     public async Task<int> CountAsync(CancellationToken cancellationToken = default)
     {
@@ -525,17 +488,13 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         return await _parent._parent.Connection.QueryPartialListAsync(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default)
-    {
-        var results = await SelectPartialAsync(columns, cancellationToken).ConfigureAwait(false);
-        return results.FirstOrDefault() ?? throw new InvalidOperationException("Sequence contains no elements");
-    }
+    // AUD-R12: same fetch-all-then-take-first issue - delegate to _parent._parent, which
+    // already applies GetPagingSql(0, 1).
+    public Task<IDictionary<string, object?>> SelectPartialFirstAsync(string columns, CancellationToken cancellationToken = default)
+        => _parent._parent.SelectPartialFirstAsync(columns, cancellationToken);
 
-    public async Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
-    {
-        var results = await SelectPartialAsync(columns, cancellationToken).ConfigureAwait(false);
-        return results.FirstOrDefault();
-    }
+    public Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
+        => _parent._parent.SelectPartialFirstOrDefaultAsync(columns, cancellationToken);
 
     // ==================== HELPERS ====================
 
