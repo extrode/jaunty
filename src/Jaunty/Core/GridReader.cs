@@ -315,10 +315,16 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         var results = new List<T>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
         Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
 
-        while (reader.Read())
-            results.Add(map(reader));
+        try
+        {
+            while (reader.Read())
+                results.Add(map(reader));
+        }
+        finally
+        {
+            Advance();
+        }
 
-        Advance();
         return results;
     }
 
@@ -408,10 +414,15 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     {
         Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
 
-        while (reader.Read())
-            yield return map(reader);
-
-        Advance();
+        try
+        {
+            while (reader.Read())
+                yield return map(reader);
+        }
+        finally
+        {
+            Advance();
+        }
     }
 
     private void Advance()
@@ -564,12 +575,18 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     {
         Func<IDataReader, T>? map = null;
 
-        while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        try
         {
-            map ??= DrDispatcher.Resolve(reader, options, mode);
-            yield return map(reader);
+            while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                map ??= DrDispatcher.Resolve(reader, options, mode);
+                yield return map(reader);
+            }
         }
-        await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+        finally
+        {
+            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private async Task<List<T>> ReadAsyncCore<T>(CommandOptions<T> options, MappingMode mode, CancellationToken cancellationToken) where T : new()
@@ -580,13 +597,19 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         var results = new List<T>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
         Func<IDataReader, T>? map = null;
 
-        while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        try
         {
-            map ??= DrDispatcher.Resolve(reader, options, mode);
-            results.Add(map(reader));
+            while (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                map ??= DrDispatcher.Resolve(reader, options, mode);
+                results.Add(map(reader));
+            }
+        }
+        finally
+        {
+            await AdvanceAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        await AdvanceAsync(cancellationToken).ConfigureAwait(false);
         return results;
     }
 
