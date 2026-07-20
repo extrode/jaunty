@@ -77,7 +77,11 @@ public interface IJoinClause<TFrom, TJoin> where TFrom : new() where TJoin : new
     /// Specifies the join condition using a raw SQL condition with a typed parameter.
     /// </summary>
     /// <typeparam name="TValue">The type of the parameter value.</typeparam>
-    /// <param name="condition">The raw SQL join condition with a @value placeholder.</param>
+    /// <param name="condition">
+    /// The raw SQL join condition with a "value" placeholder using the connection's dialect
+    /// parameter prefix (e.g. "@value" for SQL Server/PostgreSQL/MySQL/SQLite, "$value" for
+    /// DuckDB).
+    /// </param>
     /// <param name="value">The parameter value.</param>
     /// <returns>A joined query builder for further operations.</returns>
     /// <example>
