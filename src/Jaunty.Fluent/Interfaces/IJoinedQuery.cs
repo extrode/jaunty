@@ -213,6 +213,16 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     TFrom? SelectFirstOrDefault();
 
     /// <summary>
+    /// Returns the single result of the primary entity or throws if not exactly one.
+    /// </summary>
+    TFrom SelectSingle();
+
+    /// <summary>
+    /// Returns the single result of the primary entity, or default if empty. Throws if more than one.
+    /// </summary>
+    TFrom? SelectSingleOrDefault();
+
+    /// <summary>
     /// Returns the first result as a tuple or throws if empty.
     /// </summary>
     (TFrom From, TJoin Joined) SelectFirstBoth();

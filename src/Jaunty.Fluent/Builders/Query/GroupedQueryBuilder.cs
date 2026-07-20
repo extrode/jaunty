@@ -221,7 +221,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
                         object value = reader.GetValue(ordinal);
                         Type targetType = parameters[i].ParameterType;
                         Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-                        values[i] = Convert.ChangeType(value, underlyingType);
+                        values[i] = GroupedJoinedResultMapper.ConvertColumnValue(value, underlyingType);
                     }
                 }
 #pragma warning restore IL2090
@@ -249,7 +249,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
                     object value = reader.GetValue(ordinal);
                     Type targetType = property.PropertyType;
                     Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-                    object converted = Convert.ChangeType(value, underlyingType);
+                    object converted = GroupedJoinedResultMapper.ConvertColumnValue(value, underlyingType);
                     property.SetValue(instance, converted);
                 }
             }
