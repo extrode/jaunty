@@ -188,6 +188,25 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     #region Private helpers
 
+    /// <summary>
+    /// Folds WHERE conditions left-to-right, wrapping each step in parentheses so the
+    /// generated SQL evaluates in the same order the fluent Where/And/Or chain was built,
+    /// instead of relying on SQL's AND-before-OR operator precedence.
+    /// </summary>
+    private static string BuildWhereExpression(List<WhereCondition> conditions)
+    {
+        var expr = conditions[0].Sql;
+
+        for (var i = 1; i < conditions.Count; i++)
+        {
+            var condition = conditions[i];
+            var op = condition.Operator == LogicalOperator.Or ? "OR" : "AND";
+            expr = $"({expr} {op} {condition.Sql})";
+        }
+
+        return expr;
+    }
+
     private string BuildSql()
     {
         if (string.IsNullOrEmpty(_cteDefinitionSql))
@@ -210,14 +229,7 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
         if (_whereConditions.Count > 0)
         {
             sb.Append(" WHERE ");
-            for (int i = 0; i < _whereConditions.Count; i++)
-            {
-                if (i > 0)
-                {
-                    sb.Append(_whereConditions[i].Operator == LogicalOperator.Or ? " OR " : " AND ");
-                }
-                sb.Append(_whereConditions[i].Sql);
-            }
+            sb.Append(BuildWhereExpression(_whereConditions));
         }
 
         // ORDER BY
