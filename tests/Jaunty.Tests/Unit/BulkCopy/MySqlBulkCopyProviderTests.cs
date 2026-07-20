@@ -142,6 +142,24 @@ public class MySqlBulkCopyProviderTests
     }
 
     [Fact]
+    public async Task CopyToServerAsync_RespectsExternalTransaction_RollbackDiscardsRows()
+    {
+        using var conn = OpenOrSkip();
+        CreateTable(conn, "bulk_mysql_async_txn");
+
+        using (var txn = conn.BeginTransaction())
+        {
+            using var reader = MakeTable(50).CreateDataReader();
+            int inserted = await new MySqlBulkCopyProvider().CopyToServerAsync(
+                conn, "bulk_mysql_async_txn", reader, new BulkCopyOptions { Transaction = txn }, CancellationToken.None);
+            Assert.Equal(50, inserted);
+            txn.Rollback();
+        }
+
+        Assert.Equal(0, Count(conn, "bulk_mysql_async_txn"));
+    }
+
+    [Fact]
     public void CopyToServer_InvalidTableName_ThrowsArgumentException()
     {
         // Regression test (AUD-R11): BuildChunkCommand used to interpolate tableName/columnName
