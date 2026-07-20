@@ -144,9 +144,18 @@ internal sealed class SqlServerDialect : ISqlDialect
         return $"{columnName} = {parameterName} COLLATE Latin1_General_CI_AS";
     }
 
-    public string FormatContainsPattern(string value) => $"%{value}%";
-    public string FormatStartsWithPattern(string value) => $"{value}%";
-    public string FormatEndsWithPattern(string value) => $"%{value}";
+    public string FormatContainsPattern(string value) => $"%{EscapeLikeWildcards(value)}%";
+    public string FormatStartsWithPattern(string value) => $"{EscapeLikeWildcards(value)}%";
+    public string FormatEndsWithPattern(string value) => $"%{EscapeLikeWildcards(value)}";
+
+    // GenerateCaseSensitiveLike/GenerateCaseInsensitiveLike declare ESCAPE '\', so literal
+    // occurrences of the escape char and SQL Server's LIKE wildcard chars (%, _, [) must be
+    // escaped in the value or they change query semantics instead of matching literally.
+    private static string EscapeLikeWildcards(string value) => value
+        .Replace("\\", "\\\\")
+        .Replace("%", "\\%")
+        .Replace("_", "\\_")
+        .Replace("[", "\\[");
 
     // SQL Server doesn't have a simple session-level FK toggle.
     // Disabling constraints requires per-table ALTER statements.

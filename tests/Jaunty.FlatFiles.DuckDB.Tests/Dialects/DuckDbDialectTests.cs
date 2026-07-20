@@ -121,6 +121,31 @@ public class DuckDbDialectTests
         Assert.Equal("%test", _dialect.FormatEndsWithPattern("test"));
     }
 
+    [Theory]
+    [InlineData("100%", "%100\\%%")]
+    [InlineData("a_b", "%a\\_b%")]
+    [InlineData("a\\b", "%a\\\\b%")]
+    public void FormatContainsPattern_EscapesLikeWildcards(string value, string expected)
+    {
+        Assert.Equal(expected, _dialect.FormatContainsPattern(value));
+    }
+
+    [Theory]
+    [InlineData("100%", "100\\%%")]
+    [InlineData("a_b", "a\\_b%")]
+    public void FormatStartsWithPattern_EscapesLikeWildcards(string value, string expected)
+    {
+        Assert.Equal(expected, _dialect.FormatStartsWithPattern(value));
+    }
+
+    [Theory]
+    [InlineData("100%", "%100\\%")]
+    [InlineData("a_b", "%a\\_b")]
+    public void FormatEndsWithPattern_EscapesLikeWildcards(string value, string expected)
+    {
+        Assert.Equal(expected, _dialect.FormatEndsWithPattern(value));
+    }
+
     // ==========================================
     // FK Toggle
     // ==========================================
