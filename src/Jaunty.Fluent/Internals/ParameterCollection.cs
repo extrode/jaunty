@@ -9,17 +9,29 @@ namespace Jaunty.Fluent.Internals;
 internal sealed class ParameterCollection
 {
     private readonly List<(string Name, object? Value)> _parameters = new();
+    private readonly HashSet<string> _names = new();
 
     public int Count => _parameters.Count;
 
+    /// <summary>
+    /// Adds a parameter. Throws if <paramref name="name"/> was already added, so a bug that
+    /// produces a duplicate parameter name fails consistently and immediately - previously
+    /// <see cref="BindTo"/> would add both duplicates to the command (the ADO.NET provider then
+    /// throws), while <see cref="ToParameterObject"/> silently let the last value win via
+    /// dictionary overwrite, so the failure mode depended on which output path the caller used.
+    /// </summary>
     public void Add(string name, object? value)
     {
+        if (!_names.Add(name))
+            throw new ArgumentException($"A parameter named '{name}' has already been added.", nameof(name));
+
         _parameters.Add((name, value));
     }
 
     public void AddRange(List<(string Name, object? Value)> parameters)
     {
-        _parameters.AddRange(parameters);
+        foreach ((string name, object? value) in parameters)
+            Add(name, value);
     }
 
     /// <summary>
@@ -52,8 +64,8 @@ internal sealed class ParameterCollection
         for (int i = 0; i < _parameters.Count; i++)
         {
             (string? name, object? value) = _parameters[i];
-            // Strip parameter prefix (@ or $) if present
-            var key = name.Length > 0 && name[0] is '@' or '$' ? name.Substring(1) : name;
+            // Strip parameter prefix (@, $, or :) if present
+            var key = name.Length > 0 && name[0] is '@' or '$' or ':' ? name.Substring(1) : name;
             dict[key] = value;
         }
 
@@ -63,6 +75,7 @@ internal sealed class ParameterCollection
     public void Clear()
     {
         _parameters.Clear();
+        _names.Clear();
     }
 
     /// <summary>
@@ -77,6 +90,7 @@ internal sealed class ParameterCollection
     {
         var clone = new ParameterCollection();
         clone._parameters.AddRange(_parameters);
+        clone._names.UnionWith(_names);
         return clone;
     }
 }

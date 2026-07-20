@@ -231,4 +231,83 @@ public class FluentExistsTests : IClassFixture<FluentDatabaseFixture>
 
         Assert.True(categories.Count <= 3);
     }
+
+    // ==========================================
+    // Alias / Self-Reference / Null Handling
+    // ==========================================
+
+    [Fact]
+    public void WhereExists_WithOuterAlias_UsesAliasNotTableName()
+    {
+        var sql = _fixture.Connection.From<Category>("c")
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId)
+            .ToSql();
+
+        // The outer correlation column must be prefixed with the alias the query was
+        // created with, not the raw (escaped) table name.
+        Assert.Contains("c.category_id", sql);
+        Assert.DoesNotContain("categories.category_id", sql);
+    }
+
+    [Fact]
+    public void WhereExists_SelfReferencing_UsesDistinctAliasesForBothSides()
+    {
+        // TOuter == TSubquery (Product self-referencing EXISTS): both sides must not collapse
+        // onto the same table prefix, or the correlation would be meaningless.
+        var sql = _fixture.Connection.From<Product>()
+            .WhereExists<Product>((p1, p2) => p1.CategoryId == p2.CategoryId && p1.ProductId != p2.ProductId)
+            .ToSql();
+
+        Assert.Contains("products_ex", sql);
+    }
+
+    [Fact]
+    public void WhereExists_SelfReferencing_FindsProductsWithSiblingInSameCategory()
+    {
+        var products = _fixture.Connection.From<Product>()
+            .WhereExists<Product>((p1, p2) => p1.CategoryId == p2.CategoryId && p1.ProductId != p2.ProductId)
+            .Select();
+
+        Assert.NotEmpty(products);
+
+        foreach (var product in products)
+        {
+            var siblingCount = _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == product.CategoryId)
+                .And(p => p.ProductId != product.ProductId)
+                .Count();
+            Assert.True(siblingCount > 0);
+        }
+    }
+
+    [Fact]
+    public void WhereExists_ComparisonAgainstNull_GeneratesIsNull()
+    {
+        var sql = _fixture.Connection.From<Category>()
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId && p.SupplierId == null)
+            .ToSql();
+
+        Assert.Contains("IS NULL", sql);
+        Assert.DoesNotContain("= NULL", sql);
+    }
+
+    [Fact]
+    public void WhereExists_ComparisonAgainstNull_FiltersCorrectly()
+    {
+        // Products with no supplier: correlate against that so only categories that have a
+        // supplier-less product are returned. Confirms IS NULL (not "= NULL", which is always
+        // UNKNOWN/false under SQL's three-valued logic) is actually being applied.
+        var categories = _fixture.Connection.From<Category>()
+            .WhereExists<Product>((c, p) => c.CategoryId == p.CategoryId && p.SupplierId == null)
+            .Select();
+
+        foreach (var category in categories)
+        {
+            var matchCount = _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == category.CategoryId)
+                .And(p => p.SupplierId == null)
+                .Count();
+            Assert.True(matchCount > 0);
+        }
+    }
 }

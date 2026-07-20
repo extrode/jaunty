@@ -339,4 +339,51 @@ public class FluentGroupByTests : IClassFixture<FluentDatabaseFixture>
         // SupplierCount should be <= TotalCount (counts non-null SupplierId only)
         Assert.All(results, r => Assert.True(r.SupplierCount <= r.TotalCount));
     }
+
+    // --- GROUP BY with HAVING (AndAlso/OrElse) Tests ---
+
+    [Fact]
+    public void GroupBy_WithHaving_AndAlsoOfTwoAggregates_FiltersGroupsCorrectly()
+    {
+        // Seed data: category 1 = 4 products / price sum 162.00, category 2 = 5 products /
+        // price sum 138.35, category 3 = 2 products / price sum 65.00. Only category 1
+        // satisfies both "count > 3" and "sum(unit_price) > 150" - this previously threw
+        // because the left/right operands of the top-level AndAlso are themselves
+        // BinaryExpression comparisons, which TranslateHavingExpression didn't handle.
+        var results = _fixture.Connection.From<Product>()
+            .GroupBy(p => p.CategoryId)
+            .Having(g => g.Count() > 3 && g.Sum(p => p.UnitPrice) > 150)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        var result = Assert.Single(results);
+        Assert.Equal((short?)1, result.CategoryId);
+    }
+
+    [Fact]
+    public void GroupBy_WithHaving_OrElseOfTwoAggregates_FiltersGroupsCorrectly()
+    {
+        // "count > 4" matches category 2 (5 products); "sum(unit_price) < 100" matches
+        // category 3 (65.00). Category 1 (count 4, sum 162.00) matches neither.
+        var results = _fixture.Connection.From<Product>()
+            .GroupBy(p => p.CategoryId)
+            .Having(g => g.Count() > 4 || g.Sum(p => p.UnitPrice) < 100)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.Equal(2, results.Count);
+        Assert.Contains(results, r => r.CategoryId == 2);
+        Assert.Contains(results, r => r.CategoryId == 3);
+        Assert.DoesNotContain(results, r => r.CategoryId == 1);
+    }
+
+    [Fact]
+    public void ToSql_GroupByWithHaving_StringConstant_IsParameterizedNotInlined()
+    {
+        var sql = _fixture.Connection.From<Product>()
+            .GroupBy(p => p.CategoryId)
+            .Having(g => g.Min(p => p.ProductName) == "Chai")
+            .ToSql(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.Contains("@hp", sql);
+        Assert.DoesNotContain("'Chai'", sql);
+    }
 }

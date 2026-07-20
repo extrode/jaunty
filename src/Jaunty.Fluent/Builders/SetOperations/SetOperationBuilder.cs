@@ -293,54 +293,59 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
 
     public async Task<List<T>> SelectAsync(CancellationToken cancellationToken = default)
     {
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
         var sql = ToSql();
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return Select();
+        return await dbConn.QueryAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> SelectFirstAsync(CancellationToken cancellationToken = default)
     {
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
         var original = _take;
         _take = 1;
         var sql = ToSql();
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryFirstAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectFirst();
+        return await dbConn.QueryFirstAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
         var original = _take;
         _take = 1;
         var sql = ToSql();
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryFirstOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectFirstOrDefault();
+        return await dbConn.QueryFirstOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> SelectSingleAsync(CancellationToken cancellationToken = default)
     {
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
         var original = _take;
         _take = 2;
         var sql = ToSql();
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QuerySingleAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectSingle();
+        return await dbConn.QuerySingleAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)
     {
+        if (_connection is not DbConnection dbConn)
+            throw new NotSupportedException("Async operations require DbConnection.");
+
         var original = _take;
         _take = 2;
         var sql = ToSql();
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QuerySingleOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectSingleOrDefault();
+        return await dbConn.QuerySingleOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     #endregion
