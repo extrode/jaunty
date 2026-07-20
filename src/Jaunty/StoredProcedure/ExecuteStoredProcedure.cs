@@ -456,30 +456,48 @@ public static partial class Jaunty
     {
         IReadOnlyList<SpParameter> paramList = parameters.Parameters;
 
+        // AUD-R12: SqlClient/Microsoft.Data.SqlClient captures a stored procedure's RETURN
+        // value correctly only when the ReturnValue-direction parameter is the first one added
+        // to IDbCommand.Parameters. Every SpParameters usage example in this codebase calls
+        // .AddReturnValue() last, so binding strictly in caller-supplied order would silently
+        // produce a wrong/undefined GetReturnValue() result. Stable-partition instead: bind all
+        // ReturnValue parameters first (in their original relative order), then everything else
+        // (in its original relative order).
         for (int i = 0; i < paramList.Count; i++)
         {
-            SpParameter sp = paramList[i];
-            IDbDataParameter dbParam = command.CreateParameter();
-
-            // Ensure parameter name starts with @
-            dbParam.ParameterName = sp.Name.StartsWith("@") ? sp.Name : "@" + sp.Name;
-            dbParam.Direction = sp.Direction;
-
-            if (sp.DbType.HasValue)
-                dbParam.DbType = sp.DbType.Value;
-
-            if (sp.Size.HasValue)
-                dbParam.Size = sp.Size.Value;
-
-            // Set value for Input and InputOutput parameters
-            if (sp.Direction is ParameterDirection.Input or ParameterDirection.InputOutput)
-                dbParam.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(sp.Value, propertyInfo: null) ?? DBNull.Value;
-
-            command.Parameters.Add(dbParam);
-
-            // Store reference to the db parameter so we can read output values later
-            sp.DbParameter = dbParam;
+            if (paramList[i].Direction == ParameterDirection.ReturnValue)
+                BindSpParameter(command, paramList[i]);
         }
+
+        for (int i = 0; i < paramList.Count; i++)
+        {
+            if (paramList[i].Direction != ParameterDirection.ReturnValue)
+                BindSpParameter(command, paramList[i]);
+        }
+    }
+
+    private static void BindSpParameter(IDbCommand command, SpParameter sp)
+    {
+        IDbDataParameter dbParam = command.CreateParameter();
+
+        // Ensure parameter name starts with @
+        dbParam.ParameterName = sp.Name.StartsWith("@") ? sp.Name : "@" + sp.Name;
+        dbParam.Direction = sp.Direction;
+
+        if (sp.DbType.HasValue)
+            dbParam.DbType = sp.DbType.Value;
+
+        if (sp.Size.HasValue)
+            dbParam.Size = sp.Size.Value;
+
+        // Set value for Input and InputOutput parameters
+        if (sp.Direction is ParameterDirection.Input or ParameterDirection.InputOutput)
+            dbParam.Value = ParameterBinder.ApplyTypeHandlerIfNeeded(sp.Value, propertyInfo: null) ?? DBNull.Value;
+
+        command.Parameters.Add(dbParam);
+
+        // Store reference to the db parameter so we can read output values later
+        sp.DbParameter = dbParam;
     }
 
     private static void ReadOutputParameters(SpParameters parameters)
