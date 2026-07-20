@@ -15,6 +15,13 @@ internal sealed class SqliteImportDialect : IImportDialect
     /// </summary>
     public static SqliteImportDialect Instance { get; } = new();
 
+    /// <summary>
+    /// Quotes an identifier for SQLite, doubling any embedded double quotes so the
+    /// identifier cannot break out of the quoted context (e.g. names derived from
+    /// filenames or [Table]/[Column] attributes).
+    /// </summary>
+    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
+
     /// <inheritdoc />
     public string MapClrTypeToSqlType(Type clrType) => clrType switch
     {
@@ -46,16 +53,16 @@ internal sealed class SqliteImportDialect : IImportDialect
 
         sb.Append(conflictStrategy switch
         {
-            ConflictStrategy.Skip => $"INSERT OR IGNORE INTO \"{tableName}\"",
-            ConflictStrategy.Upsert => $"INSERT OR REPLACE INTO \"{tableName}\"",
-            _ => $"INSERT INTO \"{tableName}\""
+            ConflictStrategy.Skip => $"INSERT OR IGNORE INTO {QuoteIdentifier(tableName)}",
+            ConflictStrategy.Upsert => $"INSERT OR REPLACE INTO {QuoteIdentifier(tableName)}",
+            _ => $"INSERT INTO {QuoteIdentifier(tableName)}"
         });
 
         sb.Append(" (");
         for (int i = 0; i < columnNames.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            sb.Append($"\"{columnNames[i]}\"");
+            sb.Append(QuoteIdentifier(columnNames[i]));
         }
         sb.Append(") VALUES (");
         for (int i = 0; i < parameterNames.Count; i++)
@@ -74,13 +81,13 @@ internal sealed class SqliteImportDialect : IImportDialect
         IReadOnlyList<(string Name, Type ClrType, bool IsPrimaryKey, bool IsNullable)> columns)
     {
         var sb = new StringBuilder();
-        sb.Append($"CREATE TABLE IF NOT EXISTS \"{tableName}\" (");
+        sb.Append($"CREATE TABLE IF NOT EXISTS {QuoteIdentifier(tableName)} (");
 
         for (int i = 0; i < columns.Count; i++)
         {
             if (i > 0) sb.Append(", ");
             (string? name, Type? clrType, bool isPrimaryKey, bool isNullable) = columns[i];
-            sb.Append($"\"{name}\" {MapClrTypeToSqlType(clrType)}");
+            sb.Append($"{QuoteIdentifier(name)} {MapClrTypeToSqlType(clrType)}");
             if (isPrimaryKey) sb.Append(" PRIMARY KEY");
             if (!isNullable && !isPrimaryKey) sb.Append(" NOT NULL");
         }

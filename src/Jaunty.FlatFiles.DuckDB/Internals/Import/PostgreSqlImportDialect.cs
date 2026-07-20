@@ -15,6 +15,13 @@ internal sealed class PostgreSqlImportDialect : IImportDialect
     /// </summary>
     public static PostgreSqlImportDialect Instance { get; } = new();
 
+    /// <summary>
+    /// Quotes an identifier for PostgreSQL, doubling any embedded double quotes so the
+    /// identifier cannot break out of the quoted context (e.g. names derived from
+    /// filenames or [Table]/[Column] attributes).
+    /// </summary>
+    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
+
     /// <inheritdoc />
     public string MapClrTypeToSqlType(Type clrType) => clrType switch
     {
@@ -43,13 +50,13 @@ internal sealed class PostgreSqlImportDialect : IImportDialect
         string? keyColumnName)
     {
         var sb = new StringBuilder();
-        sb.Append($"INSERT INTO \"{tableName}\"");
+        sb.Append($"INSERT INTO {QuoteIdentifier(tableName)}");
 
         sb.Append(" (");
         for (int i = 0; i < columnNames.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            sb.Append($"\"{columnNames[i]}\"");
+            sb.Append(QuoteIdentifier(columnNames[i]));
         }
         sb.Append(") VALUES (");
         for (int i = 0; i < parameterNames.Count; i++)
@@ -63,17 +70,17 @@ internal sealed class PostgreSqlImportDialect : IImportDialect
         {
             if (conflictStrategy == ConflictStrategy.Skip)
             {
-                sb.Append($" ON CONFLICT (\"{keyColumnName}\") DO NOTHING");
+                sb.Append($" ON CONFLICT ({QuoteIdentifier(keyColumnName)}) DO NOTHING");
             }
             else if (conflictStrategy == ConflictStrategy.Upsert)
             {
-                sb.Append($" ON CONFLICT (\"{keyColumnName}\") DO UPDATE SET ");
+                sb.Append($" ON CONFLICT ({QuoteIdentifier(keyColumnName)}) DO UPDATE SET ");
                 var first = true;
                 foreach (var colName in columnNames)
                 {
                     if (colName == keyColumnName) continue;
                     if (!first) sb.Append(", ");
-                    sb.Append($"\"{colName}\" = EXCLUDED.\"{colName}\"");
+                    sb.Append($"{QuoteIdentifier(colName)} = EXCLUDED.{QuoteIdentifier(colName)}");
                     first = false;
                 }
             }
@@ -88,13 +95,13 @@ internal sealed class PostgreSqlImportDialect : IImportDialect
         IReadOnlyList<(string Name, Type ClrType, bool IsPrimaryKey, bool IsNullable)> columns)
     {
         var sb = new StringBuilder();
-        sb.Append($"CREATE TABLE IF NOT EXISTS \"{tableName}\" (");
+        sb.Append($"CREATE TABLE IF NOT EXISTS {QuoteIdentifier(tableName)} (");
 
         for (int i = 0; i < columns.Count; i++)
         {
             if (i > 0) sb.Append(", ");
             (string? name, Type? clrType, bool isPrimaryKey, bool isNullable) = columns[i];
-            sb.Append($"\"{name}\" {MapClrTypeToSqlType(clrType)}");
+            sb.Append($"{QuoteIdentifier(name)} {MapClrTypeToSqlType(clrType)}");
             if (isPrimaryKey) sb.Append(" PRIMARY KEY");
             if (!isNullable && !isPrimaryKey) sb.Append(" NOT NULL");
         }
