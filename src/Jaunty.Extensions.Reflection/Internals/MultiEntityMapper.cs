@@ -25,7 +25,15 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     // hit; a ConditionalWeakTable keyed by the reader object gives an O(1) hit from the second
     // row onward while still going through the schema-key Cache (and thus reusing mappers
     // across different reader instances with the same column shape) on the first row.
-    private static readonly ConditionalWeakTable<IDataReader, MultiEntityMapper<T1, T2>> ReaderCache = new();
+    //
+    // Some providers (e.g. Npgsql) recycle a single IDataReader instance across different
+    // commands executed on the same pooled physical connection, so a cache hit on reader
+    // identity alone can silently return a mapper built for a completely different column
+    // layout (AUD-R9-011 regression from bac03a3's original ConditionalWeakTable<IDataReader,
+    // MultiEntityMapper<T1,T2>> - a stale mapper bound "Beverages" to an int CategoryId
+    // property). Every hit is therefore validated against the reader's current schema before
+    // being trusted, same as the source generator's OrdinalMap.CacheEntry.Matches pattern.
+    private static readonly ConditionalWeakTable<IDataReader, ReaderCacheEntry> ReaderCache = new();
 
     private readonly PropertySetter<T1>[] _t1Setters;
     private readonly PropertySetter<T2>[] _t2Setters;
@@ -38,11 +46,47 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
 
     public static MultiEntityMapper<T1, T2> Get(IDataReader reader)
     {
-        return ReaderCache.GetValue(reader, r =>
+        if (ReaderCache.TryGetValue(reader, out ReaderCacheEntry? entry) && entry.Matches(reader))
+            return entry.Mapper;
+
+        string schemaKey = BuildSchemaKey(reader);
+        MultiEntityMapper<T1, T2> mapper = Cache.GetOrAdd(schemaKey, _ => Create(reader));
+
+        ReaderCache.Remove(reader);
+        ReaderCache.Add(reader, new ReaderCacheEntry(reader, mapper));
+
+        return mapper;
+    }
+
+    private sealed class ReaderCacheEntry
+    {
+        private readonly int _fieldCount;
+        private readonly string[] _columnNames;
+
+        public ReaderCacheEntry(IDataReader reader, MultiEntityMapper<T1, T2> mapper)
         {
-            string schemaKey = BuildSchemaKey(r);
-            return Cache.GetOrAdd(schemaKey, _ => Create(r));
-        });
+            _fieldCount = reader.FieldCount;
+            _columnNames = new string[_fieldCount];
+            for (int i = 0; i < _fieldCount; i++)
+                _columnNames[i] = reader.GetName(i) ?? string.Empty;
+            Mapper = mapper;
+        }
+
+        public MultiEntityMapper<T1, T2> Mapper { get; }
+
+        public bool Matches(IDataReader reader)
+        {
+            if (reader.FieldCount != _fieldCount)
+                return false;
+
+            for (int i = 0; i < _fieldCount; i++)
+            {
+                if (!string.Equals(reader.GetName(i), _columnNames[i], StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     /// <summary>Alias for Get — builds or retrieves a cached mapper for the reader schema.</summary>
