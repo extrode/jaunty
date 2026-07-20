@@ -10,6 +10,7 @@ namespace Jaunty.Tests.Unit.Internals;
 /// unique to specific dialect instances and are not already covered by the canonical dialect
 /// test suite in Unit/Dialects/SqlDialectTests.cs.
 /// </summary>
+[Collection("Dialect Factory State")]
 public class SqlDialectFactoryTests
 {
     [Fact]

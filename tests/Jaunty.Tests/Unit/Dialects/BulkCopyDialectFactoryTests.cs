@@ -14,6 +14,7 @@ namespace Jaunty.Tests.Unit.Dialects;
 /// none of which were exercised anywhere in tests/ because no test ever called
 /// UseNativeBulkCopy() or Enable() directly.
 /// </summary>
+[Collection("Dialect Factory State")]
 public class BulkCopyDialectFactoryTests
 {
     // ------------------------------------------------------------------
@@ -133,24 +134,33 @@ public class BulkCopyDialectFactoryTests
     [Fact]
     public void GetDialect_Enabled_WrapsKnownBuiltInDialects()
     {
-        // BulkCopyDialectFactory._enabled is a one-way, process-wide switch mirroring
-        // UseNativeBulkCopy()'s real startup-time-only semantics, so Enable() is idempotent
-        // and safe to call here even if another test already enabled it first.
         BulkCopyDialectFactory.Enable();
-
-        Assert.IsType<SqlServerDialectWithBulkCopy>(BulkCopyDialectFactory.GetDialect(new SqlServerDialect()));
-        Assert.IsType<PostgreSqlDialectWithBulkCopy>(BulkCopyDialectFactory.GetDialect(new PostgreSqlDialect()));
-        Assert.IsType<MySqlDialectWithBulkCopy>(BulkCopyDialectFactory.GetDialect(new MySqlDialect()));
-        Assert.IsType<SQLiteDialectWithBulkCopy>(BulkCopyDialectFactory.GetDialect(new SQLiteDialect()));
+        try
+        {
+            Assert.IsType<SqlServerDialectWithBulkCopy>(BulkCopyDialectFactory.GetDialect(new SqlServerDialect()));
+            Assert.IsType<PostgreSqlDialectWithBulkCopy>(BulkCopyDialectFactory.GetDialect(new PostgreSqlDialect()));
+            Assert.IsType<MySqlDialectWithBulkCopy>(BulkCopyDialectFactory.GetDialect(new MySqlDialect()));
+            Assert.IsType<SQLiteDialectWithBulkCopy>(BulkCopyDialectFactory.GetDialect(new SQLiteDialect()));
+        }
+        finally
+        {
+            BulkCopyDialectFactory.ResetForTests();
+        }
     }
 
     [Fact]
     public void GetDialect_Enabled_PassesThroughUnrecognizedDialectUnchanged()
     {
         BulkCopyDialectFactory.Enable();
-
-        var baseDialect = new UnrecognizedDialect();
-        Assert.Same(baseDialect, BulkCopyDialectFactory.GetDialect(baseDialect));
+        try
+        {
+            var baseDialect = new UnrecognizedDialect();
+            Assert.Same(baseDialect, BulkCopyDialectFactory.GetDialect(baseDialect));
+        }
+        finally
+        {
+            BulkCopyDialectFactory.ResetForTests();
+        }
     }
 }
 #endif
