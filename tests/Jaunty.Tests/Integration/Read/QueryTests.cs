@@ -59,7 +59,7 @@ public class QueryTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public void Query_WithPositionalParameter_FiltersCorrectly(DialectInfo dialect)
+    public void Query_WithSingleNamedParameter_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
 
@@ -78,7 +78,7 @@ public class QueryTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
-    public void Query_WithMultiplePositionalParams_FiltersCorrectly(DialectInfo dialect)
+    public void Query_WithMultipleNamedParameters_FiltersCorrectly(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
 
