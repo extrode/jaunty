@@ -141,6 +141,9 @@ public static partial class Jaunty
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
 
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             command.BindParameters(parameters);
 
             JauntyConfig.Logger?.Invoke(command.CommandText, parameters);

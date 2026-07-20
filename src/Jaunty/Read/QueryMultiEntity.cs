@@ -1649,8 +1649,17 @@ public static partial class Jaunty
             command = connection.CreateCommand();
             command.CommandText = sql;
 
-            if (options.Transaction is System.Data.Common.DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring InsertCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead of being silently dropped.
+            if (options.Transaction is not null)
+            {
+                command.Transaction = connection is System.Data.Common.DbConnection
+                    ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                    : options.Transaction;
+            }
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;
