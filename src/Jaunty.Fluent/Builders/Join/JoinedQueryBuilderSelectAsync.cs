@@ -226,11 +226,12 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 #else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
+            Dictionary<string, int> ordinals = BuildOrdinalLookup(reader);
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                TFrom? fromObj = MapEntity<TFrom>(_fromMetadata, reader, "f_");
-                TJoin? joinObj = MapEntity<TJoin>(_joinMetadata, reader, "j_");
+                TFrom? fromObj = MapEntity<TFrom>(_fromMetadata, reader, "f_", ordinals);
+                TJoin? joinObj = MapEntity<TJoin>(_joinMetadata, reader, "j_", ordinals);
                 results.Add((fromObj, joinObj));
             }
         }

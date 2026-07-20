@@ -86,6 +86,48 @@ public class WhereExpressionVisitorTests
 
     #endregion
 
+    #region Same-Entity Column-to-Column Comparisons
+
+    // AUD-R12: a same-entity column-to-column comparison used to have an unbound
+    // ParameterExpression on whichever side ExtractColumnAndValue treated as "the value" -
+    // EvaluateExpression's Expression.Lambda(...).Compile() then threw InvalidOperationException
+    // at runtime instead of producing valid SQL.
+
+    [Fact]
+    public void Visit_ColumnToColumnEquality_GeneratesCorrectSql()
+    {
+        Expression<Func<Product, bool>> expr = p => p.CategoryId == p.SupplierId;
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Equal("([category_id] = [supplier_id])", sql);
+        Assert.Empty(parameters);
+    }
+
+    [Fact]
+    public void Visit_ColumnToColumnInequality_GeneratesCorrectSql()
+    {
+        Expression<Func<Product, bool>> expr = p => p.CategoryId != p.SupplierId;
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Equal("([category_id] <> [supplier_id])", sql);
+        Assert.Empty(parameters);
+    }
+
+    [Fact]
+    public void Visit_ColumnToColumnGreaterThan_GeneratesCorrectSql()
+    {
+        Expression<Func<Product, bool>> expr = p => p.CategoryId > p.SupplierId;
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Equal("([category_id] > [supplier_id])", sql);
+        Assert.Empty(parameters);
+    }
+
+    #endregion
+
     #region Null Comparisons
 
     [Fact]
