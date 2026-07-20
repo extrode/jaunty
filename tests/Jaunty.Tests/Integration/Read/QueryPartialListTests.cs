@@ -3,6 +3,7 @@ using System.Data.SQLite;
 
 using Jaunty.Core;
 using Jaunty.Tests.Helpers.Dialects;
+using Jaunty.Tests.Unit.Internals;
 
 namespace Jaunty.Tests.Integration.Read;
 
@@ -159,5 +160,21 @@ public class QueryPartialListTests : IClassFixture<DialectFixture>
             options);
 
         Assert.Empty(results);
+    }
+
+    // AUD-R12: QueryCoreListDirect never assigned command.CommandType from options.CommandType,
+    // so CommandOptions.AsStoredProcedure() was silently ignored and the command always executed
+    // as CommandType.Text.
+    [Fact]
+    public void QueryPartialList_SqlAndCommandOptions_AppliesStoredProcedureCommandType()
+    {
+        var connection = new SpyConnection();
+        var options = CommandOptions.AsStoredProcedure();
+
+        var results = connection.QueryPartialList("dbo.GetWidgets", options);
+
+        Assert.Empty(results);
+        Assert.NotNull(connection.LastCommand);
+        Assert.Equal(CommandType.StoredProcedure, connection.LastCommand!.CommandType);
     }
 }
