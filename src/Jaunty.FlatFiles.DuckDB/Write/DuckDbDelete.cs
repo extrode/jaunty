@@ -29,7 +29,7 @@ public sealed partial class DuckDb
 
         (string? whereSql, List<global::DuckDB.NET.Data.DuckDBParameter>? whereParams) = ExpressionTranslator.Translate<T>(predicate);
 
-        var sql = $"DELETE FROM \"{source.TableName}\" WHERE {whereSql}";
+        var sql = $"DELETE FROM {_dialect.EscapeTableName(null, source.TableName)} WHERE {whereSql}";
         var result = NonQueryExecutor.Execute(_connection, sql, whereParams, options);
 
         if (result > 0) _modified.TryAdd(typeof(T), true);
