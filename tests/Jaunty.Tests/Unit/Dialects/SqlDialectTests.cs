@@ -1095,6 +1095,25 @@ public class SqlDialectTests
         Assert.Contains("target.k1 = source.k1 AND target.k2 = source.k2", sql);
     }
 
+    // AUD-R12: GenerateUpsertSql appended "WHEN MATCHED THEN UPDATE SET " and then the joined
+    // updateColumns list with no guard for a zero-length array, producing a dangling clause
+    // (invalid SQL) for a key-only entity with no non-key updatable columns.
+    [Fact]
+    public void SqlServer_GenerateUpsertSql_NoUpdateColumns_OmitsWhenMatchedClause()
+    {
+        var sql = _sqlServer.GenerateUpsertSql(
+            "table",
+            insertColumns: new[] { "id" },
+            insertParams: new[] { "@id" },
+            updateColumns: Array.Empty<string>(),
+            updateParams: Array.Empty<string>(),
+            keyColumns: new[] { "id" },
+            keyParams: new[] { "@id" });
+
+        Assert.DoesNotContain("WHEN MATCHED", sql);
+        Assert.Contains("WHEN NOT MATCHED THEN INSERT (id) VALUES (source.id)", sql);
+    }
+
     [Fact]
     public void Postgres_SupportsUpsert_ReturnsTrue()
     {
@@ -1117,6 +1136,25 @@ public class SqlDialectTests
         Assert.Contains("(id, name, value) VALUES (@id, @name, @value)", sql);
         Assert.Contains("ON CONFLICT (id)", sql);
         Assert.Contains("DO UPDATE SET name = EXCLUDED.name, value = EXCLUDED.value", sql);
+    }
+
+    // AUD-R12: GenerateUpsertSql appended ") DO UPDATE SET " and then the joined updateColumns
+    // list with no guard for a zero-length array, producing a dangling clause (invalid SQL) for
+    // a key-only entity with no non-key updatable columns.
+    [Fact]
+    public void Postgres_GenerateUpsertSql_NoUpdateColumns_GeneratesDoNothing()
+    {
+        var sql = _postgres.GenerateUpsertSql(
+            "products",
+            insertColumns: new[] { "id" },
+            insertParams: new[] { "@id" },
+            updateColumns: Array.Empty<string>(),
+            updateParams: Array.Empty<string>(),
+            keyColumns: new[] { "id" },
+            keyParams: new[] { "@id" });
+
+        Assert.Contains("ON CONFLICT (id) DO NOTHING", sql);
+        Assert.DoesNotContain("DO UPDATE SET", sql);
     }
 
     [Fact]
@@ -1142,6 +1180,25 @@ public class SqlDialectTests
         Assert.Contains("ON DUPLICATE KEY UPDATE", sql);
         Assert.Contains("name = VALUES(name)", sql);
         Assert.Contains("value = VALUES(value)", sql);
+    }
+
+    // AUD-R12: GenerateUpsertSql appended ") ON DUPLICATE KEY UPDATE " and then the joined
+    // updateColumns list with no guard for a zero-length array, producing a dangling clause
+    // (invalid SQL) for a key-only entity with no non-key updatable columns. MySQL has no DO
+    // NOTHING equivalent, so the fix self-assigns the first key column as a no-op update.
+    [Fact]
+    public void MySql_GenerateUpsertSql_NoUpdateColumns_SelfAssignsKeyColumn()
+    {
+        var sql = _mySql.GenerateUpsertSql(
+            "products",
+            insertColumns: new[] { "id" },
+            insertParams: new[] { "@id" },
+            updateColumns: Array.Empty<string>(),
+            updateParams: Array.Empty<string>(),
+            keyColumns: new[] { "id" },
+            keyParams: new[] { "@id" });
+
+        Assert.Contains("ON DUPLICATE KEY UPDATE id = id", sql);
     }
 
     [Fact]
@@ -1181,6 +1238,25 @@ public class SqlDialectTests
             keyParams: new[] { "@k1", "@k2" });
 
         Assert.Contains("ON CONFLICT (k1, k2)", sql);
+    }
+
+    // AUD-R12: GenerateUpsertSql appended ") DO UPDATE SET " and then the joined updateColumns
+    // list with no guard for a zero-length array, producing a dangling clause (invalid SQL) for
+    // a key-only entity with no non-key updatable columns.
+    [Fact]
+    public void Sqlite_GenerateUpsertSql_NoUpdateColumns_GeneratesDoNothing()
+    {
+        var sql = _sqlite.GenerateUpsertSql(
+            "products",
+            insertColumns: new[] { "id" },
+            insertParams: new[] { "@id" },
+            updateColumns: Array.Empty<string>(),
+            updateParams: Array.Empty<string>(),
+            keyColumns: new[] { "id" },
+            keyParams: new[] { "@id" });
+
+        Assert.Contains("ON CONFLICT (id) DO NOTHING", sql);
+        Assert.DoesNotContain("DO UPDATE SET", sql);
     }
 
     #endregion

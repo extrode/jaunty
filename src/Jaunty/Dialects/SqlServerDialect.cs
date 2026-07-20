@@ -272,14 +272,20 @@ internal sealed class SqlServerDialect : ISqlDialect
             sb.Append(keyColumns[i]);
         }
 
-        sb.Append(" WHEN MATCHED THEN UPDATE SET ");
-        for (int i = 0; i < updateColumns.Length; i++)
+        // MERGE requires at least one WHEN clause but not specifically WHEN MATCHED; when the
+        // entity has no non-key updatable columns (e.g. a key-only or all-key entity), omit the
+        // clause entirely instead of emitting "WHEN MATCHED THEN UPDATE SET " with nothing after it.
+        if (updateColumns.Length > 0)
         {
-            if (i > 0) sb.Append(", ");
-            sb.Append("target.");
-            sb.Append(updateColumns[i]);
-            sb.Append(" = source.");
-            sb.Append(updateColumns[i]);
+            sb.Append(" WHEN MATCHED THEN UPDATE SET ");
+            for (int i = 0; i < updateColumns.Length; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                sb.Append("target.");
+                sb.Append(updateColumns[i]);
+                sb.Append(" = source.");
+                sb.Append(updateColumns[i]);
+            }
         }
 
         sb.Append(" WHEN NOT MATCHED THEN INSERT (");
