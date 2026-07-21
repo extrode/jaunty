@@ -78,6 +78,13 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
 
     public IJoinedQuery4<T1, T2, T3, T4> On(string condition) => CreateJoinedQuery4(condition);
 
+    public IJoinedQuery4<T1, T2, T3, T4> On<TValue>(string condition, TValue value)
+    {
+        JoinedQuery4Builder<T1, T2, T3, T4> joinedQuery = CreateJoinedQuery4(condition);
+        _parent._parent.AddParameter($"{_parent._parent.Dialect.ParameterPrefix}value", value);
+        return joinedQuery;
+    }
+
     private JoinedQuery4Builder<T1, T2, T3, T4> CreateJoinedQuery4(string onCondition)
     {
         var joinInfo = new JoinInfo(
