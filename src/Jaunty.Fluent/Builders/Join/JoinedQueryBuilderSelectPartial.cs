@@ -274,6 +274,11 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         for (int i = 0; i < reader.FieldCount; i++)
         {
             string name = reader.GetName(i);
+            if (dictionary.ContainsKey(name))
+                throw new InvalidOperationException(
+                    $"Column '{name}' is ambiguous: it appears more than once in the joined result set. " +
+                    "Use a column alias in the SelectPartial column list to disambiguate.");
+
             object? value = reader.IsDBNull(i) ? null : reader.GetValue(i);
             dictionary[name] = value;
         }
