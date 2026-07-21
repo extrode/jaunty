@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Text.RegularExpressions;
 
+using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
@@ -249,6 +250,12 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         return _connection.Query<T>(sql, GetAllParameters().ToParameterObject()!);
     }
 
+    public List<T> Select(CommandOptions options)
+    {
+        var sql = ToSql();
+        return _connection.Query<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
     public T SelectFirst()
     {
         var original = _take;
@@ -256,6 +263,15 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         var sql = ToSql();
         _take = original;
         return _connection.QueryFirst<T>(sql, GetAllParameters().ToParameterObject()!);
+    }
+
+    public T SelectFirst(CommandOptions options)
+    {
+        var original = _take;
+        _take = 1;
+        var sql = ToSql();
+        _take = original;
+        return _connection.QueryFirst<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T? SelectFirstOrDefault()
@@ -267,6 +283,15 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         return _connection.QueryFirstOrDefault<T>(sql, GetAllParameters().ToParameterObject()!);
     }
 
+    public T? SelectFirstOrDefault(CommandOptions options)
+    {
+        var original = _take;
+        _take = 1;
+        var sql = ToSql();
+        _take = original;
+        return _connection.QueryFirstOrDefault<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
     public T SelectSingle()
     {
         var original = _take;
@@ -276,6 +301,15 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         return _connection.QuerySingle<T>(sql, GetAllParameters().ToParameterObject()!);
     }
 
+    public T SelectSingle(CommandOptions options)
+    {
+        var original = _take;
+        _take = 2;
+        var sql = ToSql();
+        _take = original;
+        return _connection.QuerySingle<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
     public T? SelectSingleOrDefault()
     {
         var original = _take;
@@ -283,6 +317,15 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         var sql = ToSql();
         _take = original;
         return _connection.QuerySingleOrDefault<T>(sql, GetAllParameters().ToParameterObject()!);
+    }
+
+    public T? SelectSingleOrDefault(CommandOptions options)
+    {
+        var original = _take;
+        _take = 2;
+        var sql = ToSql();
+        _take = original;
+        return _connection.QuerySingleOrDefault<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     #endregion
@@ -298,6 +341,15 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         return await dbConn.QueryAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<List<T>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var sql = ToSql();
+        return await dbConn.QueryAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<T> SelectFirstAsync(CancellationToken cancellationToken = default)
     {
         if (_connection is not DbConnection dbConn)
@@ -308,6 +360,18 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         var sql = ToSql();
         _take = original;
         return await dbConn.QueryFirstAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var original = _take;
+        _take = 1;
+        var sql = ToSql();
+        _take = original;
+        return await dbConn.QueryFirstAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
@@ -322,6 +386,18 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         return await dbConn.QueryFirstOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var original = _take;
+        _take = 1;
+        var sql = ToSql();
+        _take = original;
+        return await dbConn.QueryFirstOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<T> SelectSingleAsync(CancellationToken cancellationToken = default)
     {
         if (_connection is not DbConnection dbConn)
@@ -334,6 +410,18 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         return await dbConn.QuerySingleAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<T> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var original = _take;
+        _take = 2;
+        var sql = ToSql();
+        _take = original;
+        return await dbConn.QuerySingleAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<T?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         if (_connection is not DbConnection dbConn)
@@ -344,6 +432,18 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         var sql = ToSql();
         _take = original;
         return await dbConn.QuerySingleOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+
+        var original = _take;
+        _take = 2;
+        var sql = ToSql();
+        _take = original;
+        return await dbConn.QuerySingleOrDefaultAsync<T>(sql, GetAllParameters().ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     #endregion
@@ -427,6 +527,9 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
 
         return combined;
     }
+
+    private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
+        new(transaction: options.Transaction, commandTimeout: options.CommandTimeout, commandType: options.CommandType);
 
     private string GetColumnNameFromProperty(string propertyName)
     {
