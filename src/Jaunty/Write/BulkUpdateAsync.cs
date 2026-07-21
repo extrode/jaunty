@@ -249,6 +249,9 @@ public static partial class Jaunty
                 $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
                 "Use BulkUpdateAsync instead, or disable constraints manually before calling this method.");
 
+        ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
+        bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
+
         // Note: Native bulk UPDATE is not widely supported by database providers.
         // We fall back to standard parameterized UPDATE statements.
 
@@ -261,6 +264,9 @@ public static partial class Jaunty
             if (wasClosed)
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+            if (ignoreConstraints && requiresAutocommit)
+                await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, null, cancellationToken).ConfigureAwait(false);
+
             if (ownTransaction)
             {
 #if NET8_0_OR_GREATER
@@ -270,18 +276,8 @@ public static partial class Jaunty
 #endif
             }
 
-            if (ignoreConstraints)
-            {
-#if NET8_0_OR_GREATER
-                DbCommand fkOffCmd = connection.CreateCommand();
-                await using var fkOffCmdDisposer = fkOffCmd.ConfigureAwait(false);
-#else
-                using DbCommand fkOffCmd = connection.CreateCommand();
-#endif
-                fkOffCmd.Transaction = transaction;
-                fkOffCmd.CommandText = dialect.GetDisableForeignKeyChecksSql()!;
-                await fkOffCmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            }
+            if (ignoreConstraints && !requiresAutocommit)
+                await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, transaction, cancellationToken).ConfigureAwait(false);
 
             int totalUpdated = 0;
 
@@ -325,18 +321,8 @@ public static partial class Jaunty
                     totalUpdated += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                 }
 
-                if (ignoreConstraints)
-                {
-#if NET8_0_OR_GREATER
-                    DbCommand fkOnCmd = connection.CreateCommand();
-                    await using var fkOnCmdDisposer = fkOnCmd.ConfigureAwait(false);
-#else
-                    using DbCommand fkOnCmd = connection.CreateCommand();
-#endif
-                    fkOnCmd.Transaction = transaction;
-                    fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
-                    await fkOnCmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                }
+                if (ignoreConstraints && !requiresAutocommit)
+                    await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, transaction, cancellationToken).ConfigureAwait(false);
 
                 if (ownTransaction)
                 {
@@ -347,23 +333,18 @@ public static partial class Jaunty
 #endif
                 }
 
+                if (ignoreConstraints && requiresAutocommit)
+                    await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, cancellationToken).ConfigureAwait(false);
+
                 return totalUpdated;
             }
             catch
             {
-                if (ignoreConstraints)
+                if (ignoreConstraints && !requiresAutocommit)
                 {
                     try
                     {
-#if NET8_0_OR_GREATER
-                        DbCommand fkOnCmd = connection.CreateCommand();
-                        await using var fkOnCmdDisposer = fkOnCmd.ConfigureAwait(false);
-#else
-                        using DbCommand fkOnCmd = connection.CreateCommand();
-#endif
-                        fkOnCmd.Transaction = transaction;
-                        fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
-                        await fkOnCmd.ExecuteNonQueryAsync(CancellationToken.None).ConfigureAwait(false);
+                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, transaction, CancellationToken.None).ConfigureAwait(false);
                     }
                     catch { /* Best effort */ }
                 }
@@ -377,6 +358,15 @@ public static partial class Jaunty
 #else
                         transaction?.Rollback();
 #endif
+                    }
+                    catch { /* Best effort */ }
+                }
+
+                if (ignoreConstraints && requiresAutocommit)
+                {
+                    try
+                    {
+                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, CancellationToken.None).ConfigureAwait(false);
                     }
                     catch { /* Best effort */ }
                 }
