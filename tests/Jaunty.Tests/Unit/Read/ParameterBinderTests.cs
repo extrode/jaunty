@@ -569,6 +569,29 @@ public class ParameterBinderTests
         Assert.Contains("(@Ids0, @Ids1, @Ids2)", command.CommandText);
     }
 
+    // R16: the parameter-limit guard checked only the expanded collection's own count against
+    // dialect.MaxParametersPerStatement, ignoring non-collection scalar parameters in the same
+    // statement. SQLiteDialect.MaxParametersPerStatement is 999, so 2 scalar params + a 998-item
+    // collection stayed under the guard's old (collection-only) count of 998 while the true total
+    // of 1000 exceeds the provider's real limit - exactly the opaque driver-level failure the
+    // guard exists to turn into a clear, fail-fast exception. The connection only needs to be an
+    // object whose Type.Name SqlDialectFactory recognizes ("SQLiteConnection"); it is never opened.
+    [Fact]
+    public void Bind_CollectionPlusScalarParamsExceedingLimit_ThrowsInvalidOperationException()
+    {
+        var command = new MockDbCommand("SELECT * FROM items WHERE a = @A AND b = @B AND id IN @Ids")
+        {
+            Connection = new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
+        };
+        var ids = Enumerable.Range(1, 998).ToArray();
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            ParameterBinder.Bind(command, new { A = 1, B = 2, Ids = ids }));
+
+        Assert.Contains("1000 parameters", ex.Message);
+        Assert.Contains("999", ex.Message);
+    }
+
     [Fact]
     public void Bind_MultipleCollections_ExpandsBoth()
     {
@@ -1132,6 +1155,24 @@ public class ParameterBinderTests
         Assert.Equal("Pending", command.Parameters[1].Value);
     }
 
+    // R16: a parameters POCO with an indexer surfaces via reflection as a public instance property
+    // named "Item" with GetIndexParameters().Length > 0. ParameterCache.BuildMetadata used to
+    // enumerate it like any other property, and CreateGetter's Expression.Property(cast, prop)
+    // throws ArgumentException ("Incorrect number of indexes") for it - failing metadata
+    // construction (and therefore every bind for the type, even for its normal properties) with an
+    // unclear exception. Dapper explicitly skips indexed properties; ParameterCache must too.
+    [Fact]
+    public void Bind_ParametersTypeWithIndexer_SkipsIndexerAndBindsNormalProperties()
+    {
+        var command = new MockDbCommand("SELECT * FROM users WHERE id = @Id");
+
+        ParameterBinder.Bind(command, new ParametersWithIndexer { Id = 7 });
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("Id", command.Parameters[0].ParameterName);
+        Assert.Equal(7, command.Parameters[0].Value);
+    }
+
     #endregion
 
     #region Test Helpers
@@ -1147,6 +1188,13 @@ public class ParameterBinderTests
     {
         [EnumStorage(EnumStorage.String)]
         public List<TestEnum> Statuses { get; set; } = [];
+    }
+
+    private sealed class ParametersWithIndexer
+    {
+        public int Id { get; set; }
+
+        public string this[int index] => index.ToString();
     }
 
     private static IEnumerable<int> YieldOneToThree()
