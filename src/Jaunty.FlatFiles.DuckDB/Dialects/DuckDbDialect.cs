@@ -144,6 +144,9 @@ public sealed class DuckDbDialect : IFlatFileDialect
     public bool SupportsForeignKeyToggle => false;
 
     /// <inheritdoc />
+    public bool RequiresAutocommitForForeignKeyToggle => false;
+
+    /// <inheritdoc />
     public string GenerateCoalesce(params string[] expressions)
     {
         return $"COALESCE({string.Join(", ", expressions)})";

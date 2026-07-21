@@ -26,6 +26,7 @@ internal sealed class SqlServerDialectWithBulkCopy : ISqlDialect
 
     // Delegate all other calls to the base dialect
     public bool SupportsForeignKeyToggle => _inner.SupportsForeignKeyToggle;
+    public bool RequiresAutocommitForForeignKeyToggle => _inner.RequiresAutocommitForForeignKeyToggle;
     public bool SupportsUpsert => _inner.SupportsUpsert;
     public bool SupportsMultiRowInsert => _inner.SupportsMultiRowInsert;
     public int MaxParametersPerStatement => _inner.MaxParametersPerStatement;
