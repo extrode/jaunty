@@ -51,13 +51,13 @@ var price = connection.QueryScalar<decimal>(
     new { CategoryId = 1 });
 ```
 
-### QueryScalar&lt;T&gt;(string sql, CommandOptions options)
+### QueryScalar&lt;T&gt;(string sql, CommandOptions<T> options)
 
 Executes a query with command options and returns the first column of the first row as a scalar value.
 
 **Signature:**
 ```csharp
-public static T QueryScalar<T>(this IDbConnection connection, string sql, CommandOptions options)
+public static T QueryScalar<T>(this IDbConnection connection, string sql, CommandOptions<T> options)
 ```
 
 **Parameters:**
@@ -75,13 +75,13 @@ var count = connection.QueryScalar<long>(
     CommandOptions.WithTimeout(30));
 ```
 
-### QueryScalar&lt;T&gt;(string sql, object parameters, CommandOptions options)
+### QueryScalar&lt;T&gt;(string sql, object parameters, CommandOptions<T> options)
 
 Executes a parameterized query with command options and returns the first column of the first row as a scalar value.
 
 **Signature:**
 ```csharp
-public static T QueryScalar<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options)
+public static T QueryScalar<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options)
 ```
 
 **Parameters:**
@@ -123,7 +123,7 @@ Asynchronously executes a query and returns the first column of the first row as
 
 **Signature:**
 ```csharp
-public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
+public static ValueTask<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
 ```
 
 **Parameters:**
@@ -132,7 +132,7 @@ public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string 
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<T>`: A task that resolves to the scalar value of type T
+- `ValueTask<T>`: A task that resolves to the scalar value of type T
 
 **Example:**
 ```csharp
@@ -145,7 +145,7 @@ Asynchronously executes a parameterized query and returns the first column of th
 
 **Signature:**
 ```csharp
-public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
+public static ValueTask<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
 ```
 
 **Parameters:**
@@ -155,15 +155,15 @@ public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string 
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<T>`: A task that resolves to the scalar value of type T
+- `ValueTask<T>`: A task that resolves to the scalar value of type T
 
-### QueryScalarAsync&lt;T&gt;(string sql, CommandOptions options, CancellationToken cancellationToken = default)
+### QueryScalarAsync&lt;T&gt;(string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)
 
 Asynchronously executes a query with command options and returns the first column of the first row as a scalar value.
 
 **Signature:**
 ```csharp
-public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
+public static ValueTask<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default)
 ```
 
 **Parameters:**
@@ -173,15 +173,15 @@ public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string 
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<T>`: A task that resolves to the scalar value of type T
+- `ValueTask<T>`: A task that resolves to the scalar value of type T
 
-### QueryScalarAsync&lt;T&gt;(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+### QueryScalarAsync&lt;T&gt;(string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)
 
 Asynchronously executes a parameterized query with command options and returns the first column of the first row as a scalar value.
 
 **Signature:**
 ```csharp
-public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+public static ValueTask<T> QueryScalarAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default)
 ```
 
 **Parameters:**
@@ -192,7 +192,7 @@ public static Task<T> QueryScalarAsync<T>(this IDbConnection connection, string 
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<T>`: A task that resolves to the scalar value of type T
+- `ValueTask<T>`: A task that resolves to the scalar value of type T
 
 **Example:**
 ```csharp

@@ -44,7 +44,8 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set.
+    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set,
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when the number of provided parameters doesn't match the SQL.
@@ -100,7 +101,8 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set.
+    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set,
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL or parameter names don't match.
@@ -161,7 +163,8 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set.
+    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set,
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <seealso cref="CommandOptions{T}"/>
     /// <seealso cref="Query{T}(IDbConnection, string)"/>
@@ -211,7 +214,8 @@ public static partial class Jaunty
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set.
+    /// Thrown when a property on <typeparamref name="T"/> has no matching column in the result set,
+    /// or when a non-nullable property receives a NULL value.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when parameter count doesn't match the SQL.

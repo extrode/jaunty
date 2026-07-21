@@ -136,12 +136,12 @@ public static partial class Jaunty
     /// using var tx = connection.BeginTransaction();
     /// var count = await connection.QueryScalarAsync&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products",
-    ///     CommandOptions.WithTransaction(tx));
-    /// 
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
+    ///
     /// // Get count with timeout
     /// var count = await connection.QueryScalarAsync&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products",
-    ///     CommandOptions.WithTimeout(30));
+    ///     CommandOptions&lt;long&gt;.WithTimeout(30));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
@@ -192,7 +192,7 @@ public static partial class Jaunty
     /// var count = await connection.QueryScalarAsync&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="ArgumentException">
