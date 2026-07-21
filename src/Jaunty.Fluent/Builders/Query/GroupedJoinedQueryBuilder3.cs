@@ -104,6 +104,7 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
     private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector)
     {
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
+        GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
 
@@ -119,7 +120,7 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
 
             while (reader.Read())
             {
-                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases);
+                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
@@ -134,9 +135,10 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
     private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CancellationToken cancellationToken)
     {
         if (_parent._parent.Connection is not DbConnection dbConn)
-            return ExecuteQuery(sql, selector);
+            throw new NotSupportedException("Async operations require DbConnection.");
 
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
+        GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
 
@@ -153,7 +155,7 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases);
+                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
