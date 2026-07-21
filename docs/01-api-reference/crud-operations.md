@@ -73,7 +73,7 @@ Asynchronously inserts an entity into the database and returns the generated ide
 
 **Signature:**
 ```csharp
-public static Task<long> InsertAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<long> InsertAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
 ```
 
 **Parameters:**
@@ -82,7 +82,7 @@ public static Task<long> InsertAsync<T>(this DbConnection connection, T entity, 
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<long>`: A task that resolves to the generated identity value, or 1 for non-identity inserts
+- `ValueTask<long>`: A task that resolves to the generated identity value, or 1 for non-identity inserts
 
 **Example:**
 ```csharp
@@ -96,7 +96,7 @@ Asynchronously inserts an entity into the database with command options and retu
 
 **Signature:**
 ```csharp
-public static Task<long> InsertAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<long> InsertAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
 ```
 
 **Parameters:**
@@ -106,7 +106,7 @@ public static Task<long> InsertAsync<T>(this DbConnection connection, T entity, 
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<long>`: A task that resolves to the generated identity value, or 1 for non-identity inserts
+- `ValueTask<long>`: A task that resolves to the generated identity value, or 1 for non-identity inserts
 
 ## Update Operations
 
@@ -158,7 +158,7 @@ Asynchronously updates an entity in the database using the primary key(s) to ide
 
 **Signature:**
 ```csharp
-public static Task<int> UpdateAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> UpdateAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
 ```
 
 **Parameters:**
@@ -167,7 +167,7 @@ public static Task<int> UpdateAsync<T>(this DbConnection connection, T entity, C
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<int>`: A task that resolves to the number of rows affected by the update
+- `ValueTask<int>`: A task that resolves to the number of rows affected by the update
 
 **Example:**
 ```csharp
@@ -181,7 +181,7 @@ Asynchronously updates an entity in the database with command options using the 
 
 **Signature:**
 ```csharp
-public static Task<int> UpdateAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> UpdateAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
 ```
 
 **Parameters:**
@@ -191,7 +191,7 @@ public static Task<int> UpdateAsync<T>(this DbConnection connection, T entity, C
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<int>`: A task that resolves to the number of rows affected by the update
+- `ValueTask<int>`: A task that resolves to the number of rows affected by the update
 
 ## Delete Operations
 
@@ -282,7 +282,7 @@ Asynchronously deletes an entity from the database using the primary key(s) to i
 
 **Signature:**
 ```csharp
-public static Task<int> DeleteAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> DeleteAsync<T>(this DbConnection connection, T entity, CancellationToken cancellationToken = default) where T : class, new()
 ```
 
 **Parameters:**
@@ -291,7 +291,7 @@ public static Task<int> DeleteAsync<T>(this DbConnection connection, T entity, C
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<int>`: A task that resolves to the number of rows affected by the delete
+- `ValueTask<int>`: A task that resolves to the number of rows affected by the delete
 
 **Example:**
 ```csharp
@@ -304,7 +304,7 @@ Asynchronously deletes an entity from the database with command options using th
 
 **Signature:**
 ```csharp
-public static Task<int> DeleteAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> DeleteAsync<T>(this DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
 ```
 
 **Parameters:**
@@ -314,7 +314,7 @@ public static Task<int> DeleteAsync<T>(this DbConnection connection, T entity, C
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<int>`: A task that resolves to the number of rows affected by the delete
+- `ValueTask<int>`: A task that resolves to the number of rows affected by the delete
 
 ### DeleteAsync&lt;T&gt;(object id, CancellationToken cancellationToken = default)
 
@@ -322,7 +322,7 @@ Asynchronously deletes an entity by its primary key value. Only works for entiti
 
 **Signature:**
 ```csharp
-public static Task<int> DeleteAsync<T>(this DbConnection connection, object id, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> DeleteAsync<T>(this DbConnection connection, object id, CancellationToken cancellationToken = default) where T : class, new()
 ```
 
 **Parameters:**
@@ -331,7 +331,7 @@ public static Task<int> DeleteAsync<T>(this DbConnection connection, object id, 
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<int>`: A task that resolves to the number of rows affected by the delete
+- `ValueTask<int>`: A task that resolves to the number of rows affected by the delete
 
 ### DeleteAsync&lt;T&gt;(object id, CommandOptions options, CancellationToken cancellationToken = default)
 
@@ -339,7 +339,7 @@ Asynchronously deletes an entity by its primary key value with command options. 
 
 **Signature:**
 ```csharp
-public static Task<int> DeleteAsync<T>(this DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
+public static ValueTask<int> DeleteAsync<T>(this DbConnection connection, object id, CommandOptions options, CancellationToken cancellationToken = default) where T : class, new()
 ```
 
 **Parameters:**
@@ -349,7 +349,7 @@ public static Task<int> DeleteAsync<T>(this DbConnection connection, object id, 
 - `cancellationToken`: Cancellation token
 
 **Returns:**
-- `Task<int>`: A task that resolves to the number of rows affected by the delete
+- `ValueTask<int>`: A task that resolves to the number of rows affected by the delete
 
 ## Real-World Example: Transactional CRUD
 

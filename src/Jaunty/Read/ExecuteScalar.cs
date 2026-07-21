@@ -117,7 +117,7 @@ public static partial class Jaunty
     /// using var tx = connection.BeginTransaction();
     /// var count = connection.ExecuteScalar&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
@@ -161,7 +161,7 @@ public static partial class Jaunty
     /// var count = connection.ExecuteScalar&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="ArgumentException">

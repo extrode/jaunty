@@ -127,7 +127,7 @@ public static partial class Jaunty
     /// using var tx = connection.BeginTransaction();
     /// var product = connection.QueryPartialFirstOrDefault&lt;Product&gt;(
     ///     "SELECT id, name FROM products ORDER BY id",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <seealso cref="QueryPartialFirstOrDefault{T}(IDbConnection, string)"/>
@@ -171,7 +171,7 @@ public static partial class Jaunty
     /// var product = connection.QueryPartialFirstOrDefault&lt;Product&gt;(
     ///     "SELECT id, name FROM products WHERE category_id = @CategoryId ORDER BY id",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="ArgumentException">

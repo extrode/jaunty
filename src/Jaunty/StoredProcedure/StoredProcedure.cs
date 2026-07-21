@@ -126,16 +126,16 @@ public static partial class Jaunty
     /// <code>
     /// // Execute stored procedure with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var products = connection.ExecuteStoredProcedure(
+    /// var products = connection.ExecuteStoredProcedure&lt;Product&gt;(
     ///     "GetProductsByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
-    /// 
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
+    ///
     /// // Execute stored procedure with timeout
-    /// var products = connection.ExecuteStoredProcedure(
+    /// var products = connection.ExecuteStoredProcedure&lt;Product&gt;(
     ///     "GetProductsByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTimeout(60));
+    ///     CommandOptions&lt;Product&gt;.WithTimeout(60));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
@@ -253,10 +253,10 @@ public static partial class Jaunty
     /// <code>
     /// // Get first product with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var product = connection.ExecuteStoredProcedureFirst(
+    /// var product = connection.ExecuteStoredProcedureFirst&lt;Product&gt;(
     ///     "GetTopProductByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -385,10 +385,10 @@ public static partial class Jaunty
     /// <code>
     /// // Get first product with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var product = connection.ExecuteStoredProcedureFirstOrDefault(
+    /// var product = connection.ExecuteStoredProcedureFirstOrDefault&lt;Product&gt;(
     ///     "GetTopProductByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
@@ -502,10 +502,10 @@ public static partial class Jaunty
     /// <code>
     /// // Get count with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var count = connection.ExecuteStoredProcedureScalar(
+    /// var count = connection.ExecuteStoredProcedureScalar&lt;long&gt;(
     ///     "GetProductCountByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
