@@ -125,7 +125,7 @@ Asynchronously executes a query and returns the results as a list of entities us
 
 **Signature:**
 ```csharp
-public static Task<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)
@@ -134,7 +134,7 @@ Asynchronously executes a parameterized query and returns the results as a list 
 
 **Signature:**
 ```csharp
-public static Task<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -143,7 +143,7 @@ Asynchronously executes a query with command options and returns the results as 
 
 **Signature:**
 ```csharp
-public static Task<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -152,7 +152,7 @@ Asynchronously executes a parameterized query with command options and returns t
 
 **Signature:**
 ```csharp
-public static Task<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> QueryAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Example:**
@@ -215,7 +215,7 @@ Asynchronously executes a query and returns the results as a list of entities us
 
 **Signature:**
 ```csharp
-public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryPartialAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)
@@ -224,7 +224,7 @@ Asynchronously executes a parameterized query and returns the results as a list 
 
 **Signature:**
 ```csharp
-public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryPartialAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -233,7 +233,7 @@ Asynchronously executes a query with command options and returns the results as 
 
 **Signature:**
 ```csharp
-public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryPartialAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -242,7 +242,7 @@ Asynchronously executes a parameterized query with command options and returns t
 
 **Signature:**
 ```csharp
-public static Task<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> QueryPartialAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Example:**

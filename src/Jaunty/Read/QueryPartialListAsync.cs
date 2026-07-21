@@ -17,7 +17,7 @@ public static partial class Jaunty
     /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>A task containing a list of dictionaries, each representing a row with column names as keys.</returns>
-    public static async ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
+    public static ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -28,10 +28,9 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
-        if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-
-        return await QueryCoreListAsync(dbConnection, sql, null, default, cancellationToken).ConfigureAwait(false);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryCoreListAsync(dbConnection, sql, null, default, cancellationToken);
     }
 
     /// <summary>
@@ -46,7 +45,7 @@ public static partial class Jaunty
     /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>A task containing a list of dictionaries, each representing a row with column names as keys.</returns>
-    public static async ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
+    public static ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -57,10 +56,9 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
-        if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-
-        return await QueryCoreListAsync(dbConnection, sql, parameters, default, cancellationToken).ConfigureAwait(false);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryCoreListAsync(dbConnection, sql, parameters, default, cancellationToken);
     }
 
     /// <summary>
@@ -74,7 +72,7 @@ public static partial class Jaunty
     /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>A task containing a list of dictionaries, each representing a row with column names as keys.</returns>
-    public static async ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
+    public static ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -85,10 +83,9 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
-        if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-
-        return await QueryCoreListAsync(dbConnection, sql, null, options, cancellationToken).ConfigureAwait(false);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryCoreListAsync(dbConnection, sql, null, options, cancellationToken);
     }
 
     /// <summary>
@@ -105,7 +102,7 @@ public static partial class Jaunty
     /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>A task containing a list of dictionaries, each representing a row with column names as keys.</returns>
-    public static async ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+    public static ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -116,10 +113,9 @@ public static partial class Jaunty
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
 #endif
-        if (connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
-
-        return await QueryCoreListAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        return connection is not DbConnection dbConnection
+            ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
+            : QueryCoreListAsync(dbConnection, sql, parameters, options, cancellationToken);
     }
 
     private static async ValueTask<List<IDictionary<string, object?>>> QueryCoreListAsync(DbConnection connection, string sql, object? parameters, CommandOptions options, CancellationToken cancellationToken)

@@ -154,7 +154,7 @@ public static partial class Jaunty
     /// var results = connection.Query&lt;Order, Customer&gt;(
     ///     "SELECT o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -203,7 +203,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE c.id = @CustomerId",
     ///     new { CustomerId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -455,7 +455,7 @@ public static partial class Jaunty
     /// var (order, customer) = connection.QueryFirst&lt;Order, Customer&gt;(
     ///     "SELECT TOP 1 o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -505,7 +505,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE c.id = @CustomerId",
     ///     new { CustomerId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -716,7 +716,7 @@ public static partial class Jaunty
     /// var result = connection.QueryFirstOrDefault&lt;Order, Customer&gt;(
     ///     "SELECT TOP 1 o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -767,7 +767,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE c.id = @CustomerId",
     ///     new { CustomerId = 999 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -971,7 +971,7 @@ public static partial class Jaunty
     ///     "SELECT o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -1021,7 +1021,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
     ///     new { OrderId = 1 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -1238,7 +1238,7 @@ public static partial class Jaunty
     ///     "SELECT o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -1290,7 +1290,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE o.id = @OrderId",
     ///     new { OrderId = 999 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -1494,7 +1494,7 @@ public static partial class Jaunty
     /// foreach (var (order, customer) in connection.QueryStream&lt;Order, Customer&gt;(
     ///     "SELECT o.id AS OrderId, o.Date, o.Total, c.id AS CustomerId, c.Name, c.Email " +
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id",
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"Order {order.OrderId}");
     /// }
@@ -1546,7 +1546,7 @@ public static partial class Jaunty
     ///     "FROM Orders o JOIN Customers c ON o.CustomerId = c.Id " +
     ///     "WHERE c.id = @CustomerId",
     ///     new { CustomerId = 5 },
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;(Order, Customer)&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"Order {order.OrderId}");
     /// }

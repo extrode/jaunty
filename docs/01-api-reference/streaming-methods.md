@@ -66,7 +66,7 @@ Asynchronously executes a query and returns an async enumerable sequence of enti
 
 **Signature:**
 ```csharp
-public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Parameters:**
@@ -92,7 +92,7 @@ Asynchronously executes a parameterized query and returns an async enumerable se
 
 **Signature:**
 ```csharp
-public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, object parameters, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryStreamAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -101,7 +101,7 @@ Asynchronously executes a query with command options and returns an async enumer
 
 **Signature:**
 ```csharp
-public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryStreamAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -110,7 +110,7 @@ Asynchronously executes a parameterized query with command options and returns a
 
 **Signature:**
 ```csharp
-public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+public static IAsyncEnumerable<T> QueryStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ## Partial Mapping Streaming Methods
@@ -168,7 +168,7 @@ Asynchronously executes a query and returns an async enumerable sequence of enti
 
 **Signature:**
 ```csharp
-public static IAsyncEnumerable<T> QueryPartialStreamAsync<T>(this IDbConnection connection, string sql, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+public static IAsyncEnumerable<T> QueryPartialStreamAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryPartialStreamAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)
@@ -177,7 +177,7 @@ Asynchronously executes a parameterized query and returns an async enumerable se
 
 **Signature:**
 ```csharp
-public static IAsyncEnumerable<T> QueryPartialStreamAsync<T>(this IDbConnection connection, string sql, object parameters, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+public static IAsyncEnumerable<T> QueryPartialStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryPartialStreamAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -186,7 +186,7 @@ Asynchronously executes a query with command options and returns an async enumer
 
 **Signature:**
 ```csharp
-public static IAsyncEnumerable<T> QueryPartialStreamAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+public static IAsyncEnumerable<T> QueryPartialStreamAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### QueryPartialStreamAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -195,13 +195,109 @@ Asynchronously executes a parameterized query with command options and returns a
 
 **Signature:**
 ```csharp
-public static IAsyncEnumerable<T> QueryPartialStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
+public static IAsyncEnumerable<T> QueryPartialStreamAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Example:**
 ```csharp
 // Only product_id and product_name are selected; partial mapping tolerates the missing columns
 await foreach (var product in connection.QueryPartialStreamAsync<Product>("SELECT product_id, product_name FROM products"))
+{
+    await ProcessProductAsync(product);
+}
+```
+
+## Unbuffered Partial Mapping Streaming Methods
+
+These overloads are functionally identical to the `QueryPartialStream` overloads above — results are streamed and not buffered in memory. They exist as an alias for callers who prefer the "unbuffered" naming to describe the streaming behavior.
+
+### QueryPartialUnbuffered&lt;T&gt;(string sql)
+
+Executes a query and streams the results as entities of type T using partial mapping mode (unbuffered).
+
+**Signature:**
+```csharp
+public static IEnumerable<T> QueryPartialUnbuffered<T>(this IDbConnection connection, string sql) where T : new()
+```
+
+### QueryPartialUnbuffered&lt;T&gt;(string sql, object parameters)
+
+Executes a parameterized query and streams the results as entities of type T using partial mapping mode (unbuffered).
+
+**Signature:**
+```csharp
+public static IEnumerable<T> QueryPartialUnbuffered<T>(this IDbConnection connection, string sql, object parameters) where T : new()
+```
+
+### QueryPartialUnbuffered&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options)
+
+Executes a query with command options and streams the results as entities of type T using partial mapping mode (unbuffered).
+
+**Signature:**
+```csharp
+public static IEnumerable<T> QueryPartialUnbuffered<T>(this IDbConnection connection, string sql, CommandOptions<T> options) where T : new()
+```
+
+### QueryPartialUnbuffered&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options)
+
+Executes a parameterized query with command options and streams the results as entities of type T using partial mapping mode (unbuffered).
+
+**Signature:**
+```csharp
+public static IEnumerable<T> QueryPartialUnbuffered<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options) where T : new()
+```
+
+**Example:**
+```csharp
+// Unbuffered stream - most memory efficient for large result sets
+foreach (var product in connection.QueryPartialUnbuffered<Product>("SELECT id, name FROM products"))
+{
+    Console.WriteLine($"{product.Id}: {product.Name}");
+}
+```
+
+## Unbuffered Async Partial Mapping Streaming Methods
+
+### QueryPartialUnbufferedAsync&lt;T&gt;(string sql, CancellationToken cancellationToken = default)
+
+Asynchronously executes a query and streams the results as entities of type T using partial mapping mode (unbuffered).
+
+**Signature:**
+```csharp
+public static IAsyncEnumerable<T> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, CancellationToken cancellationToken = default) where T : new()
+```
+
+### QueryPartialUnbufferedAsync&lt;T&gt;(string sql, object parameters, CancellationToken cancellationToken = default)
+
+Asynchronously executes a parameterized query and streams the results as entities of type T using partial mapping mode (unbuffered).
+
+**Signature:**
+```csharp
+public static IAsyncEnumerable<T> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default) where T : new()
+```
+
+### QueryPartialUnbufferedAsync&lt;T&gt;(string sql, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
+
+Asynchronously executes a query with command options and streams the results as entities of type T using partial mapping mode (unbuffered).
+
+**Signature:**
+```csharp
+public static IAsyncEnumerable<T> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+```
+
+### QueryPartialUnbufferedAsync&lt;T&gt;(string sql, object parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
+
+Asynchronously executes a parameterized query with command options and streams the results as entities of type T using partial mapping mode (unbuffered).
+
+**Signature:**
+```csharp
+public static IAsyncEnumerable<T> QueryPartialUnbufferedAsync<T>(this IDbConnection connection, string sql, object parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+```
+
+**Example:**
+```csharp
+// Unbuffered async stream - most memory efficient for large result sets
+await foreach (var product in connection.QueryPartialUnbufferedAsync<Product>("SELECT id, name FROM products"))
 {
     await ProcessProductAsync(product);
 }

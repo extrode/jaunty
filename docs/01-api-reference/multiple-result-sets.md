@@ -64,7 +64,7 @@ Asynchronously executes a command that returns multiple result sets and returns 
 
 **Signature:**
 ```csharp
-public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
+public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
 ```
 
 ### QueryMultipleAsync(string sql, object parameters, CancellationToken cancellationToken = default)
@@ -73,7 +73,7 @@ Asynchronously executes a parameterized command that returns multiple result set
 
 **Signature:**
 ```csharp
-public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
+public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
 ```
 
 ### QueryMultipleAsync(string sql, CommandOptions options, CancellationToken cancellationToken = default)
@@ -82,7 +82,7 @@ Asynchronously executes a command with options that returns multiple result sets
 
 **Signature:**
 ```csharp
-public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
+public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
 ```
 
 ### QueryMultipleAsync(string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
@@ -91,7 +91,7 @@ Asynchronously executes a parameterized command with options that returns multip
 
 **Signature:**
 ```csharp
-public static Task<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
+public static ValueTask<GridReader> QueryMultipleAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
 ```
 
 **Example:**
