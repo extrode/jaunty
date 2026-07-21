@@ -22,6 +22,11 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     /// </summary>
     IJoinClause<TFrom, TJoin, T3> LeftJoin<T3>(string? alias = null) where T3 : new();
 
+    /// <summary>
+    /// Adds a RIGHT JOIN to another table.
+    /// </summary>
+    IJoinClause<TFrom, TJoin, T3> RightJoin<T3>(string? alias = null) where T3 : new();
+
     // --- WHERE Clauses ---
 
     /// <summary>
