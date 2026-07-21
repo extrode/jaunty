@@ -19,12 +19,18 @@ public sealed partial class DuckDb
     /// <inheritdoc />
     public List<T> Query<T>(string sql) where T : class, new()
     {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
         return QueryInternal<T>(sql, []);
     }
 
     /// <inheritdoc />
     public List<T> Query<T>(string sql, params (string Name, object? Value)[] parameters) where T : class, new()
     {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
         return QueryInternal<T>(sql, parameters);
     }
 

@@ -12,6 +12,9 @@ public sealed partial class DuckDb
     /// <returns>A list of tuples containing mapped entities.</returns>
     public async ValueTask<List<(T1, T2)>> QueryMultiEntityAsync<T1, T2>(string sql, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
 #pragma warning disable CS0618 // Type or member is obsolete
         return await _connection.QueryAsync<T1, T2>(sql, cancellationToken: cancellationToken).ConfigureAwait(false);
 #pragma warning restore CS0618
@@ -28,6 +31,9 @@ public sealed partial class DuckDb
     /// <returns>A list of tuples containing mapped entities.</returns>
     public async ValueTask<List<(T1, T2)>> QueryMultiEntityAsync<T1, T2>(string sql, object parameters, CancellationToken cancellationToken = default) where T1 : new() where T2 : new()
     {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
 #pragma warning disable CS0618 // Type or member is obsolete
         return await _connection.QueryAsync<T1, T2>(sql, parameters, cancellationToken: cancellationToken).ConfigureAwait(false);
 #pragma warning restore CS0618

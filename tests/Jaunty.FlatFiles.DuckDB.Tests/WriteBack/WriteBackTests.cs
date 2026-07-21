@@ -306,6 +306,21 @@ public class WriteBackTests : IDisposable
         });
     }
 
+    [Fact]
+    public async Task FormatInference_LegacyXls_Throws()
+    {
+        // AUD-R14 batch-7: ".xls" used to map to FileFormats.Excel here, but DuckDB's write path
+        // can only produce modern ".xlsx" content - writing that under a ".xls" name produced a
+        // file FlatFile.cs's read-side _extensionRegistry (which only registers ".xlsx") can never
+        // read back, and isn't a genuine legacy .xls file despite the extension. Now rejected like
+        // any other unsupported extension.
+        var path = Path.Combine(DataDir, "legacy.xls");
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        {
+            await _db.ExportAsync<InventoryItem>(path);
+        });
+    }
+
     // ==========================================
     // M3 Exit Gate — Full INSERT/UPDATE/DELETE cycle with write-back
     // ==========================================
