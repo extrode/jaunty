@@ -96,8 +96,8 @@ public class ScaffoldCommandTests : IDisposable
         var generatedFile = Path.Combine(_outputDir, "Product.cs");
         Assert.True(File.Exists(generatedFile));
         var code = await File.ReadAllTextAsync(generatedFile);
-        Assert.Contains("[Table(\"products\")]", code);
-        Assert.Contains("[Key]", code);
+        Assert.Contains("[Jaunty.Attributes.Table(\"products\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Key]", code);
         Assert.Contains("public class Product", code);
     }
 
@@ -115,7 +115,7 @@ public class ScaffoldCommandTests : IDisposable
 
         Assert.Equal(0, exitCode);
         var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
-        Assert.DoesNotContain("[Table(", code);
+        Assert.DoesNotContain("Jaunty.Attributes.Table(", code);
     }
 
     [Fact]
