@@ -29,6 +29,12 @@ public static partial class Jaunty
     /// <para>
     /// Each entity must have its primary key property set to identify the row to delete.
     /// </para>
+    /// <para>
+    /// <strong>Performance note:</strong> This method issues one <c>DELETE</c> round trip per entity
+    /// in a sequential loop; unlike <see cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/>, there
+    /// is no multi-row batching for the delete path. For large collections, this is the dominant cost
+    /// driver.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -38,7 +44,7 @@ public static partial class Jaunty
     ///     public string Name { get; set; }
     ///     public decimal Price { get; set; }
     /// }
-    /// 
+    ///
     /// // Bulk delete multiple products
     /// var productsToDelete = new List&lt;Product&gt;
     /// {
@@ -46,7 +52,7 @@ public static partial class Jaunty
     ///     new Product { Id = 2 },
     ///     new Product { Id = 3 }
     /// };
-    /// 
+    ///
     /// int deleted = connection.BulkDelete(productsToDelete);
     /// Console.WriteLine($"Deleted {deleted} products");
     /// </code>
