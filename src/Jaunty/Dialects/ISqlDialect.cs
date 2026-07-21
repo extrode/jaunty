@@ -115,6 +115,15 @@ public interface ISqlDialect
     bool SupportsForeignKeyToggle { get; }
 
     /// <summary>
+    /// Indicates whether <see cref="GetDisableForeignKeyChecksSql"/>/<see cref="GetEnableForeignKeyChecksSql"/>
+    /// only take effect outside an active transaction (autocommit mode) and are a silent no-op
+    /// while a transaction is pending. True for SQLite's <c>PRAGMA foreign_keys</c>; false for
+    /// dialects whose FK-toggle statement is an ordinary session-level command that works fine
+    /// inside a transaction.
+    /// </summary>
+    bool RequiresAutocommitForForeignKeyToggle { get; }
+
+    /// <summary>
     /// Generates SQL for COALESCE function.
     /// Returns the first non-null value among the arguments.
     /// </summary>

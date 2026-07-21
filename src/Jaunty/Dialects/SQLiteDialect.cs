@@ -126,6 +126,8 @@ internal sealed class SQLiteDialect : ISqlDialect
 
     public bool SupportsForeignKeyToggle => true;
 
+    public bool RequiresAutocommitForForeignKeyToggle => true;
+
     public string GenerateCoalesce(params string[] expressions)
     {
         return $"COALESCE({string.Join(", ", expressions)})";

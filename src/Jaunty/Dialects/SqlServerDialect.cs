@@ -167,6 +167,8 @@ internal sealed class SqlServerDialect : ISqlDialect
 
     public bool SupportsForeignKeyToggle => false;
 
+    public bool RequiresAutocommitForForeignKeyToggle => false;
+
     public string GenerateCoalesce(params string[] expressions)
     {
         return $"COALESCE({string.Join(", ", expressions)})";
