@@ -505,6 +505,23 @@ public class StoredProcedureTests : IClassFixture<DialectFixture>
         realTransaction.Rollback();
     }
 
+    // R16: the CommandOptions<T> rebuilt internally to force CommandType.StoredProcedure dropped
+    // the caller's ExpectedRowCount, silently reverting to JauntyConfig.QueryResultCapacity.
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void ExecuteStoredProcedure_WithExpectedRowCount_PreSizesListCapacity(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var products = connection.ExecuteStoredProcedure<Product>(
+            SpName("GetAllProducts", dialect), null, CommandOptions<Product>.WithExpectedRowCount(500));
+
+        Assert.NotEmpty(products);
+        Assert.True(products.Capacity >= 500);
+    }
+
     [Theory]
     [SqlServer]
     [Postgres]
