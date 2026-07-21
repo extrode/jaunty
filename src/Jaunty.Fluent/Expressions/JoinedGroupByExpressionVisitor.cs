@@ -60,21 +60,52 @@ internal sealed class JoinedGroupByExpressionVisitor
     public (string Sql, List<(string Name, object? Value)> Parameters) TranslateHavingPredicate(LambdaExpression predicate)
     {
         _havingParameters = new List<(string, object?)>();
-        Expression body = predicate.Body;
-
-        if (body is BinaryExpression binary)
-        {
-            string left = TranslateHavingExpression(binary.Left);
-            string right = TranslateHavingExpression(binary.Right);
-            string op = GetSqlOperator(binary.NodeType);
-            return ($"{left} {op} {right}", _havingParameters);
-        }
-
-        throw new NotSupportedException($"HAVING predicate type '{body.NodeType}' is not supported.");
+        string sql = TranslateHavingExpression(predicate.Body);
+        return (sql, _havingParameters);
     }
 
+    /// <summary>
+    /// Recursively translates a HAVING predicate. Top-level and nested AndAlso/OrElse
+    /// combinators (e.g. <c>g => g.Count() > 5 &amp;&amp; g.Sum(...) > 100</c>) are handled by
+    /// translating both operands and joining them with the mapped SQL operator; comparison
+    /// operators bottom out in <see cref="TranslateHavingOperand"/> for each side. Mirrors
+    /// <c>GroupedQueryBuilder.TranslateHavingExpression</c>'s structure for the single-entity
+    /// case.
+    /// </summary>
     private string TranslateHavingExpression(Expression expr)
     {
+        if (expr is UnaryExpression convert && convert.NodeType == ExpressionType.Convert)
+            expr = convert.Operand;
+
+        if (expr is BinaryExpression binary)
+        {
+            string op = GetSqlOperator(binary.NodeType);
+
+            if (binary.NodeType is ExpressionType.AndAlso or ExpressionType.OrElse)
+            {
+                string left = TranslateHavingExpression(binary.Left);
+                string right = TranslateHavingExpression(binary.Right);
+                return $"({left} {op} {right})";
+            }
+
+            string leftOperand = TranslateHavingOperand(binary.Left);
+            string rightOperand = TranslateHavingOperand(binary.Right);
+            return $"{leftOperand} {op} {rightOperand}";
+        }
+
+        throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
+    }
+
+    /// <summary>
+    /// Translates one side of a HAVING comparison: an aggregate method call (COUNT/SUM/...), or
+    /// a value (literal constant, captured local, or method parameter) which is bound as a
+    /// query parameter rather than being inlined into the SQL text.
+    /// </summary>
+    private string TranslateHavingOperand(Expression expr)
+    {
+        if (expr is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            expr = unary.Operand;
+
         // g.Count() > 5, g.Sum((t1,t2) => t1.Price) > total, etc.
         if (expr is MethodCallExpression methodCall)
         {
