@@ -239,11 +239,20 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             }
         }
 
-        // Handle Enumerable.Contains for IN clauses (e.g., ids.Contains(p.Id))
-        if (node.Method.Name == "Contains" && node.Method.DeclaringType == typeof(Enumerable))
+        // Handle Enumerable.Contains for IN clauses (e.g., ids.Contains(p.Id)) as well as
+        // instance Contains on List<T>/HashSet<T>/other ICollection<T> implementations, which
+        // bind to the type's own Contains method rather than the Enumerable extension method.
+        bool isEnumerableContains = node.Method.Name == "Contains" && node.Method.DeclaringType == typeof(Enumerable);
+        bool isInstanceContains = node.Method.Name == "Contains"
+            && node.Object is not null
+            && node.Object.Type != typeof(string)
+            && node.Arguments.Count == 1
+            && typeof(System.Collections.IEnumerable).IsAssignableFrom(node.Object.Type);
+
+        if (isEnumerableContains || isInstanceContains)
         {
-            var collection = EvaluateExpression(node.Arguments[0]);
-            var memberExpr = node.Arguments[1] as MemberExpression;
+            var collection = EvaluateExpression(isEnumerableContains ? node.Arguments[0] : node.Object!);
+            var memberExpr = (isEnumerableContains ? node.Arguments[1] : node.Arguments[0]) as MemberExpression;
 
             if (memberExpr is not null && IsParameterMember(memberExpr) && collection is System.Collections.IEnumerable enumerable)
             {

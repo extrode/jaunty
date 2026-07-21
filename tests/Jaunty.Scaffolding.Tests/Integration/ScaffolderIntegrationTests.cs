@@ -103,18 +103,18 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.Contains("public class Product", content);
 
         // Check table attribute
-        Assert.Contains("[Table(\"products\")]", content);
+        Assert.Contains("[Jaunty.Attributes.Table(\"products\")]", content);
 
         // Check key attribute on primary key
-        Assert.Contains("[Key]", content);
+        Assert.Contains("[Jaunty.Attributes.Key]", content);
 
         // Check database generated attribute on identity column
-        Assert.Contains("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]", content);
+        Assert.Contains("[Jaunty.Attributes.DatabaseGenerated(Jaunty.Attributes.DatabaseGeneratedOption.Identity)]", content);
 
         // Check column attributes for snake_case columns
-        Assert.Contains("[Column(\"product_id\")]", content);
-        Assert.Contains("[Column(\"product_name\")]", content);
-        Assert.Contains("[Column(\"unit_price\")]", content);
+        Assert.Contains("[Jaunty.Attributes.Column(\"product_id\")]", content);
+        Assert.Contains("[Jaunty.Attributes.Column(\"product_name\")]", content);
+        Assert.Contains("[Jaunty.Attributes.Column(\"unit_price\")]", content);
 
         // Check nullable type for nullable column
         Assert.Contains("public double? UnitPrice", content);

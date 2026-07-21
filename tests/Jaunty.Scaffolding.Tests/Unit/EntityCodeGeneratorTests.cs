@@ -105,7 +105,7 @@ public class EntityCodeGeneratorTests
 
         Assert.Contains("namespace Test.Entities;", code);
         Assert.Contains("public class Product", code);
-        Assert.Contains("[Table(\"Products\", \"dbo\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Table(\"Products\", \"dbo\")]", code);
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Key]", code);
+        Assert.Contains("[Jaunty.Attributes.Key]", code);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]", code);
+        Assert.Contains("[Jaunty.Attributes.DatabaseGenerated(Jaunty.Attributes.DatabaseGeneratedOption.Identity)]", code);
     }
 
     [Fact]
@@ -150,13 +150,13 @@ public class EntityCodeGeneratorTests
         var table = CreateSnakeCaseTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Column(\"order_detail_id\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Column(\"order_detail_id\")]", code);
         Assert.Contains("public int OrderDetailId { get; set; }", code);
 
-        Assert.Contains("[Column(\"order_id\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Column(\"order_id\")]", code);
         Assert.Contains("public int OrderId { get; set; }", code);
 
-        Assert.Contains("[Column(\"unit_price\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Column(\"unit_price\")]", code);
         Assert.Contains("public decimal? UnitPrice { get; set; }", code);
     }
 
@@ -261,7 +261,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        Assert.DoesNotContain("[Table(", code);
+        Assert.DoesNotContain("Jaunty.Attributes.Table(", code);
     }
 
     [Fact]
@@ -276,7 +276,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        Assert.DoesNotContain("[Column(", code);
+        Assert.DoesNotContain("Jaunty.Attributes.Column(", code);
     }
 
     [Fact]
@@ -291,7 +291,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        Assert.DoesNotContain("[Key]", code);
+        Assert.DoesNotContain("Jaunty.Attributes.Key", code);
     }
 
     [Fact]
@@ -306,7 +306,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        Assert.DoesNotContain("[DatabaseGenerated(", code);
+        Assert.DoesNotContain("Jaunty.Attributes.DatabaseGenerated(", code);
     }
 
     [Fact]
@@ -331,17 +331,43 @@ public class EntityCodeGeneratorTests
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
         // Should have [Table("simple_table")] without schema
-        Assert.Contains("[Table(\"simple_table\")]", code);
-        Assert.DoesNotContain("[Table(\"simple_table\", \"\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Table(\"simple_table\")]", code);
+        Assert.DoesNotContain("[Jaunty.Attributes.Table(\"simple_table\", \"\")]", code);
     }
 
     [Fact]
-    public void GenerateEntity_IncludesJauntyAttributesUsing()
+    public void GenerateEntity_DoesNotEmitJauntyAttributesUsing()
     {
+        // Jaunty's [Table]/[Column]/[Key]/[DatabaseGenerated] attributes are emitted fully
+        // qualified rather than via "using Jaunty.Attributes;", so the generated file never
+        // needs that using and can't collide with it.
         var table = CreateSimpleTable();
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("using Jaunty.Attributes;", code);
+        Assert.DoesNotContain("using Jaunty.Attributes;", code);
+    }
+
+    [Fact]
+    public void GenerateEntity_WithDataAnnotationsAndDefaultAttributeFlags_DoesNotEmitAmbiguousUsings()
+    {
+        // Regression test: AddDataAnnotations=true combined with the default-on
+        // GenerateTableAttribute/GenerateColumnAttribute/GenerateKeyAttribute/
+        // GenerateDatabaseGeneratedAttribute flags used to emit both
+        // "using Jaunty.Attributes;" and "using System.ComponentModel.DataAnnotations(.Schema);"
+        // while writing [Table]/[Column]/[Key]/[DatabaseGenerated] unqualified, which fails to
+        // compile with CS0104 ambiguous-reference errors since both namespaces define
+        // identically-named attribute types.
+        var table = CreateSimpleTable();
+        var options = new CodeGeneratorOptions { Namespace = "Test.Entities", AddDataAnnotations = true };
+
+        var code = _generator.GenerateEntity(table, options);
+
+        Assert.Contains("using System.ComponentModel.DataAnnotations;", code);
+        Assert.Contains("using System.ComponentModel.DataAnnotations.Schema;", code);
+        Assert.DoesNotContain("using Jaunty.Attributes;", code);
+        Assert.Contains("[Jaunty.Attributes.Table(\"Products\", \"dbo\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Key]", code);
+        Assert.Contains("[Jaunty.Attributes.DatabaseGenerated(Jaunty.Attributes.DatabaseGeneratedOption.Identity)]", code);
     }
 
     // ------------------------------------------------------------------
@@ -363,7 +389,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Table(\"weird\\\"table\", \"dbo\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Table(\"weird\\\"table\", \"dbo\")]", code);
     }
 
     [Fact]
@@ -381,7 +407,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Table(\"weird\\\\table\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Table(\"weird\\\\table\")]", code);
     }
 
     [Fact]
@@ -400,7 +426,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("[Column(\"weird\\\"column\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Column(\"weird\\\"column\")]", code);
     }
 
     // ------------------------------------------------------------------
@@ -429,7 +455,7 @@ public class EntityCodeGeneratorTests
         Assert.Contains("public class Product", code);
         Assert.DoesNotContain("public int Product { get; set; }", code);
         Assert.Contains("public int Product1 { get; set; }", code);
-        Assert.Contains("[Column(\"Product\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Column(\"Product\")]", code);
     }
 
     [Fact]
@@ -450,10 +476,10 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        Assert.Contains("[Column(\"order_id\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Column(\"order_id\")]", code);
         Assert.Contains("public int OrderId { get; set; }", code);
 
-        Assert.Contains("[Column(\"OrderId\")]", code);
+        Assert.Contains("[Jaunty.Attributes.Column(\"OrderId\")]", code);
         Assert.Contains("public int OrderId1 { get; set; }", code);
     }
 }

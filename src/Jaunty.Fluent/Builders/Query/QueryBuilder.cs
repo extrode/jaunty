@@ -106,7 +106,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public IWhereClause<T> Where(string column, object? value)
     {
         var escapedColumn = _dialect.EscapeColumnName(column);
-        var paramName = $"{_dialect.ParameterPrefix}{column}";
+        var paramName = GetUniqueParamName(column);
 
         if (value is null)
         {
@@ -1735,7 +1735,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     IUpdateWhereClause<T> ISetClause<T>.Where(string column, object? value)
     {
         var escapedColumn = _dialect.EscapeColumnName(column);
-        var paramName = $"{_dialect.ParameterPrefix}{column}";
+        var paramName = GetUniqueParamName(column);
 
         if (value is null)
         {
