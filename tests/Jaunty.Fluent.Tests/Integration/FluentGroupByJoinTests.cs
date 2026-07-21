@@ -122,6 +122,48 @@ public class FluentGroupByJoinTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public void GroupBy_Having_AndAlsoOfTwoAggregates_FiltersGroupsCorrectly()
+    {
+        // AUD-R14 batch-5 finding #3 regression: JoinedGroupByExpressionVisitor previously
+        // threw NotSupportedException for a compound (AndAlso/OrElse) HAVING predicate,
+        // since TranslateHavingExpression had no BinaryExpression branch to recurse into -
+        // the left/right operands of the top-level AndAlso are themselves BinaryExpression
+        // comparisons. Same seed data and filter as the single-entity
+        // FluentGroupByTests.GroupBy_WithHaving_AndAlsoOfTwoAggregates_FiltersGroupsCorrectly:
+        // category 1 = 4 products / price sum 162.00, category 2 = 5 products / price sum
+        // 138.35, category 3 = 2 products / price sum 65.00 - only category 1 satisfies both
+        // "count > 3" and "sum(unit_price) > 150".
+        var results = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .GroupBy((p, c) => p.CategoryId)
+            .Having(g => g.Count() > 3 && g.Sum((p, c) => p.UnitPrice) > 150)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        var result = Assert.Single(results);
+        Assert.Equal((short?)1, result.CategoryId);
+    }
+
+    [Fact]
+    public void GroupBy_Having_OrElseOfTwoAggregates_FiltersGroupsCorrectly()
+    {
+        // Same OrElse counterpart as FluentGroupByTests.GroupBy_WithHaving_OrElseOfTwoAggregates_FiltersGroupsCorrectly:
+        // "count > 4" matches category 2 (5 products); "sum(unit_price) < 100" matches
+        // category 3 (65.00). Category 1 (count 4, sum 162.00) matches neither.
+        var results = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .GroupBy((p, c) => p.CategoryId)
+            .Having(g => g.Count() > 4 || g.Sum((p, c) => p.UnitPrice) < 100)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.Equal(2, results.Count);
+        Assert.Contains(results, r => r.CategoryId == 2);
+        Assert.Contains(results, r => r.CategoryId == 3);
+        Assert.DoesNotContain(results, r => r.CategoryId == 1);
+    }
+
+    [Fact]
     public void GroupBy_Having_ClosureCapturedLocalVariable_FiltersGroups()
     {
         // T013: gap #14's HAVING closure-safety fix, reused here via HavingExpressionHelpers
