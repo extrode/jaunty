@@ -92,6 +92,7 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
@@ -124,12 +125,12 @@ public static partial class Jaunty
     /// using var tx = connection.BeginTransaction();
     /// var count = connection.QueryScalar&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products",
-    ///     CommandOptions.WithTransaction(tx));
-    /// 
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
+    ///
     /// // Get count with timeout
     /// var count = connection.QueryScalar&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products",
-    ///     CommandOptions.WithTimeout(30));
+    ///     CommandOptions&lt;long&gt;.WithTimeout(30));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
@@ -138,6 +139,7 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
@@ -172,7 +174,7 @@ public static partial class Jaunty
     /// var count = connection.QueryScalar&lt;long&gt;(
     ///     "SELECT COUNT(*) FROM products WHERE category_id = @CategoryId",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="ArgumentException">
@@ -184,6 +186,7 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));

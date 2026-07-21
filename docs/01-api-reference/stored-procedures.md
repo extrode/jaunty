@@ -197,13 +197,13 @@ public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, s
 var count = connection.ExecuteStoredProcedureScalar<int>("GetProductCountByCategory", new { CategoryId = 1 });
 ```
 
-### ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, object? parameters, CommandOptions options)
+### ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, object? parameters, CommandOptions<T> options)
 
 Executes a parameterized stored procedure with command options and returns a scalar value.
 
 **Signature:**
 ```csharp
-public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions options)
+public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options)
 ```
 
 ## Non-Query Stored Procedure Methods
@@ -255,7 +255,7 @@ Asynchronously executes a stored procedure and returns the results as a list of 
 
 **Signature:**
 ```csharp
-public static Task<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, object? parameters, CancellationToken cancellationToken = default)
@@ -264,7 +264,7 @@ Asynchronously executes a parameterized stored procedure and returns the results
 
 **Signature:**
 ```csharp
-public static Task<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### ExecuteStoredProcedureAsync&lt;T&gt;(string procedureName, object? parameters, CommandOptions&lt;T&gt; options, CancellationToken cancellationToken = default)
@@ -273,7 +273,7 @@ Asynchronously executes a parameterized stored procedure with command options an
 
 **Signature:**
 ```csharp
-public static Task<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CommandOptions<T> options, CancellationToken cancellationToken = default) where T : new()
 ```
 
 **Example:**
@@ -288,7 +288,7 @@ Asynchronously executes a stored procedure and returns the first result from the
 
 **Signature:**
 ```csharp
-public static Task<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)
@@ -297,7 +297,7 @@ Asynchronously executes a stored procedure and returns the first result or defau
 
 **Signature:**
 ```csharp
-public static Task<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, CancellationToken cancellationToken = default)
@@ -306,7 +306,7 @@ Asynchronously executes a stored procedure and returns a scalar value.
 
 **Signature:**
 ```csharp
-public static Task<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default)
+public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default)
 ```
 
 ### ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, object? parameters, CancellationToken cancellationToken = default)
@@ -315,7 +315,7 @@ Asynchronously executes a parameterized stored procedure and returns a scalar va
 
 **Signature:**
 ```csharp
-public static Task<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default)
+public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default)
 ```
 
 ### ExecuteStoredProcedureNonQueryAsync(string procedureName, CancellationToken cancellationToken = default)
@@ -324,7 +324,7 @@ Asynchronously executes a stored procedure that does not return results and retu
 
 **Signature:**
 ```csharp
-public static Task<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default)
+public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, CancellationToken cancellationToken = default)
 ```
 
 ### ExecuteStoredProcedureNonQueryAsync(string procedureName, object? parameters, CancellationToken cancellationToken = default)
@@ -333,7 +333,7 @@ Asynchronously executes a parameterized stored procedure that does not return re
 
 **Signature:**
 ```csharp
-public static Task<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default)
+public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, object? parameters, CancellationToken cancellationToken = default)
 ```
 
 ### ExecuteStoredProcedureNonQueryAsync(string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = default)
@@ -342,7 +342,7 @@ Asynchronously executes a parameterized stored procedure with command options th
 
 **Signature:**
 ```csharp
-public static Task<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = default)
+public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, object? parameters, CommandOptions options, CancellationToken cancellationToken = default)
 ```
 
 ## Working with Output Parameters
@@ -407,13 +407,13 @@ Executes a stored procedure with output parameters and returns the first result 
 public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default) where T : new()
 ```
 
-### ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions options = default)
+### ExecuteStoredProcedureScalar&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions<T> options = default)
 
 Executes a stored procedure with output parameters and returns a scalar value. Output parameter values can be retrieved after execution.
 
 **Signature:**
 ```csharp
-public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default)
+public static T ExecuteStoredProcedureScalar<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default)
 ```
 
 ### ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default)
@@ -433,7 +433,7 @@ Asynchronously executes a stored procedure with output parameters and returns th
 
 **Signature:**
 ```csharp
-public static Task<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### ExecuteStoredProcedureFirstAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
@@ -442,7 +442,7 @@ Asynchronously executes a stored procedure with output parameters and returns th
 
 **Signature:**
 ```csharp
-public static Task<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
 ```
 
 ### ExecuteStoredProcedureFirstOrDefaultAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions&lt;T&gt; options = default, CancellationToken cancellationToken = default)
@@ -451,16 +451,16 @@ Asynchronously executes a stored procedure with output parameters and returns th
 
 **Signature:**
 ```csharp
-public static Task<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
+public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
 ```
 
-### ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
+### ExecuteStoredProcedureScalarAsync&lt;T&gt;(string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default)
 
 Asynchronously executes a stored procedure with output parameters and returns a scalar value. Output parameter values can be retrieved after execution.
 
 **Signature:**
 ```csharp
-public static Task<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
+public static ValueTask<T> ExecuteStoredProcedureScalarAsync<T>(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default)
 ```
 
 ### ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
@@ -469,7 +469,7 @@ Asynchronously executes a stored procedure with output parameters that does not 
 
 **Signature:**
 ```csharp
-public static Task<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
+public static ValueTask<int> ExecuteStoredProcedureNonQueryAsync(this IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options = default, CancellationToken cancellationToken = default)
 ```
 
 ## SpParameters Class

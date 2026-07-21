@@ -122,10 +122,10 @@ public static partial class Jaunty
     /// <code>
     /// // Async execute stored procedure with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var products = await connection.ExecuteStoredProcedureAsync(
+    /// var products = await connection.ExecuteStoredProcedureAsync&lt;Product&gt;(
     ///     "GetProductsByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// tx.Commit();
     /// </code>
     /// </example>
@@ -253,10 +253,10 @@ public static partial class Jaunty
     /// <code>
     /// // Async get first product with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var product = await connection.ExecuteStoredProcedureFirstAsync(
+    /// var product = await connection.ExecuteStoredProcedureFirstAsync&lt;Product&gt;(
     ///     "GetTopProductByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <exception cref="InvalidOperationException">
@@ -400,10 +400,10 @@ public static partial class Jaunty
     /// <code>
     /// // Async get first product with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var product = await connection.ExecuteStoredProcedureFirstOrDefaultAsync(
+    /// var product = await connection.ExecuteStoredProcedureFirstOrDefaultAsync&lt;Product&gt;(
     ///     "GetTopProductByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
@@ -522,10 +522,10 @@ public static partial class Jaunty
     /// <code>
     /// // Async get count with transaction
     /// using var tx = connection.BeginTransaction();
-    /// var count = await connection.ExecuteStoredProcedureScalarAsync(
+    /// var count = await connection.ExecuteStoredProcedureScalarAsync&lt;long&gt;(
     ///     "GetProductCountByCategory",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx));
+    ///     CommandOptions&lt;long&gt;.WithTransaction(tx));
     /// </code>
     /// </example>
     /// <seealso cref="CommandOptions{T}"/>
