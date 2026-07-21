@@ -41,7 +41,7 @@ internal static class FluentMetadataCache
                 escapedCols[col.PropertyName] = dialect.EscapeColumnName(col.ColumnName);
             }
 
-            return new CachedDialectMetadata(escapedTable, escapedCols);
+            return new CachedDialectMetadata(escapedTable, escapedCols, dialect);
         });
     }
 }
