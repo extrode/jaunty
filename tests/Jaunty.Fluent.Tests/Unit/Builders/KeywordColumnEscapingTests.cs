@@ -114,4 +114,31 @@ public class KeywordColumnEscapingTests : IClassFixture<FluentDatabaseFixture>
 
         Assert.Contains("BETWEEN", sql);
     }
+
+    // AUD-R14 batch-5 findings #1/#2: GetColumnNameFromProperty (CachedDialectMetadata.GetColumnName)
+    // used to fall back to the raw, unescaped property name whenever the anonymous-object property
+    // wasn't one of the entity's known mapped columns - unlike the recognized-column case above,
+    // which was already pre-escaped in the cache. "Group" is not a mapped column on
+    // KeywordColumnEntity (only Id/Order are), so it exercises that fallback path, and it's also a
+    // SQL reserved keyword, so the fallback must escape it to avoid emitting invalid SQL.
+
+    [Fact]
+    public void InsertValues_AnonymousObject_WithUnmappedKeywordPropertyName_EscapesColumn()
+    {
+        var sql = _fixture.Connection.Into<KeywordColumnEntity>()
+            .Values(new { Id = 1, Group = 5 })
+            .ToSql();
+
+        Assert.Contains("\"Group\"", sql);
+    }
+
+    [Fact]
+    public void Set_AnonymousObject_WithUnmappedKeywordPropertyName_EscapesColumn()
+    {
+        var sql = _fixture.Connection.From<KeywordColumnEntity>()
+            .Set(new { Group = 5 })
+            .ToSql();
+
+        Assert.Contains("\"Group\"", sql);
+    }
 }
