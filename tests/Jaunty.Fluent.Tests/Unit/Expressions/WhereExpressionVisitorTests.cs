@@ -126,6 +126,50 @@ public class WhereExpressionVisitorTests
         Assert.Empty(parameters);
     }
 
+    // R16: a string.Length comparison against another column on the same entity had the same
+    // unbound-ParameterExpression crash as AUD-R12's plain column-to-column case, because
+    // TryGetColumnName deliberately excludes .Length (it's rendered as LENGTH(), not a column), so
+    // the old both-sides-TryGetColumnName check never caught it and fell through to
+    // ExtractColumnAndValue's EvaluateExpression.
+    [Fact]
+    public void Visit_LengthToColumnGreaterThan_GeneratesCorrectSql()
+    {
+        Expression<Func<Product, bool>> expr = p => p.ProductName.Length > p.UnitsInStock;
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Equal("(LEN([product_name]) > [units_in_stock])", sql);
+        Assert.Empty(parameters);
+    }
+
+    [Fact]
+    public void Visit_ColumnToLengthLessThan_GeneratesCorrectSql()
+    {
+        Expression<Func<Product, bool>> expr = p => p.UnitsInStock < p.ProductName.Length;
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Equal("([units_in_stock] < LEN([product_name]))", sql);
+        Assert.Empty(parameters);
+    }
+
+    // R16: unlike the mixed Length-vs-column cases above, Length-vs-Length never actually crashed
+    // - TryGetColumnName rejects .Length on both sides, so ExtractColumnAndValue's own both-sides
+    // check fails first and it returns (null, null, false) without ever calling EvaluateExpression,
+    // letting the pre-fix code fall through to the generic Visit()-based rendering that already
+    // produced correct SQL. This is a format-consistency check for the new explicit VisitBinary
+    // branch, not a regression test for a crash.
+    [Fact]
+    public void Visit_LengthToLengthGreaterThan_GeneratesCorrectSql()
+    {
+        Expression<Func<Product, bool>> expr = p => p.ProductName.Length > p.QuantityPerUnit!.Length;
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Equal("(LEN([product_name]) > LEN([quantity_per_unit]))", sql);
+        Assert.Empty(parameters);
+    }
+
     #endregion
 
     #region Null Comparisons
@@ -546,6 +590,26 @@ public class WhereExpressionVisitorTests
         Assert.Contains("WHEN", sql);
         Assert.Contains("THEN", sql);
         Assert.Contains("END", sql);
+    }
+
+    // R16: a WHEN condition comparing string.Length to another column on the same entity hit the
+    // same unbound-parameter crash as the plain WHERE case (see
+    // Visit_LengthToColumnGreaterThan_GeneratesCorrectSql). A .When() condition argument is always
+    // Quote-wrapped (it's an Expression<Func<T,bool>>-typed argument nested inside the outer
+    // expression tree), so TranslateCaseCondition's own BinaryExpression branch never fires here -
+    // ExpressionVisitor's base Quote/Lambda handling routes the body through VisitBinary instead,
+    // so this is a coverage check confirming the VisitBinary fix also covers CASE WHEN conditions.
+    [Fact]
+    public void Visit_CaseExpression_WithLengthToColumnWhenCondition_GeneratesCaseStatement()
+    {
+        Expression<Func<Product, bool>> expr = p => Sql.Case<Product, int>()
+            .When(x => x.ProductName.Length > x.UnitsInStock, 1)
+            .Else(0) > 0;
+
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Contains("WHEN (LEN([product_name]) > [units_in_stock]) THEN", sql);
     }
 
     #endregion
