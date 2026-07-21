@@ -487,4 +487,44 @@ public class FluentSubqueryTests : IClassFixture<FluentDatabaseFixture>
 
         Assert.NotEmpty(products);
     }
+
+    // ==========================================
+    // Custom IQueryTerminal<TSubquery> implementations (non-QueryBuilder)
+    // ==========================================
+
+    [Fact]
+    public void WhereInSubquery_CustomImplementationWithNoParameters_WorksCorrectly()
+    {
+        var subquery = new StubQueryTerminal<Category>("SELECT category_id FROM categories");
+
+        var sql = _fixture.Connection.From<Product>()
+            .WhereInSubquery<int, Category>(
+                p => p.CategoryId!.Value,
+                c => c.CategoryId,
+                subquery)
+            .ToSql();
+
+        Assert.Contains("IN (SELECT category_id FROM categories)", sql);
+    }
+
+    [Fact]
+    public void WhereInSubquery_CustomImplementationWithUnmergeableParameters_ThrowsNotSupportedException()
+    {
+        // A custom IQueryTerminal<TSubquery> implementation whose ToSql() embeds a
+        // parameter placeholder (@name) has no way for BuildInSubqueryClause to extract
+        // and merge that parameter's value into the outer query, so it must fail loudly
+        // instead of emitting SQL with an unbound placeholder.
+        var subquery = new StubQueryTerminal<Category>(
+            "SELECT category_id FROM categories WHERE category_name = @name");
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .WhereInSubquery<int, Category>(
+                    p => p.CategoryId!.Value,
+                    c => c.CategoryId,
+                    subquery)
+                .ToSql());
+
+        Assert.Contains(nameof(Category), ex.Message);
+    }
 }
