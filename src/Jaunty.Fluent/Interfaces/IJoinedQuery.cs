@@ -479,6 +479,18 @@ public interface IJoinClause<T1, T2, T3> where T1 : new() where T2 : new() where
     /// Specifies the join condition using raw SQL.
     /// </summary>
     IJoinedQuery3<T1, T2, T3> On(string condition);
+
+    /// <summary>
+    /// Specifies the join condition using a raw SQL condition with a typed parameter.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the parameter value.</typeparam>
+    /// <param name="condition">
+    /// The raw SQL join condition with a "value" placeholder using the connection's dialect
+    /// parameter prefix (e.g. "@value" for SQL Server/PostgreSQL/MySQL/SQLite, "$value" for
+    /// DuckDB).
+    /// </param>
+    /// <param name="value">The parameter value.</param>
+    IJoinedQuery3<T1, T2, T3> On<TValue>(string condition, TValue value);
 }
 
 /// <summary>
@@ -520,6 +532,18 @@ public interface IJoinClause<T1, T2, T3, T4>
     /// Specifies the join condition using raw SQL.
     /// </summary>
     IJoinedQuery4<T1, T2, T3, T4> On(string condition);
+
+    /// <summary>
+    /// Specifies the join condition using a raw SQL condition with a typed parameter.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the parameter value.</typeparam>
+    /// <param name="condition">
+    /// The raw SQL join condition with a "value" placeholder using the connection's dialect
+    /// parameter prefix (e.g. "@value" for SQL Server/PostgreSQL/MySQL/SQLite, "$value" for
+    /// DuckDB).
+    /// </param>
+    /// <param name="value">The parameter value.</param>
+    IJoinedQuery4<T1, T2, T3, T4> On<TValue>(string condition, TValue value);
 }
 
 /// <summary>
