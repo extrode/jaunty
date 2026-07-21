@@ -71,6 +71,47 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void BulkInsert_IEntityImplementation_MultiEntityLoopPath_PopulatesIdsInInsertionOrder(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        // SQLite always takes the loop-based insert path regardless of collection size (see
+        // BulkInsertCore's !IsSqliteDialect(dialect) exclusion from the multi-row path), so a
+        // multi-entity list here verifies BulkInsertLoop's per-entity idSetter ordering, not
+        // just the single-entity case covered by BulkInsert_IEntityImplementation_PopulatesIdsViaLoopPath.
+        var entities = new List<IEntityTestEntity>
+        {
+            new() { Name = "LoopOrderFirst", Value = 1 },
+            new() { Name = "LoopOrderSecond", Value = 2 },
+            new() { Name = "LoopOrderThird", Value = 3 }
+        };
+
+        int inserted = connection.BulkInsert(entities);
+
+        Assert.Equal(3, inserted);
+        Assert.True(entities[0].Id > 0);
+        Assert.True(entities[1].Id > entities[0].Id);
+        Assert.True(entities[2].Id > entities[1].Id);
+
+        // Confirm each entity's populated Id actually matches the DB row inserted for that
+        // entity, not just an arbitrary increasing sequence.
+        foreach (IEntityTestEntity entity in entities)
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT id FROM bulk_test WHERE name = @name";
+            var param = cmd.CreateParameter();
+            param.ParameterName = "@name";
+            param.Value = entity.Name;
+            cmd.Parameters.Add(param);
+            long dbId = Convert.ToInt64(cmd.ExecuteScalar());
+
+            Assert.Equal(dbId, entity.Id);
+        }
+    }
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]

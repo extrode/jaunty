@@ -366,6 +366,19 @@ public class StoredProcedureAsyncTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    public async Task ExecuteStoredProcedureNonQueryAsync_ZeroParameterOverload_ExecutesSuccessfully(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        int result = await connection.ExecuteStoredProcedureNonQueryAsync(SpName("GetAllProducts", dialect));
+
+        Assert.True(result >= -1);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task ExecuteStoredProcedureNonQueryAsync_ExecutesSuccessfully(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
