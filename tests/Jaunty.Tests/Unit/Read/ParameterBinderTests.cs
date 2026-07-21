@@ -1031,6 +1031,17 @@ public class ParameterBinderTests
         Assert.Equal(5, command.Parameters[0].Value);
     }
 
+    // R16 batch-3: BindScalar used to silently drop the value when the SQL contained zero
+    // parameter placeholders, diverging from the object path (BuildTemplate) and dictionary path
+    // (BindFromDictionary), which both throw on an unused/unmatched value.
+    [Fact]
+    public void Bind_ScalarValue_WithNoParameterPlaceholders_Throws()
+    {
+        var command = new MockDbCommand("SELECT * FROM t");
+
+        Assert.Throws<ArgumentException>(() => ParameterBinder.Bind(command, 42));
+    }
+
     // Finding 3: a throwing type handler must surface, not silently bind unconverted data.
     [Fact]
     public void Bind_WhenTypeHandlerThrows_PropagatesAsInvalidOperationException()

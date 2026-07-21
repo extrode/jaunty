@@ -59,8 +59,10 @@ internal sealed class CachedCrudSql
 
         string? trimmed = lastInsertIdSql?.TrimStart();
 
-        return !string.IsNullOrEmpty(trimmed) &&
-            trimmed!.StartsWith("RETURNING", StringComparison.OrdinalIgnoreCase)
+        if (string.IsNullOrEmpty(trimmed))
+            return insertSql;
+
+        return trimmed!.StartsWith("RETURNING", StringComparison.OrdinalIgnoreCase)
             ? $"{insertSql} {lastInsertIdSql}"
             : $"{insertSql}; {lastInsertIdSql}";
     }
