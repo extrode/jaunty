@@ -47,6 +47,22 @@ public class FluentWhereTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public void Where_StringColumn_ThenAndSameColumn_DoesNotThrowOnParameterCollision()
+    {
+        // Regression test: the string-column Where(column, value)/And(column, value) overloads
+        // used to build their parameter name as an unconditional bare "@category_id", so using
+        // both for the same column (e.g. built up conditionally by caller code) threw
+        // ArgumentException("A parameter named '@category_id' has already been added.") from
+        // ParameterCollection.Add instead of generating a valid (if unsatisfiable) query.
+        var products = _fixture.Connection.From<Product>()
+            .Where("category_id", (short)1)
+            .And("category_id", (short)2)
+            .Select();
+
+        Assert.Empty(products);
+    }
+
+    [Fact]
     public void Where_Or_ChainsConditions()
     {
         var products = _fixture.Connection.From<Product>()

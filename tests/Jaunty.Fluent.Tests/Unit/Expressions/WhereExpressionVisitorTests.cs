@@ -652,6 +652,58 @@ public class WhereExpressionVisitorTests
         Assert.Single(parameters);
     }
 
+    // List<T>.Contains/HashSet<T>.Contains bind to the type's own instance Contains method
+    // rather than the Enumerable.Contains extension method, so they need separate handling.
+
+    [Fact]
+    public void Visit_ListContains_GeneratesInClause()
+    {
+        var ids = new List<int> { 1, 2, 3 };
+        Expression<Func<Product, bool>> expr = p => ids.Contains(p.ProductId);
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Contains("IN", sql);
+        Assert.Equal(3, parameters.Count);
+    }
+
+    [Fact]
+    public void Visit_ListContains_EmptyCollection_GeneratesFalse()
+    {
+        var ids = new List<int>();
+        Expression<Func<Product, bool>> expr = p => ids.Contains(p.ProductId);
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Equal("1 = 0", sql);
+        Assert.Empty(parameters);
+    }
+
+    [Fact]
+    public void Visit_HashSetContains_GeneratesInClause()
+    {
+        var ids = new HashSet<int> { 1, 2, 3 };
+        Expression<Func<Product, bool>> expr = p => ids.Contains(p.ProductId);
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Contains("IN", sql);
+        Assert.Equal(3, parameters.Count);
+    }
+
+    [Fact]
+    public void Visit_StringContains_StillGeneratesLike_NotInClause()
+    {
+        // Guards against the instance-Contains detection over-matching string.Contains,
+        // which must keep going through the LIKE translation path, not the IN-clause path.
+        Expression<Func<Product, bool>> expr = p => p.ProductName.Contains("Chef");
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Contains("LIKE", sql);
+        Assert.DoesNotContain(" IN (", sql);
+    }
+
     #endregion
 
     #region Duplicate Parameter Handling

@@ -83,12 +83,10 @@ public sealed class EntityCodeGenerator : ICodeGenerator
     {
         var usings = new HashSet<string>();
 
-        // Always need Jaunty.Attributes if generating any attributes
-        if (options.GenerateTableAttribute || options.GenerateColumnAttribute ||
-            options.GenerateKeyAttribute || options.GenerateDatabaseGeneratedAttribute)
-        {
-            usings.Add("Jaunty.Attributes");
-        }
+        // Jaunty's own [Table]/[Column]/[Key]/[DatabaseGenerated] attributes are emitted fully
+        // qualified (see AppendClassAttributes/AppendProperty) rather than via a
+        // "using Jaunty.Attributes;" so they never collide with the identically-named
+        // System.ComponentModel.DataAnnotations(.Schema) types when AddDataAnnotations is also on.
 
         if (options.AddDataAnnotations)
         {
@@ -122,9 +120,9 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         if (needsTableAttr)
         {
             if (!string.IsNullOrEmpty(table.SchemaName))
-                sb.AppendLine($"{indent}[Table(\"{EscapeStringLiteral(table.TableName)}\", \"{EscapeStringLiteral(table.SchemaName)}\")]");
+                sb.AppendLine($"{indent}[Jaunty.Attributes.Table(\"{EscapeStringLiteral(table.TableName)}\", \"{EscapeStringLiteral(table.SchemaName)}\")]");
             else
-                sb.AppendLine($"{indent}[Table(\"{EscapeStringLiteral(table.TableName)}\")]");
+                sb.AppendLine($"{indent}[Jaunty.Attributes.Table(\"{EscapeStringLiteral(table.TableName)}\")]");
         }
     }
 
@@ -136,22 +134,22 @@ public sealed class EntityCodeGenerator : ICodeGenerator
 
         // [Key] attribute
         if (column.IsPrimaryKey && options.GenerateKeyAttribute)
-            attrs.Add("[Key]");
+            attrs.Add("[Jaunty.Attributes.Key]");
 
         // [DatabaseGenerated] attribute
         if (options.GenerateDatabaseGeneratedAttribute)
         {
             if (column.IsIdentity)
-                attrs.Add("[DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
+                attrs.Add("[Jaunty.Attributes.DatabaseGenerated(Jaunty.Attributes.DatabaseGeneratedOption.Identity)]");
             else if (column.IsComputed)
-                attrs.Add("[DatabaseGenerated(DatabaseGeneratedOption.Computed)]");
+                attrs.Add("[Jaunty.Attributes.DatabaseGenerated(Jaunty.Attributes.DatabaseGeneratedOption.Computed)]");
         }
 
         // [Column] attribute (only when name differs)
         if (options.GenerateColumnAttribute &&
             !column.ColumnName.Equals(propertyName, StringComparison.OrdinalIgnoreCase))
         {
-            attrs.Add($"[Column(\"{EscapeStringLiteral(column.ColumnName)}\")]");
+            attrs.Add($"[Jaunty.Attributes.Column(\"{EscapeStringLiteral(column.ColumnName)}\")]");
         }
 
         // Data annotations
