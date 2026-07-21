@@ -138,6 +138,22 @@ public class NamingHelperTests
         Assert.Equal(expected, result);
     }
 
+    // R16: the -ves branch had no coverage at all, which is why it wrongly mapped "aves" words
+    // (e.g. Leaves) to the -fe form instead of -f (Leafe instead of Leaf) - only "ives" words take
+    // the -fe form.
+    [Theory]
+    [InlineData("Knives", "Knife")]
+    [InlineData("Wives", "Wife")]
+    [InlineData("Leaves", "Leaf")]
+    [InlineData("Calves", "Calf")]
+    [InlineData("Wolves", "Wolf")]
+    [InlineData("Shelves", "Shelf")]
+    public void Singularize_VesPlurals_ConvertsCorrectly(string input, string expected)
+    {
+        var result = NamingHelper.Singularize(input);
+        Assert.Equal(expected, result);
+    }
+
     [Theory]
     [InlineData("Status", "Status")]
     [InlineData("Address", "Address")]

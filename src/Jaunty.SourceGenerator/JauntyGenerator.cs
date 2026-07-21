@@ -92,9 +92,21 @@ public class JauntyGenerator : IIncrementalGenerator
         if (fullName.StartsWith("global::", StringComparison.Ordinal))
             fullName = fullName.Substring("global::".Length);
 
+        // R16: escape original underscores as "__" so a literal '_' in a namespace/class name
+        // can never be confused with the single '_' used below as the delimiter for every other
+        // non-alphanumeric character (dots, generic brackets, etc.) - otherwise e.g. namespace
+        // "MyApp.Foo" class "Bar_Baz" and namespace "MyApp.Foo.Bar" class "Baz" both flattened to
+        // "MyApp_Foo_Bar_Baz", producing a duplicate hint name that fails the build.
         var sb = new StringBuilder(fullName.Length);
         foreach (char c in fullName)
-            sb.Append(char.IsLetterOrDigit(c) || c == '_' ? c : '_');
+        {
+            if (char.IsLetterOrDigit(c))
+                sb.Append(c);
+            else if (c == '_')
+                sb.Append("__");
+            else
+                sb.Append('_');
+        }
 
         return sb.ToString();
     }
