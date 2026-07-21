@@ -463,4 +463,63 @@ public class AsyncTransactionValidatorWiringTests : IDisposable
         Assert.Contains("DbTransaction", ex.Message);
         realTransaction.Rollback();
     }
+
+    // R16 batch-2 coverage: the async siblings of the four sync Bulk* transaction-wiring tests
+    // above had no equivalents anywhere in tests/ - BulkUpdateAsync/BulkDeleteAsync's transaction
+    // wiring (including the "incompatible transaction throws ArgumentException, not
+    // InvalidCastException" path) was entirely unverified for the async surface.
+
+    [Fact]
+    public async Task BulkUpdateAsync_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        var categories = new[] { new Category { CategoryId = 1, CategoryName = "Beverages", Description = "Bulk updated" } };
+        int rows = await _connection.BulkUpdateAsync(categories, CommandOptions.WithTransaction(transaction));
+
+        Assert.Equal(1, rows);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public async Task BulkUpdateAsync_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var categories = new[] { new Category { CategoryId = 1, CategoryName = "Beverages", Description = "Bulk updated" } };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            _connection.BulkUpdateAsync(categories, CommandOptions.WithTransaction(nonDbTransaction)).AsTask());
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
+
+    [Fact]
+    public async Task BulkDeleteAsync_WithRealDbTransaction_ExecutesWithinTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+
+        var categories = new[] { new Category { CategoryId = 1, CategoryName = "Beverages" } };
+        int rows = await _connection.BulkDeleteAsync(categories, CommandOptions.WithTransaction(transaction));
+
+        Assert.Equal(1, rows);
+        transaction.Rollback();
+    }
+
+    [Fact]
+    public async Task BulkDeleteAsync_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException()
+    {
+        using var realTransaction = _connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var categories = new[] { new Category { CategoryId = 1, CategoryName = "Beverages" } };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            _connection.BulkDeleteAsync(categories, CommandOptions.WithTransaction(nonDbTransaction)).AsTask());
+
+        Assert.Contains("DbTransaction", ex.Message);
+        realTransaction.Rollback();
+    }
 }

@@ -1,6 +1,5 @@
 using System.Data;
 using System.Data.Common;
-using System.Reflection;
 using System.Text;
 
 using Jaunty.FlatFiles.Import;
@@ -247,11 +246,6 @@ internal static class ImportExecutor
         return totalImported;
     }
 
-    // Cache reflected PropertyInfo for DuckDB-specific types to avoid repeated reflection lookups.
-    // ConcurrentDictionary handles thread safety; the key is the runtime Type of the DuckDB value.
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, System.Reflection.PropertyInfo?> s_duckDbDatePropCache = new();
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, System.Reflection.PropertyInfo?> s_duckDbTimePropCache = new();
-
     /// <summary>
     /// Converts a value from the DuckDB reader to a type suitable for the target database parameter.
     /// </summary>
@@ -261,36 +255,16 @@ internal static class ImportExecutor
 
         Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
-        // Handle DuckDB-specific types
-        Type valueType = value.GetType();
-        var valueTypeName = valueType.FullName ?? valueType.Name;
-
-        // DuckDB returns DuckDBDateOnly for DATE columns
-        if (valueTypeName.Contains("DuckDBDateOnly") && underlyingType == typeof(DateTime))
+        // DuckDB.NET (1.3.0, pinned) returns System.DateOnly for DATE columns
+        if (value is DateOnly dateOnlyValue && underlyingType == typeof(DateTime))
         {
-            PropertyInfo? daysProp = s_duckDbDatePropCache.GetOrAdd(valueType, t => t.GetProperty("DaysSinceEpoch"));
-            if (daysProp is null)
-            {
-                throw new InvalidOperationException(
-                    $"Cannot convert DuckDB date type '{valueTypeName}': expected a 'DaysSinceEpoch' property " +
-                    $"but it was not found. This may indicate an incompatible DuckDB.NET version.");
-            }
-            var days = (int)daysProp.GetValue(value)!;
-            return new DateTime(1970, 1, 1).AddDays(days);
+            return dateOnlyValue.ToDateTime(TimeOnly.MinValue);
         }
 
-        // DuckDB returns DuckDBTimeOnly for TIME columns
-        if (valueTypeName.Contains("DuckDBTimeOnly") && underlyingType == typeof(TimeSpan))
+        // DuckDB.NET (1.3.0, pinned) returns System.TimeOnly for TIME columns
+        if (value is TimeOnly timeOnlyValue && underlyingType == typeof(TimeSpan))
         {
-            PropertyInfo? ticksProp = s_duckDbTimePropCache.GetOrAdd(valueType, t => t.GetProperty("Ticks"));
-            if (ticksProp is null)
-            {
-                throw new InvalidOperationException(
-                    $"Cannot convert DuckDB time type '{valueTypeName}': expected a 'Ticks' property " +
-                    $"but it was not found. This may indicate an incompatible DuckDB.NET version.");
-            }
-            var ticks = (long)ticksProp.GetValue(value)!;
-            return new TimeSpan(ticks);
+            return timeOnlyValue.ToTimeSpan();
         }
 
         // Standard conversions
