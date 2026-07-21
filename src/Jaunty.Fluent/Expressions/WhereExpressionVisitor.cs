@@ -498,6 +498,25 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     {
         // The condition might be a binary expression (e.g., p.Price < 10)
         // We need to translate it without wrapping in parentheses for cleaner SQL
+        if (condition is BinaryExpression { NodeType: ExpressionType.AndAlso or ExpressionType.OrElse } logical)
+        {
+            // Defensive: a bare (unquoted) AndAlso/OrElse BinaryExpression reaching here would
+            // otherwise fall through to GetOperator, which throws NotSupportedException. In
+            // practice, a compound .When(x => a && b, ...) condition arrives as a Quote
+            // UnaryExpression (not a bare LambdaExpression/BinaryExpression) because it's a
+            // nested Expression<Func<TFrom,bool>> inside an already-being-built outer expression
+            // tree, so it's actually resolved via the EvaluateExpression/Visit fallback below,
+            // which re-enters this class's top-level VisitBinary AndAlso/OrElse handling. This
+            // branch guards the case where a caller (or a future refactor) supplies an already
+            // unwrapped BinaryExpression directly.
+            _sql.Append('(');
+            TranslateCaseCondition(logical.Left);
+            _sql.Append(logical.NodeType == ExpressionType.AndAlso ? " AND " : " OR ");
+            TranslateCaseCondition(logical.Right);
+            _sql.Append(')');
+            return;
+        }
+
         if (condition is BinaryExpression binary)
         {
             // Handle comparison operators

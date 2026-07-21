@@ -101,6 +101,7 @@ public class BulkCopyDialectFactoryTests
         public string GetDefaultSchema() => _inner.GetDefaultSchema();
         public string EscapeTableName(string? schemaName, string tableName) => _inner.EscapeTableName(schemaName, tableName);
         public string EscapeColumnName(string columnName) => _inner.EscapeColumnName(columnName);
+        public string EscapeStringLiteral(string value) => _inner.EscapeStringLiteral(value);
         public string GetLastInsertIdSql(params string[] columnNames) => _inner.GetLastInsertIdSql(columnNames);
         public string GetPagingSql(string baseSql, int offset, int fetchNext) => _inner.GetPagingSql(baseSql, offset, fetchNext);
         public bool IsKeyword(string identifier) => _inner.IsKeyword(identifier);

@@ -612,6 +612,23 @@ public class WhereExpressionVisitorTests
         Assert.Contains("WHEN (LEN([product_name]) > [units_in_stock]) THEN", sql);
     }
 
+    [Fact]
+    public void Visit_CaseExpression_WithCompoundWhenCondition_DoesNotThrow()
+    {
+        // Regression test: a compound (AndAlso/OrElse) .When() condition used to be
+        // reachable through TranslateCaseCondition's BinaryExpression fallback, which called
+        // GetOperator(AndAlso/OrElse) and threw NotSupportedException.
+        Expression<Func<Product, bool>> expr = p => Sql.Case<Product, int>()
+            .When(x => x.UnitPrice < 10 && x.UnitsInStock > 0, 1)
+            .Else(0) > 0;
+
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("CASE", sql);
+        Assert.Contains("AND", sql);
+    }
+
     #endregion
 
     #region Enumerable.Contains (IN clause)

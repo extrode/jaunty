@@ -55,6 +55,11 @@ internal sealed class PostgreSqlDialect : ISqlDialect
         return IsKeyword(columnName) ? $"\"{columnName}\"" : columnName;
     }
 
+    public string EscapeStringLiteral(string value)
+    {
+        return value.Replace("'", "''");
+    }
+
     public string GetLastInsertIdSql(params string[] columnNames)
     {
         if (columnNames.Length == 0) return "RETURNING id;";
