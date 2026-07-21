@@ -93,6 +93,7 @@ public class BulkCopyDialectFactoryTests
         public bool SupportsNativeBulkCopy => false;
         public IBulkCopyProvider? CreateBulkCopyProvider() => null;
         public bool SupportsForeignKeyToggle => _inner.SupportsForeignKeyToggle;
+        public bool RequiresAutocommitForForeignKeyToggle => _inner.RequiresAutocommitForForeignKeyToggle;
         public bool SupportsUpsert => _inner.SupportsUpsert;
         public bool SupportsMultiRowInsert => _inner.SupportsMultiRowInsert;
         public int MaxParametersPerStatement => _inner.MaxParametersPerStatement;

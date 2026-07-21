@@ -247,6 +247,9 @@ public static partial class Jaunty
                 $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
                 "Use BulkDelete instead, or disable constraints manually before calling this method.");
 
+        ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
+        bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
+
         // Note: Native bulk DELETE is not widely supported by database providers.
         // Most databases (SQL Server, PostgreSQL, MySQL) don't have native bulk DELETE APIs.
         // We fall back to standard parameterized DELETE statements which are still efficient
@@ -269,16 +272,14 @@ public static partial class Jaunty
             if (wasClosed)
                 connection.Open();
 
+            if (ignoreConstraints && requiresAutocommit)
+                ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null);
+
             if (ownTransaction)
                 transaction = connection.BeginTransaction();
 
-            if (ignoreConstraints)
-            {
-                using IDbCommand fkOffCmd = connection.CreateCommand();
-                fkOffCmd.Transaction = transaction;
-                fkOffCmd.CommandText = dialect.GetDisableForeignKeyChecksSql()!;
-                fkOffCmd.ExecuteNonQuery();
-            }
+            if (ignoreConstraints && !requiresAutocommit)
+                ForeignKeyToggleCoordinator.DisableSync(connection, dialect, transaction);
 
             int totalDeleted = 0;
 
@@ -316,30 +317,22 @@ public static partial class Jaunty
                     totalDeleted += command.ExecuteNonQuery();
                 }
 
-                if (ignoreConstraints)
-                {
-                    using IDbCommand fkOnCmd = connection.CreateCommand();
-                    fkOnCmd.Transaction = transaction;
-                    fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
-                    fkOnCmd.ExecuteNonQuery();
-                }
+                if (ignoreConstraints && !requiresAutocommit)
+                    ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction);
 
                 if (ownTransaction)
                     transaction!.Commit();
+
+                if (ignoreConstraints && requiresAutocommit)
+                    ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null);
 
                 return totalDeleted;
             }
             catch
             {
-                if (ignoreConstraints)
+                if (ignoreConstraints && !requiresAutocommit)
                 {
-                    try
-                    {
-                        using IDbCommand fkOnCmd = connection.CreateCommand();
-                        fkOnCmd.Transaction = transaction;
-                        fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
-                        fkOnCmd.ExecuteNonQuery();
-                    }
+                    try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction); }
                     catch { /* Best effort */ }
                 }
 
@@ -347,6 +340,12 @@ public static partial class Jaunty
                 {
                     try { transaction?.Rollback(); }
                     catch { /* Best effort - do not mask the original exception */ }
+                }
+
+                if (ignoreConstraints && requiresAutocommit)
+                {
+                    try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null); }
+                    catch { /* Best effort */ }
                 }
 
                 throw;
