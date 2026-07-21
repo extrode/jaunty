@@ -89,6 +89,16 @@ public class SQLiteSchemaReaderTests : IDisposable
                 code_name TEXT NOT NULL
             ) WITHOUT ROWID";
         cmd.ExecuteNonQuery();
+
+        // Table name containing a single quote, requiring a quoted identifier. Exercises
+        // GetCreateTableSqlAsync's WHERE name = @TableName lookup with a value that would have
+        // needed manual quote-doubling under the old string-interpolated query.
+        cmd.CommandText = @"
+            CREATE TABLE ""order's notes"" (
+                note_id INTEGER PRIMARY KEY,
+                note_text TEXT NOT NULL
+            ) WITHOUT ROWID";
+        cmd.ExecuteNonQuery();
     }
 
     [Fact]
@@ -99,10 +109,10 @@ public class SQLiteSchemaReaderTests : IDisposable
 
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
-        Assert.Equal(6, schema.Tables.Count);
+        Assert.Equal(7, schema.Tables.Count);
         Assert.Equal(
-            ["customers", "order_details", "orders", "plain_rowid_pk", "products", "without_rowid_pk"],
-            schema.Tables.Select(t => t.TableName).Order());
+            new[] { "customers", "order's notes", "order_details", "orders", "plain_rowid_pk", "products", "without_rowid_pk" }.OrderBy(t => t, StringComparer.Ordinal),
+            schema.Tables.Select(t => t.TableName).OrderBy(t => t, StringComparer.Ordinal));
     }
 
     [Fact]
@@ -234,7 +244,7 @@ public class SQLiteSchemaReaderTests : IDisposable
 
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
-        Assert.Equal(5, schema.Tables.Count);
+        Assert.Equal(6, schema.Tables.Count);
         Assert.DoesNotContain("order_details", schema.Tables.Select(t => t.TableName));
     }
 
@@ -287,6 +297,24 @@ public class SQLiteSchemaReaderTests : IDisposable
         Assert.Equal(
             ["customer_id", "first_name", "last_name", "email", "birth_date", "balance", "is_active"],
             columnNames);
+    }
+
+    [Fact]
+    public async Task ReadSchemaAsync_TableNameWithSingleQuote_ReadsWithoutRowidCorrectly()
+    {
+        var reader = new SQLiteSchemaReader();
+        var options = new SchemaReaderOptions();
+
+        var schema = await reader.ReadSchemaAsync(_connectionString, options);
+
+        var table = schema.Tables.First(t => t.TableName == "order's notes");
+        var idColumn = table.Columns.First(c => c.ColumnName == "note_id");
+
+        // WITHOUT ROWID suppresses rowid aliasing; correctly detecting this requires
+        // GetCreateTableSqlAsync's WHERE name = @TableName lookup to have matched the
+        // apostrophe-containing table name exactly (not truncated/misescaped).
+        Assert.True(idColumn.IsPrimaryKey);
+        Assert.False(idColumn.IsIdentity);
     }
 
     public void Dispose()
