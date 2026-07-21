@@ -49,6 +49,14 @@ internal sealed class PostgreSqlImportDialect : IImportDialect
         ConflictStrategy conflictStrategy,
         string? keyColumnName)
     {
+        if (conflictStrategy != ConflictStrategy.Error && keyColumnName is null)
+        {
+            throw new NotSupportedException(
+                $"Table '{tableName}' has no [Key] property to use for conflict resolution. " +
+                $"The {conflictStrategy} conflict strategy requires a [Key]-attributed property; " +
+                "use ConflictStrategy.Error (the default) instead, or add a [Key] attribute to the entity.");
+        }
+
         var sb = new StringBuilder();
         sb.Append($"INSERT INTO {QuoteIdentifier(tableName)}");
 
