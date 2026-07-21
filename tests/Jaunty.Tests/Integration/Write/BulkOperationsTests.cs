@@ -211,6 +211,13 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
         }
 
         using var transaction = connection.BeginTransaction();
+
+        if (dialect.Provider is DialectProvider.SystemSqlite or DialectProvider.MicrosoftSqlite)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkInsertIgnoreConstraints(entities, new CommandOptions(transaction: transaction)));
+            return;
+        }
+
         int inserted = connection.BulkInsertIgnoreConstraints(entities, new CommandOptions(transaction: transaction));
         transaction.Commit();
 
@@ -406,6 +413,13 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
         }
 
         using var transaction = connection.BeginTransaction();
+
+        if (dialect.Provider is DialectProvider.SystemSqlite or DialectProvider.MicrosoftSqlite)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkUpdateIgnoreConstraints(inserted, new CommandOptions(transaction: transaction)));
+            return;
+        }
+
         int updated = connection.BulkUpdateIgnoreConstraints(inserted, new CommandOptions(transaction: transaction));
         transaction.Commit();
 
@@ -605,6 +619,13 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
         }
 
         using var transaction = connection.BeginTransaction();
+
+        if (dialect.Provider is DialectProvider.SystemSqlite or DialectProvider.MicrosoftSqlite)
+        {
+            Assert.Throws<NotSupportedException>(() => connection.BulkDeleteIgnoreConstraints(toDelete, new CommandOptions(transaction: transaction)));
+            return;
+        }
+
         int deleted = connection.BulkDeleteIgnoreConstraints(toDelete, new CommandOptions(transaction: transaction));
         transaction.Commit();
 

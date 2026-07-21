@@ -119,6 +119,9 @@ public static partial class Jaunty
                 $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
                 "Use BulkInsert instead, or disable constraints manually before calling this method.");
 
+        ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
+        bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
+
         // Check if native bulk copy should be used
         if (BulkCopyConfiguration.EnableNativeBulkCopy &&
             dialect.SupportsNativeBulkCopy &&
@@ -146,15 +149,14 @@ public static partial class Jaunty
         try
         {
             if (wasClosed) connection.Open();
+
+            if (ignoreConstraints && requiresAutocommit)
+                ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null);
+
             if (ownTransaction) transaction = connection.BeginTransaction();
 
-            if (ignoreConstraints)
-            {
-                using IDbCommand fkOffCmd = connection.CreateCommand();
-                fkOffCmd.Transaction = transaction;
-                fkOffCmd.CommandText = dialect.GetDisableForeignKeyChecksSql()!;
-                fkOffCmd.ExecuteNonQuery();
-            }
+            if (ignoreConstraints && !requiresAutocommit)
+                ForeignKeyToggleCoordinator.DisableSync(connection, dialect, transaction);
 
             int totalInserted = 0;
 
@@ -178,29 +180,21 @@ public static partial class Jaunty
                     totalInserted = BulkInsertLoop(connection, entityList, cached, transaction, options, valueSetter);
                 }
 
-                if (ignoreConstraints)
-                {
-                    using IDbCommand fkOnCmd = connection.CreateCommand();
-                    fkOnCmd.Transaction = transaction;
-                    fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
-                    fkOnCmd.ExecuteNonQuery();
-                }
+                if (ignoreConstraints && !requiresAutocommit)
+                    ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction);
 
                 if (ownTransaction) transaction!.Commit();
+
+                if (ignoreConstraints && requiresAutocommit)
+                    ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null);
 
                 return totalInserted;
             }
             catch
             {
-                if (ignoreConstraints)
+                if (ignoreConstraints && !requiresAutocommit)
                 {
-                    try
-                    {
-                        using IDbCommand fkOnCmd = connection.CreateCommand();
-                        fkOnCmd.Transaction = transaction;
-                        fkOnCmd.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
-                        fkOnCmd.ExecuteNonQuery();
-                    }
+                    try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction); }
                     catch { }
                 }
 
@@ -208,6 +202,12 @@ public static partial class Jaunty
                 {
                     try { transaction?.Rollback(); }
                     catch { /* Best effort - do not mask the original exception */ }
+                }
+
+                if (ignoreConstraints && requiresAutocommit)
+                {
+                    try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null); }
+                    catch { }
                 }
                 throw;
             }
