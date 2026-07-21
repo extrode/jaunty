@@ -29,6 +29,12 @@ public static partial class Jaunty
     /// <para>
     /// <strong>Foreign key constraints are enforced.</strong>
     /// </para>
+    /// <para>
+    /// <strong>Performance note:</strong> This method issues one <c>DELETE</c> round trip per entity
+    /// in a sequential loop; unlike <see cref="BulkInsertAsync{T}(IDbConnection, IEnumerable{T}, CancellationToken)"/>,
+    /// there is no multi-row batching for the delete path. For large collections, this is the dominant
+    /// cost driver.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -38,7 +44,7 @@ public static partial class Jaunty
     ///     public string Name { get; set; }
     ///     public decimal Price { get; set; }
     /// }
-    /// 
+    ///
     /// // Async bulk delete multiple products
     /// var productsToDelete = new List&lt;Product&gt;
     /// {
