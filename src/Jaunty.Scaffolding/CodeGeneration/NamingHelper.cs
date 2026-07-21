@@ -34,6 +34,31 @@ public static class NamingHelper
     };
 
     /// <summary>
+    /// Derives a generated entity class name from a table name, applying PascalCase
+    /// conversion, optional singularization, prefix/suffix, and identifier escaping.
+    /// </summary>
+    /// <param name="tableName">The source table name.</param>
+    /// <param name="singularize">Whether to singularize the PascalCase name.</param>
+    /// <param name="classPrefix">An optional prefix to prepend to the class name.</param>
+    /// <param name="classSuffix">An optional suffix to append to the class name.</param>
+    /// <returns>The generated class name.</returns>
+    public static string ToClassName(string tableName, bool singularize, string? classPrefix, string? classSuffix)
+    {
+        var className = ToPascalCase(tableName);
+
+        if (singularize)
+            className = Singularize(className);
+
+        if (!string.IsNullOrEmpty(classPrefix))
+            className = classPrefix + className;
+
+        if (!string.IsNullOrEmpty(classSuffix))
+            className += classSuffix;
+
+        return EscapeIdentifier(className);
+    }
+
+    /// <summary>
     /// Converts snake_case or kebab-case to PascalCase.
     /// If the name has no delimiters, capitalizes the first letter and preserves the rest.
     /// </summary>
