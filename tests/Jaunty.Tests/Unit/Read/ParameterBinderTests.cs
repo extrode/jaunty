@@ -1,5 +1,6 @@
 using System.Data;
 
+using Jaunty.Attributes;
 using Jaunty.Configuration;
 using Jaunty.Internals.Parameters;
 using Jaunty.TypeHandlers;
@@ -1113,6 +1114,24 @@ public class ParameterBinderTests
         Assert.Equal(2, command.Parameters.Count);
     }
 
+    // R16: a collection property's [EnumStorage] attribute must still apply to each value produced
+    // by IN-clause expansion. Before the fix, BindDynamic's expanded-parameter branch always passed
+    // propertyInfo: null to ApplyTypeHandlerIfNeeded, so the attribute was silently ignored and
+    // JauntyConfig.DefaultEnumStorage (Numeric) was used instead - binding the enum values
+    // unconverted rather than as their attribute-specified string representation.
+    [Fact]
+    public void Bind_EnumCollectionWithStringStorageAttribute_ExpandedValuesUseAttributeStorage()
+    {
+        var command = new MockDbCommand("SELECT * FROM orders WHERE status IN @Statuses");
+        var entity = new EnumCollectionEntity { Statuses = [TestEnum.Active, TestEnum.Pending] };
+
+        ParameterBinder.Bind(command, entity);
+
+        Assert.Equal(2, command.Parameters.Count);
+        Assert.Equal("Active", command.Parameters[0].Value);
+        Assert.Equal("Pending", command.Parameters[1].Value);
+    }
+
     #endregion
 
     #region Test Helpers
@@ -1122,6 +1141,12 @@ public class ParameterBinderTests
         Inactive = 0,
         Active = 1,
         Pending = 2
+    }
+
+    private sealed class EnumCollectionEntity
+    {
+        [EnumStorage(EnumStorage.String)]
+        public List<TestEnum> Statuses { get; set; } = [];
     }
 
     private static IEnumerable<int> YieldOneToThree()
