@@ -151,14 +151,18 @@ public static partial class Jaunty
             var results = new List<IDictionary<string, object?>>();
 
             using IDataReader reader = command.ExecuteReader();
+
+            var columnNames = new string[reader.FieldCount];
+            for (int i = 0; i < columnNames.Length; i++)
+                columnNames[i] = reader.GetName(i);
+
             while (reader.Read())
             {
                 var row = new Dictionary<string, object?>();
-                for (int i = 0; i < reader.FieldCount; i++)
+                for (int i = 0; i < columnNames.Length; i++)
                 {
-                    string columnName = reader.GetName(i);
                     object? value = reader.GetValue(i);
-                    row[columnName] = value == DBNull.Value ? null : value;
+                    row[columnNames[i]] = value == DBNull.Value ? null : value;
                 }
                 results.Add(row);
             }

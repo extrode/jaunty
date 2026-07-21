@@ -596,13 +596,13 @@ public static partial class Jaunty
 
     #region N-ary Multi-Entity Core Methods
 
-    private static List<(T1, T2, T3)> QueryMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    private static List<(T1, T2, T3)> QueryMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
-                var results = new List<(T1, T2, T3)>(JauntyConfig.QueryResultCapacity);
+                var results = new List<(T1, T2, T3)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
                 if (!reader.Read())
                     return results;
@@ -629,7 +629,7 @@ public static partial class Jaunty
 
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            var results = new List<(T1, T2, T3)>(JauntyConfig.QueryResultCapacity);
+            var results = new List<(T1, T2, T3)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
             if (!reader.Read())
                 return results;
@@ -654,13 +654,13 @@ public static partial class Jaunty
         });
     }
 
-    private static (T1, T2, T3) QueryFirstMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    private static (T1, T2, T3) QueryFirstMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
         (T1, T2, T3)? result = QueryFirstOrDefaultMultiEntityCore<T1, T2, T3>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name})'.") : result.Value;
     }
 
-    private static (T1, T2, T3)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    private static (T1, T2, T3)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -702,13 +702,13 @@ public static partial class Jaunty
         });
     }
 
-    private static (T1, T2, T3) QuerySingleMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    private static (T1, T2, T3) QuerySingleMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
         (T1, T2, T3)? result = QuerySingleOrDefaultMultiEntityCore<T1, T2, T3>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name})'.") : result.Value;
     }
 
-    private static (T1, T2, T3)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    private static (T1, T2, T3)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -750,7 +750,7 @@ public static partial class Jaunty
         });
     }
 
-    private static IEnumerable<(T1, T2, T3)> QueryStreamMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    private static IEnumerable<(T1, T2, T3)> QueryStreamMultiEntityCore<T1, T2, T3>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -810,7 +810,7 @@ public static partial class Jaunty
         }
     }
 
-    private static IEnumerable<(T1, T2, T3)> QueryStreamMultiEntityCoreFast<T1, T2, T3>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
+    private static IEnumerable<(T1, T2, T3)> QueryStreamMultiEntityCoreFast<T1, T2, T3>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new()
     {
         var wasClosed = connection.State == ConnectionState.Closed;
 
@@ -862,13 +862,13 @@ public static partial class Jaunty
         }
     }
 
-    private static List<(T1, T2, T3, T4)> QueryMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static List<(T1, T2, T3, T4)> QueryMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
-                var results = new List<(T1, T2, T3, T4)>(JauntyConfig.QueryResultCapacity);
+                var results = new List<(T1, T2, T3, T4)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
                 if (!reader.Read())
                     return results;
@@ -897,7 +897,7 @@ public static partial class Jaunty
 
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            var results = new List<(T1, T2, T3, T4)>(JauntyConfig.QueryResultCapacity);
+            var results = new List<(T1, T2, T3, T4)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
             if (!reader.Read())
                 return results;
@@ -924,13 +924,13 @@ public static partial class Jaunty
         });
     }
 
-    private static (T1, T2, T3, T4) QueryFirstMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static (T1, T2, T3, T4) QueryFirstMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         (T1, T2, T3, T4)? result = QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name})'.") : result.Value;
     }
 
-    private static (T1, T2, T3, T4)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static (T1, T2, T3, T4)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -976,13 +976,13 @@ public static partial class Jaunty
         });
     }
 
-    private static (T1, T2, T3, T4) QuerySingleMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static (T1, T2, T3, T4) QuerySingleMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         (T1, T2, T3, T4)? result = QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name})'.") : result.Value;
     }
 
-    private static (T1, T2, T3, T4)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static (T1, T2, T3, T4)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -1028,7 +1028,7 @@ public static partial class Jaunty
         });
     }
 
-    private static IEnumerable<(T1, T2, T3, T4)> QueryStreamMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static IEnumerable<(T1, T2, T3, T4)> QueryStreamMultiEntityCore<T1, T2, T3, T4>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -1090,7 +1090,7 @@ public static partial class Jaunty
         }
     }
 
-    private static IEnumerable<(T1, T2, T3, T4)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static IEnumerable<(T1, T2, T3, T4)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         var wasClosed = connection.State == ConnectionState.Closed;
 
@@ -1144,13 +1144,13 @@ public static partial class Jaunty
         }
     }
 
-    private static List<(T1, T2, T3, T4, T5)> QueryMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static List<(T1, T2, T3, T4, T5)> QueryMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
-                var results = new List<(T1, T2, T3, T4, T5)>(JauntyConfig.QueryResultCapacity);
+                var results = new List<(T1, T2, T3, T4, T5)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
                 if (!reader.Read())
                     return results;
@@ -1181,7 +1181,7 @@ public static partial class Jaunty
 
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            var results = new List<(T1, T2, T3, T4, T5)>(JauntyConfig.QueryResultCapacity);
+            var results = new List<(T1, T2, T3, T4, T5)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
             if (!reader.Read())
                 return results;
@@ -1210,13 +1210,13 @@ public static partial class Jaunty
         });
     }
 
-    private static (T1, T2, T3, T4, T5) QueryFirstMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static (T1, T2, T3, T4, T5) QueryFirstMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         (T1, T2, T3, T4, T5)? result = QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name})'.") : result.Value;
     }
 
-    private static (T1, T2, T3, T4, T5)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static (T1, T2, T3, T4, T5)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -1266,13 +1266,13 @@ public static partial class Jaunty
         });
     }
 
-    private static (T1, T2, T3, T4, T5) QuerySingleMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static (T1, T2, T3, T4, T5) QuerySingleMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         (T1, T2, T3, T4, T5)? result = QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name})'.") : result.Value;
     }
 
-    private static (T1, T2, T3, T4, T5)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static (T1, T2, T3, T4, T5)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -1322,7 +1322,7 @@ public static partial class Jaunty
         });
     }
 
-    private static IEnumerable<(T1, T2, T3, T4, T5)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static IEnumerable<(T1, T2, T3, T4, T5)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -1386,7 +1386,7 @@ public static partial class Jaunty
         }
     }
 
-    private static IEnumerable<(T1, T2, T3, T4, T5)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static IEnumerable<(T1, T2, T3, T4, T5)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         var wasClosed = connection.State == ConnectionState.Closed;
 
@@ -1442,13 +1442,13 @@ public static partial class Jaunty
         }
     }
 
-    private static List<(T1, T2, T3, T4, T5, T6)> QueryMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static List<(T1, T2, T3, T4, T5, T6)> QueryMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
-                var results = new List<(T1, T2, T3, T4, T5, T6)>(JauntyConfig.QueryResultCapacity);
+                var results = new List<(T1, T2, T3, T4, T5, T6)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
                 if (!reader.Read())
                     return results;
@@ -1481,7 +1481,7 @@ public static partial class Jaunty
 
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            var results = new List<(T1, T2, T3, T4, T5, T6)>(JauntyConfig.QueryResultCapacity);
+            var results = new List<(T1, T2, T3, T4, T5, T6)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
             if (!reader.Read())
                 return results;
@@ -1512,13 +1512,13 @@ public static partial class Jaunty
         });
     }
 
-    private static (T1, T2, T3, T4, T5, T6) QueryFirstMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static (T1, T2, T3, T4, T5, T6) QueryFirstMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         (T1, T2, T3, T4, T5, T6)? result = QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name})'.") : result.Value;
     }
 
-    private static (T1, T2, T3, T4, T5, T6)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static (T1, T2, T3, T4, T5, T6)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -1572,13 +1572,13 @@ public static partial class Jaunty
         });
     }
 
-    private static (T1, T2, T3, T4, T5, T6) QuerySingleMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static (T1, T2, T3, T4, T5, T6) QuerySingleMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         (T1, T2, T3, T4, T5, T6)? result = QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name})'.") : result.Value;
     }
 
-    private static (T1, T2, T3, T4, T5, T6)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static (T1, T2, T3, T4, T5, T6)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -1632,7 +1632,7 @@ public static partial class Jaunty
         });
     }
 
-    private static IEnumerable<(T1, T2, T3, T4, T5, T6)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static IEnumerable<(T1, T2, T3, T4, T5, T6)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5, T6>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -1698,7 +1698,7 @@ public static partial class Jaunty
         }
     }
 
-    private static IEnumerable<(T1, T2, T3, T4, T5, T6)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5, T6>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static IEnumerable<(T1, T2, T3, T4, T5, T6)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5, T6>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         var wasClosed = connection.State == ConnectionState.Closed;
 
@@ -1756,13 +1756,13 @@ public static partial class Jaunty
         }
     }
 
-    private static List<(T1, T2, T3, T4, T5, T6, T7)> QueryMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static List<(T1, T2, T3, T4, T5, T6, T7)> QueryMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         if (connection is DbConnection dbConnection)
         {
             return ExecuteReader(dbConnection, sql, parameters, options, reader =>
             {
-                var results = new List<(T1, T2, T3, T4, T5, T6, T7)>(JauntyConfig.QueryResultCapacity);
+                var results = new List<(T1, T2, T3, T4, T5, T6, T7)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
                 if (!reader.Read())
                     return results;
@@ -1797,7 +1797,7 @@ public static partial class Jaunty
 
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            var results = new List<(T1, T2, T3, T4, T5, T6, T7)>(JauntyConfig.QueryResultCapacity);
+            var results = new List<(T1, T2, T3, T4, T5, T6, T7)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
             if (!reader.Read())
                 return results;
@@ -1830,13 +1830,13 @@ public static partial class Jaunty
         });
     }
 
-    private static (T1, T2, T3, T4, T5, T6, T7) QueryFirstMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static (T1, T2, T3, T4, T5, T6, T7) QueryFirstMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         (T1, T2, T3, T4, T5, T6, T7)? result = QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name}, {typeof(T7).Name})'.") : result.Value;
     }
 
-    private static (T1, T2, T3, T4, T5, T6, T7)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static (T1, T2, T3, T4, T5, T6, T7)? QueryFirstOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -1894,13 +1894,13 @@ public static partial class Jaunty
         });
     }
 
-    private static (T1, T2, T3, T4, T5, T6, T7) QuerySingleMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static (T1, T2, T3, T4, T5, T6, T7) QuerySingleMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         (T1, T2, T3, T4, T5, T6, T7)? result = QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(connection, sql, parameters, options, mode);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name}, {typeof(T7).Name})'.") : result.Value;
     }
 
-    private static (T1, T2, T3, T4, T5, T6, T7)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static (T1, T2, T3, T4, T5, T6, T7)? QuerySingleOrDefaultMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -1958,7 +1958,7 @@ public static partial class Jaunty
         });
     }
 
-    private static IEnumerable<(T1, T2, T3, T4, T5, T6, T7)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static IEnumerable<(T1, T2, T3, T4, T5, T6, T7)> QueryStreamMultiEntityCore<T1, T2, T3, T4, T5, T6, T7>(IDbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         if (connection is DbConnection dbConnection)
         {
@@ -2026,7 +2026,7 @@ public static partial class Jaunty
         }
     }
 
-    private static IEnumerable<(T1, T2, T3, T4, T5, T6, T7)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5, T6, T7>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static IEnumerable<(T1, T2, T3, T4, T5, T6, T7)> QueryStreamMultiEntityCoreFast<T1, T2, T3, T4, T5, T6, T7>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         var wasClosed = connection.State == ConnectionState.Closed;
 

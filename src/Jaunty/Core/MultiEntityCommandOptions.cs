@@ -67,9 +67,9 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3>
         CommandType = commandType;
     }
 
-    /// <summary>Implicitly converts to a non-generic CommandOptions for use with ExecuteReader.</summary>
-    public static implicit operator CommandOptions(MultiEntityCommandOptions<T1, T2, T3> opts) =>
-        new(opts.Transaction, opts.CommandTimeout, opts.CommandType);
+    /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3)&gt; for use with the multi-entity query core.</summary>
+    public static implicit operator CommandOptions<(T1, T2, T3)>(MultiEntityCommandOptions<T1, T2, T3> opts) =>
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
 }
 
 // ============================================================
@@ -102,9 +102,9 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4>
         CommandType = commandType;
     }
 
-    /// <summary>Implicitly converts to a non-generic CommandOptions for use with ExecuteReader.</summary>
-    public static implicit operator CommandOptions(MultiEntityCommandOptions<T1, T2, T3, T4> opts) =>
-        new(opts.Transaction, opts.CommandTimeout, opts.CommandType);
+    /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4)&gt; for use with the multi-entity query core.</summary>
+    public static implicit operator CommandOptions<(T1, T2, T3, T4)>(MultiEntityCommandOptions<T1, T2, T3, T4> opts) =>
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
 }
 
 // ============================================================
@@ -138,9 +138,9 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5>
         CommandType = commandType;
     }
 
-    /// <summary>Implicitly converts to a non-generic CommandOptions for use with ExecuteReader.</summary>
-    public static implicit operator CommandOptions(MultiEntityCommandOptions<T1, T2, T3, T4, T5> opts) =>
-        new(opts.Transaction, opts.CommandTimeout, opts.CommandType);
+    /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4, T5)&gt; for use with the multi-entity query core.</summary>
+    public static implicit operator CommandOptions<(T1, T2, T3, T4, T5)>(MultiEntityCommandOptions<T1, T2, T3, T4, T5> opts) =>
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
 }
 
 // ============================================================
@@ -175,9 +175,9 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6>
         CommandType = commandType;
     }
 
-    /// <summary>Implicitly converts to a non-generic CommandOptions for use with ExecuteReader.</summary>
-    public static implicit operator CommandOptions(MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6> opts) =>
-        new(opts.Transaction, opts.CommandTimeout, opts.CommandType);
+    /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4, T5, T6)&gt; for use with the multi-entity query core.</summary>
+    public static implicit operator CommandOptions<(T1, T2, T3, T4, T5, T6)>(MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6> opts) =>
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
 }
 
 // ============================================================
@@ -213,7 +213,7 @@ public readonly struct MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6, T7>
         CommandType = commandType;
     }
 
-    /// <summary>Implicitly converts to a non-generic CommandOptions for use with ExecuteReader.</summary>
-    public static implicit operator CommandOptions(MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6, T7> opts) =>
-        new(opts.Transaction, opts.CommandTimeout, opts.CommandType);
+    /// <summary>Implicitly converts to a generic CommandOptions&lt;(T1, T2, T3, T4, T5, T6, T7)&gt; for use with the multi-entity query core.</summary>
+    public static implicit operator CommandOptions<(T1, T2, T3, T4, T5, T6, T7)>(MultiEntityCommandOptions<T1, T2, T3, T4, T5, T6, T7> opts) =>
+        new(mapper: null, transaction: opts.Transaction, commandTimeout: opts.CommandTimeout, commandType: opts.CommandType);
 }
