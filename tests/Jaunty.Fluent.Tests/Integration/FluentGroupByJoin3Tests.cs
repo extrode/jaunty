@@ -109,4 +109,28 @@ public class FluentGroupByJoin3Tests : IClassFixture<FluentDatabaseFixture>
         Assert.Contains("COUNT(*)", sql);
         Assert.Contains("JOIN", sql);
     }
+
+    [Fact]
+    public async Task GroupBy_SelectAsync_ReturnsGroupedResults()
+    {
+        var results = await _fixture.Connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
+            .GroupBy((p, c, s) => p.CategoryId)
+            .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.NotEmpty(results);
+    }
+
+    [Fact]
+    public async Task GroupBy_SelectAsync_NonDbConnection_ThrowsNotSupportedException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
+            .GroupBy((p, c, s) => p.CategoryId);
+
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            query.SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() }));
+    }
 }

@@ -99,6 +99,7 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
     private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector)
     {
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
+        GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
 
@@ -114,7 +115,7 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
 
             while (reader.Read())
             {
-                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases);
+                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
@@ -129,9 +130,10 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
     private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CancellationToken cancellationToken)
     {
         if (_parent.Connection is not DbConnection dbConn)
-            return ExecuteQuery(sql, selector);
+            throw new NotSupportedException("Async operations require DbConnection.");
 
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
+        GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
 
@@ -148,7 +150,7 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases);
+                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
