@@ -889,6 +889,38 @@ public class ParameterBinderTests
         Assert.Equal(true, command.Parameters[0].Value);
     }
 
+#if NET8_0_OR_GREATER
+    // DateOnly/TimeOnly were missing from IsScalarType, so a bare DateOnly/TimeOnly argument
+    // fell through to reflection-based object binding instead of BindScalar - DateOnly/TimeOnly
+    // expose public properties (Year, Month, Day, ... / Hour, Minute, ...) that would then be
+    // matched against the SQL's parameter names instead of being bound as a single scalar value.
+    [Fact]
+    public void Bind_ScalarDateOnly_BindsToSqlParameter()
+    {
+        var date = new DateOnly(2026, 7, 20);
+        var command = new MockDbCommand("SELECT * FROM orders WHERE order_date = @date");
+
+        ParameterBinder.Bind(command, date);
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("date", command.Parameters[0].ParameterName);
+        Assert.Equal(date, command.Parameters[0].Value);
+    }
+
+    [Fact]
+    public void Bind_ScalarTimeOnly_BindsToSqlParameter()
+    {
+        var time = new TimeOnly(13, 45, 0);
+        var command = new MockDbCommand("SELECT * FROM shifts WHERE start_time = @time");
+
+        ParameterBinder.Bind(command, time);
+
+        Assert.Single(command.Parameters);
+        Assert.Equal("time", command.Parameters[0].ParameterName);
+        Assert.Equal(time, command.Parameters[0].Value);
+    }
+#endif
+
     #endregion
 
     #region Audit Regression Tests
