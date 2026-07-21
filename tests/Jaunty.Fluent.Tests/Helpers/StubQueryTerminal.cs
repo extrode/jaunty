@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
 
+using Jaunty.Core;
+
 namespace Jaunty.Fluent.Tests.Helpers;
 
 /// <summary>
@@ -20,10 +22,15 @@ public class StubQueryTerminal<T> : IQueryTerminal<T> where T : new()
     public string ToSql<TResult>(Expression<Func<T, TResult>> selector) => _sql;
 
     public List<T> Select() => throw new NotImplementedException();
+    public List<T> Select(CommandOptions options) => throw new NotImplementedException();
     public T SelectFirst() => throw new NotImplementedException();
+    public T SelectFirst(CommandOptions options) => throw new NotImplementedException();
     public T? SelectFirstOrDefault() => throw new NotImplementedException();
+    public T? SelectFirstOrDefault(CommandOptions options) => throw new NotImplementedException();
     public T SelectSingle() => throw new NotImplementedException();
+    public T SelectSingle(CommandOptions options) => throw new NotImplementedException();
     public T? SelectSingleOrDefault() => throw new NotImplementedException();
+    public T? SelectSingleOrDefault(CommandOptions options) => throw new NotImplementedException();
     public List<T> SelectPartial(params string[] columns) => throw new NotImplementedException();
     public T SelectPartialFirst(params string[] columns) => throw new NotImplementedException();
     public T? SelectPartialFirstOrDefault(params string[] columns) => throw new NotImplementedException();
@@ -36,7 +43,9 @@ public class StubQueryTerminal<T> : IQueryTerminal<T> where T : new()
     public T? SelectPartialSingleOrDefault(params Expression<Func<T, object?>>[] columns) => throw new NotImplementedException();
 
     public int Count() => throw new NotImplementedException();
+    public int Count(CommandOptions options) => throw new NotImplementedException();
     public long LongCount() => throw new NotImplementedException();
+    public long LongCount(CommandOptions options) => throw new NotImplementedException();
     public int Count<TResult>(Expression<Func<T, TResult>> selector) => throw new NotImplementedException();
     public long LongCount<TResult>(Expression<Func<T, TResult>> selector) => throw new NotImplementedException();
     public TResult Sum<TResult>(Expression<Func<T, TResult>> selector) => throw new NotImplementedException();
@@ -51,10 +60,15 @@ public class StubQueryTerminal<T> : IQueryTerminal<T> where T : new()
     public TResult SelectMax<TResult>(Expression<Func<T, TResult>> selector) => throw new NotImplementedException();
 
     public Task<List<T>> SelectAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<List<T>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     public Task<T> SelectFirstAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     public Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     public Task<T> SelectSingleAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<T> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     public Task<T?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<T?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     public Task<List<T>> SelectPartialAsync(string[] columns, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     public Task<T> SelectPartialFirstAsync(string[] columns, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     public Task<T?> SelectPartialFirstOrDefaultAsync(string[] columns, CancellationToken cancellationToken = default) => throw new NotImplementedException();
@@ -67,7 +81,9 @@ public class StubQueryTerminal<T> : IQueryTerminal<T> where T : new()
     public Task<T?> SelectPartialSingleOrDefaultAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public Task<int> CountAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<int> CountAsync(CommandOptions options, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     public Task<long> LongCountAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<long> LongCountAsync(CommandOptions options, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     public Task<int> CountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     public Task<long> LongCountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     public Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) => throw new NotImplementedException();
