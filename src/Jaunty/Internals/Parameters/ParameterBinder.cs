@@ -632,7 +632,12 @@ internal static class ParameterBinder
             || underlying == typeof(DateTimeOffset)
             || underlying == typeof(TimeSpan)
             || underlying == typeof(Guid)
-            || underlying == typeof(byte[]);
+            || underlying == typeof(byte[])
+#if NET8_0_OR_GREATER
+            || underlying == typeof(DateOnly)
+            || underlying == typeof(TimeOnly)
+#endif
+            ;
     }
 
     private static void BindScalar(IDbCommand command, object value)

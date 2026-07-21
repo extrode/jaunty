@@ -163,8 +163,45 @@ internal static class WriteParameterCache<T> where T : new()
         return resolver?.Invoke(typeof(T)) is Action<IDbCommand, object> binder ? ((cmd, entity) => binder(cmd, entity!)) : null;
     }
 
+#if NET5_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2075", Justification = "Interfaces implemented by T are preserved because T is a public entity type reachable from the caller's own generic instantiation.")]
+    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "Interfaces implemented by T are preserved because T is a public entity type reachable from the caller's own generic instantiation.")]
+#endif
     private static Action<T, long>? CreateIdSetter()
     {
-        return typeof(IEntity).IsAssignableFrom(typeof(T)) ? (static (target, value) => ((IEntity)target!).Id = value) : null;
+        if (typeof(IEntity).IsAssignableFrom(typeof(T)))
+            return static (target, value) => ((IEntity)target!).Id = value;
+
+        // IEntity<TId> covers non-long primary keys (int, Guid, string, ...). Only numeric TId
+        // types can receive the database-generated `long` identity value here - a Guid/string key
+        // can't come from a database identity column, so those fall through and Id is left
+        // whatever the caller already set, matching the pre-existing behavior for entities with no
+        // usable setter at all (the call site only invokes IdSetter when non-null).
+        Type? entityInterface = Array.Find(typeof(T).GetInterfaces(),
+            i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntity<>));
+
+        if (entityInterface is null)
+            return null;
+
+        Type idType = entityInterface.GetGenericArguments()[0];
+        if (!IsConvertibleFromInt64(idType))
+            return null;
+
+        PropertyInfo idProperty = entityInterface.GetProperty(nameof(IEntity<object>.Id))!;
+
+        ParameterExpression target = Expression.Parameter(typeof(T), "target");
+        ParameterExpression value = Expression.Parameter(typeof(long), "value");
+        MethodCallExpression setterCall = Expression.Call(
+            Expression.Convert(target, entityInterface), idProperty.SetMethod!, Expression.Convert(value, idType));
+
+        return Expression.Lambda<Action<T, long>>(setterCall, target, value).Compile();
     }
+
+    private static bool IsConvertibleFromInt64(Type type) => Type.GetTypeCode(type) switch
+    {
+        TypeCode.Byte or TypeCode.SByte or TypeCode.Int16 or TypeCode.UInt16 or
+        TypeCode.Int32 or TypeCode.UInt32 or TypeCode.Int64 or TypeCode.UInt64 or
+        TypeCode.Single or TypeCode.Double or TypeCode.Decimal => true,
+        _ => false
+    };
 }

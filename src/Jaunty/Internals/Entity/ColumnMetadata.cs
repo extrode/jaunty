@@ -93,16 +93,17 @@ internal sealed class ColumnMetadata
     /// <param name="columnName">The database column name.</param>
     /// <param name="isPrimaryKey">Whether the column is part of the primary key.</param>
     /// <param name="isIdentity">Whether the column is an identity column.</param>
+    /// <param name="isComputed">Whether the column is database-computed.</param>
     /// <param name="getter">A compiled, reflection-free getter for this column's value.</param>
     /// <param name="setter">A compiled, reflection-free setter for this column's value.</param>
-    public ColumnMetadata(string propertyName, Type propertyType, string columnName, bool isPrimaryKey, bool isIdentity, Func<object, object?> getter, Action<object, object?> setter)
+    public ColumnMetadata(string propertyName, Type propertyType, string columnName, bool isPrimaryKey, bool isIdentity, bool isComputed, Func<object, object?> getter, Action<object, object?> setter)
     {
         PropertyName = propertyName;
         PropertyType = propertyType;
         ColumnName = columnName;
         IsPrimaryKey = isPrimaryKey;
         IsIdentity = isIdentity;
-        IsComputed = false;
+        IsComputed = isComputed;
         Getter = getter;
         Setter = setter;
     }
