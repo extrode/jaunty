@@ -141,11 +141,16 @@ public class JauntyGenerator : IIncrementalGenerator
             // Support [DatabaseGenerated] from both
             AttributeData? dbGenAttr = GetAttribute(prop, "DatabaseGeneratedAttribute");
             var isIdentity = false;
+            var isComputed = false;
             if (dbGenAttr != null)
             {
                 TypedConstant arg = dbGenAttr.ConstructorArguments.FirstOrDefault();
-                // Both Jaunty and DataAnnotations use 1 for Identity
-                if (arg.Value is int val && val == 1) isIdentity = true;
+                // Both Jaunty and DataAnnotations use 1 for Identity, 2 for Computed
+                if (arg.Value is int val)
+                {
+                    if (val == 1) isIdentity = true;
+                    else if (val == 2) isComputed = true;
+                }
             }
             else if (isKey && (prop.Type.SpecialType == SpecialType.System_Int32 || prop.Type.SpecialType == SpecialType.System_Int64))
             {
@@ -159,7 +164,7 @@ public class JauntyGenerator : IIncrementalGenerator
             // class) resolves the leading segment as that type instead of the namespace,
             // producing a CS0426 in the generated code. Built-in/special types (int, string,
             // decimal?, etc.) are unaffected - FullyQualifiedFormat keeps their keyword form.
-            properties.Add(new PropertyMetadata(prop.Name, columnName, isKey, isIdentity, prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
+            properties.Add(new PropertyMetadata(prop.Name, columnName, isKey, isIdentity, isComputed, prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
         }
 
         (var tableName, var schemaName) = GetTableNameAndSchema(classSymbol);
@@ -458,8 +463,8 @@ public class JauntyGenerator : IIncrementalGenerator
         }
         sb.AppendLine("        };");
 
-        var insertProps = properties.Where(x => !x.IsIdentity).ToList();
-        var updateProps = properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity).ToList();
+        var insertProps = properties.Where(x => !x.IsIdentity && !x.IsComputed).ToList();
+        var updateProps = properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity && !x.IsComputed).ToList();
         var deleteProps = properties.Where(x => x.IsPrimaryKey).ToList();
 
         string ColumnInfoCtor(PropertyMetadata p)
@@ -509,7 +514,7 @@ public class JauntyGenerator : IIncrementalGenerator
         // properties of the same name already exist above (a class cannot have both a static
         // and an instance member sharing one name).
         string EntityColumnInfoCtor(PropertyMetadata p)
-            => $"new EntityColumnInfo(\"{EscapeStringLiteral(p.ColumnName)}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, " +
+            => $"new EntityColumnInfo(\"{EscapeStringLiteral(p.ColumnName)}\", \"{p.PropertyName}\", {p.IsPrimaryKey.ToString().ToLower()}, {p.IsIdentity.ToString().ToLower()}, {p.IsComputed.ToString().ToLower()}, " +
                $"typeof({p.TypeName}), e => (object?)(({className})e).{p.PropertyName}, (e, v) => (({className})e).{p.PropertyName} = ({p.TypeName})v!)";
 
         sb.AppendLine();
@@ -657,12 +662,13 @@ public class JauntyGenerator : IIncrementalGenerator
     /// <summary>
     /// Holds the resolved mapping metadata for a single property of an entity class.
     /// </summary>
-    private struct PropertyMetadata(string propertyName, string columnName, bool isPrimaryKey, bool isIdentity, string typeName)
+    private struct PropertyMetadata(string propertyName, string columnName, bool isPrimaryKey, bool isIdentity, bool isComputed, string typeName)
     {
         public string PropertyName = propertyName;
         public string ColumnName = columnName;
         public bool IsPrimaryKey = isPrimaryKey;
         public bool IsIdentity = isIdentity;
+        public bool IsComputed = isComputed;
         public string TypeName = typeName;
     }
 }
