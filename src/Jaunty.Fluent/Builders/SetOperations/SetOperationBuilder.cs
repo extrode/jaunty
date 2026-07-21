@@ -2,7 +2,6 @@ using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Text;
-using System.Text.RegularExpressions;
 
 using Jaunty.Core;
 using Jaunty.Dialects;
@@ -68,7 +67,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         _metadata = FluentMetadataCache.GetMetadata<T>();
 
         // Rename first query parameters with prefix "p0_"
-        (string? renamedSql, ParameterCollection? renamedParams) = RenameParameters(firstQuerySql, firstQueryParameters, "p0");
+        (string? renamedSql, ParameterCollection? renamedParams) = ParameterRenamer.Rename(firstQuerySql, firstQueryParameters, "p0");
         _firstQuerySql = renamedSql;
         _firstQueryParameters = renamedParams;
     }
@@ -106,7 +105,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
 
         // Rename parameters with unique prefix
         var prefix = $"p{_operationCount}";
-        (string? renamedSql, ParameterCollection? renamedParams) = RenameParameters(sql, parameters, prefix);
+        (string? renamedSql, ParameterCollection? renamedParams) = ParameterRenamer.Rename(sql, parameters, prefix);
 
         _operations.Add(new SetOperationComponent(operationType, renamedSql, renamedParams));
         _operationCount++;
@@ -122,34 +121,6 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
             return qb.GetParameters();
         }
         return new ParameterCollection();
-    }
-
-    /// <summary>
-    /// Renames all parameters in the SQL and parameter collection with the given prefix.
-    /// </summary>
-    private static (string Sql, ParameterCollection Parameters) RenameParameters(
-        string sql,
-        ParameterCollection parameters,
-        string prefix)
-    {
-        var renamedParams = new ParameterCollection();
-        var renamedSql = sql;
-
-        foreach ((string? name, object? value) in parameters.GetAll())
-        {
-            // Detect prefix from the parameter name itself (@ or $)
-            var paramPrefix = name.Length > 0 && name[0] is '@' or '$' ? name[0].ToString() : "@";
-            var baseName = name.TrimStart('@').TrimStart('$');
-            var newName = $"{paramPrefix}{prefix}_{baseName}";
-
-            // Replace in SQL - use word boundary to avoid partial matches
-            var pattern = $@"{Regex.Escape(paramPrefix)}{Regex.Escape(baseName)}(?![a-zA-Z0-9_])";
-            renamedSql = Regex.Replace(renamedSql, pattern, newName);
-
-            renamedParams.Add(newName, value);
-        }
-
-        return (renamedSql, renamedParams);
     }
 
     #endregion
