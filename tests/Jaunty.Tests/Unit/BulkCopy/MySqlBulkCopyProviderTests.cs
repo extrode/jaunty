@@ -1,5 +1,7 @@
 #if NET8_0_OR_GREATER
 using System.Data;
+using System.Data.Common;
+using System.Data.SQLite;
 
 using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection.BulkCopy;
@@ -173,5 +175,237 @@ public class MySqlBulkCopyProviderTests
         Assert.Throws<ArgumentException>(() => new MySqlBulkCopyProvider().CopyToServer(
             conn, "products; DROP TABLE users; --", reader, new BulkCopyOptions()));
     }
+
+    // R16: rowsPerChunk previously ignored options.BatchSize entirely, always chunking purely by
+    // MaxParametersPerStatement / columnCount (2000 rows for this 1-column reader), so callers had
+    // no way to shrink the per-statement row count (e.g. to bound statement/packet size or
+    // transaction lock duration). Runs against a real in-memory SQLite connection (SQLite accepts
+    // the provider's backtick-quoted multi-row INSERT syntax) wrapped in a spy that records every
+    // command CopyToServer creates, so the test can observe exactly how many chunk commands were
+    // built and how many parameters (i.e. rows) each one was bound with - not reachable from a
+    // MySQL-only integration test that just checks the final row count.
+    [Fact]
+    public void CopyToServer_RespectsBatchSizeOption_ChunksRowsAccordingly()
+    {
+        using var inner = CreateSpyInnerConnection();
+        var connection = new SpyingDbConnection(inner);
+        using var reader = new IntSequenceReader(rowCount: 7);
+
+        int inserted = new MySqlBulkCopyProvider().CopyToServer(connection, "widgets", reader, new BulkCopyOptions { BatchSize = 3 });
+
+        Assert.Equal(7, inserted);
+        // 7 rows at BatchSize=3 -> two full 3-row chunks bound onto the same reused command,
+        // followed by a separate 1-row tail command.
+        Assert.Equal(2, connection.CreatedCommands.Count);
+        Assert.Equal(3, connection.CreatedCommands[0].ParameterCount);
+        Assert.Equal(1, connection.CreatedCommands[1].ParameterCount);
+    }
+
+    [Fact]
+    public async Task CopyToServerAsync_RespectsBatchSizeOption_ChunksRowsAccordingly()
+    {
+        using var inner = CreateSpyInnerConnection();
+        var connection = new SpyingDbConnection(inner);
+        using var reader = new IntSequenceReader(rowCount: 7);
+
+        int inserted = await new MySqlBulkCopyProvider().CopyToServerAsync(
+            connection, "widgets", reader, new BulkCopyOptions { BatchSize = 3 }, CancellationToken.None);
+
+        Assert.Equal(7, inserted);
+        Assert.Equal(2, connection.CreatedCommands.Count);
+        Assert.Equal(3, connection.CreatedCommands[0].ParameterCount);
+        Assert.Equal(1, connection.CreatedCommands[1].ParameterCount);
+    }
+
+    /// <summary>
+    /// An open, real in-memory SQLite connection pre-loaded with the "widgets" table, for
+    /// <see cref="SpyingDbConnection"/> to wrap. SQLite accepts the provider's backtick-quoted
+    /// multi-row INSERT syntax and gives <see cref="SpyingDbCommand"/> a real
+    /// <see cref="DbParameterCollection"/> and real ExecuteNonQuery row counts for free, instead of
+    /// hand-rolling a fake ADO.NET provider.
+    /// </summary>
+    private static SQLiteConnection CreateSpyInnerConnection()
+    {
+        var connection = new SQLiteConnection("Data Source=:memory:");
+        connection.Open();
+        using var create = connection.CreateCommand();
+        create.CommandText = "CREATE TABLE widgets (value INTEGER)";
+        create.ExecuteNonQuery();
+        return connection;
+    }
 }
+
+#region Minimal In-Memory Fakes For Direct BatchSize/Chunk-Size Observation
+
+/// <summary>
+/// Wraps a real, already-open <see cref="DbConnection"/> and records every
+/// <see cref="SpyingDbCommand"/> <see cref="MySqlBulkCopyProvider"/> creates through it, so tests
+/// can inspect exactly how many chunk commands were built and how many parameters (rows) each one
+/// was bound with, while all actual SQL execution still runs for real against the inner connection.
+/// </summary>
+internal sealed class SpyingDbConnection : DbConnection
+{
+    private readonly DbConnection _inner;
+
+    public SpyingDbConnection(DbConnection inner) => _inner = inner;
+
+    public List<SpyingDbCommand> CreatedCommands { get; } = new();
+
+#pragma warning disable CS8765 // base DbConnection.ConnectionString setter is [AllowNull]; not using the attribute here since its netstandard2.0 SDK polyfill is file-scoped and inaccessible outside its own file.
+    public override string ConnectionString
+    {
+        get => _inner.ConnectionString;
+        set => _inner.ConnectionString = value;
+    }
+#pragma warning restore CS8765
+
+    public override string Database => _inner.Database;
+    public override string DataSource => _inner.DataSource;
+    public override string ServerVersion => _inner.ServerVersion;
+    public override ConnectionState State => _inner.State;
+
+    public override void ChangeDatabase(string databaseName) => _inner.ChangeDatabase(databaseName);
+    public override void Close() => _inner.Close();
+    public override void Open() => _inner.Open();
+
+    protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel) => _inner.BeginTransaction(isolationLevel);
+
+    protected override DbCommand CreateDbCommand()
+    {
+        var command = new SpyingDbCommand(_inner.CreateCommand());
+        CreatedCommands.Add(command);
+        return command;
+    }
+}
+
+/// <summary>
+/// Wraps a real <see cref="DbCommand"/>, forwarding everything to it (including its real
+/// <see cref="DbParameterCollection"/>) so tests can read back exactly how many parameters
+/// <see cref="MySqlBulkCopyProvider"/> bound onto each chunk command.
+/// </summary>
+internal sealed class SpyingDbCommand : DbCommand
+{
+    private readonly DbCommand _inner;
+
+    public SpyingDbCommand(DbCommand inner) => _inner = inner;
+
+    /// <summary>
+    /// Snapshotted on <see cref="Dispose(bool)"/> (the provider disposes each chunk command as
+    /// soon as it's done with it), so tests can still read the parameter/row count of a command
+    /// after <see cref="MySqlBulkCopyProvider"/> has already disposed it.
+    /// </summary>
+    public int ParameterCount => _disposedParameterCount ?? _inner.Parameters.Count;
+    private int? _disposedParameterCount;
+
+#pragma warning disable CS8765 // base DbCommand.CommandText setter is [AllowNull]; not using the attribute here since its netstandard2.0 SDK polyfill is file-scoped and inaccessible outside its own file.
+    public override string CommandText
+    {
+        get => _inner.CommandText;
+        set => _inner.CommandText = value;
+    }
+#pragma warning restore CS8765
+
+    public override int CommandTimeout
+    {
+        get => _inner.CommandTimeout;
+        set => _inner.CommandTimeout = value;
+    }
+
+    public override CommandType CommandType
+    {
+        get => _inner.CommandType;
+        set => _inner.CommandType = value;
+    }
+
+    public override bool DesignTimeVisible
+    {
+        get => _inner.DesignTimeVisible;
+        set => _inner.DesignTimeVisible = value;
+    }
+
+    public override UpdateRowSource UpdatedRowSource
+    {
+        get => _inner.UpdatedRowSource;
+        set => _inner.UpdatedRowSource = value;
+    }
+
+    protected override DbConnection? DbConnection
+    {
+        get => _inner.Connection;
+        set { /* fixed to the inner command's own connection */ }
+    }
+
+    protected override DbParameterCollection DbParameterCollection => _inner.Parameters;
+
+    protected override DbTransaction? DbTransaction
+    {
+        get => _inner.Transaction;
+        set => _inner.Transaction = value;
+    }
+
+    public override void Cancel() => _inner.Cancel();
+    protected override DbParameter CreateDbParameter() => _inner.CreateParameter();
+    public override int ExecuteNonQuery() => _inner.ExecuteNonQuery();
+    public override Task<int> ExecuteNonQueryAsync(CancellationToken cancellationToken) => _inner.ExecuteNonQueryAsync(cancellationToken);
+    public override object? ExecuteScalar() => _inner.ExecuteScalar();
+    public override void Prepare() => _inner.Prepare();
+    protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior) => _inner.ExecuteReader(behavior);
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _disposedParameterCount = _inner.Parameters.Count;
+            _inner.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+}
+
+/// <summary>
+/// An <see cref="IDataReader"/> yielding <c>rowCount</c> rows of a single int column, just enough
+/// for <see cref="MySqlBulkCopyProvider"/> to drive its row-buffering/chunking loop.
+/// </summary>
+internal sealed class IntSequenceReader(int rowCount) : IDataReader
+{
+    private int _index = -1;
+
+    public object this[int i] => _index;
+    public object this[string name] => _index;
+    public int Depth => 0;
+    public bool IsClosed { get; private set; }
+    public int RecordsAffected => 0;
+    public int FieldCount => 1;
+
+    public void Close() => IsClosed = true;
+    public void Dispose() => IsClosed = true;
+    public bool GetBoolean(int i) => throw new NotImplementedException();
+    public byte GetByte(int i) => throw new NotImplementedException();
+    public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferoffset, int length) => throw new NotImplementedException();
+    public char GetChar(int i) => throw new NotImplementedException();
+    public long GetChars(int i, long fieldoffset, char[]? buffer, int bufferoffset, int length) => throw new NotImplementedException();
+    public IDataReader GetData(int i) => throw new NotImplementedException();
+    public string GetDataTypeName(int i) => throw new NotImplementedException();
+    public DateTime GetDateTime(int i) => throw new NotImplementedException();
+    public decimal GetDecimal(int i) => throw new NotImplementedException();
+    public double GetDouble(int i) => throw new NotImplementedException();
+    public Type GetFieldType(int i) => typeof(int);
+    public float GetFloat(int i) => throw new NotImplementedException();
+    public Guid GetGuid(int i) => throw new NotImplementedException();
+    public short GetInt16(int i) => throw new NotImplementedException();
+    public int GetInt32(int i) => _index;
+    public long GetInt64(int i) => throw new NotImplementedException();
+    public string GetName(int i) => "value";
+    public int GetOrdinal(string name) => 0;
+    public DataTable? GetSchemaTable() => null;
+    public string GetString(int i) => throw new NotImplementedException();
+    public object GetValue(int i) => _index;
+    public int GetValues(object[] values) { values[0] = _index; return 1; }
+    public bool IsDBNull(int i) => false;
+    public bool NextResult() => false;
+    public bool Read() => ++_index < rowCount;
+}
+
+#endregion
 #endif
