@@ -135,15 +135,10 @@ public static partial class Jaunty
 
         ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
 
-        if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
-            throw new NotSupportedException(
-                $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
-                "Use BulkInsertAsync instead, or disable constraints manually before calling this method.");
-
-        ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
-        bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
-
-        // Check if native bulk copy should be used
+        // Check if native bulk copy should be used. This must run before the SupportsForeignKeyToggle
+        // guard below: the native path honors ignoreConstraints itself via BulkCopyOptions.CheckConstraints
+        // and never touches the session-level FK-toggle pragma, so a dialect that supports native bulk
+        // copy but not session-level toggling (e.g. SQL Server) must still be able to reach it.
         if (BulkCopyConfiguration.EnableNativeBulkCopy &&
             dialect.SupportsNativeBulkCopy &&
             entityList.Count >= BulkCopyConfiguration.MinimumRowsForNativeBulkCopy)
@@ -154,6 +149,14 @@ public static partial class Jaunty
                 return await BulkInsertNativeCoreAsync(connection, entityList, cached, bulkProvider, options, ignoreConstraints, cancellationToken).ConfigureAwait(false);
             }
         }
+
+        if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
+            throw new NotSupportedException(
+                $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
+                "Use BulkInsertAsync instead, or disable constraints manually before calling this method.");
+
+        ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
+        bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
 
         bool wasClosed = connection.State == ConnectionState.Closed;
         DbTransaction? transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
