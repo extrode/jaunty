@@ -116,6 +116,21 @@ public sealed class EntityMetadataSourceEmissionTests
     }
 
     [Fact]
+    public void Columns_GetOnlyAndInitOnlyProperties_AreExcluded()
+    {
+        // If the generator still emitted `entity.Code = ...` / `entity.Display = ...`
+        // assignments for these, the whole test assembly would fail to compile
+        // (CS0200/CS8852) - this test existing and compiling is itself part of the coverage.
+        IEntityMetadataSource source = new GenGetOnlyEntity();
+
+        Assert.Equal(2, source.Columns.Count);
+        Assert.Contains(source.Columns, c => c.ColumnName == "entity_id");
+        Assert.Contains(source.Columns, c => c.ColumnName == "label");
+        Assert.DoesNotContain(source.Columns, c => c.ColumnName == "code");
+        Assert.DoesNotContain(source.Columns, c => c.PropertyName == nameof(GenGetOnlyEntity.Display));
+    }
+
+    [Fact]
     public void Columns_Getter_ReturnsCurrentPropertyValue()
     {
         var product = new GenProduct { ProductId = 7, ProductName = "Widget" };

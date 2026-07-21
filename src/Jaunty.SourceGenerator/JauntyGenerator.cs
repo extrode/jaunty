@@ -131,6 +131,13 @@ public class JauntyGenerator : IIncrementalGenerator
             // Support [Ignore] and [NotMapped]
             if (HasAttribute(prop, "IgnoreAttribute") || HasAttribute(prop, "NotMappedAttribute")) continue;
 
+            // A get-only property has no SetMethod at all; an init-only property has one, but it
+            // can only be assigned inside an object initializer, not via the post-construction
+            // `entity.Prop = value` assignments this generator emits in ReadEntity/CreateRowMapper/
+            // the ColumnInfo and EntityColumnInfo setter lambdas. Either would emit an assignment
+            // that fails to compile (CS0200/CS8852), so treat both as implicitly [Ignore]d.
+            if (prop.SetMethod is null || prop.SetMethod.IsInitOnly) continue;
+
             // Support [Column] from both
             AttributeData? columnAttr = GetAttribute(prop, "ColumnAttribute");
             var columnName = columnAttr?.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? prop.Name;
@@ -285,11 +292,12 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("        {");
         sb.AppendLine("            var ord = OrdinalMap.Resolve(reader);");
         sb.AppendLine("            int fieldCount = reader.FieldCount;");
-        sb.AppendLine("            if (reader is DbDataReader dbReader)");
+        sb.AppendLine("            if (reader is DbDataReader)");
         sb.AppendLine("            {");
         sb.AppendLine("                return r =>");
         sb.AppendLine("                {");
-        sb.AppendLine("                    if (dbReader.FieldCount != fieldCount)");
+        sb.AppendLine("                    var rr = (DbDataReader)r;");
+        sb.AppendLine("                    if (rr.FieldCount != fieldCount)");
         sb.AppendLine("        #if NET8_0_OR_GREATER");
         sb.AppendLine("                        return ReadEntity(r);");
         sb.AppendLine("        #else");
@@ -302,11 +310,11 @@ public class JauntyGenerator : IIncrementalGenerator
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
             var typeForGetFieldValue = typeInfo.TypeForGetFieldValue;
             string dbAccess = typeInfo.Getter == "reader.GetValue"
-                ? $"dbReader.GetFieldValue<{typeForGetFieldValue}>"
-                : "dbReader." + typeInfo.Getter.Substring("reader.".Length);
+                ? $"rr.GetFieldValue<{typeForGetFieldValue}>"
+                : "rr." + typeInfo.Getter.Substring("reader.".Length);
             if (typeInfo.NeedsNullCheck)
             {
-                sb.AppendLine($"                    entity.{p.PropertyName} = dbReader.IsDBNull(ord[{i}]) ? default({p.TypeName})! : {dbAccess}(ord[{i}]);");
+                sb.AppendLine($"                    entity.{p.PropertyName} = rr.IsDBNull(ord[{i}]) ? default({p.TypeName})! : {dbAccess}(ord[{i}]);");
             }
             else
             {
@@ -318,7 +326,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine("            }");
         sb.AppendLine("            return r =>");
         sb.AppendLine("            {");
-        sb.AppendLine("                if (reader.FieldCount != fieldCount)");
+        sb.AppendLine("                if (r.FieldCount != fieldCount)");
         sb.AppendLine("        #if NET8_0_OR_GREATER");
         sb.AppendLine("                    return ReadEntity(r);");
         sb.AppendLine("        #else");
@@ -329,10 +337,10 @@ public class JauntyGenerator : IIncrementalGenerator
         {
             PropertyMetadata p = properties[i];
             ReaderTypeInfo typeInfo = GetReaderTypeInfo(p.TypeName);
-            var getter = typeInfo.Getter == "reader.GetValue" ? $"({p.TypeName})reader.GetValue" : typeInfo.Getter;
+            var getter = typeInfo.Getter == "reader.GetValue" ? $"({p.TypeName})r.GetValue" : "r." + typeInfo.Getter.Substring("reader.".Length);
             if (typeInfo.NeedsNullCheck)
             {
-                sb.AppendLine($"                if (!reader.IsDBNull(ord[{i}]))");
+                sb.AppendLine($"                if (!r.IsDBNull(ord[{i}]))");
                 sb.AppendLine($"                    entity.{p.PropertyName} = {getter}(ord[{i}]);");
             }
             else
