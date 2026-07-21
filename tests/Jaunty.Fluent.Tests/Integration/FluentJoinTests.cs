@@ -288,6 +288,27 @@ public class FluentJoinTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public async Task InnerJoin_SelectAsync_NonDbConnection_ThrowsInvalidOperationException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => query.SelectAsync());
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectPartialAsync_NonDbConnection_ThrowsInvalidOperationException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => query.SelectPartialAsync("products.product_id, categories.category_name"));
+    }
+
+    [Fact]
     public async Task InnerJoin_SelectAsyncGeneric_ReturnsTuples()
     {
         var results = await _fixture.Connection.From<Product>()
