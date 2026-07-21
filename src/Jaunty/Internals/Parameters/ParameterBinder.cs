@@ -674,6 +674,13 @@ internal static class ParameterBinder
                 nameof(value));
         }
 
+        // Mirror BuildTemplate/BindFromDictionary's strictness: fail fast when the caller passed a
+        // value but the SQL contains no matching placeholder, instead of silently dropping it.
+        if (bound.Count == 0)
+        {
+            throw new ArgumentException("Unused scalar parameter value. SQL contains no matching parameters.", nameof(value));
+        }
+
         foreach (string sqlName in bound)
         {
             IDbDataParameter p = command.CreateParameter();
