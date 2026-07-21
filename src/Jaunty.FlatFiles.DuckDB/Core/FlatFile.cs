@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 using Jaunty.FlatFiles.Core;
 using Jaunty.FlatFiles.FileSources;
 using Jaunty.FlatFiles.Interfaces;
@@ -9,7 +11,7 @@ namespace Jaunty.FlatFiles.DuckDB;
 /// </summary>
 public static class FlatFile
 {
-    private static readonly Dictionary<string, Func<string, string, Type, IFileSource>> _extensionRegistry = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly ConcurrentDictionary<string, Func<string, string, Type, IFileSource>> _extensionRegistry = new(StringComparer.OrdinalIgnoreCase)
     {
         [".csv"] = (tableName, fullPath, entityType) => new CsvFileSource(tableName, fullPath, entityType),
         [".tsv"] = (tableName, fullPath, entityType) => new TsvFileSource(tableName, fullPath, entityType),

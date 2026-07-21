@@ -63,6 +63,44 @@ public class MultiEntityQueryTests : IDisposable
         Assert.Equal(400, right.Amount);
     }
 
+    // ==========================================
+    // AUD-R14 batch-7: DuckDb.QueryMultiEntity/QueryMultiEntityAsync null/whitespace sql validation
+    // ==========================================
+
+    [Fact]
+    public void QueryMultiEntity_NullSql_Throws()
+        => Assert.Throws<ArgumentNullException>(() => _db.QueryMultiEntity<Left, Right>(null!));
+
+    [Fact]
+    public void QueryMultiEntity_WhitespaceSql_Throws()
+        => Assert.Throws<ArgumentException>(() => _db.QueryMultiEntity<Left, Right>("   "));
+
+    [Fact]
+    public void QueryMultiEntity_WithParameters_NullSql_Throws()
+        => Assert.Throws<ArgumentNullException>(() => _db.QueryMultiEntity<Left, Right>(null!, new { Amount = 1 }));
+
+    [Fact]
+    public void QueryMultiEntity_WithParameters_WhitespaceSql_Throws()
+        => Assert.Throws<ArgumentException>(() => _db.QueryMultiEntity<Left, Right>("   ", new { Amount = 1 }));
+
+    [Fact]
+    public async Task QueryMultiEntityAsync_NullSql_Throws()
+        => await Assert.ThrowsAsync<ArgumentNullException>(() => _db.QueryMultiEntityAsync<Left, Right>(null!).AsTask());
+
+    [Fact]
+    public async Task QueryMultiEntityAsync_WhitespaceSql_Throws()
+        => await Assert.ThrowsAsync<ArgumentException>(() => _db.QueryMultiEntityAsync<Left, Right>("   ").AsTask());
+
+    [Fact]
+    public async Task QueryMultiEntityAsync_WithParameters_NullSql_Throws()
+        => await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            _db.QueryMultiEntityAsync<Left, Right>(null!, new { Amount = 1 }, CancellationToken.None).AsTask());
+
+    [Fact]
+    public async Task QueryMultiEntityAsync_WithParameters_WhitespaceSql_Throws()
+        => await Assert.ThrowsAsync<ArgumentException>(() =>
+            _db.QueryMultiEntityAsync<Left, Right>("   ", new { Amount = 1 }, CancellationToken.None).AsTask());
+
     private sealed class Left
     {
         public int Id { get; set; }
