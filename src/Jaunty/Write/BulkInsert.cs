@@ -59,11 +59,20 @@ public static partial class Jaunty
     /// Inserts multiple entities into the database, bypassing foreign key constraint checks.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// See <see cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/> for the identity-population
     /// caveat: only the loop-based insert path populates entity IDs back.
+    /// </para>
+    /// <para>
+    /// For datasets at or above the native bulk-copy threshold, constraints are bypassed via the
+    /// provider's bulk-copy <c>CheckConstraints</c> option rather than session-level FK-toggle SQL;
+    /// the two mechanisms are not guaranteed to be equivalent across providers/constraint types.
+    /// The <see cref="NotSupportedException"/> below only applies to datasets below that threshold.
+    /// </para>
     /// </remarks>
     /// <exception cref="NotSupportedException">
-    /// Thrown if the database provider doesn't support foreign key toggling (e.g., SQL Server).
+    /// Thrown if the database provider doesn't support session-level foreign key toggling
+    /// (e.g., SQL Server) and the dataset is below the native bulk-copy threshold.
     /// </exception>
     public static int BulkInsertIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities) where T : new()
     {
@@ -81,11 +90,20 @@ public static partial class Jaunty
     /// Inserts multiple entities into the database, bypassing foreign key constraint checks, with command options.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// See <see cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/> for the identity-population
     /// caveat: only the loop-based insert path populates entity IDs back.
+    /// </para>
+    /// <para>
+    /// For datasets at or above the native bulk-copy threshold, constraints are bypassed via the
+    /// provider's bulk-copy <c>CheckConstraints</c> option rather than session-level FK-toggle SQL;
+    /// the two mechanisms are not guaranteed to be equivalent across providers/constraint types.
+    /// The <see cref="NotSupportedException"/> below only applies to datasets below that threshold.
+    /// </para>
     /// </remarks>
     /// <exception cref="NotSupportedException">
-    /// Thrown if the database provider doesn't support foreign key toggling.
+    /// Thrown if the database provider doesn't support session-level foreign key toggling
+    /// and the dataset is below the native bulk-copy threshold.
     /// </exception>
     public static int BulkInsertIgnoreConstraints<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : new()
     {
