@@ -1,6 +1,9 @@
 
+using System.Data.SQLite;
+
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
+using Jaunty.Tests.Helpers;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Write;
@@ -281,6 +284,71 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
         Assert.Equal(0, updated);
     }
 
+    // R16 batch-2 coverage: the non-ignoreConstraints 4-arg overload
+    // (IDbConnection, IEnumerable<T>, CommandOptions, CancellationToken) was only ever exercised
+    // with default options; transaction-wiring correctness for this specific overload was
+    // unverified (only the IgnoreConstraints variant had a WithOptions/transaction test below).
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkUpdateAsync_WithOptions_UpdatesEntities(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity>
+        {
+            new() { Name = "Test1", Value = 100 },
+            new() { Name = "Test2", Value = 200 }
+        };
+        await connection.BulkInsertAsync(entities);
+
+        var inserted = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+        foreach (var entity in inserted)
+        {
+            entity.Value *= 10;
+        }
+
+        using var transaction = connection.BeginTransaction();
+
+        int updated = await connection.BulkUpdateAsync(inserted, CommandOptions.WithTransaction(transaction));
+        transaction.Commit();
+
+        Assert.Equal(2, updated);
+
+        var results = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test ORDER BY id");
+        Assert.Equal(1000, results[0].Value);
+        Assert.Equal(2000, results[1].Value);
+    }
+
+    // R16 batch-2 coverage: cancellation-token respect is tested for BulkInsertAsync above but had
+    // no equivalent for BulkUpdateAsync, despite the same cancellationToken.ThrowIfCancellationRequested()
+    // pattern in BulkUpdateCoreAsync's per-entity loop.
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkUpdateAsync_CancellationToken_Respects(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = Enumerable.Range(1, 100)
+            .Select(i => new BulkTestEntity { Name = $"Item{i}", Value = i })
+            .ToList();
+        await connection.BulkInsertAsync(entities);
+        var inserted = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => connection.BulkUpdateAsync(inserted, cts.Token).AsTask());
+    }
+
     [Theory]
     [SqlServer]
     [Postgres]
@@ -362,6 +430,96 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
         var results = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test ORDER BY id");
         Assert.Equal(1000, results[0].Value);
         Assert.Equal(2000, results[1].Value);
+    }
+
+    // R16 batch-2 coverage: same cancellation-token gap as BulkUpdateAsync above, for the
+    // IgnoreConstraints variant.
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkUpdateIgnoreConstraintsAsync_CancellationToken_Respects(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = Enumerable.Range(1, 100)
+            .Select(i => new BulkTestEntity { Name = $"Item{i}", Value = i })
+            .ToList();
+        await connection.BulkInsertAsync(entities);
+        var inserted = connection.Query<BulkTestEntity>("SELECT id AS Id, name AS Name, value AS Value FROM bulk_test");
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        if (dialect.Provider == DialectProvider.SqlServer)
+        {
+            // SQL Server doesn't support constraint toggling at all; the NotSupportedException
+            // guard fires before cancellation is ever checked.
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => connection.BulkUpdateIgnoreConstraintsAsync(inserted, cts.Token).AsTask());
+            return;
+        }
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => connection.BulkUpdateIgnoreConstraintsAsync(inserted, cts.Token).AsTask());
+    }
+
+    // R16 batch-2 coverage: the "Async connection requires a DbConnection or its subclass"
+    // InvalidOperationException guard, present in all four public BulkUpdateAsync wrapper methods,
+    // had zero test coverage anywhere in tests/. IDbConnectionWrapper wraps a real IDbConnection
+    // without extending DbConnection, forcing the guard's "is not DbConnection" branch.
+    [Fact]
+    public async Task BulkUpdateAsync_WithNonDbConnection_ThrowsInvalidOperationException()
+    {
+        using var sqliteConnection = new SQLiteConnection("Data Source=:memory:");
+        var wrapper = new IDbConnectionWrapper(sqliteConnection);
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 } };
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            wrapper.BulkUpdateAsync(entities).AsTask());
+
+        Assert.Contains("DbConnection", ex.Message);
+    }
+
+    [Fact]
+    public async Task BulkUpdateAsync_WithOptionsAndNonDbConnection_ThrowsInvalidOperationException()
+    {
+        using var sqliteConnection = new SQLiteConnection("Data Source=:memory:");
+        var wrapper = new IDbConnectionWrapper(sqliteConnection);
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 } };
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            wrapper.BulkUpdateAsync(entities, new CommandOptions()).AsTask());
+
+        Assert.Contains("DbConnection", ex.Message);
+    }
+
+    [Fact]
+    public async Task BulkUpdateIgnoreConstraintsAsync_WithNonDbConnection_ThrowsInvalidOperationException()
+    {
+        using var sqliteConnection = new SQLiteConnection("Data Source=:memory:");
+        var wrapper = new IDbConnectionWrapper(sqliteConnection);
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 } };
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            wrapper.BulkUpdateIgnoreConstraintsAsync(entities).AsTask());
+
+        Assert.Contains("DbConnection", ex.Message);
+    }
+
+    [Fact]
+    public async Task BulkUpdateIgnoreConstraintsAsync_WithOptionsAndNonDbConnection_ThrowsInvalidOperationException()
+    {
+        using var sqliteConnection = new SQLiteConnection("Data Source=:memory:");
+        var wrapper = new IDbConnectionWrapper(sqliteConnection);
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 } };
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            wrapper.BulkUpdateIgnoreConstraintsAsync(entities, new CommandOptions()).AsTask());
+
+        Assert.Contains("DbConnection", ex.Message);
     }
 
     #endregion
