@@ -164,7 +164,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken)
     {
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
         (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
