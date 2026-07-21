@@ -147,7 +147,7 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
     {
         IDbConnection connection = _parent._parent._parent.Connection;
         if (connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);

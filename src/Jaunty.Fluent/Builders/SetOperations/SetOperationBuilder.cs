@@ -292,7 +292,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     public async Task<List<T>> SelectAsync(CancellationToken cancellationToken = default)
     {
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
         var sql = ToSql();
         return await dbConn.QueryAsync<T>(sql, GetAllParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
@@ -301,7 +301,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     public async Task<T> SelectFirstAsync(CancellationToken cancellationToken = default)
     {
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
         var original = _take;
         _take = 1;
@@ -313,7 +313,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     public async Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
         var original = _take;
         _take = 1;
@@ -325,7 +325,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     public async Task<T> SelectSingleAsync(CancellationToken cancellationToken = default)
     {
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
         var original = _take;
         _take = 2;
@@ -337,7 +337,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     public async Task<T?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
         var original = _take;
         _take = 2;
