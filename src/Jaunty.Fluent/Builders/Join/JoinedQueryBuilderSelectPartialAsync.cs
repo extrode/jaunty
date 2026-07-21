@@ -12,11 +12,11 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string columns,
         CancellationToken cancellationToken = default)
     {
-        string sql = BuildPartialSelectSql(columns);
+        string sql = BuildSelectPartialSql(columns);
         var results = new List<IDictionary<string, object?>>();
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
@@ -63,11 +63,11 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        string sql = BuildPartialSelectSql(columns);
+        string sql = BuildSelectPartialSql(columns);
         var results = new List<T>();
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
@@ -113,10 +113,10 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string columns,
         CancellationToken cancellationToken = default)
     {
-        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 1);
+        string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 1);
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
@@ -163,10 +163,10 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 1);
+        string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 1);
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
@@ -212,10 +212,10 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string columns,
         CancellationToken cancellationToken = default)
     {
-        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 1);
+        string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 1);
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
@@ -262,10 +262,10 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 1);
+        string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 1);
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
@@ -311,12 +311,12 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string columns,
         CancellationToken cancellationToken = default)
     {
-        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 2);
+        string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 2);
         IDictionary<string, object?>? result = null;
         int count = 0;
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
@@ -368,12 +368,12 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 2);
+        string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 2);
         T? result = default;
         int count = 0;
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
@@ -424,12 +424,12 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string columns,
         CancellationToken cancellationToken = default)
     {
-        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 2);
+        string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 2);
         IDictionary<string, object?>? result = null;
         int count = 0;
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
@@ -481,12 +481,12 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        string sql = _dialect.GetPagingSql(BuildPartialSelectSql(columns), 0, 2);
+        string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 2);
         T? result = default;
         int count = 0;
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();

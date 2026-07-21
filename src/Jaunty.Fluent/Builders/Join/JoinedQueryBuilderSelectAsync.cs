@@ -19,7 +19,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
-            : throw new NotSupportedException("Async operations require DbConnection.");
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
     public async Task<List<T>> SelectAsync<T>(CancellationToken cancellationToken = default)
@@ -66,7 +66,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialFirstAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
-            : throw new NotSupportedException("Async operations require DbConnection.");
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
     public async Task<TFrom?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
@@ -76,7 +76,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialFirstOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
-            : throw new NotSupportedException("Async operations require DbConnection.");
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
     public async Task<T> SelectFirstAsync<T>(CancellationToken cancellationToken = default)
@@ -152,7 +152,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialSingleAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
-            : throw new NotSupportedException("Async operations require DbConnection.");
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
     public async Task<TFrom?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)
@@ -162,7 +162,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialSingleOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
-            : throw new NotSupportedException("Async operations require DbConnection.");
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
     public async Task<int> CountAsync(CancellationToken cancellationToken = default)
@@ -171,7 +171,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryScalarAsync<int>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
-            : throw new NotSupportedException("Async operations require DbConnection.");
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
     public async Task<long> LongCountAsync(CancellationToken cancellationToken = default)
@@ -180,7 +180,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
-            : throw new NotSupportedException("Async operations require DbConnection.");
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
     private async Task<List<TJoin>> SelectJoinedAsync(CancellationToken cancellationToken = default)
@@ -190,7 +190,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialAsync<TJoin>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
-            : throw new NotSupportedException("Async operations require DbConnection.");
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
     private async Task<TJoin> SelectFirstJoinedAsync(CancellationToken cancellationToken = default)
@@ -200,7 +200,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialFirstAsync<TJoin>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
-            : throw new NotSupportedException("Async operations require DbConnection.");
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
     private async Task<TJoin?> SelectFirstOrDefaultJoinedAsync(CancellationToken cancellationToken = default)
@@ -210,7 +210,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialFirstOrDefaultAsync<TJoin>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
-            : throw new NotSupportedException("Async operations require DbConnection.");
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
     private async Task<List<(TFrom From, TJoin Joined)>> SelectBothInternalAsync(CancellationToken cancellationToken = default)
@@ -223,7 +223,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         var results = new List<(TFrom, TJoin)>();
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
@@ -272,11 +272,11 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     private async Task<List<T>> SelectWithMappingAsync<T>(MappingMode mode, CancellationToken cancellationToken = default) where T : new()
     {
-        string sql = BuildSelectAllColumnsSql();
+        string sql = BuildSelectPartialSql("*");
         var results = new List<T>();
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
@@ -322,11 +322,11 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     private async Task<List<T>> SelectWithMapperAsync<T>(Func<IDataReader, T> mapper, CancellationToken cancellationToken = default)
     {
-        string sql = BuildSelectAllColumnsSql();
+        string sql = BuildSelectPartialSql("*");
         var results = new List<T>();
 
         if (_connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
 #if NET8_0_OR_GREATER
         DbCommand command = dbConn.CreateCommand();
