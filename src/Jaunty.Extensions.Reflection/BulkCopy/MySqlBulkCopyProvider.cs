@@ -55,7 +55,10 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
             for (int i = 0; i < columnCount; i++)
                 columnNames[i] = data.GetName(i);
 
-            int rowsPerChunk = Math.Max(1, MaxParametersPerStatement / Math.Max(1, columnCount));
+            // R16: options.BatchSize must cap rows-per-statement - the MaxParametersPerStatement
+            // ceiling alone left BatchSize completely unused, so callers had no way to shrink the
+            // chunk size (e.g. to limit statement/packet size or transaction lock duration).
+            int rowsPerChunk = Math.Max(1, Math.Min(options.BatchSize, MaxParametersPerStatement / Math.Max(1, columnCount)));
 
             int total = 0;
             var buffer = new object?[rowsPerChunk][];
@@ -133,7 +136,8 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
             for (int i = 0; i < columnCount; i++)
                 columnNames[i] = data.GetName(i);
 
-            int rowsPerChunk = Math.Max(1, MaxParametersPerStatement / Math.Max(1, columnCount));
+            // R16: see the sync CopyToServer for why BatchSize must cap rows-per-statement here too.
+            int rowsPerChunk = Math.Max(1, Math.Min(options.BatchSize, MaxParametersPerStatement / Math.Max(1, columnCount)));
 
             int total = 0;
             var buffer = new object?[rowsPerChunk][];
