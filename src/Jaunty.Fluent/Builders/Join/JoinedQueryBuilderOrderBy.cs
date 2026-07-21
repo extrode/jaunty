@@ -89,7 +89,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             }
         }
 
-        string prefix = tableAlias ?? metadata.TableName;
+        string prefix = tableAlias ?? _dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{_dialect.EscapeColumnName(columnName)}";
     }
 }
