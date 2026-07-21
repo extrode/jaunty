@@ -300,10 +300,15 @@ internal static class ParameterBinder
         if (connection is not null)
         {
             ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
-            if (totalExpandedCount > dialect.MaxParametersPerStatement)
+            // R16: totalExpandedCount alone undercounts - it ignores the non-collection scalar
+            // placeholders in the same statement (seen.Count includes both), so a statement could
+            // still exceed the provider's true parameter maximum while passing a collection-only
+            // check.
+            int totalParameterCount = totalExpandedCount + (seen.Count - expansions.Count);
+            if (totalParameterCount > dialect.MaxParametersPerStatement)
             {
                 throw new InvalidOperationException(
-                    $"Collection parameter expansion produces {totalExpandedCount} parameters, exceeding the " +
+                    $"Collection parameter expansion produces {totalParameterCount} parameters, exceeding the " +
                     $"{connection.GetType().Name} provider's maximum of {dialect.MaxParametersPerStatement} parameters " +
                     "per statement. Consider batching the query into smaller chunks.");
             }
