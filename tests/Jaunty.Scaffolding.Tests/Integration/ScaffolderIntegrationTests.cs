@@ -353,6 +353,41 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.False(File.Exists(Path.Combine(_tempOutputDir, "Product.cs")));
     }
 
+    [Fact]
+    public async Task ScaffoldAsync_LaterTableFileExists_FailsBeforeWritingEarlierTableFiles()
+    {
+        // Round 15 audit finding: File.Exists was previously checked one table at a time
+        // inside the write loop, so a collision on a *later* table (categories, here) would
+        // leave an *earlier* table's file (Product.cs) already written to disk with no
+        // rollback. This proves the up-front pre-validation (mirroring the class-name-collision
+        // check above) now catches it before writing anything at all.
+        var existingFile = Path.Combine(_tempOutputDir, "Category.cs");
+        await File.WriteAllTextAsync(existingFile, "// existing content");
+
+        var scaffolder = new Scaffolder();
+        var options = new ScaffoldOptions
+        {
+            ConnectionString = _connectionString,
+            Provider = DatabaseProvider.SQLite,
+            OutputDirectory = _tempOutputDir,
+            Namespace = "Test.Entities",
+            IncludeTables = ["products", "categories"],
+            Force = false
+        };
+
+        var result = await scaffolder.ScaffoldAsync(options);
+
+        Assert.False(result.Success);
+        Assert.Contains("Category.cs", result.Error);
+
+        // Product.cs must not have been written even though "products" sorts/executes before
+        // "categories" - the collision on categories must be caught before any write happens.
+        Assert.False(File.Exists(Path.Combine(_tempOutputDir, "Product.cs")));
+
+        // The pre-existing categories file must be untouched.
+        Assert.Equal("// existing content", await File.ReadAllTextAsync(existingFile));
+    }
+
     public void Dispose()
     {
         _connection.Close();
