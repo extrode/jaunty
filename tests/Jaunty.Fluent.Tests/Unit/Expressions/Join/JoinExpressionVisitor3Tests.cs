@@ -224,6 +224,36 @@ public class JoinExpressionVisitor3Tests
     }
 
     #endregion
+
+    #region Null Alias Fallback
+
+    [Fact]
+    public void Visit_NullAlias_UsesEscapedTableNameNotRawTableName()
+    {
+        // Regression test: same alias-less fallback bug as JoinExpressionVisitor, fixed the
+        // same way - _dialect.EscapeTableName instead of the raw, unescaped table name.
+        Expression<Func<Product, Category, Supplier, bool>> expr = (p, c, s) => c.CategoryId == 1;
+        var visitor = new JoinExpressionVisitor3<Product, Category, Supplier>(_dialect, "p", null, "s");
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("[categories].[category_id]", sql);
+        Assert.DoesNotContain("categories.[category_id]", sql);
+    }
+
+    #endregion
+
+    #region Unsupported Method Calls
+
+    [Fact]
+    public void Visit_MethodCall_ThrowsNotSupportedInsteadOfEmittingGarbageSql()
+    {
+        Expression<Func<Product, Category, Supplier, bool>> expr = (p, c, s) => s.Country.Contains("K");
+        var visitor = new JoinExpressionVisitor3<Product, Category, Supplier>(_dialect, "p", "c", "s");
+
+        Assert.Throws<NotSupportedException>(() => visitor.Translate(expr));
+    }
+
+    #endregion
 }
 
 /// <summary>
@@ -320,6 +350,34 @@ public class JoinExpressionVisitor4Tests
 
         Assert.Contains("p1.[supplier_id] = p3.[product_id]", sql);
         Assert.Contains("p3.[category_id] = c.[category_id]", sql);
+    }
+
+    #endregion
+
+    #region Null Alias Fallback
+
+    [Fact]
+    public void Visit_NullAlias_UsesEscapedTableNameNotRawTableName()
+    {
+        Expression<Func<Product, Category, Supplier, Order, bool>> expr = (p, c, s, o) => o.OrderId == 1;
+        var visitor = new JoinExpressionVisitor4<Product, Category, Supplier, Order>(_dialect, "p", "c", "s", null);
+        var (sql, _) = visitor.Translate(expr);
+
+        Assert.Contains("[order_id]", sql);
+        Assert.DoesNotContain("orders.[order_id]", sql);
+    }
+
+    #endregion
+
+    #region Unsupported Method Calls
+
+    [Fact]
+    public void Visit_MethodCall_ThrowsNotSupportedInsteadOfEmittingGarbageSql()
+    {
+        Expression<Func<Product, Category, Supplier, Order, bool>> expr = (p, c, s, o) => s.Country.Contains("K");
+        var visitor = new JoinExpressionVisitor4<Product, Category, Supplier, Order>(_dialect, "p", "c", "s", "o");
+
+        Assert.Throws<NotSupportedException>(() => visitor.Translate(expr));
     }
 
     #endregion

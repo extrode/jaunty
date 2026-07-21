@@ -67,6 +67,14 @@ internal sealed class MySqlDialect : ISqlDialect
         return IsKeyword(columnName) ? $"`{columnName}`" : columnName;
     }
 
+    public string EscapeStringLiteral(string value)
+    {
+        // MySQL/MariaDB (without NO_BACKSLASH_ESCAPES) treats backslash as an in-string
+        // escape character, so backslashes must be doubled first or a value ending in an
+        // odd number of them can escape the closing quote.
+        return value.Replace("\\", "\\\\").Replace("'", "''");
+    }
+
     public string GetLastInsertIdSql(params string[] columnNames)
     {
         return "SELECT LAST_INSERT_ID();";

@@ -288,5 +288,5 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
         return propertyName;
     }
 
-    private static string FormatConstant(object? value) => HavingExpressionHelpers.FormatLiteral(value);
+    private string FormatConstant(object? value) => HavingExpressionHelpers.FormatLiteral(value, _dialect);
 }
