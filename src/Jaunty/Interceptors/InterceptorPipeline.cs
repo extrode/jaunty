@@ -19,10 +19,14 @@ namespace Jaunty.Interceptors;
 /// <item><description><see cref="InvokeFailedAsync"/> - Called when command execution fails (all interceptors in order)</description></item>
 /// </list>
 /// <para>
-/// If any interceptor throws during <see cref="InvokeExecutingAsync"/>, the command is not executed
-/// and every registered interceptor's <see cref="ICommandInterceptor.OnCommandFailedAsync"/> method is
-/// called - including ones that already ran successfully before the failing interceptor, and the
-/// failing interceptor itself.
+/// When a caller drives this lifecycle through <see cref="ExecuteWithInterceptionAsync{T}"/> or
+/// <see cref="ExecuteWithInterception{T}"/>, an interceptor throwing during
+/// <see cref="InvokeExecutingAsync"/> causes the command not to execute, and every registered
+/// interceptor's <see cref="ICommandInterceptor.OnCommandFailedAsync"/> method is called -
+/// including ones that already ran successfully before the failing interceptor, and the failing
+/// interceptor itself. This failure notification is implemented by those wrapper methods, not by
+/// <see cref="InvokeExecutingAsync"/> itself - a caller invoking <see cref="InvokeExecutingAsync"/>
+/// directly does not get it.
 /// </para>
 /// <para>
 /// This pipeline also emits diagnostic events via <see cref="JauntyDiagnosticListener"/>
