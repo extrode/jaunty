@@ -470,6 +470,10 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
     public Task<T1?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default) => _parent._parent.SelectFirstOrDefaultAsync(cancellationToken);
 
+    public Task<T1> SelectSingleAsync(CancellationToken cancellationToken = default) => _parent._parent.SelectSingleAsync(cancellationToken);
+
+    public Task<T1?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default) => _parent._parent.SelectSingleOrDefaultAsync(cancellationToken);
+
     public async Task<int> CountAsync(CancellationToken cancellationToken = default)
     {
         string sql = _parent._parent.BuildCountSql();
@@ -495,6 +499,12 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
     public Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
         => _parent._parent.SelectPartialFirstOrDefaultAsync(columns, cancellationToken);
+
+    public Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CancellationToken cancellationToken = default)
+        => _parent._parent.SelectPartialSingleAsync(columns, cancellationToken);
+
+    public Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CancellationToken cancellationToken = default)
+        => _parent._parent.SelectPartialSingleOrDefaultAsync(columns, cancellationToken);
 
     // ==================== HELPERS ====================
 

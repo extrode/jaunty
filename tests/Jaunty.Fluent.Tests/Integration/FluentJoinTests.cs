@@ -389,6 +389,31 @@ public class FluentJoinTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public async Task InnerJoin_SelectSingleAsync_OneResult_ReturnsProduct()
+    {
+        var product = await _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == 1)
+            .SelectSingleAsync();
+
+        Assert.NotNull(product);
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Fact]
+    public async Task InnerJoin_SelectSingleOrDefaultAsync_NoResults_ReturnsNull()
+    {
+        var product = await _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .Where((p, c) => p.ProductId == -999) // Non-existent
+            .SelectSingleOrDefaultAsync();
+
+        Assert.Null(product);
+    }
+
+    [Fact]
     public async Task InnerJoin_SelectFirstBothAsync_ReturnsTuple()
     {
         var result = await _fixture.Connection.From<Product>()

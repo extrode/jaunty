@@ -543,6 +543,63 @@ public class FluentMultiTableJoinAdvancedTests : IClassFixture<FluentDatabaseFix
         Assert.Null(result);
     }
 
+    [Fact]
+    public async Task ThreeTableJoin_SelectSingleAsync_OneResult_ReturnsResult()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>()
+            .On(p => p.SupplierId, s => s.SupplierId)
+            .Where((p, c, s) => p.ProductId == 1)
+            .SelectSingleAsync();
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.ProductId);
+    }
+
+    [Fact]
+    public async Task ThreeTableJoin_SelectSingleOrDefaultAsync_NoResults_ReturnsNull()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>()
+            .On(p => p.SupplierId, s => s.SupplierId)
+            .Where((p, c, s) => p.ProductId == -999)
+            .SelectSingleOrDefaultAsync();
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task ThreeTableJoin_SelectPartialSingleAsync_OneResult_ReturnsResult()
+    {
+        var result = await _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .InnerJoin<Supplier>("s")
+            .On("p.supplier_id", "s.supplier_id")
+            .Where("p.product_id = 1")
+            .SelectPartialSingleAsync("p.product_name");
+
+        Assert.Contains("product_name", result.Keys);
+    }
+
+    [Fact]
+    public async Task ThreeTableJoin_SelectPartialSingleOrDefaultAsync_NoResults_ReturnsNull()
+    {
+        var result = await _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .InnerJoin<Supplier>("s")
+            .On("p.supplier_id", "s.supplier_id")
+            .Where("p.product_id = -999")
+            .SelectPartialSingleOrDefaultAsync("p.product_name");
+
+        Assert.Null(result);
+    }
+
     // ==========================================
     // Join Clause Tests - OnFromSecond
     // ==========================================
