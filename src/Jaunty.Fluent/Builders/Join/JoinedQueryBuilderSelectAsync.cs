@@ -145,6 +145,26 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             : result[0];
     }
 
+    public async Task<TFrom> SelectSingleAsync(CancellationToken cancellationToken = default)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialSingleAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
+            : throw new NotSupportedException("Async operations require DbConnection.");
+    }
+
+    public async Task<TFrom?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialSingleOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
+            : throw new NotSupportedException("Async operations require DbConnection.");
+    }
+
     public async Task<int> CountAsync(CancellationToken cancellationToken = default)
     {
         string sql = BuildCountSql();

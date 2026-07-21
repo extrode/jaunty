@@ -311,6 +311,19 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     Task<(TFrom From, TJoin Joined)> SelectFirstBothAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the single result of the primary entity asynchronously, or throws if the
+    /// result set is empty or contains more than one row. Equivalent to <c>SelectSingle()</c>.
+    /// </summary>
+    Task<TFrom> SelectSingleAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single result of the primary entity asynchronously, or default if empty;
+    /// throws if the result set contains more than one row. Equivalent to
+    /// <c>SelectSingleOrDefault()</c>.
+    /// </summary>
+    Task<TFrom?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the count of rows asynchronously.
     /// </summary>
     Task<int> CountAsync(CancellationToken cancellationToken = default);
@@ -699,6 +712,16 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     Task<T1?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the single result asynchronously or throws if not exactly one.
+    /// </summary>
+    Task<T1> SelectSingleAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single result asynchronously, or default if empty. Throws if more than one.
+    /// </summary>
+    Task<T1?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the count of rows asynchronously.
     /// </summary>
     Task<int> CountAsync(CancellationToken cancellationToken = default);
@@ -724,6 +747,16 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     /// Returns the first partial result asynchronously, or null if empty.
     /// </summary>
     Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single partial result asynchronously or throws if not exactly one.
+    /// </summary>
+    Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single partial result asynchronously, or null if empty. Throws if more than one.
+    /// </summary>
+    Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -945,6 +978,16 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     Task<T1?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the single result asynchronously or throws if not exactly one.
+    /// </summary>
+    Task<T1> SelectSingleAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single result asynchronously, or default if empty. Throws if more than one.
+    /// </summary>
+    Task<T1?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the count of rows asynchronously.
     /// </summary>
     Task<int> CountAsync(CancellationToken cancellationToken = default);
@@ -970,4 +1013,14 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     /// Returns the first partial result asynchronously, or null if empty.
     /// </summary>
     Task<IDictionary<string, object?>?> SelectPartialFirstOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single partial result asynchronously or throws if not exactly one.
+    /// </summary>
+    Task<IDictionary<string, object?>> SelectPartialSingleAsync(string columns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single partial result asynchronously, or null if empty. Throws if more than one.
+    /// </summary>
+    Task<IDictionary<string, object?>?> SelectPartialSingleOrDefaultAsync(string columns, CancellationToken cancellationToken = default);
 }
