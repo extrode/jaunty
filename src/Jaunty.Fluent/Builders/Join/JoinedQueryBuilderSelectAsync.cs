@@ -94,7 +94,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             return Unsafe.As<TJoin, T>(ref result);
         }
 
-        List<T> results = await SelectWithMappingAsync<T>(MappingMode.Strict, cancellationToken).ConfigureAwait(false);
+        List<T> results = await SelectWithMappingAsync<T>(MappingMode.Strict, cancellationToken, limit: 1).ConfigureAwait(false);
         return results.Count == 0
             ? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.")
             : results[0];
@@ -104,7 +104,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        List<T> results = await SelectWithMapperAsync(mapper, cancellationToken).ConfigureAwait(false);
+        List<T> results = await SelectWithMapperAsync(mapper, cancellationToken, limit: 1).ConfigureAwait(false);
         return results.Count == 0
             ? throw new InvalidOperationException($"Sequence contains no elements of type '{typeof(T).Name}'.")
             : results[0];
@@ -125,7 +125,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             return Unsafe.As<TJoin?, T?>(ref result);
         }
 
-        List<T> results = await SelectWithMappingAsync<T>(MappingMode.Strict, cancellationToken).ConfigureAwait(false);
+        List<T> results = await SelectWithMappingAsync<T>(MappingMode.Strict, cancellationToken, limit: 1).ConfigureAwait(false);
         return results.Count > 0 ? results[0] : default;
     }
 
@@ -133,7 +133,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         Func<IDataReader, T> mapper,
         CancellationToken cancellationToken = default)
     {
-        List<T> results = await SelectWithMapperAsync(mapper, cancellationToken).ConfigureAwait(false);
+        List<T> results = await SelectWithMapperAsync(mapper, cancellationToken, limit: 1).ConfigureAwait(false);
         return results.Count > 0 ? results[0] : default;
     }
 
@@ -270,9 +270,12 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return results;
     }
 
-    private async Task<List<T>> SelectWithMappingAsync<T>(MappingMode mode, CancellationToken cancellationToken = default) where T : new()
+    private async Task<List<T>> SelectWithMappingAsync<T>(MappingMode mode, CancellationToken cancellationToken = default, int? limit = null) where T : new()
     {
         string sql = BuildSelectPartialSql("*");
+        if (limit.HasValue)
+            sql = _dialect.GetPagingSql(sql, 0, limit.Value);
+
         var results = new List<T>();
 
         if (_connection is not DbConnection dbConn)
@@ -320,9 +323,12 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return results;
     }
 
-    private async Task<List<T>> SelectWithMapperAsync<T>(Func<IDataReader, T> mapper, CancellationToken cancellationToken = default)
+    private async Task<List<T>> SelectWithMapperAsync<T>(Func<IDataReader, T> mapper, CancellationToken cancellationToken = default, int? limit = null)
     {
         string sql = BuildSelectPartialSql("*");
+        if (limit.HasValue)
+            sql = _dialect.GetPagingSql(sql, 0, limit.Value);
+
         var results = new List<T>();
 
         if (_connection is not DbConnection dbConn)
