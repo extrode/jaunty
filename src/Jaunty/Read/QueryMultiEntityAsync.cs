@@ -313,7 +313,7 @@ public static partial class Jaunty
     /// Asynchronously executes a query and maps columns to two entity types by property name.
     /// </summary>
     [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<List<(T1, T2)>> QueryAsync<T1, T2>(
+    public static ValueTask<List<(T1, T2)>> QueryAsync<T1, T2>(
         this IDbConnection connection,
         string sql,
         object? parameters = null,
@@ -322,10 +322,18 @@ public static partial class Jaunty
         where T1 : new()
         where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
         if (connection is not DbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        return await ExecuteReaderAsync<List<(T1, T2)>>(connection, sql, parameters, options, async (reader, ct) =>
+        return ExecuteReaderAsync<List<(T1, T2)>>(connection, sql, parameters, options, async (reader, ct) =>
         {
             var results = new List<(T1, T2)>(64);
 
@@ -349,14 +357,14 @@ public static partial class Jaunty
             while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
 
             return results;
-        }, cancellationToken).ConfigureAwait(false);
+        }, cancellationToken);
     }
 
     /// <summary>
     /// Asynchronously executes a query, maps to two entity types, and combines them using a function.
     /// </summary>
     [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<List<TResult>> QueryAsync<T1, T2, TResult>(
+    public static ValueTask<List<TResult>> QueryAsync<T1, T2, TResult>(
         this IDbConnection connection,
         string sql,
         Func<T1, T2, TResult> map,
@@ -367,15 +375,20 @@ public static partial class Jaunty
         where T2 : new()
     {
 #if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         ArgumentNullException.ThrowIfNull(map);
 #else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
         if (map is null) throw new ArgumentNullException(nameof(map));
 #endif
 
         if (connection is not DbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        return await ExecuteReaderAsync<List<TResult>>(connection, sql, parameters, options, async (reader, ct) =>
+        return ExecuteReaderAsync<List<TResult>>(connection, sql, parameters, options, async (reader, ct) =>
         {
             var results = new List<TResult>(64);
 
@@ -399,7 +412,7 @@ public static partial class Jaunty
             while (await dbReader.ReadAsync(ct).ConfigureAwait(false));
 
             return results;
-        }, cancellationToken).ConfigureAwait(false);
+        }, cancellationToken);
     }
 
     #endregion
@@ -694,7 +707,7 @@ public static partial class Jaunty
     /// Asynchronously executes a query and returns the first row mapped to two entity types.
     /// </summary>
     [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<(T1, T2)> QueryFirstAsync<T1, T2>(
+    public static ValueTask<(T1, T2)> QueryFirstAsync<T1, T2>(
         this IDbConnection connection,
         string sql,
         object? parameters = null,
@@ -703,10 +716,18 @@ public static partial class Jaunty
         where T1 : new()
         where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
         if (connection is not DbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        return await ExecuteReaderAsync<(T1, T2)>(connection, sql, parameters, options, async (reader, ct) =>
+        return ExecuteReaderAsync<(T1, T2)>(connection, sql, parameters, options, async (reader, ct) =>
         {
             var dbReader = (DbDataReader)reader;
 
@@ -722,7 +743,7 @@ public static partial class Jaunty
             mapping.ApplyT2(t2, dbReader);
 
             return (t1, t2);
-        }, cancellationToken).ConfigureAwait(false);
+        }, cancellationToken);
     }
 
     #endregion
@@ -1031,7 +1052,7 @@ public static partial class Jaunty
     /// Asynchronously executes a query and returns the first row mapped to two entity types, or default if empty.
     /// </summary>
     [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<(T1, T2)?> QueryFirstOrDefaultAsync<T1, T2>(
+    public static ValueTask<(T1, T2)?> QueryFirstOrDefaultAsync<T1, T2>(
         this IDbConnection connection,
         string sql,
         object? parameters = null,
@@ -1040,10 +1061,18 @@ public static partial class Jaunty
         where T1 : new()
         where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
         if (connection is not DbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        return await ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
+        return ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
         {
             var dbReader = (DbDataReader)reader;
 
@@ -1059,7 +1088,7 @@ public static partial class Jaunty
             mapping.ApplyT2(t2, dbReader);
 
             return (t1, t2);
-        }, cancellationToken).ConfigureAwait(false);
+        }, cancellationToken);
     }
 
     #endregion
@@ -1359,7 +1388,7 @@ public static partial class Jaunty
     /// Asynchronously executes a query and returns exactly one row mapped to two entity types.
     /// </summary>
     [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<(T1, T2)> QuerySingleAsync<T1, T2>(
+    public static ValueTask<(T1, T2)> QuerySingleAsync<T1, T2>(
         this IDbConnection connection,
         string sql,
         object? parameters = null,
@@ -1368,10 +1397,18 @@ public static partial class Jaunty
         where T1 : new()
         where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
         if (connection is not DbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        return await ExecuteReaderAsync<(T1, T2)>(connection, sql, parameters, options, async (reader, ct) =>
+        return ExecuteReaderAsync<(T1, T2)>(connection, sql, parameters, options, async (reader, ct) =>
         {
             var dbReader = (DbDataReader)reader;
 
@@ -1389,7 +1426,7 @@ public static partial class Jaunty
             return await dbReader.ReadAsync(ct).ConfigureAwait(false)
                 ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
                 : ((T1, T2))(t1, t2);
-        }, cancellationToken).ConfigureAwait(false);
+        }, cancellationToken);
     }
 
     #endregion
@@ -1702,7 +1739,7 @@ public static partial class Jaunty
     /// Asynchronously executes a query and returns exactly one row mapped to two entity types, or default if empty.
     /// </summary>
     [Obsolete("Use the overload with CommandOptions<(T1, T2)> instead")]
-    public static async ValueTask<(T1, T2)?> QuerySingleOrDefaultAsync<T1, T2>(
+    public static ValueTask<(T1, T2)?> QuerySingleOrDefaultAsync<T1, T2>(
         this IDbConnection connection,
         string sql,
         object? parameters = null,
@@ -1711,10 +1748,18 @@ public static partial class Jaunty
         where T1 : new()
         where T2 : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
         if (connection is not DbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        return await ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
+        return ExecuteReaderAsync<(T1, T2)?>(connection, sql, parameters, options, async (reader, ct) =>
         {
             var dbReader = (DbDataReader)reader;
 
@@ -1732,7 +1777,7 @@ public static partial class Jaunty
             return await dbReader.ReadAsync(ct).ConfigureAwait(false)
                 ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
                 : ((T1, T2)?)(t1, t2);
-        }, cancellationToken).ConfigureAwait(false);
+        }, cancellationToken);
     }
 
     #endregion
