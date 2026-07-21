@@ -60,6 +60,13 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
     public IJoinedQuery3<T1, T2, T3> On(string condition)
         => CreateJoinedQuery3(condition);
 
+    public IJoinedQuery3<T1, T2, T3> On<TValue>(string condition, TValue value)
+    {
+        JoinedQuery3Builder<T1, T2, T3> joinedQuery = CreateJoinedQuery3(condition);
+        _parent.AddParameter($"{_parent.Dialect.ParameterPrefix}value", value);
+        return joinedQuery;
+    }
+
     private JoinedQuery3Builder<T1, T2, T3> CreateJoinedQuery3(string onCondition)
     {
         var joinInfo = new JoinInfo(
