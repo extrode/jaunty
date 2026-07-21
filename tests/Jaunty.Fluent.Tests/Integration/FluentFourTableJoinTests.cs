@@ -758,4 +758,25 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
 
         Assert.Null(result);
     }
+
+    [Fact]
+    public void FourTableJoin_OnTypedValue_BindsParameterInsteadOfInlining()
+    {
+        // Regression test: IJoinClause<T1,T2,T3,T4> previously only exposed 4 On() overloads
+        // (key-pair from T1, key-pair from previous table, string/string, raw string), missing
+        // the On<TValue>(condition, value) parameterized-raw-condition overload that the 2-way
+        // IJoinClause<TFrom,TJoin> already had.
+        var joinedQuery = _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .InnerJoin<Supplier>("s")
+            .On("p.supplier_id", "s.supplier_id")
+            .LeftJoin<Product, Category, Supplier, Order>("o")
+            .On<int>("o.order_id = @value", 1);
+
+        var builder = Assert.IsType<JoinedQuery4Builder<Product, Category, Supplier, Order>>(joinedQuery);
+        var parameters = builder._parent._parent.GetParameters().GetAll();
+
+        Assert.Contains(parameters, p => p.Name == "@value" && Equals(p.Value, 1));
+    }
 }

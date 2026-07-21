@@ -65,4 +65,23 @@ public class FluentThreeTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On(p => p.SupplierId, s => s.SupplierId)
             .Where("products; DROP TABLE products--.product_name", "Chai"));
     }
+
+    [Fact]
+    public void ThreeTableJoin_OnTypedValue_BindsParameterInsteadOfInlining()
+    {
+        // Regression test: IJoinClause<T1,T2,T3> previously only exposed 4 On() overloads
+        // (key-pair from T1, key-pair from T2, string/string, raw string), missing the
+        // On<TValue>(condition, value) parameterized-raw-condition overload that the 2-way
+        // IJoinClause<TFrom,TJoin> already had.
+        var joinedQuery = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>()
+            .On<int>("suppliers.supplier_id = products.supplier_id AND suppliers.supplier_id = @value", 1);
+
+        var builder = Assert.IsType<JoinedQuery3Builder<Product, Category, Supplier>>(joinedQuery);
+        var parameters = builder._parent.GetParameters().GetAll();
+
+        Assert.Contains(parameters, p => p.Name == "@value" && Equals(p.Value, 1));
+    }
 }
