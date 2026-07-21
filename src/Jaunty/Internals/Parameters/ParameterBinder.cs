@@ -77,7 +77,7 @@ internal static class ParameterBinder
         }
 
         // Check for collection parameters and expand SQL if needed
-        (string? expandedSql, Dictionary<string, object?>? expandedParams, HashSet<string>? expandedOriginalNames) = ExpandCollectionParameters(sql, sqlParamNames, propertyLookup, parameters, command.Connection);
+        (string? expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, HashSet<string>? expandedOriginalNames) = ExpandCollectionParameters(sql, sqlParamNames, propertyLookup, parameters, command.Connection);
 
         if (expandedSql is not null)
         {
@@ -140,7 +140,7 @@ internal static class ParameterBinder
         return new CommandTemplate(items.ToArray());
     }
 
-    private static void BindDynamic(IDbCommand command, object parameters, string expandedSql, Dictionary<string, object?>? expandedParams, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] meta, HashSet<string>? expandedOriginalNames)
+    private static void BindDynamic(IDbCommand command, object parameters, string expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] meta, HashSet<string>? expandedOriginalNames)
     {
         Type type = parameters.GetType();
         var sqlParamNames = SqlParameterParser.ExtractParameterNames(expandedSql);
@@ -155,7 +155,7 @@ internal static class ParameterBinder
             {
                 IDbDataParameter p = command.CreateParameter();
                 p.ParameterName = sqlName;
-                p.Value = ApplyTypeHandlerIfNeeded(expandedValue, propertyInfo: null) ?? DBNull.Value;
+                p.Value = ApplyTypeHandlerIfNeeded(expandedValue.Value, expandedValue.Property) ?? DBNull.Value;
                 command.Parameters.Add(p);
             }
             else if (propertyLookup.TryGetValue(sqlName, out ParameterMetadata m))
@@ -259,7 +259,7 @@ internal static class ParameterBinder
         public readonly PropertyInfo? Property = property;
     }
 
-    private static (string? expandedSql, Dictionary<string, object?>? expandedParams, HashSet<string>? expandedOriginalNames)
+    private static (string? expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, HashSet<string>? expandedOriginalNames)
         ExpandCollectionParameters(
             string sql,
             string[] sqlParamNames,
@@ -287,7 +287,7 @@ internal static class ParameterBinder
             if (IsCollection(value, out IEnumerable? items, out var count))
             {
                 expansions ??= new List<CollectionExpansion>(2);
-                expansions.Add(new CollectionExpansion(sqlName, items, count));
+                expansions.Add(new CollectionExpansion(sqlName, items, count, meta.Property));
                 totalExpandedCount += count;
             }
         }
@@ -312,7 +312,7 @@ internal static class ParameterBinder
         // Second pass: build replacements and expanded params
         // Detect parameter prefix from the SQL (@ or $)
         var paramPrefix = DetectParameterPrefix(sql);
-        var expandedParams = new Dictionary<string, object?>(CommonConstants.OrdinalIgnoreCase);
+        var expandedParams = new Dictionary<string, ExpandedParameterValue>(CommonConstants.OrdinalIgnoreCase);
         var expandedOriginalNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
         var replacements = new Dictionary<string, string>(CommonConstants.OrdinalIgnoreCase);
 
@@ -336,7 +336,7 @@ internal static class ParameterBinder
                     if (i > 0) sb.Append(", ");
                     var expandedName = expansion.Name + i;
                     sb.Append(paramPrefix).Append(expandedName);
-                    expandedParams[expandedName] = item;
+                    expandedParams[expandedName] = new ExpandedParameterValue(item, expansion.Property);
                     i++;
                 }
                 sb.Append(')');
@@ -614,11 +614,20 @@ internal static class ParameterBinder
     private static bool IsParameterChar(char c) =>
         c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
 
-    private readonly struct CollectionExpansion(string name, IEnumerable items, int count)
+    private readonly struct CollectionExpansion(string name, IEnumerable items, int count, PropertyInfo? property)
     {
         public readonly string Name = name;
         public readonly IEnumerable Items = items;
         public readonly int Count = count;
+        public readonly PropertyInfo? Property = property;
+    }
+
+    // Carries the source property alongside each expanded IN-clause value so ApplyTypeHandlerIfNeeded
+    // can still resolve a per-property [EnumStorage] override for collection-expanded parameters.
+    private readonly struct ExpandedParameterValue(object? value, PropertyInfo? property)
+    {
+        public readonly object? Value = value;
+        public readonly PropertyInfo? Property = property;
     }
 
     private static bool IsScalarType(Type type)
