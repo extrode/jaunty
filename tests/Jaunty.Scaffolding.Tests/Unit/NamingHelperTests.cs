@@ -246,4 +246,36 @@ public class NamingHelperTests
     }
 
     #endregion
+
+    #region ToClassName Tests
+
+    [Fact]
+    public void ToClassName_NoOptions_ConvertsTableNameToPascalCase()
+    {
+        var result = NamingHelper.ToClassName("order_details", singularize: false, classPrefix: null, classSuffix: null);
+        Assert.Equal("OrderDetails", result);
+    }
+
+    [Fact]
+    public void ToClassName_Singularize_SingularizesAfterPascalCase()
+    {
+        var result = NamingHelper.ToClassName("products", singularize: true, classPrefix: null, classSuffix: null);
+        Assert.Equal("Product", result);
+    }
+
+    [Fact]
+    public void ToClassName_WithPrefixAndSuffix_AppliesBothAroundPascalCaseName()
+    {
+        var result = NamingHelper.ToClassName("products", singularize: false, classPrefix: "Db", classSuffix: "Entity");
+        Assert.Equal("DbProductsEntity", result);
+    }
+
+    [Fact]
+    public void ToClassName_ResultStartsWithDigit_PrefixesWithUnderscore()
+    {
+        var result = NamingHelper.ToClassName("123name", singularize: false, classPrefix: null, classSuffix: null);
+        Assert.Equal("_123name", result);
+    }
+
+    #endregion
 }
