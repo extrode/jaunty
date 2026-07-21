@@ -525,11 +525,11 @@ public static partial class Jaunty
 
     #region N-ary Multi-Entity Async Core Methods
 
-    private static async ValueTask<List<(T1, T2, T3)>> QueryMultiEntityCoreAsync<T1, T2, T3>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    private static async ValueTask<List<(T1, T2, T3)>> QueryMultiEntityCoreAsync<T1, T2, T3>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<(T1, T2, T3)>(JauntyConfig.QueryResultCapacity);
+            var results = new List<(T1, T2, T3)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
             if (reader is DbDataReader dbReader)
             {
@@ -579,13 +579,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<(T1, T2, T3)> QueryFirstMultiEntityCoreAsync<T1, T2, T3>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    private static async ValueTask<(T1, T2, T3)> QueryFirstMultiEntityCoreAsync<T1, T2, T3>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
     {
         (T1, T2, T3)? result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2, T3)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    private static async ValueTask<(T1, T2, T3)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
     {
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -626,13 +626,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<(T1, T2, T3)> QuerySingleMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    private static async ValueTask<(T1, T2, T3)> QuerySingleMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
     {
         (T1, T2, T3)? result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2, T3)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    private static async ValueTask<(T1, T2, T3)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
     {
         return await ExecuteReaderAsync<(T1, T2, T3)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -681,7 +681,7 @@ public static partial class Jaunty
     }
 
 #if ASYNC_ENUMERABLE_SUPPORT
-    private static async IAsyncEnumerable<(T1, T2, T3)> QueryStreamMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
+    private static async IAsyncEnumerable<(T1, T2, T3)> QueryStreamMultiEntityCoreAsync<T1, T2, T3>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new()
     {
         var wasClosed = dbConnection.State == ConnectionState.Closed;
 
@@ -740,11 +740,11 @@ public static partial class Jaunty
     }
 #endif
 
-    private static async ValueTask<List<(T1, T2, T3, T4)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static async ValueTask<List<(T1, T2, T3, T4)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<(T1, T2, T3, T4)>(JauntyConfig.QueryResultCapacity);
+            var results = new List<(T1, T2, T3, T4)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
             if (reader is DbDataReader dbReader)
             {
@@ -798,13 +798,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<(T1, T2, T3, T4)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static async ValueTask<(T1, T2, T3, T4)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         (T1, T2, T3, T4)? result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2, T3, T4)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static async ValueTask<(T1, T2, T3, T4)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -849,13 +849,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<(T1, T2, T3, T4)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static async ValueTask<(T1, T2, T3, T4)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         (T1, T2, T3, T4)? result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2, T3, T4)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static async ValueTask<(T1, T2, T3, T4)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         return await ExecuteReaderAsync<(T1, T2, T3, T4)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -908,7 +908,7 @@ public static partial class Jaunty
     }
 
 #if ASYNC_ENUMERABLE_SUPPORT
-    private static async IAsyncEnumerable<(T1, T2, T3, T4)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
+    private static async IAsyncEnumerable<(T1, T2, T3, T4)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new()
     {
         var wasClosed = dbConnection.State == ConnectionState.Closed;
 
@@ -969,11 +969,11 @@ public static partial class Jaunty
     }
 #endif
 
-    private static async ValueTask<List<(T1, T2, T3, T4, T5)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static async ValueTask<List<(T1, T2, T3, T4, T5)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<(T1, T2, T3, T4, T5)>(JauntyConfig.QueryResultCapacity);
+            var results = new List<(T1, T2, T3, T4, T5)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
             if (reader is DbDataReader dbReader)
             {
@@ -1031,13 +1031,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         (T1, T2, T3, T4, T5)? result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1086,13 +1086,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         (T1, T2, T3, T4, T5)? result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         return await ExecuteReaderAsync<(T1, T2, T3, T4, T5)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1149,7 +1149,7 @@ public static partial class Jaunty
     }
 
 #if ASYNC_ENUMERABLE_SUPPORT
-    private static async IAsyncEnumerable<(T1, T2, T3, T4, T5)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
+    private static async IAsyncEnumerable<(T1, T2, T3, T4, T5)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4, T5>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
     {
         var wasClosed = dbConnection.State == ConnectionState.Closed;
 
@@ -1212,11 +1212,11 @@ public static partial class Jaunty
     }
 #endif
 
-    private static async ValueTask<List<(T1, T2, T3, T4, T5, T6)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static async ValueTask<List<(T1, T2, T3, T4, T5, T6)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<(T1, T2, T3, T4, T5, T6)>(JauntyConfig.QueryResultCapacity);
+            var results = new List<(T1, T2, T3, T4, T5, T6)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
             if (reader is DbDataReader dbReader)
             {
@@ -1278,13 +1278,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5, T6)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         (T1, T2, T3, T4, T5, T6)? result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5, T6)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1337,13 +1337,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5, T6)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         (T1, T2, T3, T4, T5, T6)? result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5, T6)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         return await ExecuteReaderAsync<(T1, T2, T3, T4, T5, T6)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1404,7 +1404,7 @@ public static partial class Jaunty
     }
 
 #if ASYNC_ENUMERABLE_SUPPORT
-    private static async IAsyncEnumerable<(T1, T2, T3, T4, T5, T6)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
+    private static async IAsyncEnumerable<(T1, T2, T3, T4, T5, T6)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
     {
         var wasClosed = dbConnection.State == ConnectionState.Closed;
 
@@ -1469,11 +1469,11 @@ public static partial class Jaunty
     }
 #endif
 
-    private static async ValueTask<List<(T1, T2, T3, T4, T5, T6, T7)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static async ValueTask<List<(T1, T2, T3, T4, T5, T6, T7)>> QueryMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         return await ExecuteReaderAsync(connection, sql, parameters, options, async (reader, ct) =>
         {
-            var results = new List<(T1, T2, T3, T4, T5, T6, T7)>(JauntyConfig.QueryResultCapacity);
+            var results = new List<(T1, T2, T3, T4, T5, T6, T7)>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
 
             if (reader is DbDataReader dbReader)
             {
@@ -1539,13 +1539,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection connection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)> QueryFirstMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection connection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         (T1, T2, T3, T4, T5, T6, T7)? result = await QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(connection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name}, {typeof(T7).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)?> QueryFirstOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         return await ExecuteReaderAsync(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1602,13 +1602,13 @@ public static partial class Jaunty
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)> QuerySingleMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         (T1, T2, T3, T4, T5, T6, T7)? result = await QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(dbConnection, sql, parameters, options, mode, cancellationToken).ConfigureAwait(false);
         return result is null ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(T1).Name}, {typeof(T2).Name}, {typeof(T3).Name}, {typeof(T4).Name}, {typeof(T5).Name}, {typeof(T6).Name}, {typeof(T7).Name})'.") : result.Value;
     }
 
-    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)?> QuerySingleOrDefaultMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         return await ExecuteReaderAsync<(T1, T2, T3, T4, T5, T6, T7)?>(dbConnection, sql, parameters, options, async (reader, ct) =>
         {
@@ -1673,7 +1673,7 @@ public static partial class Jaunty
     }
 
 #if ASYNC_ENUMERABLE_SUPPORT
-    private static async IAsyncEnumerable<(T1, T2, T3, T4, T5, T6, T7)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
+    private static async IAsyncEnumerable<(T1, T2, T3, T4, T5, T6, T7)> QueryStreamMultiEntityCoreAsync<T1, T2, T3, T4, T5, T6, T7>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<(T1, T2, T3, T4, T5, T6, T7)> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
     {
         var wasClosed = dbConnection.State == ConnectionState.Closed;
 

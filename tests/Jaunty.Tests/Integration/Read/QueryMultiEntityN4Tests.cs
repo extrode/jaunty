@@ -192,6 +192,22 @@ public class QueryMultiEntityN4Tests : IClassFixture<DialectFixture>
         Assert.Equal("Isaac Asimov", results[0].Item1.Name);
     }
 
+    // AUD-R13: QueryMultiEntityCore<T1..T4> hardcoded JauntyConfig.QueryResultCapacity for the
+    // results list instead of honoring options.ExpectedRowCount (arity-2 equivalent already
+    // fixed under AUD-R12).
+    [Theory]
+    [SystemSqlite]
+    public void Query_FourEntities_WithExpectedRowCount_PreSizesListCapacity(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = CommandOptions<(Author, Book, Chapter, Section)>.WithExpectedRowCount(500);
+
+        var results = connection.Query<Author, Book, Chapter, Section>(JoinSql, options);
+
+        Assert.Single(results);
+        Assert.True(results.Capacity >= 500);
+    }
+
     [Theory]
     [SystemSqlite]
     public void QueryFirst_FourEntities_WithCommandOptions_ReturnsFirstRow(DialectInfo _)
