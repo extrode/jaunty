@@ -58,4 +58,42 @@ public class NamedParameterQueryTests : IDisposable
         Assert.NotEmpty(results);
         Assert.All(results, r => Assert.Equal("Northeast", r.Region));
     }
+
+    // ==========================================
+    // AUD-R14 batch-7: DuckDb.Query/QueryAsync null/whitespace sql validation
+    // ==========================================
+
+    [Fact]
+    public void Query_NullSql_Throws()
+        => Assert.Throws<ArgumentNullException>(() => _db.Query<SalesRecord>(null!));
+
+    [Fact]
+    public void Query_WhitespaceSql_Throws()
+        => Assert.Throws<ArgumentException>(() => _db.Query<SalesRecord>("   "));
+
+    [Fact]
+    public void Query_WithParameters_NullSql_Throws()
+        => Assert.Throws<ArgumentNullException>(() => _db.Query<SalesRecord>(null!, ("region", "Northeast")));
+
+    [Fact]
+    public void Query_WithParameters_WhitespaceSql_Throws()
+        => Assert.Throws<ArgumentException>(() => _db.Query<SalesRecord>("   ", ("region", "Northeast")));
+
+    [Fact]
+    public async Task QueryAsync_NullSql_Throws()
+        => await Assert.ThrowsAsync<ArgumentNullException>(() => _db.QueryAsync<SalesRecord>(null!).AsTask());
+
+    [Fact]
+    public async Task QueryAsync_WhitespaceSql_Throws()
+        => await Assert.ThrowsAsync<ArgumentException>(() => _db.QueryAsync<SalesRecord>("   ").AsTask());
+
+    [Fact]
+    public async Task QueryAsync_WithParameters_NullSql_Throws()
+        => await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            _db.QueryAsync<SalesRecord>(null!, [("region", "Northeast")]).AsTask());
+
+    [Fact]
+    public async Task QueryAsync_WithParameters_WhitespaceSql_Throws()
+        => await Assert.ThrowsAsync<ArgumentException>(() =>
+            _db.QueryAsync<SalesRecord>("   ", [("region", "Northeast")]).AsTask());
 }

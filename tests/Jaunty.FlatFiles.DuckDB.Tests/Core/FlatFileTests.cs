@@ -263,6 +263,34 @@ public class FlatFileTests
         }
     }
 
+    [Fact]
+    public void RegisterExtension_ConcurrentRegisterAndOpen_DoesNotThrow()
+    {
+        // AUD-R14 batch-7: _extensionRegistry used to be a plain Dictionary mutated by
+        // RegisterExtension while Open()/CreateSourceFromExtension read it - concurrent access
+        // could throw InvalidOperationException ("Collection was modified") or corrupt the
+        // dictionary. Now backed by ConcurrentDictionary, so concurrent register+read must not throw.
+        var csvPath = Path.Combine(DataDir, "csv", "sales.csv");
+
+        var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+        Parallel.For(0, 20, i =>
+        {
+            try
+            {
+                var ext = $".concurrentfmt{i}";
+                FlatFile.RegisterExtension(ext, (tableName, path, type) => new CsvFileSource(tableName, path, type));
+                IFileSource source = FlatFile.CreateSourceFromExtension(ext, "t", csvPath, typeof(object));
+                Assert.IsType<CsvFileSource>(source);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
+        });
+
+        Assert.Empty(exceptions);
+    }
+
     // ==========================================
     // AUD-R11 batch-07: Open() glob pattern coverage
     // ==========================================
