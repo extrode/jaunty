@@ -446,6 +446,41 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
         Assert.Null(result);
     }
 
+    [Fact]
+    public async Task FourTableJoin_SelectSingleAsync_OneResult_ReturnsResult()
+    {
+        // Join on a single specific order (not "> 0") so the LEFT JOIN doesn't fan out product 1
+        // across all seeded orders - the seed data has 3 orders, so "> 0" would yield 3 rows here.
+        var result = await _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>()
+            .On(p => p.SupplierId, s => s.SupplierId)
+            .LeftJoin<Product, Category, Supplier, Order>()
+            .On("orders.order_id = 1")
+            .Where("products.product_id = 1")
+            .SelectSingleAsync();
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.ProductId);
+    }
+
+    [Fact]
+    public async Task FourTableJoin_SelectSingleOrDefaultAsync_NoResults_ReturnsNull()
+    {
+        var result = await _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>()
+            .On(p => p.SupplierId, s => s.SupplierId)
+            .LeftJoin<Product, Category, Supplier, Order>()
+            .On("orders.order_id > 0")
+            .Where("products.product_id = -999")
+            .SelectSingleOrDefaultAsync();
+
+        Assert.Null(result);
+    }
+
     // ------------------------------------------------------------------
     // SelectSingle / SelectSingleOrDefault
     // ------------------------------------------------------------------
@@ -630,6 +665,39 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
             .On("o.order_id > 0")
             .Where("p.product_id = -999")
             .SelectPartialFirstOrDefaultAsync("p.product_name");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task FourTableJoin_SelectPartialSingleAsync_OneResult_ReturnsResult()
+    {
+        var result = await _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .InnerJoin<Supplier>("s")
+            .On("p.supplier_id", "s.supplier_id")
+            .LeftJoin<Product, Category, Supplier, Order>("o")
+            .On("o.order_id = 1")
+            .Where("p.product_id = 1")
+            .SelectPartialSingleAsync("p.product_name");
+
+        Assert.NotNull(result);
+        Assert.Equal("Chai", result["product_name"]);
+    }
+
+    [Fact]
+    public async Task FourTableJoin_SelectPartialSingleOrDefaultAsync_NoResults_ReturnsNull()
+    {
+        var result = await _fixture.Connection.From<Product>("p")
+            .InnerJoin<Category>("c")
+            .On("p.category_id", "c.category_id")
+            .InnerJoin<Supplier>("s")
+            .On("p.supplier_id", "s.supplier_id")
+            .LeftJoin<Product, Category, Supplier, Order>("o")
+            .On("o.order_id > 0")
+            .Where("p.product_id = -999")
+            .SelectPartialSingleOrDefaultAsync("p.product_name");
 
         Assert.Null(result);
     }
