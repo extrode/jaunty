@@ -160,9 +160,9 @@ public static class NamingHelper
         {
             var withF = word[..^3] + "f";
             var withFe = word[..^3] + "fe";
-            // Common -fe words
-            if (word.EndsWith("ives", StringComparison.OrdinalIgnoreCase) ||
-                word.EndsWith("aves", StringComparison.OrdinalIgnoreCase))
+            // R16: "aves" words (leaves, calves, wolves, ...) singularize to the plain -f form,
+            // not -fe - only "ives" words (knives -> knife) take the -fe form.
+            if (word.EndsWith("ives", StringComparison.OrdinalIgnoreCase))
                 return withFe;
             return withF;
         }
