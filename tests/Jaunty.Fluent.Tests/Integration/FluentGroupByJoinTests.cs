@@ -174,6 +174,18 @@ public class FluentGroupByJoinTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public async Task GroupBy_SelectAsync_NonDbConnection_ThrowsNotSupportedException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .GroupBy((p, c) => p.CategoryId);
+
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            query.SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() }));
+    }
+
+    [Fact]
     public void GroupBy_ToSql_ReturnsGroupByAndAggregateSql()
     {
         var sql = _fixture.Connection.From<Product>()

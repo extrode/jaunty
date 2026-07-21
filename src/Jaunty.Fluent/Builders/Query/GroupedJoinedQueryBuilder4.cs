@@ -114,6 +114,7 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
     private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector)
     {
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
+        GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
 
@@ -130,7 +131,7 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
 
             while (reader.Read())
             {
-                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases);
+                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
@@ -146,9 +147,10 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
     {
         IDbConnection connection = _parent._parent._parent.Connection;
         if (connection is not DbConnection dbConn)
-            return ExecuteQuery(sql, selector);
+            throw new NotSupportedException("Async operations require DbConnection.");
 
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
+        GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
 
@@ -165,7 +167,7 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases);
+                TResult result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
