@@ -171,6 +171,22 @@ public class QueryMultiEntityN6Tests : IClassFixture<DialectFixture>
         Assert.Equal(1, results[0].Item1.Id);
     }
 
+    // AUD-R13: QueryMultiEntityCore<T1..T6> hardcoded JauntyConfig.QueryResultCapacity for the
+    // results list instead of honoring options.ExpectedRowCount (arity-2 equivalent already
+    // fixed under AUD-R12).
+    [Theory]
+    [SystemSqlite]
+    public void Query_SixEntities_WithExpectedRowCount_PreSizesListCapacity(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = CommandOptions<(E1, E2, E3, E4, E5, E6)>.WithExpectedRowCount(500);
+
+        var results = connection.Query<E1, E2, E3, E4, E5, E6>(JoinSql, options);
+
+        Assert.Single(results);
+        Assert.True(results.Capacity >= 500);
+    }
+
     [Theory]
     [SystemSqlite]
     public void QueryFirst_SixEntities_ReturnsFirstTuple(DialectInfo _)

@@ -240,6 +240,22 @@ public class QueryMultiEntityN5Tests : IClassFixture<DialectFixture>
         Assert.Equal("Ada Lovelace", results[0].Item1.AuthorName);
     }
 
+    // AUD-R13: QueryMultiEntityCore<T1..T5> hardcoded JauntyConfig.QueryResultCapacity for the
+    // results list instead of honoring options.ExpectedRowCount (arity-2 equivalent already
+    // fixed under AUD-R12).
+    [Theory]
+    [SystemSqlite]
+    public void Query_FiveEntities_WithExpectedRowCount_PreSizesListCapacity(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = CommandOptions<(Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata)>.WithExpectedRowCount(500);
+
+        var results = connection.Query<Mm5Author, Mm5Book, Mm5Chapter, Mm5Section, Mm5Metadata>(JoinSql, options);
+
+        Assert.Single(results);
+        Assert.True(results.Capacity >= 500);
+    }
+
     [Theory]
     [SystemSqlite]
     public void QueryFirst_FiveEntities_ReturnsFirstTuple(DialectInfo _)
