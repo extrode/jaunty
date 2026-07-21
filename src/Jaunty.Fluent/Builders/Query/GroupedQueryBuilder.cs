@@ -132,7 +132,8 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
     {
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
-        (string[] _, string[]? aliases) = visitor.TranslateSelect(selector);
+        (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
+        ResultMapperPlan plan = ResolveResultMapperPlan<TResult>(aliases);
 
         var results = new List<TResult>();
 
@@ -145,11 +146,10 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         try
         {
             using IDataReader reader = command.ExecuteReader();
-            Type resultType = typeof(TResult);
 
             while (reader.Read())
             {
-                TResult? result = MapResult<TResult>(reader, aliases, selector);
+                TResult? result = MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
@@ -167,7 +167,8 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
             throw new NotSupportedException("Async operations require DbConnection.");
 
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
-        (string[] _, string[]? aliases) = visitor.TranslateSelect(selector);
+        (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
+        ResultMapperPlan plan = ResolveResultMapperPlan<TResult>(aliases);
 
         var results = new List<TResult>();
 
@@ -184,7 +185,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                TResult? result = MapResult(reader, aliases, selector);
+                TResult? result = MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
@@ -196,7 +197,25 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return results;
     }
 
-    private TResult MapResult<TResult>(IDataReader reader, string[] aliases, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+    /// <summary>
+    /// Constructor/property lookups resolved once per query execution and reused across every
+    /// row, instead of re-running reflection (GetConstructors/GetProperty) per row.
+    /// </summary>
+    private readonly struct ResultMapperPlan
+    {
+        public ResultMapperPlan(ConstructorInfo? constructor, ParameterInfo[]? constructorParameters, PropertyInfo?[]? properties)
+        {
+            Constructor = constructor;
+            ConstructorParameters = constructorParameters;
+            Properties = properties;
+        }
+
+        public ConstructorInfo? Constructor { get; }
+        public ParameterInfo[]? ConstructorParameters { get; }
+        public PropertyInfo?[]? Properties { get; }
+    }
+
+    private static ResultMapperPlan ResolveResultMapperPlan<TResult>(string[] aliases)
     {
         Type resultType = typeof(TResult);
 
@@ -204,41 +223,52 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 #pragma warning disable IL2090 // Reflection on generic parameter for result mapping
         if (resultType.Name.StartsWith("<>") || resultType.GetConstructors().Any(c => c.GetParameters().Length == aliases.Length))
         {
-            var values = new object?[aliases.Length];
-
             ConstructorInfo? constructor = resultType.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == aliases.Length);
 
             if (constructor is not null)
-            {
-                ParameterInfo[] parameters = constructor.GetParameters();
-
-                for (int i = 0; i < aliases.Length; i++)
-                {
-                    int ordinal = reader.GetOrdinal(aliases[i]);
-
-                    if (!reader.IsDBNull(ordinal))
-                    {
-                        object value = reader.GetValue(ordinal);
-                        Type targetType = parameters[i].ParameterType;
-                        Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-                        values[i] = GroupedJoinedResultMapper.ConvertColumnValue(value, underlyingType);
-                    }
-                }
-#pragma warning restore IL2090
-                return (TResult)constructor.Invoke(values);
-            }
+                return new ResultMapperPlan(constructor, constructor.GetParameters(), properties: null);
         }
 
         // For regular classes/structs
+        var properties = new PropertyInfo?[aliases.Length];
+        for (int i = 0; i < aliases.Length; i++)
+            properties[i] = resultType.GetProperty(aliases[i]);
+#pragma warning restore IL2090
+
+        return new ResultMapperPlan(constructor: null, constructorParameters: null, properties);
+    }
+
+    private static TResult MapResult<TResult>(IDataReader reader, string[] aliases, in ResultMapperPlan plan)
+    {
+        if (plan.Constructor is not null)
+        {
+            var values = new object?[aliases.Length];
+            ParameterInfo[] parameters = plan.ConstructorParameters!;
+
+            for (int i = 0; i < aliases.Length; i++)
+            {
+                int ordinal = reader.GetOrdinal(aliases[i]);
+
+                if (!reader.IsDBNull(ordinal))
+                {
+                    object value = reader.GetValue(ordinal);
+                    Type targetType = parameters[i].ParameterType;
+                    Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+                    values[i] = GroupedJoinedResultMapper.ConvertColumnValue(value, underlyingType);
+                }
+            }
+
+            return (TResult)plan.Constructor.Invoke(values);
+        }
+
 #pragma warning disable IL2091 // Activator.CreateInstance requires public parameterless constructor
         TResult? instance = Activator.CreateInstance<TResult>();
 #pragma warning restore IL2091
+        PropertyInfo?[] properties = plan.Properties!;
+
         for (int i = 0; i < aliases.Length; i++)
         {
-
-#pragma warning disable IL2090
-            PropertyInfo? property = resultType.GetProperty(aliases[i]);
-#pragma warning restore IL2090
+            PropertyInfo? property = properties[i];
 
             if (property is not null && property.CanWrite)
             {

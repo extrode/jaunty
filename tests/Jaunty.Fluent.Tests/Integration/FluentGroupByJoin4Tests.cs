@@ -99,4 +99,30 @@ public class FluentGroupByJoin4Tests : IClassFixture<FluentDatabaseFixture>
         int joinCount = sql.Split("INNER JOIN", StringSplitOptions.None).Length - 1;
         Assert.Equal(3, joinCount);
     }
+
+    [Fact]
+    public async Task GroupBy_SelectAsync_ReturnsGroupedResults()
+    {
+        var results = await _fixture.Connection.From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
+            .InnerJoin<Product, Category, Supplier, Order>().On("products.supplier_id", "orders.employee_id")
+            .GroupBy((p, c, s, o) => p.CategoryId)
+            .SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() });
+
+        Assert.NotEmpty(results);
+    }
+
+    [Fact]
+    public async Task GroupBy_SelectAsync_NonDbConnection_ThrowsNotSupportedException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>()
+            .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
+            .InnerJoin<Product, Category, Supplier, Order>().On("products.supplier_id", "orders.employee_id")
+            .GroupBy((p, c, s, o) => p.CategoryId);
+
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            query.SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() }));
+    }
 }

@@ -10,47 +10,76 @@ namespace Jaunty.Fluent.Internals;
 /// </summary>
 internal static class GroupedJoinedResultMapper
 {
-    public static TResult MapResult<TResult>(System.Data.IDataReader reader, string[] aliases)
+    /// <summary>
+    /// Constructor/property lookups resolved once per query execution and reused across every
+    /// row, instead of re-running reflection (GetConstructors/GetProperty) per row.
+    /// </summary>
+    public readonly struct ResultMapperPlan
     {
-        Type resultType = typeof(TResult);
+        private ResultMapperPlan(ConstructorInfo? constructor, ParameterInfo[]? constructorParameters, PropertyInfo?[]? properties)
+        {
+            Constructor = constructor;
+            ConstructorParameters = constructorParameters;
+            Properties = properties;
+        }
+
+        public ConstructorInfo? Constructor { get; }
+        public ParameterInfo[]? ConstructorParameters { get; }
+        public PropertyInfo?[]? Properties { get; }
+
+        public static ResultMapperPlan Resolve<TResult>(string[] aliases)
+        {
+            Type resultType = typeof(TResult);
 
 #pragma warning disable IL2090 // Reflection on generic parameter for result mapping
-        if (resultType.Name.StartsWith("<>") || resultType.GetConstructors().Any(c => c.GetParameters().Length == aliases.Length))
+            if (resultType.Name.StartsWith("<>") || resultType.GetConstructors().Any(c => c.GetParameters().Length == aliases.Length))
+            {
+                ConstructorInfo? constructor = resultType.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == aliases.Length);
+
+                if (constructor is not null)
+                    return new ResultMapperPlan(constructor, constructor.GetParameters(), properties: null);
+            }
+
+            var properties = new PropertyInfo?[aliases.Length];
+            for (int i = 0; i < aliases.Length; i++)
+                properties[i] = resultType.GetProperty(aliases[i]);
+#pragma warning restore IL2090
+
+            return new ResultMapperPlan(constructor: null, constructorParameters: null, properties);
+        }
+    }
+
+    public static TResult MapResult<TResult>(System.Data.IDataReader reader, string[] aliases, in ResultMapperPlan plan)
+    {
+        if (plan.Constructor is not null)
         {
             var values = new object?[aliases.Length];
+            ParameterInfo[] parameters = plan.ConstructorParameters!;
 
-            ConstructorInfo? constructor = resultType.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == aliases.Length);
-
-            if (constructor is not null)
+            for (int i = 0; i < aliases.Length; i++)
             {
-                ParameterInfo[] parameters = constructor.GetParameters();
+                int ordinal = reader.GetOrdinal(aliases[i]);
 
-                for (int i = 0; i < aliases.Length; i++)
+                if (!reader.IsDBNull(ordinal))
                 {
-                    int ordinal = reader.GetOrdinal(aliases[i]);
-
-                    if (!reader.IsDBNull(ordinal))
-                    {
-                        object value = reader.GetValue(ordinal);
-                        Type targetType = parameters[i].ParameterType;
-                        Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-                        values[i] = ConvertColumnValue(value, underlyingType);
-                    }
+                    object value = reader.GetValue(ordinal);
+                    Type targetType = parameters[i].ParameterType;
+                    Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+                    values[i] = ConvertColumnValue(value, underlyingType);
                 }
-
-                return (TResult)constructor.Invoke(values);
             }
+
+            return (TResult)plan.Constructor.Invoke(values);
         }
-#pragma warning restore IL2090
 
 #pragma warning disable IL2091 // Activator.CreateInstance requires public parameterless constructor
         TResult? instance = Activator.CreateInstance<TResult>();
 #pragma warning restore IL2091
+        PropertyInfo?[] properties = plan.Properties!;
+
         for (int i = 0; i < aliases.Length; i++)
         {
-#pragma warning disable IL2090
-            PropertyInfo? property = resultType.GetProperty(aliases[i]);
-#pragma warning restore IL2090
+            PropertyInfo? property = properties[i];
 
             if (property is not null && property.CanWrite)
             {
