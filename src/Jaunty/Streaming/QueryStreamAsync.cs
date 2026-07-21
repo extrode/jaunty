@@ -168,7 +168,7 @@ public static partial class Jaunty
     /// using var tx = connection.BeginTransaction();
     /// await foreach (var product in connection.QueryStreamAsync&lt;Product&gt;(
     ///     "SELECT * FROM products",
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"{product.Id}: {product.Name}");
     /// }
@@ -223,7 +223,7 @@ public static partial class Jaunty
     /// await foreach (var product in connection.QueryStreamAsync&lt;Product&gt;(
     ///     "SELECT * FROM products WHERE category_id = @CategoryId",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"{product.Id}: {product.Name}");
     /// }

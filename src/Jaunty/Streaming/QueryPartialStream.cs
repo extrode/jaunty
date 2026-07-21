@@ -144,7 +144,7 @@ public static partial class Jaunty
     /// using var tx = connection.BeginTransaction();
     /// foreach (var product in connection.QueryPartialStream&lt;Product&gt;(
     ///     "SELECT id, name FROM products",
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"{product.Id}: {product.Name}");
     /// }
@@ -193,7 +193,7 @@ public static partial class Jaunty
     /// foreach (var product in connection.QueryPartialStream&lt;Product&gt;(
     ///     "SELECT id, name FROM products WHERE category_id = @CategoryId",
     ///     new { CategoryId = 5 },
-    ///     CommandOptions.WithTransaction(tx)))
+    ///     CommandOptions&lt;Product&gt;.WithTransaction(tx)))
     /// {
     ///     Console.WriteLine($"{product.Id}: {product.Name}");
     /// }
