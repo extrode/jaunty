@@ -88,6 +88,24 @@ public sealed class Scaffolder
             CodeGeneratorOptions codeGenOptions = MapToCodeGenOptions(options);
             var generatedFiles = new List<string>();
 
+            // Detect pre-existing output files up front (like the class-name-collision check
+            // above) so a collision discovered partway through a multi-table run can't leave
+            // earlier tables' files written to disk while later ones fail.
+            if (!options.DryRun && !options.Force)
+            {
+                List<string> existingFiles = schema.Tables
+                    .Select(table => Path.Combine(options.OutputDirectory, $"{GetClassName(table.TableName, options)}.cs"))
+                    .Where(File.Exists)
+                    .ToList();
+
+                if (existingFiles.Count > 0)
+                {
+                    return ScaffoldResult.Failed(
+                        "File(s) already exists: " + string.Join(", ", existingFiles) +
+                        ". Use --force to overwrite.");
+                }
+            }
+
             // Create output directory
             if (!options.DryRun)
             {
@@ -102,13 +120,6 @@ public sealed class Scaffolder
 
                 if (!options.DryRun)
                 {
-                    // Check if file exists and force is not set
-                    if (File.Exists(filePath) && !options.Force)
-                    {
-                        return ScaffoldResult.Failed(
-                            $"File already exists: {filePath}. Use --force to overwrite.");
-                    }
-
                     await File.WriteAllTextAsync(filePath, code, cancellationToken).ConfigureAwait(false);
                 }
 

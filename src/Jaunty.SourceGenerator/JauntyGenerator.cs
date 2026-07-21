@@ -52,19 +52,10 @@ public class JauntyGenerator : IIncrementalGenerator
     {
         var classDeclaration = (ClassDeclarationSyntax)context.Node;
 
-        foreach (AttributeListSyntax attributeList in classDeclaration.AttributeLists)
-        {
-            foreach (AttributeSyntax attribute in attributeList.Attributes)
-            {
-                var name = attribute.Name.ToString();
-                if (name is "Table" or "Jaunty.Attributes.Table" or "TableAttribute" or "System.ComponentModel.DataAnnotations.Schema.TableAttribute")
-                {
-                    return classDeclaration;
-                }
-            }
-        }
+        if (context.SemanticModel.GetDeclaredSymbol(classDeclaration) is not INamedTypeSymbol classSymbol)
+            return null;
 
-        return null;
+        return HasAttribute(classSymbol, "TableAttribute") ? classDeclaration : null;
     }
 
     /// <summary>
@@ -357,7 +348,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        public static void BindInsert(IDbCommand command, {className} entity)");
         sb.AppendLine("        {");
         sb.AppendLine("            var p = command.Parameters;");
-        foreach (PropertyMetadata p in properties.Where(x => !x.IsIdentity))
+        foreach (PropertyMetadata p in properties.Where(x => !x.IsIdentity && !x.IsComputed))
         {
             sb.AppendLine($"            AddParam(command, p, \"@{EscapeStringLiteral(p.ColumnName)}\", entity.{p.PropertyName});");
         }
@@ -367,7 +358,7 @@ public class JauntyGenerator : IIncrementalGenerator
         sb.AppendLine($"        public static void BindUpdate(IDbCommand command, {className} entity)");
         sb.AppendLine("        {");
         sb.AppendLine("            var p = command.Parameters;");
-        foreach (PropertyMetadata p in properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity))
+        foreach (PropertyMetadata p in properties.Where(x => !x.IsPrimaryKey && !x.IsIdentity && !x.IsComputed))
         {
             sb.AppendLine($"            AddParam(command, p, \"@{EscapeStringLiteral(p.ColumnName)}\", entity.{p.PropertyName});");
         }
