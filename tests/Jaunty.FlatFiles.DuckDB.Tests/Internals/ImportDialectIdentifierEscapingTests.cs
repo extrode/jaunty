@@ -88,4 +88,41 @@ public class ImportDialectIdentifierEscapingTests
 
         Assert.Contains("\"orders\"\" DROP TABLE users; --\"", sql);
     }
+
+    [Theory]
+    [InlineData(ConflictStrategy.Skip)]
+    [InlineData(ConflictStrategy.Upsert)]
+    public void PostgreSqlImportDialect_GenerateInsertSql_KeylessEntityWithNonErrorStrategy_Throws(
+        ConflictStrategy conflictStrategy)
+    {
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            PostgreSqlImportDialect.Instance.GenerateInsertSql(
+                "orders", ["id"], ["@p0"], conflictStrategy, keyColumnName: null));
+
+        Assert.Contains("orders", ex.Message);
+        Assert.Contains("[Key]", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(ConflictStrategy.Skip)]
+    [InlineData(ConflictStrategy.Upsert)]
+    public void SqlServerImportDialect_GenerateInsertSql_KeylessEntityWithNonErrorStrategy_Throws(
+        ConflictStrategy conflictStrategy)
+    {
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            SqlServerImportDialect.Instance.GenerateInsertSql(
+                "orders", ["id"], ["@p0"], conflictStrategy, keyColumnName: null));
+
+        Assert.Contains("orders", ex.Message);
+        Assert.Contains("[Key]", ex.Message);
+    }
+
+    [Fact]
+    public void SqliteImportDialect_GenerateInsertSql_KeylessEntityWithSkipStrategy_DoesNotThrow()
+    {
+        string sql = SqliteImportDialect.Instance.GenerateInsertSql(
+            "orders", ["id"], ["@p0"], ConflictStrategy.Skip, keyColumnName: null);
+
+        Assert.Contains("INSERT OR IGNORE INTO", sql);
+    }
 }
