@@ -195,7 +195,12 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         CancellationToken cancellationToken)
     {
         using DbCommand cmd = connection.CreateCommand();
-        cmd.CommandText = $"SELECT sql FROM sqlite_master WHERE type = 'table' AND name = '{tableName.Replace("'", "''")}'";
+        cmd.CommandText = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = @TableName";
+
+        DbParameter tableNameParam = cmd.CreateParameter();
+        tableNameParam.ParameterName = "@TableName";
+        tableNameParam.Value = tableName;
+        cmd.Parameters.Add(tableNameParam);
 
         var result = await cmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
         return result as string;
