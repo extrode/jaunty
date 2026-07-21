@@ -28,6 +28,8 @@ internal class TestDialect : ISqlDialect
 
     public string EscapeColumnName(string columnName) => $"[{columnName}]";
 
+    public string EscapeStringLiteral(string value) => value.Replace("'", "''");
+
     public string GetLastInsertIdSql(params string[] columnNames) => "SELECT SCOPE_IDENTITY()";
 
     public string GetPagingSql(string baseSql, int offset, int fetchNext)

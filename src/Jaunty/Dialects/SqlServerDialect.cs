@@ -64,6 +64,11 @@ internal sealed class SqlServerDialect : ISqlDialect
         return IsKeyword(columnName) ? $"[{columnName}]" : columnName;
     }
 
+    public string EscapeStringLiteral(string value)
+    {
+        return value.Replace("'", "''");
+    }
+
     public string GetLastInsertIdSql(params string[] columnNames)
     {
         return "SELECT CAST(SCOPE_IDENTITY() AS BIGINT);";
