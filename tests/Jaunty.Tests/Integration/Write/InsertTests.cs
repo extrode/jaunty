@@ -120,6 +120,23 @@ public class InsertTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public void Insert_IEntityGeneric_SetsIdAfterInsert(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var entity = new IEntityGenericTestEntity { Name = "TestIEntityGeneric", Value = 42 };
+
+        long id = ctx.Connection.Insert(entity);
+
+        Assert.True(id > 0);
+        Assert.Equal(id, entity.Id);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void Insert_ExplicitlyProvidedId_IsIgnored(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);

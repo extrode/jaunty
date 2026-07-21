@@ -14,7 +14,7 @@ public class MultiRowInsertCacheTests
     private sealed class CacheKeyCollisionProbeEntity { }
 
     private static ColumnMetadata MarkerColumn(string columnName, string markerValue) =>
-        new("Prop_" + columnName, typeof(string), columnName, isPrimaryKey: false, isIdentity: false,
+        new("Prop_" + columnName, typeof(string), columnName, isPrimaryKey: false, isIdentity: false, isComputed: false,
             getter: _ => markerValue, setter: (_, _) => { });
 
     [Fact]
