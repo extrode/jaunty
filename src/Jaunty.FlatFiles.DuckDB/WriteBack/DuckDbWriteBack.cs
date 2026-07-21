@@ -78,16 +78,21 @@ public sealed partial class DuckDb
             ".tsv" => FileFormats.Tsv,
             ".parquet" => FileFormats.Parquet,
             ".json" or ".ndjson" => FileFormats.Json,
-            ".xlsx" or ".xls" => FileFormats.Excel,
+            ".xlsx" => FileFormats.Excel,
             _ => (string?)null
         };
 
         if (format is not null)
             return format;
 
+        // ".xls" (legacy binary Excel) is deliberately unsupported here, matching FlatFile.cs's
+        // read-side _extensionRegistry: DuckDB's write path can only produce modern ".xlsx" files,
+        // and writing that content under a ".xls" name would produce a file FlatFile.Open() can
+        // never read back and that isn't a genuine legacy .xls file despite the extension.
         throw new ArgumentException(
             $"Cannot infer output format from extension '{ext}'. " +
-            $"Supported extensions: .csv, .tsv, .parquet, .json, .ndjson, .xlsx, .xls.",
+            $"Supported extensions: .csv, .tsv, .parquet, .json, .ndjson, .xlsx." +
+            (ext == ".xls" ? " \".xls\" (legacy binary Excel) is not supported for writing - use \".xlsx\" instead." : string.Empty),
             nameof(path));
     }
 }
