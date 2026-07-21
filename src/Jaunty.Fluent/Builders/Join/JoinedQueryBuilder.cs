@@ -260,8 +260,29 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal void AddParameter<TValue>(string name, TValue value) =>
         _parameters.Add(name, value);
 
-    internal void BindParameters(IDbCommand command) =>
-        _parameters.BindTo(command);
+    /// <summary>
+    /// Binds all accumulated parameters directly to the command via raw ADO.NET (bypasses
+    /// Jaunty's core Query&lt;T&gt;/ParameterBinder). Used by this builder's own SelectAll/
+    /// SelectAllAsync as well as by every GroupedJoinedQueryBuilder{,3,4} (via
+    /// _parent(.{_parent}).BindParameters) for HAVING parameter binding. Some ADO.NET
+    /// providers (observed with System.Data.SQLite) don't correctly compare a bound
+    /// <see cref="decimal"/> parameter against a REAL/numeric column - the comparison silently
+    /// never matches regardless of value - so decimal values are normalized to double before
+    /// binding, matching GroupedQueryBuilder.BindParameters/NormalizeForBinding's fix for the
+    /// same issue on the single-entity path.
+    /// </summary>
+    internal void BindParameters(IDbCommand command)
+    {
+        foreach ((string name, object? value) in _parameters.GetAll())
+        {
+            IDbDataParameter param = command.CreateParameter();
+            param.ParameterName = name;
+            param.Value = NormalizeForBinding(value) ?? DBNull.Value;
+            command.Parameters.Add(param);
+        }
+    }
+
+    private static object? NormalizeForBinding(object? value) => value is decimal d ? (double)d : value;
 
     internal string[] GetPrefixedColumns(EntityMetadata metadata, string? alias)
     {
