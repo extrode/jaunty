@@ -227,7 +227,12 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
 
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 return default;
 
@@ -296,7 +301,12 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
 
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 return default;
 
