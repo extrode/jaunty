@@ -15,6 +15,11 @@ namespace Jaunty.Internals.Write;
 /// </summary>
 internal static class MultiRowInsertCache
 {
+    // Not keyed by column layout, unlike _getterCache below: this is safe only because
+    // ColumnMetadataHelper.GetInsertableColumns(metadata) is deterministic per entity type (the
+    // column set/order for T never varies across calls). If that ever changes, this cache would
+    // need a layout key too, or it could hand back SQL whose @col_row parameter names don't match
+    // the getters _getterCache produces for the new layout.
     private static readonly ConcurrentDictionary<(Type EntityType, Type ConnectionType, int BatchSize), string> _cache = new();
 
     // Keyed by (entity type, column layout) - not just entity type - so a second bulk insert of

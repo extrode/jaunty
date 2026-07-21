@@ -138,7 +138,12 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, null);
 
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             var list = new List<T>(JauntyConfig.QueryResultCapacity);
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
