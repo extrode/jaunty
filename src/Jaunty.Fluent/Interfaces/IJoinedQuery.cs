@@ -535,6 +535,11 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     IJoinedQuery3<T1, T2, T3> Where(string condition);
 
     /// <summary>
+    /// Adds a WHERE clause using column name and value.
+    /// </summary>
+    IJoinedQuery3<T1, T2, T3> Where(string column, object value);
+
+    /// <summary>
     /// Adds an AND condition using a predicate expression.
     /// </summary>
     IJoinedQuery3<T1, T2, T3> And(Expression<Func<T1, T2, T3, bool>> predicate);
@@ -779,6 +784,11 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     /// Adds a WHERE clause using a raw SQL condition.
     /// </summary>
     IJoinedQuery4<T1, T2, T3, T4> Where(string condition);
+
+    /// <summary>
+    /// Adds a WHERE clause using column name and value.
+    /// </summary>
+    IJoinedQuery4<T1, T2, T3, T4> Where(string column, object value);
 
     /// <summary>
     /// Adds an AND condition using a predicate expression.

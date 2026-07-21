@@ -258,6 +258,44 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
         Assert.True(filtered.Count <= all.Count);
     }
 
+    [Fact]
+    public void FourTableJoin_WhereColumnValue_ToSql_UsesBoundParameter()
+    {
+        // Regression test: JoinedQuery4Builder.Where(string column, object value) previously
+        // did not exist, forcing callers onto raw-string Where() (or the strongly-typed
+        // predicate overload) for a simple equality filter. It must bind the value as a
+        // parameter, not inline it into the SQL text.
+        var sql = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>()
+            .On(p => p.SupplierId, s => s.SupplierId)
+            .LeftJoin<Product, Category, Supplier, Order>()
+            .On("orders.order_id > 0")
+            .Where("products.product_name", "Chai")
+            .ToSql();
+
+        Assert.Contains("WHERE", sql);
+        Assert.Contains("products.product_name =", sql);
+        Assert.DoesNotContain("'Chai'", sql);
+    }
+
+    [Fact]
+    public void FourTableJoin_WhereColumnValue_RejectsInjectionInAliasSegment()
+    {
+        // Regression test: the alias segment of a qualified column name (before the '.') is
+        // validated as a plain identifier via SqlIdentifierValidator, so it can't be used to
+        // smuggle arbitrary SQL text into the generated WHERE clause.
+        Assert.Throws<ArgumentException>(() => _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>()
+            .On(p => p.SupplierId, s => s.SupplierId)
+            .LeftJoin<Product, Category, Supplier, Order>()
+            .On("orders.order_id > 0")
+            .Where("products; DROP TABLE products--.product_name", "Chai"));
+    }
+
     // ------------------------------------------------------------------
     // OrderBy / ThenBy
     // ------------------------------------------------------------------

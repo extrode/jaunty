@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 
+using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
@@ -143,6 +144,30 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
     {
         _parent._parent.AddWhereCondition(WhereCondition.Raw(condition, LogicalOperator.None));
         return this;
+    }
+
+    public IJoinedQuery4<T1, T2, T3, T4> Where(string column, object value)
+    {
+        string paramName = $"{_parent._parent.Dialect.ParameterPrefix}{column.Replace(".", "_")}";
+        string escapedColumn = EscapeQualifiedColumn(column);
+        _parent._parent.AddWhereCondition(WhereCondition.Column($"{escapedColumn} = {paramName}", LogicalOperator.None));
+        _parent._parent.GetParameters().Add(paramName, value);
+        return this;
+    }
+
+    // The alias prefix (if any) is validated as a plain identifier - not dialect-escaped, since
+    // aliases are library-controlled bare names in the generated SQL, not user data - so a caller
+    // can't smuggle arbitrary SQL text through the alias segment while the column name is escaped.
+    private string EscapeQualifiedColumn(string column)
+    {
+        int dotIndex = column.IndexOf('.');
+        if (dotIndex < 0)
+            return _parent._parent.Dialect.EscapeColumnName(column);
+
+        string alias = column.Substring(0, dotIndex);
+        string columnName = column.Substring(dotIndex + 1);
+        SqlIdentifierValidator.Validate(alias, nameof(column));
+        return $"{alias}.{_parent._parent.Dialect.EscapeColumnName(columnName)}";
     }
 
     public IJoinedQuery4<T1, T2, T3, T4> And(Expression<Func<T1, T2, T3, T4, bool>> predicate)

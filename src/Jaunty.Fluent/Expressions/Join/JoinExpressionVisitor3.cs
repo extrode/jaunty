@@ -148,6 +148,11 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
         return node;
     }
 
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        throw new NotSupportedException($"Method '{node.Method.Name}' is not supported in JOIN expressions.");
+    }
+
     private string? TryGetColumnExpression(Expression expression)
     {
         if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
@@ -192,7 +197,7 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
         var columnName = column?.ColumnName ?? propertyName;
         var escapedColumn = _dialect.EscapeColumnName(columnName);
 
-        var prefix = alias ?? metadata.TableName;
+        var prefix = alias ?? _dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escapedColumn}";
     }
 
