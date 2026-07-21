@@ -104,7 +104,7 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
         }
 
         var escaped = _fromBuilder.Dialect.EscapeColumnName(columnName);
-        var prefix = alias ?? metadata.TableName;
+        var prefix = alias ?? _fromBuilder.Dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escaped}";
     }
 }
