@@ -55,15 +55,22 @@ internal static class ParameterCache
         Type type)
     {
         PropertyInfo[] props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-        var result = new ParameterMetadata[props.Length];
+        var result = new List<ParameterMetadata>(props.Length);
 
-        for (int i = 0; i < props.Length; i++)
+        foreach (PropertyInfo p in props)
         {
-            PropertyInfo p = props[i];
-            result[i] = new ParameterMetadata(p.Name, CreateGetter(p), property: p);
+            // R16: an indexer (e.g. "public object this[int i]") surfaces as a public instance
+            // property named "Item" with GetIndexParameters().Length > 0. Expression.Property(cast,
+            // prop) throws ArgumentException ("Incorrect number of indexes") for these, so a
+            // parameters POCO that happens to declare an indexer would fail binding with an
+            // unclear exception. Dapper explicitly skips indexed properties; do the same here.
+            if (p.GetIndexParameters().Length > 0)
+                continue;
+
+            result.Add(new ParameterMetadata(p.Name, CreateGetter(p), property: p));
         }
 
-        return result;
+        return result.ToArray();
     }
 
     /// <summary>
