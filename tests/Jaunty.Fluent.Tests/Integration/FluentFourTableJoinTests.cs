@@ -42,6 +42,25 @@ public class FluentFourTableJoinTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public void FourTableJoin_RightJoinFourth_ToSql_ContainsRightJoin()
+    {
+        // Regression test: JoinedQueryExtensions previously only offered InnerJoin<T1,T2,T3,T4>
+        // and LeftJoin<T1,T2,T3,T4> to extend a 3-way join to 4-way - RightJoin<T1,T2,T3,T4>
+        // was missing even though the equivalent 2-/3-way RightJoin overloads and JoinType.Right
+        // both already existed.
+        var sql = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .InnerJoin<Supplier>()
+            .On(p => p.SupplierId, s => s.SupplierId)
+            .RightJoin<Product, Category, Supplier, Order>()
+            .On("products.supplier_id", "orders.employee_id")
+            .ToSql();
+
+        Assert.Contains("RIGHT JOIN", sql);
+    }
+
+    [Fact]
     public void FourTableJoin_LeftJoinFourth_ToSql_MixesInnerAndLeft()
     {
         var sql = _fixture.Connection.From<Product>()

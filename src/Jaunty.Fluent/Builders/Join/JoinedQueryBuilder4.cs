@@ -106,7 +106,7 @@ internal sealed class JoinClause4Builder<T1, T2, T3, T4> : IJoinClause<T1, T2, T
         }
 
         string escaped = _parent._parent.Dialect.EscapeColumnName(columnName);
-        string prefix = alias ?? metadata.TableName;
+        string prefix = alias ?? _parent._parent.Dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escaped}";
     }
 }
@@ -548,7 +548,7 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         }
 
         string escaped = _parent._parent.Dialect.EscapeColumnName(columnName);
-        string prefix = alias ?? metadata.TableName;
+        string prefix = alias ?? _parent._parent.Dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escaped}";
     }
 }

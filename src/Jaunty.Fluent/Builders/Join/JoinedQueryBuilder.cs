@@ -208,6 +208,9 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     public IJoinClause<TFrom, TJoin, T3> LeftJoin<T3>(string? alias = null) where T3 : new()
         => new JoinClause3Builder<TFrom, TJoin, T3>(this, JoinType.Left, alias);
 
+    public IJoinClause<TFrom, TJoin, T3> RightJoin<T3>(string? alias = null) where T3 : new()
+        => new JoinClause3Builder<TFrom, TJoin, T3>(this, JoinType.Right, alias);
+
     internal void AddJoin(JoinInfo join) => _joins.Add(join);
 
     internal void AddWhereCondition(WhereCondition condition) => _conditions.Add(condition);
@@ -288,7 +291,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     {
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
         var result = new string[columns.Count];
-        string prefix = alias ?? metadata.TableName;
+        string prefix = alias ?? _dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
 
         for (int i = 0; i < columns.Count; i++)
         {
@@ -303,7 +306,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     {
         IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
         var result = new string[columns.Count];
-        string prefix = tableAlias ?? metadata.TableName;
+        string prefix = tableAlias ?? _dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
 
         for (int i = 0; i < columns.Count; i++)
         {
