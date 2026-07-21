@@ -123,14 +123,14 @@ public class FluentGroupByJoin3Tests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
-    public async Task GroupBy_SelectAsync_NonDbConnection_ThrowsNotSupportedException()
+    public async Task GroupBy_SelectAsync_NonDbConnection_ThrowsInvalidOperationException()
     {
         var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>()
             .InnerJoin<Category>().On(p => p.CategoryId, c => c.CategoryId)
             .InnerJoin<Supplier>().On(p => p.SupplierId, s => s.SupplierId)
             .GroupBy((p, c, s) => p.CategoryId);
 
-        await Assert.ThrowsAsync<NotSupportedException>(() =>
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
             query.SelectAsync(g => new { CategoryId = g.Key, Count = g.Count() }));
     }
 }
