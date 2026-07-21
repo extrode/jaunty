@@ -90,6 +90,45 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
     }
 
     [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertAsync_IEntityImplementation_PopulatesIdsEndToEnd(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        // SQLite always takes the loop-based insert path regardless of collection size, so this
+        // exercises BulkInsertLoopAsync's per-entity idSetter call end-to-end through the public
+        // async API, mirroring the sync coverage in
+        // BulkOperationsTests.BulkInsert_IEntityImplementation_MultiEntityLoopPath_PopulatesIdsInInsertionOrder.
+        var entities = new List<IEntityTestEntity>
+        {
+            new() { Name = "AsyncLoopOrderFirst", Value = 1 },
+            new() { Name = "AsyncLoopOrderSecond", Value = 2 },
+            new() { Name = "AsyncLoopOrderThird", Value = 3 }
+        };
+
+        int inserted = await connection.BulkInsertAsync(entities);
+
+        Assert.Equal(3, inserted);
+        Assert.True(entities[0].Id > 0);
+        Assert.True(entities[1].Id > entities[0].Id);
+        Assert.True(entities[2].Id > entities[1].Id);
+
+        foreach (IEntityTestEntity entity in entities)
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT id FROM bulk_test WHERE name = @name";
+            var param = cmd.CreateParameter();
+            param.ParameterName = "@name";
+            param.Value = entity.Name;
+            cmd.Parameters.Add(param);
+            long dbId = Convert.ToInt64(cmd.ExecuteScalar());
+
+            Assert.Equal(dbId, entity.Id);
+        }
+    }
+
+    [Theory]
     [SqlServer]
     [Postgres]
     [MariaDB]
@@ -252,6 +291,23 @@ public class BulkOperationsAsyncTests : IClassFixture<DialectFixture>
         var entities = new List<BulkTestEntity>();
 
         int updated = await connection.BulkUpdateAsync(entities);
+
+        Assert.Equal(0, updated);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkUpdateIgnoreConstraintsAsync_EmptyCollection_ReturnsZero(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity>();
+
+        int updated = await connection.BulkUpdateIgnoreConstraintsAsync(entities);
 
         Assert.Equal(0, updated);
     }

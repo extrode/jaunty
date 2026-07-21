@@ -52,4 +52,40 @@ public class BulkNullEntityTests : IClassFixture<DialectFixture>
 
         Assert.Throws<ArgumentException>(() => connection.Connection.BulkDelete(entities));
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task BulkInsertAsync_CollectionContainsNull_ThrowsArgumentException(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetWriteContext(dialect);
+        var entities = new List<BulkTestEntity> { new BulkTestEntity { Name = "A", Value = 1 }, null! };
+
+        await Assert.ThrowsAsync<ArgumentException>(() => connection.Connection.BulkInsertAsync(entities).AsTask());
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task BulkUpdateAsync_CollectionContainsNull_ThrowsArgumentException(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetWriteContext(dialect);
+        var entities = new List<BulkTestEntity> { new BulkTestEntity { Id = 1, Name = "A", Value = 1 }, null! };
+
+        await Assert.ThrowsAsync<ArgumentException>(() => connection.Connection.BulkUpdateAsync(entities).AsTask());
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task BulkDeleteAsync_CollectionContainsNull_ThrowsArgumentException(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetWriteContext(dialect);
+        var entities = new List<BulkTestEntity> { new BulkTestEntity { Id = 1, Name = "A", Value = 1 }, null! };
+
+        await Assert.ThrowsAsync<ArgumentException>(() => connection.Connection.BulkDeleteAsync(entities).AsTask());
+    }
 }
