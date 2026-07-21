@@ -83,6 +83,12 @@ public sealed class DuckDbDialect : IFlatFileDialect
     }
 
     /// <inheritdoc />
+    public string EscapeStringLiteral(string value)
+    {
+        return value.Replace("'", "''");
+    }
+
+    /// <inheritdoc />
     public string GetLastInsertIdSql(params string[] columnNames)
     {
         // DuckDB does not have a direct last_insert_id equivalent

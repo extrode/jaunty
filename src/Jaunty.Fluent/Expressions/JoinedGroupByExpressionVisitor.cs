@@ -265,7 +265,7 @@ internal sealed class JoinedGroupByExpressionVisitor
 
         if (expr is ConstantExpression constant)
         {
-            return (HavingExpressionHelpers.FormatLiteral(constant.Value), defaultAlias);
+            return (HavingExpressionHelpers.FormatLiteral(constant.Value, _dialect), defaultAlias);
         }
 
         throw new NotSupportedException($"Expression type '{expr.NodeType}' is not supported in GROUP BY Select.");
@@ -335,7 +335,7 @@ internal sealed class JoinedGroupByExpressionVisitor
 
             if (body is ConstantExpression constant)
             {
-                return $"{aggregate}({HavingExpressionHelpers.FormatLiteral(constant.Value)})";
+                return $"{aggregate}({HavingExpressionHelpers.FormatLiteral(constant.Value, _dialect)})";
             }
         }
 

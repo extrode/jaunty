@@ -416,7 +416,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         return compiled.DynamicInvoke();
     }
 
-    private static string FormatConstant(object? value) => HavingExpressionHelpers.FormatLiteral(value);
+    private string FormatConstant(object? value) => HavingExpressionHelpers.FormatLiteral(value, _dialect);
 }
 
 internal readonly struct SelectColumn

@@ -210,6 +210,11 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         return base.VisitUnary(node);
     }
 
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        throw new NotSupportedException($"Method '{node.Method.Name}' is not supported in EXISTS correlation predicates.");
+    }
+
     private (bool IsColumn, string Sql, object? Value) AnalyzeExpression(Expression expression)
     {
         // Unwrap Convert
