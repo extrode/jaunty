@@ -229,19 +229,6 @@ public sealed class Scaffolder
         };
     }
 
-    private static string GetClassName(string tableName, ScaffoldOptions options)
-    {
-        var className = NamingHelper.ToPascalCase(tableName);
-
-        if (options.Singularize)
-            className = NamingHelper.Singularize(className);
-
-        if (!string.IsNullOrEmpty(options.ClassPrefix))
-            className = options.ClassPrefix + className;
-
-        if (!string.IsNullOrEmpty(options.ClassSuffix))
-            className = className + options.ClassSuffix;
-
-        return NamingHelper.EscapeIdentifier(className);
-    }
+    private static string GetClassName(string tableName, ScaffoldOptions options) =>
+        NamingHelper.ToClassName(tableName, options.Singularize, options.ClassPrefix, options.ClassSuffix);
 }

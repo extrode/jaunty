@@ -193,21 +193,8 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         sb.AppendLine($"{indent}public {typeName} {propertyName} {{ get; set; }}{defaultValue}");
     }
 
-    private static string GetClassName(string tableName, CodeGeneratorOptions options)
-    {
-        var className = NamingHelper.ToPascalCase(tableName);
-
-        if (options.Singularize)
-            className = NamingHelper.Singularize(className);
-
-        if (!string.IsNullOrEmpty(options.ClassPrefix))
-            className = options.ClassPrefix + className;
-
-        if (!string.IsNullOrEmpty(options.ClassSuffix))
-            className = className + options.ClassSuffix;
-
-        return NamingHelper.EscapeIdentifier(className);
-    }
+    private static string GetClassName(string tableName, CodeGeneratorOptions options) =>
+        NamingHelper.ToClassName(tableName, options.Singularize, options.ClassPrefix, options.ClassSuffix);
 
     private static string GetPropertyName(string columnName)
     {
