@@ -243,6 +243,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         try
         {
             using IDataReader reader = command.ExecuteReader();
+            EnsureNoAmbiguousColumns(reader);
             Func<IDataReader, T> mapper = DrDispatcher.Resolve<T>(reader, default, mode);
 
             while (reader.Read())
@@ -255,6 +256,20 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         }
 
         return results;
+    }
+
+    private static void EnsureNoAmbiguousColumns(IDataReader reader)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < reader.FieldCount; i++)
+        {
+            string name = reader.GetName(i);
+            if (!seen.Add(name))
+                throw new InvalidOperationException(
+                    $"Column '{name}' is ambiguous: it appears more than once in the joined result set. " +
+                    "Use SelectPartial with aliased columns, or Select(Func<IDataReader, T> mapper), to disambiguate.");
+        }
     }
 
     private List<T> SelectWithMapper<T>(Func<IDataReader, T> mapper, int? limit = null)
