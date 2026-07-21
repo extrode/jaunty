@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -289,19 +288,5 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
         return propertyName;
     }
 
-    private static string FormatConstant(object? value)
-    {
-        return value switch
-        {
-            null => "NULL",
-            string s => $"'{s.Replace("'", "''")}'",
-            bool b => b ? "1" : "0",
-            DateTime dt => $"'{dt:yyyy-MM-dd HH:mm:ss}'",
-            // Numeric types (decimal/double/float/int/...) implement IFormattable - format with
-            // the invariant culture so a comma-decimal culture (e.g. de-DE) doesn't corrupt the
-            // generated SQL by rendering "1,5" instead of "1.5".
-            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
-            _ => value.ToString() ?? "NULL"
-        };
-    }
+    private static string FormatConstant(object? value) => HavingExpressionHelpers.FormatLiteral(value);
 }
