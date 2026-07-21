@@ -1,7 +1,6 @@
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 
 using Jaunty.Core;
@@ -9,6 +8,7 @@ using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Parameters;
 using Jaunty.Configuration;
 
 namespace Jaunty.Fluent;
@@ -1317,13 +1317,11 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     private void AddParametersFromObject(object parameters)
     {
-        Type type = parameters.GetType();
-        PropertyInfo[] props = type.GetProperties();
+        ParameterMetadata[] props = ParameterCache.Get(parameters.GetType());
         for (int i = 0; i < props.Length; i++)
         {
-            PropertyInfo prop = props[i];
-            var value = prop.GetValue(parameters);
-            _parameters.Add($"{_dialect.ParameterPrefix}{prop.Name}", value);
+            ParameterMetadata prop = props[i];
+            _parameters.Add($"{_dialect.ParameterPrefix}{prop.Name}", prop.Getter(parameters));
         }
     }
 
@@ -1689,12 +1687,15 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     ISetClause<T> IFromClause<T>.Set(object values)
     {
 
-        foreach (PropertyInfo? prop in values.GetType().GetProperties())
+        ParameterMetadata[] props = ParameterCache.Get(values.GetType());
+        for (int i = 0; i < props.Length; i++)
         {
+            ParameterMetadata prop = props[i];
+
             // Already dialect-escaped - see comment in BuildAggregateSql.
             string columnName = GetColumnNameFromProperty(prop.Name);
             string paramName = GetUniqueParamName(prop.Name);
-            _parameters.Add(paramName, prop.GetValue(values));
+            _parameters.Add(paramName, prop.Getter(values));
             _setColumns.Add(new SetColumn(columnName, paramName));
         }
         return this;
@@ -1706,12 +1707,15 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     ISetClause<T> ISetClause<T>.Set(object values)
     {
 
-        foreach (PropertyInfo? prop in values.GetType().GetProperties())
+        ParameterMetadata[] props = ParameterCache.Get(values.GetType());
+        for (int i = 0; i < props.Length; i++)
         {
+            ParameterMetadata prop = props[i];
+
             // Already dialect-escaped - see comment in BuildAggregateSql.
             string columnName = GetColumnNameFromProperty(prop.Name);
             string paramName = GetUniqueParamName(prop.Name);
-            _parameters.Add(paramName, prop.GetValue(values));
+            _parameters.Add(paramName, prop.Getter(values));
             _setColumns.Add(new SetColumn(columnName, paramName));
         }
         return this;
