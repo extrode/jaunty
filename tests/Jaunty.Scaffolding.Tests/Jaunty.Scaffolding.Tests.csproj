@@ -26,11 +26,25 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Real-server integration tests for MySqlSchemaReader/PostgreSqlSchemaReader/SqlServerSchemaReader
+         (AUD-R14 batch-8 coverage gap); skip via TestConfiguration when no server is configured. -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
+    <PackageReference Include="Npgsql" Version="10.0.1" />
+    <PackageReference Include="MySqlConnector" Version="2.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Jaunty.Scaffolding\Jaunty.Scaffolding.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json" Condition="Exists('appsettings.json')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
