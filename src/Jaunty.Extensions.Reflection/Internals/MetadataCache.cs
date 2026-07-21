@@ -182,39 +182,24 @@ internal static class MetadataCache<T>
             {
                 object dbValue = record.GetValue(index);
 
-                if (dbValue is null or DBNull)
+                try
                 {
-                    // For nullable types, set to null; for non-nullable, use default
-                    if (Nullable.GetUnderlyingType(propertyType) != null || !propertyType.IsValueType)
+                    object? convertedValue = handler.Parse(dbValue);
+
+                    // Convert to the property type (handles nullable)
+                    if (propertyType != underlyingType && convertedValue is not null)
                     {
-                        property.SetValue(target, null);
+                        property.SetValue(target, DbValueConverter.ChangeType(convertedValue, underlyingType));
                     }
                     else
                     {
-                        property.SetValue(target, Activator.CreateInstance(propertyType));
+                        property.SetValue(target, convertedValue);
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    try
-                    {
-                        object? convertedValue = handler.Parse(dbValue);
-
-                        // Convert to the property type (handles nullable)
-                        if (propertyType != underlyingType && convertedValue is not null)
-                        {
-                            property.SetValue(target, DbValueConverter.ChangeType(convertedValue, underlyingType));
-                        }
-                        else
-                        {
-                            property.SetValue(target, convertedValue);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new InvalidOperationException(
-                            $"Type handler '{handler.GetType().Name}' failed to parse value for property '{property.Name}' on type '{typeof(T).Name}'.", ex);
-                    }
+                    throw new InvalidOperationException(
+                        $"Type handler '{handler.GetType().Name}' failed to parse value for property '{property.Name}' on type '{typeof(T).Name}'.", ex);
                 }
 
                 return;
@@ -238,33 +223,26 @@ internal static class MetadataCache<T>
                 return (target, record, index) =>
                 {
                     object dbValue = record.GetValue(index);
+                    string strValue = dbValue.ToString() ?? string.Empty;
                     object? convertedValue;
 
-                    if (dbValue is null or DBNull)
+                    try
                     {
-                        convertedValue = Nullable.GetUnderlyingType(propertyType) != null ? null : Activator.CreateInstance(underlyingType);
+                        // Try Enum.Parse case-insensitive
+                        convertedValue = Enum.Parse(underlyingType, strValue, ignoreCase: true);
                     }
-                    else
+                    catch
                     {
-                        string strValue = dbValue.ToString() ?? string.Empty;
+                        // If it's already numeric, try parsing as that
                         try
                         {
-                            // Try Enum.Parse case-insensitive
-                            convertedValue = Enum.Parse(underlyingType, strValue, ignoreCase: true);
+                            var numValue = Convert.ChangeType(dbValue, Enum.GetUnderlyingType(underlyingType));
+                            convertedValue = Enum.ToObject(underlyingType, numValue);
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            // If it's already numeric, try parsing as that
-                            try
-                            {
-                                var numValue = Convert.ChangeType(dbValue, Enum.GetUnderlyingType(underlyingType));
-                                convertedValue = Enum.ToObject(underlyingType, numValue);
-                            }
-                            catch (Exception ex)
-                            {
-                                throw new InvalidOperationException(
-                                    $"Cannot convert value '{strValue}' to enum type '{underlyingType.Name}' for property '{property.Name}' on type '{typeof(T).Name}'.", ex);
-                            }
+                            throw new InvalidOperationException(
+                                $"Cannot convert value '{strValue}' to enum type '{underlyingType.Name}' for property '{property.Name}' on type '{typeof(T).Name}'.", ex);
                         }
                     }
 
