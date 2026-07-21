@@ -1624,8 +1624,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             using DbCommand command = dbConnection.CreateCommand();
             command.CommandText = sql;
 
-            if (options.Transaction is DbTransaction dbTransaction)
-                command.Transaction = dbTransaction;
+            if (options.Transaction is not null)
+                command.Transaction = global::Jaunty.AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
             if (options.CommandTimeout.HasValue)
                 command.CommandTimeout = options.CommandTimeout.Value;

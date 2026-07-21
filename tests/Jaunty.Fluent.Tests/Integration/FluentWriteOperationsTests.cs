@@ -217,6 +217,42 @@ public class FluentWriteOperationsTests : IDisposable
         realTransaction.Rollback();
     }
 
+    // ExecuteNonQueryAsync (the private helper backing DeleteAsync/UpdateAsync) assigned
+    // options.Transaction to command.Transaction only when it was already a DbTransaction,
+    // with no else branch - a non-DbTransaction IDbTransaction was silently dropped instead of
+    // erroring, so the command executed outside the caller's requested transaction with no
+    // indication anything was wrong. The sync counterpart (ExecuteNonQuery, see the
+    // Delete_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfInvalidCastException test
+    // above) already threw a clear ArgumentException for this case; ExecuteNonQueryAsync now
+    // matches. (AUD-R13)
+    [Fact]
+    public async Task DeleteAsync_WithNonDbTransaction_ThrowsArgumentExceptionInsteadOfSilentlyDroppingTransaction()
+    {
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestDeleteAsyncNonDbTx",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                QuantityPerUnit = "10 boxes",
+                UnitPrice = 9.99m,
+                UnitsInStock = (short)10,
+                Discontinued = false
+            })
+            .Insert();
+
+        using var realTransaction = _db.Connection.BeginTransaction();
+        using var nonDbTransaction = new IDbTransactionWrapper(realTransaction);
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await _db.Connection.From<Product>()
+                .Where(p => p.ProductId == (int)insertedId)
+                .DeleteAsync(CommandOptions.WithTransaction(nonDbTransaction)));
+        Assert.Contains("DbTransaction", ex.Message);
+
+        realTransaction.Rollback();
+    }
+
     [Fact]
     public async Task DeleteAsync_WithCommandOptionsTransaction_RollsBackWithTransaction()
     {
