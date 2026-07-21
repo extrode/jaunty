@@ -578,6 +578,43 @@ public class FluentWriteOperationsTests : IDisposable
         Assert.Contains("unit_price", sql);
     }
 
+    [Fact]
+    public void Update_SetThenWhereStringColumn_UpdatesCorrectRow()
+    {
+        // Regression test: ISetClause<T>.Where(string, object?) used to build its parameter
+        // name as a bare "@column" (identical to what WhereExpressionVisitor's first-occurrence
+        // naming produces), rather than the suffixed name every other Where-family overload
+        // uses via GetUniqueParamName. Left uncaught, a bare name here could collide with
+        // another bare-named parameter added to the same builder instance and throw
+        // ArgumentException("A parameter named ... has already been added.") from
+        // ParameterCollection.Add instead of executing the update.
+        var insertedId = _db.Connection.Into<Product>()
+            .Values(new
+            {
+                ProductName = "TestUpdateStringWhere",
+                SupplierId = 1,
+                CategoryId = (short)1,
+                UnitPrice = 10.00m,
+                UnitsInStock = (short)10,
+                UnitsOnOrder = (short)0,
+                ReorderLevel = (short)5,
+                Discontinued = false
+            })
+            .Insert();
+
+        var rowsUpdated = ((ISetClause<Product>)_db.Connection.From<Product>()
+            .Set(p => p.UnitPrice, 555.55m))
+            .Where("product_id", (int)insertedId)
+            .Update();
+
+        Assert.Equal(1, rowsUpdated);
+
+        var updated = _db.Connection.From<Product>()
+            .Where(p => p.ProductId == (int)insertedId)
+            .SelectFirst();
+        Assert.Equal(555.55m, updated.UnitPrice);
+    }
+
     #endregion
 
     #region Insert Tests
