@@ -135,7 +135,7 @@ internal sealed class GroupedJoinedQueryBuilder3<T1, T2, T3, TKey> : IGroupedJoi
     private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGroupingJoined3<TKey, T1, T2, T3>, TResult>> selector, CancellationToken cancellationToken)
     {
         if (_parent._parent.Connection is not DbConnection dbConn)
-            throw new NotSupportedException("Async operations require DbConnection.");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);

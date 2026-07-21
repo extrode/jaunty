@@ -1,6 +1,5 @@
 using System.Data;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 using Jaunty.Fluent.Internals;
 using Jaunty.Configuration;
@@ -226,7 +225,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     private List<T> SelectWithMapping<T>(MappingMode mode, int? limit = null)
         where T : new()
     {
-        string sql = BuildSelectAllColumnsSql();
+        string sql = BuildSelectPartialSql("*");
         if (limit.HasValue)
             sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
@@ -274,7 +273,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     private List<T> SelectWithMapper<T>(Func<IDataReader, T> mapper, int? limit = null)
     {
-        string sql = BuildSelectAllColumnsSql();
+        string sql = BuildSelectPartialSql("*");
         if (limit.HasValue)
             sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
@@ -302,62 +301,5 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         }
 
         return results;
-    }
-
-    private string BuildSelectAllColumnsSql()
-    {
-        var sb = new StringBuilder(256);
-        sb.Append("SELECT *");
-
-        sb.Append(" FROM ");
-        sb.Append(_dialect.EscapeTableName(_fromSchema, _fromTable));
-
-        if (_fromAlias is not null)
-        {
-            sb.Append(' ');
-            sb.Append(_fromAlias);
-        }
-
-        foreach (JoinInfo join in _joins)
-        {
-            sb.Append(' ');
-            sb.Append(join.JoinKeyword);
-            sb.Append(' ');
-            sb.Append(_dialect.EscapeTableName(join.SchemaName, join.TableName));
-
-            if (join.Alias is not null)
-            {
-                sb.Append(' ');
-                sb.Append(join.Alias);
-            }
-
-            sb.Append(" ON ");
-            sb.Append(join.OnCondition);
-        }
-
-        if (_conditions.Count > 0)
-        {
-            sb.Append(" WHERE ");
-            sb.Append(BuildWhereExpression(_conditions));
-        }
-
-        if (_orderByColumns.Count > 0)
-        {
-            sb.Append(" ORDER BY ");
-
-            for (var i = 0; i < _orderByColumns.Count; i++)
-            {
-                if (i > 0)
-                    sb.Append(", ");
-
-                OrderByColumn orderBy = _orderByColumns[i];
-                sb.Append(orderBy.ColumnName);
-
-                if (orderBy.Descending)
-                    sb.Append(" DESC");
-            }
-        }
-
-        return sb.ToString();
     }
 }

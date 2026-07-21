@@ -358,7 +358,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     public async Task<List<(T1, T2, T3)>> SelectAllAsync(CancellationToken cancellationToken = default)
     {
         if (_parent.Connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("Async operations require a DbConnection");
+            throw new InvalidOperationException("Async operations require a DbConnection.");
 
         EntityMetadata t1Metadata = FluentMetadataCache.GetMetadata<T1>();
         EntityMetadata t2Metadata = FluentMetadataCache.GetMetadata<T2>();
