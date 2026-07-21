@@ -113,14 +113,12 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
 
     private static ParameterCollection ExtractParameters(IQueryTerminal<T> query)
     {
-        // Extract parameters from QueryBuilder or SetOperationBuilder
+        // SetOperationBuilder<T> does not implement IQueryTerminal<T>, so it can never
+        // reach this method - only QueryBuilder<T> (or another IQueryTerminal<T>
+        // implementation) can.
         if (query is QueryBuilder<T> qb)
         {
             return qb.GetParameters();
-        }
-        if (query is SetOperationBuilder<T> sob)
-        {
-            return sob.GetAllParameters();
         }
         return new ParameterCollection();
     }

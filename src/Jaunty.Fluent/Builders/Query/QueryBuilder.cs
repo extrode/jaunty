@@ -829,9 +829,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public async Task<List<T>> SelectAsync(CancellationToken cancellationToken = default)
     {
         var sql = BuildSelectSql(GetAllColumnNames());
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return Select();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> SelectFirstAsync(CancellationToken cancellationToken = default)
@@ -840,9 +840,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 1;
         var sql = BuildSelectSql(GetAllColumnNames());
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectFirst();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
@@ -851,9 +851,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 1;
         var sql = BuildSelectSql(GetAllColumnNames());
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectFirstOrDefault();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> SelectSingleAsync(CancellationToken cancellationToken = default)
@@ -862,9 +862,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 2;
         var sql = BuildSelectSql(GetAllColumnNames());
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QuerySingleAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectSingle();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QuerySingleAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)
@@ -873,9 +873,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 2;
         var sql = BuildSelectSql(GetAllColumnNames());
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QuerySingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectSingleOrDefault();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QuerySingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     #endregion
@@ -885,9 +885,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public async Task<List<T>> SelectPartialAsync(string[] columns, CancellationToken cancellationToken = default)
     {
         var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectPartial(columns);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> SelectPartialFirstAsync(string[] columns, CancellationToken cancellationToken = default)
@@ -896,9 +896,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 1;
         var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectPartialFirst(columns);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectPartialFirstOrDefaultAsync(string[] columns, CancellationToken cancellationToken = default)
@@ -907,9 +907,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 1;
         var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectPartialFirstOrDefault(columns);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> SelectPartialSingleAsync(string[] columns, CancellationToken cancellationToken = default)
@@ -918,9 +918,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 2;
         var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialSingleAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectPartialSingle(columns);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialSingleAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectPartialSingleOrDefaultAsync(string[] columns, CancellationToken cancellationToken = default)
@@ -929,9 +929,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 2;
         var sql = BuildSelectSql(columns.Length > 0 ? EscapeColumns(columns) : GetAllColumnNames());
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialSingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectPartialSingleOrDefault(columns);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialSingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     #endregion
@@ -942,9 +942,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     {
         var columnNames = columns.Length > 0 ? ResolveColumns(columns) : GetAllColumnNames();
         var sql = BuildSelectSql(columnNames);
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectPartial(columns);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> SelectPartialFirstAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default)
@@ -954,9 +954,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 1;
         var sql = BuildSelectSql(columnNames);
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectPartialFirst(columns);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectPartialFirstOrDefaultAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default)
@@ -966,9 +966,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 1;
         var sql = BuildSelectSql(columnNames);
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectPartialFirstOrDefault(columns);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T> SelectPartialSingleAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default)
@@ -978,9 +978,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 2;
         var sql = BuildSelectSql(columnNames);
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialSingleAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectPartialSingle(columns);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialSingleAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectPartialSingleOrDefaultAsync(Expression<Func<T, object?>>[] columns, CancellationToken cancellationToken = default)
@@ -990,9 +990,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         _take = 2;
         var sql = BuildSelectSql(columnNames);
         _take = original;
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryPartialSingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return SelectPartialSingleOrDefault(columns);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryPartialSingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     #endregion
@@ -1002,86 +1002,76 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     public async Task<int> CountAsync(CancellationToken cancellationToken = default)
     {
         var sql = BuildCountSql();
-        if (_connection is DbConnection dbConn)
-        {
-            var result = await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-            return (int)result;
-        }
-        return Count();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        var result = await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+        return (int)result;
     }
 
     public async Task<long> LongCountAsync(CancellationToken cancellationToken = default)
     {
         var sql = BuildCountSql();
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return LongCount();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<int> CountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
     {
         var columnName = GetColumnNameFromSelector(selector);
         var sql = BuildAggregateSql("COUNT", columnName);
-        if (_connection is DbConnection dbConn)
-        {
-            var result = await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-            return (int)result;
-        }
-        return Count(selector);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        var result = await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+        return (int)result;
     }
 
     public async Task<long> LongCountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
     {
         var columnName = GetColumnNameFromSelector(selector);
         var sql = BuildAggregateSql("COUNT", columnName);
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return LongCount(selector);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
     {
         var columnName = GetColumnNameFromSelector(selector);
         var sql = BuildAggregateSql("SUM", columnName);
-        if (_connection is DbConnection dbConn)
-        {
-            var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-            return ConvertScalarResult<TResult>(result);
-        }
-        return Sum(selector);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+        return ConvertScalarResult<TResult>(result);
     }
 
     public async Task<double> AvgAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
     {
         var columnName = GetColumnNameFromSelector(selector);
         var sql = BuildAggregateSql("AVG", columnName);
-        if (_connection is DbConnection dbConn)
-            return await dbConn.QueryScalarAsync<double>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-        return Avg(selector);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryScalarAsync<double>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<TResult> MinAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
     {
         var columnName = GetColumnNameFromSelector(selector);
         var sql = BuildAggregateSql("MIN", columnName);
-        if (_connection is DbConnection dbConn)
-        {
-            var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-            return ConvertScalarResult<TResult>(result);
-        }
-        return Min(selector);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+        return ConvertScalarResult<TResult>(result);
     }
 
     public async Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
     {
         var columnName = GetColumnNameFromSelector(selector);
         var sql = BuildAggregateSql("MAX", columnName);
-        if (_connection is DbConnection dbConn)
-        {
-            var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
-            return ConvertScalarResult<TResult>(result);
-        }
-        return Max(selector);
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        var result = await dbConn.QueryScalarAsync<object>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+        return ConvertScalarResult<TResult>(result);
     }
 
     // Async SelectX aliases
@@ -1440,8 +1430,20 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         }
         else
         {
-            // Fallback for other implementations
+            // Fallback for custom IQueryTerminal<TSubquery> implementations: there is no
+            // generic way to extract their bound parameters. If the produced SQL has no
+            // parameter placeholders this is still safe to inline as-is; otherwise those
+            // placeholders would end up unbound in the outer query, so fail loudly instead
+            // of silently emitting broken SQL.
             subquerySql = subquery.ToSql();
+            if (subquerySql.IndexOf(_dialect.ParameterPrefix, StringComparison.Ordinal) >= 0)
+            {
+                throw new NotSupportedException(
+                    $"WhereInSubquery/WhereNotInSubquery only supports merging parameters from " +
+                    $"a subquery built via QueryBuilder<{typeof(TSubquery).Name}> (e.g. connection.From<{typeof(TSubquery).Name}>()...). " +
+                    $"The provided IQueryTerminal<{typeof(TSubquery).Name}> implementation produced " +
+                    $"parameterized SQL that cannot be safely merged into the outer query.");
+            }
         }
 
         // Replace the SELECT columns with just our needed column
