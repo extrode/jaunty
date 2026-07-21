@@ -1,7 +1,7 @@
 namespace Jaunty.Benchmarks.Entities;
 
 [Dapper.Contrib.Extensions.Table("benchmark_products")]
-public class DapperProduct
+public partial class DapperProduct
 {
     [Dapper.Contrib.Extensions.Key]
     public int product_id { get; set; }
