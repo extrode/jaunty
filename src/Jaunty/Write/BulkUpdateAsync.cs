@@ -29,6 +29,11 @@ public static partial class Jaunty
     /// <para>
     /// <strong>Foreign key constraints are enforced.</strong>
     /// </para>
+    /// <para>
+    /// <strong>Performance note:</strong> This method issues one <c>ExecuteNonQueryAsync</c> round trip
+    /// per entity in a sequential loop; there is no multi-row batching for the update path. For large
+    /// collections, this is the dominant cost driver.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -38,7 +43,7 @@ public static partial class Jaunty
     ///     public string Name { get; set; }
     ///     public decimal Price { get; set; }
     /// }
-    /// 
+    ///
     /// // Async bulk update multiple products
     /// var products = new List&lt;Product&gt;
     /// {
