@@ -610,6 +610,13 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureNonQuery(IDbConnection, string)"/>
     public static int ExecuteStoredProcedureNonQuery(this IDbConnection connection, string procedureName, object? parameters, CommandOptions options)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(procedureName);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
+#endif
         return ExecuteNonQueryCore(connection, procedureName, parameters, options, CommandType.StoredProcedure);
     }
 }
