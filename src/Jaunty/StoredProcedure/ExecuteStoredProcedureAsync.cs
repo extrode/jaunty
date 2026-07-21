@@ -63,10 +63,10 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedure{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
     public static ValueTask<List<T>> ExecuteStoredProcedureAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
         return ExecuteWithOutputParametersAsync(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
         {
-            var results = new List<T>(16);
+            var results = new List<T>(spOptions.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
             Func<IDataReader, T> map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
             while (await ReadAsync(reader, ct).ConfigureAwait(false))
             {
@@ -120,7 +120,7 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirst{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
     public static ValueTask<T> ExecuteStoredProcedureFirstAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
         return ExecuteWithOutputParametersAsync(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
         {
             if (!await ReadAsync(reader, ct).ConfigureAwait(false))
@@ -174,7 +174,7 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefault{T}(IDbConnection, string, SpParameters, CommandOptions{T})"/>
     public static ValueTask<T?> ExecuteStoredProcedureFirstOrDefaultAsync<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default, CancellationToken cancellationToken = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
         return ExecuteWithOutputParametersAsync<T?>(connection, procedureName, parameters, spOptions, async (reader, _, ct) =>
         {
             if (!await ReadAsync(reader, ct).ConfigureAwait(false))
