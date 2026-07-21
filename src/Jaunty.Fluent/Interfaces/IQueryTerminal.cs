@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
 
+using Jaunty.Core;
+
 namespace Jaunty.Fluent;
 
 /// <summary>
@@ -15,9 +17,23 @@ public interface IQueryTerminal<T> where T : new()
     List<T> Select();
 
     /// <summary>
+    /// Executes the query and returns all results as a list, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    List<T> Select(CommandOptions options);
+
+    /// <summary>
     /// Returns the first result or throws if empty.
     /// </summary>
     T SelectFirst();
+
+    /// <summary>
+    /// Returns the first result or throws if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T SelectFirst(CommandOptions options);
 
     /// <summary>
     /// Returns the first result, or default if empty.
@@ -25,14 +41,36 @@ public interface IQueryTerminal<T> where T : new()
     T? SelectFirstOrDefault();
 
     /// <summary>
+    /// Returns the first result, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T? SelectFirstOrDefault(CommandOptions options);
+
+    /// <summary>
     /// Returns the single result or throws if empty or more than one.
     /// </summary>
     T SelectSingle();
 
     /// <summary>
+    /// Returns the single result or throws if empty or more than one, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T SelectSingle(CommandOptions options);
+
+    /// <summary>
     /// Returns the single result, or default if empty. Throws if more than one.
     /// </summary>
     T? SelectSingleOrDefault();
+
+    /// <summary>
+    /// Returns the single result, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// Throws if more than one.
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    T? SelectSingleOrDefault(CommandOptions options);
 
     // Partial entity selection - string-based column specification
     /// <summary>
@@ -103,9 +141,23 @@ public interface IQueryTerminal<T> where T : new()
     int Count();
 
     /// <summary>
+    /// Returns the count of rows, executing within the given <see cref="CommandOptions"/>
+    /// (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    int Count(CommandOptions options);
+
+    /// <summary>
     /// Returns the count of rows as long.
     /// </summary>
     long LongCount();
+
+    /// <summary>
+    /// Returns the count of rows as long, executing within the given <see cref="CommandOptions"/>
+    /// (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    long LongCount(CommandOptions options);
 
     /// <summary>
     /// Returns the count of non-null values for the specified column.
@@ -188,10 +240,26 @@ public interface IQueryTerminal<T> where T : new()
     Task<List<T>> SelectAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Executes the query asynchronously and returns all results as a list, executing within
+    /// the given <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<List<T>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first result asynchronously or throws if empty.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T> SelectFirstAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result asynchronously or throws if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first result asynchronously, or default if empty.
@@ -200,16 +268,41 @@ public interface IQueryTerminal<T> where T : new()
     Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the first result asynchronously, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously or throws if empty or more than one.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T> SelectSingleAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the single result asynchronously or throws if empty or more than one, executing
+    /// within the given <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously, or default if empty. Throws if more than one.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<T?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single result asynchronously, or default if empty, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// Throws if more than one.
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<T?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     // Async variants - partial entity selection (string-based)
     /// <summary>
@@ -291,10 +384,26 @@ public interface IQueryTerminal<T> where T : new()
     Task<int> CountAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the count of rows asynchronously, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<int> CountAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the count of rows as long asynchronously.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<long> LongCountAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the count of rows as long asynchronously, executing within the given
+    /// <see cref="CommandOptions"/> (e.g. <see cref="CommandOptions.WithTransaction(System.Data.IDbTransaction)"/>).
+    /// </summary>
+    /// <param name="options">Options controlling command execution, such as an ambient transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<long> LongCountAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the count of non-null values for the specified column asynchronously.

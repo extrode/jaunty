@@ -619,6 +619,12 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return _connection.Query<T>(sql, _parameters.ToParameterObject()!);
     }
 
+    public List<T> Select(CommandOptions options)
+    {
+        var sql = BuildSelectSql(GetAllColumnNames());
+        return _connection.Query<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
     public T SelectFirst()
     {
         var original = _take;
@@ -626,6 +632,15 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         var sql = BuildSelectSql(GetAllColumnNames());
         _take = original;
         return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public T SelectFirst(CommandOptions options)
+    {
+        var original = _take;
+        _take = 1;
+        var sql = BuildSelectSql(GetAllColumnNames());
+        _take = original;
+        return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     public T? SelectFirstOrDefault()
@@ -637,6 +652,15 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
 
+    public T? SelectFirstOrDefault(CommandOptions options)
+    {
+        var original = _take;
+        _take = 1;
+        var sql = BuildSelectSql(GetAllColumnNames());
+        _take = original;
+        return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
     public T SelectSingle()
     {
         var original = _take;
@@ -646,6 +670,15 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return _connection.QuerySingle<T>(sql, _parameters.ToParameterObject()!);
     }
 
+    public T SelectSingle(CommandOptions options)
+    {
+        var original = _take;
+        _take = 2;
+        var sql = BuildSelectSql(GetAllColumnNames());
+        _take = original;
+        return _connection.QuerySingle<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
+    }
+
     public T? SelectSingleOrDefault()
     {
         var original = _take;
@@ -653,6 +686,15 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         var sql = BuildSelectSql(GetAllColumnNames());
         _take = original;
         return _connection.QuerySingleOrDefault<T>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public T? SelectSingleOrDefault(CommandOptions options)
+    {
+        var original = _take;
+        _take = 2;
+        var sql = BuildSelectSql(GetAllColumnNames());
+        _take = original;
+        return _connection.QuerySingleOrDefault<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options));
     }
 
     #endregion
@@ -764,10 +806,24 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return (int)result;
     }
 
+    public int Count(CommandOptions options)
+    {
+        var sql = BuildCountSql();
+        // SQLite returns Int64 for COUNT, so we need to handle conversion
+        var result = _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options));
+        return (int)result;
+    }
+
     public long LongCount()
     {
         var sql = BuildCountSql();
         return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public long LongCount(CommandOptions options)
+    {
+        var sql = BuildCountSql();
+        return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options));
     }
 
     public int Count<TResult>(Expression<Func<T, TResult>> selector)
@@ -834,6 +890,14 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return await dbConn.QueryAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<List<T>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildSelectSql(GetAllColumnNames());
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<T> SelectFirstAsync(CancellationToken cancellationToken = default)
     {
         var original = _take;
@@ -843,6 +907,17 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var original = _take;
+        _take = 1;
+        var sql = BuildSelectSql(GetAllColumnNames());
+        _take = original;
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryFirstAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<T?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
@@ -856,6 +931,17 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return await dbConn.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<T?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var original = _take;
+        _take = 1;
+        var sql = BuildSelectSql(GetAllColumnNames());
+        _take = original;
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryFirstOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<T> SelectSingleAsync(CancellationToken cancellationToken = default)
     {
         var original = _take;
@@ -867,6 +953,17 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return await dbConn.QuerySingleAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<T> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var original = _take;
+        _take = 2;
+        var sql = BuildSelectSql(GetAllColumnNames());
+        _take = original;
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QuerySingleAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<T?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         var original = _take;
@@ -876,6 +973,17 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QuerySingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<T?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var original = _take;
+        _take = 2;
+        var sql = BuildSelectSql(GetAllColumnNames());
+        _take = original;
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QuerySingleOrDefaultAsync<T>(sql, _parameters.ToParameterObject()!, ToTypedOptions<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     #endregion
@@ -1008,12 +1116,29 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         return (int)result;
     }
 
+    public async Task<int> CountAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildCountSql();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        var result = await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options), cancellationToken).ConfigureAwait(false);
+        return (int)result;
+    }
+
     public async Task<long> LongCountAsync(CancellationToken cancellationToken = default)
     {
         var sql = BuildCountSql();
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
         return await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<long> LongCountAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        var sql = BuildCountSql();
+        if (_connection is not DbConnection dbConn)
+            throw new InvalidOperationException("Async operations require a DbConnection.");
+        return await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<int> CountAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
@@ -1307,6 +1432,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         var converted = Convert.ChangeType(value, underlyingType);
         return (TResult)converted;
     }
+
+    private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
+        new(transaction: options.Transaction, commandTimeout: options.CommandTimeout, commandType: options.CommandType);
 
     private string GetColumnNameFromProperty(string propertyName) => _cache.GetColumnName(propertyName);
 
