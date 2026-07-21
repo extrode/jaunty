@@ -29,6 +29,14 @@ public interface ISqlDialect
     string EscapeColumnName(string columnName);
 
     /// <summary>
+    /// Escapes a string value for safe inline use as a SQL string literal (i.e. between single
+    /// quotes), for dialects/clauses that cannot use a bound parameter (e.g. HAVING literals).
+    /// Dialects where backslash is an in-string escape character (e.g. MySQL/MariaDB without
+    /// NO_BACKSLASH_ESCAPES) must also double backslashes, not just single quotes.
+    /// </summary>
+    string EscapeStringLiteral(string value);
+
+    /// <summary>
     /// Returns SQL to retrieve the last inserted identity value.
     /// </summary>
     /// <param name="columnNames">The primary key column names (escaped if necessary).</param>

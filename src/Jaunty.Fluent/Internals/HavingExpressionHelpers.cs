@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Linq.Expressions;
 
+using Jaunty.Dialects;
+
 namespace Jaunty.Fluent.Internals;
 
 /// <summary>
@@ -20,12 +22,12 @@ internal static class HavingExpressionHelpers
     /// see <c>GroupedQueryBuilder.AddHavingParameter</c> and
     /// <c>JoinedGroupByExpressionVisitor.AddHavingParameter</c>.
     /// </summary>
-    public static string FormatLiteral(object? value)
+    public static string FormatLiteral(object? value, ISqlDialect dialect)
     {
         return value switch
         {
             null => "NULL",
-            string s => $"'{s.Replace("'", "''")}'",
+            string s => $"'{dialect.EscapeStringLiteral(s)}'",
             bool b => b ? "1" : "0",
             DateTime dt => $"'{dt:yyyy-MM-dd HH:mm:ss}'",
             // Numeric types (decimal/double/float/int/...) implement IFormattable - format with
