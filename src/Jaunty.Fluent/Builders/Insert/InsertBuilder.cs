@@ -1,13 +1,13 @@
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 
 using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Parameters;
 
 namespace Jaunty.Fluent;
 
@@ -54,9 +54,11 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
 
     public IValuesClause<T> Values(object values)
     {
-
-        foreach (PropertyInfo? prop in values.GetType().GetProperties())
+        ParameterMetadata[] props = ParameterCache.Get(values.GetType());
+        for (int i = 0; i < props.Length; i++)
         {
+            ParameterMetadata prop = props[i];
+
             // GetColumnNameFromProperty already returns the dialect-escaped column name (it's
             // backed by CachedDialectMetadata, whose cached values are pre-escaped) - do not
             // escape it again here, or a keyword-named column (e.g. "[Order]") fails
@@ -69,7 +71,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
                 continue;
 
             var paramName = $"{_dialect.ParameterPrefix}{prop.Name}";
-            _parameters.Add(paramName, prop.GetValue(values));
+            _parameters.Add(paramName, prop.Getter(values));
             _columns.Add(new InsertColumn(columnName, paramName));
         }
         return this;
