@@ -242,7 +242,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 #if NET8_0_OR_GREATER
                 await dbConn.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConn.Close(), cancellationToken).ConfigureAwait(false);
+                dbConn.Close();
 #endif
             }
         }
@@ -279,6 +279,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 #else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
+            EnsureNoAmbiguousColumns(reader);
             Func<DbDataReader, T> mapper = DrDispatcher.Resolve<T>(reader, default, mode);
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
@@ -291,7 +292,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 #if NET8_0_OR_GREATER
                 await dbConn.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConn.Close(), cancellationToken).ConfigureAwait(false);
+                dbConn.Close();
 #endif
             }
         }
@@ -339,7 +340,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 #if NET8_0_OR_GREATER
                 await dbConn.CloseAsync().ConfigureAwait(false);
 #else
-                await Task.Run(() => dbConn.Close(), cancellationToken).ConfigureAwait(false);
+                dbConn.Close();
 #endif
             }
         }

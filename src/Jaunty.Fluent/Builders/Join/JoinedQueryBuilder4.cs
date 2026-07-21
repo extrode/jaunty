@@ -416,6 +416,9 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
     public async Task<List<(T1, T2, T3, T4)>> SelectAllAsync(CancellationToken cancellationToken = default)
     {
+        if (_parent._parent.Connection is not DbConnection dbConnection)
+            throw new InvalidOperationException("Async operations require a DbConnection");
+
         EntityMetadata t1Metadata = FluentMetadataCache.GetMetadata<T1>();
         EntityMetadata t2Metadata = FluentMetadataCache.GetMetadata<T2>();
         EntityMetadata t3Metadata = FluentMetadataCache.GetMetadata<T3>();
@@ -429,9 +432,6 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
         string sql = _parent._parent.BuildSelectSql(allColumns);
         var results = new List<(T1, T2, T3, T4)>();
-
-        if (_parent._parent.Connection is not DbConnection dbConnection)
-            throw new InvalidOperationException("Async operations require a DbConnection");
 
         using DbCommand command = dbConnection.CreateCommand();
         command.CommandText = sql;
