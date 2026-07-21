@@ -70,11 +70,11 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureAsync{T}(IDbConnection, string, SpParameters, CommandOptions{T}, CancellationToken)"/>
     public static List<T> ExecuteStoredProcedure<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
 
         return ExecuteWithOutputParameters(connection, procedureName, parameters, spOptions, (reader, _) =>
         {
-            var results = new List<T>(16);
+            var results = new List<T>(spOptions.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
             Func<IDataReader, T> map = DrDispatcher.Resolve(reader, spOptions, MappingMode.Strict);
 
             while (reader.Read())
@@ -126,7 +126,7 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirst{T}(IDbConnection, string, object?, CommandOptions{T})"/>
     public static T ExecuteStoredProcedureFirst<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
         return ExecuteWithOutputParameters(connection, procedureName, parameters, spOptions, (reader, _) =>
         {
             if (!reader.Read())
@@ -180,7 +180,7 @@ public static partial class Jaunty
     /// <seealso cref="ExecuteStoredProcedureFirstOrDefault{T}(IDbConnection, string, object?, CommandOptions{T})"/>
     public static T? ExecuteStoredProcedureFirstOrDefault<T>(this IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions<T> options = default) where T : new()
     {
-        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure);
+        var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
         return ExecuteWithOutputParameters<T?>(connection, procedureName, parameters, spOptions, (reader, _) =>
         {
             if (!reader.Read())
