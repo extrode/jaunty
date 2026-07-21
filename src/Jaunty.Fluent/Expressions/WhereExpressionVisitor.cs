@@ -79,11 +79,16 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         // throws InvalidOperationException at runtime instead of producing "category_id =
         // supplier_id". Check both sides for a column reference first, mirroring how
         // JoinExpressionVisitor already handles cross-entity column comparisons.
-        if (TryGetColumnName(node.Left, out var leftColumnName) && TryGetColumnName(node.Right, out var rightColumnName))
+        // R16: the same unbound-parameter crash also applies when one or both sides are a
+        // string.Length comparison (e.g. p.Description.Length > p.MinLength, or
+        // p.FirstName.Length > p.LastName.Length) - TryGetColumnOrLengthSql extends the check to
+        // recognize those as renderable SQL expressions too, instead of falling through to
+        // ExtractColumnAndValue's EvaluateExpression.
+        if (TryGetColumnOrLengthSql(node.Left, out var leftSql) && TryGetColumnOrLengthSql(node.Right, out var rightSql))
         {
-            _sql.Append(_dialect.EscapeColumnName(leftColumnName!));
+            _sql.Append(leftSql);
             _sql.Append(GetOperator(node.NodeType));
-            _sql.Append(_dialect.EscapeColumnName(rightColumnName!));
+            _sql.Append(rightSql);
             _sql.Append(')');
             return node;
         }
@@ -684,6 +689,35 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             }
 
             columnName = GetColumnName(member);
+            return true;
+        }
+
+        return false;
+    }
+
+    // R16: treats both a plain column reference and a string.Length member (e.g. p.Name.Length)
+    // as a renderable SQL expression, so VisitBinary can compare either against another column or
+    // Length expression without routing through EvaluateExpression's Expression.Lambda(...).Compile(),
+    // which throws when the expression still references the unbound lambda parameter.
+    private bool TryGetColumnOrLengthSql(Expression expression, out string? sql)
+    {
+        sql = null;
+
+        if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            expression = unary.Operand;
+
+        if (expression is MemberExpression { Member.Name: "Length" } lengthMember
+            && lengthMember.Expression is MemberExpression innerMember
+            && innerMember.Type == typeof(string) && IsParameterMember(innerMember))
+        {
+            var innerColumn = GetColumnName(innerMember);
+            sql = _dialect.GenerateLength(_dialect.EscapeColumnName(innerColumn));
+            return true;
+        }
+
+        if (TryGetColumnName(expression, out var columnName))
+        {
+            sql = _dialect.EscapeColumnName(columnName!);
             return true;
         }
 
