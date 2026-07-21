@@ -123,6 +123,23 @@ public class StoredProcedureAsyncTests : IClassFixture<DialectFixture>
         }
     }
 
+    // R16: the CommandOptions<T> rebuilt internally to force CommandType.StoredProcedure dropped
+    // the caller's ExpectedRowCount, silently reverting to JauntyConfig.QueryResultCapacity.
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task ExecuteStoredProcedureAsync_WithExpectedRowCount_PreSizesListCapacity(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var products = await connection.ExecuteStoredProcedureAsync<Product>(
+            SpName("GetAllProducts", dialect), null, CommandOptions<Product>.WithExpectedRowCount(500));
+
+        Assert.NotEmpty(products);
+        Assert.True(products.Capacity >= 500);
+    }
+
     #endregion
 
     #region ExecuteStoredProcedureFirstAsync
