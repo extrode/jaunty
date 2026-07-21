@@ -50,8 +50,16 @@ internal sealed class SqlServerImportDialect : IImportDialect
         string? keyColumnName)
     {
         // SQL Server uses MERGE for upsert/skip scenarios
-        if (conflictStrategy != ConflictStrategy.Error && keyColumnName is not null)
+        if (conflictStrategy != ConflictStrategy.Error)
         {
+            if (keyColumnName is null)
+            {
+                throw new NotSupportedException(
+                    $"Table '{tableName}' has no [Key] property to use for conflict resolution. " +
+                    $"The {conflictStrategy} conflict strategy requires a [Key]-attributed property; " +
+                    "use ConflictStrategy.Error (the default) instead, or add a [Key] attribute to the entity.");
+            }
+
             return GenerateMergeSql(tableName, columnNames, parameterNames, conflictStrategy, keyColumnName);
         }
 
