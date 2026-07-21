@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 
+using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Configuration;
@@ -38,9 +39,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return this;
     }
 
-    // Mirrors JoinExpressionVisitor's BuildColumnReference: only the bare column name is dialect-
-    // escaped, the alias prefix (if any) is passed through as-is, matching how the expression-based
-    // Where(Expression) overload builds qualified column references for the same join.
+    // The alias prefix (if any) is validated as a plain identifier - not dialect-escaped, since
+    // aliases are library-controlled bare names in the generated SQL, not user data - so a caller
+    // can't smuggle arbitrary SQL text through the alias segment while the column name is escaped.
     private string EscapeQualifiedColumn(string column)
     {
         int dotIndex = column.IndexOf('.');
@@ -49,6 +50,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         string alias = column.Substring(0, dotIndex);
         string columnName = column.Substring(dotIndex + 1);
+        SqlIdentifierValidator.Validate(alias, nameof(column));
         return $"{alias}.{_dialect.EscapeColumnName(columnName)}";
     }
 

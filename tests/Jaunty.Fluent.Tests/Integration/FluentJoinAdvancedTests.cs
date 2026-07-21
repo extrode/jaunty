@@ -159,6 +159,22 @@ public class FluentJoinAdvancedTests : IClassFixture<FluentDatabaseFixture>
         Assert.DoesNotContain("\"p.order\"", sql);
     }
 
+    [Fact]
+    public void InnerJoin_WhereColumnValue_InjectedAliasSegment_Throws()
+    {
+        // Regression test (critical): EscapeQualifiedColumn used to interpolate the segment
+        // before the first "." into the SQL text unvalidated and unescaped, so a column string
+        // like "1=1 OR p.category_id" injected arbitrary SQL into the WHERE clause instead of
+        // being treated as a (bogus) alias. It must now be validated as a plain identifier via
+        // SqlIdentifierValidator and rejected.
+        Assert.Throws<ArgumentException>(() =>
+            _fixture.Connection.From<Product>("p")
+                .InnerJoin<Category>("c")
+                .On("p.category_id", "c.category_id")
+                .Where("1=1 OR p.category_id", 1)
+                .ToSql());
+    }
+
     // ==========================================
     // And / Or expression predicates
     // ==========================================
