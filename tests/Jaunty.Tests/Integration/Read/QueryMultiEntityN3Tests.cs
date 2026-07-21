@@ -226,6 +226,25 @@ public class QueryMultiEntityN3Tests : IClassFixture<DialectFixture>
         Assert.Equal("Ada Lovelace", results[0].Item1.Name);
     }
 
+    // AUD-R13: QueryMultiEntityCore<T1,T2,T3..T7> hardcoded JauntyConfig.QueryResultCapacity
+    // for the results list instead of honoring options.ExpectedRowCount, matching the arity-2
+    // bug already fixed under AUD-R12 (see QueryMultiEntityCommandOptionsTests). This overload
+    // previously could not even accept a tuple-typed CommandOptions<(T1,T2,T3)> with
+    // ExpectedRowCount set, because MultiEntityCommandOptions<T1,T2,T3>'s implicit conversion
+    // targeted the non-generic CommandOptions type.
+    [Theory]
+    [SystemSqlite]
+    public void Query_ThreeEntities_WithExpectedRowCount_PreSizesListCapacity(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = CommandOptions<(Mm3Author, Mm3Book, Mm3Tag)>.WithExpectedRowCount(500);
+
+        var results = connection.Query<Mm3Author, Mm3Book, Mm3Tag>(JoinSql, options);
+
+        Assert.Single(results);
+        Assert.True(results.Capacity >= 500);
+    }
+
     [Theory]
     [SystemSqlite]
     public void QueryFirst_ThreeEntities_WithCommandOptions_ReturnsFirstRow(DialectInfo _)
