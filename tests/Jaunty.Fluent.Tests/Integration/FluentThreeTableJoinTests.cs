@@ -6,7 +6,7 @@ namespace Jaunty.Fluent.Tests.Integration;
 
 /// <summary>
 /// Tests for 3-table join functionality (JoinedQuery3Builder), focused on the
-/// Where(string column, object value) overload.
+/// Where(string column, object value) overload and the RightJoin&lt;T3&gt; overload.
 ///
 /// Schema: Product → Category (category_id), Product → Supplier (supplier_id).
 /// </summary>
@@ -15,6 +15,22 @@ public class FluentThreeTableJoinTests : IClassFixture<FluentDatabaseFixture>
     private readonly FluentDatabaseFixture _fixture;
 
     public FluentThreeTableJoinTests(FluentDatabaseFixture fixture) => _fixture = fixture;
+
+    [Fact]
+    public void ThreeTableJoin_RightJoinThird_ToSql_ContainsRightJoin()
+    {
+        // Regression test: IJoinedQuery<TFrom,TJoin> previously only exposed InnerJoin<T3>
+        // and LeftJoin<T3> to extend a 2-way join to 3-way - RightJoin<T3> was missing even
+        // though the 2-way RightJoin<TJoin> and JoinType.Right both already existed.
+        var sql = _fixture.Connection.From<Product>()
+            .InnerJoin<Category>()
+            .On(p => p.CategoryId, c => c.CategoryId)
+            .RightJoin<Supplier>()
+            .On(p => p.SupplierId, s => s.SupplierId)
+            .ToSql();
+
+        Assert.Contains("RIGHT JOIN", sql);
+    }
 
     [Fact]
     public void ThreeTableJoin_WhereColumnValue_ToSql_UsesBoundParameter()
