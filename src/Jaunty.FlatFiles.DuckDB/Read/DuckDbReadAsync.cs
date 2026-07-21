@@ -11,12 +11,18 @@ public sealed partial class DuckDb
     /// <inheritdoc />
     public async ValueTask<List<T>> QueryAsync<T>(string sql, CancellationToken cancellationToken = default) where T : class, new()
     {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
         return await QueryInternalAsync<T>(sql, [], cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async ValueTask<List<T>> QueryAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CancellationToken cancellationToken = default) where T : class, new()
     {
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
         return await QueryInternalAsync<T>(sql, parameters, cancellationToken).ConfigureAwait(false);
     }
 
