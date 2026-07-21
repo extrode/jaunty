@@ -1584,15 +1584,10 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         if (subqueryParams != null)
         {
             var prefix = $"sq{_parameters.Count}";
-            foreach ((string? name, object? value) in subqueryParams.GetAll())
+            (subquerySql, ParameterCollection renamedParams) = ParameterRenamer.Rename(subquerySql, subqueryParams, prefix);
+            foreach ((string? name, object? value) in renamedParams.GetAll())
             {
-                var paramPrefix = _dialect.ParameterPrefix;
-                var baseName = name.TrimStart('@').TrimStart('$');
-                var newName = $"{paramPrefix}{prefix}_{baseName}";
-                // Update the SQL with the new parameter name
-                var pattern = $@"{System.Text.RegularExpressions.Regex.Escape(paramPrefix)}{System.Text.RegularExpressions.Regex.Escape(baseName)}(?![a-zA-Z0-9_])";
-                subquerySql = System.Text.RegularExpressions.Regex.Replace(subquerySql, pattern, newName);
-                _parameters.Add(newName, value);
+                _parameters.Add(name, value);
             }
         }
 
