@@ -27,7 +27,7 @@ internal static class SourceGeneratedMetadataResolver
         for (int i = 0; i < sourceColumns.Count; i++)
         {
             EntityColumnInfo c = sourceColumns[i];
-            columns.Add(new ColumnMetadata(c.PropertyName, c.PropertyType, c.ColumnName, c.IsPrimaryKey, c.IsIdentity, c.Getter, c.Setter));
+            columns.Add(new ColumnMetadata(c.PropertyName, c.PropertyType, c.ColumnName, c.IsPrimaryKey, c.IsIdentity, c.IsComputed, c.Getter, c.Setter));
         }
 
         return new EntityMetadata(source.TableName, source.SchemaName, columns);

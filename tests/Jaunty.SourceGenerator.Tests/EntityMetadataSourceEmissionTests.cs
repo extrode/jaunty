@@ -102,6 +102,20 @@ public sealed class EntityMetadataSourceEmissionTests
     }
 
     [Fact]
+    public void Columns_ComputedAttribute_SetsIsComputedTrue()
+    {
+        IEntityMetadataSource source = new GenComputedEntity();
+
+        EntityColumnInfo entityId = Assert.Single(source.Columns, c => c.ColumnName == "entity_id");
+        EntityColumnInfo label = Assert.Single(source.Columns, c => c.ColumnName == "label");
+        EntityColumnInfo computedValue = Assert.Single(source.Columns, c => c.ColumnName == "computed_value");
+
+        Assert.False(entityId.IsComputed);
+        Assert.False(label.IsComputed);
+        Assert.True(computedValue.IsComputed);
+    }
+
+    [Fact]
     public void Columns_Getter_ReturnsCurrentPropertyValue()
     {
         var product = new GenProduct { ProductId = 7, ProductName = "Widget" };

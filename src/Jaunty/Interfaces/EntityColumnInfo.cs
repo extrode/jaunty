@@ -20,15 +20,17 @@ public readonly struct EntityColumnInfo
     /// <param name="propertyName">The CLR property name.</param>
     /// <param name="isPrimaryKey">Whether the column is part of the primary key.</param>
     /// <param name="isIdentity">Whether the column is an identity (database-generated) column.</param>
+    /// <param name="isComputed">Whether the column is database-computed and excluded from INSERT/UPDATE.</param>
     /// <param name="propertyType">The CLR property type.</param>
     /// <param name="getter">A compiled, reflection-free getter for this column's value.</param>
     /// <param name="setter">A compiled, reflection-free setter for this column's value.</param>
-    public EntityColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, Type propertyType, Func<object, object?> getter, Action<object, object?> setter)
+    public EntityColumnInfo(string columnName, string propertyName, bool isPrimaryKey, bool isIdentity, bool isComputed, Type propertyType, Func<object, object?> getter, Action<object, object?> setter)
     {
         ColumnName = columnName;
         PropertyName = propertyName;
         IsPrimaryKey = isPrimaryKey;
         IsIdentity = isIdentity;
+        IsComputed = isComputed;
         PropertyType = propertyType;
         Getter = getter;
         Setter = setter;
@@ -53,6 +55,12 @@ public readonly struct EntityColumnInfo
     /// Gets a value indicating whether the column is an identity (database-generated) column.
     /// </summary>
     public bool IsIdentity { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the column is database-computed. Computed columns are
+    /// excluded from generated INSERT and UPDATE statements, matching the reflection-resolved path.
+    /// </summary>
+    public bool IsComputed { get; }
 
     /// <summary>
     /// Gets the CLR property type.

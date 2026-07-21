@@ -142,4 +142,50 @@ public class ScalarConverterTests
         }
     }
 
+#if NET8_0_OR_GREATER
+    // AUD-R14: DateOnly/TimeOnly don't implement IConvertible either, so like Guid/DateTimeOffset/
+    // TimeSpan above, System.Convert.ChangeType cannot produce them from a string - a provider
+    // (e.g. SQLite) returning a "date"/"time" column as text previously threw
+    // InvalidCastException here instead of parsing correctly.
+    [Fact]
+    public void Convert_DateOnlyFromString_Parses()
+    {
+        var date = new DateOnly(2026, 7, 20);
+
+        var result = ScalarConverter<DateOnly>.Convert(date.ToString("O", System.Globalization.CultureInfo.InvariantCulture));
+
+        Assert.Equal(date, result);
+    }
+
+    [Fact]
+    public void Convert_NullableDateOnlyFromString_Parses()
+    {
+        var date = new DateOnly(2026, 7, 20);
+
+        var result = ScalarConverter<DateOnly?>.Convert(date.ToString("O", System.Globalization.CultureInfo.InvariantCulture));
+
+        Assert.Equal(date, result);
+    }
+
+    [Fact]
+    public void Convert_TimeOnlyFromString_Parses()
+    {
+        var time = new TimeOnly(13, 45, 30);
+
+        var result = ScalarConverter<TimeOnly>.Convert(time.ToString("O", System.Globalization.CultureInfo.InvariantCulture));
+
+        Assert.Equal(time, result);
+    }
+
+    [Fact]
+    public void Convert_NullableTimeOnlyFromString_Parses()
+    {
+        var time = new TimeOnly(13, 45, 30);
+
+        var result = ScalarConverter<TimeOnly?>.Convert(time.ToString("O", System.Globalization.CultureInfo.InvariantCulture));
+
+        Assert.Equal(time, result);
+    }
+#endif
+
 }
