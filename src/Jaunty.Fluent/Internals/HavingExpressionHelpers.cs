@@ -14,9 +14,10 @@ internal static class HavingExpressionHelpers
 {
     /// <summary>
     /// Formats a literal for inline, non-parameterized use (SELECT-projection/aggregate-column
-    /// constants - matches <c>GroupByExpressionVisitor.FormatConstant</c>'s single-entity
-    /// behavior). HAVING comparison operands are bound as query parameters instead - see
-    /// <c>GroupedQueryBuilder.AddHavingParameter</c> and
+    /// constants). Shared by <c>GroupByExpressionVisitor.FormatConstant</c> and
+    /// <c>SelectExpressionVisitor.FormatConstant</c>, which both delegate here instead of
+    /// duplicating this logic. HAVING comparison operands are bound as query parameters instead -
+    /// see <c>GroupedQueryBuilder.AddHavingParameter</c> and
     /// <c>JoinedGroupByExpressionVisitor.AddHavingParameter</c>.
     /// </summary>
     public static string FormatLiteral(object? value)

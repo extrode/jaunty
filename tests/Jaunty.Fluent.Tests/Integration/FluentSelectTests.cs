@@ -336,6 +336,23 @@ public class FluentSelectTests : IClassFixture<FluentDatabaseFixture>
     }
 
     [Fact]
+    public async Task SelectAsync_NonDbConnection_ThrowsInvalidOperationException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => query.SelectAsync());
+    }
+
+    [Fact]
+    public async Task SelectPartialAsync_String_NonDbConnection_ThrowsInvalidOperationException()
+    {
+        var query = new IDbConnectionWrapper(_fixture.Connection).From<Product>();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => query.SelectPartialAsync(new[] { "product_id", "product_name" }));
+    }
+
+    [Fact]
     public async Task SelectFirstAsync_ReturnsFirstProduct()
     {
         var product = await _fixture.Connection.From<Product>().SelectFirstAsync();
