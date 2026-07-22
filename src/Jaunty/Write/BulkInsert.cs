@@ -119,6 +119,14 @@ public static partial class Jaunty
 
     private static int BulkInsertCore<T>(IDbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints) where T : new()
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(entities);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (entities is null) throw new ArgumentNullException(nameof(entities));
+#endif
+
         IList<T> entityList = entities as IList<T> ?? entities.ToList();
         if (entityList.Count == 0)
             return 0;
