@@ -1042,6 +1042,19 @@ public class ParameterBinderTests
         Assert.Throws<ArgumentException>(() => ParameterBinder.Bind(command, 42));
     }
 
+    // R23 batch-3: a scalar passed to a stored-procedure/table-direct command used to fall
+    // through to BindAllFromObject, which finds zero properties on a scalar type and silently
+    // binds nothing - the procedure would execute with the value dropped instead of failing.
+    [Fact]
+    public void Bind_ScalarValue_ToStoredProcedureCommand_Throws()
+    {
+        var command = new MockDbCommand("GetProductById") { CommandType = CommandType.StoredProcedure };
+
+        var ex = Assert.Throws<ArgumentException>(() => ParameterBinder.Bind(command, 5));
+        Assert.Empty(command.Parameters);
+        Assert.Contains("stored procedure", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     // Finding 3: a throwing type handler must surface, not silently bind unconverted data.
     [Fact]
     public void Bind_WhenTypeHandlerThrows_PropagatesAsInvalidOperationException()
