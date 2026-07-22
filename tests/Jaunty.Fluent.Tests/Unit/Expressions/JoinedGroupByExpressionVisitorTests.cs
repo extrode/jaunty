@@ -44,4 +44,21 @@ public class JoinedGroupByExpressionVisitorTests
         Assert.Contains("c.[category_name]", columns[1]);
         Assert.Equal(new[] { "Key0", "Key1" }, aliases);
     }
+
+    [Fact]
+    public void TranslateHavingPredicate_BareAggregateWithoutComparison_TranslatesOperandDirectly()
+    {
+        // AUD-R20: a top-level HAVING predicate that isn't a BinaryExpression (e.g. a bare
+        // aggregate call with no comparison) used to throw NotSupportedException instead of
+        // falling through to TranslateHavingOperand, unlike the single-entity
+        // GroupedQueryBuilder.TranslateHavingExpression it's meant to mirror.
+        Expression<Func<Product, Category, object>> keySelector = (p, c) => new { p.CategoryId };
+        var visitor = new JoinedGroupByExpressionVisitor(_dialect, _metadata, new[] { "p", "c" }, keySelector);
+
+        Expression<Func<IGroupingJoined<object, Product, Category>, int>> havingExpr = g => g.Count();
+        var (sql, parameters) = visitor.TranslateHavingPredicate(havingExpr);
+
+        Assert.Equal("COUNT(*)", sql);
+        Assert.Empty(parameters);
+    }
 }

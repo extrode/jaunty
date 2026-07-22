@@ -189,7 +189,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T1>(), propertyName, _parent.FromAlias);
-        _parent.AddOrderByColumn(columnName, "ASC", isFirst: _parent.GetOrderByColumns().Count == 0);
+        _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
 
@@ -197,7 +197,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T1>(), propertyName, _parent.FromAlias);
-        _parent.AddOrderByColumn(columnName, "DESC", isFirst: _parent.GetOrderByColumns().Count == 0);
+        _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
 
@@ -205,7 +205,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T2>(), propertyName, _parent.Joins[0].Alias);
-        _parent.AddOrderByColumn(columnName, "ASC", isFirst: _parent.GetOrderByColumns().Count == 0);
+        _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
 
@@ -213,7 +213,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T2>(), propertyName, _parent.Joins[0].Alias);
-        _parent.AddOrderByColumn(columnName, "DESC", isFirst: _parent.GetOrderByColumns().Count == 0);
+        _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
 
@@ -221,7 +221,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T3>(), propertyName, _parent.Joins[1].Alias);
-        _parent.AddOrderByColumn(columnName, "ASC", isFirst: _parent.GetOrderByColumns().Count == 0);
+        _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
 
@@ -229,7 +229,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T3>(), propertyName, _parent.Joins[1].Alias);
-        _parent.AddOrderByColumn(columnName, "DESC", isFirst: _parent.GetOrderByColumns().Count == 0);
+        _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
 
@@ -237,7 +237,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T1>(), propertyName, _parent.FromAlias);
-        _parent.AddOrderByColumn(columnName, "ASC", isFirst: false);
+        _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
 
@@ -245,7 +245,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T1>(), propertyName, _parent.FromAlias);
-        _parent.AddOrderByColumn(columnName, "DESC", isFirst: false);
+        _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
 
@@ -253,7 +253,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T2>(), propertyName, _parent.Joins[0].Alias);
-        _parent.AddOrderByColumn(columnName, "ASC", isFirst: false);
+        _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
 
@@ -261,7 +261,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T2>(), propertyName, _parent.Joins[0].Alias);
-        _parent.AddOrderByColumn(columnName, "DESC", isFirst: false);
+        _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
 
@@ -269,7 +269,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T3>(), propertyName, _parent.Joins[1].Alias);
-        _parent.AddOrderByColumn(columnName, "ASC", isFirst: false);
+        _parent.AddOrderByColumn(columnName, "ASC");
         return this;
     }
 
@@ -277,7 +277,7 @@ internal sealed partial class JoinedQuery3Builder<T1, T2, T3> : IJoinedQuery3<T1
     {
         string propertyName = PropertyExtractor.ExtractPropertyName(keySelector);
         string columnName = GetColumnNameForOrderBy(FluentMetadataCache.GetMetadata<T3>(), propertyName, _parent.Joins[1].Alias);
-        _parent.AddOrderByColumn(columnName, "DESC", isFirst: false);
+        _parent.AddOrderByColumn(columnName, "DESC");
         return this;
     }
 

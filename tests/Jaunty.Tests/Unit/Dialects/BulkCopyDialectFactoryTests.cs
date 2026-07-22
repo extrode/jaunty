@@ -111,6 +111,7 @@ public class BulkCopyDialectFactoryTests
         public string FormatContainsPattern(string value) => _inner.FormatContainsPattern(value);
         public string FormatStartsWithPattern(string value) => _inner.FormatStartsWithPattern(value);
         public string FormatEndsWithPattern(string value) => _inner.FormatEndsWithPattern(value);
+        public string FormatBooleanLiteral(bool value) => _inner.FormatBooleanLiteral(value);
         public string? GetDisableForeignKeyChecksSql() => _inner.GetDisableForeignKeyChecksSql();
         public string? GetEnableForeignKeyChecksSql() => _inner.GetEnableForeignKeyChecksSql();
         public string GenerateCoalesce(params string[] expressions) => _inner.GenerateCoalesce(expressions);

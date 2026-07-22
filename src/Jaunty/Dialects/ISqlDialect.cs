@@ -104,6 +104,14 @@ public interface ISqlDialect
     string FormatEndsWithPattern(string value);
 
     /// <summary>
+    /// Formats a boolean literal for use directly in generated SQL (e.g. bare boolean member
+    /// predicates such as <c>.Where(p => p.IsActive)</c>).
+    /// </summary>
+    /// <param name="value">The boolean value to format.</param>
+    /// <returns>The dialect-appropriate SQL literal for the given boolean value.</returns>
+    string FormatBooleanLiteral(bool value);
+
+    /// <summary>
     /// Returns SQL to disable foreign key constraint checks for the current session/connection.
     /// Used by bulk operations that need to ignore referential integrity.
     /// </summary>
