@@ -412,4 +412,42 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
         Assert.Contains("UNION ALL", sql);
         Assert.Contains("INTERSECT", sql);
     }
+
+    // ==========================================
+    // Custom IQueryTerminal<T> implementations (non-QueryBuilder)
+    // ==========================================
+
+    [Fact]
+    public void Union_CustomImplementationWithUnmergeableParameters_ThrowsNotSupportedException()
+    {
+        // AUD-R18: a custom IQueryTerminal<T> implementation whose ToSql() embeds a parameter
+        // placeholder (@name) has no way for SetOperationBuilder to extract and merge that
+        // parameter's value into the combined query, so it must fail loudly instead of
+        // silently splicing in SQL with an unbound placeholder - mirrors
+        // FluentSubqueryTests.WhereInSubquery_CustomImplementationWithUnmergeableParameters_ThrowsNotSupportedException.
+        var other = new StubQueryTerminal<Product>(
+            "SELECT * FROM products WHERE product_name = @name");
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == 1)
+                .Union(other)
+                .ToSql());
+
+        Assert.Contains(nameof(Product), ex.Message);
+    }
+
+    [Fact]
+    public void Union_CustomImplementationWithNoParameters_WorksCorrectly()
+    {
+        var other = new StubQueryTerminal<Product>("SELECT * FROM products WHERE category_id = 2");
+
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(other)
+            .ToSql();
+
+        Assert.Contains("UNION", sql);
+        Assert.Contains("SELECT * FROM products WHERE category_id = 2", sql);
+    }
 }
