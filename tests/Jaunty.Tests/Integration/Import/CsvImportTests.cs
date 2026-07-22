@@ -258,6 +258,45 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         }
     }
 
+    [Fact]
+    public void ImportCsv_SqliteCli_DotQualifiedTableName_ImportsSuccessfully()
+    {
+        // Regression test: the top-level ImportCsv/ImportCsvAsync entry point's own
+        // ValidateIdentifier regex explicitly accepts a dot-qualified name (e.g. "main.MyTable",
+        // for importing into an ATTACHed database), and every other import path
+        // (ImportViaPreparedStatements, Postgres, MySQL, SQL Server) correctly splits it via
+        // EscapeQualifiedTableName before escaping. ImportViaSqliteCli used to pass the whole
+        // dot-qualified name unsplit to EscapeTableName, which rejects dots and throws
+        // ArgumentException - the only import path where this same, explicitly-accepted input
+        // shape failed. "main" is SQLite's always-present schema name for the primary database
+        // file, so no ATTACH is needed to exercise the dot-qualified path.
+        const string dotQualifiedTableName = "main." + TableName;
+        var csvPath = ResolveCsvPath();
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_dotqualified_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using (var setup = new SQLiteConnection($"Data Source={tempDb}"))
+            {
+                setup.Open();
+                CreateTable(setup, DialectProvider.SystemSqlite);
+            }
+
+            using var importConn = new SQLiteConnection($"Data Source={tempDb}");
+            long rows = importConn.ImportCsv(dotQualifiedTableName, csvPath);
+
+            Assert.Equal(ExpectedRowCount, rows);
+
+            importConn.Open();
+            Assert.Equal(ExpectedRowCount, GetRowCount(importConn, DialectProvider.SystemSqlite));
+        }
+        finally
+        {
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
     // =============================================
     // Async (SQLite in-memory)
     // =============================================
