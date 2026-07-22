@@ -46,7 +46,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
     public bool IsSupported => NpgsqlConnectionType != null && NpgsqlBinaryImporterType != null;
 
     /// <inheritdoc/>
-    public int CopyToServer(IDbConnection connection, string tableName, IDataReader data, BulkCopyOptions options)
+    public int CopyToServer(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)
     {
         if (NpgsqlConnectionType == null || NpgsqlBinaryImporterType == null)
             throw new InvalidOperationException("NpgsqlBinaryImporter is not available. Ensure Npgsql is installed.");
@@ -60,7 +60,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         // is no reflection-accessible way to honor any of those BulkCopyOptions for Postgres.
 
         // Build COPY command
-        var copyCommand = BuildCopyCommand(tableName, data);
+        var copyCommand = BuildCopyCommand(schemaName, tableName, data);
 
         // Begin binary import — must be called on the actual NpgsqlConnection
         var importer = BeginBinaryImportMethod?.Invoke(connection, new object[] { copyCommand });
@@ -109,6 +109,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
     /// <inheritdoc/>
     public async ValueTask<int> CopyToServerAsync(
         DbConnection connection,
+        string? schemaName,
         string tableName,
         IDataReader data,
         BulkCopyOptions options,
@@ -122,14 +123,14 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 
         // If native async methods are not available, fall back to sync
         if (BeginBinaryImportAsyncMethod == null || StartRowAsyncMethod == null || WriteAsyncGenericMethod == null)
-            return CopyToServer(connection, tableName, data, options);
+            return CopyToServer(connection, schemaName, tableName, data, options);
 
         // NpgsqlBinaryImporter has no per-import timeout/batch-size/check-constraints/table-lock
         // controls, and NpgsqlConnection.CommandTimeout has no public setter (it's derived from
         // the connection string), so unlike SqlServerBulkCopyProvider/MySqlBulkCopyProvider there
         // is no reflection-accessible way to honor any of those BulkCopyOptions for Postgres.
 
-        var copyCommand = BuildCopyCommand(tableName, data);
+        var copyCommand = BuildCopyCommand(schemaName, tableName, data);
 
         // BeginBinaryImportAsync returns Task<NpgsqlBinaryImporter>
         if (BeginBinaryImportAsyncMethod.Invoke(connection, new object[] { copyCommand, cancellationToken }) is not Task importerTask)
@@ -219,9 +220,20 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
     /// <summary>
     /// Builds the COPY command for PostgreSQL.
     /// </summary>
-    private static string BuildCopyCommand(string tableName, IDataReader data)
+    private static string BuildCopyCommand(string? schemaName, string tableName, IDataReader data)
     {
         global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+
+        string qualifiedTableName;
+        if (schemaName is null || schemaName.Length == 0)
+        {
+            qualifiedTableName = $"\"{tableName}\"";
+        }
+        else
+        {
+            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName));
+            qualifiedTableName = $"\"{schemaName}\".\"{tableName}\"";
+        }
 
         var columnNames = new List<string>();
         for (int i = 0; i < data.FieldCount; i++)
@@ -232,7 +244,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         }
 
         var columns = string.Join(", ", columnNames);
-        return $"COPY \"{tableName}\" ({columns}) FROM STDIN BINARY";
+        return $"COPY {qualifiedTableName} ({columns}) FROM STDIN BINARY";
     }
 
     /// <summary>
