@@ -196,6 +196,46 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         }
     }
 
+    // AUD-R22: sqlite3 doesn't report a row count itself, so ImportViaSqliteCli falls back to
+    // CountCsvRows, which used to count physical lines via raw StreamReader.ReadLine() instead of
+    // the RFC4180-aware ReadCsvRecord helper. A quoted field with an embedded newline was therefore
+    // miscounted as two rows even though sqlite3's own .import correctly imported it as one.
+    [Fact]
+    public void ImportCsv_SqliteFile_QuotedFieldWithEmbeddedNewline_ReturnsCorrectRowCount()
+    {
+        var tempDb = Path.Combine(Path.GetTempPath(), $"jaunty_csv_test_{Guid.NewGuid():N}.db");
+
+        var csv =
+            "Name,Age,City,Email\n" +
+            "\"Alice\nSmith\",30,NYC,alice@example.com\n" +
+            "Bob,25,LA,bob@example.com\n";
+        var path = WriteTempCsv(csv);
+
+        try
+        {
+            using (var setup = new SQLiteConnection($"Data Source={tempDb}"))
+            {
+                setup.Open();
+                CreateTable(setup, DialectProvider.SystemSqlite);
+            }
+
+            using var importConn = new SQLiteConnection($"Data Source={tempDb}");
+            long rows = importConn.ImportCsv(TableName, path);
+
+            // Without the fix, the embedded newline inflates the count to 3 rows instead of 2.
+            Assert.Equal(2L, rows);
+
+            importConn.Open();
+            Assert.Equal(2L, GetRowCount(importConn, DialectProvider.SystemSqlite));
+        }
+        finally
+        {
+            File.Delete(path);
+            if (File.Exists(tempDb))
+                File.Delete(tempDb);
+        }
+    }
+
     [Fact]
     public void ImportViaSqliteCli_DbPathWithQuote_IsRejected()
     {
