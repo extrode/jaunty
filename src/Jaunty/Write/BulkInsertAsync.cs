@@ -483,7 +483,7 @@ public static partial class Jaunty
                 using var reader = new EntityDataReader<T>(entityList, metadata);
 
                 // Execute native bulk copy
-                int providerResult = await bulkProvider.CopyToServerAsync(connection, cached.Metadata.TableName, reader, bulkOptions, cancellationToken).ConfigureAwait(false);
+                int providerResult = await bulkProvider.CopyToServerAsync(connection, cached.Metadata.SchemaName, cached.Metadata.TableName, reader, bulkOptions, cancellationToken).ConfigureAwait(false);
 
                 // Some providers (e.g. SqlBulkCopy) return -1; use entityList.Count as fallback
                 totalInserted = providerResult >= 0 ? providerResult : entityList.Count;
