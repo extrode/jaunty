@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
 
@@ -84,6 +85,24 @@ public class MetadataCacheTests : IDisposable
         public string Name { get; set; } = string.Empty;
     }
 
+    // AUD-R22: a *writable* indexer (unlike a get-only one) passes MetadataBuilder's
+    // CanWrite check and used to be added as a ColumnMetadata. MetadataCache<T>'s static
+    // constructor then calls CreateGetter/CreateSetter (Expression.Property) on every column,
+    // which throws ArgumentException("Incorrect number of indexes") for an indexer - failing the
+    // type's static initializer and breaking ALL reflection-based mapping for the entity, not
+    // just the indexer.
+    public class WritableIndexerItem
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        private readonly Dictionary<int, string> _data = new();
+        public string this[int index]
+        {
+            get => _data.TryGetValue(index, out string? v) ? v : string.Empty;
+            set => _data[index] = value;
+        }
+    }
+
     #endregion
 
     #region Metadata Caching
@@ -115,6 +134,17 @@ public class MetadataCacheTests : IDisposable
 
         Assert.Contains(meta.Columns, c => c.ColumnName == "entity_id");
         Assert.Contains(meta.Columns, c => c.ColumnName == "full_name");
+    }
+
+    [Fact]
+    public void Properties_EntityWithWritableIndexer_ExcludesIndexerAndDoesNotThrow()
+    {
+        var properties = MetadataCache<WritableIndexerItem>.Properties;
+
+        Assert.Equal(2, properties.Length);
+        Assert.Contains(properties, p => p.PropertyName == "Id");
+        Assert.Contains(properties, p => p.PropertyName == "Name");
+        Assert.DoesNotContain(properties, p => p.PropertyName == "Item");
     }
 
     #endregion
