@@ -72,6 +72,14 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     /// </summary>
     internal ParameterCollection GetParameters() => _parameters.Clone();
 
+    /// <summary>
+    /// True if this query already has its own ORDER BY, Take, or Skip applied - used by
+    /// <see cref="SetOperationBuilder{T}"/> to reject operands whose own ordering/paging
+    /// would otherwise be spliced into the middle of a combined UNION/EXCEPT/INTERSECT
+    /// statement instead of applying to the combined result.
+    /// </summary>
+    internal bool HasOrderingOrPaging() => _orderByColumns.Count > 0 || _take.HasValue || _skip.HasValue;
+
     private string[] GetAllColumnNames() => _cache.ColumnNames.ToArray();
 
     private string[] ResolveColumns(Expression<Func<T, object?>>[] expressions)
@@ -1235,26 +1243,46 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     public ISetOperationClause<T> Union(IQueryTerminal<T> other)
     {
+        ThrowIfHasOrderingOrPaging();
         var builder = new SetOperationBuilder<T>(_connection, _dialect, ToSql(), _parameters.Clone());
         return builder.Union(other);
     }
 
     public ISetOperationClause<T> UnionAll(IQueryTerminal<T> other)
     {
+        ThrowIfHasOrderingOrPaging();
         var builder = new SetOperationBuilder<T>(_connection, _dialect, ToSql(), _parameters.Clone());
         return builder.UnionAll(other);
     }
 
     public ISetOperationClause<T> Except(IQueryTerminal<T> other)
     {
+        ThrowIfHasOrderingOrPaging();
         var builder = new SetOperationBuilder<T>(_connection, _dialect, ToSql(), _parameters.Clone());
         return builder.Except(other);
     }
 
     public ISetOperationClause<T> Intersect(IQueryTerminal<T> other)
     {
+        ThrowIfHasOrderingOrPaging();
         var builder = new SetOperationBuilder<T>(_connection, _dialect, ToSql(), _parameters.Clone());
         return builder.Intersect(other);
+    }
+
+    // The same class of bug SetOperationBuilder<T>.ThrowIfOperandHasOrderingOrPaging guards
+    // against on the operand side: if this query already has its own ORDER BY/Take/Skip
+    // applied (e.g. db.From<T>().OrderBy(...).Take(5).Union(...)), that ordering/paging would
+    // be baked into ToSql() and spliced in as the first segment of the combined statement
+    // instead of applying to the combined result.
+    private void ThrowIfHasOrderingOrPaging()
+    {
+        if (HasOrderingOrPaging())
+        {
+            throw new NotSupportedException(
+                "Union/UnionAll/Except/Intersect must not be called on a query that already has " +
+                "its own OrderBy/Take/Skip applied. Ordering and paging apply to the combined result - " +
+                "call OrderBy/Take/Skip on the outer set-operation chain (after Union/UnionAll/Except/Intersect) instead.");
+        }
     }
 
     #endregion
