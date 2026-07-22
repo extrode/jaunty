@@ -116,6 +116,8 @@ internal sealed class MySqlDialect : ISqlDialect
     public string FormatStartsWithPattern(string value) => $"{EscapeLikeWildcards(value)}%";
     public string FormatEndsWithPattern(string value) => $"%{EscapeLikeWildcards(value)}";
 
+    public string FormatBooleanLiteral(bool value) => value ? "1" : "0";
+
     // GenerateCaseSensitiveLike/GenerateCaseInsensitiveLike declare ESCAPE '\', so literal
     // occurrences of the escape char and LIKE wildcard chars (%, _) must be escaped in the
     // value or they change query semantics instead of matching literally.
