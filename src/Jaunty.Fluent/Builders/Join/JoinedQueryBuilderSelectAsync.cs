@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Runtime.CompilerServices;
 
 using Jaunty.Configuration;
+using Jaunty.Core;
 using Jaunty.Internals.Read;
 
 namespace Jaunty.Fluent;
@@ -19,6 +20,16 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
+    }
+
+    public async Task<List<TFrom>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialAsync<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options), cancellationToken).ConfigureAwait(false)
             : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
@@ -69,6 +80,16 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
+    public async Task<TFrom> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
+
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialFirstAsync<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options), cancellationToken).ConfigureAwait(false)
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
+    }
+
     public async Task<TFrom?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
@@ -76,6 +97,16 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialFirstOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
+    }
+
+    public async Task<TFrom?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
+
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialFirstOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options), cancellationToken).ConfigureAwait(false)
             : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
@@ -155,6 +186,16 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
+    public async Task<TFrom> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialSingleAsync<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options), cancellationToken).ConfigureAwait(false)
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
+    }
+
     public async Task<TFrom?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
@@ -162,6 +203,16 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialSingleOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
+    }
+
+    public async Task<TFrom?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryPartialSingleOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options), cancellationToken).ConfigureAwait(false)
             : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
@@ -174,12 +225,30 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
+    public async Task<int> CountAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        string sql = BuildCountSql();
+
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryScalarAsync<int>(sql, _parameters.ToParameterObject()!, ToTypedOptions<int>(options), cancellationToken).ConfigureAwait(false)
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
+    }
+
     public async Task<long> LongCountAsync(CancellationToken cancellationToken = default)
     {
         string sql = BuildCountSql();
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
+            : throw new InvalidOperationException("Async operations require a DbConnection.");
+    }
+
+    public async Task<long> LongCountAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        string sql = BuildCountSql();
+
+        return _connection is DbConnection dbConn
+            ? await dbConn.QueryScalarAsync<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options), cancellationToken).ConfigureAwait(false)
             : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
