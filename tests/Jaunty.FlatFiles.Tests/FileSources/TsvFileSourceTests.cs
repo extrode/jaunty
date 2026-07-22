@@ -114,6 +114,18 @@ public class TsvFileSourceTests
         Assert.Equal("DELIMITER '\t', HEADER true", source.GenerateCopyToOptions());
     }
 
+    // AUD-R23 batch-1: GenerateCopyToOptions() used to hardcode "DELIMITER '\t', HEADER true"
+    // regardless of NullString, unlike GenerateReadFunction (which does honor it) and unlike
+    // CsvFileSource.GenerateCopyToOptions (which includes it). A NullString configured for
+    // reading a TSV was silently dropped when exporting via COPY TO, round-tripping the NULL
+    // sentinel as literal text instead of an actual NULL.
+    [Fact]
+    public void GenerateCopyToOptions_WithNullString_IncludesNull()
+    {
+        var source = new TsvFileSource("t", "f.tsv", typeof(object)) { NullString = "NA" };
+        Assert.Equal("DELIMITER '\t', HEADER true, NULL 'NA'", source.GenerateCopyToOptions());
+    }
+
     [Fact]
     public void IsPromotedToTable_CanBeSet()
     {
