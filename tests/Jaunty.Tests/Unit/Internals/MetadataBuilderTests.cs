@@ -102,7 +102,15 @@ public class MetadataBuilderTests
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public string this[int index] => Name;
+
+        // AUD-R22: a *writable* indexer passes the pre-existing CanWrite check, unlike a get-only
+        // one, so it actually exercises MetadataBuilder's own indexer guard rather than being
+        // filtered out incidentally by CanWrite.
+        public string this[int index]
+        {
+            get => Name;
+            set => Name = value;
+        }
     }
 
     public abstract class AbstractEntity

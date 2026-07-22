@@ -71,6 +71,12 @@ internal static class MetadataBuilder
         {
             PropertyInfo property = props[i];
 
+            // R16/AUD-R22: an indexer (e.g. "public object this[int i]") surfaces as a public
+            // instance property named "Item" with GetIndexParameters().Length > 0.
+            // Expression.Property/PropertyInfo.SetValue throw for these; skip them like
+            // ParameterCache.cs already does.
+            if (property.GetIndexParameters().Length > 0) continue;
+
             // 2. Ignore resolution
             if (property.GetCustomAttribute<IgnoreAttribute>() is not null) continue;
 
