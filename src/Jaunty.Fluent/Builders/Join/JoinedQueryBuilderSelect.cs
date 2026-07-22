@@ -1,6 +1,7 @@
 using System.Data;
 using System.Runtime.CompilerServices;
 
+using Jaunty.Core;
 using Jaunty.Fluent.Internals;
 using Jaunty.Configuration;
 using Jaunty.Internals.Read;
@@ -17,6 +18,13 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         string sql = BuildSelectSql(columns);
         return _connection.QueryPartial<TFrom>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public List<TFrom> Select(CommandOptions options)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+        return _connection.QueryPartial<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
 
     public List<T> Select<T>() where T : new()
@@ -61,11 +69,25 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return _connection.QueryPartialFirst<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
+    public TFrom SelectFirst(CommandOptions options)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
+        return _connection.QueryPartialFirst<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
+    }
+
     public TFrom? SelectFirstOrDefault()
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
         return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public TFrom? SelectFirstOrDefault(CommandOptions options)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 1);
+        return _connection.QueryPartialFirstOrDefault<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
 
     public TFrom SelectSingle()
@@ -75,11 +97,25 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return _connection.QueryPartialSingle<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
+    public TFrom SelectSingle(CommandOptions options)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+        return _connection.QueryPartialSingle<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
+    }
+
     public TFrom? SelectSingleOrDefault()
     {
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
         string sql = BuildSelectSql(columns);
         return _connection.QueryPartialSingleOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public TFrom? SelectSingleOrDefault(CommandOptions options)
+    {
+        string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
+        string sql = BuildSelectSql(columns);
+        return _connection.QueryPartialSingleOrDefault<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
 
     public T SelectFirst<T>() where T : new()
@@ -151,10 +187,22 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return _connection.QueryScalar<int>(sql, _parameters.ToParameterObject()!);
     }
 
+    public int Count(CommandOptions options)
+    {
+        string sql = BuildCountSql();
+        return _connection.QueryScalar<int>(sql, _parameters.ToParameterObject()!, ToTypedOptions<int>(options));
+    }
+
     public long LongCount()
     {
         string sql = BuildCountSql();
         return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!);
+    }
+
+    public long LongCount(CommandOptions options)
+    {
+        string sql = BuildCountSql();
+        return _connection.QueryScalar<long>(sql, _parameters.ToParameterObject()!, ToTypedOptions<long>(options));
     }
 
     public string ToSql()
@@ -256,6 +304,9 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
         return results;
     }
+
+    private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
+        new(transaction: options.Transaction, commandTimeout: options.CommandTimeout, commandType: options.CommandType);
 
     private static void EnsureNoAmbiguousColumns(IDataReader reader)
     {
