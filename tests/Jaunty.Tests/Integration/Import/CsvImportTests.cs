@@ -1,6 +1,7 @@
 using System.Data.Common;
 using System.Data.SQLite;
 using System.Reflection;
+using System.Text;
 
 using Jaunty;
 using Jaunty.Tests.Helpers;
@@ -233,6 +234,38 @@ public class CsvImportTests : IClassFixture<DialectFixture>
             File.Delete(path);
             if (File.Exists(tempDb))
                 File.Delete(tempDb);
+        }
+    }
+
+    // AUD-R23: CountCsvRows used to always open the file with a plain new StreamReader(filePath)
+    // (default lenient UTF-8 decoding) instead of the caller-supplied CsvImportOptions.Encoding
+    // that every other read path in this file honors. Proven here by configuring a strict
+    // (throwing) UTF-8 decoder as options.Encoding and feeding it a byte that is invalid on its
+    // own in UTF-8: pre-fix, the encoding argument was silently ignored and the built-in lenient
+    // StreamReader(filePath) default swallowed the bad byte without complaint; post-fix,
+    // CountCsvRows actually decodes with the configured strict encoding and throws.
+    [Fact]
+    public void CountCsvRows_UsesConfiguredEncoding_ThrowsOnInvalidByteForStrictEncoding()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"jaunty_csv_reg_{Guid.NewGuid():N}.csv");
+        // 'N','a','m','e','\n', then a lone UTF-8 continuation byte (0x80) - invalid on its own.
+        File.WriteAllBytes(path, [(byte)'N', (byte)'a', (byte)'m', (byte)'e', (byte)'\n', 0x80, (byte)'\n']);
+
+        try
+        {
+            Encoding strictUtf8 = Encoding.GetEncoding(
+                "utf-8", EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+
+            MethodInfo method = typeof(CsvImportExtensions).GetMethod(
+                "CountCsvRows", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+            var ex = Assert.Throws<TargetInvocationException>(() =>
+                method.Invoke(null, [path, false, '"', strictUtf8]));
+            Assert.IsType<DecoderFallbackException>(ex.InnerException);
+        }
+        finally
+        {
+            File.Delete(path);
         }
     }
 
