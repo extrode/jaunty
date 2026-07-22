@@ -101,7 +101,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     private void AddOperation(SetOperationType operationType, IQueryTerminal<T> other)
     {
         var sql = other.ToSql();
-        ParameterCollection parameters = ExtractParameters(other);
+        ParameterCollection parameters = ExtractParameters(other, sql);
 
         // Rename parameters with unique prefix
         var prefix = $"p{_operationCount}";
@@ -111,7 +111,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         _operationCount++;
     }
 
-    private static ParameterCollection ExtractParameters(IQueryTerminal<T> query)
+    private ParameterCollection ExtractParameters(IQueryTerminal<T> query, string sql)
     {
         // SetOperationBuilder<T> does not implement IQueryTerminal<T>, so it can never
         // reach this method - only QueryBuilder<T> (or another IQueryTerminal<T>
@@ -120,6 +120,21 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
         {
             return qb.GetParameters();
         }
+
+        // A custom IQueryTerminal<T> has no way to report its bound parameters here, so its
+        // SQL must be parameter-free - otherwise its placeholders would be spliced into the
+        // combined SQL with no corresponding values ever bound. Fail loudly instead of
+        // silently emitting broken SQL, mirroring QueryBuilder<T>.BuildInSubqueryClause's
+        // guard for the same class of gap in WhereInSubquery/WhereNotInSubquery.
+        if (sql.IndexOf(_dialect.ParameterPrefix, StringComparison.Ordinal) >= 0)
+        {
+            throw new NotSupportedException(
+                $"Union/UnionAll/Except/Intersect only supports merging parameters from " +
+                $"a query built via QueryBuilder<{typeof(T).Name}> (e.g. connection.From<{typeof(T).Name}>()...). " +
+                $"The provided IQueryTerminal<{typeof(T).Name}> implementation produced " +
+                $"parameterized SQL that cannot be safely merged into the combined query.");
+        }
+
         return new ParameterCollection();
     }
 

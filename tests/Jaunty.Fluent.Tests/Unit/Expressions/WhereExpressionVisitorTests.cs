@@ -342,6 +342,21 @@ public class WhereExpressionVisitorTests
     }
 
     [Fact]
+    public void Visit_StringEqualsNull_GeneratesIsNull()
+    {
+        // AUD-R18: HandleStringEquals used to coerce a null comparison value into an empty
+        // string ("" bound as the parameter), so p.Name.Equals(null) matched empty-string rows
+        // instead of actual NULL rows - a legitimate, non-throwing .NET comparison that must
+        // translate to IS NULL per SQL three-valued logic.
+        Expression<Func<Product, bool>> expr = p => p.ProductName.Equals(null);
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Equal("[product_name] IS NULL", sql);
+        Assert.Empty(parameters);
+    }
+
+    [Fact]
     public void Visit_StringEqualsIgnoreCase_GeneratesCaseInsensitiveComparison()
     {
         Expression<Func<Product, bool>> expr = p => p.ProductName.Equals("Test", StringComparison.OrdinalIgnoreCase);
@@ -610,6 +625,23 @@ public class WhereExpressionVisitorTests
         var (sql, parameters) = visitor.Translate(expr);
 
         Assert.Contains("WHEN (LEN([product_name]) > [units_in_stock]) THEN", sql);
+    }
+
+    [Fact]
+    public void Visit_CaseExpression_WithNullWhenCondition_GeneratesIsNull()
+    {
+        // AUD-R18: TranslateCaseCondition used to parameterize a WHEN condition compared to a
+        // literal null as "col = @param" bound to NULL, which per SQL three-valued logic never
+        // matches - it must emit IS NULL instead, mirroring VisitBinary's top-level null handling.
+        Expression<Func<Product, bool>> expr = p => Sql.Case<Product, string>()
+            .When(x => x.SupplierId == null, "NoSupplier")
+            .Else("HasSupplier") == "NoSupplier";
+
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(expr);
+
+        Assert.Contains("WHEN ([supplier_id] IS NULL) THEN", sql);
+        Assert.DoesNotContain("@supplier_id", sql);
     }
 
     [Fact]

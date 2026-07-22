@@ -184,6 +184,20 @@ internal sealed class JoinedGroupByExpressionVisitor
         {
             TranslateMemberInit(memberInit, groupingParam);
         }
+        else if (IsBareKeyAccess(body, groupingParam) && _groupByColumns.Length > 1)
+        {
+            // Bare `g => g.Key` over a composite grouping key (e.g. `(t1,t2) => new { t1.A, t2.B }`).
+            // Emit every GROUP BY column instead of silently dropping all but the first - mirrors
+            // GroupByExpressionVisitor<T,TKey>.TranslateSelect's fix for the same single-entity gap;
+            // that fix was never ported to this joined visitor.
+            string[] aliases = GetCompositeKeyAliases();
+
+            for (int i = 0; i < _groupByColumns.Length; i++)
+            {
+                _selectColumns.Add($"{_groupByColumns[i]} AS {_dialect.EscapeColumnName(aliases[i])}");
+                _columnAliases.Add(aliases[i]);
+            }
+        }
         else
         {
             (string sql, string alias) = TranslateExpression(body, "Value", groupingParam);
@@ -192,6 +206,17 @@ internal sealed class JoinedGroupByExpressionVisitor
         }
 
         return (_selectColumns.ToArray(), _columnAliases.ToArray());
+    }
+
+    private static bool IsBareKeyAccess(Expression expr, ParameterExpression groupingParam) =>
+        expr is MemberExpression keyMember && keyMember.Member.Name == "Key" && IsGroupingAccess(keyMember.Expression, groupingParam);
+
+    private string[] GetCompositeKeyAliases()
+    {
+        var aliases = new string[_groupByColumns.Length];
+        for (int i = 0; i < aliases.Length; i++)
+            aliases[i] = $"Key{i}";
+        return aliases;
     }
 
     private void TranslateNewExpression(NewExpression newExpr, ParameterExpression groupingParam)
