@@ -16,7 +16,12 @@ public sealed partial class DuckDb
         return FluentExtensions.From<T>(_connection);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Executes a raw SQL query and returns the results as strongly-typed entities.
+    /// </summary>
+    /// <typeparam name="T">The entity type to materialize results into.</typeparam>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <returns>A list of entities matching the query.</returns>
     public List<T> Query<T>(string sql) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(sql);
@@ -25,7 +30,13 @@ public sealed partial class DuckDb
         return QueryInternal<T>(sql, []);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Executes a raw SQL query with parameters and returns the results as strongly-typed entities.
+    /// </summary>
+    /// <typeparam name="T">The entity type to materialize results into.</typeparam>
+    /// <param name="sql">The raw SQL query to execute.</param>
+    /// <param name="parameters">Parameters for the query.</param>
+    /// <returns>A list of entities matching the query.</returns>
     public List<T> Query<T>(string sql, params (string Name, object? Value)[] parameters) where T : class, new()
     {
         ArgumentNullException.ThrowIfNull(sql);
