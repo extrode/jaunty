@@ -465,17 +465,12 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
     private void BindParameters(IDbCommand command)
     {
-        object? paramObj = _parameters.ToParameterObject();
-
-        if (paramObj is IDictionary<string, object?> dict)
+        foreach ((string name, object? value) in _parameters.GetAll())
         {
-            foreach (KeyValuePair<string, object?> kvp in dict)
-            {
-                IDbDataParameter p = command.CreateParameter();
-                p.ParameterName = kvp.Key;
-                p.Value = NormalizeForBinding(kvp.Value) ?? DBNull.Value;
-                command.Parameters.Add(p);
-            }
+            IDbDataParameter p = command.CreateParameter();
+            p.ParameterName = name;
+            p.Value = NormalizeForBinding(value) ?? DBNull.Value;
+            command.Parameters.Add(p);
         }
     }
 
