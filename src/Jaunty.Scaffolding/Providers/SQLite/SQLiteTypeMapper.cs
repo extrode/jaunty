@@ -52,17 +52,17 @@ public sealed class SQLiteTypeMapper : ITypeMapper
 
             // Date/Time (SQLite stores as text or numbers)
             "DATE" =>
-                new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true },
+                new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true, RequiredUsing = "System" },
 
             "TIME" =>
-                new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true },
+                new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true, RequiredUsing = "System" },
 
             "DATETIME" or "TIMESTAMP" =>
-                new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true },
+                new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true, RequiredUsing = "System" },
 
             // GUID/UUID (SQLite stores as text or blob)
             "GUID" or "UUID" or "UNIQUEIDENTIFIER" =>
-                new CSharpTypeInfo { TypeName = "Guid", IsValueType = true },
+                new CSharpTypeInfo { TypeName = "Guid", IsValueType = true, RequiredUsing = "System" },
 
             // Default to object for unknown types
             _ => new CSharpTypeInfo { TypeName = "object", IsValueType = false }

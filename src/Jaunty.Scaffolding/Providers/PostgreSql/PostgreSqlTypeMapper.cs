@@ -42,15 +42,15 @@ public sealed class PostgreSqlTypeMapper : ITypeMapper
                 new CSharpTypeInfo { TypeName = "string", IsValueType = false },
 
             // Date/Time types
-            "date" => new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true },
-            "time" or "time without time zone" => new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true },
-            "time with time zone" or "timetz" => new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true },
-            "timestamp" or "timestamp without time zone" => new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true },
-            "timestamp with time zone" or "timestamptz" => new CSharpTypeInfo { TypeName = "DateTimeOffset", IsValueType = true },
-            "interval" => new CSharpTypeInfo { TypeName = "TimeSpan", IsValueType = true },
+            "date" => new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true, RequiredUsing = "System" },
+            "time" or "time without time zone" => new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true, RequiredUsing = "System" },
+            "time with time zone" or "timetz" => new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true, RequiredUsing = "System" },
+            "timestamp" or "timestamp without time zone" => new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true, RequiredUsing = "System" },
+            "timestamp with time zone" or "timestamptz" => new CSharpTypeInfo { TypeName = "DateTimeOffset", IsValueType = true, RequiredUsing = "System" },
+            "interval" => new CSharpTypeInfo { TypeName = "TimeSpan", IsValueType = true, RequiredUsing = "System" },
 
             // UUID
-            "uuid" => new CSharpTypeInfo { TypeName = "Guid", IsValueType = true },
+            "uuid" => new CSharpTypeInfo { TypeName = "Guid", IsValueType = true, RequiredUsing = "System" },
 
             // Binary
             "bytea" => new CSharpTypeInfo { TypeName = "byte[]", IsValueType = false },
