@@ -118,4 +118,115 @@ public class GetAsyncTests : IClassFixture<DialectFixture>
 
         Assert.NotNull(entity);
     }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GetAsync_WithCommandOptions_ReadsUncommittedInSameTx(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var id = InsertRow(ctx.Connection, "AsyncTxRow", 15);
+        var dbConn = (DbConnection)ctx.Connection;
+        using var tx = dbConn.BeginTransaction();
+
+        var entity = await dbConn.GetAsync<GetTestEntity>(id, CommandOptions<GetTestEntity>.WithTransaction(tx));
+
+        Assert.NotNull(entity);
+        Assert.Equal("AsyncTxRow", entity.Name);
+        tx.Rollback();
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GetAsync_TypedKey_WithCommandOptions_ReadsUncommittedInSameTx(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var id = InsertRow(ctx.Connection, "AsyncTypedTxRow", 16);
+        var dbConn = (DbConnection)ctx.Connection;
+        using var tx = dbConn.BeginTransaction();
+
+        var entity = await dbConn.GetAsync<GetTestEntityTyped, long>(id, CommandOptions<GetTestEntityTyped>.WithTransaction(tx));
+
+        Assert.NotNull(entity);
+        Assert.Equal("AsyncTypedTxRow", entity.Name);
+        tx.Rollback();
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GetRequiredAsync_WithCommandOptions_ReadsUncommittedInSameTx(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var id = InsertRow(ctx.Connection, "AsyncReqTxRow", 17);
+        var dbConn = (DbConnection)ctx.Connection;
+        using var tx = dbConn.BeginTransaction();
+
+        var entity = await dbConn.GetRequiredAsync<GetTestEntity>(id, CommandOptions<GetTestEntity>.WithTransaction(tx));
+
+        Assert.Equal("AsyncReqTxRow", entity.Name);
+        tx.Rollback();
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GetRequiredAsync_TypedKey_ReturnsEntity(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var id = InsertRow(ctx.Connection, "AsyncTypedRequired", 18);
+        var dbConn = (DbConnection)ctx.Connection;
+
+        var entity = await dbConn.GetRequiredAsync<GetTestEntityTyped, long>(id);
+
+        Assert.Equal(id, entity.Id);
+        Assert.Equal("AsyncTypedRequired", entity.Name);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GetRequiredAsync_TypedKey_MissingRow_Throws(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var dbConn = (DbConnection)ctx.Connection;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            dbConn.GetRequiredAsync<GetTestEntityTyped, long>(-1L).AsTask());
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task GetRequiredAsync_TypedKey_WithCommandOptions_ReadsUncommittedInSameTx(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var id = InsertRow(ctx.Connection, "AsyncTypedReqTxRow", 19);
+        var dbConn = (DbConnection)ctx.Connection;
+        using var tx = dbConn.BeginTransaction();
+
+        var entity = await dbConn.GetRequiredAsync<GetTestEntityTyped, long>(id, CommandOptions<GetTestEntityTyped>.WithTransaction(tx));
+
+        Assert.Equal("AsyncTypedReqTxRow", entity.Name);
+        tx.Rollback();
+    }
 }
