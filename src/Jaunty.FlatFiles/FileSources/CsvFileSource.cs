@@ -114,5 +114,19 @@ public sealed class CsvFileSource : IFileSource
     }
 
     /// <inheritdoc />
-    public string? GenerateCopyToOptions() => "HEADER true";
+    public string? GenerateCopyToOptions()
+    {
+        var sb = new System.Text.StringBuilder("HEADER true");
+
+        if (Delimiter.HasValue)
+            sb.Append($", DELIMITER '{Delimiter.Value.ToString().Replace("'", "''")}'");
+
+        if (QuoteChar.HasValue)
+            sb.Append($", QUOTE '{QuoteChar.Value.ToString().Replace("'", "''")}'");
+
+        if (NullString is not null)
+            sb.Append($", NULL '{NullString.Replace("'", "''")}'");
+
+        return sb.ToString();
+    }
 }
