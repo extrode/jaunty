@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
@@ -225,63 +226,76 @@ public static class JauntyReflectionExtensions
     }
 
 
-    private static object? ApplyHandlersAndEnumStorage(PropertyInfo property, object? value)
+    /// <summary>
+    /// Builds a per-property value converter once (at binder-build time, mirroring
+    /// <see cref="MetadataCache{T}.CreateFallbackSetter"/> on the read path), so
+    /// <see cref="EnumStorageAttribute"/> is resolved once per column instead of once per row.
+    /// An explicit attribute is immutable and safe to bake in; a property without one falls back
+    /// to <see cref="JauntyConfig.DefaultEnumStorage"/>, which is mutable process-wide state
+    /// (callers can change it at runtime, e.g. tests or multi-tenant apps) and so must be
+    /// re-checked on every call rather than captured once - same reasoning CreateSetter already
+    /// applies to TypeHandlerRegistry, which is likewise re-checked on every call below.
+    /// </summary>
+    private static Func<object?, object?> BuildValueConverter(PropertyInfo property)
+    {
+        Type propertyType = property.PropertyType;
+        Type underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+
+        if (underlyingType.IsEnum)
+        {
+            EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
+
+            if (enumAttr is not null)
+            {
+                return enumAttr.Storage == EnumStorage.String
+                    ? value => ConvertWithTypeHandlerOrElse(value, static v => v.ToString())
+                    : value => ConvertWithTypeHandlerOrElse(value, static v => v);
+            }
+
+            return value => ConvertWithTypeHandlerOrElse(value, static v =>
+                JauntyConfig.DefaultEnumStorage == EnumStorage.String ? v.ToString() : v);
+        }
+
+        return value => ConvertWithTypeHandlerOrElse(value, static v => v);
+    }
+
+    private static object? ConvertWithTypeHandlerOrElse(object? value, Func<object, object?> fallback)
     {
         if (value is null)
             return value;
 
-        Type valueType = value.GetType();
-
-        // Check if there's a registered type handler
-        if (TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(valueType, out ITypeHandler? handler) && handler is not null)
-        {
+        if (TypeHandlerRegistry.HasHandlers && TypeHandlerRegistry.TryGetHandler(value.GetType(), out ITypeHandler? handler) && handler is not null)
             return handler.ToDbValue(value);
-        }
 
-        // Handle enums based on storage strategy
-        if (valueType.IsEnum)
-        {
-            EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
-            EnumStorage storage = enumAttr?.Storage ?? JauntyConfig.DefaultEnumStorage;
-            
-            if (storage == EnumStorage.String)
-            {
-                return value.ToString();
-            }
-        }
-        else if (valueType.IsGenericType)
-        {
-            Type? underlyingType = Nullable.GetUnderlyingType(valueType);
-            if (underlyingType?.IsEnum == true)
-            {
-                EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
-                EnumStorage storage = enumAttr?.Storage ?? JauntyConfig.DefaultEnumStorage;
-                
-                if (storage == EnumStorage.String)
-                {
-                    return value.ToString();
-                }
-            }
-        }
+        return fallback(value);
+    }
 
-        return value;
+    private static (string ParamName, PropertyInfo Property, Func<object?, object?> Convert)[] BuildColumnConverters(IReadOnlyList<ColumnMetadata> columns)
+    {
+        var result = new (string, PropertyInfo, Func<object?, object?>)[columns.Count];
+        for (int i = 0; i < columns.Count; i++)
+        {
+            PropertyInfo property = columns[i].Property!;
+            result[i] = ("@" + columns[i].ColumnName, property, BuildValueConverter(property));
+        }
+        return result;
     }
 
     private static Action<IDbCommand, object> GetTypedInsertBinder<T>() where T : new()
     {
+        var converters = BuildColumnConverters(MetadataCache<T>.Metadata.InsertColumns);
+
         return (cmd, entityObj) =>
         {
             if (entityObj is not T entity)
                 throw new InvalidOperationException($"Expected an instance of '{typeof(T).Name}' but received '{entityObj?.GetType().Name ?? "null"}'.");
-            EntityMetadata meta = MetadataCache<T>.Metadata;
 
-            foreach (ColumnMetadata col in meta.InsertColumns)
+            foreach ((string paramName, PropertyInfo property, Func<object?, object?> convert) in converters)
             {
                 IDbDataParameter p = cmd.CreateParameter();
-                p.ParameterName = "@" + col.ColumnName;
-                PropertyInfo property = col.Property!;
+                p.ParameterName = paramName;
                 object? propValue = property.GetValue(entity);
-                p.Value = ApplyHandlersAndEnumStorage(property, propValue) ?? DBNull.Value;
+                p.Value = convert(propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
         };
@@ -289,27 +303,30 @@ public static class JauntyReflectionExtensions
 
     private static Action<IDbCommand, object> GetTypedUpdateBinder<T>() where T : new()
     {
+        EntityMetadata meta = MetadataCache<T>.Metadata;
+        var updateConverters = BuildColumnConverters(meta.UpdateColumns);
+        var keyConverters = BuildColumnConverters(meta.PrimaryKeys);
+
         return (cmd, entityObj) =>
         {
             if (entityObj is not T entity)
                 throw new InvalidOperationException($"Expected an instance of '{typeof(T).Name}' but received '{entityObj?.GetType().Name ?? "null"}'.");
-            EntityMetadata meta = MetadataCache<T>.Metadata;
 
-            foreach (ColumnMetadata col in meta.UpdateColumns)
+            foreach ((string paramName, PropertyInfo property, Func<object?, object?> convert) in updateConverters)
             {
                 IDbDataParameter p = cmd.CreateParameter();
-                p.ParameterName = "@" + col.ColumnName;
-                PropertyInfo property = col.Property!;
-                object? propValue = property.GetValue(entity); p.Value = ApplyHandlersAndEnumStorage(property, propValue) ?? DBNull.Value;
+                p.ParameterName = paramName;
+                object? propValue = property.GetValue(entity);
+                p.Value = convert(propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
 
-            foreach (ColumnMetadata col in meta.PrimaryKeys)
+            foreach ((string paramName, PropertyInfo property, Func<object?, object?> convert) in keyConverters)
             {
                 IDbDataParameter p = cmd.CreateParameter();
-                p.ParameterName = "@" + col.ColumnName;
-                PropertyInfo property = col.Property!;
-                object? propValue = property.GetValue(entity); p.Value = ApplyHandlersAndEnumStorage(property, propValue) ?? DBNull.Value;
+                p.ParameterName = paramName;
+                object? propValue = property.GetValue(entity);
+                p.Value = convert(propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
         };
@@ -317,19 +334,19 @@ public static class JauntyReflectionExtensions
 
     private static Action<IDbCommand, object> GetTypedDeleteBinder<T>() where T : new()
     {
+        var converters = BuildColumnConverters(MetadataCache<T>.Metadata.DeleteColumns);
+
         return (cmd, entityObj) =>
         {
             if (entityObj is not T entity)
                 throw new InvalidOperationException($"Expected an instance of '{typeof(T).Name}' but received '{entityObj?.GetType().Name ?? "null"}'.");
-            EntityMetadata meta = MetadataCache<T>.Metadata;
 
-            foreach (ColumnMetadata col in meta.DeleteColumns)
+            foreach ((string paramName, PropertyInfo property, Func<object?, object?> convert) in converters)
             {
                 IDbDataParameter p = cmd.CreateParameter();
-                p.ParameterName = "@" + col.ColumnName;
-                PropertyInfo property = col.Property!;
+                p.ParameterName = paramName;
                 object? propValue = property.GetValue(entity);
-                p.Value = ApplyHandlersAndEnumStorage(property, propValue) ?? DBNull.Value;
+                p.Value = convert(propValue) ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
         };
