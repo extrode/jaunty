@@ -1,3 +1,4 @@
+using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Unit.Extensions.Reflection;
@@ -433,6 +434,32 @@ public class SpecialTypeMapperIntegrationTests : IClassFixture<DialectFixture>
         var kvp = results[0];
         Assert.True(kvp.Key > 0);
         Assert.Equal(123.45m, kvp.Value);
+    }
+
+    // AUD-R19 batch-6: DbValueConverter.ChangeType's IsEnum branch had no direct test - it's
+    // only reachable through SpecialTypeMappers.ConvertValue (a special-type container, e.g.
+    // KeyValuePair, with an enum type argument), since MetadataCache<T>.CreateFallbackSetter
+    // handles enum entity properties itself before ChangeType is ever built for them.
+    [Theory]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void Query_KeyValuePair_WithEnumValue_MapsThroughDbValueConverter(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+
+        var sql = dialect.Provider == DialectProvider.SqlServer
+            ? "SELECT TOP (1) CategoryId, 1 FROM Categories"
+            : "SELECT category_id AS CategoryId, 1 FROM categories LIMIT 1";
+
+        var results = connection.Query<KeyValuePair<int, TestEnumForHandlers>>(sql);
+
+        Assert.Equal(1, results.Count);
+        var kvp = results[0];
+        Assert.True(kvp.Key > 0);
+        Assert.Equal(TestEnumForHandlers.Completed, kvp.Value);
     }
 
     #endregion
