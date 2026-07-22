@@ -472,7 +472,12 @@ public static partial class Jaunty
         {
             if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
             using DbCommand command = dbConnection.CreateCommand();
+#endif
             command.CommandText = sql;
 
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
@@ -488,7 +493,12 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 yield break;
@@ -689,7 +699,12 @@ public static partial class Jaunty
         {
             if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
             using DbCommand command = dbConnection.CreateCommand();
+#endif
             command.CommandText = sql;
 
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
@@ -705,7 +720,12 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 yield break;
@@ -916,7 +936,12 @@ public static partial class Jaunty
         {
             if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
             using DbCommand command = dbConnection.CreateCommand();
+#endif
             command.CommandText = sql;
 
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
@@ -932,7 +957,12 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 yield break;
@@ -1157,7 +1187,12 @@ public static partial class Jaunty
         {
             if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
             using DbCommand command = dbConnection.CreateCommand();
+#endif
             command.CommandText = sql;
 
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
@@ -1173,7 +1208,12 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 yield break;
@@ -1412,7 +1452,12 @@ public static partial class Jaunty
         {
             if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
             using DbCommand command = dbConnection.CreateCommand();
+#endif
             command.CommandText = sql;
 
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
@@ -1428,7 +1473,12 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 yield break;
@@ -1681,7 +1731,12 @@ public static partial class Jaunty
         {
             if (wasClosed) await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
+#if NET8_0_OR_GREATER
+            DbCommand command = dbConnection.CreateCommand();
+            await using var commandDisposer = command.ConfigureAwait(false);
+#else
             using DbCommand command = dbConnection.CreateCommand();
+#endif
             command.CommandText = sql;
 
             if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
@@ -1697,7 +1752,12 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
+#if NET8_0_OR_GREATER
+            DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using var readerDisposer = reader.ConfigureAwait(false);
+#else
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 yield break;
