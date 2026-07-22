@@ -76,6 +76,7 @@ public class JoinClauseBuilderParameterPrefixTests
         public string FormatContainsPattern(string value) => _inner.FormatContainsPattern(value);
         public string FormatStartsWithPattern(string value) => _inner.FormatStartsWithPattern(value);
         public string FormatEndsWithPattern(string value) => _inner.FormatEndsWithPattern(value);
+        public string FormatBooleanLiteral(bool value) => _inner.FormatBooleanLiteral(value);
         public string GenerateCoalesce(params string[] expressions) => _inner.GenerateCoalesce(expressions);
         public string GenerateIsNull(string expression, string defaultExpression) => _inner.GenerateIsNull(expression, defaultExpression);
         public string GenerateNullIf(string expression, string compareExpression) => _inner.GenerateNullIf(expression, compareExpression);

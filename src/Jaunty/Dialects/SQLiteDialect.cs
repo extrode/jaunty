@@ -116,6 +116,8 @@ internal sealed class SQLiteDialect : ISqlDialect
         return $"*{EscapeGlobPattern(value)}";
     }
 
+    public string FormatBooleanLiteral(bool value) => value ? "1" : "0";
+
     private static string EscapeGlobPattern(string value)
     {
         // Escape GLOB special characters: *, ?, [
