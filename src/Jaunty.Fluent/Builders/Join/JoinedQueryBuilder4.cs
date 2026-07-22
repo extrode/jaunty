@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 
+using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
@@ -346,6 +347,8 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
 
     public List<T1> Select() => _parent._parent.Select();
 
+    public List<T1> Select(CommandOptions options) => _parent._parent.Select(options);
+
     public List<(T1, T2, T3, T4)> SelectAll()
     {
         EntityMetadata t1Metadata = FluentMetadataCache.GetMetadata<T1>();
@@ -400,11 +403,19 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
     // _dialect.GetPagingSql, so delegate to it directly.
     public T1 SelectFirst() => _parent._parent.SelectFirst();
 
+    public T1 SelectFirst(CommandOptions options) => _parent._parent.SelectFirst(options);
+
     public T1? SelectFirstOrDefault() => _parent._parent.SelectFirstOrDefault();
+
+    public T1? SelectFirstOrDefault(CommandOptions options) => _parent._parent.SelectFirstOrDefault(options);
 
     public T1 SelectSingle() => _parent._parent.SelectSingle();
 
+    public T1 SelectSingle(CommandOptions options) => _parent._parent.SelectSingle(options);
+
     public T1? SelectSingleOrDefault() => _parent._parent.SelectSingleOrDefault();
+
+    public T1? SelectSingleOrDefault(CommandOptions options) => _parent._parent.SelectSingleOrDefault(options);
 
     public int Count()
     {
@@ -412,10 +423,22 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         return _parent._parent.Connection.QueryScalar<int>(sql, _parent._parent.GetParameters().ToParameterObject()!);
     }
 
+    public int Count(CommandOptions options)
+    {
+        string sql = _parent._parent.BuildCountSql();
+        return _parent._parent.Connection.QueryScalar<int>(sql, _parent._parent.GetParameters().ToParameterObject()!, ToTypedOptions<int>(options));
+    }
+
     public long LongCount()
     {
         string sql = _parent._parent.BuildCountSql();
         return _parent._parent.Connection.QueryScalar<long>(sql, _parent._parent.GetParameters().ToParameterObject()!);
+    }
+
+    public long LongCount(CommandOptions options)
+    {
+        string sql = _parent._parent.BuildCountSql();
+        return _parent._parent.Connection.QueryScalar<long>(sql, _parent._parent.GetParameters().ToParameterObject()!, ToTypedOptions<long>(options));
     }
 
     public string ToSql() => _parent._parent.ToSql();
@@ -444,6 +467,12 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
     {
         string sql = _parent._parent.BuildSelectSql(_parent._parent.GetSelectColumns<T1>());
         return await _parent._parent.Connection.QueryPartialAsync<T1>(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<List<T1>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        string sql = _parent._parent.BuildSelectSql(_parent._parent.GetSelectColumns<T1>());
+        return await _parent._parent.Connection.QueryPartialAsync<T1>(sql, _parent._parent.GetParameters().ToParameterObject()!, ToTypedOptions<T1>(options), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<List<(T1, T2, T3, T4)>> SelectAllAsync(CancellationToken cancellationToken = default)
@@ -500,11 +529,19 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
     // _parent._parent, which already applies GetPagingSql(0, 1).
     public Task<T1> SelectFirstAsync(CancellationToken cancellationToken = default) => _parent._parent.SelectFirstAsync(cancellationToken);
 
+    public Task<T1> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default) => _parent._parent.SelectFirstAsync(options, cancellationToken);
+
     public Task<T1?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default) => _parent._parent.SelectFirstOrDefaultAsync(cancellationToken);
+
+    public Task<T1?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default) => _parent._parent.SelectFirstOrDefaultAsync(options, cancellationToken);
 
     public Task<T1> SelectSingleAsync(CancellationToken cancellationToken = default) => _parent._parent.SelectSingleAsync(cancellationToken);
 
+    public Task<T1> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default) => _parent._parent.SelectSingleAsync(options, cancellationToken);
+
     public Task<T1?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default) => _parent._parent.SelectSingleOrDefaultAsync(cancellationToken);
+
+    public Task<T1?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default) => _parent._parent.SelectSingleOrDefaultAsync(options, cancellationToken);
 
     public async Task<int> CountAsync(CancellationToken cancellationToken = default)
     {
@@ -512,10 +549,22 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         return await _parent._parent.Connection.QueryScalarAsync<int>(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<int> CountAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        string sql = _parent._parent.BuildCountSql();
+        return await _parent._parent.Connection.QueryScalarAsync<int>(sql, _parent._parent.GetParameters().ToParameterObject()!, ToTypedOptions<int>(options), cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<long> LongCountAsync(CancellationToken cancellationToken = default)
     {
         string sql = _parent._parent.BuildCountSql();
         return await _parent._parent.Connection.QueryScalarAsync<long>(sql, _parent._parent.GetParameters().ToParameterObject()!, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<long> LongCountAsync(CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        string sql = _parent._parent.BuildCountSql();
+        return await _parent._parent.Connection.QueryScalarAsync<long>(sql, _parent._parent.GetParameters().ToParameterObject()!, ToTypedOptions<long>(options), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<List<IDictionary<string, object?>>> SelectPartialAsync(string columns, CancellationToken cancellationToken = default)
@@ -558,4 +607,7 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         string prefix = alias ?? _parent._parent.Dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escaped}";
     }
+
+    private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
+        new(transaction: options.Transaction, commandTimeout: options.CommandTimeout, commandType: options.CommandType);
 }
