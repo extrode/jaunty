@@ -73,6 +73,42 @@ public class BulkInsertNativeGuardOrderTests : IDisposable
         Assert.False(_provider.LastOptions!.CheckConstraints);
     }
 
+    // AUD-R18 batch-6: IBulkCopyProvider.CopyToServer/CopyToServerAsync used to take only a bare
+    // tableName, silently dropping EntityMetadata.SchemaName for entities mapped to a non-default
+    // schema - the native bulk-copy path would target the wrong (schema-less) table on any dialect
+    // where that matters. SchemaQualifiedBulkTestEntity is mapped to schema "custom"; asserting the
+    // provider actually received it (not just that WasCalled is true) is what would have caught
+    // this since RecordingBulkCopyProvider never touches a real connection.
+    [Fact]
+    public void BulkInsertIgnoreConstraints_SchemaQualifiedEntity_PassesSchemaNameToProvider()
+    {
+        var connection = new NativeOnlyConnection(_inner);
+        var entities = Enumerable.Range(0, 5)
+            .Select(i => new SchemaQualifiedBulkTestEntity { Name = $"P{i}", Value = i })
+            .ToList();
+
+        connection.BulkInsertIgnoreConstraints(entities);
+
+        Assert.True(_provider.WasCalled);
+        Assert.Equal("custom", _provider.LastSchemaName);
+        Assert.Equal("bulk_test", _provider.LastTableName);
+    }
+
+    [Fact]
+    public async Task BulkInsertIgnoreConstraintsAsync_SchemaQualifiedEntity_PassesSchemaNameToProvider()
+    {
+        var connection = new NativeOnlyConnection(_inner);
+        var entities = Enumerable.Range(0, 5)
+            .Select(i => new SchemaQualifiedBulkTestEntity { Name = $"P{i}", Value = i })
+            .ToList();
+
+        await connection.BulkInsertIgnoreConstraintsAsync(entities);
+
+        Assert.True(_provider.WasCalled);
+        Assert.Equal("custom", _provider.LastSchemaName);
+        Assert.Equal("bulk_test", _provider.LastTableName);
+    }
+
     public void Dispose()
     {
         BulkCopyConfiguration.EnableNativeBulkCopy = _originalEnableNativeBulkCopy;
@@ -210,16 +246,21 @@ internal sealed class RecordingBulkCopyProvider : IBulkCopyProvider
     public bool IsSupported => true;
     public bool WasCalled { get; private set; }
     public BulkCopyOptions? LastOptions { get; private set; }
+    public string? LastSchemaName { get; private set; }
+    public string? LastTableName { get; private set; }
 
-    public int CopyToServer(IDbConnection connection, string tableName, IDataReader data, BulkCopyOptions options)
+    public int CopyToServer(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)
     {
         WasCalled = true;
         LastOptions = options;
+        LastSchemaName = schemaName;
+        LastTableName = tableName;
         return -1;
     }
 
     public ValueTask<int> CopyToServerAsync(
         DbConnection connection,
+        string? schemaName,
         string tableName,
         IDataReader data,
         BulkCopyOptions options,
@@ -227,6 +268,8 @@ internal sealed class RecordingBulkCopyProvider : IBulkCopyProvider
     {
         WasCalled = true;
         LastOptions = options;
+        LastSchemaName = schemaName;
+        LastTableName = tableName;
         return new ValueTask<int>(-1);
     }
 }
