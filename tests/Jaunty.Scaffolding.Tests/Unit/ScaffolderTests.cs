@@ -7,6 +7,43 @@ namespace Jaunty.Scaffolding.Tests.Unit;
 public class ScaffolderTests
 {
     // ------------------------------------------------------------------
+    // ScaffoldAsync / ValidateOptions
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task ScaffoldAsync_EmptyConnectionString_ReturnsFailedWithMessage()
+    {
+        var options = new ScaffoldOptions { ConnectionString = "", OutputDirectory = "./out", Namespace = "Generated" };
+
+        ScaffoldResult result = await new Scaffolder().ScaffoldAsync(options);
+
+        Assert.False(result.Success);
+        Assert.StartsWith("Connection string is required.", result.Error);
+    }
+
+    [Fact]
+    public async Task ScaffoldAsync_EmptyOutputDirectory_ReturnsFailedWithMessage()
+    {
+        var options = new ScaffoldOptions { ConnectionString = "Data Source=./app.db", OutputDirectory = "", Namespace = "Generated" };
+
+        ScaffoldResult result = await new Scaffolder().ScaffoldAsync(options);
+
+        Assert.False(result.Success);
+        Assert.StartsWith("Output directory is required.", result.Error);
+    }
+
+    [Fact]
+    public async Task ScaffoldAsync_EmptyNamespace_ReturnsFailedWithMessage()
+    {
+        var options = new ScaffoldOptions { ConnectionString = "Data Source=./app.db", OutputDirectory = "./out", Namespace = "" };
+
+        ScaffoldResult result = await new Scaffolder().ScaffoldAsync(options);
+
+        Assert.False(result.Success);
+        Assert.StartsWith("Namespace is required.", result.Error);
+    }
+
+    // ------------------------------------------------------------------
     // DetectProvider
     // ------------------------------------------------------------------
 

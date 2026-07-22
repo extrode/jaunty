@@ -370,6 +370,70 @@ public class EntityCodeGeneratorTests
         Assert.Contains("[Jaunty.Attributes.DatabaseGenerated(Jaunty.Attributes.DatabaseGeneratedOption.Identity)]", code);
     }
 
+    [Fact]
+    public void GenerateEntity_WithDataAnnotations_EmitsRequiredAndMaxLength()
+    {
+        var table = CreateSimpleTable();
+        var options = new CodeGeneratorOptions { Namespace = "Test.Entities", AddDataAnnotations = true };
+
+        var code = _generator.GenerateEntity(table, options);
+
+        // ProductName is a non-nullable string with MaxLength=100.
+        Assert.Contains("[Required]", code);
+        Assert.Contains("[MaxLength(100)]", code);
+    }
+
+    [Fact]
+    public void GenerateEntity_DataAnnotationsNullableColumn_OmitsRequired()
+    {
+        var table = CreateSimpleTable();
+        var options = new CodeGeneratorOptions { Namespace = "Test.Entities", AddDataAnnotations = true };
+
+        var code = _generator.GenerateEntity(table, options);
+
+        // UnitPrice is nullable decimal (a value type), so neither [Required] (nullable) nor
+        // [MaxLength] (not a string) should be attached to it.
+        Assert.Contains("public decimal? UnitPrice { get; set; }", code);
+    }
+
+    [Fact]
+    public void GenerateEntity_ComputedColumn_GeneratesDatabaseGeneratedComputedAttribute()
+    {
+        var table = new TableSchema
+        {
+            SchemaName = "dbo",
+            TableName = "Products",
+            Columns =
+            [
+                new ColumnSchema { ColumnName = "Id", DataType = "int", IsPrimaryKey = true, OrdinalPosition = 1 },
+                new ColumnSchema { ColumnName = "Total", DataType = "decimal", IsComputed = true, OrdinalPosition = 2 }
+            ]
+        };
+
+        var code = _generator.GenerateEntity(table, _defaultOptions);
+
+        Assert.Contains("[Jaunty.Attributes.DatabaseGenerated(Jaunty.Attributes.DatabaseGeneratedOption.Computed)]", code);
+    }
+
+    [Fact]
+    public void GenerateEntity_NonNullableByteArrayColumn_GeneratesEmptyArrayDefault()
+    {
+        var table = new TableSchema
+        {
+            SchemaName = "dbo",
+            TableName = "Products",
+            Columns =
+            [
+                new ColumnSchema { ColumnName = "Id", DataType = "int", IsPrimaryKey = true, OrdinalPosition = 1 },
+                new ColumnSchema { ColumnName = "RowVersion", DataType = "varbinary", IsNullable = false, OrdinalPosition = 2 }
+            ]
+        };
+
+        var code = _generator.GenerateEntity(table, _defaultOptions);
+
+        Assert.Contains("public byte[] RowVersion { get; set; } = [];", code);
+    }
+
     // ------------------------------------------------------------------
     // String literal escaping
     // ------------------------------------------------------------------
