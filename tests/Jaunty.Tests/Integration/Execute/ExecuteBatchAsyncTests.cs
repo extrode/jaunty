@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using Jaunty.Core;
 using Jaunty.Tests.Helpers.Dialects;
 
 namespace Jaunty.Tests.Integration.Execute;
@@ -64,5 +65,34 @@ public class ExecuteBatchAsyncTests : IClassFixture<DialectFixture>
             paramSets);
 
         Assert.Equal(0, totalRows);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task ExecuteBatchAsync_WithDefaultCommandOptions_ReturnsCumulativeRows(DialectInfo dialect)
+    {
+        // AUD-R19 batch-2: default(CommandOptions) zero-initializes CommandType to (CommandType)0
+        // rather than running the primary constructor's CommandType.Text default. ExecuteBatchCoreAsync
+        // previously set command.CommandType whenever commandType != CommandType.Text, so a
+        // default-initialized options struct wrongly assigned an invalid CommandType to the command.
+        using var ctx = _fixture.GetWriteContextForTable(dialect, TableName);
+        var connection = (DbConnection)ctx.Connection;
+        var paramSets = new object[]
+        {
+            new { Name = "AsyncDefaultOptions1", Value = 100 },
+            new { Name = "AsyncDefaultOptions2", Value = 200 }
+        };
+
+        var totalRows = await connection.ExecuteBatchAsync(
+            $"INSERT INTO {TableName} (name, value) VALUES (@Name, @Value)",
+            paramSets,
+            default(CommandOptions));
+
+        Assert.Equal(2, totalRows);
+        Assert.Equal(2, GetRowCount(ctx.Connection));
     }
 }
