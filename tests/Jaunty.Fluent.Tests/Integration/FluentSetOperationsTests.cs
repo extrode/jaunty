@@ -450,4 +450,90 @@ public class FluentSetOperationsTests : IClassFixture<FluentDatabaseFixture>
         Assert.Contains("UNION", sql);
         Assert.Contains("SELECT * FROM products WHERE category_id = 2", sql);
     }
+
+    // ==========================================
+    // Operands/first query with pre-existing ORDER BY / Take / Skip (AUD-R21)
+    // ==========================================
+
+    [Fact]
+    public void Union_OperandAlreadyHasOrderBy_ThrowsNotSupportedException()
+    {
+        // AUD-R21: an operand that already has its own ORDER BY applied would have that
+        // ordering spliced verbatim into the middle of the combined statement instead of
+        // applying to the combined result - reject it instead of emitting broken/misleading SQL.
+        var orderedOperand = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 2)
+            .OrderBy(p => p.ProductName);
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == 1)
+                .Union(orderedOperand)
+                .ToSql());
+
+        Assert.Contains("OrderBy", ex.Message);
+    }
+
+    [Fact]
+    public void Union_OperandAlreadyHasTake_ThrowsNotSupportedException()
+    {
+        var pagedOperand = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 2)
+            .OrderBy(p => p.ProductId)
+            .Take(5);
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == 1)
+                .Union(pagedOperand)
+                .ToSql());
+
+        Assert.Contains("Take", ex.Message);
+    }
+
+    [Fact]
+    public void Union_OperandCustomImplementationAlreadyHasOrderBy_ThrowsNotSupportedException()
+    {
+        var other = new StubQueryTerminal<Product>("SELECT * FROM products WHERE category_id = 2 ORDER BY product_name");
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            _fixture.Connection.From<Product>()
+                .Where(p => p.CategoryId == 1)
+                .Union(other)
+                .ToSql());
+
+        Assert.Contains("OrderBy", ex.Message);
+    }
+
+    [Fact]
+    public void Union_FirstQueryAlreadyHasOrderBy_ThrowsNotSupportedException()
+    {
+        // The same guard applies to the first (left-hand) query in the chain: Union/UnionAll/
+        // Except/Intersect are plain public methods on QueryBuilder<T>, reachable even after
+        // OrderBy/Take/Skip has already been applied to that same builder instance.
+        var firstQuery = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .OrderBy(p => p.ProductName);
+
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            firstQuery.Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2)).ToSql());
+
+        Assert.Contains("OrderBy", ex.Message);
+    }
+
+    [Fact]
+    public void Union_OuterOrderByAfterUnion_StillWorksCorrectly()
+    {
+        // Confirms the fix doesn't break the documented/intended usage: OrderBy/Take/Skip on
+        // the OUTER set-operation chain (after Union), applying to the combined result.
+        var sql = _fixture.Connection.From<Product>()
+            .Where(p => p.CategoryId == 1)
+            .Union(_fixture.Connection.From<Product>().Where(p => p.CategoryId == 2))
+            .OrderBy(p => p.ProductName)
+            .Take(5)
+            .ToSql();
+
+        Assert.Contains("UNION", sql);
+        Assert.Contains("ORDER BY", sql);
+    }
 }
