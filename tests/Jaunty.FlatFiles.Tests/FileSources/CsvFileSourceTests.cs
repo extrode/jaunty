@@ -198,6 +198,40 @@ public class CsvFileSourceTests
     }
 
     [Fact]
+    public void GenerateCopyToOptions_WithDelimiter_IncludesDelimiter()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { Delimiter = ';' };
+        Assert.Equal("HEADER true, DELIMITER ';'", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_WithQuoteChar_IncludesQuote()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { QuoteChar = '\'' };
+        Assert.Equal("HEADER true, QUOTE ''''", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_WithNullString_IncludesNull()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { NullString = "NA" };
+        Assert.Equal("HEADER true, NULL 'NA'", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
+    public void GenerateCopyToOptions_WithAllOptions_IncludesAllInOrder()
+    {
+        var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord))
+        {
+            Delimiter = ';',
+            QuoteChar = '"',
+            NullString = "NA"
+        };
+
+        Assert.Equal("HEADER true, DELIMITER ';', QUOTE '\"', NULL 'NA'", source.GenerateCopyToOptions());
+    }
+
+    [Fact]
     public void IsPromotedToTable_CanBeSet()
     {
         var source = new CsvFileSource("t", "f.csv", typeof(SalesRecord)) { IsPromotedToTable = true };
