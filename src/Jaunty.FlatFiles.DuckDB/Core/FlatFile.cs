@@ -133,7 +133,7 @@ public static class FlatFile
             nameof(extension));
     }
 
-    private static bool IsRemoteUri(string path, out string scheme)
+    internal static bool IsRemoteUri(string path, out string scheme)
     {
         // Check for scheme:// pattern without using Uri.TryCreate (which accepts file:// and relative paths)
         var schemeEnd = path.IndexOf("://", StringComparison.Ordinal);
