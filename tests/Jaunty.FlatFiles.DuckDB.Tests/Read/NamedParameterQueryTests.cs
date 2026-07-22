@@ -1,4 +1,5 @@
 using Jaunty.FlatFiles.DuckDB.Tests.Helpers.Entities;
+using Jaunty.FlatFiles.Interfaces;
 
 namespace Jaunty.FlatFiles.DuckDB.Tests.Read;
 
@@ -96,4 +97,22 @@ public class NamedParameterQueryTests : IDisposable
     public async Task QueryAsync_WithParameters_WhitespaceSql_Throws()
         => await Assert.ThrowsAsync<ArgumentException>(() =>
             _db.QueryAsync<SalesRecord>("   ", [("region", "Northeast")]).AsTask());
+
+    // ==========================================
+    // AUD-R19 batch-7: sync Query<T> overloads were implemented on DuckDb but missing from
+    // IFlatFile, so callers coding against the interface abstraction couldn't reach them.
+    // ==========================================
+
+    [Fact]
+    public void Query_ThroughIFlatFileInterface_ReturnsResults()
+    {
+        IFlatFile flatFile = _db;
+
+        var results = flatFile.Query<SalesRecord>(
+            "SELECT * FROM \"sales\" WHERE \"region\" = $region",
+            ("region", "Northeast"));
+
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.Equal("Northeast", r.Region));
+    }
 }
