@@ -1,6 +1,8 @@
 using System.Data;
 using System.Linq.Expressions;
 
+using Jaunty.Core;
+
 namespace Jaunty.Fluent;
 
 /// <summary>
@@ -131,6 +133,13 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     List<TFrom> Select();
 
     /// <summary>
+    /// Executes the query and returns the primary (From) entity, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// Equivalent to <c>Select&lt;TFrom&gt;()</c>.
+    /// </summary>
+    List<TFrom> Select(CommandOptions options);
+
+    /// <summary>
     /// Executes the query and returns the specified entity type.
     /// Uses IMapped&lt;T&gt; if implemented, otherwise maps columns to properties (strict mode - all properties must match).
     /// </summary>
@@ -212,10 +221,24 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     TFrom SelectFirst();
 
     /// <summary>
+    /// Returns the first result of the primary entity or throws if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// Equivalent to <c>SelectFirst&lt;TFrom&gt;()</c>.
+    /// </summary>
+    TFrom SelectFirst(CommandOptions options);
+
+    /// <summary>
     /// Returns the first result of the primary entity, or default if empty.
     /// Equivalent to <c>SelectFirstOrDefault&lt;TFrom&gt;()</c>.
     /// </summary>
     TFrom? SelectFirstOrDefault();
+
+    /// <summary>
+    /// Returns the first result of the primary entity, or default if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// Equivalent to <c>SelectFirstOrDefault&lt;TFrom&gt;()</c>.
+    /// </summary>
+    TFrom? SelectFirstOrDefault(CommandOptions options);
 
     /// <summary>
     /// Returns the single result of the primary entity or throws if not exactly one.
@@ -223,9 +246,22 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     TFrom SelectSingle();
 
     /// <summary>
+    /// Returns the single result of the primary entity or throws if not exactly one, using the
+    /// specified <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    TFrom SelectSingle(CommandOptions options);
+
+    /// <summary>
     /// Returns the single result of the primary entity, or default if empty. Throws if more than one.
     /// </summary>
     TFrom? SelectSingleOrDefault();
+
+    /// <summary>
+    /// Returns the single result of the primary entity, or default if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction). Throws if more
+    /// than one.
+    /// </summary>
+    TFrom? SelectSingleOrDefault(CommandOptions options);
 
     /// <summary>
     /// Returns the first result as a tuple or throws if empty.
@@ -238,9 +274,21 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     int Count();
 
     /// <summary>
+    /// Returns the count of rows, using the specified <see cref="CommandOptions"/> (e.g. to run
+    /// within an explicit transaction).
+    /// </summary>
+    int Count(CommandOptions options);
+
+    /// <summary>
     /// Returns the count of rows as long.
     /// </summary>
     long LongCount();
+
+    /// <summary>
+    /// Returns the count of rows as long, using the specified <see cref="CommandOptions"/> (e.g.
+    /// to run within an explicit transaction).
+    /// </summary>
+    long LongCount(CommandOptions options);
 
     /// <summary>
     /// Returns the generated SQL for debugging purposes.
@@ -254,6 +302,13 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     /// Equivalent to <c>SelectAsync&lt;TFrom&gt;()</c>.
     /// </summary>
     Task<List<TFrom>> SelectAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes the query asynchronously and returns the primary (From) entity, using the
+    /// specified <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// Equivalent to <c>SelectAsync&lt;TFrom&gt;()</c>.
+    /// </summary>
+    Task<List<TFrom>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Executes the query asynchronously and returns the specified entity type.
@@ -305,10 +360,24 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     Task<TFrom> SelectFirstAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the first result of the primary entity asynchronously or throws if empty, using
+    /// the specified <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// Equivalent to <c>SelectFirstAsync&lt;TFrom&gt;()</c>.
+    /// </summary>
+    Task<TFrom> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first result of the primary entity asynchronously, or default if empty.
     /// Equivalent to <c>SelectFirstOrDefaultAsync&lt;TFrom&gt;()</c>.
     /// </summary>
     Task<TFrom?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result of the primary entity asynchronously, or default if empty, using
+    /// the specified <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// Equivalent to <c>SelectFirstOrDefaultAsync&lt;TFrom&gt;()</c>.
+    /// </summary>
+    Task<TFrom?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the first result as a tuple asynchronously or throws if empty.
@@ -322,6 +391,14 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     Task<TFrom> SelectSingleAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the single result of the primary entity asynchronously, or throws if the result
+    /// set is empty or contains more than one row, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction). Equivalent to
+    /// <c>SelectSingle()</c>.
+    /// </summary>
+    Task<TFrom> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result of the primary entity asynchronously, or default if empty;
     /// throws if the result set contains more than one row. Equivalent to
     /// <c>SelectSingleOrDefault()</c>.
@@ -329,14 +406,34 @@ public interface IJoinedQuery<TFrom, TJoin> where TFrom : new() where TJoin : ne
     Task<TFrom?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the single result of the primary entity asynchronously, or default if empty, using
+    /// the specified <see cref="CommandOptions"/> (e.g. to run within an explicit transaction);
+    /// throws if the result set contains more than one row. Equivalent to
+    /// <c>SelectSingleOrDefault()</c>.
+    /// </summary>
+    Task<TFrom?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the count of rows asynchronously.
     /// </summary>
     Task<int> CountAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the count of rows asynchronously, using the specified <see cref="CommandOptions"/>
+    /// (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<int> CountAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the count of rows as long asynchronously.
     /// </summary>
     Task<long> LongCountAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the count of rows as long asynchronously, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<long> LongCountAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     // --- SELECT PARTIAL Operations (Projection) ---
 
@@ -657,6 +754,12 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     List<T1> Select();
 
     /// <summary>
+    /// Executes the query and returns the primary entity, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    List<T1> Select(CommandOptions options);
+
+    /// <summary>
     /// Executes the query and returns all three entities as tuples.
     /// </summary>
     List<(T1, T2, T3)> SelectAll();
@@ -667,9 +770,21 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     T1 SelectFirst();
 
     /// <summary>
+    /// Returns the first result or throws if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    T1 SelectFirst(CommandOptions options);
+
+    /// <summary>
     /// Returns the first result, or default if empty.
     /// </summary>
     T1? SelectFirstOrDefault();
+
+    /// <summary>
+    /// Returns the first result, or default if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    T1? SelectFirstOrDefault(CommandOptions options);
 
     /// <summary>
     /// Returns the single result or throws if not exactly one.
@@ -677,9 +792,22 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     T1 SelectSingle();
 
     /// <summary>
+    /// Returns the single result or throws if not exactly one, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    T1 SelectSingle(CommandOptions options);
+
+    /// <summary>
     /// Returns the single result, or default if empty. Throws if more than one.
     /// </summary>
     T1? SelectSingleOrDefault();
+
+    /// <summary>
+    /// Returns the single result, or default if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction). Throws if more
+    /// than one.
+    /// </summary>
+    T1? SelectSingleOrDefault(CommandOptions options);
 
     /// <summary>
     /// Returns the count of rows.
@@ -687,9 +815,21 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     int Count();
 
     /// <summary>
+    /// Returns the count of rows, using the specified <see cref="CommandOptions"/> (e.g. to run
+    /// within an explicit transaction).
+    /// </summary>
+    int Count(CommandOptions options);
+
+    /// <summary>
     /// Returns the count of rows as long.
     /// </summary>
     long LongCount();
+
+    /// <summary>
+    /// Returns the count of rows as long, using the specified <see cref="CommandOptions"/> (e.g.
+    /// to run within an explicit transaction).
+    /// </summary>
+    long LongCount(CommandOptions options);
 
     /// <summary>
     /// Returns the generated SQL for debugging purposes.
@@ -731,6 +871,12 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     Task<List<T1>> SelectAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Executes the query asynchronously and returns the primary entity, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<List<T1>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Executes the query asynchronously and returns all three entities as tuples.
     /// </summary>
     Task<List<(T1, T2, T3)>> SelectAllAsync(CancellationToken cancellationToken = default);
@@ -741,9 +887,21 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     Task<T1> SelectFirstAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the first result asynchronously or throws if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<T1> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first result asynchronously, or default if empty.
     /// </summary>
     Task<T1?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result asynchronously, or default if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<T1?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the single result asynchronously or throws if not exactly one.
@@ -751,9 +909,22 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     Task<T1> SelectSingleAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the single result asynchronously or throws if not exactly one, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<T1> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously, or default if empty. Throws if more than one.
     /// </summary>
     Task<T1?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single result asynchronously, or default if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction). Throws if more
+    /// than one.
+    /// </summary>
+    Task<T1?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the count of rows asynchronously.
@@ -761,9 +932,21 @@ public interface IJoinedQuery3<T1, T2, T3> where T1 : new() where T2 : new() whe
     Task<int> CountAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the count of rows asynchronously, using the specified <see cref="CommandOptions"/>
+    /// (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<int> CountAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the count of rows as long asynchronously.
     /// </summary>
     Task<long> LongCountAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the count of rows as long asynchronously, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<long> LongCountAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     // --- SELECT PARTIAL Async Operations ---
 
@@ -928,6 +1111,12 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     List<T1> Select();
 
     /// <summary>
+    /// Executes the query and returns the primary entity, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    List<T1> Select(CommandOptions options);
+
+    /// <summary>
     /// Executes the query and returns all four entities as tuples.
     /// </summary>
     List<(T1, T2, T3, T4)> SelectAll();
@@ -938,9 +1127,21 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     T1 SelectFirst();
 
     /// <summary>
+    /// Returns the first result or throws if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    T1 SelectFirst(CommandOptions options);
+
+    /// <summary>
     /// Returns the first result, or default if empty.
     /// </summary>
     T1? SelectFirstOrDefault();
+
+    /// <summary>
+    /// Returns the first result, or default if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    T1? SelectFirstOrDefault(CommandOptions options);
 
     /// <summary>
     /// Returns the single result or throws if not exactly one.
@@ -948,9 +1149,22 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     T1 SelectSingle();
 
     /// <summary>
+    /// Returns the single result or throws if not exactly one, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    T1 SelectSingle(CommandOptions options);
+
+    /// <summary>
     /// Returns the single result, or default if empty. Throws if more than one.
     /// </summary>
     T1? SelectSingleOrDefault();
+
+    /// <summary>
+    /// Returns the single result, or default if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction). Throws if more
+    /// than one.
+    /// </summary>
+    T1? SelectSingleOrDefault(CommandOptions options);
 
     /// <summary>
     /// Returns the count of rows.
@@ -958,9 +1172,21 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     int Count();
 
     /// <summary>
+    /// Returns the count of rows, using the specified <see cref="CommandOptions"/> (e.g. to run
+    /// within an explicit transaction).
+    /// </summary>
+    int Count(CommandOptions options);
+
+    /// <summary>
     /// Returns the count of rows as long.
     /// </summary>
     long LongCount();
+
+    /// <summary>
+    /// Returns the count of rows as long, using the specified <see cref="CommandOptions"/> (e.g.
+    /// to run within an explicit transaction).
+    /// </summary>
+    long LongCount(CommandOptions options);
 
     /// <summary>
     /// Returns the generated SQL for debugging purposes.
@@ -1002,6 +1228,12 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     Task<List<T1>> SelectAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Executes the query asynchronously and returns the primary entity, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<List<T1>> SelectAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Executes the query asynchronously and returns all four entities as tuples.
     /// </summary>
     Task<List<(T1, T2, T3, T4)>> SelectAllAsync(CancellationToken cancellationToken = default);
@@ -1012,9 +1244,21 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     Task<T1> SelectFirstAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the first result asynchronously or throws if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<T1> SelectFirstAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the first result asynchronously, or default if empty.
     /// </summary>
     Task<T1?> SelectFirstOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the first result asynchronously, or default if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<T1?> SelectFirstOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the single result asynchronously or throws if not exactly one.
@@ -1022,9 +1266,22 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     Task<T1> SelectSingleAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the single result asynchronously or throws if not exactly one, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<T1> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the single result asynchronously, or default if empty. Throws if more than one.
     /// </summary>
     Task<T1?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the single result asynchronously, or default if empty, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction). Throws if more
+    /// than one.
+    /// </summary>
+    Task<T1?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the count of rows asynchronously.
@@ -1032,9 +1289,21 @@ public interface IJoinedQuery4<T1, T2, T3, T4>
     Task<int> CountAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the count of rows asynchronously, using the specified <see cref="CommandOptions"/>
+    /// (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<int> CountAsync(CommandOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the count of rows as long asynchronously.
     /// </summary>
     Task<long> LongCountAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the count of rows as long asynchronously, using the specified
+    /// <see cref="CommandOptions"/> (e.g. to run within an explicit transaction).
+    /// </summary>
+    Task<long> LongCountAsync(CommandOptions options, CancellationToken cancellationToken = default);
 
     // --- SELECT PARTIAL Async Operations ---
 
