@@ -151,7 +151,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static object MapBulkCopyOptions(BulkCopyOptions options)
     {
         if (SqlBulkCopyOptionsType == null)
-            return 0; // Default options
+            throw new InvalidOperationException("SqlBulkCopyOptions could not be resolved via reflection.");
 
         int result = 0;
 
