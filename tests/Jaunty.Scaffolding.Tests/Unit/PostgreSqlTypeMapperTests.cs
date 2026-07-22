@@ -281,4 +281,22 @@ public class PostgreSqlTypeMapperTests
         var result = _mapper.MapToCSharpType(CreateColumn("user_defined_type_xyz"));
         Assert.Equal("object", result.TypeName);
     }
+
+    // AUD-R18 batch-8: RequiredUsing exists so EntityCodeGenerator.AppendUsings can emit
+    // "using System;" for types like Guid/DateOnly that aren't in scope without ImplicitUsings -
+    // no mapper populated it, so generated code failed to compile with ImplicitUsings disabled.
+    [Theory]
+    [InlineData("date")]
+    [InlineData("time")]
+    [InlineData("time without time zone")]
+    [InlineData("time with time zone")]
+    [InlineData("timestamp")]
+    [InlineData("timestamp with time zone")]
+    [InlineData("interval")]
+    [InlineData("uuid")]
+    public void MapToCSharpType_SystemNamespaceTypes_SetsRequiredUsing(string sqlType)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("System", result.RequiredUsing);
+    }
 }
