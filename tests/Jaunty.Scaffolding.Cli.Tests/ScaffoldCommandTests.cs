@@ -168,4 +168,305 @@ public class ScaffoldCommandTests : IDisposable
         Assert.Equal(1, exitCode);
         Assert.Contains("Error:", errWriter.ToString());
     }
+
+    // ==========================================
+    // AUD-R19 batch-8: ScaffoldCommandTests only exercised --dry-run, --no-table-attribute,
+    // --partial, and --verbose end-to-end - a wiring mistake in ScaffoldCommand's SetAction
+    // lambda for any other option (e.g. mapped to the wrong ScaffoldOptions property) would
+    // not have been caught by any existing test.
+    // ==========================================
+
+    private void AddCategoriesTable()
+    {
+        using SqliteCommand cmd = _connection.CreateCommand();
+        cmd.CommandText = "CREATE TABLE categories (category_id INTEGER PRIMARY KEY, description TEXT)";
+        cmd.ExecuteNonQuery();
+    }
+
+    [Fact]
+    public async Task Invoke_TablesOption_FiltersToSpecifiedTable()
+    {
+        AddCategoriesTable();
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--tables", "products"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("Generated 1 entity file(s)", outWriter.ToString());
+        Assert.True(File.Exists(Path.Combine(_outputDir, "Product.cs")));
+        Assert.False(File.Exists(Path.Combine(_outputDir, "Category.cs")));
+    }
+
+    [Fact]
+    public async Task Invoke_ExcludeTablesOption_OmitsSpecifiedTable()
+    {
+        AddCategoriesTable();
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--exclude-tables", "categories"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("Generated 1 entity file(s)", outWriter.ToString());
+        Assert.True(File.Exists(Path.Combine(_outputDir, "Product.cs")));
+        Assert.False(File.Exists(Path.Combine(_outputDir, "Category.cs")));
+    }
+
+    [Fact]
+    public void Parse_SchemasOption_MapsToOptionValue()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse(["--connection", "x", "--schemas", "dbo", "sales"]);
+        Assert.Equal(["dbo", "sales"], result.GetValue<string[]>("--schemas"));
+    }
+
+    [Fact]
+    public async Task Invoke_NoColumnAttribute_OmitsColumnAttribute()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--no-column-attribute"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
+        Assert.DoesNotContain("Jaunty.Attributes.Column(", code);
+    }
+
+    [Fact]
+    public async Task Invoke_NoKeyAttribute_OmitsKeyAttribute()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--no-key-attribute"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
+        Assert.DoesNotContain("[Jaunty.Attributes.Key]", code);
+    }
+
+    [Fact]
+    public async Task Invoke_NoDatabaseGenerated_OmitsDatabaseGeneratedAttribute()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--no-database-generated"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
+        Assert.DoesNotContain("Jaunty.Attributes.DatabaseGenerated(", code);
+    }
+
+    [Fact]
+    public async Task Invoke_DatabaseGenerated_IsIncludedByDefault()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
+        Assert.Contains("Jaunty.Attributes.DatabaseGenerated(Jaunty.Attributes.DatabaseGeneratedOption.Identity)", code);
+    }
+
+    [Fact]
+    public async Task Invoke_NoNullable_OmitsNullableAnnotation()
+    {
+        AddCategoriesTable();
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--tables", "categories", "--no-nullable"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Category.cs"));
+        Assert.Contains("string Description", code);
+        Assert.DoesNotContain("string? Description", code);
+    }
+
+    [Fact]
+    public async Task Invoke_NullableColumn_UsesNullableReferenceTypeByDefault()
+    {
+        AddCategoriesTable();
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--tables", "categories"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Category.cs"));
+        Assert.Contains("string? Description", code);
+    }
+
+    [Fact]
+    public async Task Invoke_NoSingularize_KeepsPluralClassName()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--no-singularize"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(Path.Combine(_outputDir, "Products.cs")));
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Products.cs"));
+        Assert.Contains("public class Products", code);
+    }
+
+    [Fact]
+    public async Task Invoke_ClassPrefix_PrependsToClassName()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--class-prefix", "Db"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(Path.Combine(_outputDir, "DbProduct.cs")));
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "DbProduct.cs"));
+        Assert.Contains("public class DbProduct", code);
+    }
+
+    [Fact]
+    public async Task Invoke_ClassSuffix_AppendsToClassName()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--class-suffix", "Entity"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(Path.Combine(_outputDir, "ProductEntity.cs")));
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "ProductEntity.cs"));
+        Assert.Contains("public class ProductEntity", code);
+    }
+
+    [Fact]
+    public async Task Invoke_DataAnnotations_AddsRequiredAttribute()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--data-annotations"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
+        Assert.Contains("[Required]", code);
+        Assert.Contains("using System.ComponentModel.DataAnnotations;", code);
+    }
+
+    [Fact]
+    public async Task Invoke_BlockNamespace_UsesBlockScopedNamespace()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--namespace", "My.Entities", "--block-namespace"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
+        Assert.DoesNotContain("namespace My.Entities;", code);
+        Assert.Contains("namespace My.Entities", code);
+    }
+
+    [Fact]
+    public async Task Invoke_ForceFlag_OverwritesExistingFile()
+    {
+        var command1 = new ScaffoldCommand();
+        ParseResult result1 = command1.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir
+        ]);
+        RedirectConsole();
+        Assert.Equal(0, await result1.InvokeAsync());
+
+        var command2 = new ScaffoldCommand();
+        ParseResult result2 = command2.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir
+        ]);
+        (_, StringWriter errWriter2) = RedirectConsole();
+        Assert.Equal(1, await result2.InvokeAsync());
+        Assert.Contains("already exists", errWriter2.ToString());
+
+        var command3 = new ScaffoldCommand();
+        ParseResult result3 = command3.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--force"
+        ]);
+        (StringWriter outWriter3, _) = RedirectConsole();
+        Assert.Equal(0, await result3.InvokeAsync());
+        Assert.Contains("Generated 1 entity file(s)", outWriter3.ToString());
+    }
+
+    [Fact]
+    public async Task Invoke_IncludeForeignKeys_ScaffoldsSuccessfully()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--include-foreign-keys"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("Generated 1 entity file(s)", outWriter.ToString());
+    }
 }
