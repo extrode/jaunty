@@ -206,7 +206,7 @@ public static class CsvImportExtensions
             throw new InvalidOperationException($"sqlite3 import failed (exit code {process.ExitCode}): {stderr}");
 
         // sqlite3 doesn't report row count; count lines in file minus header
-        return CountCsvRows(filePath, options.HasHeader);
+        return CountCsvRows(filePath, options.HasHeader, options.Quote);
     }
 
     private static long ImportViaPreparedStatements(IDbConnection connection, string tableName, string filePath, CsvImportOptions options)
@@ -360,7 +360,7 @@ public static class CsvImportExtensions
                     textWriter.WriteLine(line);
                 }
 
-                return CountCsvRows(filePath, options.HasHeader);
+                return CountCsvRows(filePath, options.HasHeader, options.Quote);
             }
 
             // Fallback: Use COPY FROM with file path (requires server access to file)
@@ -403,7 +403,7 @@ public static class CsvImportExtensions
                     await textWriter.WriteLineAsync(line).ConfigureAwait(false);
                 }
 
-                return CountCsvRows(filePath, options.HasHeader);
+                return CountCsvRows(filePath, options.HasHeader, options.Quote);
             }
 
             using DbCommand cmd = connection.CreateCommand();
@@ -716,11 +716,11 @@ public static class CsvImportExtensions
         return count % 2 == 0;
     }
 
-    private static long CountCsvRows(string filePath, bool hasHeader)
+    private static long CountCsvRows(string filePath, bool hasHeader, char quote)
     {
         long count = 0;
         using var reader = new StreamReader(filePath);
-        while (reader.ReadLine() != null)
+        while (ReadCsvRecord(reader, quote) != null)
             count++;
 
         if (hasHeader && count > 0)

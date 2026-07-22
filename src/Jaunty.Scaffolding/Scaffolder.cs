@@ -128,7 +128,12 @@ public sealed class Scaffolder
 
             return ScaffoldResult.Succeeded(generatedFiles);
         }
-        catch (Exception ex)
+        // AUD-R22: let OperationCanceledException (e.g. from a cancelled cancellationToken)
+        // propagate instead of being reported as an ordinary ScaffoldResult.Failed - matches
+        // ListTablesAsync, which has no catch and lets cancellation propagate normally, so a
+        // caller can distinguish "cancelled" from "the database read failed" consistently
+        // across both public APIs.
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return ScaffoldResult.Failed(ex.Message);
         }
