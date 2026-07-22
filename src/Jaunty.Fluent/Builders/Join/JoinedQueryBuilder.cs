@@ -56,7 +56,7 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal List<OrderByColumn> GetOrderByColumns() => _orderByColumns;
     internal ParameterCollection GetParameters() => _parameters;
 
-    internal void AddOrderByColumn(string columnName, string direction, bool isFirst)
+    internal void AddOrderByColumn(string columnName, string direction)
     {
         _orderByColumns.Add(new OrderByColumn(columnName, direction == "DESC"));
     }

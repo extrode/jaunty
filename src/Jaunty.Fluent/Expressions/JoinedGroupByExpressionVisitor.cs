@@ -93,7 +93,7 @@ internal sealed class JoinedGroupByExpressionVisitor
             return $"{leftOperand} {op} {rightOperand}";
         }
 
-        throw new NotSupportedException($"HAVING expression type '{expr.NodeType}' is not supported.");
+        return TranslateHavingOperand(expr);
     }
 
     /// <summary>
