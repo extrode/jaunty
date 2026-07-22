@@ -44,6 +44,9 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         if (SqlConnectionType == null || !SqlConnectionType.IsInstanceOfType(connection))
             throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
 
+        if (WriteToServerMethod == null)
+            throw new InvalidOperationException("SqlBulkCopy.WriteToServer could not be resolved via reflection.");
+
         DbConnection sqlConnection = (DbConnection)connection;
 
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
@@ -57,7 +60,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
             DestinationTableNameProperty?.SetValue(bulkCopy, QualifyTableName(schemaName, tableName));
             ApplyColumnMappings(bulkCopy, data);
 
-            WriteToServerMethod?.Invoke(bulkCopy, new object[] { data });
+            WriteToServerMethod.Invoke(bulkCopy, new object[] { data });
 
             // SqlBulkCopy doesn't expose row count; return -1 and let the caller use entityList.Count
             return -1;
@@ -77,6 +80,9 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         if (SqlConnectionType == null || !SqlConnectionType.IsInstanceOfType(connection))
             throw new ArgumentException("Connection must be a SqlConnection.", nameof(connection));
 
+        if (WriteToServerAsyncMethod == null && WriteToServerMethod == null)
+            throw new InvalidOperationException("SqlBulkCopy.WriteToServer/WriteToServerAsync could not be resolved via reflection.");
+
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
         object? bulkCopyOptions = MapBulkCopyOptions(options);
         object? bulkCopy = Activator.CreateInstance(SqlBulkCopyType, connection, bulkCopyOptions, options.Transaction) ?? throw new InvalidOperationException("Failed to create SqlBulkCopy instance.");
@@ -91,7 +97,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
             if (WriteToServerAsyncMethod != null)
                 await ((Task)WriteToServerAsyncMethod.Invoke(bulkCopy, new object[] { data, cancellationToken })!).ConfigureAwait(false);
             else
-                WriteToServerMethod?.Invoke(bulkCopy, [data]);
+                WriteToServerMethod!.Invoke(bulkCopy, [data]);
 
             // SqlBulkCopy doesn't expose row count; return -1 and let the caller use entityList.Count
             return -1;
@@ -104,11 +110,19 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
 
     /// <summary>
     /// Combines schema and table into the "schema.table" form SqlBulkCopy.DestinationTableName
-    /// accepts natively — SqlBulkCopy resolves this itself, so (unlike the other providers) no
-    /// escaping/validation is needed here.
+    /// accepts natively. Validated (not escaped) the same way MySqlBulkCopyProvider and
+    /// PostgreSqlBulkCopyProvider validate their table/schema names, so a malformed or malicious
+    /// name is rejected up front rather than passed through to SqlBulkCopy's own resolution.
     /// </summary>
     private static string QualifyTableName(string? schemaName, string tableName)
-        => string.IsNullOrEmpty(schemaName) ? tableName : $"{schemaName}.{tableName}";
+    {
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+        if (schemaName is null || schemaName.Length == 0)
+            return tableName;
+
+        global::Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName));
+        return $"{schemaName}.{tableName}";
+    }
 
     /// <summary>
     /// Maps each source column to the same-named destination column.

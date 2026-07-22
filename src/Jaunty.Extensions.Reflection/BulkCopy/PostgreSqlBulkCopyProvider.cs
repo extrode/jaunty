@@ -54,6 +54,9 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         if (!NpgsqlConnectionType.IsInstanceOfType(connection))
             throw new ArgumentException("Connection must be an NpgsqlConnection.", nameof(connection));
 
+        if (StartRowMethod == null || WriteGenericMethod == null || CompleteMethod == null || WriteNullMethod == null)
+            throw new InvalidOperationException("NpgsqlBinaryImporter members could not be resolved via reflection.");
+
         // NpgsqlBinaryImporter has no per-import timeout/batch-size/check-constraints/table-lock
         // controls, and NpgsqlConnection.CommandTimeout has no public setter (it's derived from
         // the connection string), so unlike SqlServerBulkCopyProvider/MySqlBulkCopyProvider there
@@ -75,27 +78,27 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 
             while (data.Read())
             {
-                StartRowMethod?.Invoke(importer, null);
+                StartRowMethod.Invoke(importer, null);
 
                 for (int i = 0; i < columnCount; i++)
                 {
                     var value = data.GetValue(i);
                     if (value is DBNull)
                     {
-                        WriteNullMethod?.Invoke(importer, null);
+                        WriteNullMethod.Invoke(importer, null);
                     }
                     else
                     {
                         // Use Write<T> with the actual runtime type to avoid boxing/type issues
-                        MethodInfo? writeMethod = WriteGenericMethod?.MakeGenericMethod(value.GetType());
-                        writeMethod?.Invoke(importer, new[] { value });
+                        MethodInfo writeMethod = WriteGenericMethod.MakeGenericMethod(value.GetType());
+                        writeMethod.Invoke(importer, new[] { value });
                     }
                 }
 
                 rowCount++;
             }
 
-            CompleteMethod?.Invoke(importer, null);
+            CompleteMethod.Invoke(importer, null);
 
             return rowCount;
         }
@@ -124,6 +127,12 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         // If native async methods are not available, fall back to sync
         if (BeginBinaryImportAsyncMethod == null || StartRowAsyncMethod == null || WriteAsyncGenericMethod == null)
             return CopyToServer(connection, schemaName, tableName, data, options);
+
+        if (WriteNullAsyncMethod == null)
+            throw new InvalidOperationException("NpgsqlBinaryImporter.WriteNullAsync could not be resolved via reflection.");
+
+        if (CompleteAsyncMethod == null && CompleteMethod == null)
+            throw new InvalidOperationException("NpgsqlBinaryImporter.Complete/CompleteAsync could not be resolved via reflection.");
 
         // NpgsqlBinaryImporter has no per-import timeout/batch-size/check-constraints/table-lock
         // controls, and NpgsqlConnection.CommandTimeout has no public setter (it's derived from
@@ -162,7 +171,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
                     var value = data.GetValue(i);
                     if (value is DBNull)
                     {
-                        if (WriteNullAsyncMethod?.Invoke(importer, new object[] { cancellationToken }) is Task nullTask) await nullTask.ConfigureAwait(false);
+                        if (WriteNullAsyncMethod.Invoke(importer, new object[] { cancellationToken }) is Task nullTask) await nullTask.ConfigureAwait(false);
                     }
                     else
                     {
@@ -197,7 +206,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
             }
             else
             {
-                CompleteMethod?.Invoke(importer, null);
+                CompleteMethod!.Invoke(importer, null);
             }
 
             return rowCount;

@@ -182,6 +182,32 @@ public class SqlServerBulkCopyProviderTests
         Assert.Equal(50L, Convert.ToInt64(check.ExecuteScalar()));
     }
 
+    // AUD-R19 batch-6: QualifyTableName interpolated schemaName/tableName into
+    // SqlBulkCopy.DestinationTableName with no SqlIdentifierValidator.Validate call, unlike
+    // MySqlBulkCopyProvider.BuildChunkCommand and PostgreSqlBulkCopyProvider.BuildCopyCommand,
+    // which both validate before use. QualifyTableName throws before any server round-trip, so
+    // this doesn't need a reachable SQL Server - an unopened SqlConnection satisfies the
+    // SqlConnectionType.IsInstanceOfType check that gates entry to the method.
+    [Fact]
+    public void CopyToServer_InvalidTableName_ThrowsArgumentException()
+    {
+        using var conn = new SqlConnection(ConnectionString);
+        using var reader = MakeTable(1).CreateDataReader();
+
+        Assert.Throws<ArgumentException>(() => new SqlServerBulkCopyProvider().CopyToServer(
+            conn, null, "products; DROP TABLE users; --", reader, new BulkCopyOptions()));
+    }
+
+    [Fact]
+    public void CopyToServer_InvalidSchemaName_ThrowsArgumentException()
+    {
+        using var conn = new SqlConnection(ConnectionString);
+        using var reader = MakeTable(1).CreateDataReader();
+
+        Assert.Throws<ArgumentException>(() => new SqlServerBulkCopyProvider().CopyToServer(
+            conn, "bad schema", "irrelevant", reader, new BulkCopyOptions()));
+    }
+
     [Fact]
     public void CopyToServer_NonSqlConnection_ThrowsArgumentException()
     {
