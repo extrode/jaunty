@@ -225,10 +225,76 @@ public class QueryMultiEntityCommandOptionsTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    public async Task QueryFirstAsync_TwoEntities_WithCommandOptions_ReturnsFirstTuple(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = new CommandOptions<(ProductInfo, CategoryInfo)>();
+
+        var (product, _) = await connection.QueryFirstAsync<ProductInfo, CategoryInfo>(
+            $"SELECT {JoinSql} ORDER BY p.product_id", options, CancellationToken.None);
+
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryFirstAsync_TwoEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = new CommandOptions<(ProductInfo, CategoryInfo)>();
+
+        var (product, _) = await connection.QueryFirstAsync<ProductInfo, CategoryInfo>(
+            $"SELECT {JoinSql} WHERE p.product_id = @ProductId",
+            new { ProductId = 1 },
+            options,
+            CancellationToken.None);
+
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QueryFirstOrDefaultAsync_TwoEntities_WithParametersAndMultiEntityCommandOptions_ReturnsNullWhenEmpty(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var options = new MultiEntityCommandOptions<ProductInfo, CategoryInfo>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<ProductInfo, CategoryInfo>(
+            $"SELECT {JoinSql} WHERE p.product_id = @ProductId",
+            new { ProductId = -999 },
+            options,
+            CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryFirstOrDefaultAsync_TwoEntities_WithCommandOptions_ReturnsFirstTuple(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = new CommandOptions<(ProductInfo, CategoryInfo)>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<ProductInfo, CategoryInfo>(
+            $"SELECT {JoinSql} ORDER BY p.product_id", options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryFirstOrDefaultAsync_TwoEntities_WithParametersAndCommandOptions_ReturnsNullWhenEmpty(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = new CommandOptions<(ProductInfo, CategoryInfo)>();
 
         var result = await connection.QueryFirstOrDefaultAsync<ProductInfo, CategoryInfo>(
             $"SELECT {JoinSql} WHERE p.product_id = @ProductId",
@@ -259,10 +325,79 @@ public class QueryMultiEntityCommandOptionsTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    public async Task QuerySingleAsync_TwoEntities_WithCommandOptions_ReturnsSingleRow(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = new CommandOptions<(ProductInfo, CategoryInfo)>();
+
+        var (product, category) = await connection.QuerySingleAsync<ProductInfo, CategoryInfo>(
+            $"SELECT {JoinSql} WHERE p.product_id = 1", options, CancellationToken.None);
+
+        Assert.Equal(1, product.ProductId);
+        Assert.True(category.CategoryId > 0);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QuerySingleAsync_TwoEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = new CommandOptions<(ProductInfo, CategoryInfo)>();
+
+        var (product, _) = await connection.QuerySingleAsync<ProductInfo, CategoryInfo>(
+            $"SELECT {JoinSql} WHERE p.product_id = @ProductId",
+            new { ProductId = 1 },
+            options,
+            CancellationToken.None);
+
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public async Task QuerySingleOrDefaultAsync_TwoEntities_WithParametersAndMultiEntityCommandOptions_Works(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
         var options = new MultiEntityCommandOptions<ProductInfo, CategoryInfo>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<ProductInfo, CategoryInfo>(
+            $"SELECT {JoinSql} WHERE p.product_id = @ProductId",
+            new { ProductId = 1 },
+            options,
+            CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Value.Item1.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QuerySingleOrDefaultAsync_TwoEntities_WithCommandOptions_Works(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = new CommandOptions<(ProductInfo, CategoryInfo)>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<ProductInfo, CategoryInfo>(
+            $"SELECT {JoinSql} WHERE p.product_id = 1", options, CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Value.Item1.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QuerySingleOrDefaultAsync_TwoEntities_WithParametersAndCommandOptions_Works(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = new CommandOptions<(ProductInfo, CategoryInfo)>();
 
         var result = await connection.QuerySingleOrDefaultAsync<ProductInfo, CategoryInfo>(
             $"SELECT {JoinSql} WHERE p.product_id = @ProductId",
@@ -291,6 +426,48 @@ public class QueryMultiEntityCommandOptionsTests : IClassFixture<DialectFixture>
         }
 
         Assert.Equal(3, results.Count);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryStreamAsync_TwoEntities_WithCommandOptions_StreamsResults(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = new CommandOptions<(ProductInfo, CategoryInfo)>();
+
+        var results = new List<(ProductInfo, CategoryInfo)>();
+        await foreach (var row in connection.QueryStreamAsync<ProductInfo, CategoryInfo>(
+            $"SELECT {TopPrefix(dialect, 3)}{JoinSql}{LimitSuffix(dialect, 3)}", options, CancellationToken.None))
+        {
+            results.Add(row);
+        }
+
+        Assert.Equal(3, results.Count);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryStreamAsync_TwoEntities_WithParametersAndCommandOptions_Filters(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var options = new CommandOptions<(ProductInfo, CategoryInfo)>();
+
+        var results = new List<(ProductInfo, CategoryInfo)>();
+        await foreach (var row in connection.QueryStreamAsync<ProductInfo, CategoryInfo>(
+            $"SELECT {JoinSql} WHERE c.category_id = @CategoryId",
+            new { CategoryId = 1 },
+            options,
+            CancellationToken.None))
+        {
+            results.Add(row);
+        }
+
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.Equal(1, r.Item2.CategoryId));
     }
 
     [Theory]
