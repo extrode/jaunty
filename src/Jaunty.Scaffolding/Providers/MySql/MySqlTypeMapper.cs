@@ -52,9 +52,9 @@ public sealed class MySqlTypeMapper : ITypeMapper
                 new CSharpTypeInfo { TypeName = "byte[]", IsValueType = false },
 
             // Date/Time types
-            "date" => new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true },
-            "time" => new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true },
-            "datetime" or "timestamp" => new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true },
+            "date" => new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true, RequiredUsing = "System" },
+            "time" => new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true, RequiredUsing = "System" },
+            "datetime" or "timestamp" => new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true, RequiredUsing = "System" },
             "year" => new CSharpTypeInfo { TypeName = "short", IsValueType = true },
 
             // Enum and Set (map to string)
