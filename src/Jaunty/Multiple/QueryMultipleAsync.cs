@@ -249,7 +249,8 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        await using var gridReaderDisposer = gridReader.ConfigureAwait(false);
         reader(gridReader);
     }
 
@@ -298,7 +299,8 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        await using var gridReaderDisposer = gridReader.ConfigureAwait(false);
         await reader(gridReader).ConfigureAwait(false);
     }
 
@@ -349,7 +351,8 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        await using var gridReaderDisposer = gridReader.ConfigureAwait(false);
         return reader(gridReader);
     }
 
@@ -400,7 +403,8 @@ public static partial class Jaunty
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
-        using GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        GridReader gridReader = await ExecuteQueryMultipleAsync(dbConnection, sql, parameters, options, cancellationToken).ConfigureAwait(false);
+        await using var gridReaderDisposer = gridReader.ConfigureAwait(false);
         return await reader(gridReader).ConfigureAwait(false);
     }
 }
