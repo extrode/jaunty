@@ -417,11 +417,11 @@ public static partial class Jaunty
             return command.ExecuteNonQuery();
 
         object? result = command.ExecuteScalar();
-        long id = result is null or DBNull ? 0 : Convert.ToInt64(result);
-        if (id > 0)
-            idSetter(entity, id);
+        bool inserted = result is not null and not DBNull;
+        if (inserted)
+            idSetter(entity, Convert.ToInt64(result));
 
-        return id > 0 ? 1 : 0;
+        return inserted ? 1 : 0;
     }
     private static bool IsSqliteDialect(ISqlDialect dialect)
         => dialect is SQLiteDialect || dialect.GetType().Name.Contains("SQLite", StringComparison.OrdinalIgnoreCase);
