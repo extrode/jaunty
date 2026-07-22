@@ -82,6 +82,29 @@ public class PostgreSqlBulkCopyProviderTests
         return Convert.ToInt64(cmd.ExecuteScalar());
     }
 
+    private static void CreateSchemaQualifiedTable(NpgsqlConnection conn, string schema, string name)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            CREATE SCHEMA IF NOT EXISTS "{schema}";
+            DROP TABLE IF EXISTS "{schema}"."{name}";
+            CREATE TABLE "{schema}"."{name}" (
+                id BIGSERIAL PRIMARY KEY,
+                name TEXT NULL,
+                price NUMERIC(18,2) NOT NULL,
+                stock INTEGER NOT NULL,
+                discontinued BOOLEAN NOT NULL)
+            """;
+        cmd.ExecuteNonQuery();
+    }
+
+    private static long Count(NpgsqlConnection conn, string schema, string table)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SELECT COUNT(*) FROM \"{schema}\".\"{table}\"";
+        return Convert.ToInt64(cmd.ExecuteScalar());
+    }
+
     [Fact]
     public void IsSupported_NpgsqlReferenced_IsTrue()
     {
@@ -96,7 +119,7 @@ public class PostgreSqlBulkCopyProviderTests
 
         using var reader = MakeTable(1200).CreateDataReader();
         int inserted = new PostgreSqlBulkCopyProvider().CopyToServer(
-            conn, "bulk_pg_sync", reader, new BulkCopyOptions());
+            conn, null, "bulk_pg_sync", reader, new BulkCopyOptions());
 
         Assert.Equal(1200, inserted);
         Assert.Equal(1200, Count(conn, "bulk_pg_sync"));
@@ -126,10 +149,41 @@ public class PostgreSqlBulkCopyProviderTests
 
         using var reader = MakeTable(750).CreateDataReader();
         int inserted = await new PostgreSqlBulkCopyProvider().CopyToServerAsync(
-            conn, "bulk_pg_async", reader, new BulkCopyOptions(), CancellationToken.None);
+            conn, null, "bulk_pg_async", reader, new BulkCopyOptions(), CancellationToken.None);
 
         Assert.Equal(750, inserted);
         Assert.Equal(750, Count(conn, "bulk_pg_async"));
+    }
+
+    // AUD-R18 batch-6: CopyToServer used to take only a bare tableName, so BuildCopyCommand always
+    // emitted COPY "table" - any entity mapped to a non-default schema silently targeted the wrong
+    // table. Passing schemaName now produces COPY "schema"."table" for real.
+    [Fact]
+    public void CopyToServer_SchemaQualifiedTable_InsertsIntoCorrectSchema()
+    {
+        using var conn = OpenOrSkip();
+        CreateSchemaQualifiedTable(conn, "bulk_pg_schema", "bulk_pg_sync_schema");
+
+        using var reader = MakeTable(50).CreateDataReader();
+        int inserted = new PostgreSqlBulkCopyProvider().CopyToServer(
+            conn, "bulk_pg_schema", "bulk_pg_sync_schema", reader, new BulkCopyOptions());
+
+        Assert.Equal(50, inserted);
+        Assert.Equal(50, Count(conn, "bulk_pg_schema", "bulk_pg_sync_schema"));
+    }
+
+    [Fact]
+    public async Task CopyToServerAsync_SchemaQualifiedTable_InsertsIntoCorrectSchema()
+    {
+        using var conn = OpenOrSkip();
+        CreateSchemaQualifiedTable(conn, "bulk_pg_schema", "bulk_pg_async_schema");
+
+        using var reader = MakeTable(50).CreateDataReader();
+        int inserted = await new PostgreSqlBulkCopyProvider().CopyToServerAsync(
+            conn, "bulk_pg_schema", "bulk_pg_async_schema", reader, new BulkCopyOptions(), CancellationToken.None);
+
+        Assert.Equal(50, inserted);
+        Assert.Equal(50, Count(conn, "bulk_pg_schema", "bulk_pg_async_schema"));
     }
 
     [Fact]
@@ -139,7 +193,17 @@ public class PostgreSqlBulkCopyProviderTests
 
         using var reader = MakeTable(1).CreateDataReader();
         Assert.Throws<ArgumentException>(() => new PostgreSqlBulkCopyProvider().CopyToServer(
-            conn, "products\"; DROP TABLE users; --", reader, new BulkCopyOptions()));
+            conn, null, "products\"; DROP TABLE users; --", reader, new BulkCopyOptions()));
+    }
+
+    [Fact]
+    public void CopyToServer_InvalidSchemaName_ThrowsArgumentException()
+    {
+        using var conn = OpenOrSkip();
+
+        using var reader = MakeTable(1).CreateDataReader();
+        Assert.Throws<ArgumentException>(() => new PostgreSqlBulkCopyProvider().CopyToServer(
+            conn, "public\"; DROP TABLE users; --", "products", reader, new BulkCopyOptions()));
     }
 
     [Fact]
@@ -150,7 +214,7 @@ public class PostgreSqlBulkCopyProviderTests
         using var reader = MakeTable(1).CreateDataReader();
 
         var ex = Assert.Throws<ArgumentException>(() =>
-            new PostgreSqlBulkCopyProvider().CopyToServer(conn, "irrelevant", reader, new BulkCopyOptions()));
+            new PostgreSqlBulkCopyProvider().CopyToServer(conn, null, "irrelevant", reader, new BulkCopyOptions()));
 
         Assert.Contains("NpgsqlConnection", ex.Message);
     }
@@ -163,7 +227,7 @@ public class PostgreSqlBulkCopyProviderTests
         using var reader = MakeTable(1).CreateDataReader();
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
-            new PostgreSqlBulkCopyProvider().CopyToServerAsync(conn, "irrelevant", reader, new BulkCopyOptions(), CancellationToken.None).AsTask());
+            new PostgreSqlBulkCopyProvider().CopyToServerAsync(conn, null, "irrelevant", reader, new BulkCopyOptions(), CancellationToken.None).AsTask());
 
         Assert.Contains("NpgsqlConnection", ex.Message);
     }
