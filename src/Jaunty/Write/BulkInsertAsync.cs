@@ -406,6 +406,7 @@ public static partial class Jaunty
         valueSetter(pCollection, entityList[0]);
         try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
 
+        cancellationToken.ThrowIfCancellationRequested();
         int totalInserted = await ExecuteInsertAndSetIdAsync(command, entityList[0], idSetter, cancellationToken).ConfigureAwait(false);
 
         for (int i = 1; i < entityList.Count; i++)
