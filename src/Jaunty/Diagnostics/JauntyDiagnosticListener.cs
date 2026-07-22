@@ -142,7 +142,7 @@ public sealed class JauntyDiagnosticListener : DiagnosticListener, IDisposable
     }
 
     /// <inheritdoc/>
-    public new void Dispose()
+    public override void Dispose()
     {
         if (!_disposed)
         {

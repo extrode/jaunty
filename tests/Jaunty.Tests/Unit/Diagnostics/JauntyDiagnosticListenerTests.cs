@@ -96,6 +96,25 @@ public class JauntyDiagnosticListenerTests : IDisposable
         Assert.Empty(localObserver.Events);
     }
 
+    [Fact]
+    public void Dispose_ThroughIDisposableReference_DisablesFutureWrites()
+    {
+        // Arrange - dispose through a base-typed reference to verify the override actually
+        // runs (a `new` hider would only run when disposed through the concrete type).
+        var listener = new JauntyDiagnosticListener();
+        var localObserver = new TestDiagnosticObserver();
+        listener.Subscribe(localObserver);
+        var context = new CommandContext("SELECT 1", null, _connection, CommandType.Text);
+        IDisposable disposable = listener;
+
+        // Act
+        disposable.Dispose();
+        listener.WriteCommandExecuting(context);
+
+        // Assert
+        Assert.Empty(localObserver.Events);
+    }
+
     #endregion
 
     #region WriteCommandExecuted Tests
