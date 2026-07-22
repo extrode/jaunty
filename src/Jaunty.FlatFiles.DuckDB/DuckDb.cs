@@ -41,6 +41,7 @@ public sealed partial class DuckDb : IFlatFile
     private readonly FlatFileOptions _options;
     private readonly ConcurrentDictionary<Type, IFileSource> _sources = new();
     private readonly ConcurrentDictionary<Type, bool> _modified = new();
+    private readonly HashSet<string> _loadedExtensions = new(StringComparer.OrdinalIgnoreCase);
     private bool _disposed;
 
     /// <inheritdoc />
@@ -100,6 +101,7 @@ public sealed partial class DuckDb : IFlatFile
     public void RegisterSource(IFileSource source)
     {
         ArgumentNullException.ThrowIfNull(source);
+        EnsureExtensionsLoaded(source);
         string sql = GenerateRegistrationSql(source);
 
         using DuckDBCommand cmd = _connection.CreateCommand();
@@ -116,6 +118,7 @@ public sealed partial class DuckDb : IFlatFile
     public async ValueTask RegisterSourceAsync(IFileSource source, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(source);
+        await EnsureExtensionsLoadedAsync(source, cancellationToken).ConfigureAwait(false);
         string sql = await GenerateRegistrationSqlAsync(source, cancellationToken).ConfigureAwait(false);
 
         DuckDBCommand cmd = _connection.CreateCommand();
@@ -128,6 +131,56 @@ public sealed partial class DuckDb : IFlatFile
 
         _sources[source.EntityType] = source;
     }
+
+    /// <summary>
+    /// Installs and loads the DuckDB extension required to read <paramref name="source"/>'s
+    /// remote URI scheme (e.g. <c>httpfs</c> for S3/HTTP(S), <c>azure</c> for az/abfss), if any.
+    /// DuckDB's implicit extension autoload is unreliable for the azure extension and can be
+    /// disabled entirely in locked-down deployments, so this is done explicitly up front rather
+    /// than left to fail opaquely at query time.
+    /// </summary>
+    private void EnsureExtensionsLoaded(IFileSource source)
+    {
+        foreach (string path in source.FilePaths)
+        {
+            if (!FlatFile.IsRemoteUri(path, out string scheme))
+                continue;
+
+            string? extension = GetDuckDbExtensionForScheme(scheme);
+            if (extension is null || !_loadedExtensions.Add(extension))
+                continue;
+
+            using DuckDBCommand cmd = _connection.CreateCommand();
+            cmd.CommandText = $"INSTALL {extension}; LOAD {extension};";
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    /// <inheritdoc cref="EnsureExtensionsLoaded"/>
+    private async ValueTask EnsureExtensionsLoadedAsync(IFileSource source, CancellationToken cancellationToken)
+    {
+        foreach (string path in source.FilePaths)
+        {
+            if (!FlatFile.IsRemoteUri(path, out string scheme))
+                continue;
+
+            string? extension = GetDuckDbExtensionForScheme(scheme);
+            if (extension is null || !_loadedExtensions.Add(extension))
+                continue;
+
+            DuckDBCommand cmd = _connection.CreateCommand();
+            await using var cmdDisposer = cmd.ConfigureAwait(false);
+            cmd.CommandText = $"INSTALL {extension}; LOAD {extension};";
+            await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static string? GetDuckDbExtensionForScheme(string scheme) => scheme.ToLowerInvariant() switch
+    {
+        "az" or "abfss" => "azure",
+        "http" or "https" or "s3" or "s3a" or "s3n" or "r2" or "gs" or "hf" => "httpfs",
+        _ => null
+    };
 
     /// <inheritdoc />
     public IFileSource? GetSource<T>() where T : class, new()
