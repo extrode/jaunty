@@ -65,9 +65,12 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
             // SqlIdentifierValidator's plain-identifier check on the second pass.
             string columnName = GetColumnNameFromProperty(prop.Name);
 
-            // Skip identity and computed columns
+            // Skip identity and computed columns. AUD-R22: a property that doesn't correspond to
+            // a mapped column on T (colMeta is null) is intentionally allowed through - see
+            // KeywordColumnEscapingTests.InsertValues_AnonymousObject_WithUnmappedKeywordPropertyName_EscapesColumn
+            // (R14 batch-5): callers can insert into columns not present on the mapped entity type.
             ColumnMetadata? colMeta = GetColumnMetadata(prop.Name);
-            if (colMeta?.IsIdentity == true || colMeta?.IsComputed == true)
+            if (colMeta is not null && (colMeta.IsIdentity || colMeta.IsComputed))
                 continue;
 
             var paramName = $"{_dialect.ParameterPrefix}{prop.Name}";
@@ -90,7 +93,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
 
     public IValuesClause<T> Value(string column, object? value)
     {
-        var paramName = $"{_dialect.ParameterPrefix}{column}";
+        var paramName = $"{_dialect.ParameterPrefix}{SanitizeParamName(column)}";
         _parameters.Add(paramName, value);
         _columns.Add(new InsertColumn(_dialect.EscapeColumnName(column), paramName));
         return this;
@@ -263,6 +266,21 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
                 return columns[i];
         }
         return null;
+    }
+
+    // AUD-R22: column is the raw caller-supplied column name from the string-based Value
+    // overload. A space or other character invalid in a SQL parameter identifier (e.g.
+    // Value("Order Date", value)) used to be interpolated unsanitized, producing a malformed
+    // placeholder that fails at execution time.
+    private static string SanitizeParamName(string name)
+    {
+        char[] chars = name.ToCharArray();
+        for (int i = 0; i < chars.Length; i++)
+        {
+            if (!char.IsLetterOrDigit(chars[i]) && chars[i] != '_')
+                chars[i] = '_';
+        }
+        return new string(chars);
     }
 
     #endregion

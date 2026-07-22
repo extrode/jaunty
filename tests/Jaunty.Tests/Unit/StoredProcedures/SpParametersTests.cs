@@ -318,6 +318,14 @@ public class SpParametersTests
         Assert.False(parameters.HasValue("NonExistent"));
     }
 
+    [Fact]
+    public void HasValue_NullName_ThrowsArgumentNullException()
+    {
+        var parameters = new SpParameters();
+
+        Assert.Throws<ArgumentNullException>(() => parameters.HasValue(null!));
+    }
+
     #endregion
 
     #region Parameters Property Tests

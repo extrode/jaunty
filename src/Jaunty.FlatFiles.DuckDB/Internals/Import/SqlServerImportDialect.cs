@@ -16,11 +16,14 @@ internal sealed class SqlServerImportDialect : IImportDialect
     public static SqlServerImportDialect Instance { get; } = new();
 
     /// <summary>
-    /// Quotes an identifier for SQL Server, doubling any embedded double quotes so the
-    /// identifier cannot break out of the quoted context (e.g. names derived from
-    /// filenames or [Table]/[Column] attributes).
+    /// Quotes an identifier for SQL Server using [brackets], doubling any embedded closing
+    /// bracket so the identifier cannot break out of the quoted context (e.g. names derived
+    /// from filenames or [Table]/[Column] attributes). Brackets are SQL Server's native
+    /// identifier delimiter and work regardless of the session's QUOTED_IDENTIFIER setting,
+    /// unlike double quotes, which only work when QUOTED_IDENTIFIER is ON (see
+    /// src/Jaunty/Dialects/SqlServerDialect.cs).
     /// </summary>
-    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
+    private static string QuoteIdentifier(string identifier) => $"[{identifier.Replace("]", "]]")}]";
 
     /// <inheritdoc />
     public string MapClrTypeToSqlType(Type clrType) => clrType switch
