@@ -86,26 +86,72 @@ internal sealed class SqlServerDialect : ISqlDialect
     }
 
     // Tracks paren depth so an ORDER BY nested inside a window function's OVER(...) clause
-    // (or a subquery) isn't mistaken for the query's own top-level ORDER BY.
+    // (or a subquery) isn't mistaken for the query's own top-level ORDER BY. Also skips
+    // string literals, quoted identifiers, and comments so "ORDER BY" text inside them
+    // (or a paren inside them) can't produce a false positive/negative.
     private static bool HasTopLevelOrderBy(string sql)
     {
         int depth = 0;
-        for (int i = 0; i < sql.Length; i++)
+        int len = sql.Length;
+        int i = 0;
+
+        while (i < len)
         {
             char c = sql[i];
+
+            if (c == '-' && i + 1 < len && sql[i + 1] == '-')
+            {
+                i += 2;
+                while (i < len && sql[i] is not ('\n' or '\r')) i++;
+                continue;
+            }
+
+            if (c == '/' && i + 1 < len && sql[i + 1] == '*')
+            {
+                i += 2;
+                while (i + 1 < len && !(sql[i] == '*' && sql[i + 1] == '/')) i++;
+                i = i + 1 < len ? i + 2 : len;
+                continue;
+            }
+
+            if (c is '\'' or '"' or '[')
+            {
+                char terminator = c == '[' ? ']' : c;
+                i++;
+                while (i < len)
+                {
+                    if (sql[i] == terminator)
+                    {
+                        if (i + 1 < len && sql[i + 1] == terminator) { i += 2; continue; }
+                        i++;
+                        break;
+                    }
+                    i++;
+                }
+                continue;
+            }
+
             if (c == '(')
             {
                 depth++;
+                i++;
+                continue;
             }
-            else if (c == ')')
+
+            if (c == ')')
             {
                 depth--;
+                i++;
+                continue;
             }
-            else if (depth == 0 && i + 8 <= sql.Length &&
-                     string.Compare(sql, i, "ORDER BY", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+
+            if (depth == 0 && i + 8 <= len &&
+                string.Compare(sql, i, "ORDER BY", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
             {
                 return true;
             }
+
+            i++;
         }
 
         return false;

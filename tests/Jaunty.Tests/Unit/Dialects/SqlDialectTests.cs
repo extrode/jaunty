@@ -76,6 +76,56 @@ public class SqlDialectTests
     }
 
     [Fact]
+    public void SqlServer_GetPagingSql_OrderByTextInsideStringLiteral_StillInjectsTopLevelOrder()
+    {
+        // Regression test: "ORDER BY" appearing inside a string literal at paren-depth 0 must
+        // not be mistaken for a real top-level ORDER BY, or OFFSET/FETCH fails at execution
+        // with "Incorrect syntax near 'OFFSET'" since no genuine ORDER BY precedes it.
+        var result = _sqlServer.GetPagingSql(
+            "SELECT * FROM table WHERE notes = 'Sort ORDER BY date please'",
+            10, 20);
+        Assert.Equal(
+            "SELECT * FROM table WHERE notes = 'Sort ORDER BY date please' ORDER BY (SELECT NULL) OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY",
+            result);
+    }
+
+    [Fact]
+    public void SqlServer_GetPagingSql_OrderByTextInsideBracketIdentifier_StillInjectsTopLevelOrder()
+    {
+        var result = _sqlServer.GetPagingSql(
+            "SELECT * FROM table WHERE [ORDER BY column] = 1",
+            10, 20);
+        Assert.Equal(
+            "SELECT * FROM table WHERE [ORDER BY column] = 1 ORDER BY (SELECT NULL) OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY",
+            result);
+    }
+
+    [Fact]
+    public void SqlServer_GetPagingSql_OrderByTextInsideLineComment_StillInjectsTopLevelOrder()
+    {
+        var result = _sqlServer.GetPagingSql(
+            "SELECT * FROM table -- ORDER BY note\n",
+            10, 20);
+        Assert.Equal(
+            "SELECT * FROM table -- ORDER BY note\n ORDER BY (SELECT NULL) OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY",
+            result);
+    }
+
+    [Fact]
+    public void SqlServer_GetPagingSql_RealOrderByAfterStringLiteralContainingOrderByText_NotDuplicated()
+    {
+        // A genuine top-level ORDER BY after a string literal that itself contains "ORDER BY"
+        // text must still be recognized, and an unbalanced paren inside the literal must not
+        // throw off the paren-depth counter.
+        var result = _sqlServer.GetPagingSql(
+            "SELECT * FROM table WHERE notes = 'contains a ( paren' ORDER BY id",
+            10, 20);
+        Assert.Equal(
+            "SELECT * FROM table WHERE notes = 'contains a ( paren' ORDER BY id OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY",
+            result);
+    }
+
+    [Fact]
     public void SqlServer_GetLastInsertIdSql_ReturnsScopeIdentity()
     {
         Assert.Equal("SELECT CAST(SCOPE_IDENTITY() AS BIGINT);", _sqlServer.GetLastInsertIdSql("Id"));
