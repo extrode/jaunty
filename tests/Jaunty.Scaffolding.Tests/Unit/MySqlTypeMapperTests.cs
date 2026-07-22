@@ -221,4 +221,18 @@ public class MySqlTypeMapperTests
         var result = _mapper.MapToCSharpType(CreateColumn("unknown_custom_type_xyz"));
         Assert.Equal("object", result.TypeName);
     }
+
+    // AUD-R18 batch-8: RequiredUsing exists so EntityCodeGenerator.AppendUsings can emit
+    // "using System;" for types like DateOnly that aren't in scope without ImplicitUsings -
+    // no mapper populated it, so generated code failed to compile with ImplicitUsings disabled.
+    [Theory]
+    [InlineData("date")]
+    [InlineData("time")]
+    [InlineData("datetime")]
+    [InlineData("timestamp")]
+    public void MapToCSharpType_SystemNamespaceTypes_SetsRequiredUsing(string sqlType)
+    {
+        var result = _mapper.MapToCSharpType(CreateColumn(sqlType));
+        Assert.Equal("System", result.RequiredUsing);
+    }
 }

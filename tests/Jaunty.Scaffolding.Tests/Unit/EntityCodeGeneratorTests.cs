@@ -348,6 +348,34 @@ public class EntityCodeGeneratorTests
     }
 
     [Fact]
+    public void GenerateEntity_WithSystemNamespaceColumnType_EmitsSystemUsing()
+    {
+        // AUD-R18 batch-8: CSharpTypeInfo.RequiredUsing exists precisely so a mapped type like
+        // Guid/DateOnly can request "using System;" - no ITypeMapper populated it, so generated
+        // entities referencing these types failed to compile under ImplicitUsings=disable.
+        var table = new TableSchema
+        {
+            SchemaName = "dbo",
+            TableName = "Widgets",
+            Columns =
+            [
+                new ColumnSchema
+                {
+                    ColumnName = "WidgetId",
+                    DataType = "uniqueidentifier",
+                    IsNullable = false,
+                    IsPrimaryKey = true,
+                    OrdinalPosition = 1
+                }
+            ]
+        };
+
+        var code = _generator.GenerateEntity(table, _defaultOptions);
+
+        Assert.Contains("using System;", code);
+    }
+
+    [Fact]
     public void GenerateEntity_WithDataAnnotationsAndDefaultAttributeFlags_DoesNotEmitAmbiguousUsings()
     {
         // Regression test: AddDataAnnotations=true combined with the default-on

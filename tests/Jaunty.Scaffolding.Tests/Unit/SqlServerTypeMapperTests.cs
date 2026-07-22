@@ -149,4 +149,22 @@ public class SqlServerTypeMapperTests
         Assert.Equal("object", result.TypeName);
         Assert.False(result.IsValueType);
     }
+
+    // AUD-R18 batch-8: RequiredUsing exists so EntityCodeGenerator.AppendUsings can emit
+    // "using System;" for types like Guid/DateOnly that aren't in scope without ImplicitUsings -
+    // no mapper populated it, so generated code failed to compile with ImplicitUsings disabled.
+    [Theory]
+    [InlineData("date")]
+    [InlineData("time")]
+    [InlineData("datetime")]
+    [InlineData("datetime2")]
+    [InlineData("smalldatetime")]
+    [InlineData("datetimeoffset")]
+    [InlineData("uniqueidentifier")]
+    public void MapToCSharpType_SystemNamespaceTypes_SetsRequiredUsing(string sqlType)
+    {
+        var column = CreateColumn(sqlType);
+        var result = _mapper.MapToCSharpType(column);
+        Assert.Equal("System", result.RequiredUsing);
+    }
 }
