@@ -132,6 +132,9 @@ public sealed class DuckDbDialect : IFlatFileDialect
     /// <inheritdoc />
     public string FormatEndsWithPattern(string value) => $"%{EscapeLikeWildcards(value)}";
 
+    /// <inheritdoc />
+    public string FormatBooleanLiteral(bool value) => value ? "TRUE" : "FALSE";
+
     // GenerateCaseSensitiveLike/GenerateCaseInsensitiveLike declare ESCAPE '\', so literal
     // occurrences of the escape char and LIKE wildcard chars (%, _) must be escaped in the
     // value or they change query semantics instead of matching literally.
