@@ -37,15 +37,15 @@ public sealed class SqlServerTypeMapper : ITypeMapper
                 new CSharpTypeInfo { TypeName = "string", IsValueType = false },
 
             // Date/Time types
-            "date" => new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true },
-            "time" => new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true },
+            "date" => new CSharpTypeInfo { TypeName = "DateOnly", IsValueType = true, RequiredUsing = "System" },
+            "time" => new CSharpTypeInfo { TypeName = "TimeOnly", IsValueType = true, RequiredUsing = "System" },
             "datetime" or "datetime2" or "smalldatetime" =>
-                new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true },
+                new CSharpTypeInfo { TypeName = "DateTime", IsValueType = true, RequiredUsing = "System" },
             "datetimeoffset" =>
-                new CSharpTypeInfo { TypeName = "DateTimeOffset", IsValueType = true },
+                new CSharpTypeInfo { TypeName = "DateTimeOffset", IsValueType = true, RequiredUsing = "System" },
 
             // GUID
-            "uniqueidentifier" => new CSharpTypeInfo { TypeName = "Guid", IsValueType = true },
+            "uniqueidentifier" => new CSharpTypeInfo { TypeName = "Guid", IsValueType = true, RequiredUsing = "System" },
 
             // Binary types
             "binary" or "varbinary" or "image" or "rowversion" or "timestamp" =>

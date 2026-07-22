@@ -12,6 +12,15 @@ namespace Jaunty.Scaffolding.Providers.SQLite;
 /// </summary>
 public sealed class SQLiteSchemaReader : ISchemaReader
 {
+    // SQLite PRAGMA statements don't accept bind parameters for their argument in the common
+    // ADO providers, so the table name must be interpolated into the command text. Table names
+    // can legitimately contain spaces, quotes, and other punctuation when created via a quoted
+    // identifier (see the "order's notes" fixture in SQLiteSchemaReaderTests), which rules out
+    // restricting to a plain-identifier shape. Doubling embedded single quotes is the standard
+    // SQL string-literal escape and is sufficient here since the argument is always wrapped in
+    // single quotes below.
+    private static string EscapeForPragmaLiteral(string tableName) => tableName.Replace("'", "''");
+
     /// <inheritdoc />
     public async Task<DatabaseSchema> ReadSchemaAsync(
         string connectionString,
@@ -144,7 +153,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
 
         // Use PRAGMA table_info to get column information
         using DbCommand cmd = connection.CreateCommand();
-        cmd.CommandText = $"PRAGMA table_info('{tableName.Replace("'", "''")}')";
+        cmd.CommandText = $"PRAGMA table_info('{EscapeForPragmaLiteral(tableName)}')";
 
         var rows = new List<(string ColumnName, string DataType, bool NotNull, string? DefaultValue, bool IsPk)>();
         using (DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
@@ -228,7 +237,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         var foreignKeys = new List<ForeignKeyInfo>();
 
         using DbCommand cmd = connection.CreateCommand();
-        cmd.CommandText = $"PRAGMA foreign_key_list('{tableName.Replace("'", "''")}')";
+        cmd.CommandText = $"PRAGMA foreign_key_list('{EscapeForPragmaLiteral(tableName)}')";
 
         using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
