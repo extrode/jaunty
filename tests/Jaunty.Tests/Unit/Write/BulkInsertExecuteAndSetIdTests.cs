@@ -48,6 +48,23 @@ public class BulkInsertExecuteAndSetIdTests
         Assert.Equal(42, entity.Id);
     }
 
+    [Theory]
+    [InlineData(0L)]
+    [InlineData(-1L)]
+    public void ExecuteInsertAndSetId_NonPositiveScalarResult_StillReturnsOneAndSetsId(long scalarValue)
+    {
+        using var inner = new SqliteConnection("Data Source=:memory:");
+        inner.Open();
+        using var connection = new ThrowingDbConnection(inner) { OnExecute = _ => scalarValue };
+        using DbCommand command = connection.CreateCommand();
+
+        var entity = new Entity { Id = 99 };
+        int contribution = ExecuteInsertAndSetId(command, entity, (e, id) => e.Id = id);
+
+        Assert.Equal(1, contribution);
+        Assert.Equal(scalarValue, entity.Id);
+    }
+
     [Fact]
     public async Task ExecuteInsertAndSetIdAsync_NullScalarResult_ReturnsZeroAndDoesNotSetId()
     {
@@ -76,5 +93,22 @@ public class BulkInsertExecuteAndSetIdTests
 
         Assert.Equal(1, contribution);
         Assert.Equal(7, entity.Id);
+    }
+
+    [Theory]
+    [InlineData(0L)]
+    [InlineData(-1L)]
+    public async Task ExecuteInsertAndSetIdAsync_NonPositiveScalarResult_StillReturnsOneAndSetsId(long scalarValue)
+    {
+        using var inner = new SqliteConnection("Data Source=:memory:");
+        inner.Open();
+        using var connection = new ThrowingDbConnection(inner) { OnExecute = _ => scalarValue };
+        using DbCommand command = connection.CreateCommand();
+
+        var entity = new Entity { Id = 99 };
+        int contribution = await ExecuteInsertAndSetIdAsync(command, entity, (e, id) => e.Id = id, CancellationToken.None);
+
+        Assert.Equal(1, contribution);
+        Assert.Equal(scalarValue, entity.Id);
     }
 }
