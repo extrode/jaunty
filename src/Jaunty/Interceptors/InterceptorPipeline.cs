@@ -78,7 +78,9 @@ public sealed class InterceptorPipeline
     /// <param name="commandType">The command type.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A <see cref="ValueTask"/> representing the asynchronous operation.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when an interceptor throws an exception.</exception>
+    /// <remarks>
+    /// Exceptions thrown by an interceptor propagate unchanged to the caller.
+    /// </remarks>
     public async ValueTask InvokeExecutingAsync(
         string commandText,
         object? parameters,

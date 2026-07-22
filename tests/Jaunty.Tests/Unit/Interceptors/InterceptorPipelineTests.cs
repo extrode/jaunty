@@ -241,6 +241,27 @@ public class InterceptorPipelineTests
         Assert.NotEmpty(interceptor2.FailedCalls);
     }
 
+    [Fact]
+    public async Task ExecuteWithInterceptionAsync_InterceptorThrowsNonInvalidOperationException_PropagatesUnchanged()
+    {
+        // Arrange - InvokeExecutingAsync does not catch or wrap interceptor exceptions, so
+        // whatever type the interceptor throws must propagate unchanged, not be coerced to
+        // InvalidOperationException.
+        var pipeline = new InterceptorPipeline(new ICommandInterceptor[] { new TypedThrowingInterceptor() });
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await pipeline.ExecuteWithInterceptionAsync(
+                "SELECT 1",
+                null,
+                CreateMockConnection(),
+                CommandType.Text,
+                () => new ValueTask<int>(42),
+                CancellationToken.None));
+
+        Assert.Equal("Non-InvalidOperationException from interceptor", exception.Message);
+    }
+
     #endregion
 
     #region Exception Handling Tests
@@ -397,6 +418,18 @@ public class InterceptorPipelineTests
 
         public ValueTask OnCommandFailedAsync(CommandContext context, Exception exception, CancellationToken cancellationToken)
             => throw new InvalidOperationException("Interceptor failed");
+    }
+
+    private class TypedThrowingInterceptor : ICommandInterceptor
+    {
+        public ValueTask OnCommandExecutingAsync(CommandContext context, CancellationToken cancellationToken)
+            => throw new ArgumentException("Non-InvalidOperationException from interceptor");
+
+        public ValueTask OnCommandExecutedAsync(CommandContext context, CancellationToken cancellationToken)
+            => new ValueTask();
+
+        public ValueTask OnCommandFailedAsync(CommandContext context, Exception exception, CancellationToken cancellationToken)
+            => new ValueTask();
     }
 
     private class TestDbConnection : IDbConnection
