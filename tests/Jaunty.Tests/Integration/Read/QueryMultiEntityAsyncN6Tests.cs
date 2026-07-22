@@ -114,6 +114,32 @@ public class QueryMultiEntityAsyncN6Tests : IClassFixture<DialectFixture>
 
     [Theory]
     [SystemSqlite]
+    public async Task QueryAsync_SixEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Af1, Af2, Af3, Af4, Af5, Af6)>();
+
+        var results = await connection.QueryAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None);
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryAsync_SixEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Af1, Af2, Af3, Af4, Af5, Af6>();
+
+        var results = await connection.QueryAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None);
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
     public async Task QueryFirstAsync_SixEntities_ReturnsFirstTuple(DialectInfo _)
     {
         using var connection = CreateAndSeed();
@@ -156,6 +182,32 @@ public class QueryMultiEntityAsyncN6Tests : IClassFixture<DialectFixture>
         var options = new MultiEntityCommandOptions<Af1, Af2, Af3, Af4, Af5, Af6>();
 
         var (e1, _, _, _, _, _) = await connection.QueryFirstAsync<Af1, Af2, Af3, Af4, Af5, Af6>(Sql, options, CancellationToken.None);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_SixEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Af1, Af2, Af3, Af4, Af5, Af6)>();
+
+        var (e1, _, _, _, _, _) = await connection.QueryFirstAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_SixEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Af1, Af2, Af3, Af4, Af5, Af6>();
+
+        var (e1, _, _, _, _, _) = await connection.QueryFirstAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None);
 
         Assert.Equal(1, e1.Id);
     }
@@ -210,6 +262,32 @@ public class QueryMultiEntityAsyncN6Tests : IClassFixture<DialectFixture>
 
     [Theory]
     [SystemSqlite]
+    public async Task QueryFirstOrDefaultAsync_SixEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Af1, Af2, Af3, Af4, Af5, Af6)>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstOrDefaultAsync_SixEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Af1, Af2, Af3, Af4, Af5, Af6>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
     public async Task QuerySingleAsync_SixEntities_ReturnsSingleTuple(DialectInfo _)
     {
         using var connection = CreateAndSeed();
@@ -258,6 +336,32 @@ public class QueryMultiEntityAsyncN6Tests : IClassFixture<DialectFixture>
 
     [Theory]
     [SystemSqlite]
+    public async Task QuerySingleAsync_SixEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Af1, Af2, Af3, Af4, Af5, Af6)>();
+
+        var (e1, _, _, _, _, _) = await connection.QuerySingleAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleAsync_SixEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Af1, Af2, Af3, Af4, Af5, Af6>();
+
+        var (e1, _, _, _, _, _) = await connection.QuerySingleAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None);
+
+        Assert.Equal(1, e1.Id);
+    }
+
+    [Theory]
+    [SystemSqlite]
     public async Task QuerySingleOrDefaultAsync_SixEntities_ReturnsSingleTuple(DialectInfo _)
     {
         using var connection = CreateAndSeed();
@@ -300,6 +404,32 @@ public class QueryMultiEntityAsyncN6Tests : IClassFixture<DialectFixture>
         var options = new MultiEntityCommandOptions<Af1, Af2, Af3, Af4, Af5, Af6>();
 
         var result = await connection.QuerySingleOrDefaultAsync<Af1, Af2, Af3, Af4, Af5, Af6>(Sql, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleOrDefaultAsync_SixEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Af1, Af2, Af3, Af4, Af5, Af6)>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleOrDefaultAsync_SixEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Af1, Af2, Af3, Af4, Af5, Af6>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None);
 
         Assert.NotNull(result);
     }
@@ -360,6 +490,40 @@ public class QueryMultiEntityAsyncN6Tests : IClassFixture<DialectFixture>
 
         var seen = new List<(Af1, Af2, Af3, Af4, Af5, Af6)>();
         await foreach (var row in connection.QueryStreamAsync<Af1, Af2, Af3, Af4, Af5, Af6>(Sql, options, CancellationToken.None))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_SixEntities_WithParametersAndCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(Af1, Af2, Af3, Af4, Af5, Af6)>();
+
+        var seen = new List<(Af1, Af2, Af3, Af4, Af5, Af6)>();
+        await foreach (var row in connection.QueryStreamAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_SixEntities_WithParametersAndMultiEntityCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<Af1, Af2, Af3, Af4, Af5, Af6>();
+
+        var seen = new List<(Af1, Af2, Af3, Af4, Af5, Af6)>();
+        await foreach (var row in connection.QueryStreamAsync<Af1, Af2, Af3, Af4, Af5, Af6>(
+            $"{Sql} WHERE t1.id = @Id", new { Id = 1 }, options, CancellationToken.None))
         {
             seen.Add(row);
         }

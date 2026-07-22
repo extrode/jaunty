@@ -253,6 +253,121 @@ public class QueryMultiEntityTests : IClassFixture<DialectFixture>
     [SqlServer]
     [Postgres]
     [MariaDB]
+    public async Task QueryFirstAsync_TwoEntities_WithParameters_FiltersRow(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var (product, _) = await connection.QueryFirstAsync<ProductInfo, CategoryInfo>(
+            @"SELECT
+                p.product_id AS ProductId,
+                p.product_name AS ProductName,
+                c.category_id AS CategoryId,
+                c.category_name AS CategoryName
+              FROM products p
+              JOIN categories c ON p.category_id = c.category_id
+              WHERE p.product_id = @ProductId",
+            new { ProductId = 1 },
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryFirstOrDefaultAsync_TwoEntities_WithParameters_ReturnsNullWhenEmpty(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var result = await connection.QueryFirstOrDefaultAsync<ProductInfo, CategoryInfo>(
+            @"SELECT
+                p.product_id AS ProductId,
+                p.product_name AS ProductName,
+                c.category_id AS CategoryId,
+                c.category_name AS CategoryName
+              FROM products p
+              JOIN categories c ON p.category_id = c.category_id
+              WHERE p.product_id = @ProductId",
+            new { ProductId = -999 },
+            cancellationToken: CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QuerySingleAsync_TwoEntities_WithParameters_FiltersRow(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var (product, _) = await connection.QuerySingleAsync<ProductInfo, CategoryInfo>(
+            @"SELECT
+                p.product_id AS ProductId,
+                p.product_name AS ProductName,
+                c.category_id AS CategoryId,
+                c.category_name AS CategoryName
+              FROM products p
+              JOIN categories c ON p.category_id = c.category_id
+              WHERE p.product_id = @ProductId",
+            new { ProductId = 1 },
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(1, product.ProductId);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QuerySingleOrDefaultAsync_TwoEntities_WithParameters_ReturnsNullWhenEmpty(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var result = await connection.QuerySingleOrDefaultAsync<ProductInfo, CategoryInfo>(
+            @"SELECT
+                p.product_id AS ProductId,
+                p.product_name AS ProductName,
+                c.category_id AS CategoryId,
+                c.category_name AS CategoryName
+              FROM products p
+              JOIN categories c ON p.category_id = c.category_id
+              WHERE p.product_id = @ProductId",
+            new { ProductId = -999 },
+            cancellationToken: CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryStreamAsync_TwoEntities_WithParameters_FiltersRows(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetConnection(dialect);
+        var results = new List<(ProductInfo, CategoryInfo)>();
+        await foreach (var row in connection.QueryStreamAsync<ProductInfo, CategoryInfo>(
+            @"SELECT
+                p.product_id AS ProductId,
+                p.product_name AS ProductName,
+                c.category_id AS CategoryId,
+                c.category_name AS CategoryName
+              FROM products p
+              JOIN categories c ON p.category_id = c.category_id
+              WHERE c.category_id = @CategoryId",
+            new { CategoryId = 1 },
+            CancellationToken.None))
+        {
+            results.Add(row);
+        }
+
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.Equal(1, r.Item2.CategoryId));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
     public void Query_TwoEntities_T1HasPriority_WhenColumnMatchesBoth(DialectInfo dialect)
     {
         using var connection = _fixture.GetConnection(dialect);
