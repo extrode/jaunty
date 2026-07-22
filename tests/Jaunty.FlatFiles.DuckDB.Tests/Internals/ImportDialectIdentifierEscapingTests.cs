@@ -125,4 +125,39 @@ public class ImportDialectIdentifierEscapingTests
 
         Assert.Contains("INSERT OR IGNORE INTO", sql);
     }
+
+    [Fact]
+    public void SqliteImportDialect_GenerateInsertSql_KeylessEntityWithUpsertStrategy_Throws()
+    {
+        var ex = Assert.Throws<NotSupportedException>(() =>
+            SqliteImportDialect.Instance.GenerateInsertSql(
+                "orders", ["id"], ["@p0"], ConflictStrategy.Upsert, keyColumnName: null));
+
+        Assert.Contains("orders", ex.Message);
+        Assert.Contains("[Key]", ex.Message);
+    }
+
+    [Fact]
+    public void SqliteImportDialect_GenerateInsertSql_Upsert_UsesOnConflictDoUpdateNotReplace()
+    {
+        // AUD-R20: "INSERT OR REPLACE" is a DELETE+INSERT under the hood - fires DELETE+INSERT
+        // triggers instead of an UPDATE trigger, churns the rowid/AUTOINCREMENT counter, and can
+        // cascade-delete FK-dependent child rows under PRAGMA foreign_keys=ON with ON DELETE
+        // CASCADE. "ON CONFLICT DO UPDATE" is a true UPDATE, matching PostgreSqlImportDialect's
+        // and SqlServerImportDialect's Upsert semantics for the identical ConflictStrategy value.
+        string sql = SqliteImportDialect.Instance.GenerateInsertSql(
+            "orders", ["id", "name"], ["@p0", "@p1"], ConflictStrategy.Upsert, keyColumnName: "id");
+
+        Assert.DoesNotContain("OR REPLACE", sql);
+        Assert.Contains("ON CONFLICT (\"id\") DO UPDATE SET \"name\" = excluded.\"name\"", sql);
+    }
+
+    [Fact]
+    public void SqliteImportDialect_GenerateInsertSql_Upsert_EscapesEmbeddedQuoteInColumnName()
+    {
+        string sql = SqliteImportDialect.Instance.GenerateInsertSql(
+            "orders", [MaliciousColumnName], ["@p0"], ConflictStrategy.Upsert, keyColumnName: MaliciousColumnName);
+
+        Assert.Contains("\"id\"\" = 1; --\"", sql);
+    }
 }

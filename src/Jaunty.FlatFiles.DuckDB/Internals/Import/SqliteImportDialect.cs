@@ -49,12 +49,19 @@ internal sealed class SqliteImportDialect : IImportDialect
         ConflictStrategy conflictStrategy,
         string? keyColumnName)
     {
+        if (conflictStrategy == ConflictStrategy.Upsert && keyColumnName is null)
+        {
+            throw new NotSupportedException(
+                $"Table '{tableName}' has no [Key] property to use for conflict resolution. " +
+                $"The {conflictStrategy} conflict strategy requires a [Key]-attributed property; " +
+                "use ConflictStrategy.Error (the default) instead, or add a [Key] attribute to the entity.");
+        }
+
         var sb = new StringBuilder();
 
         sb.Append(conflictStrategy switch
         {
             ConflictStrategy.Skip => $"INSERT OR IGNORE INTO {QuoteIdentifier(tableName)}",
-            ConflictStrategy.Upsert => $"INSERT OR REPLACE INTO {QuoteIdentifier(tableName)}",
             _ => $"INSERT INTO {QuoteIdentifier(tableName)}"
         });
 
@@ -71,6 +78,23 @@ internal sealed class SqliteImportDialect : IImportDialect
             sb.Append(parameterNames[i]);
         }
         sb.Append(')');
+
+        if (conflictStrategy == ConflictStrategy.Upsert)
+        {
+            // SQLite's "INSERT ... ON CONFLICT DO UPDATE" (added in 3.24) performs a true
+            // UPDATE, unlike "INSERT OR REPLACE" which is a DELETE+INSERT under the hood -
+            // it fires UPDATE triggers instead of DELETE+INSERT triggers, doesn't churn the
+            // rowid/AUTOINCREMENT counter, and doesn't cascade-delete FK-dependent child rows.
+            sb.Append($" ON CONFLICT ({QuoteIdentifier(keyColumnName!)}) DO UPDATE SET ");
+            var first = true;
+            foreach (var colName in columnNames)
+            {
+                if (colName == keyColumnName) continue;
+                if (!first) sb.Append(", ");
+                sb.Append($"{QuoteIdentifier(colName)} = excluded.{QuoteIdentifier(colName)}");
+                first = false;
+            }
+        }
 
         return sb.ToString();
     }
