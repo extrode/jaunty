@@ -141,6 +141,32 @@ public class QueryMultiEntityAsyncN4Tests : IClassFixture<DialectFixture>
 
     [Theory]
     [SystemSqlite]
+    public async Task QueryAsync_FourEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A4Author, A4Book, A4Chapter, A4Section)>();
+
+        var results = await connection.QueryAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryAsync_FourEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A4Author, A4Book, A4Chapter, A4Section>();
+
+        var results = await connection.QueryAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
     public async Task QueryFirstAsync_FourEntities_ReturnsFirstTuple(DialectInfo _)
     {
         using var connection = CreateAndSeed();
@@ -182,6 +208,32 @@ public class QueryMultiEntityAsyncN4Tests : IClassFixture<DialectFixture>
         var options = new MultiEntityCommandOptions<A4Author, A4Book, A4Chapter, A4Section>();
 
         var (author, _, _, _) = await connection.QueryFirstAsync<A4Author, A4Book, A4Chapter, A4Section>(Sql, options, CancellationToken.None);
+
+        Assert.Equal("Isaac Asimov", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_FourEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A4Author, A4Book, A4Chapter, A4Section)>();
+
+        var (author, _, _, _) = await connection.QueryFirstAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Equal("Isaac Asimov", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_FourEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A4Author, A4Book, A4Chapter, A4Section>();
+
+        var (author, _, _, _) = await connection.QueryFirstAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
 
         Assert.Equal("Isaac Asimov", author.AuthorName);
     }
@@ -236,6 +288,32 @@ public class QueryMultiEntityAsyncN4Tests : IClassFixture<DialectFixture>
 
     [Theory]
     [SystemSqlite]
+    public async Task QueryFirstOrDefaultAsync_FourEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A4Author, A4Book, A4Chapter, A4Section)>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstOrDefaultAsync_FourEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A4Author, A4Book, A4Chapter, A4Section>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
     public async Task QuerySingleAsync_FourEntities_ReturnsSingleTuple(DialectInfo _)
     {
         using var connection = CreateAndSeed();
@@ -283,6 +361,32 @@ public class QueryMultiEntityAsyncN4Tests : IClassFixture<DialectFixture>
 
     [Theory]
     [SystemSqlite]
+    public async Task QuerySingleAsync_FourEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A4Author, A4Book, A4Chapter, A4Section)>();
+
+        var (author, _, _, _) = await connection.QuerySingleAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Equal("Isaac Asimov", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleAsync_FourEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A4Author, A4Book, A4Chapter, A4Section>();
+
+        var (author, _, _, _) = await connection.QuerySingleAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Equal("Isaac Asimov", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
     public async Task QuerySingleOrDefaultAsync_FourEntities_ReturnsSingleTuple(DialectInfo _)
     {
         using var connection = CreateAndSeed();
@@ -324,6 +428,32 @@ public class QueryMultiEntityAsyncN4Tests : IClassFixture<DialectFixture>
         var options = new MultiEntityCommandOptions<A4Author, A4Book, A4Chapter, A4Section>();
 
         var result = await connection.QuerySingleOrDefaultAsync<A4Author, A4Book, A4Chapter, A4Section>(Sql, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleOrDefaultAsync_FourEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A4Author, A4Book, A4Chapter, A4Section)>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleOrDefaultAsync_FourEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A4Author, A4Book, A4Chapter, A4Section>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
 
         Assert.NotNull(result);
     }
@@ -384,6 +514,40 @@ public class QueryMultiEntityAsyncN4Tests : IClassFixture<DialectFixture>
 
         var seen = new List<(A4Author, A4Book, A4Chapter, A4Section)>();
         await foreach (var row in connection.QueryStreamAsync<A4Author, A4Book, A4Chapter, A4Section>(Sql, options, CancellationToken.None))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_FourEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A4Author, A4Book, A4Chapter, A4Section)>();
+
+        var seen = new List<(A4Author, A4Book, A4Chapter, A4Section)>();
+        await foreach (var row in connection.QueryStreamAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_FourEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A4Author, A4Book, A4Chapter, A4Section>();
+
+        var seen = new List<(A4Author, A4Book, A4Chapter, A4Section)>();
+        await foreach (var row in connection.QueryStreamAsync<A4Author, A4Book, A4Chapter, A4Section>(
+            $"{Sql} WHERE a.id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None))
         {
             seen.Add(row);
         }

@@ -511,6 +511,26 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
         Assert.Equal(5, orders.Count);
     }
 
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public void QueryMultiple_WithValueReturningCallback_ReturnsTransformedResult(DialectInfo dialect)
+    {
+        using var connection = _fixture.GetDbConnection(dialect);
+        var sql = MultipleOrdersCustomersSql(dialect);
+
+        var (orderCount, customerCount) = connection.QueryMultiple(sql, reader =>
+        {
+            var orders = reader.ReadPartial<Order>().ToList();
+            var customers = reader.ReadPartial<Customer>().ToList();
+            return (orders.Count, customers.Count);
+        });
+
+        Assert.Equal(3, orderCount);
+        Assert.Equal(2, customerCount);
+    }
+
     #endregion
 
     #region Async Tests
@@ -865,6 +885,46 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
 
         Assert.NotNull(count);
         Assert.True(count > 0);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryMultipleAsync_WithSyncValueReturningCallback_ReturnsTransformedResult(DialectInfo dialect)
+    {
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = MultipleOrdersCustomersSql(dialect);
+
+        var (orderCount, customerCount) = await conn!.QueryMultipleAsync(sql, reader =>
+        {
+            var orders = reader.ReadPartial<Order>().ToList();
+            var customers = reader.ReadPartial<Customer>().ToList();
+            return (orders.Count, customers.Count);
+        });
+
+        Assert.Equal(3, orderCount);
+        Assert.Equal(2, customerCount);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    public async Task QueryMultipleAsync_WithAsyncValueReturningCallback_ReturnsTransformedResult(DialectInfo dialect)
+    {
+        using var conn = _fixture.GetDbConnection(dialect);
+        var sql = MultipleOrdersCustomersSql(dialect);
+
+        var (orderCount, customerCount) = await conn!.QueryMultipleAsync(sql, async reader =>
+        {
+            var orders = await reader.ReadPartialAsync<Order>();
+            var customers = await reader.ReadPartialAsync<Customer>();
+            return (orders.Count(), customers.Count());
+        });
+
+        Assert.Equal(3, orderCount);
+        Assert.Equal(2, customerCount);
     }
 
     #endregion
