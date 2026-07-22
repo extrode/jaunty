@@ -1,13 +1,14 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Data;
-using System.Text;
 using System.Reflection;
+using System.Text;
 
-using Jaunty.Configuration;
-using Jaunty.TypeHandlers;
 using Jaunty.Attributes;
+using Jaunty.Configuration;
 using Jaunty.Dialects;
+using Jaunty.StoredProcedure;
+using Jaunty.TypeHandlers;
 
 namespace Jaunty.Internals.Parameters;
 
@@ -35,6 +36,13 @@ internal static class ParameterBinder
                 return;
             }
 
+            // A scalar (int, string, Guid, etc.) has no named properties to bind, and unlike the
+            // non-sproc path below there is no SQL text to parse to discover the target parameter
+            // name, so silently binding zero parameters would execute the procedure with the
+            // value dropped. Fail loudly instead, matching BindScalar's fail-loudly convention.
+            if (IsScalarType(parameters.GetType()))
+                throw new ArgumentException($"A scalar parameter value cannot be bound to a stored procedure or table-direct command by name. Pass an anonymous object, dictionary, or {nameof(SpParameters)} instead (e.g. new {{ CategoryId = 5 }}).", nameof(parameters));
+
             BindAllFromObject(command, parameters);
             return;
         }
@@ -54,7 +62,7 @@ internal static class ParameterBinder
             return;
         }
 
-        var sql = command.CommandText;
+        string sql = command.CommandText;
         Type type = parameters.GetType();
         Type commandType = command.GetType();
 
@@ -143,7 +151,7 @@ internal static class ParameterBinder
     private static void BindDynamic(IDbCommand command, object parameters, string expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] meta, HashSet<string>? expandedOriginalNames)
     {
         Type type = parameters.GetType();
-        var sqlParamNames = SqlParameterParser.ExtractParameterNames(expandedSql);
+        string[] sqlParamNames = SqlParameterParser.ExtractParameterNames(expandedSql);
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
@@ -229,12 +237,7 @@ internal static class ParameterBinder
         private static IDbDataParameter CloneParameter(IDbCommand command, IDbDataParameter template)
         {
             // If the provider supports ICloneable, use it (Fast Path)
-            if (template is ICloneable cloneable)
-            {
-                return (IDbDataParameter)cloneable.Clone();
-            }
-
-            return CreateParameter(command, template);
+            return template is ICloneable cloneable ? (IDbDataParameter)cloneable.Clone() : CreateParameter(command, template);
         }
 
         private static IDbDataParameter CreateParameter(IDbCommand command, IDbDataParameter template)
