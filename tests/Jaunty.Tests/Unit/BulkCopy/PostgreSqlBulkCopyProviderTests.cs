@@ -1,5 +1,7 @@
 #if NET8_0_OR_GREATER
+using System.Collections.Concurrent;
 using System.Data;
+using System.Reflection;
 
 using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection.BulkCopy;
@@ -230,6 +232,50 @@ public class PostgreSqlBulkCopyProviderTests
             new PostgreSqlBulkCopyProvider().CopyToServerAsync(conn, null, "irrelevant", reader, new BulkCopyOptions(), CancellationToken.None).AsTask());
 
         Assert.Contains("NpgsqlConnection", ex.Message);
+    }
+
+    private static ConcurrentDictionary<Type, MethodInfo> GetWriteMethodCache(string fieldName)
+        => (ConcurrentDictionary<Type, MethodInfo>)typeof(PostgreSqlBulkCopyProvider)
+            .GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Static)!
+            .GetValue(null)!;
+
+    // AUD-R23 batch-6: CopyToServer/CopyToServerAsync used to call
+    // WriteGenericMethod/WriteAsyncGenericMethod.MakeGenericMethod(value.GetType()) once per
+    // non-null cell of every row, instead of once per distinct runtime Type - a per-cell
+    // reflection cost that works against the entire point of using the native binary COPY path
+    // for bulk-insert performance. Proven here by asserting the per-type MethodInfo cache holds
+    // at most one entry per distinct column type after inserting many rows, not one entry per
+    // cell (500 rows x up to 4 non-null cells = up to 2000 MakeGenericMethod calls pre-fix).
+    [Fact]
+    public void CopyToServer_MultipleRowsSameTypes_CachesWriteMethodPerType()
+    {
+        using var conn = OpenOrSkip();
+        CreateTable(conn, "bulk_pg_cache_sync");
+
+        var cache = GetWriteMethodCache("WriteMethodCache");
+        cache.Clear();
+
+        using var reader = MakeTable(500).CreateDataReader();
+        new PostgreSqlBulkCopyProvider().CopyToServer(conn, null, "bulk_pg_cache_sync", reader, new BulkCopyOptions());
+
+        // Columns: name(string), price(decimal), stock(int), discontinued(bool).
+        Assert.Equal(4, cache.Count);
+    }
+
+    [Fact]
+    public async Task CopyToServerAsync_MultipleRowsSameTypes_CachesWriteMethodPerType()
+    {
+        using var conn = OpenOrSkip();
+        CreateTable(conn, "bulk_pg_cache_async");
+
+        var cache = GetWriteMethodCache("WriteAsyncMethodCache");
+        cache.Clear();
+
+        using var reader = MakeTable(500).CreateDataReader();
+        await new PostgreSqlBulkCopyProvider().CopyToServerAsync(
+            conn, null, "bulk_pg_cache_async", reader, new BulkCopyOptions(), CancellationToken.None);
+
+        Assert.Equal(4, cache.Count);
     }
 }
 #endif
