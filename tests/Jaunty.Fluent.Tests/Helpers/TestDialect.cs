@@ -58,6 +58,8 @@ internal class TestDialect : ISqlDialect
     public string FormatStartsWithPattern(string value) => $"{value}%";
     public string FormatEndsWithPattern(string value) => $"%{value}";
 
+    public string FormatBooleanLiteral(bool value) => value ? "1" : "0";
+
     public string? GetDisableForeignKeyChecksSql() => null;
     public string? GetEnableForeignKeyChecksSql() => null;
 

@@ -99,6 +99,8 @@ internal sealed class PostgreSqlDialect : ISqlDialect
     public string FormatStartsWithPattern(string value) => $"{EscapeLikeWildcards(value)}%";
     public string FormatEndsWithPattern(string value) => $"%{EscapeLikeWildcards(value)}";
 
+    public string FormatBooleanLiteral(bool value) => value ? "TRUE" : "FALSE";
+
     // GenerateCaseSensitiveLike/GenerateCaseInsensitiveLike declare ESCAPE '\', so literal
     // occurrences of the escape char and LIKE wildcard chars (%, _) must be escaped in the
     // value or they change query semantics instead of matching literally.

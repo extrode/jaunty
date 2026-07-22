@@ -564,7 +564,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                 var columnName = GetColumnName(member);
                 var escapedColumn = _dialect.EscapeColumnName(columnName);
                 _sql.Append(escapedColumn);
-                _sql.Append(" = 1");
+                _sql.Append(" = ").Append(_dialect.FormatBooleanLiteral(true));
             }
             else
             {
@@ -643,7 +643,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             var columnName = GetColumnName(node);
             var escapedColumn = _dialect.EscapeColumnName(columnName);
             _sql.Append(escapedColumn);
-            _sql.Append(" = 1");
+            _sql.Append(" = ").Append(_dialect.FormatBooleanLiteral(true));
             return node;
         }
 
