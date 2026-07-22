@@ -67,7 +67,6 @@ public class SqlServerSchemaReaderTests
     [Theory]
     [InlineData("nvarchar", (short)100, (short)50)]
     [InlineData("nchar", (short)20, (short)10)]
-    [InlineData("ntext", (short)32, (short)16)]
     public void NormalizeMaxLength_UnicodeCharacterTypes_HalvesByteLength(string dataType, short rawMaxLength, short expected)
     {
         short? result = SqlServerSchemaReader.NormalizeMaxLength(dataType, rawMaxLength);
@@ -78,7 +77,6 @@ public class SqlServerSchemaReaderTests
     [Theory]
     [InlineData("varchar", (short)100)]
     [InlineData("char", (short)20)]
-    [InlineData("text", (short)32)]
     public void NormalizeMaxLength_NonUnicodeCharacterTypes_LeavesByteLengthUnchanged(string dataType, short rawMaxLength)
     {
         short? result = SqlServerSchemaReader.NormalizeMaxLength(dataType, rawMaxLength);
@@ -98,6 +96,24 @@ public class SqlServerSchemaReaderTests
     public void NormalizeMaxLength_NullMaxLength_ReturnsNull()
     {
         short? result = SqlServerSchemaReader.NormalizeMaxLength("nvarchar", null);
+
+        Assert.Null(result);
+    }
+
+    // AUD-R22: text/ntext/image are legacy LOB types where sys.columns.max_length is always a
+    // fixed sentinel of 16 (the internal data pointer size), not a real byte length - halving it
+    // (ntext) or passing it through (text/image) produced a nonsensical [MaxLength(8)] or
+    // [MaxLength(16)] attribute that silently truncates real data far under the column's true,
+    // effectively unbounded, capacity. 16 is the real-world sentinel SQL Server actually reports;
+    // the type must be treated as unbounded (null) regardless of the raw value.
+    [Theory]
+    [InlineData("text", (short)16)]
+    [InlineData("ntext", (short)16)]
+    [InlineData("image", (short)16)]
+    [InlineData("text", (short)32)]
+    public void NormalizeMaxLength_LegacyLobTypes_ReturnsNullRegardlessOfRawValue(string dataType, short rawMaxLength)
+    {
+        short? result = SqlServerSchemaReader.NormalizeMaxLength(dataType, rawMaxLength);
 
         Assert.Null(result);
     }

@@ -71,6 +71,29 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.True(File.Exists(categoryFile));
     }
 
+    // AUD-R22: ScaffoldAsync used to wrap its entire body in catch (Exception ex), converting
+    // OperationCanceledException from a cancelled cancellationToken into an ordinary
+    // ScaffoldResult.Failed - unlike the sibling ListTablesAsync, which has no such catch and
+    // lets cancellation propagate as a thrown exception. A caller couldn't distinguish
+    // "cancelled" from "the database read failed" via ScaffoldAsync's result alone.
+    [Fact]
+    public async Task ScaffoldAsync_CancelledToken_PropagatesOperationCanceledException()
+    {
+        var scaffolder = new Scaffolder();
+        var options = new ScaffoldOptions
+        {
+            ConnectionString = _connectionString,
+            Provider = DatabaseProvider.SQLite,
+            OutputDirectory = _tempOutputDir,
+            Namespace = "Test.Entities"
+        };
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => scaffolder.ScaffoldAsync(options, cts.Token));
+    }
+
     [Fact]
     public async Task ScaffoldAsync_GeneratesCorrectCode()
     {
