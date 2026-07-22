@@ -1,5 +1,6 @@
 #if NET8_0_OR_GREATER
 using System.Data;
+using System.Reflection;
 
 using Jaunty.Configuration;
 using Jaunty.Extensions.Reflection.BulkCopy;
@@ -232,6 +233,37 @@ public class SqlServerBulkCopyProviderTests
             new SqlServerBulkCopyProvider().CopyToServerAsync(conn, null, "irrelevant", reader, new BulkCopyOptions(), CancellationToken.None).AsTask());
 
         Assert.Contains("SqlConnection", ex.Message);
+    }
+
+    private static MethodInfo MapBulkCopyOptionsMethod =>
+        typeof(SqlServerBulkCopyProvider).GetMethod("MapBulkCopyOptions", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+    // AUD-R23 batch-6: no test exercised the TableLock/IdentityMode/CheckConstraints
+    // option-mapping branches of MapBulkCopyOptions - every prior call in this file used a
+    // default new BulkCopyOptions(). A regression here would silently drop the requested
+    // SqlBulkCopyOptions flags without any test noticing.
+    [Fact]
+    public void MapBulkCopyOptions_AllFlagsSet_MapsToExpectedSqlBulkCopyOptions()
+    {
+        var options = new BulkCopyOptions
+        {
+            TableLock = TableLockOption.BulkLock,
+            IdentityMode = BulkCopyIdentityMode.KeepIdentity,
+            CheckConstraints = true
+        };
+
+        object mapped = MapBulkCopyOptionsMethod.Invoke(null, [options])!;
+
+        var expected = SqlBulkCopyOptions.TableLock | SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.CheckConstraints;
+        Assert.Equal((int)expected, (int)mapped);
+    }
+
+    [Fact]
+    public void MapBulkCopyOptions_DefaultOptions_MapsToSqlBulkCopyOptionsDefault()
+    {
+        object mapped = MapBulkCopyOptionsMethod.Invoke(null, [new BulkCopyOptions()])!;
+
+        Assert.Equal((int)SqlBulkCopyOptions.Default, (int)mapped);
     }
 }
 #endif
