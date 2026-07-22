@@ -101,6 +101,7 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
     private void AddOperation(SetOperationType operationType, IQueryTerminal<T> other)
     {
         var sql = other.ToSql();
+        ThrowIfOperandHasOrderingOrPaging(other, sql);
         ParameterCollection parameters = ExtractParameters(other, sql);
 
         // Rename parameters with unique prefix
@@ -109,6 +110,28 @@ internal sealed class SetOperationBuilder<T> : ISetOperationClause<T>, ISetOpera
 
         _operations.Add(new SetOperationComponent(operationType, renamedSql, renamedParams));
         _operationCount++;
+    }
+
+    // An operand that already has its own ORDER BY/Take/Skip applied would have that
+    // ordering/paging spliced verbatim into the middle (or end) of the combined
+    // UNION/EXCEPT/INTERSECT statement instead of applying to the combined result - either
+    // a syntax error (if this builder's own OrderBy/Take/Skip is also used) or silent
+    // semantic corruption (if it isn't, since the operand's clause ends up governing the
+    // whole result). Only the outer set-operation chain's OrderBy/Take/Skip is meaningful;
+    // reject the operand up front instead of emitting broken or misleading SQL.
+    private void ThrowIfOperandHasOrderingOrPaging(IQueryTerminal<T> query, string sql)
+    {
+        bool hasOrderingOrPaging = query is QueryBuilder<T> qb
+            ? qb.HasOrderingOrPaging()
+            : sql.IndexOf(" ORDER BY ", StringComparison.Ordinal) >= 0;
+
+        if (hasOrderingOrPaging)
+        {
+            throw new NotSupportedException(
+                "Union/UnionAll/Except/Intersect operands must not have their own OrderBy/Take/Skip applied. " +
+                "Ordering and paging apply to the combined result - call OrderBy/Take/Skip on the outer " +
+                "set-operation chain (after Union/UnionAll/Except/Intersect) instead.");
+        }
     }
 
     private ParameterCollection ExtractParameters(IQueryTerminal<T> query, string sql)
