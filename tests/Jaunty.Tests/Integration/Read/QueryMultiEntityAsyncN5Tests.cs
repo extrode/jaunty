@@ -177,6 +177,32 @@ public class QueryMultiEntityAsyncN5Tests : IClassFixture<DialectFixture>
 
     [Theory]
     [SystemSqlite]
+    public async Task QueryAsync_FiveEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A5Author, A5Book, A5Chapter, A5Section, A5Metadata)>();
+
+        var results = await connection.QueryAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryAsync_FiveEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>();
+
+        var results = await connection.QueryAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Single(results);
+    }
+
+    [Theory]
+    [SystemSqlite]
     public async Task QueryFirstAsync_FiveEntities_ReturnsFirstTuple(DialectInfo _)
     {
         using var connection = CreateAndSeed();
@@ -218,6 +244,32 @@ public class QueryMultiEntityAsyncN5Tests : IClassFixture<DialectFixture>
         var options = new MultiEntityCommandOptions<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>();
 
         var (author, _, _, _, _) = await connection.QueryFirstAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(Sql, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_FiveEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A5Author, A5Book, A5Chapter, A5Section, A5Metadata)>();
+
+        var (author, _, _, _, _) = await connection.QueryFirstAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstAsync_FiveEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>();
+
+        var (author, _, _, _, _) = await connection.QueryFirstAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
 
         Assert.Equal("Ada Lovelace", author.AuthorName);
     }
@@ -272,6 +324,32 @@ public class QueryMultiEntityAsyncN5Tests : IClassFixture<DialectFixture>
 
     [Theory]
     [SystemSqlite]
+    public async Task QueryFirstOrDefaultAsync_FiveEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A5Author, A5Book, A5Chapter, A5Section, A5Metadata)>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryFirstOrDefaultAsync_FiveEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>();
+
+        var result = await connection.QueryFirstOrDefaultAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
     public async Task QuerySingleAsync_FiveEntities_ReturnsSingleTuple(DialectInfo _)
     {
         using var connection = CreateAndSeed();
@@ -319,6 +397,32 @@ public class QueryMultiEntityAsyncN5Tests : IClassFixture<DialectFixture>
 
     [Theory]
     [SystemSqlite]
+    public async Task QuerySingleAsync_FiveEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A5Author, A5Book, A5Chapter, A5Section, A5Metadata)>();
+
+        var (author, _, _, _, _) = await connection.QuerySingleAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleAsync_FiveEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>();
+
+        var (author, _, _, _, _) = await connection.QuerySingleAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.Equal("Ada Lovelace", author.AuthorName);
+    }
+
+    [Theory]
+    [SystemSqlite]
     public async Task QuerySingleOrDefaultAsync_FiveEntities_ReturnsSingleTuple(DialectInfo _)
     {
         using var connection = CreateAndSeed();
@@ -360,6 +464,32 @@ public class QueryMultiEntityAsyncN5Tests : IClassFixture<DialectFixture>
         var options = new MultiEntityCommandOptions<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>();
 
         var result = await connection.QuerySingleOrDefaultAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(Sql, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleOrDefaultAsync_FiveEntities_WithParametersAndCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A5Author, A5Book, A5Chapter, A5Section, A5Metadata)>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QuerySingleOrDefaultAsync_FiveEntities_WithParametersAndMultiEntityCommandOptions_FiltersRow(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>();
+
+        var result = await connection.QuerySingleOrDefaultAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None);
 
         Assert.NotNull(result);
     }
@@ -420,6 +550,40 @@ public class QueryMultiEntityAsyncN5Tests : IClassFixture<DialectFixture>
 
         var seen = new List<(A5Author, A5Book, A5Chapter, A5Section, A5Metadata)>();
         await foreach (var row in connection.QueryStreamAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(Sql, options, CancellationToken.None))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_FiveEntities_WithParametersAndCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new CommandOptions<(A5Author, A5Book, A5Chapter, A5Section, A5Metadata)>();
+
+        var seen = new List<(A5Author, A5Book, A5Chapter, A5Section, A5Metadata)>();
+        await foreach (var row in connection.QueryStreamAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None))
+        {
+            seen.Add(row);
+        }
+
+        Assert.Single(seen);
+    }
+
+    [Theory]
+    [SystemSqlite]
+    public async Task QueryStreamAsync_FiveEntities_WithParametersAndMultiEntityCommandOptions_FiltersRows(DialectInfo _)
+    {
+        using var connection = CreateAndSeed();
+        var options = new MultiEntityCommandOptions<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>();
+
+        var seen = new List<(A5Author, A5Book, A5Chapter, A5Section, A5Metadata)>();
+        await foreach (var row in connection.QueryStreamAsync<A5Author, A5Book, A5Chapter, A5Section, A5Metadata>(
+            $"{Sql} WHERE a.author_id = @AuthorId", new { AuthorId = 1 }, options, CancellationToken.None))
         {
             seen.Add(row);
         }
