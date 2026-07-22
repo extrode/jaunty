@@ -145,7 +145,7 @@ public static partial class Jaunty
 #endif
             command.CommandText = sql;
 
-            if (commandType != CommandType.Text)
+            if (commandType is CommandType.StoredProcedure or CommandType.TableDirect)
                 command.CommandType = commandType;
 
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
