@@ -19,6 +19,12 @@ public sealed class FlatFileOptions
     /// Gets or sets whether to open the connection immediately on creation.
     /// Default: true.
     /// </summary>
+    /// <remarks>
+    /// Setting this to <see langword="false"/> while <see cref="Sources"/> is non-empty is not a
+    /// supported combination: registering a source runs a command against the connection, which
+    /// throws <see cref="InvalidOperationException"/> ("... requires an open connection") if the
+    /// connection was never opened.
+    /// </remarks>
     public bool AutoOpen { get; set; } = true;
 
     /// <summary>
