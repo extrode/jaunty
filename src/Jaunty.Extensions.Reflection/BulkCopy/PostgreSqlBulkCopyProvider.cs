@@ -51,6 +51,14 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         if (NpgsqlConnectionType == null || NpgsqlBinaryImporterType == null)
             throw new InvalidOperationException("NpgsqlBinaryImporter is not available. Ensure Npgsql is installed.");
 
+        if (!NpgsqlConnectionType.IsInstanceOfType(connection))
+            throw new ArgumentException("Connection must be an NpgsqlConnection.", nameof(connection));
+
+        // NpgsqlBinaryImporter has no per-import timeout/batch-size/check-constraints/table-lock
+        // controls, and NpgsqlConnection.CommandTimeout has no public setter (it's derived from
+        // the connection string), so unlike SqlServerBulkCopyProvider/MySqlBulkCopyProvider there
+        // is no reflection-accessible way to honor any of those BulkCopyOptions for Postgres.
+
         // Build COPY command
         var copyCommand = BuildCopyCommand(tableName, data);
 
@@ -109,9 +117,17 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         if (NpgsqlConnectionType == null || NpgsqlBinaryImporterType == null)
             throw new InvalidOperationException("NpgsqlBinaryImporter is not available. Ensure Npgsql is installed.");
 
+        if (!NpgsqlConnectionType.IsInstanceOfType(connection))
+            throw new ArgumentException("Connection must be an NpgsqlConnection.", nameof(connection));
+
         // If native async methods are not available, fall back to sync
         if (BeginBinaryImportAsyncMethod == null || StartRowAsyncMethod == null || WriteAsyncGenericMethod == null)
             return CopyToServer(connection, tableName, data, options);
+
+        // NpgsqlBinaryImporter has no per-import timeout/batch-size/check-constraints/table-lock
+        // controls, and NpgsqlConnection.CommandTimeout has no public setter (it's derived from
+        // the connection string), so unlike SqlServerBulkCopyProvider/MySqlBulkCopyProvider there
+        // is no reflection-accessible way to honor any of those BulkCopyOptions for Postgres.
 
         var copyCommand = BuildCopyCommand(tableName, data);
 
