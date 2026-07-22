@@ -96,5 +96,13 @@ public sealed class TsvFileSource : IFileSource
     }
 
     /// <inheritdoc />
-    public string? GenerateCopyToOptions() => "DELIMITER '\t', HEADER true";
+    public string? GenerateCopyToOptions()
+    {
+        var sb = new System.Text.StringBuilder("DELIMITER '\t', HEADER true");
+
+        if (NullString is not null)
+            sb.Append($", NULL '{NullString.Replace("'", "''")}'");
+
+        return sb.ToString();
+    }
 }
