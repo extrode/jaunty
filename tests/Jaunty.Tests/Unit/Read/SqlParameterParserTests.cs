@@ -426,3 +426,38 @@ WHERE product_name = @Name";
 
     #endregion
 }
+
+// R23 batch-3: SqlParameterParserCache.GetOrAdd had no dedicated test - only transitive exercise
+// via ParameterBinder.Bind. These test the cache wrapper's own contract directly.
+public class SqlParameterParserCacheTests
+{
+    [Fact]
+    public void GetOrAdd_ReturnsParsedParameterNames()
+    {
+        var names = SqlParameterParserCache.GetOrAdd("SELECT * FROM products WHERE product_id = @ProductId");
+
+        Assert.Single(names);
+        Assert.Equal("ProductId", names[0]);
+    }
+
+    [Fact]
+    public void GetOrAdd_SameSqlTwice_ReturnsEqualResultFromCache()
+    {
+        const string sql = "SELECT * FROM products WHERE product_name = @Name AND unit_price > @Price";
+
+        var first = SqlParameterParserCache.GetOrAdd(sql);
+        var second = SqlParameterParserCache.GetOrAdd(sql);
+
+        Assert.Equal(first, second);
+    }
+
+    [Fact]
+    public void GetOrAdd_DifferentSqlKeys_ReturnIndependentResults()
+    {
+        var a = SqlParameterParserCache.GetOrAdd("SELECT * FROM t WHERE a = @A");
+        var b = SqlParameterParserCache.GetOrAdd("SELECT * FROM t WHERE b = @B");
+
+        Assert.Equal("A", Assert.Single(a));
+        Assert.Equal("B", Assert.Single(b));
+    }
+}

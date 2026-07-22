@@ -19,9 +19,10 @@ internal static class SourceGeneratedMetadataResolver
     /// </summary>
     public static EntityMetadata? TryBuild<T>() where T : new()
     {
-        if (new T() is not IEntityMetadataSource source)
+        if (!typeof(IEntityMetadataSource).IsAssignableFrom(typeof(T)))
             return null;
 
+        var source = (IEntityMetadataSource)new T();
         IReadOnlyList<EntityColumnInfo> sourceColumns = source.Columns;
         var columns = new List<ColumnMetadata>(sourceColumns.Count);
         for (int i = 0; i < sourceColumns.Count; i++)
