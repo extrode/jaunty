@@ -89,7 +89,7 @@ public class MySqlBulkCopyProviderTests
         using var reader = MakeTable(1200).CreateDataReader();
         // project away nothing: DataTableReader exposes exactly the 4 data columns
         int inserted = new MySqlBulkCopyProvider().CopyToServer(
-            conn, "bulk_mysql_sync", reader, new BulkCopyOptions());
+            conn, null, "bulk_mysql_sync", reader, new BulkCopyOptions());
 
         Assert.Equal(1200, inserted);
         Assert.Equal(1200, Count(conn, "bulk_mysql_sync"));
@@ -119,7 +119,7 @@ public class MySqlBulkCopyProviderTests
 
         using var reader = MakeTable(750).CreateDataReader();
         int inserted = await new MySqlBulkCopyProvider().CopyToServerAsync(
-            conn, "bulk_mysql_async", reader, new BulkCopyOptions(), CancellationToken.None);
+            conn, null, "bulk_mysql_async", reader, new BulkCopyOptions(), CancellationToken.None);
 
         Assert.Equal(750, inserted);
         Assert.Equal(750, Count(conn, "bulk_mysql_async"));
@@ -135,7 +135,7 @@ public class MySqlBulkCopyProviderTests
         {
             using var reader = MakeTable(50).CreateDataReader();
             int inserted = new MySqlBulkCopyProvider().CopyToServer(
-                conn, "bulk_mysql_txn", reader, new BulkCopyOptions { Transaction = txn });
+                conn, null, "bulk_mysql_txn", reader, new BulkCopyOptions { Transaction = txn });
             Assert.Equal(50, inserted);
             txn.Rollback();
         }
@@ -153,7 +153,7 @@ public class MySqlBulkCopyProviderTests
         {
             using var reader = MakeTable(50).CreateDataReader();
             int inserted = await new MySqlBulkCopyProvider().CopyToServerAsync(
-                conn, "bulk_mysql_async_txn", reader, new BulkCopyOptions { Transaction = txn }, CancellationToken.None);
+                conn, null, "bulk_mysql_async_txn", reader, new BulkCopyOptions { Transaction = txn }, CancellationToken.None);
             Assert.Equal(50, inserted);
             txn.Rollback();
         }
@@ -173,7 +173,17 @@ public class MySqlBulkCopyProviderTests
 
         using var reader = MakeTable(1).CreateDataReader();
         Assert.Throws<ArgumentException>(() => new MySqlBulkCopyProvider().CopyToServer(
-            conn, "products; DROP TABLE users; --", reader, new BulkCopyOptions()));
+            conn, null, "products; DROP TABLE users; --", reader, new BulkCopyOptions()));
+    }
+
+    [Fact]
+    public void CopyToServer_InvalidSchemaName_ThrowsArgumentException()
+    {
+        using var conn = OpenOrSkip();
+
+        using var reader = MakeTable(1).CreateDataReader();
+        Assert.Throws<ArgumentException>(() => new MySqlBulkCopyProvider().CopyToServer(
+            conn, "jauntybench; DROP TABLE users; --", "products", reader, new BulkCopyOptions()));
     }
 
     // R16: rowsPerChunk previously ignored options.BatchSize entirely, always chunking purely by
@@ -191,7 +201,7 @@ public class MySqlBulkCopyProviderTests
         var connection = new SpyingDbConnection(inner);
         using var reader = new IntSequenceReader(rowCount: 7);
 
-        int inserted = new MySqlBulkCopyProvider().CopyToServer(connection, "widgets", reader, new BulkCopyOptions { BatchSize = 3 });
+        int inserted = new MySqlBulkCopyProvider().CopyToServer(connection, null, "widgets", reader, new BulkCopyOptions { BatchSize = 3 });
 
         Assert.Equal(7, inserted);
         // 7 rows at BatchSize=3 -> two full 3-row chunks bound onto the same reused command,
@@ -209,12 +219,43 @@ public class MySqlBulkCopyProviderTests
         using var reader = new IntSequenceReader(rowCount: 7);
 
         int inserted = await new MySqlBulkCopyProvider().CopyToServerAsync(
-            connection, "widgets", reader, new BulkCopyOptions { BatchSize = 3 }, CancellationToken.None);
+            connection, null, "widgets", reader, new BulkCopyOptions { BatchSize = 3 }, CancellationToken.None);
 
         Assert.Equal(7, inserted);
         Assert.Equal(2, connection.CreatedCommands.Count);
         Assert.Equal(3, connection.CreatedCommands[0].ParameterCount);
         Assert.Equal(1, connection.CreatedCommands[1].ParameterCount);
+    }
+
+    // AUD-R18 batch-6: BuildChunkCommand used to take only a bare tableName, so INSERT INTO always
+    // targeted the unqualified `table` - any entity mapped to a non-default schema silently landed
+    // in the wrong place. Uses a real ATTACH'd SQLite database as the "schema" so the generated
+    // `schema`.`table` command text is not just asserted but actually executes successfully.
+    [Fact]
+    public void CopyToServer_SchemaQualifiedTable_GeneratesSchemaQualifiedInsertAndInsertsAllRows()
+    {
+        using var inner = CreateSpyInnerConnection();
+        using (var attach = inner.CreateCommand())
+        {
+            attach.CommandText = "ATTACH DATABASE ':memory:' AS myschema";
+            attach.ExecuteNonQuery();
+        }
+        using (var create = inner.CreateCommand())
+        {
+            create.CommandText = "CREATE TABLE myschema.widgets (value INTEGER)";
+            create.ExecuteNonQuery();
+        }
+        var connection = new SpyingDbConnection(inner);
+        using var reader = new IntSequenceReader(rowCount: 7);
+
+        int inserted = new MySqlBulkCopyProvider().CopyToServer(connection, "myschema", "widgets", reader, new BulkCopyOptions { BatchSize = 3 });
+
+        Assert.Equal(7, inserted);
+        Assert.Contains("`myschema`.`widgets`", connection.CreatedCommands[0].CommandText);
+
+        using var count = inner.CreateCommand();
+        count.CommandText = "SELECT COUNT(*) FROM myschema.widgets";
+        Assert.Equal(7L, Convert.ToInt64(count.ExecuteScalar()));
     }
 
     /// <summary>
@@ -297,10 +338,12 @@ internal sealed class SpyingDbCommand : DbCommand
     public int ParameterCount => _disposedParameterCount ?? _inner.Parameters.Count;
     private int? _disposedParameterCount;
 
+    private string? _disposedCommandText;
+
 #pragma warning disable CS8765 // base DbCommand.CommandText setter is [AllowNull]; not using the attribute here since its netstandard2.0 SDK polyfill is file-scoped and inaccessible outside its own file.
     public override string CommandText
     {
-        get => _inner.CommandText;
+        get => _disposedCommandText ?? _inner.CommandText;
         set => _inner.CommandText = value;
     }
 #pragma warning restore CS8765
@@ -356,6 +399,7 @@ internal sealed class SpyingDbCommand : DbCommand
         if (disposing)
         {
             _disposedParameterCount = _inner.Parameters.Count;
+            _disposedCommandText = _inner.CommandText;
             _inner.Dispose();
         }
 

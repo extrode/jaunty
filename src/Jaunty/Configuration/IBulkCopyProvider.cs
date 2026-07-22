@@ -20,16 +20,18 @@ public interface IBulkCopyProvider
     /// Copies data from an <see cref="IDataReader"/> to the specified table.
     /// </summary>
     /// <param name="connection">The database connection to use.</param>
+    /// <param name="schemaName">The schema containing the destination table, or <see langword="null"/> to use the connection's default schema.</param>
     /// <param name="tableName">The name of the destination table.</param>
     /// <param name="data">The data to copy.</param>
     /// <param name="options">Options for the bulk copy operation.</param>
     /// <returns>The number of rows copied.</returns>
-    int CopyToServer(IDbConnection connection, string tableName, IDataReader data, BulkCopyOptions options);
+    int CopyToServer(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options);
 
     /// <summary>
     /// Copies data from an <see cref="IDataReader"/> to the specified table asynchronously.
     /// </summary>
     /// <param name="connection">The database connection to use.</param>
+    /// <param name="schemaName">The schema containing the destination table, or <see langword="null"/> to use the connection's default schema.</param>
     /// <param name="tableName">The name of the destination table.</param>
     /// <param name="data">The data to copy.</param>
     /// <param name="options">Options for the bulk copy operation.</param>
@@ -37,6 +39,7 @@ public interface IBulkCopyProvider
     /// <returns>A task representing the asynchronous operation. The result is the number of rows copied.</returns>
     ValueTask<int> CopyToServerAsync(
         DbConnection connection,
+        string? schemaName,
         string tableName,
         IDataReader data,
         BulkCopyOptions options,

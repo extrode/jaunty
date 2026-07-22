@@ -36,7 +36,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
     public bool IsSupported => true;
 
     /// <inheritdoc/>
-    public int CopyToServer(IDbConnection connection, string tableName, IDataReader data, BulkCopyOptions options)
+    public int CopyToServer(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
         IDbTransaction? transaction = options.Transaction;
@@ -77,7 +77,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
                     if (buffered == rowsPerChunk)
                     {
-                        fullChunkCommand ??= BuildChunkCommand(connection, transaction, tableName, columnNames, rowsPerChunk, options);
+                        fullChunkCommand ??= BuildChunkCommand(connection, transaction, schemaName, tableName, columnNames, rowsPerChunk, options);
                         BindChunk(fullChunkCommand, buffer, buffered, columnCount);
                         total += ExecuteAffectedRows(fullChunkCommand, buffered);
                         buffered = 0;
@@ -86,7 +86,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
                 if (buffered > 0)
                 {
-                    using IDbCommand tail = BuildChunkCommand(connection, transaction, tableName, columnNames, buffered, options);
+                    using IDbCommand tail = BuildChunkCommand(connection, transaction, schemaName, tableName, columnNames, buffered, options);
                     BindChunk(tail, buffer, buffered, columnCount);
                     total += ExecuteAffectedRows(tail, buffered);
                 }
@@ -117,7 +117,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
     }
 
     /// <inheritdoc/>
-    public async ValueTask<int> CopyToServerAsync(DbConnection connection, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
+    public async ValueTask<int> CopyToServerAsync(DbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
     {
         bool wasClosed = connection.State == ConnectionState.Closed;
         DbTransaction? transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
@@ -155,7 +155,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
                     if (buffered == rowsPerChunk)
                     {
-                        fullChunkCommand ??= (DbCommand)BuildChunkCommand(connection, transaction, tableName, columnNames, rowsPerChunk, options);
+                        fullChunkCommand ??= (DbCommand)BuildChunkCommand(connection, transaction, schemaName, tableName, columnNames, rowsPerChunk, options);
                         BindChunk(fullChunkCommand, buffer, buffered, columnCount);
                         int affected = await fullChunkCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                         total += affected < 0 ? buffered : affected;
@@ -165,7 +165,7 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
 
                 if (buffered > 0)
                 {
-                    using var tail = (DbCommand)BuildChunkCommand(connection, transaction, tableName, columnNames, buffered, options);
+                    using var tail = (DbCommand)BuildChunkCommand(connection, transaction, schemaName, tableName, columnNames, buffered, options);
                     BindChunk(tail, buffer, buffered, columnCount);
                     int affected = await tail.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                     total += affected < 0 ? buffered : affected;
@@ -196,9 +196,11 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
         }
     }
 
-    private static IDbCommand BuildChunkCommand(IDbConnection connection, IDbTransaction? transaction, string tableName, string[] columnNames, int rows, BulkCopyOptions options)
+    private static IDbCommand BuildChunkCommand(IDbConnection connection, IDbTransaction? transaction, string? schemaName, string tableName, string[] columnNames, int rows, BulkCopyOptions options)
     {
         global::Jaunty.Dialects.SqlIdentifierValidator.Validate(tableName, nameof(tableName));
+        if (schemaName is not null && schemaName.Length != 0)
+            global::Jaunty.Dialects.SqlIdentifierValidator.Validate(schemaName, nameof(schemaName));
         foreach (string columnName in columnNames)
             global::Jaunty.Dialects.SqlIdentifierValidator.Validate(columnName, nameof(columnNames));
 
@@ -207,8 +209,12 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
         if (options.Timeout > 0)
             command.CommandTimeout = options.Timeout;
 
+        string qualifiedTableName = schemaName is null || schemaName.Length == 0
+            ? EscapeIdentifier(tableName)
+            : $"{EscapeIdentifier(schemaName)}.{EscapeIdentifier(tableName)}";
+
         var sb = new StringBuilder(64 + rows * columnNames.Length * 8);
-        sb.Append("INSERT INTO ").Append(EscapeIdentifier(tableName)).Append(" (");
+        sb.Append("INSERT INTO ").Append(qualifiedTableName).Append(" (");
         for (int c = 0; c < columnNames.Length; c++)
         {
             if (c > 0) sb.Append(", ");

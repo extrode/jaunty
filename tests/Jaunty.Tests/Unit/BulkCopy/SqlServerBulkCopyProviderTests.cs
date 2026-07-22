@@ -86,7 +86,7 @@ public class SqlServerBulkCopyProviderTests
 
         using var reader = MakeTable(1200).CreateDataReader();
         int inserted = new SqlServerBulkCopyProvider().CopyToServer(
-            conn, "bulk_mssql_sync", reader, new BulkCopyOptions());
+            conn, null, "bulk_mssql_sync", reader, new BulkCopyOptions());
 
         Assert.Equal(1200, inserted);
         Assert.Equal(1200, Count(conn, "bulk_mssql_sync"));
@@ -116,7 +116,7 @@ public class SqlServerBulkCopyProviderTests
 
         using var reader = MakeTable(750).CreateDataReader();
         int inserted = await new SqlServerBulkCopyProvider().CopyToServerAsync(
-            conn, "bulk_mssql_async", reader, new BulkCopyOptions(), CancellationToken.None);
+            conn, null, "bulk_mssql_async", reader, new BulkCopyOptions(), CancellationToken.None);
 
         Assert.Equal(750, inserted);
         Assert.Equal(750, Count(conn, "bulk_mssql_async"));
@@ -132,12 +132,54 @@ public class SqlServerBulkCopyProviderTests
         {
             using var reader = MakeTable(50).CreateDataReader();
             int inserted = new SqlServerBulkCopyProvider().CopyToServer(
-                conn, "bulk_mssql_txn", reader, new BulkCopyOptions { Transaction = txn });
+                conn, null, "bulk_mssql_txn", reader, new BulkCopyOptions { Transaction = txn });
             Assert.Equal(50, inserted);
             txn.Rollback();
         }
 
         Assert.Equal(0, Count(conn, "bulk_mssql_txn"));
+    }
+
+    // AUD-R18 batch-6: CopyToServer used to take only a bare tableName, so DestinationTableName was
+    // always set to just "table" regardless of EntityMetadata.SchemaName - SqlBulkCopy would then
+    // resolve against the connection's default schema instead of the mapped one. SQL Server ships
+    // with the "dbo" default schema plus a non-default "guest"-adjacent schema is not guaranteed to
+    // exist, so this creates its own schema to be self-contained.
+    [Fact]
+    public void CopyToServer_SchemaQualifiedTable_InsertsIntoCorrectSchema()
+    {
+        using var conn = OpenOrSkip();
+        using (var createSchema = conn.CreateCommand())
+        {
+            createSchema.CommandText = "IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'bulk_mssql_schema') EXEC('CREATE SCHEMA bulk_mssql_schema')";
+            createSchema.ExecuteNonQuery();
+        }
+        using (var dropTable = conn.CreateCommand())
+        {
+            dropTable.CommandText = "IF OBJECT_ID('bulk_mssql_schema.bulk_mssql_sync_schema', 'U') IS NOT NULL DROP TABLE [bulk_mssql_schema].[bulk_mssql_sync_schema]";
+            dropTable.ExecuteNonQuery();
+        }
+        using (var createTable = conn.CreateCommand())
+        {
+            createTable.CommandText = """
+                CREATE TABLE [bulk_mssql_schema].[bulk_mssql_sync_schema] (
+                    id INT IDENTITY(1,1) PRIMARY KEY,
+                    name NVARCHAR(64) NULL,
+                    price DECIMAL(18,2) NOT NULL,
+                    stock INT NOT NULL,
+                    discontinued BIT NOT NULL)
+                """;
+            createTable.ExecuteNonQuery();
+        }
+
+        using var reader = MakeTable(50).CreateDataReader();
+        int inserted = new SqlServerBulkCopyProvider().CopyToServer(
+            conn, "bulk_mssql_schema", "bulk_mssql_sync_schema", reader, new BulkCopyOptions());
+
+        Assert.Equal(50, inserted);
+        using var check = conn.CreateCommand();
+        check.CommandText = "SELECT COUNT_BIG(*) FROM [bulk_mssql_schema].[bulk_mssql_sync_schema]";
+        Assert.Equal(50L, Convert.ToInt64(check.ExecuteScalar()));
     }
 
     [Fact]
@@ -148,7 +190,7 @@ public class SqlServerBulkCopyProviderTests
         using var reader = MakeTable(1).CreateDataReader();
 
         var ex = Assert.Throws<ArgumentException>(() =>
-            new SqlServerBulkCopyProvider().CopyToServer(conn, "irrelevant", reader, new BulkCopyOptions()));
+            new SqlServerBulkCopyProvider().CopyToServer(conn, null, "irrelevant", reader, new BulkCopyOptions()));
 
         Assert.Contains("SqlConnection", ex.Message);
     }
@@ -161,7 +203,7 @@ public class SqlServerBulkCopyProviderTests
         using var reader = MakeTable(1).CreateDataReader();
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
-            new SqlServerBulkCopyProvider().CopyToServerAsync(conn, "irrelevant", reader, new BulkCopyOptions(), CancellationToken.None).AsTask());
+            new SqlServerBulkCopyProvider().CopyToServerAsync(conn, null, "irrelevant", reader, new BulkCopyOptions(), CancellationToken.None).AsTask());
 
         Assert.Contains("SqlConnection", ex.Message);
     }
