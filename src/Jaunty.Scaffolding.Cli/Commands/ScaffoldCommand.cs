@@ -109,6 +109,11 @@ internal sealed class ScaffoldCommand : Command
             Description = "Use block-scoped namespaces instead of file-scoped"
         };
 
+        var includeForeignKeysOption = new Option<bool>("--include-foreign-keys")
+        {
+            Description = "Read foreign key information (for future navigation properties)"
+        };
+
         // Advanced options
         var forceOption = new Option<bool>("--force")
         {
@@ -144,6 +149,7 @@ internal sealed class ScaffoldCommand : Command
         Options.Add(classSuffixOption);
         Options.Add(dataAnnotationsOption);
         Options.Add(blockNamespaceOption);
+        Options.Add(includeForeignKeysOption);
         Options.Add(forceOption);
         Options.Add(dryRunOption);
         Options.Add(verboseOption);
@@ -168,6 +174,7 @@ internal sealed class ScaffoldCommand : Command
             var classSuffix = parseResult.GetValue(classSuffixOption);
             var dataAnnotations = parseResult.GetValue(dataAnnotationsOption);
             var blockNamespace = parseResult.GetValue(blockNamespaceOption);
+            var includeForeignKeys = parseResult.GetValue(includeForeignKeysOption);
             var force = parseResult.GetValue(forceOption);
             var dryRun = parseResult.GetValue(dryRunOption);
             var verbose = parseResult.GetValue(verboseOption);
@@ -192,6 +199,7 @@ internal sealed class ScaffoldCommand : Command
                 ClassSuffix = classSuffix,
                 AddDataAnnotations = dataAnnotations,
                 UseFileScopedNamespace = !blockNamespace,
+                IncludeForeignKeys = includeForeignKeys,
                 Force = force,
                 DryRun = dryRun
             };
