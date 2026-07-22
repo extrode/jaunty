@@ -525,11 +525,23 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             if (columnName != null)
             {
                 var escapedColumn = _dialect.EscapeColumnName(columnName);
-                _sql.Append(escapedColumn);
-                _sql.Append(GetOperator(isLeftColumn ? binary.NodeType : MirrorOperator(binary.NodeType)));
-                var paramName = GetParameterName(columnName);
-                _sql.Append(paramName);
-                _parameters.Add((paramName, value));
+
+                // Mirror VisitBinary's null handling: per SQL three-valued logic, "col = NULL"
+                // never matches, so a WHEN condition comparing to a literal null must become
+                // IS NULL/IS NOT NULL rather than a parameterized comparison bound to NULL.
+                if (value is null && binary.NodeType is ExpressionType.Equal or ExpressionType.NotEqual)
+                {
+                    _sql.Append(escapedColumn);
+                    _sql.Append(binary.NodeType == ExpressionType.Equal ? " IS NULL" : " IS NOT NULL");
+                }
+                else
+                {
+                    _sql.Append(escapedColumn);
+                    _sql.Append(GetOperator(isLeftColumn ? binary.NodeType : MirrorOperator(binary.NodeType)));
+                    var paramName = GetParameterName(columnName);
+                    _sql.Append(paramName);
+                    _parameters.Add((paramName, value));
+                }
             }
             else
             {
@@ -808,8 +820,18 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
 
     private Expression HandleStringEquals(MethodCallExpression node, string escapedColumn, string columnName, object? value)
     {
+        if (value is null)
+        {
+            // String.Equals(null) is a legitimate, non-throwing comparison in .NET - per SQL
+            // three-valued logic that requires IS NULL, not coercing the null into an
+            // empty-string match (which would silently exclude every actual NULL row).
+            _sql.Append(escapedColumn);
+            _sql.Append(" IS NULL");
+            return node;
+        }
+
         var paramName = GetParameterName(columnName);
-        var stringValue = value?.ToString() ?? "";
+        var stringValue = value.ToString()!;
 
         bool isCaseInsensitive = false;
         if (node.Arguments.Count >= 2)
