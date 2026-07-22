@@ -207,6 +207,42 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
     [MariaDB]
     [MicrosoftSqlite]
     [SystemSqlite]
+    public void BulkInsert_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        // AUD-R18: BulkEntityValidator.ThrowIfAnyNull turns a null item inside a non-null
+        // entity list into a clear ArgumentException naming the offending index, instead of
+        // an opaque NullReferenceException surfacing later from parameter binding.
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Name = "Test", Value = 1 }, null! };
+
+        var ex = Assert.Throws<ArgumentException>(() => connection.BulkInsert(entities));
+        Assert.Contains("index 1", ex.Message);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkInsertAsync_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Name = "Test", Value = 1 }, null! };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await connection.BulkInsertAsync(entities));
+        Assert.Contains("index 1", ex.Message);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
     public void BulkInsertIgnoreConstraints_InsertsMultipleEntities(DialectInfo dialect)
     {
         using var ctx = _fixture.GetWriteContext(dialect);
@@ -386,6 +422,39 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
         var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 } };
 
         Assert.Throws<ArgumentNullException>(() => nullConnection!.BulkUpdate(entities));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void BulkUpdate_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 }, null! };
+
+        var ex = Assert.Throws<ArgumentException>(() => connection.BulkUpdate(entities));
+        Assert.Contains("index 1", ex.Message);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkUpdateAsync_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 }, null! };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await connection.BulkUpdateAsync(entities));
+        Assert.Contains("index 1", ex.Message);
     }
 
     [Theory]
@@ -600,6 +669,39 @@ public class BulkOperationsTests : IClassFixture<DialectFixture>
         var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 } };
 
         Assert.Throws<ArgumentNullException>(() => nullConnection!.BulkDelete(entities));
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public void BulkDelete_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 }, null! };
+
+        var ex = Assert.Throws<ArgumentException>(() => connection.BulkDelete(entities));
+        Assert.Contains("index 1", ex.Message);
+    }
+
+    [Theory]
+    [SqlServer]
+    [Postgres]
+    [MariaDB]
+    [MicrosoftSqlite]
+    [SystemSqlite]
+    public async Task BulkDeleteAsync_EntityListContainsNull_ThrowsArgumentExceptionWithIndex(DialectInfo dialect)
+    {
+        using var ctx = _fixture.GetWriteContext(dialect);
+        var connection = ctx.Connection;
+        var entities = new List<BulkTestEntity> { new() { Id = 1, Name = "Test", Value = 1 }, null! };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await connection.BulkDeleteAsync(entities));
+        Assert.Contains("index 1", ex.Message);
     }
 
     [Theory]
