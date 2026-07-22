@@ -192,17 +192,13 @@ internal static class ParameterBinder
     private class CommandTemplate(TemplateItem[] items)
     {
         private IDbDataParameter[]? _templates;
-        private Type? _templateCommandType;
 
         public void Bind(IDbCommand command, object parameters)
         {
+            // TemplateCache keys on (Sql, ParamType, command.GetType()), so a CommandTemplate
+            // instance is only ever Bind()-bound to commands of the exact provider type it was
+            // created with - always clone rather than re-derive a provider-type check per call.
             _templates ??= CreateTemplates(command);
-
-            // Check if the command type matches the cached template's originating command type.
-            // This prevents cross-provider bugs when multiple providers (e.g.,
-            // System.Data.SQLite and Microsoft.Data.Sqlite) share the same SQL cache key.
-            // Uses command type comparison (no allocation) instead of CreateParameter().GetType().
-            bool sameProvider = command.GetType() == _templateCommandType;
 
             IDataParameterCollection pCollection = command.Parameters;
             for (int i = 0; i < items.Length; i++)
@@ -212,7 +208,7 @@ internal static class ParameterBinder
 
                 // Clone the template to avoid thread safety issues
                 // and to prevent parameters from being bound to multiple commands
-                IDbDataParameter p = sameProvider ? CloneParameter(command, template) : CreateParameter(command, template);
+                IDbDataParameter p = CloneParameter(command, template);
                 p.Value = ApplyTypeHandlerIfNeeded(item.Getter(parameters), item.Property) ?? DBNull.Value;
                 pCollection.Add(p);
             }
@@ -220,7 +216,6 @@ internal static class ParameterBinder
 
         private IDbDataParameter[] CreateTemplates(IDbCommand command)
         {
-            _templateCommandType = command.GetType();
             var templates = new IDbDataParameter[items.Length];
             for (int i = 0; i < items.Length; i++)
             {
