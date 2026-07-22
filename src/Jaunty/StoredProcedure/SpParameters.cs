@@ -355,6 +355,7 @@ public sealed class SpParameters
     /// <remarks>
     /// This method is useful for checking if an output parameter has a value before retrieving it.
     /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="name"/> is null.</exception>
     /// <example>
     /// <code>
     /// var parameters = new SpParameters()
@@ -375,6 +376,11 @@ public sealed class SpParameters
     /// </example>
     public bool HasValue(string name)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(name);
+#else
+        if (name is null) throw new ArgumentNullException(nameof(name));
+#endif
         for (int i = 0; i < _parameters.Count; i++)
         {
             if (string.Equals(_parameters[i].Name, name, StringComparison.OrdinalIgnoreCase))

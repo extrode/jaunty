@@ -425,11 +425,11 @@ public static partial class Jaunty
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
         object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-        long id = result is null or DBNull ? 0 : Convert.ToInt64(result);
-        if (id > 0)
-            idSetter(entity, id);
+        bool inserted = result is not null and not DBNull;
+        if (inserted)
+            idSetter(entity, Convert.ToInt64(result));
 
-        return id > 0 ? 1 : 0;
+        return inserted ? 1 : 0;
     }
 
     /// <summary>
