@@ -328,7 +328,7 @@ public static partial class Jaunty
         }
     }
 
-    internal static async ValueTask<int> DeleteByIdCoreAsync<T, TId>(DbConnection dbConnection, object id, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
+    internal static async ValueTask<int> DeleteByIdCoreAsync<T, TId>(DbConnection dbConnection, TId id, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
     {
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(dbConnection);
 
@@ -351,7 +351,7 @@ public static partial class Jaunty
         return await DeleteByIdCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<int> DeleteByIdCoreDirectAsync<T, TId>(DbConnection dbConnection, object id, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
+    private static async ValueTask<int> DeleteByIdCoreDirectAsync<T, TId>(DbConnection dbConnection, TId id, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : IEntity<TId>, new()
     {
         bool wasClosed = dbConnection.State == ConnectionState.Closed;
 
