@@ -141,5 +141,31 @@ public class PostgreSqlBulkCopyProviderTests
         Assert.Throws<ArgumentException>(() => new PostgreSqlBulkCopyProvider().CopyToServer(
             conn, "products\"; DROP TABLE users; --", reader, new BulkCopyOptions()));
     }
+
+    [Fact]
+    public void CopyToServer_NonNpgsqlConnection_ThrowsArgumentException()
+    {
+        using var conn = new System.Data.SQLite.SQLiteConnection("Data Source=:memory:");
+        conn.Open();
+        using var reader = MakeTable(1).CreateDataReader();
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            new PostgreSqlBulkCopyProvider().CopyToServer(conn, "irrelevant", reader, new BulkCopyOptions()));
+
+        Assert.Contains("NpgsqlConnection", ex.Message);
+    }
+
+    [Fact]
+    public async Task CopyToServerAsync_NonNpgsqlConnection_ThrowsArgumentException()
+    {
+        using var conn = new System.Data.SQLite.SQLiteConnection("Data Source=:memory:");
+        conn.Open();
+        using var reader = MakeTable(1).CreateDataReader();
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            new PostgreSqlBulkCopyProvider().CopyToServerAsync(conn, "irrelevant", reader, new BulkCopyOptions(), CancellationToken.None).AsTask());
+
+        Assert.Contains("NpgsqlConnection", ex.Message);
+    }
 }
 #endif
