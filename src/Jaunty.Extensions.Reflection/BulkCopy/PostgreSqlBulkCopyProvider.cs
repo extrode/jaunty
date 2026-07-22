@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -35,6 +36,13 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
     // WriteGenericMethod above, required for the async copy path (see CopyToServerAsync).
     private static readonly MethodInfo? WriteAsyncGenericMethod = FindWriteAsyncGenericMethod();
 
+    // Per-type Write<T>/WriteAsync<T> MethodInfo cache — MakeGenericMethod is expensive
+    // (comparable to a dictionary lookup plus JIT bookkeeping) and was previously called once
+    // per non-null cell in every row, which works against the entire point of using the native
+    // binary COPY path for bulk-insert performance. Built once per column/type combination.
+    private static readonly ConcurrentDictionary<Type, MethodInfo> WriteMethodCache = new();
+    private static readonly ConcurrentDictionary<Type, MethodInfo> WriteAsyncMethodCache = new();
+
     // Async methods available in Npgsql 6+
     private static readonly MethodInfo? BeginBinaryImportAsyncMethod = FindAsyncMethod("BeginBinaryImportAsync");
     private static readonly MethodInfo? StartRowAsyncMethod = NpgsqlBinaryImporterType?.GetMethod("StartRowAsync", new[] { typeof(CancellationToken) });
@@ -56,6 +64,8 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
 
         if (StartRowMethod == null || WriteGenericMethod == null || CompleteMethod == null || WriteNullMethod == null)
             throw new InvalidOperationException("NpgsqlBinaryImporter members could not be resolved via reflection.");
+
+        MethodInfo writeGenericMethod = WriteGenericMethod;
 
         // NpgsqlBinaryImporter has no per-import timeout/batch-size/check-constraints/table-lock
         // controls, and NpgsqlConnection.CommandTimeout has no public setter (it's derived from
@@ -90,7 +100,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
                     else
                     {
                         // Use Write<T> with the actual runtime type to avoid boxing/type issues
-                        MethodInfo writeMethod = WriteGenericMethod.MakeGenericMethod(value.GetType());
+                        MethodInfo writeMethod = WriteMethodCache.GetOrAdd(value.GetType(), t => writeGenericMethod.MakeGenericMethod(t));
                         writeMethod.Invoke(importer, new[] { value });
                     }
                 }
@@ -127,6 +137,8 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         // If native async methods are not available, fall back to sync
         if (BeginBinaryImportAsyncMethod == null || StartRowAsyncMethod == null || WriteAsyncGenericMethod == null)
             return CopyToServer(connection, schemaName, tableName, data, options);
+
+        MethodInfo writeAsyncGenericMethod = WriteAsyncGenericMethod;
 
         if (WriteNullAsyncMethod == null)
             throw new InvalidOperationException("NpgsqlBinaryImporter.WriteNullAsync could not be resolved via reflection.");
@@ -182,7 +194,7 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
                         // and hangs indefinitely against a real server instead of throwing
                         // (AUD-R11 batch-06: caught via coverage testing - this path had no
                         // test at all before, sync or async, so the deadlock was undetected).
-                        MethodInfo writeMethod = WriteAsyncGenericMethod!.MakeGenericMethod(value.GetType());
+                        MethodInfo writeMethod = WriteAsyncMethodCache.GetOrAdd(value.GetType(), t => writeAsyncGenericMethod.MakeGenericMethod(t));
                         if (writeMethod.Invoke(importer, new[] { value, cancellationToken }) is Task writeTask)
                             await writeTask.ConfigureAwait(false);
                     }
