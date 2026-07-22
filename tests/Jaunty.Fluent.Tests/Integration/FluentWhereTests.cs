@@ -62,6 +62,7 @@ public class FluentWhereTests : IClassFixture<FluentDatabaseFixture>
         Assert.Empty(products);
     }
 
+
     [Fact]
     public void Where_Or_ChainsConditions()
     {
