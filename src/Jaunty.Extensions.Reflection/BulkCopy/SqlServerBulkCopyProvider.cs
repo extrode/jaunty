@@ -36,7 +36,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     public bool IsSupported => SqlBulkCopyType != null;
 
     /// <inheritdoc/>
-    public int CopyToServer(IDbConnection connection, string tableName, IDataReader data, BulkCopyOptions options)
+    public int CopyToServer(IDbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options)
     {
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
@@ -54,7 +54,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         {
             BatchSizeProperty?.SetValue(bulkCopy, options.BatchSize);
             BulkCopyTimeoutProperty?.SetValue(bulkCopy, options.Timeout);
-            DestinationTableNameProperty?.SetValue(bulkCopy, tableName);
+            DestinationTableNameProperty?.SetValue(bulkCopy, QualifyTableName(schemaName, tableName));
             ApplyColumnMappings(bulkCopy, data);
 
             WriteToServerMethod?.Invoke(bulkCopy, new object[] { data });
@@ -69,7 +69,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     }
 
     /// <inheritdoc/>
-    public async ValueTask<int> CopyToServerAsync(DbConnection connection, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
+    public async ValueTask<int> CopyToServerAsync(DbConnection connection, string? schemaName, string tableName, IDataReader data, BulkCopyOptions options, CancellationToken cancellationToken)
     {
         if (SqlBulkCopyType == null)
             throw new InvalidOperationException("SqlBulkCopy is not available. Ensure Microsoft.Data.SqlClient or System.Data.SqlClient is installed.");
@@ -85,7 +85,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         {
             BatchSizeProperty?.SetValue(bulkCopy, options.BatchSize);
             BulkCopyTimeoutProperty?.SetValue(bulkCopy, options.Timeout);
-            DestinationTableNameProperty?.SetValue(bulkCopy, tableName);
+            DestinationTableNameProperty?.SetValue(bulkCopy, QualifyTableName(schemaName, tableName));
             ApplyColumnMappings(bulkCopy, data);
 
             if (WriteToServerAsyncMethod != null)
@@ -101,6 +101,14 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
             (bulkCopy as IDisposable)?.Dispose();
         }
     }
+
+    /// <summary>
+    /// Combines schema and table into the "schema.table" form SqlBulkCopy.DestinationTableName
+    /// accepts natively — SqlBulkCopy resolves this itself, so (unlike the other providers) no
+    /// escaping/validation is needed here.
+    /// </summary>
+    private static string QualifyTableName(string? schemaName, string tableName)
+        => string.IsNullOrEmpty(schemaName) ? tableName : $"{schemaName}.{tableName}";
 
     /// <summary>
     /// Maps each source column to the same-named destination column.
