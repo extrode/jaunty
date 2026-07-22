@@ -257,16 +257,22 @@ public sealed class SqlServerSchemaReader : ISchemaReader
 
     /// <summary>
     /// <c>sys.columns.max_length</c> is reported in bytes. For unicode character types
-    /// (<c>nchar</c>/<c>nvarchar</c>/<c>ntext</c>) SQL Server stores 2 bytes per character, so the
-    /// raw value must be halved to get the actual character length; <c>-1</c> (the MAX sentinel) is
-    /// left untouched.
+    /// (<c>nchar</c>/<c>nvarchar</c>) SQL Server stores 2 bytes per character, so the raw value
+    /// must be halved to get the actual character length; <c>-1</c> (the MAX sentinel) is left
+    /// untouched. The legacy LOB types <c>text</c>/<c>ntext</c>/<c>image</c> always report a fixed
+    /// sentinel <c>max_length</c> of 16 (the size of the internal data pointer) regardless of the
+    /// column's actual, effectively unbounded, capacity - AUD-R22: treat them as unbounded (null)
+    /// like the MAX sentinel instead of halving/passing through the meaningless sentinel value.
     /// </summary>
     internal static short? NormalizeMaxLength(string dataType, short? maxLength)
     {
         if (maxLength is null or -1)
             return maxLength;
 
-        return dataType is "nchar" or "nvarchar" or "ntext"
+        if (dataType is "text" or "ntext" or "image")
+            return null;
+
+        return dataType is "nchar" or "nvarchar"
             ? (short)(maxLength.Value / 2)
             : maxLength;
     }
