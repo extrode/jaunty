@@ -149,7 +149,7 @@ public static class CsvImportExtensions
         // needs dialect escaping/quoting here to match ImportViaPreparedStatements' behavior for
         // keyword-collision table names (e.g. "GROUP") - the sqlite3 CLI's dot-command tokenizer
         // accepts double-quoted arguments the same way ImportViaPreparedStatements' SQL does.
-        string escapedTableName = new SQLiteDialect().EscapeTableName(null, tableName);
+        string escapedTableName = EscapeQualifiedTableName(new SQLiteDialect(), tableName);
 
         // filePath comes from the caller and is embedded verbatim in the sqlite3 CLI's dot-command
         // script (piped over stdin); a quote or newline would let it break out of the quoted argument
