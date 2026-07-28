@@ -8,9 +8,7 @@ using Jaunty.Tests.Helpers;
 using Jaunty.Tests.Helpers.Dialects;
 
 using Microsoft.Data.SqlClient;
-#if NET8_0_OR_GREATER
 using Microsoft.Data.Sqlite;
-#endif
 
 using MySql.Data.MySqlClient;
 
@@ -159,7 +157,6 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         Assert.Equal(ExpectedRowCount, rows);
     }
 
-#if NET8_0_OR_GREATER
     [Fact]
     public void ImportCsv_MicrosoftSqliteInMemory_ImportsAllRows()
     {
@@ -173,7 +170,6 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         Assert.Equal(ExpectedRowCount, rows);
         Assert.Equal(ExpectedRowCount, GetRowCount(connection, DialectProvider.MicrosoftSqlite));
     }
-#endif
 
     // =============================================
     // SQLite file-based (sqlite3 CLI path)
@@ -799,7 +795,6 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         }
     }
 
-#if NET8_0_OR_GREATER
     // Same guard via Microsoft.Data.Sqlite, mirroring
     // ImportCsv_MicrosoftSqliteInMemory_ImportsAllRows: the check lives in the shared
     // prepared-statement path, so it must not depend on which SQLite provider got there.
@@ -824,7 +819,6 @@ public class CsvImportTests : IClassFixture<DialectFixture>
             File.Delete(path);
         }
     }
-#endif
 
     [Fact]
     public void ImportCsv_NoHeader_LongRow_ThrowsAgainstFirstRecordWidth()

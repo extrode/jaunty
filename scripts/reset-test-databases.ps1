@@ -61,14 +61,16 @@ if (Running 'torture-mssql') {
     Would "drop database Northwind (recreated by the seed script)"
     if ($Execute) {
         $d = "IF DB_ID('Northwind') IS NOT NULL BEGIN ALTER DATABASE Northwind SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE Northwind; END"
-        docker exec torture-mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $pw -C -Q $d | Out-Null
+        # -b: without it sqlcmd exits 0 even when the statement fails.
+        docker exec torture-mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $pw -C -b -Q $d | Out-Null
+        if ($LASTEXITCODE -ne 0) { Fail "torture-mssql: drop database" }
     }
     foreach ($f in @('data/sqlserver/create-northwind.sql', 'data/sqlserver/create-stored-procedures.sql')) {
         $db = if ($f -match 'stored-procedures') { @('-d', 'Northwind') } else { @() }
         Would "sqlcmd < $f"
         if ($Execute) {
             docker cp (Join-Path $repoRoot $f) "torture-mssql:/tmp/r.sql" | Out-Null
-            docker exec torture-mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $pw -C @db -i /tmp/r.sql | Out-Null
+            docker exec torture-mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $pw -C -b @db -i /tmp/r.sql | Out-Null
             if ($LASTEXITCODE -ne 0) { Fail "torture-mssql: $f" }
         }
     }
@@ -135,12 +137,13 @@ if ($SkipLocal) {
         Would "seed NorthwindJaunty from data/sqlserver/create-northwind.sql"
         if ($Execute) {
             $d = "IF DB_ID('NorthwindJaunty') IS NOT NULL BEGIN ALTER DATABASE NorthwindJaunty SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE NorthwindJaunty; END"
-            & $sqlcmd -S 'lpc:localhost' -E -C -Q $d | Out-Null
+            & $sqlcmd -S 'lpc:localhost' -E -C -b -Q $d | Out-Null
+            if ($LASTEXITCODE -ne 0) { Fail "NorthwindJaunty: drop database" }
             (Get-Content (Join-Path $repoRoot 'data/sqlserver/create-northwind.sql') -Raw).Replace('Northwind', 'NorthwindJaunty') |
                 Set-Content $tmp -NoNewline -Encoding UTF8
-            & $sqlcmd -S 'lpc:localhost' -E -C -i $tmp | Out-Null
+            & $sqlcmd -S 'lpc:localhost' -E -C -b -i $tmp | Out-Null
             if ($LASTEXITCODE -ne 0) { Fail "NorthwindJaunty schema" }
-            & $sqlcmd -S 'lpc:localhost' -E -C -d NorthwindJaunty -i (Join-Path $repoRoot 'data/sqlserver/create-stored-procedures.sql') | Out-Null
+            & $sqlcmd -S 'lpc:localhost' -E -C -b -d NorthwindJaunty -i (Join-Path $repoRoot 'data/sqlserver/create-stored-procedures.sql') | Out-Null
             if ($LASTEXITCODE -ne 0) { Fail "NorthwindJaunty stored procedures" }
             Remove-Item $tmp -ErrorAction SilentlyContinue
         }
