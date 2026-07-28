@@ -62,9 +62,17 @@ internal sealed class JoinClause3Builder<T1, T2, T3> : IJoinClause<T1, T2, T3>
         => CreateJoinedQuery3(condition);
 
     public IJoinedQuery3<T1, T2, T3> On<TValue>(string condition, TValue value)
+        => On(condition, JoinParameterName.Default, value);
+
+    public IJoinedQuery3<T1, T2, T3> On<TValue>(string condition, string parameterName, TValue value)
     {
+        string qualified = JoinParameterName.Qualify(_parent.Dialect.ParameterPrefix, parameterName, nameof(parameterName));
+
+        if (_parent.HasParameter(qualified))
+            throw JoinParameterName.DuplicateError(qualified, nameof(parameterName));
+
         JoinedQuery3Builder<T1, T2, T3> joinedQuery = CreateJoinedQuery3(condition);
-        _parent.AddParameter($"{_parent.Dialect.ParameterPrefix}value", value);
+        _parent.AddParameter(qualified, value);
         return joinedQuery;
     }
 
