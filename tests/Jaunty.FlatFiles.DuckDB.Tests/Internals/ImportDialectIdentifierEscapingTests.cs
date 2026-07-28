@@ -131,21 +131,18 @@ public class ImportDialectIdentifierEscapingTests
         Assert.Contains("[Key]", ex.Message);
     }
 
-    [Fact]
-    public void SqliteImportDialect_GenerateInsertSql_KeylessEntityWithSkipStrategy_DoesNotThrow()
+    [Theory]
+    [InlineData(ConflictStrategy.Skip)]
+    [InlineData(ConflictStrategy.Upsert)]
+    public void SqliteImportDialect_GenerateInsertSql_KeylessEntityWithNonErrorStrategy_Throws(
+        ConflictStrategy conflictStrategy)
     {
-        string sql = SqliteImportDialect.Instance.GenerateInsertSql(
-            "orders", ["id"], ["@p0"], ConflictStrategy.Skip, keyColumnName: null);
-
-        Assert.Contains("INSERT OR IGNORE INTO", sql);
-    }
-
-    [Fact]
-    public void SqliteImportDialect_GenerateInsertSql_KeylessEntityWithUpsertStrategy_Throws()
-    {
+        // AUD-R25: Skip used to fall through to "INSERT OR IGNORE" here, so SQLite alone accepted a
+        // keyless Skip while PostgreSqlImportDialect and SqlServerImportDialect both threw. The
+        // guard is now "!= Error" on all three.
         var ex = Assert.Throws<NotSupportedException>(() =>
             SqliteImportDialect.Instance.GenerateInsertSql(
-                "orders", ["id"], ["@p0"], ConflictStrategy.Upsert, keyColumnName: null));
+                "orders", ["id"], ["@p0"], conflictStrategy, keyColumnName: null));
 
         Assert.Contains("orders", ex.Message);
         Assert.Contains("[Key]", ex.Message);
