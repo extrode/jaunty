@@ -133,7 +133,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     {
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
         (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
-        ResultMapperPlan plan = ResolveResultMapperPlan<TResult>(aliases);
+        GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
 
@@ -149,7 +149,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
             while (reader.Read())
             {
-                TResult? result = MapResult<TResult>(reader, aliases, in plan);
+                TResult? result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
@@ -168,7 +168,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
         (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
-        ResultMapperPlan plan = ResolveResultMapperPlan<TResult>(aliases);
+        GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
 
         var results = new List<TResult>();
 
@@ -185,7 +185,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                TResult? result = MapResult<TResult>(reader, aliases, in plan);
+                TResult? result = GroupedJoinedResultMapper.MapResult<TResult>(reader, aliases, in plan);
                 results.Add(result);
             }
         }
@@ -197,96 +197,11 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return results;
     }
 
-    /// <summary>
-    /// Constructor/property lookups resolved once per query execution and reused across every
-    /// row, instead of re-running reflection (GetConstructors/GetProperty) per row.
-    /// </summary>
-    private readonly struct ResultMapperPlan
-    {
-        public ResultMapperPlan(ConstructorInfo? constructor, ParameterInfo[]? constructorParameters, PropertyInfo?[]? properties)
-        {
-            Constructor = constructor;
-            ConstructorParameters = constructorParameters;
-            Properties = properties;
-        }
-
-        public ConstructorInfo? Constructor { get; }
-        public ParameterInfo[]? ConstructorParameters { get; }
-        public PropertyInfo?[]? Properties { get; }
-    }
-
-    private static ResultMapperPlan ResolveResultMapperPlan<TResult>(string[] aliases)
-    {
-        Type resultType = typeof(TResult);
-
-        // For anonymous types, we need to use the constructor
-#pragma warning disable IL2090 // Reflection on generic parameter for result mapping
-        if (resultType.Name.StartsWith("<>") || resultType.GetConstructors().Any(c => c.GetParameters().Length == aliases.Length))
-        {
-            ConstructorInfo? constructor = resultType.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == aliases.Length);
-
-            if (constructor is not null)
-                return new ResultMapperPlan(constructor, constructor.GetParameters(), properties: null);
-        }
-
-        // For regular classes/structs
-        var properties = new PropertyInfo?[aliases.Length];
-        for (int i = 0; i < aliases.Length; i++)
-            properties[i] = resultType.GetProperty(aliases[i]);
-#pragma warning restore IL2090
-
-        return new ResultMapperPlan(constructor: null, constructorParameters: null, properties);
-    }
-
-    private static TResult MapResult<TResult>(IDataReader reader, string[] aliases, in ResultMapperPlan plan)
-    {
-        if (plan.Constructor is not null)
-        {
-            var values = new object?[aliases.Length];
-            ParameterInfo[] parameters = plan.ConstructorParameters!;
-
-            for (int i = 0; i < aliases.Length; i++)
-            {
-                int ordinal = reader.GetOrdinal(aliases[i]);
-
-                if (!reader.IsDBNull(ordinal))
-                {
-                    object value = reader.GetValue(ordinal);
-                    Type targetType = parameters[i].ParameterType;
-                    Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-                    values[i] = GroupedJoinedResultMapper.ConvertColumnValue(value, underlyingType);
-                }
-            }
-
-            return (TResult)plan.Constructor.Invoke(values);
-        }
-
-#pragma warning disable IL2091 // Activator.CreateInstance requires public parameterless constructor
-        TResult? instance = Activator.CreateInstance<TResult>();
-#pragma warning restore IL2091
-        PropertyInfo?[] properties = plan.Properties!;
-
-        for (int i = 0; i < aliases.Length; i++)
-        {
-            PropertyInfo? property = properties[i];
-
-            if (property is not null && property.CanWrite)
-            {
-                int ordinal = reader.GetOrdinal(aliases[i]);
-
-                if (!reader.IsDBNull(ordinal))
-                {
-                    object value = reader.GetValue(ordinal);
-                    Type targetType = property.PropertyType;
-                    Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-                    object converted = GroupedJoinedResultMapper.ConvertColumnValue(value, underlyingType);
-                    property.SetValue(instance, converted);
-                }
-            }
-        }
-
-        return instance;
-    }
+    // AUD-R25: ResultMapperPlan, ResolveResultMapperPlan and MapResult used to live here as a
+    // byte-for-byte private copy of GroupedJoinedResultMapper's, right down to the per-row
+    // GetOrdinal call. ConvertColumnValue was already shared with that type "so they can't drift
+    // out of sync with each other"; the rest now is too, so the ordinal caching added there
+    // benefits this builder as well instead of leaving the two halves divergent.
 
     private string[] ExtractGroupByColumns(Expression<Func<T, TKey>> keySelector)
     {
