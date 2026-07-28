@@ -32,6 +32,12 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static readonly PropertyInfo? BulkCopyTimeoutProperty = SqlBulkCopyType?.GetProperty("BulkCopyTimeout");
     private static readonly PropertyInfo? DestinationTableNameProperty = SqlBulkCopyType?.GetProperty("DestinationTableName");
     private static readonly PropertyInfo? ColumnMappingsProperty = SqlBulkCopyType?.GetProperty("ColumnMappings");
+
+    // AUD-R25: BulkCopyOptions.EnableStreaming is public, defaults to true and is documented as
+    // "rows are streamed to the database without buffering", but no provider read it - setting it
+    // to false changed nothing. On SQL Server it maps directly onto SqlBulkCopy.EnableStreaming,
+    // which this provider never set despite reflecting over five other SqlBulkCopy properties.
+    private static readonly PropertyInfo? EnableStreamingProperty = SqlBulkCopyType?.GetProperty("EnableStreaming");
     private static readonly MethodInfo? ColumnMappingsAddMethod = ColumnMappingsProperty?.PropertyType.GetMethod("Add", [typeof(string), typeof(string)]);
     private static readonly MethodInfo? WriteToServerMethod = SqlBulkCopyType?.GetMethod("WriteToServer", [typeof(IDataReader)]);
     private static readonly MethodInfo? WriteToServerAsyncMethod = SqlBulkCopyType?.GetMethod("WriteToServerAsync", [typeof(IDataReader), typeof(CancellationToken)]);
@@ -63,6 +69,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         {
             BatchSizeProperty?.SetValue(bulkCopy, options.BatchSize);
             BulkCopyTimeoutProperty?.SetValue(bulkCopy, options.Timeout);
+            EnableStreamingProperty?.SetValue(bulkCopy, options.EnableStreaming);
             DestinationTableNameProperty?.SetValue(bulkCopy, QualifyTableName(schemaName, tableName));
             ApplyColumnMappings(bulkCopy, data);
 
@@ -98,6 +105,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         {
             BatchSizeProperty?.SetValue(bulkCopy, options.BatchSize);
             BulkCopyTimeoutProperty?.SetValue(bulkCopy, options.Timeout);
+            EnableStreamingProperty?.SetValue(bulkCopy, options.EnableStreaming);
             DestinationTableNameProperty?.SetValue(bulkCopy, QualifyTableName(schemaName, tableName));
             ApplyColumnMappings(bulkCopy, data);
 
