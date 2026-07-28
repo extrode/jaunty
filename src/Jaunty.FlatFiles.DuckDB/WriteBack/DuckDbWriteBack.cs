@@ -13,8 +13,7 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(outputPath);
 
         IFileSource source = GetSourceOrThrow<T>();
-        var format = InferFormatFromExtension(outputPath);
-        var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(outputPath), format);
+        var sql = BuildCopyToSql(source, outputPath);
 
         NonQueryExecutor.Execute(_connection, sql, []);
     }
@@ -62,10 +61,38 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(outputPath);
 
         IFileSource source = GetSourceOrThrow<T>();
-        var format = InferFormatFromExtension(outputPath);
-        var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(outputPath), format);
+        var sql = BuildCopyToSql(source, outputPath);
 
         NonQueryExecutor.Execute(_connection, sql, []);
+    }
+
+    /// <summary>
+    /// Builds the COPY TO statement for writing <paramref name="source"/> out to
+    /// <paramref name="outputPath"/>, preferring the source-aware overload when the output format
+    /// matches the source's own.
+    /// </summary>
+    /// <remarks>
+    /// The format-string overload knows nothing but the format name, so it emits a bare
+    /// <c>FORMAT CSV, HEADER true</c> and drops everything the source was configured with -
+    /// DELIMITER, QUOTE, NULL and (since AUD-R25) HEADER. Writing a semicolon-delimited source back
+    /// out through it therefore silently produced a comma-delimited file. Same-format writes now go
+    /// through the <see cref="IFileSource"/> overload, which is what Save&lt;T&gt;(WriteBackMode)
+    /// already used.
+    ///
+    /// <para>
+    /// Cross-format writes still take the format-string overload: a CSV source's DELIMITER/QUOTE
+    /// options are not valid COPY arguments for PARQUET or JSON, so carrying them across would turn
+    /// the documented "CSV source -&gt; Parquet output" export into a DuckDB binder error.
+    /// </para>
+    /// </remarks>
+    private string BuildCopyToSql(IFileSource source, string outputPath)
+    {
+        var format = InferFormatFromExtension(outputPath);
+        var fullPath = Path.GetFullPath(outputPath);
+
+        return string.Equals(format, source.Format, StringComparison.OrdinalIgnoreCase)
+            ? _dialect.GenerateCopyToSql(source.TableName, fullPath, source)
+            : _dialect.GenerateCopyToSql(source.TableName, fullPath, format);
     }
 
     private static string InferFormatFromExtension(string path)
