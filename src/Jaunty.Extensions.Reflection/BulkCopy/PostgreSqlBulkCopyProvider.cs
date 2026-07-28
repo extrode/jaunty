@@ -71,6 +71,10 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         // controls, and NpgsqlConnection.CommandTimeout has no public setter (it's derived from
         // the connection string), so unlike SqlServerBulkCopyProvider/MySqlBulkCopyProvider there
         // is no reflection-accessible way to honor any of those BulkCopyOptions for Postgres.
+        //
+        // options.EnableStreaming is likewise not applicable rather than merely unimplemented: the
+        // binary COPY protocol has no buffered mode, so this import always streams and false cannot
+        // be honored. Documented on BulkCopyOptions.EnableStreaming (AUD-R25).
 
         // Build COPY command
         var copyCommand = BuildCopyCommand(schemaName, tableName, data);
@@ -150,6 +154,10 @@ internal sealed class PostgreSqlBulkCopyProvider : IBulkCopyProvider
         // controls, and NpgsqlConnection.CommandTimeout has no public setter (it's derived from
         // the connection string), so unlike SqlServerBulkCopyProvider/MySqlBulkCopyProvider there
         // is no reflection-accessible way to honor any of those BulkCopyOptions for Postgres.
+        //
+        // options.EnableStreaming is likewise not applicable rather than merely unimplemented: the
+        // binary COPY protocol has no buffered mode, so this import always streams and false cannot
+        // be honored. Documented on BulkCopyOptions.EnableStreaming (AUD-R25).
 
         var copyCommand = BuildCopyCommand(schemaName, tableName, data);
 
