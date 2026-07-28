@@ -111,19 +111,21 @@ public sealed class EntityCodeGenerator : ICodeGenerator
         if (!options.GenerateTableAttribute)
             return;
 
-        var className = GetClassName(table.TableName, options);
-
-        // Only emit [Table] if name differs from class name or schema is specified
-        bool needsTableAttr = !table.TableName.Equals(className, StringComparison.OrdinalIgnoreCase) ||
-                              !string.IsNullOrEmpty(table.SchemaName);
-
-        if (needsTableAttr)
-        {
-            if (!string.IsNullOrEmpty(table.SchemaName))
-                sb.AppendLine($"{indent}[Jaunty.Attributes.Table(\"{EscapeStringLiteral(table.TableName)}\", \"{EscapeStringLiteral(table.SchemaName)}\")]");
-            else
-                sb.AppendLine($"{indent}[Jaunty.Attributes.Table(\"{EscapeStringLiteral(table.TableName)}\")]");
-        }
+        // AUD-R25: always emit [Table]. This used to be skipped when the table name equalled the
+        // class name and the schema was empty, on the reasoning that the attribute was redundant -
+        // but it is not redundant to Jaunty.SourceGenerator, whose GetSemanticTargetForGeneration
+        // requires a [Table] attribute to consider a class at all. The elided case is the *normal*
+        // one for two of the four providers - MySqlSchemaReader hardcodes '' AS SchemaName and
+        // SQLite has no schemas - so a SQLite table named `Customer` scaffolded to a `Customer`
+        // class with no attribute, got no generated mapper, and silently fell back to reflection
+        // (or threw, if UseReflectionMapping() was never called) with nothing to indicate why.
+        //
+        // Set GenerateTableAttribute = false (--no-table-attr) if the attribute really is unwanted;
+        // that is an explicit choice rather than an invisible consequence of a name matching.
+        if (!string.IsNullOrEmpty(table.SchemaName))
+            sb.AppendLine($"{indent}[Jaunty.Attributes.Table(\"{EscapeStringLiteral(table.TableName)}\", \"{EscapeStringLiteral(table.SchemaName)}\")]");
+        else
+            sb.AppendLine($"{indent}[Jaunty.Attributes.Table(\"{EscapeStringLiteral(table.TableName)}\")]");
     }
 
     private void AppendProperty(

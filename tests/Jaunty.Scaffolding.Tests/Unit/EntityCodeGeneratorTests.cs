@@ -104,7 +104,7 @@ public class EntityCodeGeneratorTests
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
         Assert.Contains("namespace Test.Entities;", code);
-        Assert.Contains("public class Product", code);
+        Assert.Contains("public partial class Product", code);
         Assert.Contains("[Jaunty.Attributes.Table(\"Products\", \"dbo\")]", code);
     }
 
@@ -166,7 +166,7 @@ public class EntityCodeGeneratorTests
         var table = CreateSimpleTable(); // TableName = "Products"
         var code = _generator.GenerateEntity(table, _defaultOptions);
 
-        Assert.Contains("public class Product", code);
+        Assert.Contains("public partial class Product", code);
         Assert.DoesNotContain("public class Products", code);
     }
 
@@ -182,7 +182,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        Assert.Contains("public class Products", code);
+        Assert.Contains("public partial class Products", code);
     }
 
     [Fact]
@@ -198,7 +198,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        Assert.Contains("public class ProductEntity", code);
+        Assert.Contains("public partial class ProductEntity", code);
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        Assert.Contains("public class DbProduct", code);
+        Assert.Contains("public partial class DbProduct", code);
     }
 
     [Fact]
@@ -544,7 +544,7 @@ public class EntityCodeGeneratorTests
 
         var code = _generator.GenerateEntity(table, options);
 
-        Assert.Contains("public class Product", code);
+        Assert.Contains("public partial class Product", code);
         Assert.DoesNotContain("public int Product { get; set; }", code);
         Assert.Contains("public int Product1 { get; set; }", code);
         Assert.Contains("[Jaunty.Attributes.Column(\"Product\")]", code);
