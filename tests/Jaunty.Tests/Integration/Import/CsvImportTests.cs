@@ -648,7 +648,10 @@ public class CsvImportTests : IClassFixture<DialectFixture>
 
     private static string WriteTempCsv(string content)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"jaunty_csv_reg_{Guid.NewGuid():N}.csv");
+        // Written under the test output directory rather than the OS temp dir: SQL Server's
+        // BULK INSERT reads the file server-side, and CI only bind-mounts the repo workspace
+        // (which the output directory is under) into the mssql container - not /tmp.
+        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"jaunty_csv_reg_{Guid.NewGuid():N}.csv");
         File.WriteAllText(path, content);
         return path;
     }
