@@ -86,12 +86,29 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
         if (!IsEnabledAtLevel(level))
             return new ValueTask();
 
-        _logger.Log(
-            level,
-            "Completed {CommandType} in {ElapsedMilliseconds:F2}ms{SlowQueryIndicator}",
-            GetCommandTypeDescription(context.CommandType),
-            context.Elapsed.TotalMilliseconds,
-            isSlow ? $" (SLOW - exceeded {_config.SlowQueryThreshold.TotalMilliseconds}ms threshold)" : "");
+        // AUD-R25: LogExecutionTime was declared, defaulted to true and documented, but had no
+        // consumer anywhere - the elapsed time was formatted in regardless, so setting it to false
+        // did nothing. Its three sibling flags (LogSql, LogParameters, SlowQueryThreshold) are all
+        // honoured. Slow-query *detection* deliberately still works when it is off: the flag governs
+        // whether the measurement appears in the message, not whether a slow query is worth warning
+        // about, and the threshold quoted in that warning is configuration rather than a measurement.
+        if (_config.LogExecutionTime)
+        {
+            _logger.Log(
+                level,
+                "Completed {CommandType} in {ElapsedMilliseconds:F2}ms{SlowQueryIndicator}",
+                GetCommandTypeDescription(context.CommandType),
+                context.Elapsed.TotalMilliseconds,
+                isSlow ? $" (SLOW - exceeded {_config.SlowQueryThreshold.TotalMilliseconds}ms threshold)" : "");
+        }
+        else
+        {
+            _logger.Log(
+                level,
+                "Completed {CommandType}{SlowQueryIndicator}",
+                GetCommandTypeDescription(context.CommandType),
+                isSlow ? $" (SLOW - exceeded {_config.SlowQueryThreshold.TotalMilliseconds}ms threshold)" : "");
+        }
 
         return new ValueTask();
     }
@@ -102,12 +119,23 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
         if (!IsEnabledAtLevel(LogLevel.Error))
             return new ValueTask();
 
-        _logger.LogError(
-            exception,
-            "Failed executing {CommandType} after {ElapsedMilliseconds:F2}ms: {ErrorMessage}",
-            GetCommandTypeDescription(context.CommandType),
-            context.Elapsed.TotalMilliseconds,
-            exception.Message);
+        if (_config.LogExecutionTime)
+        {
+            _logger.LogError(
+                exception,
+                "Failed executing {CommandType} after {ElapsedMilliseconds:F2}ms: {ErrorMessage}",
+                GetCommandTypeDescription(context.CommandType),
+                context.Elapsed.TotalMilliseconds,
+                exception.Message);
+        }
+        else
+        {
+            _logger.LogError(
+                exception,
+                "Failed executing {CommandType}: {ErrorMessage}",
+                GetCommandTypeDescription(context.CommandType),
+                exception.Message);
+        }
 
         return new ValueTask();
     }
