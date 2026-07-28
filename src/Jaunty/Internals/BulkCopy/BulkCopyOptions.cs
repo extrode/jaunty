@@ -85,8 +85,37 @@ public sealed class BulkCopyOptions
     /// <summary>
     /// Gets or sets whether to enable streaming mode for large datasets.
     /// When enabled, rows are streamed to the database without buffering.
-    /// Default is true.
+    /// Default is <see langword="true"/>.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Honored per provider, because the underlying bulk APIs differ in whether buffering is even
+    /// expressible:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>
+    /// <b>SQL Server</b> - mapped directly onto <c>SqlBulkCopy.EnableStreaming</c>, so both values
+    /// take effect.
+    /// </description></item>
+    /// <item><description>
+    /// <b>PostgreSQL</b> - always streams. The binary COPY protocol behind
+    /// <c>NpgsqlBinaryImporter</c> has no buffered mode, so <see langword="false"/> cannot be
+    /// honored and is ignored. This is the same constraint the provider already documents for
+    /// timeout, batch size, check-constraints and table-lock.
+    /// </description></item>
+    /// <item><description>
+    /// <b>MySQL</b> - always buffers one chunk at a time. Rows are accumulated into a chunk of at
+    /// most <see cref="BatchSize"/> rows and sent as a single multi-row INSERT, so
+    /// <see langword="true"/> does not eliminate buffering; it bounds it. Use
+    /// <see cref="BatchSize"/> to control how much is held at once.
+    /// </description></item>
+    /// </list>
+    /// <para>
+    /// AUD-R25: this was public, defaulted to true and documented as above, but no provider read
+    /// it - setting it to <see langword="false"/> changed nothing anywhere. SQL Server now wires
+    /// it; the other two document what they actually do rather than claim a knob they cannot offer.
+    /// </para>
+    /// </remarks>
     public bool EnableStreaming { get; set; } = true;
 
     /// <summary>
