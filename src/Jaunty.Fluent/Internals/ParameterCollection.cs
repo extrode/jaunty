@@ -28,6 +28,12 @@ internal sealed class ParameterCollection
         _parameters.Add((name, value));
     }
 
+    /// <summary>
+    /// Whether a parameter with this name has already been added. Lets callers raise a more
+    /// specific error before <see cref="Add"/>'s generic duplicate check fires.
+    /// </summary>
+    public bool Contains(string name) => _names.Contains(name);
+
     public void AddRange(List<(string Name, object? Value)> parameters)
     {
         foreach ((string name, object? value) in parameters)
