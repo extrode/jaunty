@@ -98,7 +98,10 @@ public sealed class TsvFileSource : IFileSource
     /// <inheritdoc />
     public string? GenerateCopyToOptions()
     {
-        var sb = new System.Text.StringBuilder("DELIMITER '\t', HEADER true");
+        // See CsvFileSource.GenerateCopyToOptions: HEADER true on a headerless source round-trips to a
+        // file whose first data row is consumed as column names.
+        var sb = new System.Text.StringBuilder(
+            HasHeader == false ? "DELIMITER '\t', HEADER false" : "DELIMITER '\t', HEADER true");
 
         if (NullString is not null)
             sb.Append($", NULL '{NullString.Replace("'", "''")}'");
