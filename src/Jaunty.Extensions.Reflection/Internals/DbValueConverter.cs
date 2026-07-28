@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace Jaunty.Extensions.Reflection;
 
@@ -17,7 +18,7 @@ internal static class DbValueConverter
         {
             return value is string stringValue
                 ? Enum.Parse(underlyingType, stringValue, ignoreCase: true)
-                : Enum.ToObject(underlyingType, Convert.ChangeType(value, Enum.GetUnderlyingType(underlyingType)));
+                : Enum.ToObject(underlyingType, Convert.ChangeType(value, Enum.GetUnderlyingType(underlyingType), CultureInfo.InvariantCulture));
         }
 
         // Guid doesn't implement IConvertible, so Convert.ChangeType always throws for it -
@@ -27,6 +28,12 @@ internal static class DbValueConverter
             return value is Guid guidValue ? guidValue : Guid.Parse((string)value);
         }
 
-        return Convert.ChangeType(value, underlyingType);
+        // CultureInfo.InvariantCulture, not the ambient CurrentCulture: providers routinely hand back
+        // a string where the column is TEXT/NUMERIC (SQLite in particular), and under a comma-decimal
+        // culture (de-DE, fr-FR, ...) Convert.ChangeType("1.5", typeof(decimal)) does not throw - it
+        // reads the period as a group separator and returns 15.
+        // This is the terminal conversion for every reflection-mapped column read, so the ambient
+        // culture would otherwise silently scale numeric values by the host's locale.
+        return Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
     }
 }
