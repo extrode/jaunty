@@ -13,18 +13,19 @@
 -- GetAllProducts: Returns all products
 -- Tests: ExecuteStoredProcedure<T>(procedureName)
 -- =============================================
+DROP FUNCTION IF EXISTS GetAllProducts();
 CREATE OR REPLACE FUNCTION GetAllProducts()
 RETURNS TABLE (
-    product_id INTEGER,
-    product_name VARCHAR,
-    supplier_id INTEGER,
-    category_id INTEGER,
-    quantity_per_unit VARCHAR,
-    unit_price DECIMAL,
-    units_in_stock SMALLINT,
-    units_on_order SMALLINT,
-    reorder_level SMALLINT,
-    discontinued BOOLEAN
+    "ProductId" INTEGER,
+    "ProductName" VARCHAR,
+    "SupplierId" INTEGER,
+    "CategoryId" SMALLINT,
+    "QuantityPerUnit" VARCHAR,
+    "UnitPrice" DECIMAL,
+    "UnitsInStock" SMALLINT,
+    "UnitsOnOrder" SMALLINT,
+    "ReorderLevel" SMALLINT,
+    "Discontinued" BOOLEAN
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -39,18 +40,19 @@ $$ LANGUAGE plpgsql;
 -- GetProductsByCategory: Returns products filtered by category_id
 -- Tests: ExecuteStoredProcedure<T>(procedureName, parameters)
 -- =============================================
+DROP FUNCTION IF EXISTS GetProductsByCategory(INTEGER);
 CREATE OR REPLACE FUNCTION GetProductsByCategory(p_category_id INTEGER)
 RETURNS TABLE (
-    product_id INTEGER,
-    product_name VARCHAR,
-    supplier_id INTEGER,
-    category_id INTEGER,
-    quantity_per_unit VARCHAR,
-    unit_price DECIMAL,
-    units_in_stock SMALLINT,
-    units_on_order SMALLINT,
-    reorder_level SMALLINT,
-    discontinued BOOLEAN
+    "ProductId" INTEGER,
+    "ProductName" VARCHAR,
+    "SupplierId" INTEGER,
+    "CategoryId" SMALLINT,
+    "QuantityPerUnit" VARCHAR,
+    "UnitPrice" DECIMAL,
+    "UnitsInStock" SMALLINT,
+    "UnitsOnOrder" SMALLINT,
+    "ReorderLevel" SMALLINT,
+    "Discontinued" BOOLEAN
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -66,18 +68,19 @@ $$ LANGUAGE plpgsql;
 -- GetProductById: Returns a single product by ID
 -- Tests: ExecuteStoredProcedureFirst, ExecuteStoredProcedureSingle
 -- =============================================
+DROP FUNCTION IF EXISTS GetProductById(INTEGER);
 CREATE OR REPLACE FUNCTION GetProductById(p_product_id INTEGER)
 RETURNS TABLE (
-    product_id INTEGER,
-    product_name VARCHAR,
-    supplier_id INTEGER,
-    category_id INTEGER,
-    quantity_per_unit VARCHAR,
-    unit_price DECIMAL,
-    units_in_stock SMALLINT,
-    units_on_order SMALLINT,
-    reorder_level SMALLINT,
-    discontinued BOOLEAN
+    "ProductId" INTEGER,
+    "ProductName" VARCHAR,
+    "SupplierId" INTEGER,
+    "CategoryId" SMALLINT,
+    "QuantityPerUnit" VARCHAR,
+    "UnitPrice" DECIMAL,
+    "UnitsInStock" SMALLINT,
+    "UnitsOnOrder" SMALLINT,
+    "ReorderLevel" SMALLINT,
+    "Discontinued" BOOLEAN
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -93,6 +96,7 @@ $$ LANGUAGE plpgsql;
 -- GetProductCount: Returns scalar count of all products
 -- Tests: ExecuteStoredProcedureScalar<T>
 -- =============================================
+DROP FUNCTION IF EXISTS GetProductCount();
 CREATE OR REPLACE FUNCTION GetProductCount()
 RETURNS INTEGER AS $$
 DECLARE
@@ -107,6 +111,7 @@ $$ LANGUAGE plpgsql;
 -- GetProductCountByCategory: Returns scalar count with parameter
 -- Tests: ExecuteStoredProcedureScalar<T>(procedureName, parameters)
 -- =============================================
+DROP FUNCTION IF EXISTS GetProductCountByCategory(INTEGER);
 CREATE OR REPLACE FUNCTION GetProductCountByCategory(p_category_id INTEGER)
 RETURNS INTEGER AS $$
 DECLARE
@@ -122,6 +127,7 @@ $$ LANGUAGE plpgsql;
 -- Tests: ExecuteStoredProcedureNonQuery
 -- Note: Tests should wrap in transaction and rollback
 -- =============================================
+DROP FUNCTION IF EXISTS UpdateProductPrice(INTEGER, DECIMAL);
 CREATE OR REPLACE FUNCTION UpdateProductPrice(p_product_id INTEGER, p_new_price DECIMAL)
 RETURNS VOID AS $$
 BEGIN
@@ -134,6 +140,7 @@ $$ LANGUAGE plpgsql;
 -- Tests: ExecuteStoredProcedure with SpParameters (output)
 -- Note: PostgreSQL uses INOUT parameters instead of OUTPUT parameters
 -- =============================================
+DROP FUNCTION IF EXISTS GetProductCountWithOutput(INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION GetProductCountWithOutput(
     p_category_id INTEGER,
     INOUT p_product_count INTEGER DEFAULT 0
@@ -147,18 +154,19 @@ $$ LANGUAGE plpgsql;
 -- GetNoResults: Returns empty result set
 -- Tests: FirstOrDefault returns null, First throws
 -- =============================================
+DROP FUNCTION IF EXISTS GetNoResults();
 CREATE OR REPLACE FUNCTION GetNoResults()
 RETURNS TABLE (
-    product_id INTEGER,
-    product_name VARCHAR,
-    supplier_id INTEGER,
-    category_id INTEGER,
-    quantity_per_unit VARCHAR,
-    unit_price DECIMAL,
-    units_in_stock SMALLINT,
-    units_on_order SMALLINT,
-    reorder_level SMALLINT,
-    discontinued BOOLEAN
+    "ProductId" INTEGER,
+    "ProductName" VARCHAR,
+    "SupplierId" INTEGER,
+    "CategoryId" SMALLINT,
+    "QuantityPerUnit" VARCHAR,
+    "UnitPrice" DECIMAL,
+    "UnitsInStock" SMALLINT,
+    "UnitsOnOrder" SMALLINT,
+    "ReorderLevel" SMALLINT,
+    "Discontinued" BOOLEAN
 ) AS $$
 BEGIN
     RETURN QUERY
