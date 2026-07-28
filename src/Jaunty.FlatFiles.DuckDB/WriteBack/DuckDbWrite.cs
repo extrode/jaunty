@@ -46,7 +46,11 @@ public sealed partial class DuckDb
 
         var sql = $"INSERT INTO {_dialect.EscapeTableName(null, source.TableName)} ({columns}) VALUES ({values})";
         var result = NonQueryExecutor.Execute(_connection, sql, parameters, options);
-        _modified.TryAdd(typeof(T), true);
+        // Guarded on rows-affected like the other six write sites (batch Insert, Update, Delete and
+        // their async twins). A single-row VALUES insert affects exactly one row or throws today, so
+        // this changes nothing now - it keeps the flag's meaning uniform if this statement ever grows
+        // a conflict clause, which is exactly how the SQLite import path acquired DO NOTHING.
+        if (result > 0) _modified.TryAdd(typeof(T), true);
         return result;
     }
 
