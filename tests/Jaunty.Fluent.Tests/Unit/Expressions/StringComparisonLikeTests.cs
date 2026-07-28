@@ -26,6 +26,7 @@ public class StringComparisonLikeTests
     {
         SqlDialectFactory.RegisterDialect(nameof(SqlServerStubConnection), new SqlServerDialect());
         SqlDialectFactory.RegisterDialect(nameof(PostgresStubConnection), new PostgreSqlDialect());
+        SqlDialectFactory.RegisterDialect(nameof(SqliteStubConnection), new SQLiteDialect());
     }
 
     // ------------------------------------------------------------------
@@ -149,6 +150,46 @@ public class StringComparisonLikeTests
     }
 
     // ------------------------------------------------------------------
+    // SQLite: GLOB either way, because that is what the pattern formatters produce
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Contains_WithOrdinalIgnoreCase_StaysGlobShapedOnSqlite()
+    {
+        // SQLiteDialect's FormatContainsPattern emits a GLOB pattern ("*abc*"), so the operator this
+        // pairs with has to be GLOB too. Emitting LIKE here - which the dialect used to do for the
+        // case-insensitive form - produced "col LIKE '*abc*'", matching nothing. Fixed in the same
+        // round; this test is the end-to-end guard that the two halves agree.
+        var sql = new SqliteStubConnection().From<Product>()
+            .Where(p => p.ProductName.Contains("abc", StringComparison.OrdinalIgnoreCase))
+            .ToSql();
+
+        Assert.Contains("GLOB", sql);
+        Assert.DoesNotContain("LIKE", sql);
+    }
+
+    [Fact]
+    public void Contains_WithOrdinalIgnoreCase_FoldsBothSidesOnSqlite()
+    {
+        var sql = new SqliteStubConnection().From<Product>()
+            .Where(p => p.ProductName.Contains("abc", StringComparison.OrdinalIgnoreCase))
+            .ToSql();
+
+        Assert.Contains("LOWER", sql);
+    }
+
+    [Fact]
+    public void Contains_WithoutAComparison_IsUnfoldedGlobOnSqlite()
+    {
+        var sql = new SqliteStubConnection().From<Product>()
+            .Where(p => p.ProductName.Contains("abc"))
+            .ToSql();
+
+        Assert.Contains("GLOB", sql);
+        Assert.DoesNotContain("LOWER", sql);
+    }
+
+    // ------------------------------------------------------------------
     // Stub connections - nothing is executed, only ToSql()/GetParameters() are read
     // ------------------------------------------------------------------
 
@@ -170,4 +211,6 @@ public class StringComparisonLikeTests
     private sealed class SqlServerStubConnection : StubConnection;
 
     private sealed class PostgresStubConnection : StubConnection;
+
+    private sealed class SqliteStubConnection : StubConnection;
 }
