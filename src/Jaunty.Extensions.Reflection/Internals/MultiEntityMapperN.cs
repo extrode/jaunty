@@ -5,6 +5,15 @@ using System.Data;
 
 namespace Jaunty.Extensions.Reflection;
 
+// Every BuildSchemaKey below joins the field count and column names with U+001F (unit
+// separator) - a character that cannot appear in a column name, so two different reader
+// schemas can never produce the same cache key. It is spelled as a \u001F escape rather
+// than as a literal control character in the source (R24): a raw 0x1F byte is invisible in
+// most editors and diffs, indistinguishable from an empty separator, and one stray formatting
+// pass or copy-paste that dropped it would silently reintroduce the schema-key collision the
+// AUD-R9-002-CORRECTION regression tests in MultiEntityMapperTests guard against. The arity-2
+// implementation in MultiEntityMapper.cs uses the same escape.
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //  Arity-3 mapper
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -33,7 +42,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3>
         var parts = new string[reader.FieldCount + 1];
         parts[0] = reader.FieldCount.ToString();
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3> Create(IDataReader reader)
@@ -81,7 +90,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4>
         var parts = new string[reader.FieldCount + 1];
         parts[0] = reader.FieldCount.ToString();
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4> Create(IDataReader reader)
@@ -133,7 +142,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5>
         var parts = new string[reader.FieldCount + 1];
         parts[0] = reader.FieldCount.ToString();
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5> Create(IDataReader reader)
@@ -189,7 +198,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6>
         var parts = new string[reader.FieldCount + 1];
         parts[0] = reader.FieldCount.ToString();
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6> Create(IDataReader reader)
@@ -249,7 +258,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>
         var parts = new string[reader.FieldCount + 1];
         parts[0] = reader.FieldCount.ToString();
         for (int i = 0; i < reader.FieldCount; i++) parts[i + 1] = reader.GetName(i) ?? string.Empty;
-        return string.Join("", parts);
+        return string.Join("\u001F", parts);
     }
 
     private static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> Create(IDataReader reader)
