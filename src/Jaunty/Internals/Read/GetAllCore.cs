@@ -168,6 +168,8 @@ public static partial class Jaunty
         }
     }
 
+    // Deliberately no InterceptorPipeline here, unlike GetAllCore above - see the rationale on
+    // QueryStreamCore in QueryCore.cs. Same for GetAllStreamCoreAsync below.
     internal static IEnumerable<T> GetAllStreamCore<T>(IDbConnection connection, CommandOptions<T> options) where T : new()
     {
         CachedCrudSql cached = CrudSqlCache.GetSql<T>(connection);
