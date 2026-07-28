@@ -228,9 +228,15 @@ public class JauntyGenerator : IIncrementalGenerator
                     else if (val == 2) isComputed = true;
                 }
             }
-            else if (isKey && (prop.Type.SpecialType == SpecialType.System_Int32 || prop.Type.SpecialType == SpecialType.System_Int64))
+            // AUD-R25: an int/long key with no explicit [DatabaseGenerated] is *inferred* to be an
+            // identity column. Recorded as inferred rather than applied outright, because the
+            // inference is only defensible for a single-key entity - see the post-pass below.
+            var isIdentityInferred = false;
+            if (dbGenAttr is null && isKey
+                && (prop.Type.SpecialType == SpecialType.System_Int32 || prop.Type.SpecialType == SpecialType.System_Int64))
             {
                 isIdentity = true;
+                isIdentityInferred = true;
             }
 
             // FullyQualifiedFormat (global::-prefixed for non-special types) avoids a subtle
@@ -249,7 +255,37 @@ public class JauntyGenerator : IIncrementalGenerator
             properties.Add(new PropertyMetadata(
                 prop.Name, columnName, isKey, isIdentity, isComputed,
                 prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                underlyingType.TypeKind == TypeKind.Enum));
+                underlyingType.TypeKind == TypeKind.Enum,
+                isIdentityInferred));
+        }
+
+        // AUD-R25: the implicit-identity inference applies only to a single-key entity.
+        //
+        // Applied per property, as it was, it marked *every* int/long key column identity - so a
+        // composite-key entity like `[Key] int OrderId` + `[Key] int ProductId` had both key columns
+        // dropped from InsertColumns and from BindInsert, and the generated INSERT wrote a row with
+        // no key values at all. No database has two identity columns, so there is no schema for
+        // which that emission is correct; it is a plain defect rather than a debatable convention.
+        //
+        // The convention itself is left alone for the single-key case, where it is defensible and
+        // where the generator has always behaved this way. That case still diverges from the
+        // reflection path, which infers nothing and leaves such a column in the INSERT - see the
+        // matching note in MetadataBuilder.BuildMetadata. Converging the two is a product decision
+        // (either direction silently changes the SQL of existing entities on one path), so it is
+        // recorded and test-pinned rather than settled here.
+        var keyCount = properties.Count(x => x.IsPrimaryKey);
+        if (keyCount > 1)
+        {
+            for (int i = 0; i < properties.Count; i++)
+            {
+                if (properties[i].IsIdentityInferred)
+                {
+                    PropertyMetadata reverted = properties[i];
+                    reverted.IsIdentity = false;
+                    reverted.IsIdentityInferred = false;
+                    properties[i] = reverted;
+                }
+            }
         }
 
         (var tableName, var schemaName) = GetTableNameAndSchema(classSymbol);
@@ -911,7 +947,7 @@ public class JauntyGenerator : IIncrementalGenerator
     /// <summary>
     /// Holds the resolved mapping metadata for a single property of an entity class.
     /// </summary>
-    private struct PropertyMetadata(string propertyName, string columnName, bool isPrimaryKey, bool isIdentity, bool isComputed, string typeName, bool isEnum)
+    private struct PropertyMetadata(string propertyName, string columnName, bool isPrimaryKey, bool isIdentity, bool isComputed, string typeName, bool isEnum, bool isIdentityInferred)
     {
         public string PropertyName = propertyName;
         public string ColumnName = columnName;
@@ -927,5 +963,12 @@ public class JauntyGenerator : IIncrementalGenerator
         /// implementation is an unboxing cast.
         /// </summary>
         public bool IsEnum = isEnum;
+
+        /// <summary>
+        /// AUD-R25: whether <see cref="IsIdentity"/> came from the int/long-key convention rather
+        /// than an explicit <c>[DatabaseGenerated]</c>. Only inferred identity is withdrawn for a
+        /// composite-key entity; an explicit attribute is always honoured.
+        /// </summary>
+        public bool IsIdentityInferred = isIdentityInferred;
     }
 }
