@@ -405,9 +405,15 @@ public class SqlDialectTests
     }
 
     [Fact]
-    public void Sqlite_GenerateCaseInsensitiveLike_UsesLike()
+    public void Sqlite_GenerateCaseInsensitiveLike_UsesFoldedGlob()
     {
-        Assert.Equal("col LIKE @param ESCAPE '\\'", _sqlite.GenerateCaseInsensitiveLike("col", "@param", "\\"));
+        // AUD-R25: was "col LIKE @param ESCAPE '\\'". True to SQLite - LIKE is case-insensitive for
+        // ASCII - but wrong for this dialect, whose FormatContainsPattern/FormatStartsWithPattern/
+        // FormatEndsWithPattern emit GLOB patterns to pair with GenerateCaseSensitiveLike's GLOB.
+        // "col LIKE '*abc*'" matches nothing, since * is a literal under LIKE. Folding both sides of
+        // a GLOB keeps the pattern syntax consistent. See SqliteCaseInsensitiveLikeTests, which
+        // executes both pairings against a real database.
+        Assert.Equal("LOWER(col) GLOB LOWER(@param)", _sqlite.GenerateCaseInsensitiveLike("col", "@param", "\\"));
     }
 
     [Fact]
