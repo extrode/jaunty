@@ -98,7 +98,7 @@ public class ScaffoldCommandTests : IDisposable
         var code = await File.ReadAllTextAsync(generatedFile);
         Assert.Contains("[Jaunty.Attributes.Table(\"products\")]", code);
         Assert.Contains("[Jaunty.Attributes.Key]", code);
-        Assert.Contains("public class Product", code);
+        Assert.Contains("public partial class Product", code);
     }
 
     [Fact]
@@ -118,13 +118,17 @@ public class ScaffoldCommandTests : IDisposable
         Assert.DoesNotContain("Jaunty.Attributes.Table(", code);
     }
 
+    // AUD-R25 (B8-1): --partial was an opt-in and is now --no-partial, because scaffolded output
+    // must be partial to compose with Jaunty.SourceGenerator - the generator emits a partial
+    // declaration of its own for any [Table] class, so a non-partial scaffolded file failed the
+    // build with CS0260. Both directions of the flag are covered.
     [Fact]
-    public async Task Invoke_PartialFlag_GeneratesPartialClass()
+    public async Task Invoke_ByDefault_GeneratesPartialClass()
     {
         var command = new ScaffoldCommand();
         ParseResult result = command.Parse([
             "--connection", _connectionString, "--provider", "SQLite",
-            "--output", _outputDir, "--partial"
+            "--output", _outputDir
         ]);
 
         (StringWriter outWriter, _) = RedirectConsole();
@@ -133,6 +137,24 @@ public class ScaffoldCommandTests : IDisposable
         Assert.Equal(0, exitCode);
         var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
         Assert.Contains("public partial class Product", code);
+    }
+
+    [Fact]
+    public async Task Invoke_NoPartialFlag_GeneratesNonPartialClass()
+    {
+        var command = new ScaffoldCommand();
+        ParseResult result = command.Parse([
+            "--connection", _connectionString, "--provider", "SQLite",
+            "--output", _outputDir, "--no-partial"
+        ]);
+
+        (StringWriter outWriter, _) = RedirectConsole();
+        var exitCode = await result.InvokeAsync();
+
+        Assert.Equal(0, exitCode);
+        var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Product.cs"));
+        Assert.Contains("public class Product", code);
+        Assert.DoesNotContain("public partial class Product", code);
     }
 
     [Fact]
@@ -171,7 +193,7 @@ public class ScaffoldCommandTests : IDisposable
 
     // ==========================================
     // AUD-R19 batch-8: ScaffoldCommandTests only exercised --dry-run, --no-table-attribute,
-    // --partial, and --verbose end-to-end - a wiring mistake in ScaffoldCommand's SetAction
+    // --no-partial, and --verbose end-to-end - a wiring mistake in ScaffoldCommand's SetAction
     // lambda for any other option (e.g. mapped to the wrong ScaffoldOptions property) would
     // not have been caught by any existing test.
     // ==========================================
@@ -349,7 +371,7 @@ public class ScaffoldCommandTests : IDisposable
         Assert.Equal(0, exitCode);
         Assert.True(File.Exists(Path.Combine(_outputDir, "Products.cs")));
         var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "Products.cs"));
-        Assert.Contains("public class Products", code);
+        Assert.Contains("public partial class Products", code);
     }
 
     [Fact]
@@ -367,7 +389,7 @@ public class ScaffoldCommandTests : IDisposable
         Assert.Equal(0, exitCode);
         Assert.True(File.Exists(Path.Combine(_outputDir, "DbProduct.cs")));
         var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "DbProduct.cs"));
-        Assert.Contains("public class DbProduct", code);
+        Assert.Contains("public partial class DbProduct", code);
     }
 
     [Fact]
@@ -385,7 +407,7 @@ public class ScaffoldCommandTests : IDisposable
         Assert.Equal(0, exitCode);
         Assert.True(File.Exists(Path.Combine(_outputDir, "ProductEntity.cs")));
         var code = await File.ReadAllTextAsync(Path.Combine(_outputDir, "ProductEntity.cs"));
-        Assert.Contains("public class ProductEntity", code);
+        Assert.Contains("public partial class ProductEntity", code);
     }
 
     [Fact]

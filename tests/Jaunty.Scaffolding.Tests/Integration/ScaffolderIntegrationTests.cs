@@ -123,7 +123,7 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.Contains("namespace Test.Entities;", content);
 
         // Check class declaration
-        Assert.Contains("public class Product", content);
+        Assert.Contains("public partial class Product", content);
 
         // Check table attribute
         Assert.Contains("[Jaunty.Attributes.Table(\"products\")]", content);
@@ -244,7 +244,7 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.True(File.Exists(entityFile));
 
         var content = await File.ReadAllTextAsync(entityFile);
-        Assert.Contains("public class ProductEntity", content);
+        Assert.Contains("public partial class ProductEntity", content);
     }
 
     [Fact]
@@ -269,7 +269,7 @@ public class ScaffolderIntegrationTests : IDisposable
         Assert.True(File.Exists(pluralFile));
 
         var content = await File.ReadAllTextAsync(pluralFile);
-        Assert.Contains("public class Products", content);
+        Assert.Contains("public partial class Products", content);
     }
 
     [Fact]
@@ -336,7 +336,7 @@ public class ScaffolderIntegrationTests : IDisposable
 
         // File should be overwritten with new content
         var content = await File.ReadAllTextAsync(existingFile);
-        Assert.Contains("public class Product", content);
+        Assert.Contains("public partial class Product", content);
         Assert.DoesNotContain("// existing content", content);
     }
 

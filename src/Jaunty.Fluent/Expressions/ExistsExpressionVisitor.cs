@@ -228,16 +228,14 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
             ParameterExpression? root = GetRootParameter(member);
             if (root == _outerParam)
             {
-                var columnName = GetColumnName(member, _outerMetadata);
                 var outerPrefix = _outerAlias ?? _dialect.EscapeTableName(_outerMetadata.SchemaName, _outerMetadata.TableName);
-                return (true, $"{outerPrefix}.{_dialect.EscapeColumnName(columnName)}", null);
+                return (true, $"{outerPrefix}.{GetEscapedOuterColumnName(member)}", null);
             }
 
             // Check if it's a member access on the subquery parameter
             if (root == _subqueryParam)
             {
-                var columnName = GetColumnName(member, _subqueryMetadata);
-                return (true, $"{_subqueryAlias}.{_dialect.EscapeColumnName(columnName)}", null);
+                return (true, $"{_subqueryAlias}.{GetEscapedSubqueryColumnName(member)}", null);
             }
 
             // It's a captured variable - evaluate it
@@ -264,13 +262,17 @@ internal sealed class ExistsExpressionVisitor<TOuter, TSubquery> : ExpressionVis
         return current as ParameterExpression;
     }
 
-    private string GetColumnName(MemberExpression member, EntityMetadata metadata)
-    {
-        var propertyName = member.Member.Name;
+    // AUD-R25: this used to run metadata.Columns.FirstOrDefault(c => c.PropertyName == ...) - a
+    // LINQ delegate allocation plus an O(columns) linear scan - and hand the result to
+    // _dialect.EscapeColumnName, which re-runs SqlIdentifierValidator's regex match and a keyword
+    // HashSet lookup, both per column reference per query build. CachedDialectMetadata holds an
+    // OrdinalIgnoreCase dictionary of property name to already-escaped column name, built once per
+    // (entity, dialect) pair; QueryBuilder, CteBuilder and InsertBuilder already used it.
+    private string GetEscapedOuterColumnName(MemberExpression member) =>
+        FluentMetadataCache.GetForDialect<TOuter>(_dialect).GetColumnName(member.Member.Name);
 
-        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.PropertyName == propertyName);
-        return column?.ColumnName ?? propertyName;
-    }
+    private string GetEscapedSubqueryColumnName(MemberExpression member) =>
+        FluentMetadataCache.GetForDialect<TSubquery>(_dialect).GetColumnName(member.Member.Name);
 
     // AUD-R25: this was one of eight byte-identical private copies. Kept as a one-line forwarder
     // rather than rewriting every call site, so the shared implementation - including its
