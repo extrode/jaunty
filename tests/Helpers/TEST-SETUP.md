@@ -219,9 +219,19 @@ Unconfigured, the same suite skips 2,092 tests.
 ### Known environment limit
 
 The three `CsvImportTests.*_SqlServer_*` tests use `BULK INSERT`, which reads the
-CSV **server-side**. They cannot pass against SQL Server in a Linux container,
-which has no access to the runner's filesystem; they need a SQL Server sharing a
-filesystem with the test host.
+CSV **server-side**, so what passes depends on where SQL Server runs:
+
+| SQL Server | Result |
+|---|---|
+| Linux container (`docker-compose.yml`) | all 3 fail — the container cannot see the runner's filesystem at all |
+| Local Windows instance | 2 of 3 pass; `ImportCsv_SqlServer_CustomQuote_AppliedNatively` still fails |
+
+The remaining one stages its fixture via `WriteTempCsv` into
+`Path.GetTempPath()` (the *user's* profile temp directory), which the SQL Server
+service account cannot read — it surfaces as `Cannot obtain the required
+interface ("IID_IColumnsInfo") from OLE DB provider "BULK"`. The other two read
+`data/basic.csv` from the repo, which is readable. Fixing it means staging that
+CSV somewhere the service account can read, rather than the user's temp dir.
 
 ---
 
