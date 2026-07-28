@@ -64,6 +64,26 @@ public sealed class InterceptorPipeline
     public bool HasInterceptors => _interceptors.Length > 0;
 
     /// <summary>
+    /// Gets whether anything is observing command execution - a registered
+    /// <see cref="ICommandInterceptor"/>, a <see cref="JauntyDiagnosticListener"/> subscriber, or both.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R25: every guard in this type used to test <see cref="HasInterceptors"/> alone, and the
+    /// three diagnostic emits sit behind those guards. An application that subscribed to the
+    /// "Jaunty" diagnostic source but registered no interceptor therefore received nothing - not one
+    /// event, ever - with no diagnostic to explain the silence, and the workaround was to register a
+    /// do-nothing interceptor purely to switch telemetry on. That contradicted both types' own
+    /// documentation, which presents diagnostics as something the pipeline "also emits" rather than
+    /// as contingent on interceptor registration.
+    ///
+    /// <para>
+    /// <see cref="DiagnosticListener.IsEnabled()"/> is a volatile read of the subscriber list, so
+    /// the no-interceptor/no-subscriber fast path stays a field read plus that check.
+    /// </para>
+    /// </remarks>
+    public bool IsObserved => HasInterceptors || _diagnosticListener?.IsEnabled() == true;
+
+    /// <summary>
     /// Gets the registered interceptors.
     /// </summary>
     /// <returns>An array of registered interceptors.</returns>
@@ -88,7 +108,7 @@ public sealed class InterceptorPipeline
         CommandType commandType,
         CancellationToken cancellationToken)
     {
-        if (!HasInterceptors)
+        if (!IsObserved)
             return;
 
         var context = new CommandContext(commandText, parameters, connection, commandType);
@@ -123,7 +143,7 @@ public sealed class InterceptorPipeline
         TimeSpan elapsed,
         CancellationToken cancellationToken)
     {
-        if (!HasInterceptors)
+        if (!IsObserved)
             return;
 
         var context = new CommandContext(commandText, parameters, connection, commandType, elapsed);
@@ -165,7 +185,7 @@ public sealed class InterceptorPipeline
         Exception exception,
         CancellationToken cancellationToken)
     {
-        if (!HasInterceptors)
+        if (!IsObserved)
             return;
 
         var context = new CommandContext(commandText, parameters, connection, commandType, elapsed, exception);
@@ -206,7 +226,7 @@ public sealed class InterceptorPipeline
         Func<ValueTask<T>> executeFunc,
         CancellationToken cancellationToken)
     {
-        if (!HasInterceptors)
+        if (!IsObserved)
             return await executeFunc().ConfigureAwait(false);
 
         var stopwatch = Stopwatch.StartNew();
@@ -249,7 +269,7 @@ public sealed class InterceptorPipeline
         Func<ValueTask> executeFunc,
         CancellationToken cancellationToken)
     {
-        if (!HasInterceptors)
+        if (!IsObserved)
         {
             await executeFunc().ConfigureAwait(false);
             return;
@@ -290,7 +310,7 @@ public sealed class InterceptorPipeline
         IDbConnection connection,
         CommandType commandType)
     {
-        if (!HasInterceptors)
+        if (!IsObserved)
             return;
 
         var context = new CommandContext(commandText, parameters, connection, commandType);
@@ -325,7 +345,7 @@ public sealed class InterceptorPipeline
         CommandType commandType,
         TimeSpan elapsed)
     {
-        if (!HasInterceptors)
+        if (!IsObserved)
             return;
 
         var context = new CommandContext(commandText, parameters, connection, commandType, elapsed);
@@ -370,7 +390,7 @@ public sealed class InterceptorPipeline
         TimeSpan elapsed,
         Exception exception)
     {
-        if (!HasInterceptors)
+        if (!IsObserved)
             return;
 
         var context = new CommandContext(commandText, parameters, connection, commandType, elapsed, exception);
@@ -414,7 +434,7 @@ public sealed class InterceptorPipeline
         CommandType commandType,
         Func<T> executeFunc)
     {
-        if (!HasInterceptors)
+        if (!IsObserved)
             return executeFunc();
 
         var stopwatch = Stopwatch.StartNew();
