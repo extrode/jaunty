@@ -170,32 +170,39 @@ internal sealed class JoinExpressionVisitor3<T1, T2, T3> : ExpressionVisitor
 
         string? alias;
         EntityMetadata metadata;
+        CachedDialectMetadata cached;
 
         // Match by parameter reference/identity (not by Type) so self-joins resolve correctly.
         if (param == _param1)
         {
             alias = _alias1;
             metadata = FluentMetadataCache.GetMetadata<T1>();
+            cached = FluentMetadataCache.GetForDialect<T1>(_dialect);
         }
         else if (param == _param2)
         {
             alias = _alias2;
             metadata = FluentMetadataCache.GetMetadata<T2>();
+            cached = FluentMetadataCache.GetForDialect<T2>(_dialect);
         }
         else if (param == _param3)
         {
             alias = _alias3;
             metadata = FluentMetadataCache.GetMetadata<T3>();
+            cached = FluentMetadataCache.GetForDialect<T3>(_dialect);
         }
         else
         {
             return null;
         }
 
-        var propertyName = member.Member.Name;
-        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.PropertyName == propertyName);
-        var columnName = column?.ColumnName ?? propertyName;
-        var escapedColumn = _dialect.EscapeColumnName(columnName);
+        // AUD-R25: this used to run metadata.Columns.FirstOrDefault(c => c.PropertyName == ...) -
+        // a LINQ delegate allocation plus an O(columns) linear scan - and hand the result to
+        // _dialect.EscapeColumnName, which re-runs SqlIdentifierValidator's regex match and a
+        // keyword HashSet lookup, both per column reference per query build. CachedDialectMetadata
+        // holds an OrdinalIgnoreCase dictionary of property name to already-escaped column name,
+        // built once per (entity, dialect) pair.
+        var escapedColumn = cached.GetColumnName(member.Member.Name);
 
         var prefix = alias ?? _dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escapedColumn}";

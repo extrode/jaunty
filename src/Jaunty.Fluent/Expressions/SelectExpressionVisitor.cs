@@ -92,8 +92,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         // Single member selection: p => p.ProductName
         if (IsParameterMember(node))
         {
-            var columnName = GetColumnName(node);
-            var escapedColumn = _dialect.EscapeColumnName(columnName);
+            var escapedColumn = GetEscapedColumnName(node);
             _columns.Add(new SelectColumn(escapedColumn, node.Member.Name));
         }
         return node;
@@ -110,8 +109,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         // Entity property (p.ProductName)
         if (expr is MemberExpression member && IsParameterMember(member))
         {
-            var columnName = GetColumnName(member);
-            return _dialect.EscapeColumnName(columnName);
+            return GetEscapedColumnName(member);
         }
 
         // Method call (Sql.RowNumber(), Sql.Length(), etc.)
@@ -304,8 +302,7 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
 
         if (arg is MemberExpression member && IsParameterMember(member))
         {
-            var columnName = GetColumnName(member);
-            return _dialect.EscapeColumnName(columnName);
+            return GetEscapedColumnName(member);
         }
 
         if (arg is MethodCallExpression or ConstantExpression || arg.NodeType == ExpressionType.Coalesce)
@@ -398,13 +395,14 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         return current is ParameterExpression;
     }
 
-    private string GetColumnName(MemberExpression member)
-    {
-        var propertyName = member.Member.Name;
-
-        ColumnMetadata? column = _metadata.Columns.FirstOrDefault(c => c.PropertyName == propertyName);
-        return column?.ColumnName ?? propertyName;
-    }
+    // AUD-R25: this used to run metadata.Columns.FirstOrDefault(c => c.PropertyName == ...) - a
+    // LINQ delegate allocation plus an O(columns) linear scan - and hand the result to
+    // _dialect.EscapeColumnName, which re-runs SqlIdentifierValidator's regex match and a keyword
+    // HashSet lookup, both per column reference per query build. CachedDialectMetadata holds an
+    // OrdinalIgnoreCase dictionary of property name to already-escaped column name, built once per
+    // (entity, dialect) pair; QueryBuilder, CteBuilder and InsertBuilder already used it.
+    private string GetEscapedColumnName(MemberExpression member) =>
+        FluentMetadataCache.GetForDialect<T>(_dialect).GetColumnName(member.Member.Name);
 
     // AUD-R25: this was one of eight byte-identical private copies. Kept as a one-line forwarder
     // rather than rewriting every call site, so the shared implementation - including its

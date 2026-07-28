@@ -94,7 +94,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         }
 
         // Handle comparison operators
-        (string? columnName, object? value, bool isLeftColumn) = ExtractColumnAndValue(node);
+        (string? columnName, string? rawColumnName, object? value, bool isLeftColumn) = ExtractColumnAndValue(node);
 
         if (columnName is null)
         {
@@ -129,7 +129,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             return node;
         }
 
-        var escapedColumn = _dialect.EscapeColumnName(columnName);
+        var escapedColumn = columnName;
 
         // Handle null comparisons
         if (value is null)
@@ -142,7 +142,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
 
         _sql.Append(escapedColumn);
         _sql.Append(GetOperator(isLeftColumn ? node.NodeType : MirrorOperator(node.NodeType)));
-        var paramName = GetParameterName(columnName);
+        var paramName = GetParameterName(rawColumnName!);
         _sql.Append(paramName);
         _parameters.Add((paramName, value));
 
@@ -175,8 +175,8 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             var memberExpr = node.Object as MemberExpression;
             if (memberExpr is not null && IsParameterMember(memberExpr))
             {
-                var columnName = GetColumnName(memberExpr);
-                var escapedColumn = _dialect.EscapeColumnName(columnName);
+                var escapedColumn = GetEscapedColumnName(memberExpr);
+                var columnName = GetRawColumnName(memberExpr);
 
                 switch (node.Method.Name)
                 {
@@ -262,8 +262,8 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
 
             if (memberExpr is not null && IsParameterMember(memberExpr) && collection is System.Collections.IEnumerable enumerable)
             {
-                var columnName = GetColumnName(memberExpr);
-                var escapedColumn = _dialect.EscapeColumnName(columnName);
+                var escapedColumn = GetEscapedColumnName(memberExpr);
+                var columnName = GetRawColumnName(memberExpr);
 
                 var values = enumerable.Cast<object>().ToList();
                 if (values.Count == 0)
@@ -526,11 +526,11 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         if (condition is BinaryExpression binary)
         {
             // Handle comparison operators
-            (string? columnName, object? value, bool isLeftColumn) = ExtractColumnAndValue(binary);
+            (string? columnName, string? rawColumnName, object? value, bool isLeftColumn) = ExtractColumnAndValue(binary);
 
             if (columnName != null)
             {
-                var escapedColumn = _dialect.EscapeColumnName(columnName);
+                var escapedColumn = columnName;
 
                 // Mirror VisitBinary's null handling: per SQL three-valued logic, "col = NULL"
                 // never matches, so a WHEN condition comparing to a literal null must become
@@ -544,7 +544,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                 {
                     _sql.Append(escapedColumn);
                     _sql.Append(GetOperator(isLeftColumn ? binary.NodeType : MirrorOperator(binary.NodeType)));
-                    var paramName = GetParameterName(columnName);
+                    var paramName = GetParameterName(rawColumnName!);
                     _sql.Append(paramName);
                     _parameters.Add((paramName, value));
                 }
@@ -567,8 +567,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             // Handle boolean member access (e.g., p.IsActive)
             if (IsParameterMember(member) && member.Type == typeof(bool))
             {
-                var columnName = GetColumnName(member);
-                var escapedColumn = _dialect.EscapeColumnName(columnName);
+                var escapedColumn = GetEscapedColumnName(member);
                 _sql.Append(escapedColumn);
                 _sql.Append(" = ").Append(_dialect.FormatBooleanLiteral(true));
             }
@@ -601,8 +600,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         // If it's a member access on the parameter, translate to column
         if (arg is MemberExpression member && IsParameterMember(member))
         {
-            var columnName = GetColumnName(member);
-            return _dialect.EscapeColumnName(columnName);
+            return GetEscapedColumnName(member);
         }
 
         // Otherwise, evaluate and create a parameter
@@ -637,8 +635,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         if (node.Member.Name == "Length" && node.Expression is MemberExpression innerMember
             && innerMember.Type == typeof(string) && IsParameterMember(innerMember))
         {
-            var columnName = GetColumnName(innerMember);
-            var escapedColumn = _dialect.EscapeColumnName(columnName);
+            var escapedColumn = GetEscapedColumnName(innerMember);
             _sql.Append(_dialect.GenerateLength(escapedColumn));
             return node;
         }
@@ -646,8 +643,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         // Handle boolean properties directly (e.g., p => p.IsActive)
         if (IsParameterMember(node) && node.Type == typeof(bool))
         {
-            var columnName = GetColumnName(node);
-            var escapedColumn = _dialect.EscapeColumnName(columnName);
+            var escapedColumn = GetEscapedColumnName(node);
             _sql.Append(escapedColumn);
             _sql.Append(" = ").Append(_dialect.FormatBooleanLiteral(true));
             return node;
@@ -656,8 +652,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         // If this is a member access on the parameter, it's a column reference
         if (IsParameterMember(node))
         {
-            var columnName = GetColumnName(node);
-            _sql.Append(_dialect.EscapeColumnName(columnName));
+            _sql.Append(GetEscapedColumnName(node));
             return node;
         }
 
@@ -690,23 +685,23 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         return node;
     }
 
-    private (string? ColumnName, object? Value, bool IsLeftColumn) ExtractColumnAndValue(BinaryExpression node)
+    private (string? ColumnName, string? RawColumnName, object? Value, bool IsLeftColumn) ExtractColumnAndValue(BinaryExpression node)
     {
         // Try left as column
-        if (TryGetColumnName(node.Left, out var leftColumn))
+        if (TryGetEscapedColumnName(node.Left, out var leftColumn, out var leftRaw))
         {
             var rightValue = EvaluateExpression(node.Right);
-            return (leftColumn, rightValue, true);
+            return (leftColumn, leftRaw, rightValue, true);
         }
 
         // Try right as column
-        if (TryGetColumnName(node.Right, out var rightColumn))
+        if (TryGetEscapedColumnName(node.Right, out var rightColumn, out var rightRaw))
         {
             var leftValue = EvaluateExpression(node.Left);
-            return (rightColumn, leftValue, false);
+            return (rightColumn, rightRaw, leftValue, false);
         }
 
-        return (null, null, false);
+        return (null, null, null, false);
     }
 
     private static bool IsNullConstant(Expression expression)
@@ -717,9 +712,13 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         return expression is ConstantExpression { Value: null };
     }
 
-    private bool TryGetColumnName(Expression expression, out string? columnName)
+    // Yields both forms of the column name - see GetEscapedColumnName (AUD-R25). The escaped one
+    // goes into the SQL text; the raw one seeds the generated parameter name, which must not carry
+    // the dialect's quoting characters.
+    private bool TryGetEscapedColumnName(Expression expression, out string? columnName, out string? rawColumnName)
     {
         columnName = null;
+        rawColumnName = null;
 
         // Unwrap Convert
         if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
@@ -734,7 +733,8 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                 return false;
             }
 
-            columnName = GetColumnName(member);
+            columnName = GetEscapedColumnName(member);
+            rawColumnName = GetRawColumnName(member);
             return true;
         }
 
@@ -756,14 +756,13 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             && lengthMember.Expression is MemberExpression innerMember
             && innerMember.Type == typeof(string) && IsParameterMember(innerMember))
         {
-            var innerColumn = GetColumnName(innerMember);
-            sql = _dialect.GenerateLength(_dialect.EscapeColumnName(innerColumn));
+            sql = _dialect.GenerateLength(GetEscapedColumnName(innerMember));
             return true;
         }
 
-        if (TryGetColumnName(expression, out var columnName))
+        if (TryGetEscapedColumnName(expression, out var columnName, out _))
         {
-            sql = _dialect.EscapeColumnName(columnName!);
+            sql = columnName!;
             return true;
         }
 
@@ -780,17 +779,25 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         return current is ParameterExpression;
     }
 
-    private string GetColumnName(MemberExpression member)
-    {
-        var propertyName = member.Member.Name;
+    // AUD-R25: this used to run metadata.Columns.FirstOrDefault(c => c.PropertyName == ...) - a
+    // LINQ delegate allocation plus an O(columns) linear scan - and hand the result to
+    // _dialect.EscapeColumnName, which re-runs SqlIdentifierValidator's regex match and a keyword
+    // HashSet lookup. Both were paid per column reference per query build, so a predicate touching
+    // six columns did six scans and six regex matches. CachedDialectMetadata exists precisely for
+    // this: an OrdinalIgnoreCase dictionary of property name to already-escaped column name, built
+    // once per (entity, dialect) pair. QueryBuilder, CteBuilder and InsertBuilder already used it;
+    // the visitors, which do far more per-column work, were the only Fluent components that didn't.
+    //
+    // The name returned is now escaped, so callers must not escape it again. Unmapped property
+    // names still fall through to EscapeColumnName inside CachedDialectMetadata.GetColumnName,
+    // which is what the old code did too.
+    private string GetEscapedColumnName(MemberExpression member) =>
+        FluentMetadataCache.GetForDialect<T>(_dialect).GetColumnName(member.Member.Name);
 
-        // Look up the actual column name from metadata
-        EntityMetadata metadata = FluentMetadataCache.GetMetadata<T>();
-
-        ColumnMetadata? column = metadata.Columns.FirstOrDefault(c => c.PropertyName == propertyName);
-
-        return column?.ColumnName ?? propertyName;
-    }
+    // The unescaped name, for the two places a column reference feeds a generated parameter name
+    // rather than SQL text. Same lookup, same cache - no linear scan.
+    private string GetRawColumnName(MemberExpression member) =>
+        FluentMetadataCache.GetForDialect<T>(_dialect).GetRawColumnName(member.Member.Name);
 
     // AUD-R25: this was one of eight byte-identical private copies. Kept as a one-line forwarder
     // rather than rewriting every call site, so the shared implementation - including its
