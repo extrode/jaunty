@@ -24,6 +24,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static readonly Type? SqlConnectionType = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient")
         ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data");
 
+    private static readonly PropertyInfo? RowsCopiedProperty = SqlBulkCopyType?.GetProperty("RowsCopied");
     private static readonly PropertyInfo? BatchSizeProperty = SqlBulkCopyType?.GetProperty("BatchSize");
     private static readonly PropertyInfo? BulkCopyTimeoutProperty = SqlBulkCopyType?.GetProperty("BulkCopyTimeout");
     private static readonly PropertyInfo? DestinationTableNameProperty = SqlBulkCopyType?.GetProperty("DestinationTableName");
@@ -62,8 +63,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
 
             WriteToServerMethod.Invoke(bulkCopy, new object[] { data });
 
-            // SqlBulkCopy doesn't expose row count; return -1 and let the caller use entityList.Count
-            return -1;
+            return RowsCopiedProperty != null ? (int)RowsCopiedProperty.GetValue(bulkCopy)! : -1;
         }
         finally
         {
@@ -99,8 +99,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
             else
                 WriteToServerMethod!.Invoke(bulkCopy, [data]);
 
-            // SqlBulkCopy doesn't expose row count; return -1 and let the caller use entityList.Count
-            return -1;
+            return RowsCopiedProperty != null ? (int)RowsCopiedProperty.GetValue(bulkCopy)! : -1;
         }
         finally
         {
