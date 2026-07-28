@@ -24,6 +24,12 @@ public class QueryMultiEntityCommandOptionsTests : IClassFixture<DialectFixture>
     private static string LimitSuffix(DialectInfo dialect, int count) =>
         dialect.Provider == DialectProvider.SqlServer ? string.Empty : $" LIMIT {count}";
 
+    // SQL Server's products table exposes product_name only as a computed passthrough column
+    // (see data/sqlserver/create-northwind.sql) for cross-dialect SELECTs; it can be read but not
+    // written, so an UPDATE must target the real ProductName column on that dialect.
+    private static string ProductNameColumn(DialectInfo dialect) =>
+        dialect.Provider == DialectProvider.SqlServer ? "ProductName" : "product_name";
+
     private const string JoinSql = @"
                 p.product_id AS ProductId,
                 p.product_name AS ProductName,
@@ -43,7 +49,7 @@ public class QueryMultiEntityCommandOptionsTests : IClassFixture<DialectFixture>
 
         // Mutate product 1's name inside the transaction, via the same transaction.
         connection.Execute(
-            "UPDATE products SET product_name = @Name WHERE product_id = @Id",
+            $"UPDATE products SET {ProductNameColumn(dialect)} = @Name WHERE product_id = @Id",
             new { Name = "TXN-SENTINEL", Id = 1 },
             new CommandOptions(transaction: txn));
 
