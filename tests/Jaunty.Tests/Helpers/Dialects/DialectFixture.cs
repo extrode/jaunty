@@ -4,9 +4,7 @@ using System.Data.SQLite;
 using Jaunty.Core;
 
 using Microsoft.Data.SqlClient;
-#if NET8_0_OR_GREATER
 using Microsoft.Data.Sqlite;
-#endif
 
 using MySql.Data.MySqlClient;
 
@@ -63,9 +61,7 @@ public sealed class DialectFixture : IDisposable
         return dialect.Provider switch
         {
             DialectProvider.SystemSqlite => new SQLiteConnection($"Data Source={ResolveNorthwindPath()}"),
-#if NET8_0_OR_GREATER
             DialectProvider.MicrosoftSqlite => new SqliteConnection($"Data Source={ResolveNorthwindPath()}"),
-#endif
             DialectProvider.SqlServer => new SqlConnection(TestConfiguration.SqlServerConnectionString),
             DialectProvider.Postgres => new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString),
             DialectProvider.MariaDb => new MySqlConnection(TestConfiguration.MariaDbConnectionString),
@@ -192,11 +188,7 @@ END;
         return dialect.Provider switch
         {
             DialectProvider.SystemSqlite => CreateSystemSqliteContext(),
-#if NET8_0_OR_GREATER
             DialectProvider.MicrosoftSqlite => CreateMicrosoftSqliteContext(),
-#else
-            DialectProvider.MicrosoftSqlite => throw new NotSupportedException("Microsoft.Data.Sqlite is not available on .NET Framework."),
-#endif
             DialectProvider.SqlServer => CreateServerContext(new SqlConnection(TestConfiguration.SqlServerConnectionString), DialectProvider.SqlServer),
             DialectProvider.Postgres => CreateServerContext(new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString), DialectProvider.Postgres),
             DialectProvider.MariaDb => CreateServerContext(new MySqlConnection(TestConfiguration.MariaDbConnectionString), DialectProvider.MariaDb),
@@ -212,7 +204,6 @@ END;
         return new WriteDialectContext(connection, transaction: null);
     }
 
-#if NET8_0_OR_GREATER
     private static WriteDialectContext CreateMicrosoftSqliteContext()
     {
         var connection = new SqliteConnection("Data Source=:memory:");
@@ -220,7 +211,6 @@ END;
         InitializeBulkSchema(connection, DialectProvider.MicrosoftSqlite);
         return new WriteDialectContext(connection, transaction: null);
     }
-#endif
 
     private static WriteDialectContext CreateServerContext(DbConnection connection, DialectProvider provider)
     {
@@ -272,11 +262,7 @@ END;
         return dialect.Provider switch
         {
             DialectProvider.SystemSqlite => CreateSqliteContextForTable(new SQLiteConnection("Data Source=:memory:"), tableName, DialectProvider.SystemSqlite),
-#if NET8_0_OR_GREATER
             DialectProvider.MicrosoftSqlite => CreateSqliteContextForTable(new SqliteConnection("Data Source=:memory:"), tableName, DialectProvider.MicrosoftSqlite),
-#else
-            DialectProvider.MicrosoftSqlite => throw new NotSupportedException("Microsoft.Data.Sqlite is not available on .NET Framework."),
-#endif
             DialectProvider.SqlServer => CreateServerContextForTable(new SqlConnection(TestConfiguration.SqlServerConnectionString), DialectProvider.SqlServer, tableName),
             DialectProvider.Postgres => CreateServerContextForTable(new NpgsqlConnection(TestConfiguration.PostgreSqlConnectionString), DialectProvider.Postgres, tableName),
             DialectProvider.MariaDb => CreateServerContextForTable(new MySqlConnection(TestConfiguration.MariaDbConnectionString), DialectProvider.MariaDb, tableName),
