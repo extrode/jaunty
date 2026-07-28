@@ -423,6 +423,10 @@ public static partial class Jaunty
 
         return inserted ? 1 : 0;
     }
+    // The name-contains fallback this used to carry was a workaround for the bulk-copy wrapper
+    // (SQLiteDialectWithBulkCopy) not deriving from SQLiteDialect. SqlDialectFactory.Unwrap now
+    // exposes the decorated dialect directly, so the engine test is exact rather than by-name -
+    // which also stops a third-party dialect merely *named* "...SQLite..." from being routed here.
     private static bool IsSqliteDialect(ISqlDialect dialect)
-        => dialect is SQLiteDialect || dialect.GetType().Name.Contains("SQLite", StringComparison.OrdinalIgnoreCase);
+        => SqlDialectFactory.Unwrap(dialect) is SQLiteDialect;
 }
