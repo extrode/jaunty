@@ -4,6 +4,7 @@ using System.Text;
 
 using Jaunty.FlatFiles.Import;
 using Jaunty.FlatFiles.Interfaces;
+using System.Globalization;
 
 namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 
@@ -272,7 +273,12 @@ internal static class ImportExecutor
 
         try
         {
-            return Convert.ChangeType(value, underlyingType);
+            // CultureInfo.InvariantCulture, not the ambient CurrentCulture: providers routinely hand back
+            // a string where the column is TEXT/NUMERIC (SQLite in particular), and under a comma-decimal
+            // culture (de-DE, fr-FR, ...) Convert.ChangeType("1.5", typeof(decimal)) does not throw - it
+            // reads the period as a group separator and returns 15.
+            // This runs for every column of every row on the import path.
+            return Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
         }
         catch
         {

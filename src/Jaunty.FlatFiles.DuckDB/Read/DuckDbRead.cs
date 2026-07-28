@@ -4,6 +4,7 @@ using DuckDB.NET.Data;
 
 using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.Fluent;
+using System.Globalization;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -88,7 +89,7 @@ public sealed partial class DuckDb
                     {
                         try
                         {
-                            value = System.Convert.ChangeType(value, Nullable.GetUnderlyingType(targetType) ?? targetType);
+                            value = System.Convert.ChangeType(value, Nullable.GetUnderlyingType(targetType) ?? targetType, CultureInfo.InvariantCulture);
                         }
                         catch
                         {
