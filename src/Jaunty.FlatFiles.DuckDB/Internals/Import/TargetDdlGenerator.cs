@@ -36,6 +36,7 @@ internal static class TargetDdlGenerator
 
         foreach (PropertyInfo prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
+            if (!MappedPropertyFilter.IsMapped(prop)) continue;
             if (prop.GetCustomAttribute<KeyAttribute>() is null) continue;
 
             if (keyProperty is not null)
@@ -60,7 +61,7 @@ internal static class TargetDdlGenerator
 
         foreach (PropertyInfo prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            if (!prop.CanRead || !prop.CanWrite) continue;
+            if (!MappedPropertyFilter.IsMapped(prop)) continue;
 
             ColumnAttribute? colAttr = prop.GetCustomAttribute<ColumnAttribute>();
             var columnName = colAttr?.Name ?? prop.Name;
