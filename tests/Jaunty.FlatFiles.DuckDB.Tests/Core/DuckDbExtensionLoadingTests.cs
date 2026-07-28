@@ -55,4 +55,36 @@ public class DuckDbExtensionLoadingTests
         Assert.Equal("httpfs", GetDuckDbExtensionForScheme("S3"));
         Assert.Equal("azure", GetDuckDbExtensionForScheme("ABFSS"));
     }
+
+    // AUD-R24 batch-7: the "which extensions have we already installed" set was a plain
+    // HashSet<string> while the sibling _sources/_modified caches were ConcurrentDictionary.
+    // EnsureExtensionsLoaded is reached from RegisterSource/RegisterSourceAsync, which the
+    // surrounding design implies are safe to call concurrently, and an unsynchronized
+    // HashSet.Add under concurrency can corrupt internal state or throw. Asserting on the
+    // field's type rather than racing threads: a data race reproduces unreliably, whereas the
+    // wrong collection type is exactly what the fix changed and what a regression would undo.
+    [Fact]
+    public void LoadedExtensions_IsAConcurrentCollectionLikeItsSiblingCaches()
+    {
+        FieldInfo field = typeof(DuckDb).GetField(
+            "_loadedExtensions", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+        Assert.StartsWith("ConcurrentDictionary", field.FieldType.Name, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LoadedExtensions_MatchesTheCaseInsensitiveComparerItAlwaysUsed()
+    {
+        // The extension names come from GetDuckDbExtensionForScheme, which lowercases, but the
+        // set has always been OrdinalIgnoreCase and switching collection type must not quietly
+        // drop that.
+        using var db = new DuckDb();
+
+        FieldInfo field = typeof(DuckDb).GetField(
+            "_loadedExtensions", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        object set = field.GetValue(db)!;
+
+        var comparer = set.GetType().GetProperty("Comparer")!.GetValue(set);
+        Assert.Same(StringComparer.OrdinalIgnoreCase, comparer);
+    }
 }
