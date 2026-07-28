@@ -212,49 +212,87 @@ internal static class MetadataCache<T>
 
     private static Action<T, IDataRecord, int> CreateFallbackSetter(PropertyInfo property, Type propertyType, Type underlyingType)
     {
-        // Check if this is an enum with string storage
         if (underlyingType.IsEnum)
         {
             EnumStorageAttribute? enumAttr = property.GetCustomAttribute<EnumStorageAttribute>();
-            EnumStorage storage = enumAttr?.Storage ?? JauntyConfig.DefaultEnumStorage;
 
-            if (storage == EnumStorage.String)
+            // An attribute is genuinely immutable, so its choice can be baked into the setter.
+            if (enumAttr is not null)
             {
-                // Use a compiled delegate that calls Enum.Parse
-                return (target, record, index) =>
-                {
-                    object dbValue = record.GetValue(index);
-                    string strValue = dbValue.ToString() ?? string.Empty;
-                    object? convertedValue;
-
-                    try
-                    {
-                        // Try Enum.Parse case-insensitive
-                        convertedValue = Enum.Parse(underlyingType, strValue, ignoreCase: true);
-                    }
-                    catch
-                    {
-                        // If it's already numeric, try parsing as that
-                        try
-                        {
-                            var numValue = Convert.ChangeType(dbValue, Enum.GetUnderlyingType(underlyingType), CultureInfo.InvariantCulture);
-                            convertedValue = Enum.ToObject(underlyingType, numValue);
-                        }
-                        catch (Exception ex)
-                        {
-                            throw new InvalidOperationException(
-                                $"Cannot convert value '{strValue}' to enum type '{underlyingType.Name}' for property '{property.Name}' on type '{typeof(T).Name}'.", ex);
-                        }
-                    }
-
-                    // convertedValue is already boxed as underlyingType (the enum type); reflection's
-                    // SetValue handles boxing it into a Nullable<TEnum> property without further conversion.
-                    property.SetValue(target, convertedValue);
-                };
+                return enumAttr.Storage == EnumStorage.String
+                    ? CreateStringEnumSetter(property, underlyingType)
+                    : CreateConvertingSetter(property, propertyType);
             }
+
+            // AUD-R25: without an attribute the storage comes from JauntyConfig.DefaultEnumStorage,
+            // which is mutable process-wide state - callers can change it at runtime, e.g. tests or
+            // multi-tenant apps - so it must be re-checked on every call rather than captured once.
+            // This used to evaluate "enumAttr?.Storage ?? JauntyConfig.DefaultEnumStorage" here, in
+            // MetadataCache<T>'s static constructor, baking the answer in for the process lifetime,
+            // while the write path's BuildValueConverter deliberately deferred the same lookup into
+            // its per-call closure - and cited CreateSetter as the precedent for doing so, which
+            // CreateSetter did not actually follow.
+            //
+            // The consequence was that an application setting DefaultEnumStorage = String after
+            // entity T had been read once wrote enum columns as strings while continuing to read
+            // them as numerics: Enum.Parse on the stored name fell into the numeric-fallback catch
+            // and threw InvalidOperationException per row, or silently misbound.
+            // JauntyConfig.Reset() resets _defaultEnumStorage to Numeric but cannot reset
+            // MetadataCache<T>'s static state, which made this reachable in exactly the test
+            // scenario the write path's comment worries about.
+            Action<T, IDataRecord, int> stringSetter = CreateStringEnumSetter(property, underlyingType);
+            Action<T, IDataRecord, int> numericSetter = CreateConvertingSetter(property, propertyType);
+
+            return (target, record, index) =>
+            {
+                if (JauntyConfig.DefaultEnumStorage == EnumStorage.String)
+                    stringSetter(target, record, index);
+                else
+                    numericSetter(target, record, index);
+            };
         }
 
-        // Default: use Convert.ChangeType via Expression trees
+        return CreateConvertingSetter(property, propertyType);
+    }
+
+    /// <summary>Reads an enum stored as its name, falling back to a numeric representation.</summary>
+    private static Action<T, IDataRecord, int> CreateStringEnumSetter(PropertyInfo property, Type underlyingType)
+    {
+        return (target, record, index) =>
+        {
+            object dbValue = record.GetValue(index);
+            string strValue = dbValue.ToString() ?? string.Empty;
+            object? convertedValue;
+
+            try
+            {
+                // Try Enum.Parse case-insensitive
+                convertedValue = Enum.Parse(underlyingType, strValue, ignoreCase: true);
+            }
+            catch
+            {
+                // If it's already numeric, try parsing as that
+                try
+                {
+                    var numValue = Convert.ChangeType(dbValue, Enum.GetUnderlyingType(underlyingType), CultureInfo.InvariantCulture);
+                    convertedValue = Enum.ToObject(underlyingType, numValue);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException(
+                        $"Cannot convert value '{strValue}' to enum type '{underlyingType.Name}' for property '{property.Name}' on type '{typeof(T).Name}'.", ex);
+                }
+            }
+
+            // convertedValue is already boxed as underlyingType (the enum type); reflection's
+            // SetValue handles boxing it into a Nullable<TEnum> property without further conversion.
+            property.SetValue(target, convertedValue);
+        };
+    }
+
+    /// <summary>The default path: Convert.ChangeType via a compiled expression tree.</summary>
+    private static Action<T, IDataRecord, int> CreateConvertingSetter(PropertyInfo property, Type propertyType)
+    {
         ParameterExpression target = Expression.Parameter(typeof(T), "target");
         ParameterExpression record = Expression.Parameter(typeof(IDataRecord), "record");
         ParameterExpression index = Expression.Parameter(typeof(int), "index");
