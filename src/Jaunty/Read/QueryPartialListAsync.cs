@@ -17,6 +17,14 @@ public static partial class Jaunty
     /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>A task containing a list of dictionaries, each representing a row with column names as keys.</returns>
+    /// <remarks>
+    /// Row keys are compared with <see cref="StringComparer.OrdinalIgnoreCase"/>, matching
+    /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
+    /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
+    /// whose names differ only by case - or two identically named columns, the usual
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
+    /// alias such columns in the SQL if you need both.
+    /// </remarks>
     public static ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
@@ -45,6 +53,14 @@ public static partial class Jaunty
     /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>A task containing a list of dictionaries, each representing a row with column names as keys.</returns>
+    /// <remarks>
+    /// Row keys are compared with <see cref="StringComparer.OrdinalIgnoreCase"/>, matching
+    /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
+    /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
+    /// whose names differ only by case - or two identically named columns, the usual
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
+    /// alias such columns in the SQL if you need both.
+    /// </remarks>
     public static ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
@@ -72,6 +88,14 @@ public static partial class Jaunty
     /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>A task containing a list of dictionaries, each representing a row with column names as keys.</returns>
+    /// <remarks>
+    /// Row keys are compared with <see cref="StringComparer.OrdinalIgnoreCase"/>, matching
+    /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
+    /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
+    /// whose names differ only by case - or two identically named columns, the usual
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
+    /// alias such columns in the SQL if you need both.
+    /// </remarks>
     public static ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
@@ -102,6 +126,14 @@ public static partial class Jaunty
     /// A token to cancel the asynchronous operation. Defaults to <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>A task containing a list of dictionaries, each representing a row with column names as keys.</returns>
+    /// <remarks>
+    /// Row keys are compared with <see cref="StringComparer.OrdinalIgnoreCase"/>, matching
+    /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
+    /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
+    /// whose names differ only by case - or two identically named columns, the usual
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
+    /// alias such columns in the SQL if you need both.
+    /// </remarks>
     public static ValueTask<List<IDictionary<string, object?>>> QueryPartialListAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
@@ -169,7 +201,14 @@ public static partial class Jaunty
 
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                var row = new Dictionary<string, object?>();
+                // OrdinalIgnoreCase, matching SpecialTypeMappers.CreateDictionaryMapper - the sibling
+                // untyped-row path behind Query<Dictionary<string, object>>, which has always used it.
+                // AUD-R25: this used the default ordinal comparer, so row["productid"] threw
+                // KeyNotFoundException when the result set named the column "ProductId". Two public
+                // APIs returning the same untyped-row shape disagreed on key lookup, and the
+                // difference was silent - a caller moving between them got no compile error, just
+                // runtime failures depending on how the database happened to case the column.
+                var row = new Dictionary<string, object?>(columnNames.Length, StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < columnNames.Length; i++)
                 {
                     object? value = reader.GetValue(i);

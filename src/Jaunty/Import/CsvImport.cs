@@ -55,7 +55,11 @@ public static class CsvImportExtensions
         ValidateDelimiter(options.Delimiter);
         ValidateQuote(options.Quote);
 
-        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+        // Unwrap before the type test: SqlDialectFactory.GetDialect runs every dialect through the
+        // bulk-copy enhancement step, which after UseNativeBulkCopy() substitutes a wrapper that
+        // implements ISqlDialect rather than deriving from the engine dialect - so a direct type
+        // test would fall through to the NotSupportedException arm for *every* supported engine.
+        ISqlDialect dialect = SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(connection));
         return dialect switch
         {
             SQLiteDialect => ImportSqlite(connection, tableName, filePath, options),
@@ -91,7 +95,9 @@ public static class CsvImportExtensions
         ValidateDelimiter(options.Delimiter);
         ValidateQuote(options.Quote);
 
-        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+        // See the sync overload: unwrap before the type test so the bulk-copy wrapper doesn't
+        // make every supported engine fall through to NotSupportedException.
+        ISqlDialect dialect = SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(connection));
         return dialect switch
         {
             SQLiteDialect => await ImportSqliteAsync(connection, tableName, filePath, options, cancellationToken).ConfigureAwait(false),
@@ -286,12 +292,26 @@ public static class CsvImportExtensions
                 ReadCsvRecord(streamReader, options.Quote);
 
             string? line;
+            long recordNumber = options.HasHeader ? 1 : 0;
             while ((line = ReadCsvRecord(streamReader, options.Quote)) != null)
             {
+                recordNumber++;
+
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
 
                 string[] values = ParseCsvLine(line, options.Delimiter, options.Quote);
+
+                // A row with *more* fields than the layout row would otherwise be truncated to
+                // parameters.Length and the surplus dropped without a word - the opposite of the
+                // deliberately-safe DBNull handling for short rows below. Malformed input (an
+                // unescaped delimiter inside an unquoted value, say) must not import as a
+                // silently-partial row. The enclosing transaction is rolled back on the way out.
+                if (values.Length > parameters.Length)
+                    throw new InvalidDataException(
+                        $"CSV record {recordNumber} in '{filePath}' has {values.Length} fields but the " +
+                        $"{(options.HasHeader ? "header" : "first record")} defines {parameters.Length}. " +
+                        "Extra fields would be discarded - fix the record, or quote values that contain the delimiter.");
 
                 for (int i = 0; i < parameters.Length; i++)
                 {

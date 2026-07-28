@@ -24,6 +24,10 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
     private static readonly Type? SqlConnectionType = Type.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient")
         ?? Type.GetType("System.Data.SqlClient.SqlConnection, System.Data");
 
+    private static readonly Type? SqlTransactionType = Type.GetType("Microsoft.Data.SqlClient.SqlTransaction, Microsoft.Data.SqlClient")
+        ?? Type.GetType("System.Data.SqlClient.SqlTransaction, System.Data");
+
+    private static readonly PropertyInfo? RowsCopiedProperty = SqlBulkCopyType?.GetProperty("RowsCopied");
     private static readonly PropertyInfo? BatchSizeProperty = SqlBulkCopyType?.GetProperty("BatchSize");
     private static readonly PropertyInfo? BulkCopyTimeoutProperty = SqlBulkCopyType?.GetProperty("BulkCopyTimeout");
     private static readonly PropertyInfo? DestinationTableNameProperty = SqlBulkCopyType?.GetProperty("DestinationTableName");
@@ -47,6 +51,8 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         if (WriteToServerMethod == null)
             throw new InvalidOperationException("SqlBulkCopy.WriteToServer could not be resolved via reflection.");
 
+        ValidateTransaction(options.Transaction);
+
         DbConnection sqlConnection = (DbConnection)connection;
 
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
@@ -62,8 +68,7 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
 
             WriteToServerMethod.Invoke(bulkCopy, new object[] { data });
 
-            // SqlBulkCopy doesn't expose row count; return -1 and let the caller use entityList.Count
-            return -1;
+            return RowsCopiedProperty != null ? (int)RowsCopiedProperty.GetValue(bulkCopy)! : -1;
         }
         finally
         {
@@ -83,6 +88,8 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
         if (WriteToServerAsyncMethod == null && WriteToServerMethod == null)
             throw new InvalidOperationException("SqlBulkCopy.WriteToServer/WriteToServerAsync could not be resolved via reflection.");
 
+        ValidateTransaction(options.Transaction);
+
         // Create SqlBulkCopy — constructor is always (SqlConnection, SqlBulkCopyOptions, SqlTransaction?)
         object? bulkCopyOptions = MapBulkCopyOptions(options);
         object? bulkCopy = Activator.CreateInstance(SqlBulkCopyType, connection, bulkCopyOptions, options.Transaction) ?? throw new InvalidOperationException("Failed to create SqlBulkCopy instance.");
@@ -99,13 +106,33 @@ internal sealed class SqlServerBulkCopyProvider : IBulkCopyProvider
             else
                 WriteToServerMethod!.Invoke(bulkCopy, [data]);
 
-            // SqlBulkCopy doesn't expose row count; return -1 and let the caller use entityList.Count
-            return -1;
+            return RowsCopiedProperty != null ? (int)RowsCopiedProperty.GetValue(bulkCopy)! : -1;
         }
         finally
         {
             (bulkCopy as IDisposable)?.Dispose();
         }
+    }
+
+    /// <summary>
+    /// Validates that an external transaction is a SqlTransaction before it reaches
+    /// <see cref="Activator.CreateInstance(Type, object[])"/>. Without this a transaction from a
+    /// different provider surfaces as an opaque reflection MissingMethodException/
+    /// TargetInvocationException instead of naming the actual problem, unlike the
+    /// connection-type mismatch a few lines above.
+    /// </summary>
+    private static void ValidateTransaction(IDbTransaction? transaction)
+    {
+        if (transaction is null)
+            return;
+
+        // If the SqlTransaction type itself can't be resolved, SqlBulkCopyType would have been
+        // null too and the caller has already thrown - but stay silent rather than reject a
+        // legitimate transaction on a type we simply couldn't look up.
+        if (SqlTransactionType != null && !SqlTransactionType.IsInstanceOfType(transaction))
+            throw new ArgumentException(
+                $"BulkCopyOptions.Transaction must be a SqlTransaction, but was {transaction.GetType().FullName}.",
+                nameof(transaction));
     }
 
     /// <summary>

@@ -14,6 +14,14 @@ public static partial class Jaunty
     /// <param name="connection">The database connection to execute the query against.</param>
     /// <param name="sql">The SQL query to execute.</param>
     /// <returns>A list of dictionaries, each representing a row with column names as keys.</returns>
+    /// <remarks>
+    /// Row keys are compared with <see cref="StringComparer.OrdinalIgnoreCase"/>, matching
+    /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
+    /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
+    /// whose names differ only by case - or two identically named columns, the usual
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
+    /// alias such columns in the SQL if you need both.
+    /// </remarks>
     public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql)
     {
 #if NET8_0_OR_GREATER
@@ -37,6 +45,14 @@ public static partial class Jaunty
     /// An anonymous object or dictionary containing parameter values.
     /// </param>
     /// <returns>A list of dictionaries, each representing a row with column names as keys.</returns>
+    /// <remarks>
+    /// Row keys are compared with <see cref="StringComparer.OrdinalIgnoreCase"/>, matching
+    /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
+    /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
+    /// whose names differ only by case - or two identically named columns, the usual
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
+    /// alias such columns in the SQL if you need both.
+    /// </remarks>
     public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql, object parameters)
     {
 #if NET8_0_OR_GREATER
@@ -59,6 +75,14 @@ public static partial class Jaunty
     /// <param name="sql">The SQL query to execute.</param>
     /// <param name="options">Options controlling transaction, timeout, and command type.</param>
     /// <returns>A list of dictionaries, each representing a row with column names as keys.</returns>
+    /// <remarks>
+    /// Row keys are compared with <see cref="StringComparer.OrdinalIgnoreCase"/>, matching
+    /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
+    /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
+    /// whose names differ only by case - or two identically named columns, the usual
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
+    /// alias such columns in the SQL if you need both.
+    /// </remarks>
     public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql, CommandOptions options)
     {
 #if NET8_0_OR_GREATER
@@ -84,6 +108,14 @@ public static partial class Jaunty
     /// </param>
     /// <param name="options">Options controlling transaction, timeout, and command type.</param>
     /// <returns>A list of dictionaries, each representing a row with column names as keys.</returns>
+    /// <remarks>
+    /// Row keys are compared with <see cref="StringComparer.OrdinalIgnoreCase"/>, matching
+    /// <c>Query&lt;Dictionary&lt;string, object&gt;&gt;</c>, so a column the database returned as
+    /// <c>ProductId</c> can be read as <c>row["productid"]</c>. If a result set contains two columns
+    /// whose names differ only by case - or two identically named columns, the usual
+    /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
+    /// alias such columns in the SQL if you need both.
+    /// </remarks>
     public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql, object parameters, CommandOptions options)
     {
 #if NET8_0_OR_GREATER
@@ -158,7 +190,14 @@ public static partial class Jaunty
 
             while (reader.Read())
             {
-                var row = new Dictionary<string, object?>();
+                // OrdinalIgnoreCase, matching SpecialTypeMappers.CreateDictionaryMapper - the sibling
+                // untyped-row path behind Query<Dictionary<string, object>>, which has always used it.
+                // AUD-R25: this used the default ordinal comparer, so row["productid"] threw
+                // KeyNotFoundException when the result set named the column "ProductId". Two public
+                // APIs returning the same untyped-row shape disagreed on key lookup, and the
+                // difference was silent - a caller moving between them got no compile error, just
+                // runtime failures depending on how the database happened to case the column.
+                var row = new Dictionary<string, object?>(columnNames.Length, StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < columnNames.Length; i++)
                 {
                     object? value = reader.GetValue(i);

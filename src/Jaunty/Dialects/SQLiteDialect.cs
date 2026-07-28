@@ -88,9 +88,23 @@ internal sealed class SQLiteDialect : ISqlDialect
 
     public string GenerateCaseInsensitiveLike(string columnName, string parameterName, string escapeChar)
     {
-        // SQLite: Default LIKE is already case-insensitive for ASCII
-        // This is the standard SQLite behavior
-        return $"{columnName} LIKE {parameterName} ESCAPE '{escapeChar}'";
+        // GLOB, not LIKE - AUD-R25.
+        //
+        // This used to emit "col LIKE @p ESCAPE '\'", which is true to SQLite (LIKE is
+        // case-insensitive for ASCII) but wrong for this dialect, because the pattern it is handed
+        // is not a LIKE pattern. FormatContainsPattern/FormatStartsWithPattern/FormatEndsWithPattern
+        // below all produce *GLOB* patterns ("*value*", escaping via [[]/[*]/[?]) to pair with
+        // GenerateCaseSensitiveLike's GLOB. Feeding a GLOB pattern to LIKE gives "col LIKE '*abc*'",
+        // where * is a literal - it matches nothing, and the caller's own % and _ are left
+        // unescaped. Verified against SQLite: the LIKE pairing returns 0 rows where GLOB returns 1.
+        //
+        // Folding both sides keeps the pattern in GLOB syntax while making the comparison
+        // case-insensitive. LOWER() leaves *, ? and [ untouched, so the wildcards and the
+        // EscapeGlobPattern escapes survive. Like LIKE's built-in folding - and like every other
+        // dialect's case-insensitive form here - this is ASCII-only, so the coverage is unchanged.
+        //
+        // escapeChar is unused: GLOB has no ESCAPE clause. EscapeGlobPattern handles it in the value.
+        return $"LOWER({columnName}) GLOB LOWER({parameterName})";
     }
 
     public string GenerateCaseInsensitiveEquals(string columnName, string parameterName)

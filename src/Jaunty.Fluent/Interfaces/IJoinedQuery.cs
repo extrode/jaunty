@@ -587,7 +587,30 @@ public interface IJoinClause<T1, T2, T3> where T1 : new() where T2 : new() where
     /// DuckDB).
     /// </param>
     /// <param name="value">The parameter value.</param>
+    /// <remarks>
+    /// The parameter is always named "value", so only one join in a chain can use this overload.
+    /// For more than one raw-value join condition, use the overload that takes an explicit
+    /// parameter name.
+    /// </remarks>
     IJoinedQuery3<T1, T2, T3> On<TValue>(string condition, TValue value);
+
+    /// <summary>
+    /// Specifies the join condition using a raw SQL condition with a named typed parameter.
+    /// Use this instead of <see cref="On{TValue}(string, TValue)"/> when a join chain has more
+    /// than one raw-value condition: that overload always binds to "value", so a second use
+    /// would collide on the same parameter name.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the parameter value.</typeparam>
+    /// <param name="condition">
+    /// The raw SQL join condition referencing <paramref name="parameterName"/> with the
+    /// connection's dialect parameter prefix (e.g. "@orderId", or "$orderId" for DuckDB).
+    /// </param>
+    /// <param name="parameterName">
+    /// The parameter name, either bare ("orderId") or already prefixed ("@orderId"). Must be
+    /// unique across the query's join conditions.
+    /// </param>
+    /// <param name="value">The parameter value.</param>
+    IJoinedQuery3<T1, T2, T3> On<TValue>(string condition, string parameterName, TValue value);
 }
 
 /// <summary>
@@ -640,7 +663,30 @@ public interface IJoinClause<T1, T2, T3, T4>
     /// DuckDB).
     /// </param>
     /// <param name="value">The parameter value.</param>
+    /// <remarks>
+    /// The parameter is always named "value", so only one join in a chain can use this overload.
+    /// For more than one raw-value join condition, use the overload that takes an explicit
+    /// parameter name.
+    /// </remarks>
     IJoinedQuery4<T1, T2, T3, T4> On<TValue>(string condition, TValue value);
+
+    /// <summary>
+    /// Specifies the join condition using a raw SQL condition with a named typed parameter.
+    /// Use this instead of <see cref="On{TValue}(string, TValue)"/> when a join chain has more
+    /// than one raw-value condition: that overload always binds to "value", so a second use
+    /// would collide on the same parameter name.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the parameter value.</typeparam>
+    /// <param name="condition">
+    /// The raw SQL join condition referencing <paramref name="parameterName"/> with the
+    /// connection's dialect parameter prefix (e.g. "@orderId", or "$orderId" for DuckDB).
+    /// </param>
+    /// <param name="parameterName">
+    /// The parameter name, either bare ("orderId") or already prefixed ("@orderId"). Must be
+    /// unique across the query's join conditions.
+    /// </param>
+    /// <param name="value">The parameter value.</param>
+    IJoinedQuery4<T1, T2, T3, T4> On<TValue>(string condition, string parameterName, TValue value);
 }
 
 /// <summary>

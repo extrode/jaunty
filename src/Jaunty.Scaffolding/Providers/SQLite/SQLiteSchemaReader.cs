@@ -122,8 +122,9 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         SchemaReaderOptions options,
         CancellationToken cancellationToken)
     {
-        List<ColumnSchema> columns = await ReadColumnsAsync(connection, tableName, cancellationToken).ConfigureAwait(false);
-        PrimaryKeyInfo? primaryKey = GetPrimaryKeyFromColumns(tableName, columns);
+        (List<ColumnSchema> columns, List<string> keyColumnsInDeclarationOrder) =
+            await ReadColumnsAsync(connection, tableName, cancellationToken).ConfigureAwait(false);
+        PrimaryKeyInfo? primaryKey = BuildPrimaryKey(tableName, keyColumnsInDeclarationOrder);
         List<ForeignKeyInfo> foreignKeys = options.IncludeForeignKeys
             ? await ReadForeignKeysAsync(connection, tableName, cancellationToken).ConfigureAwait(false)
             : [];
@@ -138,7 +139,13 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         };
     }
 
-    private static async Task<List<ColumnSchema>> ReadColumnsAsync(
+    /// <summary>
+    /// Reads the table's columns, and alongside them the primary-key column names in
+    /// *declaration* order. PRAGMA table_info reports rows in physical column order, so the
+    /// two can differ (PRIMARY KEY (b, a) on a table declared (a, b)); the pk field carries
+    /// the 1-based position within the key, which is what the ordering has to come from.
+    /// </summary>
+    private static async Task<(List<ColumnSchema> Columns, List<string> KeyColumns)> ReadColumnsAsync(
         DbConnection connection,
         string tableName,
         CancellationToken cancellationToken)
@@ -155,25 +162,36 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         using DbCommand cmd = connection.CreateCommand();
         cmd.CommandText = $"PRAGMA table_info('{EscapeForPragmaLiteral(tableName)}')";
 
-        var rows = new List<(string ColumnName, string DataType, bool NotNull, string? DefaultValue, bool IsPk)>();
+        var rows = new List<(string ColumnName, string DataType, bool NotNull, string? DefaultValue, int PkOrdinal)>();
         using (DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
         {
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
                 // PRAGMA table_info returns: cid, name, type, notnull, dflt_value, pk
+                // pk is 0 for non-key columns and the 1-based position within the primary key
+                // otherwise - keep the ordinal rather than collapsing it to a bool, so composite
+                // keys can be reported in declaration order.
                 var columnName = reader.GetString(1);
                 var dataType = reader.IsDBNull(2) ? "TEXT" : reader.GetString(2);
                 var notNull = reader.GetInt32(3) != 0;
                 var defaultValue = reader.IsDBNull(4) ? null : reader.GetString(4);
-                var isPk = reader.GetInt32(5) != 0;
-                rows.Add((columnName, dataType, notNull, defaultValue, isPk));
+                var pkOrdinal = reader.GetInt32(5);
+                rows.Add((columnName, dataType, notNull, defaultValue, pkOrdinal));
             }
         }
 
-        var pkColumnCount = rows.Count(r => r.IsPk);
+        var pkColumnCount = rows.Count(r => r.PkOrdinal != 0);
 
-        foreach ((string columnName, string dataType, bool notNull, string? defaultValue, bool isPk) in rows)
+        var keyColumns = rows
+            .Where(r => r.PkOrdinal != 0)
+            .OrderBy(r => r.PkOrdinal)
+            .Select(r => r.ColumnName)
+            .ToList();
+
+        foreach ((string columnName, string dataType, bool notNull, string? defaultValue, int pkOrdinal) in rows)
         {
+            var isPk = pkOrdinal != 0;
+
             // A single-column INTEGER PRIMARY KEY is an alias for the SQLite rowid and is
             // always auto-generated, regardless of whether AUTOINCREMENT was specified.
             // Composite primary keys and WITHOUT ROWID tables don't get rowid aliasing.
@@ -195,7 +213,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
             });
         }
 
-        return columns;
+        return (columns, keyColumns);
     }
 
     private static async Task<string?> GetCreateTableSqlAsync(
@@ -215,17 +233,21 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         return result as string;
     }
 
-    private static PrimaryKeyInfo? GetPrimaryKeyFromColumns(string tableName, List<ColumnSchema> columns)
+    /// <summary>
+    /// Builds the primary key from the key columns already ordered by their PRAGMA table_info
+    /// pk ordinal. Deriving the order by filtering the column list instead would report the
+    /// key in physical column order, which the SqlServer/PostgreSql/MySql readers avoid by
+    /// ordering on key_ordinal/ordinal_position from the constraint metadata.
+    /// </summary>
+    private static PrimaryKeyInfo? BuildPrimaryKey(string tableName, List<string> keyColumns)
     {
-        var pkColumns = columns.Where(c => c.IsPrimaryKey).Select(c => c.ColumnName).ToList();
-
-        if (pkColumns.Count == 0)
+        if (keyColumns.Count == 0)
             return null;
 
         return new PrimaryKeyInfo
         {
             ConstraintName = $"pk_{tableName}",
-            Columns = pkColumns
+            Columns = keyColumns
         };
     }
 

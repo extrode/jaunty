@@ -139,12 +139,13 @@ internal static class ExpressionTranslator
         {
             var columnName = ResolveColumnFromMember(member);
             var value = EvaluateExpression(method.Arguments[0]);
+            var caseInsensitive = IsCaseInsensitiveComparison(method);
 
             return method.Method.Name switch
             {
-                "Contains" => HandleStringContains(columnName, value, parameters, paramOffset),
-                "StartsWith" => HandleStringStartsWith(columnName, value, parameters, paramOffset),
-                "EndsWith" => HandleStringEndsWith(columnName, value, parameters, paramOffset),
+                "Contains" => HandleStringContains(columnName, value, parameters, paramOffset, caseInsensitive),
+                "StartsWith" => HandleStringStartsWith(columnName, value, parameters, paramOffset, caseInsensitive),
+                "EndsWith" => HandleStringEndsWith(columnName, value, parameters, paramOffset, caseInsensitive),
                 _ => throw new NotSupportedException($"String method '{method.Method.Name}' is not supported.")
             };
         }
@@ -160,26 +161,57 @@ internal static class ExpressionTranslator
         throw new NotSupportedException($"Method '{method.Method.Name}' is not supported in flat file predicates.");
     }
 
-    private static string HandleStringContains(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset)
+    private static string HandleStringContains(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = $"%{EscapeLikeValue(value)}%" });
-        return $"\"{EscapeColumnName(columnName)}\" LIKE ${paramIndex} ESCAPE '\\'";
+        return $"\"{EscapeColumnName(columnName)}\" {LikeOperator(caseInsensitive)} ${paramIndex} ESCAPE '\\'";
     }
 
-    private static string HandleStringStartsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset)
+    private static string HandleStringStartsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = $"{EscapeLikeValue(value)}%" });
-        return $"\"{EscapeColumnName(columnName)}\" LIKE ${paramIndex} ESCAPE '\\'";
+        return $"\"{EscapeColumnName(columnName)}\" {LikeOperator(caseInsensitive)} ${paramIndex} ESCAPE '\\'";
     }
 
-    private static string HandleStringEndsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset)
+    private static string HandleStringEndsWith(string columnName, object? value, List<DuckDBParameter> parameters, int paramOffset, bool caseInsensitive)
     {
         var paramIndex = paramOffset + parameters.Count + 1;
         parameters.Add(new DuckDBParameter { Value = $"%{EscapeLikeValue(value)}" });
-        return $"\"{EscapeColumnName(columnName)}\" LIKE ${paramIndex} ESCAPE '\\'";
+        return $"\"{EscapeColumnName(columnName)}\" {LikeOperator(caseInsensitive)} ${paramIndex} ESCAPE '\\'";
     }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="method"/> is one of the
+    /// <c>(string, StringComparison)</c> overloads and the comparison requested is case-insensitive.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R25: the three string handlers read <c>Arguments[0]</c> and emitted a bare LIKE, silently
+    /// discarding the comparison argument - so
+    /// <c>Where(p =&gt; p.Name.Contains("abc", StringComparison.OrdinalIgnoreCase))</c> compiled, ran,
+    /// and filtered case-sensitively, because DuckDB's LIKE is case-sensitive like PostgreSQL's.
+    /// Jaunty.Fluent's WhereExpressionVisitor had the identical omission and is fixed alongside this.
+    ///
+    /// <para>
+    /// The culture distinction between Ordinal, CurrentCulture and InvariantCulture is not
+    /// expressible here and is deliberately not attempted; case sensitivity is the part that changes
+    /// which rows come back.
+    /// </para>
+    /// </remarks>
+    private static bool IsCaseInsensitiveComparison(MethodCallExpression method)
+    {
+        if (method.Arguments.Count < 2) return false;
+
+        return EvaluateExpression(method.Arguments[1]) is StringComparison comparison
+            && comparison is StringComparison.OrdinalIgnoreCase
+                or StringComparison.CurrentCultureIgnoreCase
+                or StringComparison.InvariantCultureIgnoreCase;
+    }
+
+    // DuckDB follows PostgreSQL: LIKE is case-sensitive, ILIKE is not. Same pairing DuckDbDialect
+    // exposes as GenerateCaseSensitiveLike/GenerateCaseInsensitiveLike.
+    private static string LikeOperator(bool caseInsensitive) => caseInsensitive ? "ILIKE" : "LIKE";
 
     /// <summary>
     /// Escapes LIKE wildcard characters (<c>%</c>, <c>_</c>) and the escape character itself

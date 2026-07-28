@@ -263,6 +263,9 @@ public static partial class Jaunty
         }
     }
 
+    // Deliberately no InterceptorPipeline here - see the rationale on QueryStreamCore in
+    // QueryCore.cs. A lazy IAsyncEnumerable can't be wrapped by ExecuteWithInterceptionAsync
+    // without materializing every row first, which is what streaming exists to avoid.
     private static async IAsyncEnumerable<T> QueryStreamCoreAsync<T>(DbConnection dbConnection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : new()
     {
         var wasClosed = dbConnection.State == ConnectionState.Closed;
