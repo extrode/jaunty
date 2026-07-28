@@ -387,6 +387,50 @@ public class EntityDataReaderTests : IDisposable
         partialReader.Dispose();
     }
 
+    // AUD-R25 (B3-4): GetOrdinal compared with "==" - ordinal, case-sensitive only.
+    // IDataRecord.GetOrdinal is documented to try a case-sensitive lookup first and then fall back
+    // to a case-insensitive one, which every ADO.NET provider reader implements, and every other
+    // column-name lookup in Jaunty is deliberately case-insensitive. A caller resolving a
+    // differently-cased name got IndexOutOfRangeException instead of the column. No in-tree caller
+    // reaches it - the providers feed back names they got from GetName(i) - but this reader is
+    // handed to third-party provider bulk-copy APIs whose lookup behaviour Jaunty does not control.
+
+    [Theory]
+    [InlineData("id")]
+    [InlineData("ID")]
+    [InlineData("nAmE")]
+    public void EntityDataReader_GetOrdinal_FallsBackToACaseInsensitiveMatch(string name)
+    {
+        var entities = new List<TestEntity> { new() { Id = 1, Name = "A" } };
+        using var reader = new EntityDataReader<TestEntity>(entities, CreateTestMetadata());
+
+        int ordinal = reader.GetOrdinal(name);
+
+        Assert.Equal(reader.GetOrdinal(reader.GetName(ordinal)), ordinal);
+    }
+
+    [Fact]
+    public void EntityDataReader_GetOrdinal_ExactMatchStillWins()
+    {
+        // Two passes rather than one case-insensitive pass, so an exact match beats a
+        // differently-cased one. Guards the ordering, not just the fallback.
+        var entities = new List<TestEntity> { new() { Id = 1, Name = "A" } };
+        using var reader = new EntityDataReader<TestEntity>(entities, CreateTestMetadata());
+
+        Assert.Equal(0, reader.GetOrdinal("Id"));
+        Assert.Equal(1, reader.GetOrdinal("Name"));
+    }
+
+    [Fact]
+    public void EntityDataReader_GetOrdinal_StillThrowsForAGenuinelyAbsentColumn()
+    {
+        // The fallback must not turn a missing column into a silent wrong answer.
+        var entities = new List<TestEntity> { new() { Id = 1, Name = "A" } };
+        using var reader = new EntityDataReader<TestEntity>(entities, CreateTestMetadata());
+
+        Assert.Throws<IndexOutOfRangeException>(() => reader.GetOrdinal("nonexistent"));
+    }
+
     private static EntityMetadata CreateReorderedSubsetMetadata()
     {
         var nameProp = typeof(TestEntity).GetProperty(nameof(TestEntity.Name))!;
