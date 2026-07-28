@@ -10,6 +10,7 @@ using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Parameters;
 using Jaunty.Configuration;
+using System.Globalization;
 
 namespace Jaunty.Fluent;
 
@@ -1456,8 +1457,13 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         Type targetType = typeof(TResult);
         Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
-        // Handle conversion from database types to C# types
-        var converted = Convert.ChangeType(value, underlyingType);
+        // Handle conversion from database types to C# types, using
+        // CultureInfo.InvariantCulture, not the ambient CurrentCulture: providers routinely hand back
+        // a string where the column is TEXT/NUMERIC (SQLite in particular), and under a comma-decimal
+        // culture (de-DE, fr-FR, ...) Convert.ChangeType("1.5", typeof(decimal)) does not throw - it
+        // reads the period as a group separator and returns 15.
+        // Matches GroupedJoinedResultMapper.ConvertColumnValue and GridReader.ReadScalar.
+        var converted = Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
         return (TResult)converted;
     }
 
