@@ -40,7 +40,7 @@ internal static class ImportExecutor
         }
 
         // Validate schema alignment — check that the target table exists and has compatible columns
-        await ValidateTargetSchemaAsync(targetConnection, tableName, mappings, options.CreateTableIfMissing, cancellationToken).ConfigureAwait(false);
+        await ValidateTargetSchemaAsync(targetConnection, dialect, tableName, mappings, options.CreateTableIfMissing, cancellationToken).ConfigureAwait(false);
 
         // Read all rows from DuckDB source
         DbCommand sourceCmd = (sourceConnection as DbConnection)!.CreateCommand();
@@ -281,7 +281,20 @@ internal static class ImportExecutor
         }
     }
 
-    private static async ValueTask ValidateTargetSchemaAsync(DbConnection targetConnection, string tableName, IReadOnlyDictionary<string, ColumnMapping> mappings, bool createTableIfMissing, CancellationToken cancellationToken)
+    /// <summary>
+    /// Quotes an identifier destined for the *target* database. Every other identifier-emitting
+    /// path in the import pipeline (GenerateInsertSql/GenerateCreateTableSql/GenerateMergeSql)
+    /// goes through the resolved dialect; this one used to hardcode double quotes, which
+    /// contradicts SqlServerImportDialect's own rationale for using [brackets] - double quotes
+    /// only work when QUOTED_IDENTIFIER is ON. Dialects that don't opt into
+    /// <see cref="IQuotedIdentifierDialect"/> keep the previous SQL-standard behaviour.
+    /// </summary>
+    private static string QuoteTargetIdentifier(IImportDialect dialect, string identifier) =>
+        dialect is IQuotedIdentifierDialect quoting
+            ? quoting.QuoteIdentifier(identifier)
+            : $"\"{identifier.Replace("\"", "\"\"")}\"";
+
+    private static async ValueTask ValidateTargetSchemaAsync(DbConnection targetConnection, IImportDialect dialect, string tableName, IReadOnlyDictionary<string, ColumnMapping> mappings, bool createTableIfMissing, CancellationToken cancellationToken)
     {
         // Check if the table exists in the target by querying it with a WHERE 0=1 (no rows).
         // Different database providers throw different exception types for "table not found":
@@ -294,7 +307,7 @@ internal static class ImportExecutor
         {
             DbCommand cmd = targetConnection.CreateCommand();
             await using var cmdDisposer = cmd.ConfigureAwait(false);
-            cmd.CommandText = $"SELECT * FROM \"{tableName.Replace("\"", "\"\"")}\" WHERE 0=1";
+            cmd.CommandText = $"SELECT * FROM {QuoteTargetIdentifier(dialect, tableName)} WHERE 0=1";
             DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             await using var readerDisposer = reader.ConfigureAwait(false);
 
