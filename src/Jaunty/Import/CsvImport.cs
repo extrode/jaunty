@@ -286,12 +286,26 @@ public static class CsvImportExtensions
                 ReadCsvRecord(streamReader, options.Quote);
 
             string? line;
+            long recordNumber = options.HasHeader ? 1 : 0;
             while ((line = ReadCsvRecord(streamReader, options.Quote)) != null)
             {
+                recordNumber++;
+
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
 
                 string[] values = ParseCsvLine(line, options.Delimiter, options.Quote);
+
+                // A row with *more* fields than the layout row would otherwise be truncated to
+                // parameters.Length and the surplus dropped without a word - the opposite of the
+                // deliberately-safe DBNull handling for short rows below. Malformed input (an
+                // unescaped delimiter inside an unquoted value, say) must not import as a
+                // silently-partial row. The enclosing transaction is rolled back on the way out.
+                if (values.Length > parameters.Length)
+                    throw new InvalidDataException(
+                        $"CSV record {recordNumber} in '{filePath}' has {values.Length} fields but the " +
+                        $"{(options.HasHeader ? "header" : "first record")} defines {parameters.Length}. " +
+                        "Extra fields would be discarded - fix the record, or quote values that contain the delimiter.");
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
