@@ -41,8 +41,19 @@ public sealed class CommandContext
     /// Gets the parameters bound to the command, or null if none.
     /// </summary>
     /// <remarks>
-    /// The actual parameter values are not exposed for security reasons.
-    /// For parameter names, inspect the Parameters object directly (e.g., cast to IDictionary).
+    /// <para>
+    /// This is the caller's parameters instance, stored verbatim - an anonymous type, a
+    /// <see cref="System.Collections.IDictionary"/>, or whatever else was passed to the query. It
+    /// therefore exposes parameter <strong>values</strong> as well as names, and nothing is
+    /// redacted on the way in.
+    /// </para>
+    /// <para>
+    /// <strong>Interceptors that log or forward this object are responsible for their own
+    /// redaction.</strong> Jaunty's built-in <c>LoggingInterceptor</c> masks values whose parameter
+    /// name matches <c>LoggingConfiguration.SensitiveParameterNames</c>, but that masking is opt-in
+    /// and applies only to that interceptor - it does not protect a custom one that reads this
+    /// property directly.
+    /// </para>
     /// </remarks>
     public object? Parameters { get; }
 
