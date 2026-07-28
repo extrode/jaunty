@@ -698,6 +698,111 @@ public class LoggingInterceptorTests
 
     #endregion
 
+    #region LogExecutionTime Tests (AUD-R25)
+
+    // AUD-R25: LogExecutionTime was public, documented and defaulted to true, with zero consumers
+    // anywhere in src/ or tests/ - the only occurrence in the repository was its own declaration.
+    // The elapsed time was formatted into every completion and failure message regardless, so
+    // setting it to false silently did nothing. Its three sibling flags on the same class are all
+    // honoured, and AddJauntyLogging's own remarks listed those three by name while omitting this
+    // one, which is what made it read as an oversight rather than a deliberate no-op.
+
+    [Fact]
+    public async Task OnCommandExecutedAsync_LogExecutionTimeFalse_OmitsTheElapsedTime()
+    {
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration { LogExecutionTime = false };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+        var context = new CommandContext(
+            "SELECT * FROM Users", null, CreateMockConnection(), CommandType.Text,
+            TimeSpan.FromMilliseconds(150));
+
+        await interceptor.OnCommandExecutedAsync(context, CancellationToken.None);
+
+        Assert.Single(provider.Logs);
+        Assert.DoesNotContain("150.00ms", provider.Logs[0].Message);
+        Assert.Contains("Completed SQL Text", provider.Logs[0].Message);
+    }
+
+    [Fact]
+    public async Task OnCommandExecutedAsync_LogExecutionTimeTrue_KeepsTheElapsedTime()
+    {
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration { LogExecutionTime = true };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+        var context = new CommandContext(
+            "SELECT * FROM Users", null, CreateMockConnection(), CommandType.Text,
+            TimeSpan.FromMilliseconds(150));
+
+        await interceptor.OnCommandExecutedAsync(context, CancellationToken.None);
+
+        Assert.Contains("150.00ms", provider.Logs[0].Message);
+    }
+
+    [Fact]
+    public async Task OnCommandExecutedAsync_LogExecutionTimeFalse_StillWarnsOnASlowQuery()
+    {
+        // The flag governs whether the measurement appears in the message, not whether a slow query
+        // is worth warning about - detection must survive.
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration
+        {
+            LogExecutionTime = false,
+            SlowQueryThreshold = TimeSpan.FromMilliseconds(100),
+        };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+        var context = new CommandContext(
+            "SELECT * FROM Users", null, CreateMockConnection(), CommandType.Text,
+            TimeSpan.FromMilliseconds(500));
+
+        await interceptor.OnCommandExecutedAsync(context, CancellationToken.None);
+
+        Assert.Equal(LogLevel.Warning, provider.Logs[0].Level);
+        Assert.Contains("SLOW", provider.Logs[0].Message);
+        Assert.DoesNotContain("500.00ms", provider.Logs[0].Message);
+    }
+
+    [Fact]
+    public async Task OnCommandFailedAsync_LogExecutionTimeFalse_OmitsTheElapsedTime()
+    {
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration { LogExecutionTime = false };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+        var context = new CommandContext(
+            "SELECT * FROM Users", null, CreateMockConnection(), CommandType.Text,
+            TimeSpan.FromMilliseconds(75));
+
+        await interceptor.OnCommandFailedAsync(context, new InvalidOperationException("boom"), CancellationToken.None);
+
+        Assert.Single(provider.Logs);
+        Assert.DoesNotContain("75.00ms", provider.Logs[0].Message);
+        Assert.Contains("boom", provider.Logs[0].Message);
+    }
+
+    [Fact]
+    public async Task OnCommandFailedAsync_LogExecutionTimeFalse_StillReportsTheException()
+    {
+        var provider = CreateTestProvider();
+        var config = new LoggingConfiguration { LogExecutionTime = false };
+        var interceptor = new LoggingInterceptor(CreateLogger(provider), config);
+        var context = new CommandContext(
+            "SELECT * FROM Users", null, CreateMockConnection(), CommandType.Text, TimeSpan.FromMilliseconds(75));
+        var exception = new InvalidOperationException("boom");
+
+        await interceptor.OnCommandFailedAsync(context, exception, CancellationToken.None);
+
+        Assert.Equal(LogLevel.Error, provider.Logs[0].Level);
+        Assert.Same(exception, provider.Logs[0].Exception);
+    }
+
+    [Fact]
+    public void LogExecutionTime_DefaultsToTrue()
+    {
+        Assert.True(new LoggingConfiguration().LogExecutionTime);
+    }
+
+    #endregion
+
     #region Test Helper Classes
 
     private class TestLoggerProvider : ILoggerProvider, ILogger<LoggingInterceptor>
