@@ -16,6 +16,41 @@ public interface ISqlDialect
     /// <summary>
     /// Gets the parameter prefix used in SQL queries (e.g., "@" for SQL Server/SQLite, "$" for DuckDB).
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Honored by <c>Jaunty.Fluent</c> only.</b> Every fluent builder consults this property when
+    /// composing placeholders. Jaunty core's own CRUD and by-id paths do not: <c>CrudSqlCache</c>,
+    /// <c>MultiRowInsertCache</c>, <c>Upsert</c>, <c>DeleteCore</c>, <c>GetCore</c> and
+    /// <c>WriteParameterHelper</c> all emit a literal <c>"@"</c>, and so do the two entity binders -
+    /// <c>JauntyGenerator</c>'s generated <c>BindInsert</c>/<c>BindUpdate</c>/<c>BindDelete</c> and
+    /// <c>Jaunty.Extensions.Reflection</c>'s equivalents.
+    /// </para>
+    /// <para>
+    /// This is documented rather than fixed because the generated binders bake the prefix in at
+    /// <em>compile</em> time, when no connection and therefore no dialect exists. Routing core CRUD
+    /// through this property requires the generated binder contract to take a prefix at runtime,
+    /// which is a breaking change to the generated API surface rather than an internal one - see
+    /// AUD-R25 (B4-3).
+    /// </para>
+    /// <para>
+    /// Consequence for a dialect that returns anything other than <c>"@"</c>: core CRUD produces SQL
+    /// its own provider will not accept. <c>DuckDbDialect.ParameterPrefix</c> returns <c>"$"</c> and
+    /// <c>DuckDb</c>'s constructor registers that dialect for <c>DuckDBConnection</c> by default, so
+    /// <c>duckDbConnection.Insert(entity)</c> throws
+    /// <c>DuckDBException: Binder Error: Referenced column "..." not found in FROM clause!</c> -
+    /// DuckDB reads <c>@Name</c> as a column reference, not a placeholder.
+    /// </para>
+    /// <para>
+    /// <b>Jaunty.Fluent is not a workaround for this.</b> It honours the prefix, so its SQL parses,
+    /// but it then fails at bind time with
+    /// <c>Invalid Input Error: Values were not provided for the following prepared statement
+    /// parameters</c> - the names it gives its parameters are not the ones DuckDB matches against
+    /// the <c>$</c> placeholders. Writes and by-id lookups against a non-<c>"@"</c> dialect
+    /// therefore do not work through either path today, for two different reasons, and fixing core
+    /// alone would not make them work. Reads are unaffected, since they bind no parameters. All
+    /// three behaviours are pinned by <c>ParameterPrefixLimitationTests</c>.
+    /// </para>
+    /// </remarks>
     string ParameterPrefix { get; }
 
     /// <summary>

@@ -79,9 +79,12 @@ internal sealed class ScaffoldCommand : Command
             Description = "Don't use nullable reference types"
         };
 
-        var partialOption = new Option<bool>("--partial")
+        // AUD-R25: inverted from an opt-in --partial. Scaffolded classes must be partial to
+        // compose with Jaunty.SourceGenerator, which emits a partial declaration of its own for any
+        // [Table] class; without it the build fails with CS0260 in the user's own scaffolded file.
+        var noPartialOption = new Option<bool>("--no-partial")
         {
-            Description = "Generate partial classes"
+            Description = "Don't generate partial classes (they will not compose with Jaunty.SourceGenerator)"
         };
 
         var noSingularizeOption = new Option<bool>("--no-singularize")
@@ -143,7 +146,7 @@ internal sealed class ScaffoldCommand : Command
         Options.Add(noKeyAttrOption);
         Options.Add(noDbGenAttrOption);
         Options.Add(noNullableOption);
-        Options.Add(partialOption);
+        Options.Add(noPartialOption);
         Options.Add(noSingularizeOption);
         Options.Add(classPrefixOption);
         Options.Add(classSuffixOption);
@@ -168,7 +171,7 @@ internal sealed class ScaffoldCommand : Command
             var noKeyAttr = parseResult.GetValue(noKeyAttrOption);
             var noDbGenAttr = parseResult.GetValue(noDbGenAttrOption);
             var noNullable = parseResult.GetValue(noNullableOption);
-            var partial = parseResult.GetValue(partialOption);
+            var noPartial = parseResult.GetValue(noPartialOption);
             var noSingularize = parseResult.GetValue(noSingularizeOption);
             var classPrefix = parseResult.GetValue(classPrefixOption);
             var classSuffix = parseResult.GetValue(classSuffixOption);
@@ -193,7 +196,7 @@ internal sealed class ScaffoldCommand : Command
                 GenerateKeyAttribute = !noKeyAttr,
                 GenerateDatabaseGeneratedAttribute = !noDbGenAttr,
                 UseNullableReferenceTypes = !noNullable,
-                GeneratePartialClasses = partial,
+                GeneratePartialClasses = !noPartial,
                 Singularize = !noSingularize,
                 ClassPrefix = classPrefix,
                 ClassSuffix = classSuffix,

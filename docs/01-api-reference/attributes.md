@@ -142,6 +142,48 @@ public class Product
 - Identity values are returned by Insert operations and can be automatically populated
 - Computed columns are typically read-only in insert/update operations
 
+**Write it explicitly — the two mapping paths infer differently without it.**
+
+If a key property is an `int` or `long` and carries no `[DatabaseGenerated]`, the two mapping
+paths disagree about whether the database generates its value, and therefore about whether the
+column appears in the generated `INSERT`:
+
+| Mapping path | Single `int`/`long` key, no `[DatabaseGenerated]` |
+|---|---|
+| `Jaunty.SourceGenerator` | Treated as an identity column — **omitted** from the `INSERT` |
+| `Jaunty.Extensions.Reflection` | Not an identity column — **included** in the `INSERT` |
+
+The source-generated mapper is preferred whenever one exists, so *adding or removing the
+`Jaunty.SourceGenerator` package reference changes the SQL* for such an entity — dropping a
+client-assigned key on one side, or overriding a real sequence on the other.
+
+Adding `[DatabaseGenerated(...)]` removes the ambiguity: both paths then honour exactly what you
+wrote. Do that for every `int`/`long` key, whichever way it should behave:
+
+```csharp
+[Table("orders")]
+public partial class Order
+{
+    // Auto-increment / IDENTITY / SERIAL column: excluded from INSERT on both paths.
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; }
+}
+
+[Table("tenants")]
+public partial class Tenant
+{
+    // Client-assigned key: included in INSERT on both paths.
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public int Id { get; set; }
+}
+```
+
+Composite keys are not affected: neither path infers identity for an entity with more than one key
+column, since no database has two identity columns. An explicit `[DatabaseGenerated]` on one part
+of a composite key is still honoured.
+
 ## EnumStorage Attribute
 
 ### [EnumStorage(EnumStorage storage)]

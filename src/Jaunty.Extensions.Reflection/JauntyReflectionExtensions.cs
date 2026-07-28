@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -70,72 +72,107 @@ public static class JauntyReflectionExtensions
         BulkCopyDialectFactory.Enable();
     }
 
-    private static object ResolveTableMetadata(Type type)
-    {
-        MethodInfo method = typeof(MetadataBuilder).GetMethod(nameof(MetadataBuilder.Build), BindingFlags.Public | BindingFlags.Static)!;
-        MethodInfo generic = method.MakeGenericMethod(type);
-        return generic.Invoke(null, null)!;
-    }
+    // AUD-R25: every one of these resolvers used to redo its reflection plumbing on each call -
+    // typeof(...).GetMethod(name, BindingFlags...), then MakeGenericMethod, then Invoke - with
+    // nothing cached between calls. ResolveMapper was the worst: DrDispatcher.Resolve calls it for
+    // every query that falls back to reflection mapping, i.e. every query over a non-source-generated
+    // entity, which is the whole point of this package, and each call did two GetMethod lookups, two
+    // MakeGenericMethod constructions and three Invokes before MetadataCache<T>'s own cache was even
+    // consulted. ResolveMultiMapperN additionally built its method name by string concatenation and
+    // looked it up by reflection per multi-entity query.
+    //
+    // This was the one layer of the package that wasn't cached - MetadataCache<T> caches metadata,
+    // setters and getters; MultiEntityMapper<...>.Get caches per schema; PostgreSqlBulkCopyProvider
+    // added WriteMethodCache/WriteAsyncMethodCache with a comment noting that MakeGenericMethod
+    // "is expensive ... and works against the entire point" of the fast path. The same reasoning
+    // applies here, one level up.
+    //
+    // The MethodInfo lookups are hoisted to static readonly fields; the constructed delegates are
+    // keyed on the entity type, since each is stateless with respect to the reader and the command
+    // (the mapper resolves setters per reader inside its own closure, and the binders capture only
+    // per-type converters).
+    private static readonly MethodInfo MetadataBuildMethod =
+        typeof(MetadataBuilder).GetMethod(nameof(MetadataBuilder.Build), BindingFlags.Public | BindingFlags.Static)!;
 
-    private static object ResolveMapper(Type type, MappingMode mode)
-    {
-        MethodInfo method = typeof(JauntyReflectionExtensions).GetMethod(nameof(GetTypedMapper), BindingFlags.NonPublic | BindingFlags.Static)!;
-        MethodInfo generic = method.MakeGenericMethod(type);
-        var mapperFactory = (Func<MappingMode, Func<IDataReader, object>>)generic.Invoke(null, null)!;
-        Func<IDataReader, object> mapper = mapperFactory(mode);
-        // Wrap to return correct type
-        return CreateTypedMapper(type, mapper);
-    }
+    private static readonly MethodInfo GetTypedMapperMethod = NonPublicStatic(nameof(GetTypedMapper));
+    private static readonly MethodInfo WrapMapperMethod = NonPublicStatic(nameof(WrapMapper));
+    private static readonly MethodInfo GetTypedInsertBinderMethod = NonPublicStatic(nameof(GetTypedInsertBinder));
+    private static readonly MethodInfo GetTypedUpdateBinderMethod = NonPublicStatic(nameof(GetTypedUpdateBinder));
+    private static readonly MethodInfo GetTypedDeleteBinderMethod = NonPublicStatic(nameof(GetTypedDeleteBinder));
+    private static readonly MethodInfo GetTypedMultiMapperMethod = NonPublicStatic(nameof(GetTypedMultiMapper));
 
-    private static object CreateTypedMapper(Type type, Func<IDataReader, object> mapper)
-    {
-        MethodInfo method = typeof(JauntyReflectionExtensions).GetMethod(nameof(WrapMapper), BindingFlags.NonPublic | BindingFlags.Static)!;
-        MethodInfo generic = method.MakeGenericMethod(type);
-        return generic.Invoke(null, new object[] { mapper })!;
-    }
+    private static readonly ConcurrentDictionary<Type, object> TableMetadataCache = new();
+    private static readonly ConcurrentDictionary<(Type Type, MappingMode Mode), object> MapperCache = new();
+    private static readonly ConcurrentDictionary<Type, Action<IDbCommand, object>> InsertBinderCache = new();
+    private static readonly ConcurrentDictionary<Type, Action<IDbCommand, object>> UpdateBinderCache = new();
+    private static readonly ConcurrentDictionary<Type, Action<IDbCommand, object>> DeleteBinderCache = new();
+    private static readonly ConcurrentDictionary<(Type, Type), object> MultiMapperCache = new();
+
+    // Keyed on arity, not on the type arguments: the constructed generic method still has to be
+    // built per type-set, but the name lookup - a string concatenation plus a reflection search -
+    // does not.
+    private static readonly ConcurrentDictionary<int, MethodInfo> MultiMapperNMethodCache = new();
+
+    private static MethodInfo NonPublicStatic(string name) =>
+        typeof(JauntyReflectionExtensions).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static)!;
+
+    private static object ResolveTableMetadata(Type type) =>
+        TableMetadataCache.GetOrAdd(type, static t => MetadataBuildMethod.MakeGenericMethod(t).Invoke(null, null)!);
+
+    private static object ResolveMapper(Type type, MappingMode mode) =>
+        MapperCache.GetOrAdd((type, mode), static key =>
+        {
+            var mapperFactory = (Func<MappingMode, Func<IDataReader, object>>)
+                GetTypedMapperMethod.MakeGenericMethod(key.Type).Invoke(null, null)!;
+
+            Func<IDataReader, object> mapper = mapperFactory(key.Mode);
+
+            // Wrap to return correct type
+            return CreateTypedMapper(key.Type, mapper);
+        });
+
+    private static object CreateTypedMapper(Type type, Func<IDataReader, object> mapper) =>
+        WrapMapperMethod.MakeGenericMethod(type).Invoke(null, new object[] { mapper })!;
 
     private static Func<IDataReader, T> WrapMapper<T>(Func<IDataReader, object> mapper) where T : new()
     {
         return reader => (T)mapper(reader);
     }
 
-    private static Action<IDbCommand, object> ResolveInsertBinder(Type type)
-    {
-        MethodInfo method = typeof(JauntyReflectionExtensions).GetMethod(nameof(GetTypedInsertBinder), BindingFlags.NonPublic | BindingFlags.Static)!;
-        MethodInfo generic = method.MakeGenericMethod(type);
-        return (Action<IDbCommand, object>)generic.Invoke(null, null)!;
-    }
+    private static Action<IDbCommand, object> ResolveInsertBinder(Type type) =>
+        InsertBinderCache.GetOrAdd(type, static t =>
+            (Action<IDbCommand, object>)GetTypedInsertBinderMethod.MakeGenericMethod(t).Invoke(null, null)!);
 
-    private static Action<IDbCommand, object> ResolveUpdateBinder(Type type)
-    {
-        MethodInfo method = typeof(JauntyReflectionExtensions).GetMethod(nameof(GetTypedUpdateBinder), BindingFlags.NonPublic | BindingFlags.Static)!;
-        MethodInfo generic = method.MakeGenericMethod(type);
-        return (Action<IDbCommand, object>)generic.Invoke(null, null)!;
-    }
+    private static Action<IDbCommand, object> ResolveUpdateBinder(Type type) =>
+        UpdateBinderCache.GetOrAdd(type, static t =>
+            (Action<IDbCommand, object>)GetTypedUpdateBinderMethod.MakeGenericMethod(t).Invoke(null, null)!);
 
-    private static Action<IDbCommand, object> ResolveDeleteBinder(Type type)
-    {
-        MethodInfo method = typeof(JauntyReflectionExtensions).GetMethod(nameof(GetTypedDeleteBinder), BindingFlags.NonPublic | BindingFlags.Static)!;
-        MethodInfo generic = method.MakeGenericMethod(type);
-        return (Action<IDbCommand, object>)generic.Invoke(null, null)!;
-    }
+    private static Action<IDbCommand, object> ResolveDeleteBinder(Type type) =>
+        DeleteBinderCache.GetOrAdd(type, static t =>
+            (Action<IDbCommand, object>)GetTypedDeleteBinderMethod.MakeGenericMethod(t).Invoke(null, null)!);
 
-    private static object ResolveMultiMapper(Type t1, Type t2)
-    {
-        MethodInfo method = typeof(JauntyReflectionExtensions).GetMethod(nameof(GetTypedMultiMapper), BindingFlags.NonPublic | BindingFlags.Static)!;
-        MethodInfo generic = method.MakeGenericMethod(t1, t2);
-        return generic.Invoke(null, null)!;
-    }
+    private static object ResolveMultiMapper(Type t1, Type t2) =>
+        MultiMapperCache.GetOrAdd((t1, t2), static key =>
+            GetTypedMultiMapperMethod.MakeGenericMethod(key.Item1, key.Item2).Invoke(null, null)!);
 
+    // Guarded: the attribute's netstandard2.0 SDK polyfill is internal to its own file, so it is
+    // not referenceable there - and the trim analyzer only runs for the net8.0 target anyway.
+#if NET8_0_OR_GREATER
+    [UnconditionalSuppressMessage("AOT", "IL2060",
+        Justification = "The helper MethodInfo now arrives via a cache, so the trimmer can no longer "
+                      + "follow it back to the GetMethod call it came from. The BuildMultiMapperNDelegates* "
+                      + "helpers are private methods of this type and are always preserved with it; this "
+                      + "package is documented as not trim-safe and NativeAOT users take the source generator.")]
+#endif
     private static Action<object, IDataRecord>[] ResolveMultiMapperN(Type[] types, IDataReader reader)
     {
-        int arity = types.Length;
-        MethodInfo? method = typeof(JauntyReflectionExtensions).GetMethod(
-            "BuildMultiMapperNDelegates" + arity,
-            BindingFlags.NonPublic | BindingFlags.Static);
-
-        if (method is null)
-            throw new InvalidOperationException($"No N-ary multi-mapper helper found for arity {arity}. Supported: 3-7.");
+        // The result is not cached: BuildMultiMapperNDelegates* binds against this reader's column
+        // layout, so it is per-call by construction. Only the helper lookup is hoisted.
+        MethodInfo method = MultiMapperNMethodCache.GetOrAdd(types.Length, static arity =>
+            typeof(JauntyReflectionExtensions).GetMethod(
+                "BuildMultiMapperNDelegates" + arity,
+                BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException($"No N-ary multi-mapper helper found for arity {arity}. Supported: 3-7."));
 
         MethodInfo generic = method.MakeGenericMethod(types);
         return (Action<object, IDataRecord>[])generic.Invoke(null, new object[] { reader })!;

@@ -19,14 +19,21 @@
 		</PackageReference>
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.3" />
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" /><!-- pin: GHSA-2m69-gcr7-jv3q; 2.1.x native sqlite is vulnerable; 3.0.3 pulls SourceGear.sqlite3 3.50.4+ -->
+		<!-- AUD-R25 (B8-7): GeneratorCachingTests drives JauntyGenerator through a
+		     CSharpGeneratorDriver by hand, so it needs the Roslyn API itself. Every other test here
+		     observes the generator's output indirectly, by compiling against the mappers it emits
+		     for the entities in Entities/. -->
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+		<!-- Both an analyzer and an ordinary reference: the analyzer role is what generates the
+		     mappers the rest of this project's tests compile against, and the reference role is what
+		     lets GeneratorCachingTests instantiate JauntyGenerator and drive it directly. -->
 		<ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
 		                  OutputItemType="Analyzer"
-		                  ReferenceOutputAssembly="false"
-		                  Private="false"
+		                  ReferenceOutputAssembly="true"
 		                  SetTargetFramework="TargetFramework=netstandard2.0" />
 	</ItemGroup>
 
