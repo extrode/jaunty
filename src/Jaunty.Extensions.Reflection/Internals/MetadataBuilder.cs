@@ -110,6 +110,26 @@ internal static class MetadataBuilder
                          property.Name.Equals($"{type.Name}Id", StringComparison.OrdinalIgnoreCase);
 
             // 5. DatabaseGenerated resolution
+            //
+            // AUD-R25: note that this path infers nothing. With no [DatabaseGenerated], genOption
+            // stays null and ColumnMetadata sets IsIdentity = false, so a conventional `int Id` key
+            // stays in InsertColumns and its value is sent on INSERT.
+            //
+            // JauntyGenerator does the opposite for the same entity: it treats a single int/long
+            // key with no [DatabaseGenerated] as an identity column and omits it. The key
+            // convention itself is shared and identical (see step 4 above and JauntyGenerator's
+            // isKey), so the two paths agree on which column is the key and disagree only on
+            // whether the database generates it. DrDispatcher prefers the generated mapper when one
+            // exists, which means adding or removing the Jaunty.SourceGenerator package reference
+            // silently changes the INSERT for such an entity - dropping a client-assigned key on
+            // one side, or overriding a real sequence on the other.
+            //
+            // Converging them is a product decision rather than an audit fix: either direction
+            // changes the SQL of existing entities on one of the two paths, and both behaviours are
+            // relied on by current tests. Both are pinned by tests so the divergence cannot drift
+            // further unnoticed, and documented in docs/01-api-reference/attributes.md, which now
+            // tells users to write [DatabaseGenerated] explicitly to get identical behaviour either
+            // way.
             DatabaseGeneratedOption? genOption = null;
             DatabaseGeneratedAttribute? genAttr = property.GetCustomAttribute<DatabaseGeneratedAttribute>();
 
