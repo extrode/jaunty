@@ -116,7 +116,11 @@ public sealed class CsvFileSource : IFileSource
     /// <inheritdoc />
     public string? GenerateCopyToOptions()
     {
-        var sb = new System.Text.StringBuilder("HEADER true");
+        // HasHeader == false means the file genuinely has no header row, so writing one back would
+        // produce a file this very source can never read correctly: the first data row would be eaten
+        // as column names on the next read. null (auto-detect) keeps the header, which is both the
+        // previous behaviour and the safer default for a file whose shape we were never told.
+        var sb = new System.Text.StringBuilder(HasHeader == false ? "HEADER false" : "HEADER true");
 
         if (Delimiter.HasValue)
             sb.Append($", DELIMITER '{Delimiter.Value.ToString().Replace("'", "''")}'");

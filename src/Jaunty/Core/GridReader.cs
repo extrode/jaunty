@@ -313,12 +313,23 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     {
         EnsureNotConsumed();
         var results = new List<T>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
-        Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
+
+        // Resolve lazily, matching ReadAsyncCore and the four First/Single terminals. Resolution is
+        // not side-effect-free: DrDispatcher.Resolve throws when no mapper is registered, and for a
+        // source-generated entity in Strict mode it runs MapperFactory, which validates the
+        // result-set shape. Resolving up front meant an *empty* result set could throw from
+        // grid.Read<T>() while await grid.ReadAsync<T>() on the identical grid returned an empty
+        // list and grid.ReadFirstOrDefault<T>() returned null - three public APIs disagreeing on
+        // whether an empty result set is an error, with nothing in their docs distinguishing them.
+        Func<IDataReader, T>? map = null;
 
         try
         {
             while (reader.Read())
+            {
+                map ??= DrDispatcher.Resolve(reader, options, mode);
                 results.Add(map(reader));
+            }
         }
         finally
         {
@@ -412,12 +423,17 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
 
     private IEnumerable<T> ReadStreamIterator<T>(CommandOptions<T> options, MappingMode mode) where T : new()
     {
-        Func<IDataReader, T> map = DrDispatcher.Resolve(reader, options, mode);
+        // Lazy, like ReadStreamAsyncIterator - see ReadCore for why resolving before the first Read
+        // makes an empty result set throw here but not on the async or First/Single paths.
+        Func<IDataReader, T>? map = null;
 
         try
         {
             while (reader.Read())
+            {
+                map ??= DrDispatcher.Resolve(reader, options, mode);
                 yield return map(reader);
+            }
         }
         finally
         {

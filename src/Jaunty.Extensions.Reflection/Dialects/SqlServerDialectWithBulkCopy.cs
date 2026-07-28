@@ -8,7 +8,7 @@ namespace Jaunty.Extensions.Reflection.Dialects;
 /// SQL Server dialect with bulk copy support.
 /// Extends the base dialect to provide SqlBulkCopy provider.
 /// </summary>
-internal sealed class SqlServerDialectWithBulkCopy : ISqlDialect
+internal sealed class SqlServerDialectWithBulkCopy : ISqlDialect, IDialectWrapper
 {
     private readonly SqlServerDialect _inner;
 
@@ -16,6 +16,14 @@ internal sealed class SqlServerDialectWithBulkCopy : ISqlDialect
     {
         _inner = inner ?? new SqlServerDialect();
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Exposes the decorated dialect so engine-identity tests (CSV import dispatch,
+    /// BulkInsert's SQLite routing) still see SqlServerDialect once UseNativeBulkCopy()
+    /// has swapped this wrapper in - see SqlDialectFactory.Unwrap.
+    /// </remarks>
+    public ISqlDialect InnerDialect => _inner;
 
     public bool SupportsNativeBulkCopy => true;
 

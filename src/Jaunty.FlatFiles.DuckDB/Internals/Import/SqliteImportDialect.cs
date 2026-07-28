@@ -8,7 +8,7 @@ namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 /// <summary>
 /// Import dialect for SQLite databases.
 /// </summary>
-internal sealed class SqliteImportDialect : IImportDialect
+internal sealed class SqliteImportDialect : IImportDialect, IQuotedIdentifierDialect
 {
     /// <summary>
     /// Singleton instance.
@@ -21,6 +21,9 @@ internal sealed class SqliteImportDialect : IImportDialect
     /// filenames or [Table]/[Column] attributes).
     /// </summary>
     private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
+
+    /// <inheritdoc />
+    string IQuotedIdentifierDialect.QuoteIdentifier(string identifier) => QuoteIdentifier(identifier);
 
     /// <inheritdoc />
     public string MapClrTypeToSqlType(Type clrType) => clrType switch
@@ -49,7 +52,10 @@ internal sealed class SqliteImportDialect : IImportDialect
         ConflictStrategy conflictStrategy,
         string? keyColumnName)
     {
-        if (conflictStrategy == ConflictStrategy.Upsert && keyColumnName is null)
+        // != Error, not == Upsert: Skip needs the key column just as much, both to name the
+        // conflict target below and to match PostgreSqlImportDialect/SqlServerImportDialect, which
+        // reject a keyless non-Error strategy rather than quietly doing something else.
+        if (conflictStrategy != ConflictStrategy.Error && keyColumnName is null)
         {
             throw new NotSupportedException(
                 $"Table '{tableName}' has no [Key] property to use for conflict resolution. " +
@@ -58,12 +64,7 @@ internal sealed class SqliteImportDialect : IImportDialect
         }
 
         var sb = new StringBuilder();
-
-        sb.Append(conflictStrategy switch
-        {
-            ConflictStrategy.Skip => $"INSERT OR IGNORE INTO {QuoteIdentifier(tableName)}",
-            _ => $"INSERT INTO {QuoteIdentifier(tableName)}"
-        });
+        sb.Append($"INSERT INTO {QuoteIdentifier(tableName)}");
 
         sb.Append(" (");
         for (int i = 0; i < columnNames.Count; i++)
@@ -79,7 +80,18 @@ internal sealed class SqliteImportDialect : IImportDialect
         }
         sb.Append(')');
 
-        if (conflictStrategy == ConflictStrategy.Upsert)
+        if (conflictStrategy == ConflictStrategy.Skip)
+        {
+            // Scoped to the key column, not "INSERT OR IGNORE". OR IGNORE suppresses *every*
+            // constraint violation on the row - NOT NULL, CHECK, foreign key, and any other UNIQUE
+            // index - so a malformed source row was silently dropped and counted as "skipped a
+            // duplicate". ON CONFLICT (key) DO NOTHING skips only the duplicate-key case and still
+            // surfaces everything else, which is what PostgreSqlImportDialect's DO NOTHING and
+            // SqlServerImportDialect's key-matched MERGE already do. Supported since SQLite 3.24 -
+            // the same release that added the DO UPDATE form the Upsert branch below relies on.
+            sb.Append($" ON CONFLICT ({QuoteIdentifier(keyColumnName!)}) DO NOTHING");
+        }
+        else if (conflictStrategy == ConflictStrategy.Upsert)
         {
             // SQLite's "INSERT ... ON CONFLICT DO UPDATE" (added in 3.24) performs a true
             // UPDATE, unlike "INSERT OR REPLACE" which is a DELETE+INSERT under the hood -

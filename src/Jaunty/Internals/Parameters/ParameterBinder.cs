@@ -102,7 +102,7 @@ internal static class ParameterBinder
         // per-call dynamic binding path instead of caching.
         if (HasCollectionTypedProperty(meta))
         {
-            BindDynamic(command, parameters, sql, expandedParams: null, propertyLookup, meta, expandedOriginalNames: null);
+            BindDynamic(command, parameters, sql, expandedParams: null, propertyLookup, meta, expandedOriginalNames: null, preParsedSqlParamNames: sqlParamNames);
             return;
         }
 
@@ -148,10 +148,19 @@ internal static class ParameterBinder
         return new CommandTemplate(items.ToArray());
     }
 
-    private static void BindDynamic(IDbCommand command, object parameters, string expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] meta, HashSet<string>? expandedOriginalNames)
+    // preParsedSqlParamNames: the already-extracted parameter names for expandedSql, when the caller
+    // has them. Only ever passed for the un-expanded case - genuinely expanded SQL is a distinct
+    // string per call and must be re-parsed.
+    private static void BindDynamic(IDbCommand command, object parameters, string expandedSql, Dictionary<string, ExpandedParameterValue>? expandedParams, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] meta, HashSet<string>? expandedOriginalNames, string[]? preParsedSqlParamNames = null)
     {
         Type type = parameters.GetType();
-        string[] sqlParamNames = SqlParameterParser.ExtractParameterNames(expandedSql);
+
+        // AUD-R25: re-parsing is right for genuinely expanded SQL - each expansion is a distinct
+        // string that must not be cached - but Bind also routes the *un-expanded* case here, when
+        // the parameters type merely has a collection-typed property whose value happened to be
+        // null. That SQL was already parsed through SqlParameterParserCache two lines earlier and
+        // the result discarded, so every such call re-tokenized the whole statement on the hot path.
+        string[] sqlParamNames = preParsedSqlParamNames ?? SqlParameterParser.ExtractParameterNames(expandedSql);
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
 
         for (int i = 0; i < sqlParamNames.Length; i++)
@@ -206,13 +215,30 @@ internal static class ParameterBinder
             // TemplateCache keys on (Sql, ParamType, command.GetType()), so a CommandTemplate
             // instance is only ever Bind()-bound to commands of the exact provider type it was
             // created with - always clone rather than re-derive a provider-type check per call.
-            _templates ??= CreateTemplates(command);
+            //
+            // AUD-R25: this was a plain "_templates ??= CreateTemplates(command);". A CommandTemplate
+            // lives in the static TemplateCache and is handed to any thread binding the same
+            // (sql, paramType, commandType), so that lazy init is a data race. The reference was
+            // published with no release barrier, so under a weak memory model - arm64, both a
+            // supported target and this project's dev machine - another thread could observe a
+            // non-null _templates whose element writes were not yet visible and dereference a null
+            // element in CloneParameter, giving an intermittent NullReferenceException deep inside
+            // parameter binding. Interlocked.CompareExchange publishes with a full fence and lets
+            // only one array win; Volatile.Read pairs with it on the fast path. Two threads racing
+            // the first bind may each build an array, but only the published one is ever read, and
+            // the loser's provider parameter objects are simply discarded.
+            IDbDataParameter[]? templates = Volatile.Read(ref _templates);
+            if (templates is null)
+            {
+                IDbDataParameter[] created = CreateTemplates(command);
+                templates = Interlocked.CompareExchange(ref _templates, created, null) ?? created;
+            }
 
             IDataParameterCollection pCollection = command.Parameters;
             for (int i = 0; i < items.Length; i++)
             {
                 ref readonly TemplateItem item = ref items[i];
-                IDbDataParameter template = _templates[i];
+                IDbDataParameter template = templates[i];
 
                 // Clone the template to avoid thread safety issues
                 // and to prevent parameters from being bound to multiple commands
@@ -784,19 +810,12 @@ internal static class ParameterBinder
                 return value.ToString();
             }
         }
-        else if (valueType.IsGenericType)
-        {
-            Type? underlyingType = Nullable.GetUnderlyingType(valueType);
-            if (underlyingType?.IsEnum == true)
-            {
-                // Handle nullable enums
-                EnumStorage storage = GetEnumStorage(propertyInfo);
-                if (storage == EnumStorage.String && value != null)
-                {
-                    return value.ToString();
-                }
-            }
-        }
+        // AUD-R25: an "else if (valueType.IsGenericType)" branch here, commented "Handle nullable
+        // enums", was unreachable. valueType comes from value.GetType() above, and boxing a
+        // SomeEnum? produces a box of SomeEnum - GetType() can never return Nullable<SomeEnum>.
+        // Nullable enums are already handled by the IsEnum branch, so the branch covered nothing
+        // while reading as though the two cases differed; its redundant "value != null" re-check
+        // (already guaranteed by the guard at the top) reinforced that misreading.
 
         return value;
     }

@@ -148,7 +148,47 @@ public class NamingHelperTests
     [InlineData("Calves", "Calf")]
     [InlineData("Wolves", "Wolf")]
     [InlineData("Shelves", "Shelf")]
+    [InlineData("Halves", "Half")]
+    [InlineData("Thieves", "Thief")]
+    [InlineData("Loaves", "Loaf")]
+    [InlineData("Selves", "Self")]
+    [InlineData("Elves", "Elf")]
+    [InlineData("Lives", "Life")]
+    [InlineData("Scarves", "Scarf")]
+    [InlineData("Hooves", "Hoof")]
     public void Singularize_VesPlurals_ConvertsCorrectly(string input, string expected)
+    {
+        var result = NamingHelper.Singularize(input);
+        Assert.Equal(expected, result);
+    }
+
+    // R24: the -ves branch used to alternate f/fe for *every* word ending in -ves, so the far
+    // larger class of ordinary -ve nouns scaffolded to nonsense class names (a table named
+    // "Drives" produced "Drife"). These must singularize with the plain -s rule instead.
+    [Theory]
+    [InlineData("Waves", "Wave")]
+    [InlineData("Curves", "Curve")]
+    [InlineData("Archives", "Archive")]
+    [InlineData("Drives", "Drive")]
+    [InlineData("Moves", "Move")]
+    [InlineData("Reserves", "Reserve")]
+    [InlineData("Valves", "Valve")]
+    [InlineData("Olives", "Olive")]
+    [InlineData("Sleeves", "Sleeve")]
+    public void Singularize_RegularVePlurals_KeepsTheVe(string input, string expected)
+    {
+        var result = NamingHelper.Singularize(input);
+        Assert.Equal(expected, result);
+    }
+
+    // The f/fe alternation still has to fire on the trailing segment of a PascalCase compound,
+    // which is how a real table name like "book_shelves" reaches Singularize.
+    [Theory]
+    [InlineData("BookShelves", "BookShelf")]
+    [InlineData("PenKnives", "PenKnife")]
+    [InlineData("HouseWives", "HouseWife")]
+    [InlineData("MapleLeaves", "MapleLeaf")]
+    public void Singularize_CompoundVesPlurals_ConvertsTrailingSegment(string input, string expected)
     {
         var result = NamingHelper.Singularize(input);
         Assert.Equal(expected, result);

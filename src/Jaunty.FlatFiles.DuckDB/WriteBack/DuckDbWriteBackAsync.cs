@@ -13,8 +13,7 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(outputPath);
 
         IFileSource source = GetSourceOrThrow<T>();
-        var format = InferFormatFromExtension(outputPath);
-        var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(outputPath), format);
+        var sql = BuildCopyToSql(source, outputPath);
 
         await NonQueryExecutor.ExecuteAsync(_connection, sql, [], cancellationToken).ConfigureAwait(false);
     }
@@ -62,8 +61,7 @@ public sealed partial class DuckDb
         ArgumentNullException.ThrowIfNull(outputPath);
 
         IFileSource source = GetSourceOrThrow<T>();
-        var format = InferFormatFromExtension(outputPath);
-        var sql = _dialect.GenerateCopyToSql(source.TableName, Path.GetFullPath(outputPath), format);
+        var sql = BuildCopyToSql(source, outputPath);
 
         await NonQueryExecutor.ExecuteAsync(_connection, sql, [], cancellationToken).ConfigureAwait(false);
     }

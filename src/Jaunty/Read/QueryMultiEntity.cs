@@ -1686,6 +1686,16 @@ public static partial class Jaunty
             command = connection.CreateCommand();
             command.CommandText = sql;
 
+            // AUD-R25: this iterator applied neither CommandType nor the logger, unlike every other
+            // obsolete multi-entity overload in this file (which route through ExecuteReader) and
+            // unlike the non-obsolete replacement QueryStreamMultiEntityCore. Passing
+            // CommandOptions.AsStoredProcedure() therefore left the command as CommandType.Text, so
+            // the provider executed the procedure *name* as a raw SQL statement, and the command
+            // never reached JauntyConfig.Logger. AUD-R12 amended this same iterator for the
+            // silently-dropped non-DbTransaction without carrying these two assignments across.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
+
             // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
             // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
             // IDbTransaction through it throws an opaque InvalidCastException. Validate via
@@ -1703,6 +1713,8 @@ public static partial class Jaunty
 
             if (parameters is not null)
                 ParameterBinder.Bind(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             reader = command.ExecuteReader();
 

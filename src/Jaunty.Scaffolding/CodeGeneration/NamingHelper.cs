@@ -33,6 +33,34 @@ public static class NamingHelper
         ["Vertices"] = "Vertex",
     };
 
+    // The f/fe-alternating plurals are a closed class in English (knife/knives, leaf/leaves,
+    // wolf/wolves, ...). R24: the previous -ves rule applied the alternation to *every* word
+    // ending in -ves, mangling the far larger class of ordinary -ve nouns that pluralize
+    // regularly - Waves -> "Waf", Drives -> "Drife", Archives -> "Archife". Enumerating the
+    // closed class instead lets everything else fall through to the generic -s rule.
+    // Ordered longest-suffix-first so "Shelves" matches "shelves" before "elves".
+    private static readonly (string Plural, string Singular)[] FAlternatingPlurals =
+    [
+        ("sheaves", "sheaf"),
+        ("wharves", "wharf"),
+        ("scarves", "scarf"),
+        ("dwarves", "dwarf"),
+        ("shelves", "shelf"),
+        ("thieves", "thief"),
+        ("knives", "knife"),
+        ("leaves", "leaf"),
+        ("loaves", "loaf"),
+        ("calves", "calf"),
+        ("halves", "half"),
+        ("selves", "self"),
+        ("wolves", "wolf"),
+        ("hooves", "hoof"),
+        ("turves", "turf"),
+        ("wives", "wife"),
+        ("lives", "life"),
+        ("elves", "elf"),
+    ];
+
     /// <summary>
     /// Derives a generated entity class name from a table name, applying PascalCase
     /// conversion, optional singularization, prefix/suffix, and identifier escaping.
@@ -155,17 +183,12 @@ public static class NamingHelper
             !word.EndsWith("sses", StringComparison.OrdinalIgnoreCase))
             return word[..^2];
 
-        // -ves -> -f or -fe (e.g., leaves -> leaf, knives -> knife)
-        if (word.EndsWith("ves", StringComparison.OrdinalIgnoreCase) && word.Length > 4)
-        {
-            var withF = word[..^3] + "f";
-            var withFe = word[..^3] + "fe";
-            // R16: "aves" words (leaves, calves, wolves, ...) singularize to the plain -f form,
-            // not -fe - only "ives" words (knives -> knife) take the -fe form.
-            if (word.EndsWith("ives", StringComparison.OrdinalIgnoreCase))
-                return withFe;
-            return withF;
-        }
+        // -ves -> -f/-fe, but only for the closed class of words that genuinely alternate
+        // (leaves -> leaf, knives -> knife). Ordinary -ve nouns (Waves, Drives, Archives)
+        // deliberately fall through to the generic -s rule below.
+        var fAlternating = TrySingularizeFAlternating(word);
+        if (fAlternating != null)
+            return fAlternating;
 
         // -s -> remove s (but not for words ending in -ss, -us, -is)
         if (word.EndsWith("s", StringComparison.OrdinalIgnoreCase) &&
@@ -176,6 +199,36 @@ public static class NamingHelper
             return word[..^1];
 
         return word;
+    }
+
+    /// <summary>
+    /// Matches one of the closed-class f/fe-alternating plurals, either as the whole word or
+    /// as the trailing PascalCase segment of a compound (BookShelves -> BookShelf). Requiring
+    /// a capital at the segment boundary stops ordinary words that merely *contain* one of
+    /// these endings from matching - "Olives" must stay "Olive", not become "Olife".
+    /// </summary>
+    /// <param name="word">The candidate plural word.</param>
+    /// <returns>The singular form, or null if the word is not an f/fe-alternating plural.</returns>
+    private static string? TrySingularizeFAlternating(string word)
+    {
+        foreach ((string plural, string singular) in FAlternatingPlurals)
+        {
+            if (word.Length < plural.Length ||
+                !word.EndsWith(plural, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var start = word.Length - plural.Length;
+            if (start > 0 && !char.IsUpper(word[start]))
+                continue;
+
+            var replacement = char.IsUpper(word[start])
+                ? char.ToUpperInvariant(singular[0]) + singular[1..]
+                : singular;
+
+            return word[..start] + replacement;
+        }
+
+        return null;
     }
 
     /// <summary>

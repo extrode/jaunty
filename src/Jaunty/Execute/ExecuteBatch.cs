@@ -112,6 +112,17 @@ public static partial class Jaunty
     /// </summary>
     public static ValueTask<int> ExecuteBatchAsync(this IDbConnection connection, string sql, IEnumerable<object> parameterSets, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentNullException.ThrowIfNull(parameterSets);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameterSets is null) throw new ArgumentNullException(nameof(parameterSets));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteBatchCoreAsync(dbConnection, sql, parameterSets, default, CommandType.Text, cancellationToken);
@@ -122,6 +133,17 @@ public static partial class Jaunty
     /// </summary>
     public static ValueTask<int> ExecuteBatchAsync(this IDbConnection connection, string sql, IEnumerable<object> parameterSets, CommandOptions options, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentNullException.ThrowIfNull(parameterSets);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameterSets is null) throw new ArgumentNullException(nameof(parameterSets));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteBatchCoreAsync(dbConnection, sql, parameterSets, options, options.CommandType, cancellationToken);
