@@ -21,6 +21,15 @@ public static partial class Jaunty
     /// </remarks>
     public static ValueTask<int> ExecuteAsync(this IDbConnection connection, string sql, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteNonQueryCoreAsync(dbConnection, sql, null, default, CommandType.Text, cancellationToken);
@@ -36,6 +45,17 @@ public static partial class Jaunty
     /// <returns>A ValueTask containing the number of rows affected by the command.</returns>
     public static ValueTask<int> ExecuteAsync(this IDbConnection connection, string sql, object parameters, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteNonQueryCoreAsync(dbConnection, sql, parameters, default, CommandType.Text, cancellationToken);
@@ -51,6 +71,15 @@ public static partial class Jaunty
     /// <returns>A ValueTask containing the number of rows affected by the command.</returns>
     public static ValueTask<int> ExecuteAsync(this IDbConnection connection, string sql, CommandOptions options, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteNonQueryCoreAsync(dbConnection, sql, null, options, options.CommandType, cancellationToken);
@@ -67,6 +96,17 @@ public static partial class Jaunty
     /// <returns>A ValueTask containing the number of rows affected by the command.</returns>
     public static ValueTask<int> ExecuteAsync(this IDbConnection connection, string sql, object parameters, CommandOptions options, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+#else
+        if (connection is null) throw new ArgumentNullException(nameof(connection));
+        if (sql is null) throw new ArgumentNullException(nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
+        if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+#endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
             : ExecuteNonQueryCoreAsync(dbConnection, sql, parameters, options, options.CommandType, cancellationToken);

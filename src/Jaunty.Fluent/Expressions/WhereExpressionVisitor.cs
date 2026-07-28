@@ -184,7 +184,9 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                         {
                             var value = EvaluateExpression(node.Arguments[0]);
                             var paramName = GetParameterName(columnName);
-                            _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
+                            _sql.Append(IsCaseInsensitiveComparison(node)
+                                ? _dialect.GenerateCaseInsensitiveLike(escapedColumn, paramName, "\\")
+                                : _dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
                             _parameters.Add((paramName, _dialect.FormatContainsPattern(value?.ToString() ?? "")));
                             return node;
                         }
@@ -192,7 +194,9 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                         {
                             var value = EvaluateExpression(node.Arguments[0]);
                             var paramName = GetParameterName(columnName);
-                            _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
+                            _sql.Append(IsCaseInsensitiveComparison(node)
+                                ? _dialect.GenerateCaseInsensitiveLike(escapedColumn, paramName, "\\")
+                                : _dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
                             _parameters.Add((paramName, _dialect.FormatStartsWithPattern(value?.ToString() ?? "")));
                             return node;
                         }
@@ -200,7 +204,9 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                         {
                             var value = EvaluateExpression(node.Arguments[0]);
                             var paramName = GetParameterName(columnName);
-                            _sql.Append(_dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
+                            _sql.Append(IsCaseInsensitiveComparison(node)
+                                ? _dialect.GenerateCaseInsensitiveLike(escapedColumn, paramName, "\\")
+                                : _dialect.GenerateCaseSensitiveLike(escapedColumn, paramName, "\\"));
                             _parameters.Add((paramName, _dialect.FormatEndsWithPattern(value?.ToString() ?? "")));
                             return node;
                         }
@@ -833,19 +839,7 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
         var paramName = GetParameterName(columnName);
         var stringValue = value.ToString()!;
 
-        bool isCaseInsensitive = false;
-        if (node.Arguments.Count >= 2)
-        {
-            var comparisonArg = EvaluateExpression(node.Arguments[1]);
-            if (comparisonArg is StringComparison comparison)
-            {
-                isCaseInsensitive = comparison is StringComparison.OrdinalIgnoreCase
-                    or StringComparison.CurrentCultureIgnoreCase
-                    or StringComparison.InvariantCultureIgnoreCase;
-            }
-        }
-
-        if (isCaseInsensitive)
+        if (IsCaseInsensitiveComparison(node))
         {
             _sql.Append(_dialect.GenerateCaseInsensitiveEquals(escapedColumn, paramName));
         }
@@ -858,5 +852,36 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
 
         _parameters.Add((paramName, stringValue));
         return node;
+    }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="node"/> is one of the
+    /// <c>(string, StringComparison)</c> overloads and the comparison requested is case-insensitive.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R25: only <c>string.Equals</c> consulted this argument. <c>Contains</c>,
+    /// <c>StartsWith</c> and <c>EndsWith</c> read <c>Arguments[0]</c> and went straight to
+    /// <c>GenerateCaseSensitiveLike</c>, so
+    /// <c>.Where(p =&gt; p.Name.Contains("abc", StringComparison.OrdinalIgnoreCase))</c> filtered
+    /// case-sensitively. Not merely "fell back to the column's collation" either: SQL Server's
+    /// GenerateCaseSensitiveLike appends COLLATE Latin1_General_CS_AS and MySQL's appends COLLATE
+    /// utf8mb4_bin, actively overriding a case-insensitive column collation to give the caller the
+    /// exact opposite of what they asked for.
+    ///
+    /// <para>
+    /// A comparison argument that is not one of the three IgnoreCase values - Ordinal,
+    /// CurrentCulture, InvariantCulture - is case-sensitive, which is what the LIKE already was.
+    /// The culture distinction between them is not expressible in SQL and is deliberately not
+    /// attempted; the case sensitivity is the part that changes which rows come back.
+    /// </para>
+    /// </remarks>
+    private bool IsCaseInsensitiveComparison(MethodCallExpression node)
+    {
+        if (node.Arguments.Count < 2) return false;
+
+        return EvaluateExpression(node.Arguments[1]) is StringComparison comparison
+            && comparison is StringComparison.OrdinalIgnoreCase
+                or StringComparison.CurrentCultureIgnoreCase
+                or StringComparison.InvariantCultureIgnoreCase;
     }
 }

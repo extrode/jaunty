@@ -9,8 +9,8 @@ namespace Jaunty.Attributes;
 /// If not specified, Jaunty will use the property name as the column name.
 /// </para>
 /// <para>
-/// This attribute is Jaunty's native column mapping attribute. It also supports the standard 
-/// <see cref="ColumnAttribute"/> for compatibility.
+/// This attribute is Jaunty's native column mapping attribute. It also supports the standard
+/// <c>ColumnAttribute</c> from System.ComponentModel.DataAnnotations.Schema for compatibility.
 /// </para>
 /// </remarks>
 /// <example>

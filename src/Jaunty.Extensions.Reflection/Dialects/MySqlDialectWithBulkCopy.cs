@@ -8,7 +8,7 @@ namespace Jaunty.Extensions.Reflection.Dialects;
 /// MySQL dialect with bulk copy support.
 /// Extends the base dialect to provide MySqlBulkLoader provider.
 /// </summary>
-internal sealed class MySqlDialectWithBulkCopy : ISqlDialect
+internal sealed class MySqlDialectWithBulkCopy : ISqlDialect, IDialectWrapper
 {
     private readonly MySqlDialect _inner;
 
@@ -16,6 +16,14 @@ internal sealed class MySqlDialectWithBulkCopy : ISqlDialect
     {
         _inner = inner ?? new MySqlDialect();
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Exposes the decorated dialect so engine-identity tests (CSV import dispatch,
+    /// BulkInsert's SQLite routing) still see MySqlDialect once UseNativeBulkCopy()
+    /// has swapped this wrapper in - see SqlDialectFactory.Unwrap.
+    /// </remarks>
+    public ISqlDialect InnerDialect => _inner;
 
     public bool SupportsNativeBulkCopy => true;
 

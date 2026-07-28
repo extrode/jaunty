@@ -59,7 +59,7 @@ public sealed partial class DuckDb
     /// <code>
     /// // Multiple queries with parameters
     /// using var grid = db.QueryMultiple(
-    ///     "SELECT * FROM sales WHERE revenue &gt; @MinRevenue; SELECT * FROM inventory WHERE stock &lt; @MaxStock",
+    ///     "SELECT * FROM sales WHERE revenue &gt; $MinRevenue; SELECT * FROM inventory WHERE stock &lt; $MaxStock",
     ///     new { MinRevenue = 1000, MaxStock = 10 });
     ///
     /// var highRevenueSales = grid.Read&lt;SalesRecord&gt;();
@@ -83,8 +83,11 @@ public sealed partial class DuckDb
 
             if (parameters != null)
             {
-                // DuckDB uses positional parameters ($1, $2, ...)
-                // For simplicity, we'll use named parameters and let DuckDB handle the binding
+                // Bound by name, always - so the SQL must spell its placeholders $Foo, matching the
+                // property name. Verified: "SELECT $Val" binds; "SELECT @Val" fails with
+                // 'Binder Error: Referenced column "Val" not found' because DuckDB does not treat @ as
+                // a placeholder prefix at all, and positional ? cannot be used through this overload
+                // since every parameter added here is named. Hence the $ spelling in the examples above.
                 foreach (PropertyInfo prop in GetCachedParameterProperties(parameters.GetType()))
                 {
                     DbParameter param = cmd.CreateParameter();

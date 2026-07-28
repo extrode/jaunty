@@ -10,6 +10,7 @@ using Jaunty.Configuration;
 using Jaunty.Internals.Entity;
 using Jaunty.Attributes;
 using Jaunty.TypeHandlers;
+using System.Globalization;
 
 namespace Jaunty.Extensions.Reflection;
 
@@ -236,7 +237,7 @@ internal static class MetadataCache<T>
                         // If it's already numeric, try parsing as that
                         try
                         {
-                            var numValue = Convert.ChangeType(dbValue, Enum.GetUnderlyingType(underlyingType));
+                            var numValue = Convert.ChangeType(dbValue, Enum.GetUnderlyingType(underlyingType), CultureInfo.InvariantCulture);
                             convertedValue = Enum.ToObject(underlyingType, numValue);
                         }
                         catch (Exception ex)

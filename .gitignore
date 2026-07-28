@@ -144,6 +144,9 @@ desktop.ini
 Thumbs.db
 ehthumbs.db
 
+# macOS Finder metadata (never commit these)
+.DS_Store
+
 # =============================================================================
 # JAUNTY PROJECT-SPECIFIC
 # =============================================================================

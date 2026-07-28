@@ -104,11 +104,30 @@ internal sealed class EntityDataReader<T> : IDataReader, IEnumerable where T : n
     public bool IsDBNull(int i) => GetValue(i) is DBNull;
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// AUD-R25: this was an ordinal, case-sensitive comparison only.
+    /// <see cref="IDataRecord.GetOrdinal"/> is documented to try a case-sensitive lookup first and
+    /// then fall back to a case-insensitive one, which every ADO.NET provider reader implements, and
+    /// every other column-name lookup in Jaunty is deliberately case-insensitive
+    /// (<c>EntityMetadata.ParameterMap</c>, <c>SpParameters.Get</c>, the dictionary special-type
+    /// mappers). A caller resolving a differently-cased name got
+    /// <see cref="IndexOutOfRangeException"/> instead of the column. No in-tree caller reaches it -
+    /// the providers feed back names they got from <see cref="GetName"/> - but this reader is handed
+    /// to third-party provider bulk-copy APIs whose lookup behaviour Jaunty does not control.
+    /// </remarks>
     public int GetOrdinal(string name)
     {
         for (int i = 0; i < _columns.Length; i++)
         {
-            if (_columns[i].ColumnName == name)
+            if (string.Equals(_columns[i].ColumnName, name, StringComparison.Ordinal))
+                return i;
+        }
+
+        // Second pass, not a single case-insensitive pass: an exact match must win over a
+        // differently-cased one when an entity maps two columns whose names differ only by case.
+        for (int i = 0; i < _columns.Length; i++)
+        {
+            if (string.Equals(_columns[i].ColumnName, name, StringComparison.OrdinalIgnoreCase))
                 return i;
         }
 
