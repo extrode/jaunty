@@ -40,6 +40,7 @@ public static class JauntyLoggingExtensions
     /// <item><description>SlowQueryThreshold: 1 second</description></item>
     /// <item><description>LogParameters: true</description></item>
     /// <item><description>LogSql: true</description></item>
+    /// <item><description>LogExecutionTime: true</description></item>
     /// </list>
     /// </para>
     /// </remarks>
