@@ -162,7 +162,14 @@ public class GridReaderEmptyResultSetTests
             return r => new CountingEntity { Id = r.GetInt32(ordinal) };
         }
 
+        // IMapped<T>.ReadEntity is a static abstract member on net8.0+ and an instance method on
+        // net472, which does not support static abstract interface members - see IMapped<T> and the
+        // same split in Jaunty.Tests.Entities.Product.
+#if NET8_0_OR_GREATER
         public static CountingEntity ReadEntity(IDataReader reader)
+#else
+        public CountingEntity ReadEntity(IDataReader reader)
+#endif
             => new() { Id = reader.GetInt32(reader.GetOrdinal("Id")) };
     }
 
