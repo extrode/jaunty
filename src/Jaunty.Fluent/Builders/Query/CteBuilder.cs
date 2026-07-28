@@ -107,11 +107,23 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     public ICteQueryClause<T> Where(string column, object? value)
     {
+        var escapedColumn = _dialect.EscapeColumnName(column);
+        LogicalOperator op = _whereConditions.Count == 0 ? LogicalOperator.None : LogicalOperator.And;
+
+        if (value is null)
+        {
+            // A bound null becomes DBNull, and "col = NULL" is UNKNOWN for every row under SQL's
+            // three-valued logic - so the query silently returned nothing instead of the rows where
+            // the column IS NULL. Every other string-column predicate in the assembly branches here
+            // (QueryBuilder's six Where/And/Or overloads and their IUpdateWhereClause counterparts);
+            // this was the one that didn't.
+            _whereConditions.Add(WhereCondition.Column($"{escapedColumn} IS NULL", op));
+            return this;
+        }
+
         var paramName = $"{_dialect.ParameterPrefix}cte_p{_parameters.Count}";
         _parameters.Add(paramName, value);
-        var sql = $"{_dialect.EscapeColumnName(column)} = {paramName}";
-        LogicalOperator op = _whereConditions.Count == 0 ? LogicalOperator.None : LogicalOperator.And;
-        _whereConditions.Add(WhereCondition.Column(sql, op));
+        _whereConditions.Add(WhereCondition.Column($"{escapedColumn} = {paramName}", op));
         return this;
     }
 
@@ -180,15 +192,24 @@ internal sealed class CteBuilder<T> : ICteClause<T>, ICteQueryClause<T> where T 
 
     public T SelectFirst()
     {
+        // Save and restore rather than assign: a CteBuilder is exactly the kind of object a caller
+        // holds onto and reuses, since building the CTE definition is the expensive part. Leaving
+        // _takeCount at 1 meant a later Select()/ToSql() on the same instance silently returned one
+        // row. QueryBuilder's 24 first/single terminals and SetOperationBuilder's 18 all restore;
+        // these two were the only ones that didn't.
+        var original = _takeCount;
         _takeCount = 1;
         var sql = BuildSql();
+        _takeCount = original;
         return _connection.QueryFirst<T>(sql, _parameters.ToParameterObject()!);
     }
 
     public T? SelectFirstOrDefault()
     {
+        var original = _takeCount;
         _takeCount = 1;
         var sql = BuildSql();
+        _takeCount = original;
         return _connection.QueryFirstOrDefault<T>(sql, _parameters.ToParameterObject()!);
     }
 
