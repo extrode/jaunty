@@ -3,6 +3,7 @@ using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Configuration;
+using Jaunty.Interceptors;
 using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Read;
 using Jaunty.StoredProcedure;
@@ -292,8 +293,32 @@ public static partial class Jaunty
         // A null literal binds to this overload over the object?-parameter overload (SpParameters
         // is a more specific reference type), so treat null the same as "no parameters" instead of
         // throwing - matches the zero-parameter convenience overload's behavior.
-        parameters ??= new SpParameters();
+        SpParameters spParameters = parameters ?? new SpParameters();
 
+        // AUD-R25: these SpParameters overloads built and ran their commands by hand and invoked
+        // neither the interceptor pipeline nor JauntyConfig.Logger, while the identically-named
+        // object?-parameters overloads delegate to Query<T>/QueryFirst/QueryFirstOrDefault/
+        // QueryScalar/ExecuteNonQueryCore and therefore do both. Same method name, same public
+        // surface, opposite observability - and it silently excluded precisely the stored-procedure
+        // calls that use output and return parameters, typically the ones an audit trail most needs.
+        // Whether anything is actually observing is the pipeline's own decision (IsObserved covers
+        // interceptors and the DiagnosticListener alike), so the only test here is whether a
+        // pipeline is configured at all.
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteWithOutputParametersCore(connection, procedureName, spParameters, options, handler)
+            : pipeline.ExecuteWithInterception(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteWithOutputParametersCore(connection, procedureName, spParameters, options, handler));
+    }
+
+    private static TResult ExecuteWithOutputParametersCore<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
+        CommandOptions options, Func<IDataReader, SpParameters, TResult> handler)
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -321,6 +346,8 @@ public static partial class Jaunty
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             BindSpParameters(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             using IDataReader reader = command.ExecuteReader();
             TResult result = handler(reader, parameters);
@@ -349,8 +376,23 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
-        parameters ??= new SpParameters();
+        SpParameters spParameters = parameters ?? new SpParameters();
 
+        // See ExecuteWithOutputParameters for why this wrapper exists (AUD-R25).
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteScalarWithOutputParametersCore<T>(connection, procedureName, spParameters, options)
+            : pipeline.ExecuteWithInterception(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteScalarWithOutputParametersCore<T>(connection, procedureName, spParameters, options));
+    }
+
+    private static T ExecuteScalarWithOutputParametersCore<T>(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options)
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -378,6 +420,8 @@ public static partial class Jaunty
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             BindSpParameters(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             object? result = command.ExecuteScalar();
 
@@ -408,8 +452,23 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
-        parameters ??= new SpParameters();
+        SpParameters spParameters = parameters ?? new SpParameters();
 
+        // See ExecuteWithOutputParameters for why this wrapper exists (AUD-R25).
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteNonQueryWithOutputParametersCore(connection, procedureName, spParameters, options)
+            : pipeline.ExecuteWithInterception(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteNonQueryWithOutputParametersCore(connection, procedureName, spParameters, options));
+    }
+
+    private static int ExecuteNonQueryWithOutputParametersCore(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options)
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -437,6 +496,8 @@ public static partial class Jaunty
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             BindSpParameters(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             int rowsAffected = command.ExecuteNonQuery();
 
