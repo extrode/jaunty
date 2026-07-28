@@ -11,11 +11,18 @@ namespace Jaunty.Fluent.Internals;
 internal static class GroupedJoinedResultMapper
 {
     /// <summary>
-    /// Constructor/property lookups resolved once per query execution and reused across every
-    /// row, instead of re-running reflection (GetConstructors/GetProperty) per row.
+    /// Constructor/property lookups - and, since AUD-R25, column ordinals - resolved once per
+    /// query execution and reused across every row, instead of re-running reflection
+    /// (GetConstructors/GetProperty) or <c>GetOrdinal</c> per row.
     /// </summary>
-    public readonly struct ResultMapperPlan
+    public sealed class ResultMapperPlan
     {
+        // Ordinals are stable for the lifetime of a result set, so they are cached here rather
+        // than looked up per row - AUD-R25. The reader is tracked alongside them so a plan that is
+        // ever reused across result sets re-resolves instead of returning stale ordinals.
+        private object? _ordinalsReader;
+        private int[]? _ordinals;
+
         private ResultMapperPlan(ConstructorInfo? constructor, ParameterInfo[]? constructorParameters, PropertyInfo?[]? properties)
         {
             Constructor = constructor;
@@ -26,6 +33,27 @@ internal static class GroupedJoinedResultMapper
         public ConstructorInfo? Constructor { get; }
         public ParameterInfo[]? ConstructorParameters { get; }
         public PropertyInfo?[]? Properties { get; }
+
+        /// <summary>
+        /// Returns this plan's ordinal buffer for <paramref name="reader"/>, with every slot reset
+        /// to -1 ("not yet resolved") when the reader changes. Slots are filled in on first use by
+        /// <see cref="MapResult{TResult}"/> rather than eagerly, so an alias the property path
+        /// skips - one with no matching writable property - is never looked up at all, exactly as
+        /// before.
+        /// </summary>
+        internal int[] GetOrdinalBuffer(System.Data.IDataReader reader, int length)
+        {
+            if (ReferenceEquals(_ordinalsReader, reader) && _ordinals is not null && _ordinals.Length == length)
+                return _ordinals;
+
+            var ordinals = new int[length];
+            for (int i = 0; i < length; i++)
+                ordinals[i] = -1;
+
+            _ordinals = ordinals;
+            _ordinalsReader = reader;
+            return ordinals;
+        }
 
         public static ResultMapperPlan Resolve<TResult>(string[] aliases)
         {
@@ -51,6 +79,8 @@ internal static class GroupedJoinedResultMapper
 
     public static TResult MapResult<TResult>(System.Data.IDataReader reader, string[] aliases, in ResultMapperPlan plan)
     {
+        int[] ordinals = plan.GetOrdinalBuffer(reader, aliases.Length);
+
         if (plan.Constructor is not null)
         {
             var values = new object?[aliases.Length];
@@ -58,7 +88,7 @@ internal static class GroupedJoinedResultMapper
 
             for (int i = 0; i < aliases.Length; i++)
             {
-                int ordinal = reader.GetOrdinal(aliases[i]);
+                int ordinal = ResolveOrdinal(reader, aliases, ordinals, i);
 
                 if (!reader.IsDBNull(ordinal))
                 {
@@ -83,7 +113,7 @@ internal static class GroupedJoinedResultMapper
 
             if (property is not null && property.CanWrite)
             {
-                int ordinal = reader.GetOrdinal(aliases[i]);
+                int ordinal = ResolveOrdinal(reader, aliases, ordinals, i);
 
                 if (!reader.IsDBNull(ordinal))
                 {
@@ -97,6 +127,16 @@ internal static class GroupedJoinedResultMapper
         }
 
         return instance!;
+    }
+
+    private static int ResolveOrdinal(System.Data.IDataReader reader, string[] aliases, int[] ordinals, int index)
+    {
+        int ordinal = ordinals[index];
+
+        if (ordinal < 0)
+            ordinals[index] = ordinal = reader.GetOrdinal(aliases[index]);
+
+        return ordinal;
     }
 
     /// <summary>
