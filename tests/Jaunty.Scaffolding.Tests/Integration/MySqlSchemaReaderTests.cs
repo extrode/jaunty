@@ -80,7 +80,7 @@ public class MySqlSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new MySqlSchemaReader().ReadSchemaAsync(
-            conn.ConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
+            TestConfiguration.MySqlConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
 
         var table = Assert.Single(schema.Tables);
         Assert.Equal("scaffold_test_products", table.TableName);
@@ -95,7 +95,7 @@ public class MySqlSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new MySqlSchemaReader().ReadSchemaAsync(
-            conn.ConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
+            TestConfiguration.MySqlConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
 
         var table = schema.Tables.Single();
         var idColumn = table.Columns.Single(c => c.ColumnName == "product_id");
@@ -113,7 +113,7 @@ public class MySqlSchemaReaderTests
         CreateCompositeKeyTable(conn);
 
         var schema = await new MySqlSchemaReader().ReadSchemaAsync(
-            conn.ConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_order_items"] });
+            TestConfiguration.MySqlConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_order_items"] });
 
         var table = schema.Tables.Single();
         Assert.NotNull(table.PrimaryKey);
@@ -128,7 +128,7 @@ public class MySqlSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new MySqlSchemaReader().ReadSchemaAsync(
-            conn.ConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
+            TestConfiguration.MySqlConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
 
         var table = schema.Tables.Single();
         var computed = table.Columns.Single(c => c.ColumnName == "full_label");
@@ -145,7 +145,7 @@ public class MySqlSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new MySqlSchemaReader().ReadSchemaAsync(
-            conn.ConnectionString,
+            TestConfiguration.MySqlConnectionString,
             new SchemaReaderOptions { IncludeTables = ["scaffold_test_products", "scaffold_test_orders"] });
 
         Assert.Equal(2, schema.Tables.Count(t => t.TableName is "scaffold_test_products" or "scaffold_test_orders"));
@@ -158,7 +158,7 @@ public class MySqlSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new MySqlSchemaReader().ReadSchemaAsync(
-            conn.ConnectionString,
+            TestConfiguration.MySqlConnectionString,
             new SchemaReaderOptions { IncludeTables = ["scaffold_test_orders"], IncludeForeignKeys = true });
 
         var ordersTable = schema.Tables.Single(t => t.TableName == "scaffold_test_orders");
@@ -176,7 +176,7 @@ public class MySqlSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new MySqlSchemaReader().ReadSchemaAsync(
-            conn.ConnectionString,
+            TestConfiguration.MySqlConnectionString,
             new SchemaReaderOptions { IncludeTables = ["scaffold_test_orders"], IncludeForeignKeys = false });
 
         var ordersTable = schema.Tables.Single(t => t.TableName == "scaffold_test_orders");
@@ -190,7 +190,7 @@ public class MySqlSchemaReaderTests
         CreateProductsAndOrders(conn);
 
         var schema = await new MySqlSchemaReader().ReadSchemaAsync(
-            conn.ConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
+            TestConfiguration.MySqlConnectionString, new SchemaReaderOptions { IncludeTables = ["scaffold_test_products"] });
 
         Assert.Equal(conn.Database, schema.DatabaseName);
     }
