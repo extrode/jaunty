@@ -102,6 +102,18 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         return cmd.ExecuteScalar()?.ToString() ?? "";
     }
 
+    private static string GetFirstEmail(IDbConnection connection, DialectProvider provider)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = provider switch
+        {
+            DialectProvider.SqlServer => "SELECT TOP 1 Email FROM dbo.csv_import_test ORDER BY Name",
+            DialectProvider.Postgres => @"SELECT ""Email"" FROM csv_import_test ORDER BY ""Name"" LIMIT 1",
+            _ => "SELECT Email FROM csv_import_test ORDER BY Name LIMIT 1"
+        };
+        return cmd.ExecuteScalar()?.ToString() ?? "";
+    }
+
     // =============================================
     // SQLite in-memory (prepared statement fallback)
     // =============================================
@@ -1172,6 +1184,31 @@ public class CsvImportTests : IClassFixture<DialectFixture>
             long rows = connection.ImportCsv(TableName, path, options);
             Assert.Equal(1L, rows);
             Assert.Equal("Alice", GetFirstName(connection, DialectProvider.SqlServer));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [SqlServer]
+    public void ImportCsv_SqlServer_CrlfLineEndings_TrailingCarriageReturnStripped(DialectInfo dialect)
+    {
+        using var connection = new SqlConnection(TestConfiguration.SqlServerConnectionString);
+        connection.Open();
+        CreateTable(connection, DialectProvider.SqlServer);
+
+        var csv =
+            "Name,Age,City,Email\r\n" +
+            "Alice,30,NYC,alice@example.com\r\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            long rows = connection.ImportCsv(TableName, path, new CsvImportOptions());
+            Assert.Equal(1L, rows);
+            Assert.Equal("Alice", GetFirstName(connection, DialectProvider.SqlServer));
+            Assert.Equal("alice@example.com", GetFirstEmail(connection, DialectProvider.SqlServer));
         }
         finally
         {
