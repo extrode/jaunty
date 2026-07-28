@@ -73,6 +73,18 @@ public class SQLiteSchemaReaderTests : IDisposable
             )";
         cmd.ExecuteNonQuery();
 
+        // Composite primary key declared in the *opposite* order to the physical columns.
+        // PRAGMA table_info reports rows in physical order, so anything that derives the key
+        // order by filtering the column list gets [col_a, col_b] instead of [col_b, col_a].
+        cmd.CommandText = @"
+            CREATE TABLE reversed_composite_pk (
+                col_a INTEGER NOT NULL,
+                col_b INTEGER NOT NULL,
+                payload TEXT,
+                PRIMARY KEY (col_b, col_a)
+            )";
+        cmd.ExecuteNonQuery();
+
         // Plain "INTEGER PRIMARY KEY" (no AUTOINCREMENT keyword) - still a rowid alias and
         // therefore still auto-generated.
         cmd.CommandText = @"
@@ -109,9 +121,9 @@ public class SQLiteSchemaReaderTests : IDisposable
 
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
-        Assert.Equal(7, schema.Tables.Count);
+        Assert.Equal(8, schema.Tables.Count);
         Assert.Equal(
-            new[] { "customers", "order's notes", "order_details", "orders", "plain_rowid_pk", "products", "without_rowid_pk" }.OrderBy(t => t, StringComparer.Ordinal),
+            new[] { "customers", "order's notes", "order_details", "orders", "plain_rowid_pk", "products", "reversed_composite_pk", "without_rowid_pk" }.OrderBy(t => t, StringComparer.Ordinal),
             schema.Tables.Select(t => t.TableName).OrderBy(t => t, StringComparer.Ordinal));
     }
 
@@ -163,9 +175,27 @@ public class SQLiteSchemaReaderTests : IDisposable
 
         var orderDetailsTable = schema.Tables.First(t => t.TableName == "order_details");
         Assert.NotNull(orderDetailsTable.PrimaryKey);
-        Assert.Equal(2, orderDetailsTable.PrimaryKey!.Columns.Count);
-        Assert.Contains("order_id", orderDetailsTable.PrimaryKey!.Columns);
-        Assert.Contains("product_id", orderDetailsTable.PrimaryKey!.Columns);
+        Assert.Equal(new[] { "order_id", "product_id" }, orderDetailsTable.PrimaryKey!.Columns);
+    }
+
+    // R24: the key order came from filtering the columns (physical order) rather than from the
+    // PRAGMA table_info pk ordinal, so a key declared against the grain of the column order was
+    // reported reversed. The order-independent Assert.Contains in the test above can't see it,
+    // and PrimaryKeyInfo.Columns order is what generated key lookups/parameter order depend on.
+    [Fact]
+    public async Task ReadSchemaAsync_CompositePrimaryKey_UsesDeclarationOrderNotColumnOrder()
+    {
+        var reader = new SQLiteSchemaReader();
+        var options = new SchemaReaderOptions();
+
+        var schema = await reader.ReadSchemaAsync(_connectionString, options);
+
+        var table = schema.Tables.First(t => t.TableName == "reversed_composite_pk");
+        Assert.NotNull(table.PrimaryKey);
+        Assert.Equal(new[] { "col_b", "col_a" }, table.PrimaryKey!.Columns);
+
+        // The columns themselves stay in physical order - only the key is re-ordered.
+        Assert.Equal(new[] { "col_a", "col_b", "payload" }, table.Columns.Select(c => c.ColumnName));
     }
 
     [Fact]
@@ -244,7 +274,7 @@ public class SQLiteSchemaReaderTests : IDisposable
 
         var schema = await reader.ReadSchemaAsync(_connectionString, options);
 
-        Assert.Equal(6, schema.Tables.Count);
+        Assert.Equal(7, schema.Tables.Count);
         Assert.DoesNotContain("order_details", schema.Tables.Select(t => t.TableName));
     }
 
