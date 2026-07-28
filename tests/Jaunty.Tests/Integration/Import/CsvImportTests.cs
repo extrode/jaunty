@@ -751,6 +751,124 @@ public class CsvImportTests : IClassFixture<DialectFixture>
         }
     }
 
+    // AUD-R24: the short-row case above is handled deliberately and safely, but the mirror-image
+    // case had no handling at all - the binding loop only ran parameters.Length times, so a row
+    // with *more* fields than the header imported as a truncated row with the surplus dropped
+    // and no error, warning or log. An unescaped delimiter inside an unquoted value is the
+    // everyday way to produce one.
+    [Fact]
+    public void ImportCsv_LongRow_ThrowsInsteadOfSilentlyDiscardingExtraFields()
+    {
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        connection.Open();
+        CreateTable(connection, DialectProvider.SystemSqlite);
+
+        var csv =
+            "Name,Age,City,Email\n" +
+            "Alice,30,NYC,alice@example.com\n" +
+            "Bob,25,LA,bob@example.com,extra\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            var ex = Assert.Throws<InvalidDataException>(() => connection.ImportCsv(TableName, path));
+
+            // The message has to identify which record and by how much, or a large file is
+            // undiagnosable. Record 3 == header + Alice + Bob.
+            Assert.Contains("record 3", ex.Message);
+            Assert.Contains("5 fields", ex.Message);
+            Assert.Contains("defines 4", ex.Message);
+
+            // The whole import is rolled back - Alice's good row must not survive a failed batch.
+            Assert.Equal(0L, GetRowCount(connection, DialectProvider.SystemSqlite));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+#if NET8_0_OR_GREATER
+    // Same guard via Microsoft.Data.Sqlite, mirroring
+    // ImportCsv_MicrosoftSqliteInMemory_ImportsAllRows: the check lives in the shared
+    // prepared-statement path, so it must not depend on which SQLite provider got there.
+    [Fact]
+    public void ImportCsv_MicrosoftSqliteInMemory_LongRow_Throws()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        CreateTable(connection, DialectProvider.MicrosoftSqlite);
+
+        var csv =
+            "Name,Age,City,Email\n" +
+            "Bob,25,LA,bob@example.com,extra\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            Assert.Throws<InvalidDataException>(() => connection.ImportCsv(TableName, path));
+            Assert.Equal(0L, GetRowCount(connection, DialectProvider.MicrosoftSqlite));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+#endif
+
+    [Fact]
+    public void ImportCsv_NoHeader_LongRow_ThrowsAgainstFirstRecordWidth()
+    {
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        connection.Open();
+        CreateTable(connection, DialectProvider.SystemSqlite);
+
+        // Without a header the first data row defines the layout, so the second row is the
+        // ragged one.
+        var csv =
+            "Alice,30,NYC,alice@example.com\n" +
+            "Bob,25,LA,bob@example.com,extra\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            var ex = Assert.Throws<InvalidDataException>(
+                () => connection.ImportCsv(TableName, path, new CsvImportOptions { HasHeader = false }));
+
+            Assert.Contains("first record", ex.Message);
+            Assert.Equal(0L, GetRowCount(connection, DialectProvider.SystemSqlite));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ImportCsv_QuotedValueContainingDelimiter_IsNotTreatedAsARaggedRow()
+    {
+        using var connection = new SQLiteConnection("Data Source=:memory:");
+        connection.Open();
+        CreateTable(connection, DialectProvider.SystemSqlite);
+
+        // The remedy the error message points at must actually work: a properly quoted value
+        // containing the delimiter parses as one field and imports normally.
+        var csv =
+            "Name,Age,City,Email\n" +
+            "Alice,30,\"NYC, NY\",alice@example.com\n";
+        var path = WriteTempCsv(csv);
+        try
+        {
+            long rows = connection.ImportCsv(TableName, path);
+            Assert.Equal(1L, rows);
+
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT City FROM csv_import_test WHERE Name = 'Alice'";
+            Assert.Equal("NYC, NY", cmd.ExecuteScalar() as string);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     // AUD-R12: CsvImportOptions.Quote had no validation equivalent to ValidateDelimiter. A
     // caller-supplied Quote = '\\' reached ImportMySql/ImportSqlServer/BuildPostgresCopyExtraOptions
     // as an unescaped single-quoted SQL string literal char; under MySQL's default sql_mode, the
