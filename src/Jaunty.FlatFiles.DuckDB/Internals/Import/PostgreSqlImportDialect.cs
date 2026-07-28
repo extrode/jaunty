@@ -8,7 +8,7 @@ namespace Jaunty.FlatFiles.DuckDB.Internals.Import;
 /// <summary>
 /// Import dialect for PostgreSQL databases.
 /// </summary>
-internal sealed class PostgreSqlImportDialect : IImportDialect
+internal sealed class PostgreSqlImportDialect : IImportDialect, IQuotedIdentifierDialect
 {
     /// <summary>
     /// Singleton instance.
@@ -21,6 +21,9 @@ internal sealed class PostgreSqlImportDialect : IImportDialect
     /// filenames or [Table]/[Column] attributes).
     /// </summary>
     private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
+
+    /// <inheritdoc />
+    string IQuotedIdentifierDialect.QuoteIdentifier(string identifier) => QuoteIdentifier(identifier);
 
     /// <inheritdoc />
     public string MapClrTypeToSqlType(Type clrType) => clrType switch
