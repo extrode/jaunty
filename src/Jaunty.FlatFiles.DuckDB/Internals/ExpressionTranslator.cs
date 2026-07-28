@@ -339,16 +339,93 @@ internal static class ExpressionTranslator
 
     private static object? EvaluateExpression(Expression expression)
     {
-        if (expression is ConstantExpression constant)
-            return constant.Value;
-
+        // Unwrapped before the fast path, exactly as before: the compile fallback below would
+        // otherwise apply the conversion that this deliberately discards.
         if (expression is UnaryExpression { NodeType: ExpressionType.Convert } unary)
             return EvaluateExpression(unary.Operand);
+
+        if (TryEvaluateWithoutCompiling(expression, out object? value))
+            return value;
 
         // Not cached by expression.ToString(): closure-captured variables (e.g. `x => x.Age > someLocalVar`)
         // produce a new Expression instance per call but stringify identically across calls, so a
         // string-keyed cache would return a stale compiled delegate bound to an earlier call's captured value.
         var lambda = System.Linq.Expressions.Expression.Lambda<Func<object?>>(System.Linq.Expressions.Expression.Convert(expression, typeof(object)));
         return lambda.Compile()();
+    }
+
+    /// <summary>
+    /// Reads the operand's value directly where that is possible, so the compile fallback above
+    /// only fires for genuinely computed operands - AUD-R25.
+    /// </summary>
+    /// <remarks>
+    /// A closure-captured local (<c>x =&gt; x.Age &gt; minAge</c>) is not a
+    /// <see cref="ConstantExpression"/>: the compiler lifts it onto a generated closure class, so
+    /// it arrives as a <see cref="MemberExpression"/> - a field read - over a constant holding the
+    /// closure instance, and used to miss the fast path entirely. Each such value then cost a full
+    /// expression compile: a <c>DynamicMethod</c> emit of tens to hundreds of microseconds plus
+    /// code heap that is never reclaimed, where reading the field is a handful of nanoseconds. A
+    /// predicate capturing five values paid it five times, per Delete/Update call.
+    ///
+    /// <para>
+    /// Jaunty.Fluent's <c>ExpressionEvaluator</c> carries the same logic for the seven copies that
+    /// lived in that assembly. This one is duplicated rather than shared because the two assemblies
+    /// are independent - Jaunty.FlatFiles.DuckDB does not reference Jaunty.Fluent.
+    /// </para>
+    /// </remarks>
+    private static bool TryEvaluateWithoutCompiling(Expression expression, out object? value)
+    {
+        value = null;
+
+        switch (expression)
+        {
+            case ConstantExpression constant:
+                value = constant.Value;
+                return true;
+
+            // Only reachable in a nested position (the declaring object of a member read); the
+            // top-level case is unwrapped by EvaluateExpression before this is called.
+            case UnaryExpression { NodeType: ExpressionType.Convert } unary:
+                return TryEvaluateWithoutCompiling(unary.Operand, out value);
+
+            case MemberExpression member:
+                object? instance = null;
+
+                // A null Expression means a static member. Otherwise the declaring object must
+                // itself be readable without compiling, or there is nothing to be gained.
+                if (member.Expression is not null && !TryEvaluateWithoutCompiling(member.Expression, out instance))
+                    return false;
+
+                switch (member.Member)
+                {
+                    case FieldInfo field:
+                        // A null instance on an instance member would throw TargetException here
+                        // but NullReferenceException from compiled code; leave those to the
+                        // compiled path so the failure does not depend on the route taken.
+                        if (instance is null && !field.IsStatic)
+                            return false;
+
+                        value = field.GetValue(instance);
+                        return true;
+
+                    case PropertyInfo property:
+                        MethodInfo? getter = property.GetGetMethod(nonPublic: true);
+
+                        if (getter is null || property.GetIndexParameters().Length != 0)
+                            return false;
+
+                        if (instance is null && !getter.IsStatic)
+                            return false;
+
+                        value = property.GetValue(instance);
+                        return true;
+
+                    default:
+                        return false;
+                }
+
+            default:
+                return false;
+        }
     }
 }

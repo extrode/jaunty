@@ -38,13 +38,8 @@ internal static class HavingExpressionHelpers
         };
     }
 
-    public static object? EvaluateExpression(Expression expression)
-    {
-        if (expression is ConstantExpression constant)
-            return constant.Value;
-
-        LambdaExpression lambda = Expression.Lambda(expression);
-        Delegate compiled = lambda.Compile();
-        return compiled.DynamicInvoke();
-    }
+    // AUD-R25: the implementation moved to ExpressionEvaluator, which the six expression visitors
+    // now share too - this was one of eight byte-identical copies. Kept here as a forwarder for the
+    // HAVING call sites that already name it.
+    public static object? EvaluateExpression(Expression expression) => ExpressionEvaluator.Evaluate(expression);
 }
