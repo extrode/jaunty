@@ -46,11 +46,24 @@ $sqlcmd = Get-ChildItem 'C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\*
 function Step($t) { Write-Host ""; Write-Host "== $t" -ForegroundColor Cyan }
 function Would($t) { if ($Execute -and $DropObjects) { Write-Host "   $t" } else { Write-Host "   [dry run] $t" -ForegroundColor Yellow } }
 
+# -b matters: without it sqlcmd exits 0 even when the statement failed, so a
+# DROP blocked by an index or constraint would be swallowed and the script would
+# still print its success footer.
 function Invoke-Sql([string]$query) {
-    $out = & $sqlcmd -S $Server -E -C -d $Database -h -1 -W -s '|' -Q "SET NOCOUNT ON; $query" 2>&1
-    if ($LASTEXITCODE -ne 0) { Write-Error ($out -join "`n") }
+    $out = & $sqlcmd -S $Server -E -C -b -h -1 -W -s '|' -d $Database -Q "SET NOCOUNT ON; $query" 2>&1
+    if ($LASTEXITCODE -ne 0) { Write-Error (($out -join "`n")) }
     return $out
 }
+
+# Exactly what the 2026-07-29 06:46 run created. Anything outside these lists is
+# left alone and reported, rather than trusted to a date comparison alone.
+$ExpectedComputedColumns = 47
+$ExpectedTables = @('CustomerCustomerDemo', 'CustomerDemographics', 'Territories', 'Region')
+$ExpectedProcs = @(
+    'GetAllProducts', 'GetProductsByCategory', 'GetProductById', 'GetProductCount',
+    'GetProductCountByCategory', 'GetProductCountWithOutput', 'GetProductCountWithReturnValue',
+    'GetNoResults', 'UpdateProductPrice'
+)
 
 # --- Safety gate ------------------------------------------------------------
 if (-not $sqlcmd) { Write-Error "sqlcmd.exe not found - cannot continue."; exit 1 }
@@ -91,6 +104,14 @@ $cols = Invoke-Sql "SELECT QUOTENAME(t.name) + '|' + QUOTENAME(c.name)
                     WHERE c.is_computed = 1 AND t.create_date < '$Cutoff'
                     ORDER BY t.name, c.name;" | Where-Object { $_ -match '\|' }
 if (-not $cols) { Write-Host "   none - already repaired" -ForegroundColor DarkGray }
+# sys.columns carries no creation date, so this selects on the TABLE's date and
+# would catch any pre-existing computed column too. Stock Northwind has none, so
+# the count is the check: bail rather than drop a column that is not ours.
+if ($cols -and $cols.Count -ne $ExpectedComputedColumns) {
+    Write-Host "   Expected $ExpectedComputedColumns computed column(s), found $($cols.Count)." -ForegroundColor Red
+    Write-Host "   Refusing to drop - a computed column here may not be from the 2026-07-29 run." -ForegroundColor Red
+    exit 1
+}
 foreach ($row in $cols) {
     $t, $c = $row -split '\|', 2
     Would "ALTER TABLE $t DROP COLUMN $c"
@@ -101,7 +122,7 @@ Write-Host "   $($cols.Count) column(s)" -ForegroundColor DarkGray
 # --- 3. Tables created by that run ------------------------------------------
 Step "3. Tables created on 2026-07-29 (with their PKs and FKs)"
 # Dropped child-first so the foreign keys go with them.
-$order = @('CustomerCustomerDemo', 'CustomerDemographics', 'Territories', 'Region')
+$order = $ExpectedTables
 $new = Invoke-Sql "SELECT name FROM sys.tables WHERE create_date >= '$Cutoff';" | Where-Object { $_ -and $_.Trim() }
 $new = $new | ForEach-Object { $_.Trim() }
 foreach ($t in $order) {
@@ -120,7 +141,13 @@ Step "4. Stored procedures created on 2026-07-29"
 $procs = Invoke-Sql "SELECT name FROM sys.procedures WHERE create_date >= '$Cutoff' ORDER BY name;" |
     Where-Object { $_ -and $_.Trim() } | ForEach-Object { $_.Trim() }
 if (-not $procs) { Write-Host "   none - already repaired" -ForegroundColor DarkGray }
+# The cutoff is midnight but the incident was 06:46, so a date test alone would
+# also catch anything else created that morning. Drop only the known nine.
 foreach ($p in $procs) {
+    if ($ExpectedProcs -notcontains $p) {
+        Write-Host "   NOT dropped - created today but not on the known list: $p" -ForegroundColor Yellow
+        continue
+    }
     Would "DROP PROCEDURE [$p]"
     if ($live) { Invoke-Sql "DROP PROCEDURE [$p];" | Out-Null }
 }
