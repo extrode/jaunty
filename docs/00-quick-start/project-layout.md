@@ -23,12 +23,13 @@ C:\home\Beparey\code\jaunty.beparey.com\
 ├── Folders
 │   ├── .github/                   # GitHub configuration (workflows)
 │   ├── .idea/                     # JetBrains IDE settings
-│   ├── docs/                  # Specify tool configuration
 │   ├── .vs/                       # Visual Studio settings
 │   │
 │   ├── src/                       # Source code packages
 │   ├── tests/                     # Test projects
 │   ├── docs/                      # Documentation (Markdown source)
+│   │   └── specs/                 # Specifications, NNN-slug/NNN-spec.md
+│   ├── work/                      # The work underway (tasklist, status, todo)
 │   │
 │   ├── benchmarks/                # Performance benchmarks
 │   ├── samples/                   # Sample projects
@@ -48,6 +49,8 @@ C:\home\Beparey\code\jaunty.beparey.com\
 | `src/` | Source code for all packages | `Jaunty/`, `Jaunty.FlatFiles/`, `Jaunty.Fluent/` |
 | `tests/` | Test projects | `Jaunty.Tests/`, `Jaunty.FlatFiles.Tests/` |
 | `docs/` | Documentation source | Organized by topic (00-quick-start through 06-releases) |
+| `docs/specs/` | Specifications | One `NNN-slug/` per feature, files `NNN-spec.md` etc. |
+| `work/` | The work underway | `tasklist.md`, `status/`, `todo.md`, `milestones.md` |
 
 ### Development Folders
 
@@ -65,7 +68,6 @@ C:\home\Beparey\code\jaunty.beparey.com\
 | `.github/` | GitHub configuration | Workflows |
 | `.idea/` | JetBrains IDE settings | Rider, ReSharper settings |
 | `.vs/` | Visual Studio settings | VS-specific configuration |
-| `docs/` | Specify tool | Architecture specification tool |
 
 ### Distribution Folders
 
