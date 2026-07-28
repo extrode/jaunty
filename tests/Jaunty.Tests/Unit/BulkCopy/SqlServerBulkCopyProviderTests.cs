@@ -235,6 +235,63 @@ public class SqlServerBulkCopyProviderTests
         Assert.Contains("SqlConnection", ex.Message);
     }
 
+    // AUD-R24 batch-6: the connection argument's runtime type was validated with a clear
+    // ArgumentException, but options.Transaction went straight into Activator.CreateInstance
+    // unchecked - a transaction from a different provider surfaced as an opaque reflection
+    // MissingMethodException/TargetInvocationException naming nothing useful. Neither test
+    // needs a live server: the guard runs before any connection is used.
+    [Fact]
+    public void CopyToServer_ForeignTransaction_ThrowsArgumentExceptionNamingSqlTransaction()
+    {
+        using var conn = new SqlConnection(ConnectionString);
+        using var reader = MakeTable(1).CreateDataReader();
+        var options = new BulkCopyOptions { Transaction = new ForeignTransaction() };
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            new SqlServerBulkCopyProvider().CopyToServer(conn, null, "irrelevant", reader, options));
+
+        Assert.Contains("SqlTransaction", ex.Message);
+        Assert.Contains(nameof(ForeignTransaction), ex.Message);
+    }
+
+    [Fact]
+    public async Task CopyToServerAsync_ForeignTransaction_ThrowsArgumentExceptionNamingSqlTransaction()
+    {
+        using var conn = new SqlConnection(ConnectionString);
+        using var reader = MakeTable(1).CreateDataReader();
+        var options = new BulkCopyOptions { Transaction = new ForeignTransaction() };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            new SqlServerBulkCopyProvider().CopyToServerAsync(conn, null, "irrelevant", reader, options, CancellationToken.None).AsTask());
+
+        Assert.Contains("SqlTransaction", ex.Message);
+        Assert.Contains(nameof(ForeignTransaction), ex.Message);
+    }
+
+    // A null transaction is the normal case (the provider opens its own) and must still be
+    // allowed straight through the guard - proven by the failure being about the *table*, not
+    // the transaction.
+    [Fact]
+    public void CopyToServer_NullTransaction_IsNotRejectedByTheTransactionGuard()
+    {
+        using var conn = new SqlConnection(ConnectionString);
+        using var reader = MakeTable(1).CreateDataReader();
+
+        var ex = Record.Exception(() =>
+            new SqlServerBulkCopyProvider().CopyToServer(conn, null, "irrelevant", reader, new BulkCopyOptions()));
+
+        Assert.DoesNotContain("SqlTransaction", ex?.Message ?? string.Empty);
+    }
+
+    private sealed class ForeignTransaction : IDbTransaction
+    {
+        public IDbConnection? Connection => null;
+        public IsolationLevel IsolationLevel => IsolationLevel.ReadCommitted;
+        public void Commit() { }
+        public void Rollback() { }
+        public void Dispose() { }
+    }
+
     private static MethodInfo MapBulkCopyOptionsMethod =>
         typeof(SqlServerBulkCopyProvider).GetMethod("MapBulkCopyOptions", BindingFlags.NonPublic | BindingFlags.Static)!;
 
