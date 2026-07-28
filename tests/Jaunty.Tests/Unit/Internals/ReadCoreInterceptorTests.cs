@@ -135,4 +135,89 @@ public class ReadCoreInterceptorTests : IDisposable
         Assert.Equal(1, interceptor.ExecutingCount);
         Assert.Equal(1, interceptor.ExecutedCount);
     }
+
+    // AUD-R24 batch-3: every Stream* path skips the InterceptorPipeline while its non-streaming
+    // counterpart above invokes it. That is intentional - a lazy iterator can't be wrapped by
+    // ExecuteWithInterception without materializing every row, which is the whole point of
+    // streaming - but nothing documented or pinned it, so the divergence read as an oversight
+    // and a future "fix" could silently make every streaming query buffer. These tests pin the
+    // contract stated on ICommandInterceptor; if streaming ever does gain interceptor support,
+    // they should fail loudly rather than let it happen by accident.
+
+    [Fact]
+    public void QueryStream_WithRegisteredInterceptor_DoesNotInvokeInterceptor()
+    {
+        JauntyConfig.ClearInterceptors();
+        var interceptor = new RecordingInterceptor();
+        JauntyConfig.AddInterceptor(interceptor);
+
+        var rows = _connection.QueryStream<Entity>("SELECT * FROM read_intercept_test").ToList();
+
+        // The query really did run - this is a deliberate divergence, not a broken query.
+        Assert.Single(rows);
+        Assert.Equal(0, interceptor.ExecutingCount);
+        Assert.Equal(0, interceptor.ExecutedCount);
+    }
+
+    [Fact]
+    public async Task QueryStreamAsync_WithRegisteredInterceptor_DoesNotInvokeInterceptor()
+    {
+        JauntyConfig.ClearInterceptors();
+        var interceptor = new RecordingInterceptor();
+        JauntyConfig.AddInterceptor(interceptor);
+
+        var rows = new List<Entity>();
+        await foreach (Entity row in _connection.QueryStreamAsync<Entity>("SELECT * FROM read_intercept_test"))
+            rows.Add(row);
+
+        Assert.Single(rows);
+        Assert.Equal(0, interceptor.ExecutingCount);
+        Assert.Equal(0, interceptor.ExecutedCount);
+    }
+
+    [Fact]
+    public void GetAllStream_WithRegisteredInterceptor_DoesNotInvokeInterceptor()
+    {
+        JauntyConfig.ClearInterceptors();
+        var interceptor = new RecordingInterceptor();
+        JauntyConfig.AddInterceptor(interceptor);
+
+        var rows = _connection.GetAllStream<Entity>().ToList();
+
+        Assert.Single(rows);
+        Assert.Equal(0, interceptor.ExecutingCount);
+        Assert.Equal(0, interceptor.ExecutedCount);
+    }
+
+    [Fact]
+    public async Task GetAllStreamAsync_WithRegisteredInterceptor_DoesNotInvokeInterceptor()
+    {
+        JauntyConfig.ClearInterceptors();
+        var interceptor = new RecordingInterceptor();
+        JauntyConfig.AddInterceptor(interceptor);
+
+        var rows = new List<Entity>();
+        await foreach (Entity row in _connection.GetAllStreamAsync<Entity>())
+            rows.Add(row);
+
+        Assert.Single(rows);
+        Assert.Equal(0, interceptor.ExecutingCount);
+        Assert.Equal(0, interceptor.ExecutedCount);
+    }
+
+    // The same query through the non-streaming API must still be intercepted: this is what makes
+    // the four tests above a statement about *streaming* rather than about this SQL or entity.
+    [Fact]
+    public void Query_SameSqlAsQueryStream_StillInvokesInterceptor()
+    {
+        JauntyConfig.ClearInterceptors();
+        var interceptor = new RecordingInterceptor();
+        JauntyConfig.AddInterceptor(interceptor);
+
+        var rows = _connection.Query<Entity>("SELECT * FROM read_intercept_test").ToList();
+
+        Assert.Single(rows);
+        Assert.Equal(1, interceptor.ExecutingCount);
+        Assert.Equal(1, interceptor.ExecutedCount);
+    }
 }
