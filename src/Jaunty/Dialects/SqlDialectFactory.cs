@@ -67,6 +67,53 @@ public static class SqlDialectFactory
         _dialectCache[typeof(TConnection)] = dialect;
     }
 
+    /// <summary>
+    /// Returns the underlying engine dialect behind any <see cref="IDialectWrapper"/> decorations,
+    /// or <paramref name="dialect"/> itself when it is not a decorator.
+    /// </summary>
+    /// <param name="dialect">The dialect to unwrap.</param>
+    /// <returns>The innermost non-decorating dialect.</returns>
+    /// <remarks>
+    /// <para>
+    /// Call this before any <c>dialect is SQLiteDialect</c>-style engine test on a dialect obtained
+    /// from <see cref="GetDialect(IDbConnection)"/>. That method runs every dialect through the
+    /// optional bulk-copy enhancement step, which - once <c>UseNativeBulkCopy()</c> has been called -
+    /// substitutes a wrapper that implements <see cref="ISqlDialect"/> and delegates to the original
+    /// rather than deriving from it, so a direct type test silently stops matching for every engine.
+    /// </para>
+    /// <para>
+    /// Decorations may nest; this unwraps all of them. A self-referential or cyclic
+    /// <see cref="IDialectWrapper.InnerDialect"/> chain is bounded rather than looped forever, and
+    /// the deepest dialect reached is returned.
+    /// </para>
+    /// </remarks>
+    public static ISqlDialect Unwrap(ISqlDialect dialect)
+    {
+#if NET8_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(dialect);
+#else
+        if (dialect is null) throw new ArgumentNullException(nameof(dialect));
+#endif
+
+        // Bounded rather than `while (true)`: InnerDialect is implemented by third-party dialects
+        // too, and a wrapper that returns itself (or a cycle between two wrappers) would otherwise
+        // hang the caller instead of degrading to "couldn't unwrap further".
+        const int MaxDepth = 8;
+        for (int i = 0; i < MaxDepth; i++)
+        {
+            if (dialect is not IDialectWrapper wrapper)
+                return dialect;
+
+            ISqlDialect inner = wrapper.InnerDialect;
+            if (inner is null || ReferenceEquals(inner, dialect))
+                return dialect;
+
+            dialect = inner;
+        }
+
+        return dialect;
+    }
+
     private static ISqlDialect ResolveDialect(string connectionTypeName)
     {
         if (_customDialects.TryGetValue(connectionTypeName, out ISqlDialect? custom))
