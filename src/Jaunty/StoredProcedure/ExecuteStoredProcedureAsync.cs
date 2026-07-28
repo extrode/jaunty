@@ -3,6 +3,7 @@ using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Configuration;
+using Jaunty.Interceptors;
 using Jaunty.Internals.Read;
 using Jaunty.StoredProcedure;
 
@@ -276,7 +277,7 @@ public static partial class Jaunty
     // cleanup below (which runs after the handler, not inside a finally block) with an
     // already-canceled token. Not reachable via the public API, whose handlers are fixed internal
     // lambdas.
-    internal static async ValueTask<TResult> ExecuteWithOutputParametersAsync<TResult>(IDbConnection connection, string procedureName, SpParameters? parameters,
+    internal static ValueTask<TResult> ExecuteWithOutputParametersAsync<TResult>(IDbConnection connection, string procedureName, SpParameters? parameters,
         CommandOptions options, Func<IDataReader, SpParameters, CancellationToken, Task<TResult>> handler, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
@@ -289,8 +290,33 @@ public static partial class Jaunty
         // A null literal binds to this overload over the object?-parameter overload (SpParameters
         // is a more specific reference type), so treat null the same as "no parameters" instead of
         // throwing - matches the zero-parameter convenience overload's behavior.
-        parameters ??= new SpParameters();
+        SpParameters spParameters = parameters ?? new SpParameters();
 
+        // AUD-R25: these SpParameters overloads built and ran their commands by hand and invoked
+        // neither the interceptor pipeline nor JauntyConfig.Logger, while the identically-named
+        // object?-parameters overloads delegate to QueryAsync/QueryFirstAsync/QueryScalarAsync/
+        // ExecuteNonQueryCoreAsync and therefore do both. Same method name, same public surface,
+        // opposite observability - and it silently excluded precisely the stored-procedure calls
+        // that use output and return parameters, typically the ones an audit trail most needs.
+        // Whether anything is actually observing is the pipeline's own decision (IsObserved covers
+        // interceptors and the DiagnosticListener alike), so the only test here is whether a
+        // pipeline is configured at all.
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, handler, cancellationToken)
+            : pipeline.ExecuteWithInterceptionAsync(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, handler, cancellationToken),
+                cancellationToken);
+    }
+
+    private static async ValueTask<TResult> ExecuteWithOutputParametersCoreAsync<TResult>(IDbConnection connection, string procedureName, SpParameters parameters,
+        CommandOptions options, Func<IDataReader, SpParameters, CancellationToken, Task<TResult>> handler, CancellationToken cancellationToken)
+    {
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
@@ -316,6 +342,8 @@ public static partial class Jaunty
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             BindSpParameters(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
 #if NET8_0_OR_GREATER
             DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -350,7 +378,7 @@ public static partial class Jaunty
         }
     }
 
-    private static async ValueTask<T> ExecuteScalarWithOutputParametersAsync<T>(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options, CancellationToken cancellationToken)
+    private static ValueTask<T> ExecuteScalarWithOutputParametersAsync<T>(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -359,8 +387,24 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
-        parameters ??= new SpParameters();
+        SpParameters spParameters = parameters ?? new SpParameters();
 
+        // See ExecuteWithOutputParametersAsync for why this wrapper exists (AUD-R25).
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteScalarWithOutputParametersCoreAsync<T>(connection, procedureName, spParameters, options, cancellationToken)
+            : pipeline.ExecuteWithInterceptionAsync(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteScalarWithOutputParametersCoreAsync<T>(connection, procedureName, spParameters, options, cancellationToken),
+                cancellationToken);
+    }
+
+    private static async ValueTask<T> ExecuteScalarWithOutputParametersCoreAsync<T>(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
+    {
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
@@ -386,6 +430,8 @@ public static partial class Jaunty
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             BindSpParameters(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
@@ -412,7 +458,7 @@ public static partial class Jaunty
         }
     }
 
-    private static async ValueTask<int> ExecuteNonQueryWithOutputParametersAsync(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options, CancellationToken cancellationToken)
+    private static ValueTask<int> ExecuteNonQueryWithOutputParametersAsync(IDbConnection connection, string procedureName, SpParameters? parameters, CommandOptions options, CancellationToken cancellationToken)
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -421,8 +467,24 @@ public static partial class Jaunty
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
-        parameters ??= new SpParameters();
+        SpParameters spParameters = parameters ?? new SpParameters();
 
+        // See ExecuteWithOutputParametersAsync for why this wrapper exists (AUD-R25).
+        InterceptorPipeline? pipeline = JauntyConfig.InterceptorPipeline;
+
+        return pipeline is null
+            ? ExecuteNonQueryWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, cancellationToken)
+            : pipeline.ExecuteWithInterceptionAsync(
+                procedureName,
+                spParameters,
+                connection,
+                CommandType.StoredProcedure,
+                () => ExecuteNonQueryWithOutputParametersCoreAsync(connection, procedureName, spParameters, options, cancellationToken),
+                cancellationToken);
+    }
+
+    private static async ValueTask<int> ExecuteNonQueryWithOutputParametersCoreAsync(IDbConnection connection, string procedureName, SpParameters parameters, CommandOptions options, CancellationToken cancellationToken)
+    {
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
 
@@ -448,6 +510,8 @@ public static partial class Jaunty
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             BindSpParameters(command, parameters);
+
+            JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
             int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
