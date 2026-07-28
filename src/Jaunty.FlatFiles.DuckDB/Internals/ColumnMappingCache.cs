@@ -34,7 +34,7 @@ internal static class ColumnMappingCache
 
             foreach (PropertyInfo prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
-                if (!prop.CanRead || !prop.CanWrite)
+                if (!MappedPropertyFilter.IsMapped(prop))
                     continue;
 
                 Type underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
