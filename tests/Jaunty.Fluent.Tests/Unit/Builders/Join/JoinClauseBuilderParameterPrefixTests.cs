@@ -32,6 +32,29 @@ public class JoinClauseBuilderParameterPrefixTests
         Assert.DoesNotContain(parameters, p => p.Name == "@value");
     }
 
+    // R24: the named overload has to qualify with the dialect's prefix too, and has to accept
+    // the name written either bare or already prefixed - a caller on a "$" dialect shouldn't
+    // have to guess which form is expected.
+    [Theory]
+    [InlineData("active")]
+    [InlineData("$active")]
+    public void On_NamedValue_UsesDialectParameterPrefix(string parameterName)
+    {
+        SqlDialectFactory.RegisterDialect(nameof(DollarPrefixConnection), new DollarPrefixDialect());
+        var connection = new DollarPrefixConnection();
+
+        var joinedQuery = connection.From<Product>()
+            .InnerJoin<Category>()
+            .On<int>("p.category_id = c.category_id AND p.active = $active", parameterName, 1);
+
+        var builder = Assert.IsType<JoinedQueryBuilder<Product, Category>>(joinedQuery);
+        var parameters = builder.GetParameters().GetAll();
+
+        Assert.Contains(parameters, p => p.Name == "$active" && Equals(p.Value, 1));
+        Assert.DoesNotContain(parameters, p => p.Name == "@active");
+        Assert.DoesNotContain(parameters, p => p.Name == "$value");
+    }
+
     private sealed class DollarPrefixConnection : IDbConnection
     {
         public string ConnectionString { get => ""; set { } }

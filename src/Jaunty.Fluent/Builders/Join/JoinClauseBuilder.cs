@@ -64,9 +64,18 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
     }
 
     public IJoinedQuery<TFrom, TJoin> On<TValue>(string condition, TValue value)
+        => On(condition, JoinParameterName.Default, value);
+
+    public IJoinedQuery<TFrom, TJoin> On<TValue>(string condition, string parameterName, TValue value)
     {
+        string qualified = JoinParameterName.Qualify(_fromBuilder.Dialect.ParameterPrefix, parameterName, nameof(parameterName));
+
         JoinedQueryBuilder<TFrom, TJoin> joinedQuery = CreateJoinedQuery(condition);
-        joinedQuery.AddParameter($"{_fromBuilder.Dialect.ParameterPrefix}value", value);
+
+        if (joinedQuery.HasParameter(qualified))
+            throw JoinParameterName.DuplicateError(qualified, nameof(parameterName));
+
+        joinedQuery.AddParameter(qualified, value);
         return joinedQuery;
     }
 
