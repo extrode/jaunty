@@ -35,6 +35,20 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Jaunty.Scaffolding\Jaunty.Scaffolding.csproj" />
+    <!-- AUD-R25 (B8-1): ScaffoldGeneratorCompositionTests compiles the scaffolder's own output
+         together with JauntyGenerator, in memory, to prove the two halves of the product actually
+         compose. Referenced as ordinary assemblies (not OutputItemType="Analyzer") because the
+         generator is driven explicitly by CSharpGeneratorDriver rather than by this project's own
+         build; Jaunty supplies the [Table]/[Key] attributes and IMapped<T> the generated code
+         needs to compile against. -->
+    <ProjectReference Include="..\..\src\Jaunty.SourceGenerator\Jaunty.SourceGenerator.csproj"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+    <ProjectReference Include="..\..\src\Jaunty\Jaunty.csproj"
+                      SetTargetFramework="TargetFramework=net8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
   </ItemGroup>
 
   <ItemGroup>
