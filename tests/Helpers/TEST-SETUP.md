@@ -61,11 +61,26 @@ For **all database tests**, you'll need to set up SQL Server, PostgreSQL, and My
 
 ### Step 2: Create Northwind Database
 
-Download and run the Northwind database script for your database server:
+The bootstrap scripts are vendored — do not download a third-party Northwind
+dump, as their column naming does not match the entity contracts.
 
-- **SQL Server:** [Northwind for SQL Server](https://github.com/microsoft/sql-server-samples/tree/master/samples/databases/northwind)
-- **PostgreSQL:** [Northwind for PostgreSQL](https://github.com/pthom/northwind_psql)
-- **MySQL:** [Northwind for MySQL](https://github.com/jpwhite3/northwind-MySQL)
+| Server | Script | Load with |
+|---|---|---|
+| SQL Server | `data/sqlserver/create-northwind.sql` | `sqlcmd -S <server> -U sa -P <pwd> -C -i create-northwind.sql` (creates the database itself) |
+| PostgreSQL | `data/postgres/create-northwind.sql` | `createdb northwind` first, then `psql -d northwind -f create-northwind.sql` |
+| MySQL / MariaDB | `data/mysql/create-northwind.sql` | `CREATE DATABASE northwind;` first, then `mysql northwind < create-northwind.sql` |
+
+All three are generated from `data/sqlite/Northwind.db` so every dialect carries
+identical data. Regenerate after changing that reference database:
+
+```bash
+python scripts/generate-sqlserver-northwind.py   # SQL Server
+python scripts/generate-northwind.py             # PostgreSQL + MySQL/MariaDB
+```
+
+Each table carries both namings: snake_case columns as declared, plus PascalCase
+generated columns bridging them, because the integration entities read PascalCase
+field names out of the reader while their `[Column]` attributes name snake_case.
 
 ### Step 3: Create Test Stored Procedures
 
@@ -194,13 +209,19 @@ The parameter names in your anonymous object don't match the stored procedure pa
 
 ## Test Coverage Summary
 
-| Database | Tests | Status |
-|----------|-------|--------|
-| SQLite | ~877 | Always runs |
-| SQL Server | ~100 | Requires setup |
-| PostgreSQL | ~100 | Requires setup |
-| MySQL | ~100 | Requires setup |
-| **Total** | **~1177** | |
+With all four configured against the `docker-compose.yml` stack, the suite runs
+11,569 passing / 493 skipped. The 493 are all `MicrosoftSqlite` on net472
+(Microsoft.Data.Sqlite is deliberately not exercised on .NET Framework), so
+there is nothing further to configure.
+
+Unconfigured, the same suite skips 2,092 tests.
+
+### Known environment limit
+
+The three `CsvImportTests.*_SqlServer_*` tests use `BULK INSERT`, which reads the
+CSV **server-side**. They cannot pass against SQL Server in a Linux container,
+which has no access to the runner's filesystem; they need a SQL Server sharing a
+filesystem with the test host.
 
 ---
 
