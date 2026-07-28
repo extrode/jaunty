@@ -41,7 +41,12 @@ public sealed partial class DuckDb : IFlatFile
     private readonly FlatFileOptions _options;
     private readonly ConcurrentDictionary<Type, IFileSource> _sources = new();
     private readonly ConcurrentDictionary<Type, bool> _modified = new();
-    private readonly HashSet<string> _loadedExtensions = new(StringComparer.OrdinalIgnoreCase);
+    // ConcurrentDictionary-as-set rather than HashSet: RegisterSource/RegisterSourceAsync are
+    // callable concurrently (the sibling _sources/_modified caches are concurrent for exactly
+    // that reason), and they reach EnsureExtensionsLoaded, whose unsynchronized HashSet.Add
+    // could corrupt internal state or throw. TryAdd keeps the same "first caller wins, install
+    // the extension once" semantics HashSet.Add's bool return provided.
+    private readonly ConcurrentDictionary<string, bool> _loadedExtensions = new(StringComparer.OrdinalIgnoreCase);
     private bool _disposed;
 
     /// <inheritdoc />
@@ -147,7 +152,7 @@ public sealed partial class DuckDb : IFlatFile
                 continue;
 
             string? extension = GetDuckDbExtensionForScheme(scheme);
-            if (extension is null || !_loadedExtensions.Add(extension))
+            if (extension is null || !_loadedExtensions.TryAdd(extension, true))
                 continue;
 
             using DuckDBCommand cmd = _connection.CreateCommand();
@@ -165,7 +170,7 @@ public sealed partial class DuckDb : IFlatFile
                 continue;
 
             string? extension = GetDuckDbExtensionForScheme(scheme);
-            if (extension is null || !_loadedExtensions.Add(extension))
+            if (extension is null || !_loadedExtensions.TryAdd(extension, true))
                 continue;
 
             DuckDBCommand cmd = _connection.CreateCommand();
