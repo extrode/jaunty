@@ -60,15 +60,29 @@ if ($DeleteVolumes) {
     $volumes | ForEach-Object { Write-Host "     $_" -ForegroundColor DarkGray }
 }
 
-# --- 4. Not removed ---------------------------------------------------------
-Step "4. Deliberately NOT removed"
+# --- 4. Local SQL Server database -------------------------------------------
+Step "4. NorthwindJaunty on the local SQL Server instance"
+Write-Host "   Created to run the CsvImport BULK INSERT tests, which need a server" -ForegroundColor DarkGray
+Write-Host "   sharing a filesystem with the test host. Separate from your own" -ForegroundColor DarkGray
+Write-Host "   Northwind database, which was left alone." -ForegroundColor DarkGray
+if ($DeleteVolumes) {
+    Would "sqlcmd -S lpc:localhost -E -C -Q `"DROP DATABASE NorthwindJaunty`""
+    if ($Execute) {
+        & sqlcmd -S 'lpc:localhost' -E -C -Q 'DROP DATABASE NorthwindJaunty'
+    }
+} else {
+    Write-Host "   kept - pass --delete-volumes to drop it too." -ForegroundColor DarkGray
+}
+
+# --- 5. Not removed ---------------------------------------------------------
+Step "5. Deliberately NOT removed"
 Write-Host "   aud-r64-ms / aud-r64-my / aud-r64-pg - pre-existing containers from an" -ForegroundColor DarkGray
 Write-Host "     earlier audit round; this work neither created nor used them." -ForegroundColor DarkGray
 Write-Host "   data/postgres/create-northwind.sql, data/mysql/create-northwind.sql," -ForegroundColor DarkGray
 Write-Host "     scripts/generate-northwind.py - committed deliverables, not scratch." -ForegroundColor DarkGray
 
-# --- 5. Remaining state -----------------------------------------------------
-Step "5. Remaining state"
+# --- 6. Remaining state -----------------------------------------------------
+Step "6. Remaining state"
 docker ps -a --filter "name=torture-" --format '   {{.Names}}\t{{.Status}}'
 if (-not $Execute) {
     Write-Host ""
