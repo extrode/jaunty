@@ -406,15 +406,10 @@ internal sealed class SelectExpressionVisitor<T> : ExpressionVisitor where T : n
         return column?.ColumnName ?? propertyName;
     }
 
-    private static object? EvaluateExpression(Expression expression)
-    {
-        if (expression is ConstantExpression constant)
-            return constant.Value;
-
-        LambdaExpression lambda = Expression.Lambda(expression);
-        Delegate compiled = lambda.Compile();
-        return compiled.DynamicInvoke();
-    }
+    // AUD-R25: this was one of eight byte-identical private copies. Kept as a one-line forwarder
+    // rather than rewriting every call site, so the shared implementation - including its
+    // closure-member fast path - is the only place the behaviour lives.
+    private static object? EvaluateExpression(Expression expression) => ExpressionEvaluator.Evaluate(expression);
 
     private string FormatConstant(object? value) => HavingExpressionHelpers.FormatLiteral(value, _dialect);
 }
