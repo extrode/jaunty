@@ -98,9 +98,14 @@ public sealed class ScaffoldOptions
     public bool UseNullableReferenceTypes { get; set; } = true;
 
     /// <summary>
-    /// Whether to generate partial classes. Default is false.
+    /// Whether to generate partial classes. Default is true.
     /// </summary>
-    public bool GeneratePartialClasses { get; set; }
+    /// <remarks>
+    /// AUD-R25: see <c>CodeGeneratorOptions.GeneratePartialClasses</c>
+    /// - scaffolded output that is not <c>partial</c> fails to compile with CS0260 as soon as
+    /// <c>Jaunty.SourceGenerator</c> is referenced.
+    /// </remarks>
+    public bool GeneratePartialClasses { get; set; } = true;
 
     /// <summary>
     /// Whether to add System.ComponentModel.DataAnnotations attributes. Default is false.
