@@ -85,10 +85,27 @@ public class JauntyGenerator : IIncrementalGenerator
         if (classes.IsDefaultOrEmpty)
             return;
 
-        foreach (ClassDeclarationSyntax? classSyntax in classes.Distinct())
+        // AUD-R25: deduplicate on the *symbol*, not the syntax node. SyntaxNode does not override
+        // Equals, so the previous `classes.Distinct()` was reference equality and could not collapse
+        // two declarations of the same type. The generator requires `partial`, so a [Table] entity
+        // split across files is the expected shape rather than an exotic one: with
+        // `[Table("orders")] public partial class Order` in one file and
+        // `[JsonSerializable] public partial class Order` in another, both parts pass
+        // IsSyntaxTargetForGeneration (each has an attribute list) and both pass
+        // GetSemanticTargetForGeneration (GetDeclaredSymbol resolves both to the same
+        // INamedTypeSymbol, onto which the attributes are merged, so HasAttribute is true for the
+        // part that doesn't itself carry [Table]). AddSource was then called twice with the same
+        // hint name and the build failed. This complements the R16 hint-name analysis below, which
+        // covered the two-namespaces-one-class-name case but not the multi-part one.
+        var emitted = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+
+        foreach (ClassDeclarationSyntax? classSyntax in classes)
         {
             SemanticModel model = compilation.GetSemanticModel(classSyntax.SyntaxTree);
             if (model.GetDeclaredSymbol(classSyntax) is not INamedTypeSymbol classSymbol)
+                continue;
+
+            if (!emitted.Add(classSymbol))
                 continue;
 
             var source = GenerateMapper(classSymbol, context.ReportDiagnostic);
@@ -128,6 +145,30 @@ public class JauntyGenerator : IIncrementalGenerator
     }
 
     /// <summary>
+    /// Renders an entity's declared accessibility as the C# keyword to emit on the generated partial
+    /// declaration.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R25: this used to be a literal <c>public</c>. C# requires every partial declaration of a
+    /// type to agree on accessibility, so <c>[Table("orders")] internal partial class Order</c>
+    /// failed to compile with CS0262 - and nothing in the attribute docs, the generator or the
+    /// scaffolder said entities had to be public. The reflection path imposes no such restriction:
+    /// <c>MetadataBuilder.BuildMetadata</c> works on any <see cref="System.Type"/>.
+    /// </remarks>
+    private static string AccessibilityKeyword(Accessibility accessibility) => accessibility switch
+    {
+        Accessibility.Public => "public",
+        Accessibility.Internal => "internal",
+        Accessibility.Protected => "protected",
+        Accessibility.ProtectedOrInternal => "protected internal",
+        Accessibility.ProtectedAndInternal => "private protected",
+        Accessibility.Private => "private",
+        // NotApplicable shouldn't reach here for a named type; internal is the C# default for a
+        // type declaration with no modifier, so it is the safest thing to mirror.
+        _ => "internal"
+    };
+
+    /// <summary>
     /// Generates the complete source text for a Jaunty entity mapper partial class,
     /// including <c>ReadEntity</c>, <c>BindInsert</c>, <c>BindUpdate</c>, <c>BindDelete</c>,
     /// an ordinal-caching <c>OrdinalMap</c>, and column-info static properties.
@@ -141,8 +182,16 @@ public class JauntyGenerator : IIncrementalGenerator
         var isGlobalNamespace = classSymbol.ContainingNamespace.IsGlobalNamespace;
         var className = classSymbol.Name;
 
+        // AUD-R25: !IsIndexer is the third guard against the same hazard. An indexer
+        // (`public object this[int i] { get; set; }`) surfaces as a public instance property named
+        // "Item" with index parameters, and C# forbids naming an indexer through member access - so
+        // it would be emitted as `entity.Item = ...` in ReadEntity/CreateRowMapper and
+        // `((Order)e).Item` in the ColumnInfo/EntityColumnInfo lambdas, none of which compile. The
+        // reflection path degrades gracefully here (the indexer is simply not a column); the
+        // generated path would break the build inside a .g.cs the user cannot edit. Both
+        // MetadataBuilder and ParameterCache already skip these.
         var allProperties = classSymbol.GetMembers().OfType<IPropertySymbol>()
-            .Where(p => !p.IsStatic && p.DeclaredAccessibility == Accessibility.Public)
+            .Where(p => !p.IsStatic && !p.IsIndexer && p.DeclaredAccessibility == Accessibility.Public)
             .ToList();
 
         var properties = new List<PropertyMetadata>();
@@ -235,7 +284,7 @@ public class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine($"namespace {namespaceName}");
             sb.AppendLine("{");
         }
-        sb.AppendLine($"    public partial class {className} : IMapped<{className}>, IEntityMetadataSource");
+        sb.AppendLine($"    {AccessibilityKeyword(classSymbol.DeclaredAccessibility)} partial class {className} : IMapped<{className}>, IEntityMetadataSource");
         sb.AppendLine("    {");
         sb.AppendLine("        public readonly struct ColumnInfo");
         sb.AppendLine("        {");
