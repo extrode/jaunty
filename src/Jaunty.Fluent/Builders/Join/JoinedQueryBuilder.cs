@@ -263,6 +263,8 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal void AddParameter<TValue>(string name, TValue value) =>
         _parameters.Add(name, value);
 
+    internal bool HasParameter(string name) => _parameters.Contains(name);
+
     /// <summary>
     /// Binds all accumulated parameters directly to the command via raw ADO.NET (bypasses
     /// Jaunty's core Query&lt;T&gt;/ParameterBinder). Used by this builder's own SelectAll/
