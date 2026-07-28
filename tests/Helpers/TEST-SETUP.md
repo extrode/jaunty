@@ -218,20 +218,24 @@ Unconfigured, the same suite skips 2,092 tests.
 
 ### Known environment limit
 
-The three `CsvImportTests.*_SqlServer_*` tests use `BULK INSERT`, which reads the
-CSV **server-side**, so what passes depends on where SQL Server runs:
+The `CsvImportTests.*_SqlServer_*` tests use `BULK INSERT`, which reads the CSV
+**server-side**, so the file has to be reachable from wherever SQL Server runs:
 
 | SQL Server | Result |
 |---|---|
-| Linux container (`docker-compose.yml`) | all 3 fail — the container cannot see the runner's filesystem at all |
-| Local Windows instance | 2 of 3 pass; `ImportCsv_SqlServer_CustomQuote_AppliedNatively` still fails |
+| Linux container (`docker-compose.yml`) | fail — the container cannot see the runner's filesystem at all |
+| Local Windows instance | pass |
 
-The remaining one stages its fixture via `WriteTempCsv` into
-`Path.GetTempPath()` (the *user's* profile temp directory), which the SQL Server
-service account cannot read — it surfaces as `Cannot obtain the required
-interface ("IID_IColumnsInfo") from OLE DB provider "BULK"`. The other two read
-`data/basic.csv` from the repo, which is readable. Fixing it means staging that
-CSV somewhere the service account can read, rather than the user's temp dir.
+Run them against a local instance by pointing `JAUNTY_TEST_SQLSERVER` at it:
+
+```bash
+JAUNTY_TEST_SQLSERVER="Server=lpc:localhost;Database=NorthwindJaunty;Trusted_Connection=true;TrustServerCertificate=true;" \
+  dotnet test tests/Jaunty.Tests/Jaunty.Tests.csproj -f net8.0 --filter "FullyQualifiedName~CsvImportTests"
+```
+
+The fixtures are staged under the test output directory (inside the repo), not
+the OS temp dir, precisely so a container that bind-mounts the workspace can
+still see them.
 
 ---
 

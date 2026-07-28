@@ -549,7 +549,7 @@ public static class CsvImportExtensions
             sb.Append($"BULK INSERT {escapedTable} FROM '{filePath.Replace("'", "''")}' ");
             sb.Append("WITH (");
             sb.Append($"FIELDTERMINATOR = '{options.Delimiter}', ");
-            sb.Append("ROWTERMINATOR = '\\n', ");
+            sb.Append($"ROWTERMINATOR = '{SqlServerRowTerminator(filePath)}', ");
             sb.Append("TABLOCK, ");
             if (options.HasHeader)
                 sb.Append("FIRSTROW = 2, ");
@@ -584,7 +584,7 @@ public static class CsvImportExtensions
             sb.Append($"BULK INSERT {escapedTable} FROM '{filePath.Replace("'", "''")}' ");
             sb.Append("WITH (");
             sb.Append($"FIELDTERMINATOR = '{options.Delimiter}', ");
-            sb.Append("ROWTERMINATOR = '\\n', ");
+            sb.Append($"ROWTERMINATOR = '{SqlServerRowTerminator(filePath)}', ");
             sb.Append("TABLOCK, ");
             if (options.HasHeader)
                 sb.Append("FIRSTROW = 2, ");
@@ -661,6 +661,45 @@ public static class CsvImportExtensions
     // literal (e.g. QUOTE '''' for a literal apostrophe quote character); any other character is
     // already safe to embed as-is.
     private static string EscapeSqlCharLiteral(char c) => c == '\'' ? "''" : c.ToString();
+
+    // BULK INSERT under FORMAT = 'CSV' expands the '\n' escape to \r\n, so an LF-only file fails
+    // outright with "Cannot obtain the required interface (IID_IColumnsInfo)". The hex form 0x0a
+    // matches a bare LF, but leaves the CR of a CRLF file trailing on the last column. Neither
+    // value is right for both, so sniff the file's first line ending and pick.
+    //
+    // BULK INSERT reads the file server-side, so the path need not be readable from here at all;
+    // when it is not, fall back to CRLF, which is what a file staged for a Windows SQL Server is
+    // overwhelmingly likely to use.
+    private static string SqlServerRowTerminator(string filePath)
+    {
+        try
+        {
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var buffer = new byte[8192];
+            int previous = -1;
+            int read;
+            while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                for (int i = 0; i < read; i++)
+                {
+                    if (buffer[i] == 0x0A)
+                        return previous == 0x0D ? "\\n" : "0x0a";
+                    previous = buffer[i];
+                }
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+        catch (NotSupportedException)
+        {
+        }
+
+        return "\\n";
+    }
 
     // Postgres COPY's WITH (...) clause natively supports NULL '<value>' and QUOTE '<char>', unlike
     // the other providers' native import commands, so these can be applied directly instead of
