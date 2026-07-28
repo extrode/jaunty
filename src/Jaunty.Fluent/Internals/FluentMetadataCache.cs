@@ -35,13 +35,15 @@ internal static class FluentMetadataCache
             EntityMetadata meta = GetMetadata<T>();
             string escapedTable = dialect.EscapeTableName(meta.SchemaName, meta.TableName);
             var escapedCols = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var rawCols = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (ColumnMetadata col in meta.Columns)
             {
                 escapedCols[col.PropertyName] = dialect.EscapeColumnName(col.ColumnName);
+                rawCols[col.PropertyName] = col.ColumnName;
             }
 
-            return new CachedDialectMetadata(escapedTable, escapedCols, dialect);
+            return new CachedDialectMetadata(escapedTable, escapedCols, rawCols, dialect);
         });
     }
 }
