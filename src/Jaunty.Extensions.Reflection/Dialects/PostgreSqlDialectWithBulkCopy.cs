@@ -8,7 +8,7 @@ namespace Jaunty.Extensions.Reflection.Dialects;
 /// PostgreSQL dialect with bulk copy support.
 /// Extends the base dialect to provide NpgsqlBinaryImporter provider.
 /// </summary>
-internal sealed class PostgreSqlDialectWithBulkCopy : ISqlDialect
+internal sealed class PostgreSqlDialectWithBulkCopy : ISqlDialect, IDialectWrapper
 {
     private readonly PostgreSqlDialect _inner;
 
@@ -16,6 +16,14 @@ internal sealed class PostgreSqlDialectWithBulkCopy : ISqlDialect
     {
         _inner = inner ?? new PostgreSqlDialect();
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Exposes the decorated dialect so engine-identity tests (CSV import dispatch,
+    /// BulkInsert's SQLite routing) still see PostgreSqlDialect once UseNativeBulkCopy()
+    /// has swapped this wrapper in - see SqlDialectFactory.Unwrap.
+    /// </remarks>
+    public ISqlDialect InnerDialect => _inner;
 
     public bool SupportsNativeBulkCopy => true;
 

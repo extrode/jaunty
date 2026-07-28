@@ -55,7 +55,11 @@ public static class CsvImportExtensions
         ValidateDelimiter(options.Delimiter);
         ValidateQuote(options.Quote);
 
-        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+        // Unwrap before the type test: SqlDialectFactory.GetDialect runs every dialect through the
+        // bulk-copy enhancement step, which after UseNativeBulkCopy() substitutes a wrapper that
+        // implements ISqlDialect rather than deriving from the engine dialect - so a direct type
+        // test would fall through to the NotSupportedException arm for *every* supported engine.
+        ISqlDialect dialect = SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(connection));
         return dialect switch
         {
             SQLiteDialect => ImportSqlite(connection, tableName, filePath, options),
@@ -91,7 +95,9 @@ public static class CsvImportExtensions
         ValidateDelimiter(options.Delimiter);
         ValidateQuote(options.Quote);
 
-        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+        // See the sync overload: unwrap before the type test so the bulk-copy wrapper doesn't
+        // make every supported engine fall through to NotSupportedException.
+        ISqlDialect dialect = SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(connection));
         return dialect switch
         {
             SQLiteDialect => await ImportSqliteAsync(connection, tableName, filePath, options, cancellationToken).ConfigureAwait(false),
