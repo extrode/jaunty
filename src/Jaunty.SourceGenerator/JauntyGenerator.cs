@@ -32,154 +32,123 @@ public class JauntyGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    /// <summary>The two <c>[Table]</c> attributes the generator recognizes, by metadata name.</summary>
+    private const string JauntyTableAttribute = "Jaunty.Attributes.TableAttribute";
+    private const string DataAnnotationsTableAttribute = "System.ComponentModel.DataAnnotations.Schema.TableAttribute";
+
     /// <summary>
     /// Initializes the source generator by registering syntax providers and source output callbacks.
     /// </summary>
+    /// <remarks>
+    /// AUD-R25 (B8-7): the pipeline used to be a <c>CreateSyntaxProvider</c> yielding
+    /// <c>ClassDeclarationSyntax</c>, collected and <c>Combine</c>d with
+    /// <see cref="IncrementalGeneratorInitializationContext.CompilationProvider"/>, feeding a single
+    /// source output that emitted every entity in the project. Both halves of that input defeat the
+    /// driver's caching: syntax nodes have reference equality, and the compilation is a new object
+    /// after every keystroke <i>anywhere</i>. So a character typed in a file containing no entity at
+    /// all still re-ran semantic analysis for, and re-emitted, every <c>[Table]</c> class in the
+    /// project - the generator's whole cost, on every keystroke, in the IDE's typing loop.
+    ///
+    /// <para>
+    /// Three changes fix it. <c>ForAttributeWithMetadataName</c> replaces the hand-written
+    /// predicate/transform pair - the compiler indexes attribute usages, so candidates are found
+    /// without running a semantic check over every attributed class. The transform yields
+    /// <see cref="EntityModel"/>, a value-equatable snapshot holding no symbols, so an edit that does
+    /// not change an entity's mapping produces an equal model and everything downstream is skipped.
+    /// And the source output is registered per entity rather than over the collected array, so
+    /// editing one entity does not re-emit its neighbours.
+    /// </para>
+    ///
+    /// <para>
+    /// One deliberate narrowing comes with it. Recognition was previously by simple name, so <i>any</i>
+    /// attribute called <c>TableAttribute</c> - including one a consumer declared themselves - marked
+    /// a class as an entity. <c>ForAttributeWithMetadataName</c> matches fully-qualified names, so
+    /// only the two documented attributes are recognized now. That is what the XML docs and the
+    /// attribute reference always claimed; a third same-named attribute being silently honoured was
+    /// undocumented behaviour, not a feature. Aliased usage is unaffected - the match is on the
+    /// resolved symbol, not on the spelling at the use site.
+    /// </para>
+    /// </remarks>
     /// <param name="context">The initialization context for configuring the generator.</param>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
-            .CreateSyntaxProvider(
-                predicate: static (s, _) => IsSyntaxTargetForGeneration(s),
-                transform: static (ctx, _) => GetSemanticTargetForGeneration(ctx))
-            .Where(static m => m is not null)!;
+        IncrementalValuesProvider<EntityModel> jauntyTables = context.SyntaxProvider.ForAttributeWithMetadataName(
+            JauntyTableAttribute,
+            predicate: static (node, _) => node is ClassDeclarationSyntax,
+            transform: static (ctx, _) => BuildEntityModel(ctx));
 
-        IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses
-            = context.CompilationProvider.Combine(classDeclarations.Collect());
+        IncrementalValuesProvider<EntityModel> annotatedTables = context.SyntaxProvider.ForAttributeWithMetadataName(
+            DataAnnotationsTableAttribute,
+            predicate: static (node, _) => node is ClassDeclarationSyntax,
+            transform: static (ctx, _) => BuildEntityModel(ctx));
 
-        context.RegisterSourceOutput(compilationAndClasses,
-            static (spc, source) => Execute(source.Item1, source.Item2, spc));
-    }
+        IncrementalValuesProvider<EntityModel> entities = jauntyTables.Collect()
+            .Combine(annotatedTables.Collect())
+            .SelectMany(static (both, _) => Deduplicate(both.Left, both.Right));
 
-    /// <summary>
-    /// Returns <see langword="true"/> when a syntax node is a class declaration with at least one attribute list.
-    /// This is a fast syntactic pre-filter applied before the more expensive semantic check.
-    /// </summary>
-    /// <param name="node">The syntax node to inspect.</param>
-    static bool IsSyntaxTargetForGeneration(SyntaxNode node)
-        => node is ClassDeclarationSyntax { AttributeLists.Count: > 0 };
-
-    /// <summary>
-    /// Returns the <see cref="ClassDeclarationSyntax"/> when the class carries a recognized
-    /// <c>[Table]</c> attribute (Jaunty or DataAnnotations), otherwise <see langword="null"/>.
-    /// </summary>
-    /// <param name="context">The generator syntax context supplying semantic information.</param>
-    static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
-    {
-        var classDeclaration = (ClassDeclarationSyntax)context.Node;
-
-        if (context.SemanticModel.GetDeclaredSymbol(classDeclaration) is not INamedTypeSymbol classSymbol)
-            return null;
-
-        return HasAttribute(classSymbol, "TableAttribute") ? classDeclaration : null;
-    }
-
-    /// <summary>
-    /// Iterates over discovered entity classes and emits a generated mapper source file for each.
-    /// </summary>
-    /// <param name="compilation">The current compilation.</param>
-    /// <param name="classes">The set of candidate class declarations collected by the syntax provider.</param>
-    /// <param name="context">The source production context used to add generated source files.</param>
-    static void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> classes, SourceProductionContext context)
-    {
-        if (classes.IsDefaultOrEmpty)
-            return;
-
-        // AUD-R25: deduplicate on the *symbol*, not the syntax node. SyntaxNode does not override
-        // Equals, so the previous `classes.Distinct()` was reference equality and could not collapse
-        // two declarations of the same type. The generator requires `partial`, so a [Table] entity
-        // split across files is the expected shape rather than an exotic one: with
-        // `[Table("orders")] public partial class Order` in one file and
-        // `[JsonSerializable] public partial class Order` in another, both parts pass
-        // IsSyntaxTargetForGeneration (each has an attribute list) and both pass
-        // GetSemanticTargetForGeneration (GetDeclaredSymbol resolves both to the same
-        // INamedTypeSymbol, onto which the attributes are merged, so HasAttribute is true for the
-        // part that doesn't itself carry [Table]). AddSource was then called twice with the same
-        // hint name and the build failed. This complements the R16 hint-name analysis below, which
-        // covered the two-namespaces-one-class-name case but not the multi-part one.
-        var emitted = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
-
-        foreach (ClassDeclarationSyntax? classSyntax in classes)
+        context.RegisterSourceOutput(entities, static (spc, entity) =>
         {
-            SemanticModel model = compilation.GetSemanticModel(classSyntax.SyntaxTree);
-            if (model.GetDeclaredSymbol(classSyntax) is not INamedTypeSymbol classSymbol)
-                continue;
-
-            if (!emitted.Add(classSymbol))
-                continue;
-
-            var source = GenerateMapper(classSymbol, context.ReportDiagnostic);
-            context.AddSource($"{GetHintName(classSymbol)}.JauntyMapper.g.cs", SourceText.From(source, Encoding.UTF8));
-        }
+            var source = GenerateMapper(entity, spc.ReportDiagnostic);
+            spc.AddSource($"{entity.HintName}.JauntyMapper.g.cs", SourceText.From(source, Encoding.UTF8));
+        });
     }
 
     /// <summary>
-    /// Builds a collision-resistant hint name for the generated source file from the entity's
-    /// fully-qualified type name, so two <c>[Table]</c> classes with the same simple name in
-    /// different namespaces don't produce a duplicate hint name (which fails the build).
-    /// </summary>
-    /// <param name="classSymbol">The entity class symbol.</param>
-    private static string GetHintName(INamedTypeSymbol classSymbol)
-    {
-        var fullName = classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        if (fullName.StartsWith("global::", StringComparison.Ordinal))
-            fullName = fullName.Substring("global::".Length);
-
-        // R16: escape original underscores as "__" so a literal '_' in a namespace/class name
-        // can never be confused with the single '_' used below as the delimiter for every other
-        // non-alphanumeric character (dots, generic brackets, etc.) - otherwise e.g. namespace
-        // "MyApp.Foo" class "Bar_Baz" and namespace "MyApp.Foo.Bar" class "Baz" both flattened to
-        // "MyApp_Foo_Bar_Baz", producing a duplicate hint name that fails the build.
-        var sb = new StringBuilder(fullName.Length);
-        foreach (char c in fullName)
-        {
-            if (char.IsLetterOrDigit(c))
-                sb.Append(c);
-            else if (c == '_')
-                sb.Append("__");
-            else
-                sb.Append('_');
-        }
-
-        return sb.ToString();
-    }
-
-    /// <summary>
-    /// Renders an entity's declared accessibility as the C# keyword to emit on the generated partial
-    /// declaration.
+    /// Merges the two recognized-attribute streams into one entity per generated file, keyed on the
+    /// hint name.
     /// </summary>
     /// <remarks>
-    /// AUD-R25: this used to be a literal <c>public</c>. C# requires every partial declaration of a
-    /// type to agree on accessibility, so <c>[Table("orders")] internal partial class Order</c>
-    /// failed to compile with CS0262 - and nothing in the attribute docs, the generator or the
-    /// scaffolder said entities had to be public. The reflection path imposes no such restriction:
-    /// <c>MetadataBuilder.BuildMetadata</c> works on any <see cref="System.Type"/>.
+    /// AUD-R25: two distinct routes reach the same hint name. A class carrying both a Jaunty and a
+    /// DataAnnotations <c>[Table]</c> appears in both streams; a <c>partial</c> class whose parts each
+    /// carry a <c>[Table]</c> appears twice in one of them. Calling <c>AddSource</c> twice with one
+    /// hint name fails the build, so both are collapsed here - keeping the first occurrence, which
+    /// makes the emitted table/schema agree with <c>GetTableNameAndSchema</c>'s own first-match rule.
+    ///
+    /// <para>
+    /// This replaces a dedupe keyed on <see cref="INamedTypeSymbol"/>. Hint name is the right key now
+    /// because it is what actually has to be unique, and because a symbol cannot be held in a cached
+    /// model - see <see cref="EntityModel"/>. It is derived from the fully-qualified type name, so
+    /// two entities collapse here only if they would have collided on output anyway.
+    /// </para>
     /// </remarks>
-    private static string AccessibilityKeyword(Accessibility accessibility) => accessibility switch
+    private static ImmutableArray<EntityModel> Deduplicate(
+        ImmutableArray<EntityModel> jauntyTables, ImmutableArray<EntityModel> annotatedTables)
     {
-        Accessibility.Public => "public",
-        Accessibility.Internal => "internal",
-        Accessibility.Protected => "protected",
-        Accessibility.ProtectedOrInternal => "protected internal",
-        Accessibility.ProtectedAndInternal => "private protected",
-        Accessibility.Private => "private",
-        // NotApplicable shouldn't reach here for a named type; internal is the C# default for a
-        // type declaration with no modifier, so it is the safest thing to mirror.
-        _ => "internal"
-    };
+        if (jauntyTables.IsDefaultOrEmpty && annotatedTables.IsDefaultOrEmpty)
+            return ImmutableArray<EntityModel>.Empty;
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        ImmutableArray<EntityModel>.Builder merged
+            = ImmutableArray.CreateBuilder<EntityModel>(jauntyTables.Length + annotatedTables.Length);
+
+        foreach (EntityModel entity in jauntyTables)
+        {
+            if (seen.Add(entity.HintName))
+                merged.Add(entity);
+        }
+
+        foreach (EntityModel entity in annotatedTables)
+        {
+            if (seen.Add(entity.HintName))
+                merged.Add(entity);
+        }
+
+        return merged.ToImmutable();
+    }
 
     /// <summary>
-    /// Generates the complete source text for a Jaunty entity mapper partial class,
-    /// including <c>ReadEntity</c>, <c>BindInsert</c>, <c>BindUpdate</c>, <c>BindDelete</c>,
-    /// an ordinal-caching <c>OrdinalMap</c>, and column-info static properties.
+    /// Extracts an entity's complete mapping metadata from the compilation into a value-equatable
+    /// <see cref="EntityModel"/>.
     /// </summary>
-    /// <param name="classSymbol">The named type symbol for the entity class to generate a mapper for.</param>
-    /// <param name="reportDiagnostic">Callback used to surface generator diagnostics, e.g. a duplicate mapped column name.</param>
-    /// <returns>The generated C# source code as a string.</returns>
-    static string GenerateMapper(INamedTypeSymbol classSymbol, Action<Diagnostic> reportDiagnostic)
+    /// <remarks>
+    /// AUD-R25 (B8-7): this is the boundary between the half of the generator that touches Roslyn
+    /// symbols and the half that only formats strings. Everything below this method must work from
+    /// the model alone - see <see cref="EntityModel"/> for why.
+    /// </remarks>
+    /// <param name="context">The attribute syntax context for a matched <c>[Table]</c> class.</param>
+    private static EntityModel BuildEntityModel(GeneratorAttributeSyntaxContext context)
     {
-        var namespaceName = classSymbol.ContainingNamespace.ToDisplayString();
-        var isGlobalNamespace = classSymbol.ContainingNamespace.IsGlobalNamespace;
+        var classSymbol = (INamedTypeSymbol)context.TargetSymbol;
         var className = classSymbol.Name;
 
         // AUD-R25: !IsIndexer is the third guard against the same hazard. An indexer
@@ -279,16 +248,97 @@ public class JauntyGenerator : IIncrementalGenerator
             for (int i = 0; i < properties.Count; i++)
             {
                 if (properties[i].IsIdentityInferred)
-                {
-                    PropertyMetadata reverted = properties[i];
-                    reverted.IsIdentity = false;
-                    reverted.IsIdentityInferred = false;
-                    properties[i] = reverted;
-                }
+                    properties[i] = properties[i] with { IsIdentity = false, IsIdentityInferred = false };
             }
         }
 
         (var tableName, var schemaName) = GetTableNameAndSchema(classSymbol);
+
+        return new EntityModel(
+            Namespace: classSymbol.ContainingNamespace.IsGlobalNamespace
+                ? null
+                : classSymbol.ContainingNamespace.ToDisplayString(),
+            ClassName: className,
+            AccessibilityKeyword: AccessibilityKeyword(classSymbol.DeclaredAccessibility),
+            HintName: GetHintName(classSymbol),
+            TableName: tableName,
+            SchemaName: schemaName,
+            Properties: new EquatableArray<PropertyMetadata>(properties.ToImmutableArray()),
+            DiagnosticLocation: LocationInfo.From(classSymbol.Locations.FirstOrDefault()));
+    }
+
+    /// <summary>
+    /// Builds a collision-resistant hint name for the generated source file from the entity's
+    /// fully-qualified type name, so two <c>[Table]</c> classes with the same simple name in
+    /// different namespaces don't produce a duplicate hint name (which fails the build).
+    /// </summary>
+    /// <param name="classSymbol">The entity class symbol.</param>
+    private static string GetHintName(INamedTypeSymbol classSymbol)
+    {
+        var fullName = classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        if (fullName.StartsWith("global::", StringComparison.Ordinal))
+            fullName = fullName.Substring("global::".Length);
+
+        // R16: escape original underscores as "__" so a literal '_' in a namespace/class name
+        // can never be confused with the single '_' used below as the delimiter for every other
+        // non-alphanumeric character (dots, generic brackets, etc.) - otherwise e.g. namespace
+        // "MyApp.Foo" class "Bar_Baz" and namespace "MyApp.Foo.Bar" class "Baz" both flattened to
+        // "MyApp_Foo_Bar_Baz", producing a duplicate hint name that fails the build.
+        var sb = new StringBuilder(fullName.Length);
+        foreach (char c in fullName)
+        {
+            if (char.IsLetterOrDigit(c))
+                sb.Append(c);
+            else if (c == '_')
+                sb.Append("__");
+            else
+                sb.Append('_');
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Renders an entity's declared accessibility as the C# keyword to emit on the generated partial
+    /// declaration.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R25: this used to be a literal <c>public</c>. C# requires every partial declaration of a
+    /// type to agree on accessibility, so <c>[Table("orders")] internal partial class Order</c>
+    /// failed to compile with CS0262 - and nothing in the attribute docs, the generator or the
+    /// scaffolder said entities had to be public. The reflection path imposes no such restriction:
+    /// <c>MetadataBuilder.BuildMetadata</c> works on any <see cref="System.Type"/>.
+    /// </remarks>
+    private static string AccessibilityKeyword(Accessibility accessibility) => accessibility switch
+    {
+        Accessibility.Public => "public",
+        Accessibility.Internal => "internal",
+        Accessibility.Protected => "protected",
+        Accessibility.ProtectedOrInternal => "protected internal",
+        Accessibility.ProtectedAndInternal => "private protected",
+        Accessibility.Private => "private",
+        // NotApplicable shouldn't reach here for a named type; internal is the C# default for a
+        // type declaration with no modifier, so it is the safest thing to mirror.
+        _ => "internal"
+    };
+
+    /// <summary>
+    /// Generates the complete source text for a Jaunty entity mapper partial class,
+    /// including <c>ReadEntity</c>, <c>BindInsert</c>, <c>BindUpdate</c>, <c>BindDelete</c>,
+    /// an ordinal-caching <c>OrdinalMap</c>, and column-info static properties.
+    /// </summary>
+    /// <param name="entity">The extracted mapping metadata for the entity class.</param>
+    /// <param name="reportDiagnostic">Callback used to surface generator diagnostics, e.g. a duplicate mapped column name.</param>
+    /// <returns>The generated C# source code as a string.</returns>
+    static string GenerateMapper(EntityModel entity, Action<Diagnostic> reportDiagnostic)
+    {
+        var namespaceName = entity.Namespace;
+        var isGlobalNamespace = namespaceName is null;
+        var className = entity.ClassName;
+        var tableName = entity.TableName;
+        var schemaName = entity.SchemaName;
+        EquatableArray<PropertyMetadata> properties = entity.Properties;
+
         var primaryKeyColumnNames = properties.Where(p => p.IsPrimaryKey).Select(p => p.ColumnName).ToList();
 
         // ParameterMap is emitted as a Dictionary<string, ColumnInfo> collection initializer keyed
@@ -305,8 +355,8 @@ public class JauntyGenerator : IIncrementalGenerator
             {
                 reportDiagnostic(Diagnostic.Create(
                     DuplicateColumnNameDescriptor,
-                    classSymbol.Locations.FirstOrDefault() ?? Location.None,
-                    classSymbol.Name, p.ColumnName, first.PropertyName));
+                    entity.DiagnosticLocation?.ToLocation() ?? Location.None,
+                    className, p.ColumnName, first.PropertyName));
                 continue;
             }
 
@@ -329,7 +379,7 @@ public class JauntyGenerator : IIncrementalGenerator
             sb.AppendLine($"namespace {namespaceName}");
             sb.AppendLine("{");
         }
-        sb.AppendLine($"    {AccessibilityKeyword(classSymbol.DeclaredAccessibility)} partial class {className} : IMapped<{className}>, IEntityMetadataSource");
+        sb.AppendLine($"    {entity.AccessibilityKeyword} partial class {className} : IMapped<{className}>, IEntityMetadataSource");
         sb.AppendLine("    {");
         sb.AppendLine("        public readonly struct ColumnInfo");
         sb.AppendLine("        {");
@@ -375,7 +425,7 @@ public class JauntyGenerator : IIncrementalGenerator
         // path to the same place. The cost is that fallback-typed properties now read through
         // GetValue (which boxes) rather than GetFieldValue<T> on providers that specialise it -
         // paid only by types that were previously broken or provider-dependent.
-        var needsFallbackHelper = properties.Exists(p => GetReaderTypeInfo(p.TypeName).Getter == "reader.GetValue");
+        var needsFallbackHelper = properties.Any(p => GetReaderTypeInfo(p.TypeName).Getter == "reader.GetValue");
         if (needsFallbackHelper)
         {
             sb.AppendLine("        /// <summary>Converts a value read via GetValue to the property's type. See AUD-R25.</summary>");
@@ -942,33 +992,5 @@ public class JauntyGenerator : IIncrementalGenerator
         public string Getter => getter;
         public string TypeForGetFieldValue => typeForGetFieldValue;
         public bool NeedsNullCheck => needsNullCheck;
-    }
-
-    /// <summary>
-    /// Holds the resolved mapping metadata for a single property of an entity class.
-    /// </summary>
-    private struct PropertyMetadata(string propertyName, string columnName, bool isPrimaryKey, bool isIdentity, bool isComputed, string typeName, bool isEnum, bool isIdentityInferred)
-    {
-        public string PropertyName = propertyName;
-        public string ColumnName = columnName;
-        public bool IsPrimaryKey = isPrimaryKey;
-        public bool IsIdentity = isIdentity;
-        public bool IsComputed = isComputed;
-        public string TypeName = typeName;
-
-        /// <summary>
-        /// AUD-R25: whether the property's type - or, for a nullable value type, its underlying
-        /// type - is an enum. Enums are the one catch-all type that cannot be read through
-        /// <c>GetFieldValue&lt;T&gt;</c> even on the <c>DbDataReader</c> path, because the base
-        /// implementation is an unboxing cast.
-        /// </summary>
-        public bool IsEnum = isEnum;
-
-        /// <summary>
-        /// AUD-R25: whether <see cref="IsIdentity"/> came from the int/long-key convention rather
-        /// than an explicit <c>[DatabaseGenerated]</c>. Only inferred identity is withdrawn for a
-        /// composite-key entity; an explicit attribute is always honoured.
-        /// </summary>
-        public bool IsIdentityInferred = isIdentityInferred;
     }
 }
