@@ -9,8 +9,8 @@ namespace Jaunty.Attributes;
 /// rather than the application providing it.
 /// </para>
 /// <para>
-/// This attribute is Jaunty's native database generation attribute. It also supports the standard 
-/// <see cref="DatabaseGeneratedAttribute"/> for compatibility.
+/// This attribute is Jaunty's native database generation attribute. It also supports the standard
+/// <c>DatabaseGeneratedAttribute</c> from System.ComponentModel.DataAnnotations.Schema for compatibility.
 /// </para>
 /// </remarks>
 /// <example>
