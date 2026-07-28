@@ -15,6 +15,16 @@ namespace Jaunty.Interceptors;
 /// To short-circuit command execution (prevent it from running), throw an exception
 /// from <see cref="OnCommandExecutingAsync"/>.
 /// </para>
+/// <para>
+/// <b>Streaming APIs do not invoke interceptors.</b> The <c>QueryStream</c>,
+/// <c>QueryStreamAsync</c>, <c>GetAllStream</c> and <c>GetAllStreamAsync</c> families are lazy
+/// iterators: the command isn't executed when the method returns, only when the caller starts
+/// enumerating, and it stays open across the whole enumeration. There is no point at which the
+/// pipeline could report a completed command without first materializing every row, which would
+/// defeat the reason to stream at all. Their non-streaming counterparts (<c>Query</c>,
+/// <c>QueryFirst</c>, <c>QuerySingle</c>, <c>GetAll</c>) do invoke interceptors, as do all write
+/// operations. If you need auditing or telemetry to cover a query, use the non-streaming form.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>

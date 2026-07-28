@@ -228,6 +228,16 @@ public static partial class Jaunty
         }
     }
 
+    // Deliberately no InterceptorPipeline here, unlike QueryCore/QueryFirstCore/QuerySingleCore
+    // above (R24 flagged the divergence as undocumented and untested; it is intentional).
+    // ExecuteWithInterception wraps a delegate and reports the command as completed when that
+    // delegate returns. This method is a lazy iterator: nothing runs until the caller enumerates,
+    // and the reader stays open for the whole enumeration, so there is no point at which the
+    // pipeline could report completion without first materializing every row into a list - which
+    // is exactly what streaming exists to avoid. ExecuteQueryMultiple can wrap its execution
+    // because ExecuteReader() there really does run the command in one round trip (see the
+    // rationale comment in ExecuteQueryMultiple.cs); that does not hold here.
+    // ICommandInterceptor's docs state this contract for callers; ReadCoreInterceptorTests pins it.
     private static IEnumerable<T> QueryStreamCore<T>(IDbConnection connection, string sql, object? parameters, CommandOptions<T> options, MappingMode mode) where T : new()
     {
         if (connection is DbConnection dbConnection)
