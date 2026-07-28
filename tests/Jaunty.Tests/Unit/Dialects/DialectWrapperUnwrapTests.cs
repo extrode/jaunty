@@ -39,15 +39,12 @@ public class DialectWrapperUnwrapTests
         // This is the whole reason Unwrap has to exist. If any of these ever became a subclass,
         // the corresponding `dialect is XDialect` test would start matching on its own and this
         // assertion would fail loudly rather than the fix quietly becoming redundant.
-        Assert.IsNotType<SQLiteDialect>(new SQLiteDialectWithBulkCopy());
-        Assert.IsNotType<SqlServerDialect>(new SqlServerDialectWithBulkCopy());
-        Assert.IsNotType<PostgreSqlDialect>(new PostgreSqlDialectWithBulkCopy());
-        Assert.IsNotType<MySqlDialect>(new MySqlDialectWithBulkCopy());
-
-        Assert.False(new SQLiteDialectWithBulkCopy() is SQLiteDialect);
-        Assert.False(new SqlServerDialectWithBulkCopy() is SqlServerDialect);
-        Assert.False(new PostgreSqlDialectWithBulkCopy() is PostgreSqlDialect);
-        Assert.False(new MySqlDialectWithBulkCopy() is MySqlDialect);
+        // Assignability, not exact type: `is XDialect` - what the dispatch sites used to do - matches
+        // a subclass too, so that is the relation that has to be pinned.
+        Assert.IsNotAssignableFrom<SQLiteDialect>(new SQLiteDialectWithBulkCopy());
+        Assert.IsNotAssignableFrom<SqlServerDialect>(new SqlServerDialectWithBulkCopy());
+        Assert.IsNotAssignableFrom<PostgreSqlDialect>(new PostgreSqlDialectWithBulkCopy());
+        Assert.IsNotAssignableFrom<MySqlDialect>(new MySqlDialectWithBulkCopy());
     }
 
     // ------------------------------------------------------------------
