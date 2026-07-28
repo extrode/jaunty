@@ -30,7 +30,7 @@ This project lives in the **existing Jaunty solution** as new projects added to 
 ## Document Reading Order
 
 ```
-1. docs/memory/constitution.md     ← Governing principles (READ FIRST)
+1. docs/constitution.md     ← Governing principles (READ FIRST)
 2. docs/specs/spec.md              ← What we're building and why
 3. docs/specs/plan.md              ← How we're building it (architecture)
 4. docs/specs/data-model.md        ← Interfaces, types, mappings
