@@ -46,6 +46,22 @@ public static class DatabaseSetup
         Environment.GetEnvironmentVariable("JAUNTY_TEST_MARIADB")
         ?? "Server=localhost;Database=jauntybench;User=root;";
 
+    /// <summary>
+    /// The configured connection string for <paramref name="provider"/>, as supplied rather than
+    /// as reported by a live connection. ADO.NET providers strip the password out of
+    /// <see cref="DbConnection.ConnectionString"/> once the connection is open unless
+    /// <c>PersistSecurityInfo=true</c>, so anything that needs to hand a connection string to a
+    /// second library — Pomelo, which cannot reuse an open connection — has to come here for it.
+    /// </summary>
+    public static string GetConnectionString(DatabaseProvider provider) => provider switch
+    {
+        DatabaseProvider.Sqlite => "Data Source=:memory:",
+        DatabaseProvider.SqlServer => SqlServerConnectionString,
+        DatabaseProvider.PostgreSql => PostgreSqlConnectionString,
+        DatabaseProvider.MariaDb => MariaDbConnectionString,
+        _ => throw new ArgumentOutOfRangeException(nameof(provider))
+    };
+
     private static bool _repoDbInitialized;
 
     public static bool IsAvailable(DatabaseProvider provider) => provider switch
