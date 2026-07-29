@@ -277,16 +277,13 @@ internal sealed class GroupByExpressionVisitor<T, TKey> : ExpressionVisitor wher
         return false;
     }
 
-    private string GetColumnName(string propertyName)
-    {
-        IReadOnlyList<ColumnMetadata> columns = _metadata.Columns;
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].PropertyName == propertyName)
-                return columns[i].ColumnName;
-        }
-        return propertyName;
-    }
+        // AUD-R26-058: the raw-name half of the same AUD-R25 conversion. This one never
+        // re-escaped, so it was only the linear scan - but CachedDialectMetadata already holds a
+        // property-name to raw-column-name dictionary for exactly this (RawColumns exists because a
+        // column reference feeds both the SQL text, which must be escaped, and the parameter name,
+        // which must not be), and the fallback to the property name is the same.
+    private string GetColumnName(string propertyName) =>
+        FluentMetadataCache.GetForDialect<T>(_dialect).GetRawColumnName(propertyName);
 
     private string FormatConstant(object? value) => HavingExpressionHelpers.FormatLiteral(value, _dialect);
 }
