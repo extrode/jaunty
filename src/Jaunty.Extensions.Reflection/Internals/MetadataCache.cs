@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -10,6 +9,7 @@ using System.Runtime.CompilerServices;
 using Jaunty.Configuration;
 using Jaunty.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Parameters;
 using Jaunty.Attributes;
 using Jaunty.TypeHandlers;
 using System.Globalization;
@@ -103,7 +103,14 @@ internal static class MetadataCache<T>
 
         public PropertyContext<T>[] Properties { get; }
 
-        private readonly ConcurrentDictionary<ReaderSignature, PropertySetter<T>[]> SettersCache = new();
+        // AUD-R26-053: bounded. ReaderSignature's equality and hash are the reader's column-name
+        // list, which the caller chooses through the SELECT list - QueryPartial, a reporting screen,
+        // anything that projects a different set of fields per request - and this was a
+        // ConcurrentDictionary on a static field of a generic type, so every distinct shape left a
+        // permanent entry, per entity type, for the process lifetime. Measured at 586 B per shape.
+        // See BoundedCache.SchemaCacheMaxEntries for the cap and why it is not the 4096 default.
+        private readonly BoundedCache<ReaderSignature, PropertySetter<T>[]> SettersCache =
+            new(BoundedCacheLimits.SchemaCacheMaxEntries);
 
         private readonly Dictionary<string, int> ColumnToIndex;
 
@@ -180,7 +187,8 @@ internal static class MetadataCache<T>
                 return entry.Setters;
 
             var signature = new ReaderSignature(reader, mode, resolver);
-            if (!SettersCache.TryGetValue(signature, out PropertySetter<T>[]? setters))
+            PropertySetter<T>[]? setters = SettersCache.Get(signature);
+            if (setters is null)
             {
                 setters = BuildSetters(reader, mode, resolver);
                 SettersCache.TryAdd(signature, setters);
