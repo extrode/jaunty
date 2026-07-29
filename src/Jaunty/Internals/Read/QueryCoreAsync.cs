@@ -330,8 +330,7 @@ public static partial class Jaunty
                     var t1 = new T1();
                     var t2 = new T2();
 
-                    mapping.ApplyT1(t1, dbReader);
-                    mapping.ApplyT2(t2, dbReader);
+                    mapping.Map(t1, t2, dbReader);
 
                     results.Add((t1, t2));
                 }
@@ -350,8 +349,7 @@ public static partial class Jaunty
                     var t1 = new T1();
                     var t2 = new T2();
 
-                    mapping.ApplyT1(t1, reader);
-                    mapping.ApplyT2(t2, reader);
+                    mapping.Map(t1, t2, reader);
 
                     results.Add((t1, t2));
                 }
@@ -382,8 +380,7 @@ public static partial class Jaunty
                 var t1 = new T1();
                 var t2 = new T2();
 
-                mapping.ApplyT1(t1, dbReader);
-                mapping.ApplyT2(t2, dbReader);
+                mapping.Map(t1, t2, dbReader);
 
                 return (t1, t2);
             }
@@ -397,8 +394,7 @@ public static partial class Jaunty
             var t1Fallback = new T1();
             var t2Fallback = new T2();
 
-            mappingFallback.ApplyT1(t1Fallback, reader);
-            mappingFallback.ApplyT2(t2Fallback, reader);
+            mappingFallback.Map(t1Fallback, t2Fallback, reader);
 
             return (t1Fallback, t2Fallback);
 
@@ -425,8 +421,7 @@ public static partial class Jaunty
                 var t1 = new T1();
                 var t2 = new T2();
 
-                mapping.ApplyT1(t1, dbReader);
-                mapping.ApplyT2(t2, dbReader);
+                mapping.Map(t1, t2, dbReader);
 
                 if (await dbReader.ReadAsync(ct).ConfigureAwait(false))
                     throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.");
@@ -443,8 +438,7 @@ public static partial class Jaunty
             var t1Fallback = new T1();
             var t2Fallback = new T2();
 
-            mappingFallback.ApplyT1(t1Fallback, reader);
-            mappingFallback.ApplyT2(t2Fallback, reader);
+            mappingFallback.Map(t1Fallback, t2Fallback, reader);
 
             ct.ThrowIfCancellationRequested();
             if (reader.Read())
@@ -502,8 +496,7 @@ public static partial class Jaunty
                 var t1 = new T1();
                 var t2 = new T2();
 
-                mapping.ApplyT1(t1, reader);
-                mapping.ApplyT2(t2, reader);
+                mapping.Map(t1, t2, reader);
 
                 yield return (t1, t2);
             }
