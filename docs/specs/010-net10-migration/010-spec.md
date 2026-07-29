@@ -2,7 +2,8 @@
 
 > spec.md — The "what" and "why". No technical implementation details.
 
-Status: draft · Created: 2026-07-29 · Origin: SDK/CI divergence investigation, 2026-07-29
+Status: **ready to plan** · Created: 2026-07-29 · Updated: 2026-07-29 (Q2/Q3/Q4 measured and closed)
+· Origin: SDK/CI divergence investigation, 2026-07-29
 
 ---
 
@@ -78,14 +79,16 @@ would repeat the mistake 009 exists to correct.
 | Jaunty.SourceGenerator.Tests | 72 passed |
 | Jaunty.Fluent.Tests | 1189 passed, **4 failed** |
 | Jaunty.Scaffolding.Tests | 555 passed, 24 skipped |
-| Jaunty.FlatFiles.Tests | **not run on net10.0** |
-| Jaunty.FlatFiles.DuckDB.Tests | **not run on net10.0** |
+| Jaunty.FlatFiles.Tests | 185 passed |
+| Jaunty.FlatFiles.DuckDB.Tests | 582 passed, 1 failed (flake, see below) |
 
-**The probe covered four of CI's five test steps, not five.** The FlatFiles/DuckDB step
-(`ci.yml:113-121`) was never executed against net10.0, so whether `DuckDB.NET.Data.Full 1.3.0`'s
-native binaries load there is unmeasured — the one place in the repo with a native dependency, and
-therefore the most likely to break. Running it is the first task of the plan, not an assumption of
-it. (Both suites pass on net8.0: 185 and 583.)
+The FlatFiles/DuckDB step (`ci.yml:113-121`) was missing from the first probe. **Measured
+2026-07-29 (Q4, closed): `DuckDB.NET.Data.Full 1.3.0`'s native binaries load correctly on
+net10.0.** The single failure,
+`ExpressionCachingTests.ExpressionCaching_ImprovesQueryPerformance`, passes in isolation on two
+consecutive runs and is load-sensitive timing, not a net10 defect — a third flaky DuckDB
+performance test, after the two fixed for CI earlier. Track it separately; it is not a migration
+blocker but it will redden CI intermittently on either target.
 
 The 2437 skips are pre-existing and environmental — no SQL Server, PostgreSQL or MySQL
 connection strings on the probe machine. CI supplies SQL Server, so the CI skip count is lower.
@@ -117,12 +120,25 @@ recognises the `MemoryExtensions` form and unwraps the span conversion, and the 
 tests build the tree by hand in the C# 14 shape, so they hold under the 13.0 pin; the Fluent suite
 passes 1199/1199 under **both** language versions.
 
-**The 1 Jaunty.Tests failure is genuinely net10-specific.**
-`TypedKeyGuardTests.TheOldFormStillBoxes_WhichIsWhatMakesTheMeasurementMeaningful` passes on
-net8.0 under both C# 13 and C# 14, and fails only on net10.0. The test asserts that an old code
-path *does* box, as the control for a boxing measurement. If .NET 10 no longer boxes there, the
-control is invalid and the test — not the product code — needs rethinking. **Unverified:** the
-cause has not yet been confirmed; it is assumed to be a runtime behaviour change.
+**The 1 Jaunty.Tests failure is genuinely net10-specific — measured, Q3 closed.**
+`TypedKeyGuardTests.TheOldFormStillBoxes_WhichIsWhatMakesTheMeasurementMeaningful` asserts that
+`ArgumentNullException.ThrowIfNull(int)` allocates, as the control proving the harness can see a
+box when there is one. On .NET 10 the JIT elides that box, so the measurement returns 0 and the
+control fails.
+
+**The control failing is the least of it.** The three sibling tests — `AnIntKey_AllocatesNothing`,
+`ALongKey_AllocatesNothing`, `AGuidKey_AllocatesNothing` (`TypedKeyGuardTests.cs:53-72`) — still
+pass on net10, and are now **vacuous**: they assert `KeyGuard.ThrowIfNull` allocates zero while the
+boxing form they exist to beat also allocates zero. They would pass with `KeyGuard` deleted. This
+is exactly what the control was written to detect, and it detected it. `KeyGuard` still earns its
+place for net8.0 and net472 consumers; what is gone is the ability to demonstrate that on net10.
+
+### The clean-build trap
+
+`dotnet build` **incrementally reports 0 errors on net10**. The four ILLink errors above appear
+only on `--no-incremental` or after `dotnet clean`. CI always builds clean so CI catches them, but
+a local build will report a false all-clear. Any task in this migration that claims "builds clean
+on net10" must say which kind of build produced that claim.
 
 ## 3. Scope
 
@@ -199,18 +215,51 @@ What keeping `net8.0` buys, which is what decided it:
 - net8 is LTS until 2026-11-10 and is supported for another fifteen weeks.
 
 Cost, measured rather than asserted: a third build/test leg on the self-hosted runner, and net10
-variants of the **39** `SetTargetFramework="TargetFramework=net8.0"` pins. (An earlier revision
-claimed *every* `ProjectReference` pins net8.0; **18** pin `netstandard2.0`.)
+variants of the **21** `SetTargetFramework="TargetFramework=net8.0"` pins across **11** csproj
+files. **10** more pin `netstandard2.0` and are untouched by this work.
 
-## 6a. Open questions
+Counting note: an earlier revision said 39 and 18. Those totals swept
+`.worktrees/`, a stale agent worktree holding a second copy of the
+tree. Any `grep -r` over this repo must exclude `.worktrees/` and `.worktrees/` or it
+double-counts.
 
-**Q2 — does the NativeAOT publish job still work?** Not exercised by the probe. Given §2's ILLink
-findings and 009's measured "No mapper found for type Product" failure under `PublishAot=true`,
-this needs its own check.
+## 6a. Resolved by measurement, 2026-07-29
 
-**Q3 — what actually changed under `TypedKeyGuard`?** See §2.
+**Q2 — does the NativeAOT publish still work? → Yes, but only once the new dependency diagnostics
+are handled.** Measured by publishing `src/Jaunty.Scaffolding.Cli` `-r win-x64 --self-contained`
+on the same machine at both targets:
 
-**Q4 — do the DuckDB native binaries load on net10.0?** Unmeasured; see §2 and §6b.
+| | net8.0 | net10.0 |
+|---|---|---|
+| `TreatWarningsAsErrors=true` (repo default) | publishes, 0 errors | **fails** — `ilc` exits −1 (MSB3073) |
+| `TreatWarningsAsErrors=false` | — | publishes, binary runs |
+| Binary size | 38.4 MB | **36.0 MB** (−6%) |
+
+`ilc` does not crash. The failure is `TreatWarningsAsErrors=true`
+(`src/Directory.Build.props:14`) promoting analyzer diagnostics to errors, from two sources that
+need opposite treatment:
+
+1. **Dependencies and the runtime pack** — IL2104/IL3053 from `Microsoft.Data.SqlClient`,
+   `MySqlConnector`, `Microsoft.IdentityModel.Tokens`, plus three assemblies from the net10
+   NativeAOT runtime pack itself (`System.Private.DataContractSerialization`, `Microsoft.CSharp`,
+   `System.Linq.Expressions`). Unfixable by us. **Measured: `<WarningsNotAsErrors>IL2104;IL3053</WarningsNotAsErrors>`
+   clears these and keeps them visible in the log.**
+2. **Jaunty's own four** — the IL2111/IL2072 set from §2, which survive step 1 and are the real
+   blocker. Fixing/deferring them (§3.3) is a prerequisite for the AOT job, not a parallel task.
+
+The `-6%` binary is the migration's first hard performance evidence.
+
+One loose end: a `Trim analysis error IL2057` at
+`src/Jaunty.Scaffolding/Providers/SQLite/SQLiteSchemaReader.cs:65` (`Type.GetType(string)`)
+appeared on the first publish and did not reproduce on later ones — incremental analysis again.
+Confirm it on a clean publish before deciding how to treat it; it is first-party, so it must not
+be swept into the `WarningsNotAsErrors` list.
+
+**Q3 — what changed under `TypedKeyGuard`? → .NET 10 elides the box.** See §2; the real finding is
+that three sibling tests become vacuous.
+
+**Q4 — do the DuckDB native binaries load on net10.0? → Yes.** See §2. 185/185 and 582/583, the
+one failure being a pre-existing timing flake.
 
 ## 6b. Risks
 
@@ -219,8 +268,12 @@ this needs its own check.
   path exists, and 009 is a draft whose own open questions block planning (009-spec.md:173). This
   is a hard dependency, not sequencing advice. Either 009 lands first, or AC2 is scoped to the
   three sites that can be fixed without it and the `ParameterBinder` pair is explicitly deferred.
-- **DuckDB native binaries on net10 are unmeasured** (§2). If they do not load, `Jaunty.FlatFiles.DuckDB`
-  cannot take a net10 leg on the schedule the rest of the work assumes.
+- ~~**DuckDB native binaries on net10 are unmeasured.**~~ Closed 2026-07-29 (Q4): they load.
+- **The AOT publish cannot go green on net10 without a decision on `TreatWarningsAsErrors`** (Q2).
+  The diagnostics come from dependencies and from the net10 runtime pack, so no amount of fixing
+  Jaunty's own code clears them. This is on the critical path for AC5 and AC6.
+- **A local incremental build will tell you net10 is clean when it is not** (§2). Any verification
+  step in the plan must clean first, or it is not evidence.
 - **The net8.0 benchmark baseline must be captured before the retarget**, or AC7's delta has
   nothing to compare against.
 
