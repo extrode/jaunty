@@ -1,4 +1,5 @@
 using System.Data;
+using System.Globalization;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Text;
@@ -201,7 +202,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
             {
                 command.CommandText = BuildInsertWithIdentitySql(sql);
                 var result = command.ExecuteScalar();
-                return Convert.ToInt64(result);
+                return Convert.ToInt64(result, CultureInfo.InvariantCulture);
             }
 
             command.CommandText = sql;
@@ -235,7 +236,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
             {
                 command.CommandText = BuildInsertWithIdentitySql(sql);
                 var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-                return Convert.ToInt64(result);
+                return Convert.ToInt64(result, CultureInfo.InvariantCulture);
             }
 
             command.CommandText = sql;
