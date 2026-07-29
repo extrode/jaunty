@@ -662,14 +662,24 @@ public static class CsvImportExtensions
     // already safe to embed as-is.
     private static string EscapeSqlCharLiteral(char c) => c == '\'' ? "''" : c.ToString();
 
-    // BULK INSERT under FORMAT = 'CSV' expands the '\n' escape to \r\n, so an LF-only file fails
-    // outright with "Cannot obtain the required interface (IID_IColumnsInfo)". The hex form 0x0a
-    // matches a bare LF, but leaves the CR of a CRLF file trailing on the last column. Neither
-    // value is right for both, so sniff the file's first line ending and pick.
+    // Both branches return a HEX terminator rather than the '\n' escape.
+    //
+    // AUD-R26: the previous version mapped a CRLF file to '\n' on the premise that BULK INSERT
+    // under FORMAT = 'CSV' expands that escape to \r\n. It does not - '\n' matches a bare LF, so
+    // the CR of each CRLF row survived as a trailing character on the last column, which is exactly
+    // what ImportCsv_SqlServer_CrlfLineEndings_TrailingCarriageReturnStripped observed: the row
+    // round-tripped as "alice@example.com\r". The escape form is also what makes an LF-only file
+    // fail outright with "Cannot obtain the required interface (IID_IColumnsInfo)".
+    //
+    // 0x0d0a and 0x0a state the bytes exactly and are subject to no escape interpretation at all,
+    // so each file shape gets the terminator it actually has.
     //
     // BULK INSERT reads the file server-side, so the path need not be readable from here at all;
     // when it is not, fall back to CRLF, which is what a file staged for a Windows SQL Server is
     // overwhelmingly likely to use.
+    private const string SqlServerCrLfTerminator = "0x0d0a";
+    private const string SqlServerLfTerminator = "0x0a";
+
     private static string SqlServerRowTerminator(string filePath)
     {
         try
@@ -683,7 +693,7 @@ public static class CsvImportExtensions
                 for (int i = 0; i < read; i++)
                 {
                     if (buffer[i] == 0x0A)
-                        return previous == 0x0D ? "\\n" : "0x0a";
+                        return previous == 0x0D ? SqlServerCrLfTerminator : SqlServerLfTerminator;
                     previous = buffer[i];
                 }
             }
@@ -698,7 +708,7 @@ public static class CsvImportExtensions
         {
         }
 
-        return "\\n";
+        return SqlServerCrLfTerminator;
     }
 
     // Postgres COPY's WITH (...) clause natively supports NULL '<value>' and QUOTE '<char>', unlike

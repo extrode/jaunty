@@ -67,19 +67,11 @@ public sealed partial class DuckDb
                 if (ordinal >= 0 && !reader.IsDBNull(ordinal))
                 {
                     var value = reader.GetValue(ordinal);
-                    Type targetType = mappingList[i].PropertyType;
-                    if (value != null && value.GetType() != targetType)
-                    {
-                        try
-                        {
-                            value = System.Convert.ChangeType(value, Nullable.GetUnderlyingType(targetType) ?? targetType, CultureInfo.InvariantCulture);
-                        }
-                        catch
-                        {
-                            // If conversion fails, let the property setter handle it
-                        }
-                    }
-                    mappingList[i].Setter(entity, value);
+                    // AUD-R26: see the note in DuckDbRead.QueryInternal - shared converter so the
+                    // sync and async read paths cannot drift, and so a failure names the column.
+                    mappingList[i].Setter(
+                        entity,
+                        ReaderValueConverter.ConvertOrThrow(value, mappingList[i], typeof(T)));
                 }
             }
             results.Add(entity);

@@ -31,14 +31,16 @@ internal static class ColumnMappingCache
         return _cache.GetOrAdd(entityType, type =>
         {
             var dict = new Dictionary<string, ColumnMapping>(StringComparer.OrdinalIgnoreCase);
+            // AUD-R26: assigning with dict[name] = ... silently dropped the earlier property when
+            // two mapped onto one column, while TargetDdlGenerator emitted both and produced DDL
+            // that SQLite and SQL Server reject. See DuplicateColumnGuard.
+            Dictionary<string, string> claimed = DuplicateColumnGuard.NewClaimSet(4);
 
-            foreach (PropertyInfo prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            foreach (PropertyInfo prop in MappedPropertyFilter.GetMappedProperties(type))
             {
-                if (!MappedPropertyFilter.IsMapped(prop))
-                    continue;
-
                 Type underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
                 var columnName = GetColumnName(prop);
+                DuplicateColumnGuard.Claim(type, columnName, prop, claimed);
 
                 dict[columnName] = new ColumnMapping
                 {

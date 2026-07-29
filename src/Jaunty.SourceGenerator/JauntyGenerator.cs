@@ -94,6 +94,69 @@ public class JauntyGenerator : IIncrementalGenerator
     }
 
     /// <summary>
+    /// Collects the entity's public, settable-shaped instance properties, including those it
+    /// inherits.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26: this used to be <c>classSymbol.GetMembers()</c>, which returns only the members
+    /// <b>declared on the type itself</b>. The reflection path enumerates
+    /// <c>type.GetProperties(BindingFlags.Instance | BindingFlags.Public)</c>
+    /// (<c>MetadataBuilder.cs:67</c>), which <b>does</b> include inherited properties. So a base
+    /// class holding shared columns - the ordinary audit-columns pattern,
+    /// <c>class Order : AuditableEntity</c> - produced two different mappings for one entity
+    /// depending on whether the generator was referenced: reflection mapped <c>CreatedAt</c> and
+    /// <c>CreatedBy</c>, the generated mapper silently did not. Measured, and pinned from both
+    /// sides, in <c>InheritedPropertyTests</c>.
+    ///
+    /// <para>
+    /// Silently is the operative word. The generated mapper simply omitted those columns - no
+    /// diagnostic, no compile error - so an entity that round-tripped correctly under reflection
+    /// would quietly stop persisting half its columns once the generator package was added.
+    /// </para>
+    ///
+    /// <para>
+    /// The hierarchy is walked derived-first and stops at <see cref="object"/>, whose members are
+    /// never columns. The first declaration of a name wins, so an <c>override</c> or a
+    /// <c>new</c> shadow is taken from the most derived type that declares it - the same
+    /// most-derived-wins rule used by <c>MappedPropertyFilter</c> in Jaunty.FlatFiles.DuckDB.
+    /// </para>
+    /// </remarks>
+    private static List<IPropertySymbol> GetMappableProperties(INamedTypeSymbol classSymbol)
+    {
+        var result = new List<IPropertySymbol>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        for (INamedTypeSymbol? type = classSymbol;
+             type is not null && type.SpecialType != SpecialType.System_Object;
+             type = type.BaseType)
+        {
+            foreach (IPropertySymbol property in type.GetMembers().OfType<IPropertySymbol>())
+            {
+                // AUD-R25: !IsIndexer is the third guard against the same hazard. An indexer
+                // (`public object this[int i] { get; set; }`) surfaces as a public instance property
+                // named "Item" with index parameters, and C# forbids naming an indexer through
+                // member access - so it would be emitted as `entity.Item = ...` in
+                // ReadEntity/CreateRowMapper and `((Order)e).Item` in the ColumnInfo/EntityColumnInfo
+                // lambdas, none of which compile. The reflection path degrades gracefully here (the
+                // indexer is simply not a column); the generated path would break the build inside a
+                // .g.cs the user cannot edit. Both MetadataBuilder and ParameterCache already skip
+                // these.
+                if (property.IsStatic || property.IsIndexer || property.DeclaredAccessibility != Accessibility.Public)
+                    continue;
+
+                // Walking derived-first means a name already recorded came from a more derived
+                // type, which shadows or overrides this declaration.
+                if (!seen.Add(property.Name))
+                    continue;
+
+                result.Add(property);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// Merges the two recognized-attribute streams into one entity per generated file, keyed on the
     /// hint name.
     /// </summary>
@@ -159,9 +222,7 @@ public class JauntyGenerator : IIncrementalGenerator
         // reflection path degrades gracefully here (the indexer is simply not a column); the
         // generated path would break the build inside a .g.cs the user cannot edit. Both
         // MetadataBuilder and ParameterCache already skip these.
-        var allProperties = classSymbol.GetMembers().OfType<IPropertySymbol>()
-            .Where(p => !p.IsStatic && !p.IsIndexer && p.DeclaredAccessibility == Accessibility.Public)
-            .ToList();
+        List<IPropertySymbol> allProperties = GetMappableProperties(classSymbol);
 
         var properties = new List<PropertyMetadata>();
         foreach (IPropertySymbol? prop in allProperties)

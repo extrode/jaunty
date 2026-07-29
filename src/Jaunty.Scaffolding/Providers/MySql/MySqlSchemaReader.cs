@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Scaffolding.Abstractions;
+using Jaunty.Scaffolding.Internals;
 using Jaunty.Scaffolding.Schema;
 
 namespace Jaunty.Scaffolding.Providers.MySql;
@@ -99,7 +100,7 @@ public sealed class MySqlSchemaReader : ISchemaReader
             var type = Type.GetType(typeName);
 #pragma warning restore IL2057
             if (type != null)
-                return (DbConnection)Activator.CreateInstance(type, connectionString)!;
+                return ReflectedConnectionFactory.Create(type, connectionString);
         }
 
         throw new InvalidOperationException("Could not find MySQL provider. Please install MySqlConnector or MySql.Data.");
