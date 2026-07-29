@@ -24,7 +24,7 @@ public class BulkCopyConfigurationTests : IDisposable
         Assert.Equal(10000, options.BatchSize);
         Assert.Equal(30, options.Timeout);
         Assert.Equal(BulkCopyIdentityMode.Default, options.IdentityMode);
-        Assert.False(options.CheckConstraints);
+        Assert.True(options.CheckConstraints);   // AUD-R26: safe by default
         Assert.Equal(TableLockOption.Default, options.TableLock);
         Assert.True(options.EnableStreaming);
         Assert.Null(options.Transaction);
@@ -67,7 +67,7 @@ public class BulkCopyConfigurationTests : IDisposable
         Assert.Equal(10000, BulkCopyConfiguration.DefaultBatchSize);
         Assert.Equal(30, BulkCopyConfiguration.DefaultTimeout);
         Assert.Equal(BulkCopyIdentityMode.Default, BulkCopyConfiguration.DefaultIdentityMode);
-        Assert.False(BulkCopyConfiguration.DefaultCheckConstraints);
+        Assert.True(BulkCopyConfiguration.DefaultCheckConstraints);   // AUD-R26: safe by default
         Assert.Equal(100, BulkCopyConfiguration.MinimumRowsForNativeBulkCopy);
         Assert.True(BulkCopyConfiguration.EnableNativeBulkCopy);
     }
@@ -84,7 +84,7 @@ public class BulkCopyConfigurationTests : IDisposable
             BulkCopyConfiguration.DefaultBatchSize = 5000;
             BulkCopyConfiguration.DefaultTimeout = 60;
             BulkCopyConfiguration.DefaultIdentityMode = BulkCopyIdentityMode.KeepIdentity;
-            BulkCopyConfiguration.DefaultCheckConstraints = true;
+            BulkCopyConfiguration.DefaultCheckConstraints = false;
             BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = 50;
             BulkCopyConfiguration.EnableNativeBulkCopy = false;
 
@@ -92,7 +92,7 @@ public class BulkCopyConfigurationTests : IDisposable
             Assert.Equal(5000, BulkCopyConfiguration.DefaultBatchSize);
             Assert.Equal(60, BulkCopyConfiguration.DefaultTimeout);
             Assert.Equal(BulkCopyIdentityMode.KeepIdentity, BulkCopyConfiguration.DefaultIdentityMode);
-            Assert.True(BulkCopyConfiguration.DefaultCheckConstraints);
+            Assert.False(BulkCopyConfiguration.DefaultCheckConstraints);
             Assert.Equal(50, BulkCopyConfiguration.MinimumRowsForNativeBulkCopy);
             Assert.False(BulkCopyConfiguration.EnableNativeBulkCopy);
         }
@@ -110,7 +110,7 @@ public class BulkCopyConfigurationTests : IDisposable
         BulkCopyConfiguration.DefaultBatchSize = 5000;
         BulkCopyConfiguration.DefaultTimeout = 60;
         BulkCopyConfiguration.DefaultIdentityMode = BulkCopyIdentityMode.KeepIdentity;
-        BulkCopyConfiguration.DefaultCheckConstraints = true;
+        BulkCopyConfiguration.DefaultCheckConstraints = false;
         BulkCopyConfiguration.MinimumRowsForNativeBulkCopy = 50;
         BulkCopyConfiguration.EnableNativeBulkCopy = false;
 
@@ -121,7 +121,7 @@ public class BulkCopyConfigurationTests : IDisposable
         Assert.Equal(10000, BulkCopyConfiguration.DefaultBatchSize);
         Assert.Equal(30, BulkCopyConfiguration.DefaultTimeout);
         Assert.Equal(BulkCopyIdentityMode.Default, BulkCopyConfiguration.DefaultIdentityMode);
-        Assert.False(BulkCopyConfiguration.DefaultCheckConstraints);
+        Assert.True(BulkCopyConfiguration.DefaultCheckConstraints);   // AUD-R26: safe by default
         Assert.Equal(100, BulkCopyConfiguration.MinimumRowsForNativeBulkCopy);
         Assert.True(BulkCopyConfiguration.EnableNativeBulkCopy);
     }
