@@ -344,7 +344,16 @@ public sealed class SpParameters
 
         object? value = param.DbParameter?.Value ?? param.Value;
 
-        return value is null || value == DBNull.Value ? 0 : Convert.ToInt32(value);
+        // AUD-R26: this was Convert.ToInt32(value), whose no-provider overload runs under
+        // CultureInfo.CurrentCulture. Get<T>(name) two methods above reads the same
+        // `param.DbParameter?.Value ?? param.Value` expression and routes through
+        // ScalarConverter<T>, which pins InvariantCulture on all seven of its conversion paths - so
+        // two accessors for the same provider value disagreed on culture, and this was the
+        // host-locale-dependent one. Routed through the same converter rather than given its own
+        // InvariantCulture argument, so the two cannot drift apart again. Same defect class as the
+        // round-25 sweep (AUD-R25-002/-003/-004); missed then because that sweep matched
+        // Convert.ChangeType and this site is Convert.ToInt32.
+        return value is null || value == DBNull.Value ? 0 : ScalarConverter<int>.Convert(value);
     }
 
     /// <summary>

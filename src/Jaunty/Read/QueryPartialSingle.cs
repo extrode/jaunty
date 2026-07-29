@@ -105,11 +105,13 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QuerySingleCore<T>(connection, sql, parameters, default, MappingMode.Projection);
     }
@@ -200,11 +202,13 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return QuerySingleCore<T>(connection, sql, parameters, options, MappingMode.Projection);
     }
