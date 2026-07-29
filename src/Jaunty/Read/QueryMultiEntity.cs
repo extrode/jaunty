@@ -280,7 +280,13 @@ public static partial class Jaunty
     {
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            var results = new List<(T1, T2)>(64);
+            // AUD-R26: these two obsolete overloads hardcoded 64, so a consumer who tuned
+            // JauntyConfig.QueryResultCapacity for their workload silently got the default here and
+            // nowhere else - every non-obsolete multi-entity path in QueryCore.cs already reads it.
+            // The per-call ExpectedRowCount hint the non-obsolete paths also honour is not available:
+            // these take the non-generic CommandOptions, which carries no such field, and widening a
+            // public struct for two obsolete entry points is not worth it.
+            var results = new List<(T1, T2)>(JauntyConfig.QueryResultCapacity);
 
             if (!reader.Read())
                 return results;
@@ -318,7 +324,7 @@ public static partial class Jaunty
 
         return ExecuteReader(connection, sql, parameters, options, reader =>
         {
-            var results = new List<TResult>(64);
+            var results = new List<TResult>(JauntyConfig.QueryResultCapacity);
 
             if (!reader.Read())
                 return results;
