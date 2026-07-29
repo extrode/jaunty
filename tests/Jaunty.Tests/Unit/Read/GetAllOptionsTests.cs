@@ -94,6 +94,11 @@ public class GetAllOptionsTests : IDisposable
     /// growth reallocations do not happen. Measured against the default capacity of 16 with 512
     /// rows: without the hint the list doubles from 16, copying 16+32+…+256 elements on the way.
     /// </summary>
+    // net8.0+ only, and the guard stays: GC.GetAllocatedBytesForCurrentThread() arrived in
+    // .NET Core 3.0 and has no net472 equivalent, so there is no way to measure the delta this
+    // test asserts on. ExpectedRowCount_DoesNotChangeTheResult below covers the behaviour on
+    // both TFMs; only the allocation proof is net8.0-only.
+#if NET8_0_OR_GREATER
     [Fact]
     public void ExpectedRowCount_IsHonouredByGetAll()
     {
@@ -120,6 +125,7 @@ public class GetAllOptionsTests : IDisposable
             $"Expected the row-count hint to allocate less than the default capacity; " +
             $"hinted {hinted}, unhinted {unhinted}.");
     }
+#endif
 
     [Fact]
     public void ExpectedRowCount_DoesNotChangeTheResult()
