@@ -93,29 +93,53 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public TFrom SelectSingle()
     {
+        // AUD-R26-057: LIMIT 2, not the whole result set. QueryPartialSingle throws when a second
+        // row exists, so two rows is all it takes to make that decision - reading the rest only to
+        // discard it is pure waste, and on a large join SelectSingle read the entire result set to
+        // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
+        // for exactly this reason, and the SelectFirst neighbours four lines above which already
+        // page to 1.
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
         return _connection.QueryPartialSingle<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
     public TFrom SelectSingle(CommandOptions options)
     {
+        // AUD-R26-057: LIMIT 2, not the whole result set. QueryPartialSingle throws when a second
+        // row exists, so two rows is all it takes to make that decision - reading the rest only to
+        // discard it is pure waste, and on a large join SelectSingle read the entire result set to
+        // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
+        // for exactly this reason, and the SelectFirst neighbours four lines above which already
+        // page to 1.
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
         return _connection.QueryPartialSingle<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
 
     public TFrom? SelectSingleOrDefault()
     {
+        // AUD-R26-057: LIMIT 2, not the whole result set. QueryPartialSingle throws when a second
+        // row exists, so two rows is all it takes to make that decision - reading the rest only to
+        // discard it is pure waste, and on a large join SelectSingle read the entire result set to
+        // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
+        // for exactly this reason, and the SelectFirst neighbours four lines above which already
+        // page to 1.
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
         return _connection.QueryPartialSingleOrDefault<TFrom>(sql, _parameters.ToParameterObject()!);
     }
 
     public TFrom? SelectSingleOrDefault(CommandOptions options)
     {
+        // AUD-R26-057: LIMIT 2, not the whole result set. QueryPartialSingle throws when a second
+        // row exists, so two rows is all it takes to make that decision - reading the rest only to
+        // discard it is pure waste, and on a large join SelectSingle read the entire result set to
+        // discover it should have thrown. Mirrors QueryBuilder.SelectSingle, which sets _take = 2
+        // for exactly this reason, and the SelectFirst neighbours four lines above which already
+        // page to 1.
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
         return _connection.QueryPartialSingleOrDefault<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options));
     }
 
@@ -175,7 +199,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public (TFrom From, TJoin Joined) SelectFirstBoth()
     {
-        List<(TFrom From, TJoin Joined)> result = SelectBothInternal();
+        List<(TFrom From, TJoin Joined)> result = SelectBothInternal(limit: 1);
         if (result.Count == 0)
             throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(TFrom).Name}, {typeof(TJoin).Name})'.");
 
@@ -233,13 +257,22 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         return _connection.QueryPartialFirstOrDefault<TJoin>(sql, _parameters.ToParameterObject()!);
     }
 
-    private List<(TFrom From, TJoin Joined)> SelectBothInternal()
+    /// <summary>
+    /// Materialises the joined rows, optionally bounded.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-057: the limit did not exist, so SelectFirstBoth called this and indexed [0] -
+    /// materialising and mapping every joined row to return one. SelectWithMapper already took a
+    /// limit for the same job; this is the sibling that did not.
+    /// </remarks>
+    private List<(TFrom From, TJoin Joined)> SelectBothInternal(int? limit = null)
     {
         string[] fromColumns = GetPrefixedColumnsWithAlias(_fromMetadata, _fromAlias, "f_");
         string[] joinColumns = GetPrefixedColumnsWithAlias(_joinMetadata, _joins[0].Alias, "j_");
         string[] allColumns = fromColumns.Concat(joinColumns).ToArray();
 
         string sql = BuildSelectSql(allColumns);
+        if (limit.HasValue) sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
         return CommandObservation.Execute(
             sql, DescribeParameters(), _connection, CommandType.Text, Body);

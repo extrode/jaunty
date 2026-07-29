@@ -171,7 +171,7 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public async Task<(TFrom From, TJoin Joined)> SelectFirstBothAsync(CancellationToken cancellationToken = default)
     {
-        List<(TFrom From, TJoin Joined)> result = await SelectBothInternalAsync(cancellationToken).ConfigureAwait(false);
+        List<(TFrom From, TJoin Joined)> result = await SelectBothInternalAsync(cancellationToken, limit: 1).ConfigureAwait(false);
         return result.Count == 0
             ? throw new InvalidOperationException($"Sequence contains no elements of type '({typeof(TFrom).Name}, {typeof(TJoin).Name})'.")
             : result[0];
@@ -179,8 +179,12 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public async Task<TFrom> SelectSingleAsync(CancellationToken cancellationToken = default)
     {
+        // AUD-R26-057: LIMIT 2 - see the sync SelectSingle. QueryPartialSingle throws when a
+        // second row exists, so two rows is all it takes to decide; reading the rest only to
+        // discard it is waste, and on a large join this read the entire result set to discover it
+        // should have thrown.
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialSingleAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
@@ -189,8 +193,12 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public async Task<TFrom> SelectSingleAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
+        // AUD-R26-057: LIMIT 2 - see the sync SelectSingle. QueryPartialSingle throws when a
+        // second row exists, so two rows is all it takes to decide; reading the rest only to
+        // discard it is waste, and on a large join this read the entire result set to discover it
+        // should have thrown.
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialSingleAsync<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options), cancellationToken).ConfigureAwait(false)
@@ -199,8 +207,12 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public async Task<TFrom?> SelectSingleOrDefaultAsync(CancellationToken cancellationToken = default)
     {
+        // AUD-R26-057: LIMIT 2 - see the sync SelectSingle. QueryPartialSingle throws when a
+        // second row exists, so two rows is all it takes to decide; reading the rest only to
+        // discard it is waste, and on a large join this read the entire result set to discover it
+        // should have thrown.
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialSingleOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject()!, cancellationToken).ConfigureAwait(false)
@@ -209,8 +221,12 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
 
     public async Task<TFrom?> SelectSingleOrDefaultAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
+        // AUD-R26-057: LIMIT 2 - see the sync SelectSingle. QueryPartialSingle throws when a
+        // second row exists, so two rows is all it takes to decide; reading the rest only to
+        // discard it is waste, and on a large join this read the entire result set to discover it
+        // should have thrown.
         string[] columns = GetPrefixedColumns(_fromMetadata, _fromAlias);
-        string sql = BuildSelectSql(columns);
+        string sql = _dialect.GetPagingSql(BuildSelectSql(columns), 0, 2);
 
         return _connection is DbConnection dbConn
             ? await dbConn.QueryPartialSingleOrDefaultAsync<TFrom>(sql, _parameters.ToParameterObject()!, ToTypedOptions<TFrom>(options), cancellationToken).ConfigureAwait(false)
@@ -283,13 +299,15 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
             : throw new InvalidOperationException("Async operations require a DbConnection.");
     }
 
-    private async Task<List<(TFrom From, TJoin Joined)>> SelectBothInternalAsync(CancellationToken cancellationToken = default)
+    /// <remarks>See SelectBothInternal - AUD-R26-057 applies identically here.</remarks>
+    private async Task<List<(TFrom From, TJoin Joined)>> SelectBothInternalAsync(CancellationToken cancellationToken = default, int? limit = null)
     {
         string[] fromColumns = GetPrefixedColumnsWithAlias(_fromMetadata, _fromAlias, "f_");
         string[] joinColumns = GetPrefixedColumnsWithAlias(_joinMetadata, _joins[0].Alias, "j_");
         string[] allColumns = fromColumns.Concat(joinColumns).ToArray();
 
         string sql = BuildSelectSql(allColumns);
+        if (limit.HasValue) sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
         return await CommandObservation.ExecuteAsync(
             sql, DescribeParameters(), _connection, CommandType.Text, Body, cancellationToken).ConfigureAwait(false);
