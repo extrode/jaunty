@@ -86,7 +86,13 @@ internal static class ImportExecutor
             {
                 readerColumnMap[i] = reader.GetOrdinal(mappingList[i].ColumnName);
             }
-            catch (IndexOutOfRangeException)
+            // AUD-R26: this used to catch IndexOutOfRangeException only - which is what ADO.NET's
+            // contract specifies, but not what the one provider this reader ever comes from throws.
+            // DuckDB.NET raises DuckDBException ("Column with name x was not found."), which derives
+            // from DbException, so the catch never fired and the message below was dead code.
+            // Both are caught now: the ADO.NET-contract type for any other reader, and DbException
+            // for DuckDB's.
+            catch (Exception ex) when (ex is IndexOutOfRangeException or DbException)
             {
                 // Build available columns list without LINQ allocation
                 var availableColumns = new StringBuilder();
@@ -254,37 +260,18 @@ internal static class ImportExecutor
     {
         if (value is null or DBNull) return DBNull.Value;
 
-        Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-
-        // DuckDB.NET (1.3.0, pinned) returns System.DateOnly for DATE columns
-        if (value is DateOnly dateOnlyValue && underlyingType == typeof(DateTime))
-        {
-            return dateOnlyValue.ToDateTime(TimeOnly.MinValue);
-        }
-
-        // DuckDB.NET (1.3.0, pinned) returns System.TimeOnly for TIME columns
-        if (value is TimeOnly timeOnlyValue && underlyingType == typeof(TimeSpan))
-        {
-            return timeOnlyValue.ToTimeSpan();
-        }
-
-        // Standard conversions
-        if (value.GetType() == underlyingType) return value;
-
-        try
-        {
-            // CultureInfo.InvariantCulture, not the ambient CurrentCulture: providers routinely hand back
-            // a string where the column is TEXT/NUMERIC (SQLite in particular), and under a comma-decimal
-            // culture (de-DE, fr-FR, ...) Convert.ChangeType("1.5", typeof(decimal)) does not throw - it
-            // reads the period as a group separator and returns 15.
-            // This runs for every column of every row on the import path.
-            return Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
-        }
-        catch
-        {
-            // Return as-is and let the ADO.NET provider handle it
-            return value;
-        }
+        // AUD-R26: the DuckDB.NET DateOnly/TimeOnly special cases and the InvariantCulture
+        // Convert.ChangeType that used to live here now live in ReaderValueConverter, shared with
+        // DuckDbRead/DuckDbReadAsync - which had never had them, so a TimeSpan property could be
+        // imported but not read back. Sharing also gives the import path enum support it lacked.
+        //
+        // The fallback stays deliberately different from the read path's: on import the value is
+        // headed for an ADO.NET parameter rather than a typed property, and the provider may well
+        // accept a representation this converter does not recognise, so an unconvertible value is
+        // passed through rather than rejected here.
+        return ReaderValueConverter.TryConvert(value, targetType, out object? converted)
+            ? converted ?? DBNull.Value
+            : value;
     }
 
     /// <summary>
