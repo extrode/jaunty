@@ -794,31 +794,77 @@ internal static class ParameterBinder
         }
     }
 
+    /// <summary>
+    /// Binds an <see cref="IDictionary{TKey,TValue}"/> parameter set, matching keys to SQL parameter
+    /// names case-insensitively.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26. This used to look keys up with a bare <c>dictParams.TryGetValue</c>, which uses
+    /// whatever comparer the caller happened to construct the dictionary with, while the object/POCO
+    /// path builds its own <c>OrdinalIgnoreCase</c> lookup. So the two documented-equivalent
+    /// parameter forms disagreed, and the difference was invisible at the call site. Measured against
+    /// Microsoft.Data.Sqlite for <c>... WHERE id = @Id</c>:
+    /// </para>
+    /// <code>
+    /// new { id = 5 }                                                    -> OK
+    /// new Dictionary&lt;string, object?&gt;                  { ["id"] = 5 } -> ArgumentException
+    /// new Dictionary&lt;string, object?&gt;(OrdinalIgnoreCase){ ["id"] = 5 } -> OK
+    /// </code>
+    /// <para>
+    /// A plain <c>Dictionary&lt;string, object?&gt;</c> - the form every example produces by default,
+    /// and what <see cref="System.Dynamic.ExpandoObject"/> presents - is case-sensitive, and nothing
+    /// in the XML docs mentioned it.
+    /// </para>
+    /// <para>
+    /// The caller's own comparer is still tried first, so a dictionary that already matches costs
+    /// nothing extra; the case-insensitive index is built only when a lookup misses, and only once.
+    /// </para>
+    /// <para>
+    /// The <c>paramName</c> on the exceptions here is the literal <c>"parameters"</c>, not
+    /// <c>nameof(dictParams)</c>: every public overload that reaches this method names the argument
+    /// <c>parameters</c>, so the old <c>nameof</c> reported an internal name that appears nowhere in
+    /// the caller's code.
+    /// </para>
+    /// </remarks>
     private static void BindFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)
     {
         string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText);
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
+
+        Dictionary<string, object?>? caseInsensitive = null;
 
         for (int i = 0; i < sqlParamNames.Length; i++)
         {
             string sqlName = sqlParamNames[i];
             if (!bound.Add(sqlName)) continue;
 
-            if (dictParams.TryGetValue(sqlName, out var value))
+            // The caller's comparer first: an exact hit is the common case and must not pay for the
+            // fallback index.
+            if (!dictParams.TryGetValue(sqlName, out object? value))
             {
-                IDbDataParameter p = command.CreateParameter();
-                p.ParameterName = sqlName;
-                p.Value = ApplyTypeHandlerIfNeeded(value, propertyInfo: null) ?? DBNull.Value;
-                command.Parameters.Add(p);
+                caseInsensitive ??= BuildCaseInsensitiveIndex(dictParams);
+
+                if (!caseInsensitive.TryGetValue(sqlName, out value))
+                {
+                    throw new ArgumentException($"No value found in dictionary for SQL parameter '@{sqlName}'.", "parameters");
+                }
             }
-            else
-            {
-                throw new ArgumentException($"No value found in dictionary for SQL parameter '@{sqlName}'.", nameof(dictParams));
-            }
+
+            IDbDataParameter p = command.CreateParameter();
+            p.ParameterName = sqlName;
+            p.Value = ApplyTypeHandlerIfNeeded(value, propertyInfo: null) ?? DBNull.Value;
+            command.Parameters.Add(p);
         }
 
         // Validate unused, mirroring BuildTemplate's strictness for object-based binding: fail
         // fast on a dictionary key the SQL never references, instead of silently ignoring it.
+        //
+        // AUD-R26, secondary: `bound` is OrdinalIgnoreCase while the keys come from the caller's
+        // dictionary, so a genuinely unused differently-cased duplicate ("Id" bound, "ID" unused)
+        // was silently accepted while an unused key of any other spelling threw. It is no longer
+        // reachable - BuildCaseInsensitiveIndex rejects the duplicate outright, because with
+        // case-insensitive matching there is no answer to which of the two the caller meant.
         if (dictParams.Count > bound.Count)
         {
             List<string>? unused = null;
@@ -830,9 +876,43 @@ internal static class ParameterBinder
 
             if (unused is not null)
             {
-                throw new ArgumentException($"Unused parameter keys in dictionary: {string.Join(", ", unused)}. SQL contains no matching parameters.", nameof(dictParams));
+                throw new ArgumentException($"Unused parameter keys in dictionary: {string.Join(", ", unused)}. SQL contains no matching parameters.", "parameters");
             }
         }
+    }
+
+    /// <summary>
+    /// Re-indexes a caller's dictionary under <c>OrdinalIgnoreCase</c>, rejecting keys that differ
+    /// only in case.
+    /// </summary>
+    /// <remarks>
+    /// A case-sensitive dictionary can legitimately hold both <c>"Id"</c> and <c>"ID"</c>. Under
+    /// case-insensitive matching there is no answer to which one <c>@Id</c> meant, and silently
+    /// picking whichever enumerated first is precisely the class of silent wrong-value bug this
+    /// round has been closing elsewhere. Say so instead.
+    /// </remarks>
+    private static Dictionary<string, object?> BuildCaseInsensitiveIndex(IDictionary<string, object?> dictParams)
+    {
+        var index = new Dictionary<string, object?>(dictParams.Count, CommonConstants.OrdinalIgnoreCase);
+
+        foreach (KeyValuePair<string, object?> entry in dictParams)
+        {
+#if NET8_0_OR_GREATER
+            if (!index.TryAdd(entry.Key, entry.Value))
+#else
+            if (index.ContainsKey(entry.Key))
+#endif
+            {
+                throw new ArgumentException(
+                    $"Parameter dictionary contains keys differing only in case ('{entry.Key}'). Parameter names are matched case-insensitively, so this is ambiguous; use one spelling.",
+                    "parameters");
+            }
+#if !NET8_0_OR_GREATER
+            index[entry.Key] = entry.Value;
+#endif
+        }
+
+        return index;
     }
 
     private static void BindAllFromObject(IDbCommand command, object parameters)
