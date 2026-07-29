@@ -150,12 +150,9 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
-<<<<<<< HEAD
-=======
         // The stored-procedure family declares `object? parameters`, and its own no-parameter
         // overloads forward null here. The `object parameters` overload rejects null (AUD-R26-030),
         // so route a null set to the overload that takes none rather than suppressing the warning.
->>>>>>> origin/dev
         return parameters is null
             ? connection.Query<T>(procedureName, spOptions)
             : connection.Query<T>(procedureName, parameters, spOptions);
@@ -282,12 +279,9 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
-<<<<<<< HEAD
-=======
         // The stored-procedure family declares `object? parameters`, and its own no-parameter
         // overloads forward null here. The `object parameters` overload rejects null (AUD-R26-030),
         // so route a null set to the overload that takes none rather than suppressing the warning.
->>>>>>> origin/dev
         return parameters is null
             ? connection.QueryFirst<T>(procedureName, spOptions)
             : connection.QueryFirst<T>(procedureName, parameters, spOptions);
@@ -419,12 +413,9 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
-<<<<<<< HEAD
-=======
         // The stored-procedure family declares `object? parameters`, and its own no-parameter
         // overloads forward null here. The `object parameters` overload rejects null (AUD-R26-030),
         // so route a null set to the overload that takes none rather than suppressing the warning.
->>>>>>> origin/dev
         return parameters is null
             ? connection.QueryFirstOrDefault<T>(procedureName, spOptions)
             : connection.QueryFirstOrDefault<T>(procedureName, parameters, spOptions);
@@ -544,12 +535,9 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
-<<<<<<< HEAD
-=======
         // The stored-procedure family declares `object? parameters`, and its own no-parameter
         // overloads forward null here. The `object parameters` overload rejects null (AUD-R26-030),
         // so route a null set to the overload that takes none rather than suppressing the warning.
->>>>>>> origin/dev
         return parameters is null
             ? connection.QueryScalar<T>(procedureName, spOptions)
             : connection.QueryScalar<T>(procedureName, parameters, spOptions);
