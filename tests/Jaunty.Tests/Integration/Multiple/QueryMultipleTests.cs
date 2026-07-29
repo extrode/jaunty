@@ -754,7 +754,6 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
         Assert.True(count > 0);
     }
 
-#if NET8_0_OR_GREATER
     [Theory]
     [SqlServer]
     [Postgres]
@@ -798,7 +797,6 @@ public class QueryMultipleTests : IClassFixture<DialectFixture>
 
         Assert.Equal(5, orders.Count);
     }
-#endif
 
     #endregion
 

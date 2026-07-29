@@ -149,7 +149,6 @@ public class DeleteAsyncTests : IClassFixture<DialectFixture>
         await Assert.ThrowsAsync<ArgumentNullException>(async () => await ctx.Connection.DeleteAsync<BulkTestEntity>(nullId));
     }
 
-#if NET8_0_OR_GREATER
     [Theory]
     [SqlServer]
     [Postgres]
@@ -187,5 +186,4 @@ public class DeleteAsyncTests : IClassFixture<DialectFixture>
         Assert.Equal(1, rows);
         Assert.Equal(0, GetRowCount(connection));
     }
-#endif
 }

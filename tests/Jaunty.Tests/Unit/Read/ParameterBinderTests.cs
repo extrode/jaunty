@@ -913,6 +913,7 @@ public class ParameterBinderTests
         Assert.Equal(true, command.Parameters[0].Value);
     }
 
+    // Guard stays: DateOnly/TimeOnly are .NET 6+ types that do not exist on net472 at all.
 #if NET8_0_OR_GREATER
     // DateOnly/TimeOnly were missing from IsScalarType, so a bare DateOnly/TimeOnly argument
     // fell through to reflection-based object binding instead of BindScalar - DateOnly/TimeOnly

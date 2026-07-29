@@ -1,4 +1,3 @@
-#if NET8_0_OR_GREATER
 using Jaunty.Configuration;
 using Jaunty.Dialects;
 using Jaunty.Extensions.Reflection.BulkCopy;
@@ -166,4 +165,3 @@ public class BulkCopyDialectFactoryTests
         }
     }
 }
-#endif
