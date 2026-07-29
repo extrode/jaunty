@@ -132,16 +132,27 @@ internal static class WriteParameterCache<T> where T : new()
     /// the shape costs a comparison per row and turns it into an error that names the mismatch.
     /// </para>
     /// <para>
-    /// The count check runs on every bind (O(1), and the collection can differ between calls); the
-    /// name check runs once, since both sides of the comparison are static per <typeparamref name="T"/>
-    /// and a per-row string comparison over every column is exactly the cost the bulk path exists
-    /// to avoid. The flag is a plain field: a race can only run the check twice, which is harmless.
+    /// The count check runs on every bind (O(1)). The name check runs once <em>per parameter
+    /// collection</em>, not once ever: an earlier version memoised it with a plain bool, which was
+    /// unsound. The two sides are not equally static - the getters are frozen when
+    /// <c>WriteParameterCache&lt;T&gt;</c>'s static constructor runs, but the parameters come from
+    /// <c>CrudSqlCache.GetSql&lt;T&gt;(connection)</c>, which is keyed on
+    /// <c>(entityType, connectionType)</c> and so re-resolves metadata the first time a given
+    /// <typeparamref name="T"/> is used on a new connection type. If the public
+    /// <c>JauntyConfig.ReflectionTableMetadataResolver</c> is replaced in between (a supported
+    /// operation - <c>JauntyConfig.Reset()</c> and re-registration are both public), the second
+    /// resolution can order columns differently while the getters keep the first order. That is an
+    /// <em>equal-count reorder</em>: the worst misbind available, and the one the count check cannot
+    /// see. Re-checking whenever the collection identity changes costs one reference comparison per
+    /// bind - the bulk loops reuse a single collection for every row, so steady-state cost is
+    /// unchanged - and closes the case this guard exists for. The field is plain: a race can only
+    /// run the check twice, which is harmless.
     /// </para>
     /// </remarks>
     private static Action<IDataParameterCollection, T> CreateValueSetter(
         Func<T, object?>[] getters, PropertyInfo?[] properties, string[] columnNames, string operation)
     {
-        bool namesVerified = false;
+        IDataParameterCollection? verifiedAgainst = null;
 
         return (pc, entity) =>
         {
@@ -150,14 +161,15 @@ internal static class WriteParameterCache<T> where T : new()
                     $"Bulk {operation} of '{typeof(T).Name}' cannot bind values: the command carries {pc.Count} " +
                     $"parameter(s) but the entity metadata supplies {getters.Length} ({string.Join(", ", columnNames)}). " +
                     "Jaunty binds bulk values by position, so continuing would leave the surplus parameters holding " +
-                    "the previous row's values and write wrong data instead of failing. The parameters were prepared " +
-                    "from different entity metadata than the value setter was compiled from - typically a Jaunty core " +
-                    "and a source-generated or reflection binder from mismatched versions.");
+                    "the previous row's values and write wrong data instead of failing. The command's parameters and " +
+                    "this setter's getters were resolved from entity metadata at different times - check whether " +
+                    "JauntyConfig.ReflectionTableMetadataResolver was replaced, or returns a different shape, between " +
+                    "the two resolutions.");
 
-            if (!namesVerified)
+            if (!ReferenceEquals(pc, verifiedAgainst))
             {
                 VerifyParameterNames(pc, columnNames, operation);
-                namesVerified = true;
+                verifiedAgainst = pc;
             }
 
             for (int i = 0; i < getters.Length; i++)
@@ -178,11 +190,18 @@ internal static class WriteParameterCache<T> where T : new()
     }
 
     /// <summary>
-    /// Confirms each parameter sits at the position its column expects. Compared without the
-    /// dialect's prefix on either side, since <c>PrepareInsertParameters</c> and friends write
-    /// <c>"@" + ColumnName</c> and some providers normalise or drop the prefix on read-back;
-    /// a parameter whose name the provider reports as empty is not checkable and is left alone.
+    /// Confirms each parameter sits at the position its column expects.
     /// </summary>
+    /// <remarks>
+    /// The prefix is stripped from the <em>parameter's</em> name only, never from the column name.
+    /// <c>PrepareInsertParameters</c> and friends write <c>"@" + ColumnName</c> and some providers
+    /// normalise or drop that prefix on read-back, so the parameter side needs it removed - but the
+    /// column name arrives raw from metadata and stripping it too would mis-handle a column whose
+    /// own name begins with a sigil: <c>[Column("$type")]</c> becomes parameter <c>"@$type"</c>,
+    /// which strips to <c>"$type"</c>, while the expected side would have stripped to <c>"type"</c>
+    /// and thrown on a perfectly correct configuration. A parameter whose name the provider reports
+    /// as empty is not checkable and is left alone.
+    /// </remarks>
     private static void VerifyParameterNames(IDataParameterCollection pc, string[] columnNames, string operation)
     {
         for (int i = 0; i < columnNames.Length; i++)
@@ -194,13 +213,15 @@ internal static class WriteParameterCache<T> where T : new()
             if (actual.Length == 0)
                 continue;
 
-            if (!string.Equals(actual, StripParameterPrefix(columnNames[i]), StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(actual, columnNames[i], StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException(
                     $"Bulk {operation} of '{typeof(T).Name}' cannot bind values: parameter {i} is named " +
                     $"'{parameter.ParameterName}' but the entity metadata expects column '{columnNames[i]}' at that " +
                     $"position (full order: {string.Join(", ", columnNames)}). Jaunty binds bulk values by position, " +
-                    "so continuing would write each column's value into a different column. The parameters were " +
-                    "prepared from different entity metadata than the value setter was compiled from.");
+                    "so continuing would write each column's value into a different column. The command's parameters " +
+                    "and this setter's getters were resolved from entity metadata at different times - check whether " +
+                    "JauntyConfig.ReflectionTableMetadataResolver was replaced, or returns a different shape, between " +
+                    "the two resolutions.");
         }
     }
 

@@ -35,11 +35,12 @@ namespace Jaunty.Tests.Unit.Write;
 /// </para>
 ///
 /// <para>
-/// Each misalignment test uses its own entity type on purpose: the name check is memoised per
-/// <c>WriteParameterCache&lt;T&gt;</c> (it compares two static shapes, so once is enough, and a
-/// per-row string comparison over every column is exactly the cost the bulk path exists to avoid).
-/// Sharing an entity type across tests would let a passing bind mark the type verified and make a
-/// later misalignment test silently vacuous.
+/// The name check is memoised per <em>parameter collection</em>, not once per
+/// <c>WriteParameterCache&lt;T&gt;</c>. The first version of this fix used a plain bool - "both sides
+/// of the comparison are static per T, so once is enough" - and that reasoning was wrong; see
+/// <see cref="AnAlreadyVerifiedTypeIsRecheckedOnANewCollection"/> for the case it let through. Each
+/// misalignment test still owns its entity type, which is now belt and braces rather than
+/// load-bearing.
 /// </para>
 /// </summary>
 [Collection("Type Handler Operations")]
@@ -89,6 +90,25 @@ public class BulkValueSetterAlignmentTests
         public int Id { get; set; }
         public string? Name { get; set; }
         public int Quantity { get; set; }
+    }
+
+    [Table("alignment_recheck")]
+    public class RecheckWidget
+    {
+        [Key]
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    [Table("alignment_sigil")]
+    public class SigilWidget
+    {
+        [Key]
+        [Column("$type")]
+        public int Type { get; set; }
+
+        public string? Name { get; set; }
     }
 
     /// <summary>
@@ -235,6 +255,97 @@ public class BulkValueSetterAlignmentTests
         Assert.Equal(3, ((IDataParameter)collection[0]).Value);
         Assert.Equal("gizmo", ((IDataParameter)collection[1]).Value);
         Assert.Equal(9, ((IDataParameter)collection[2]).Value);
+    }
+
+    /// <summary>
+    /// The case that killed the first version of this fix, which memoised the name check with a
+    /// plain bool on the reasoning that "both sides of the comparison are static per T".
+    ///
+    /// <para>
+    /// They are not equally static. The getters freeze when <c>WriteParameterCache&lt;T&gt;</c>'s
+    /// static constructor runs. The parameters come from <c>CrudSqlCache.GetSql&lt;T&gt;(connection)</c>,
+    /// which is keyed on <c>(entityType, connectionType)</c> - so the first use of a given entity on
+    /// a <em>new connection type</em> re-resolves metadata. If
+    /// <c>JauntyConfig.ReflectionTableMetadataResolver</c> is replaced in between (public API;
+    /// <c>JauntyConfig.Reset()</c> plus re-registration does it), the second resolution can order
+    /// columns differently while the getters keep the first order.
+    /// </para>
+    ///
+    /// <para>
+    /// That is an equal-count reorder - the worst misbind available, and the one case the count
+    /// check cannot see. With the bool, the second collection was waved through and every row wrote
+    /// each column's value into a different column. The memo is now keyed on the collection's
+    /// identity, so a collection this setter has not seen before is always checked.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AnAlreadyVerifiedTypeIsRecheckedOnANewCollection()
+    {
+        Action<IDataParameterCollection, RecheckWidget>? setter =
+            WriteParameterCache<RecheckWidget>.InsertValueSetter;
+        Assert.NotNull(setter);
+
+        // First collection is correct and binds, marking the setter "verified" under the old bool.
+        FakeParameterCollection aligned = FakeParameterCollection.Named("@Id", "@Name", "@Quantity");
+        setter!(aligned, new RecheckWidget { Id = 1, Name = "a", Quantity = 7 });
+        Assert.Equal(1, ((IDataParameter)aligned[0]).Value);
+
+        // A different collection object, same count, different order. The count check passes.
+        FakeParameterCollection reordered = FakeParameterCollection.Named("@Quantity", "@Id", "@Name");
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => setter!(reordered, new RecheckWidget { Id = 2, Name = "b", Quantity = 9 }));
+
+        Assert.Contains("RecheckWidget", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Quantity", exception.Message, StringComparison.Ordinal);
+
+        // And nothing was written into the misaligned collection before it was rejected.
+        Assert.All(new[] { reordered[0], reordered[1], reordered[2] },
+            p => Assert.Null(((IDataParameter)p).Value));
+    }
+
+    /// <summary>
+    /// Re-binding the same collection must not re-run the name check - that is the whole point of
+    /// memoising it. Observable indirectly: a collection whose names are correct binds any number of
+    /// times, and the second bind sees each row's own values rather than the first row's.
+    /// </summary>
+    [Fact]
+    public void RebindingTheSameCollectionKeepsWorking()
+    {
+        Action<IDataParameterCollection, RecheckWidget>? setter =
+            WriteParameterCache<RecheckWidget>.InsertValueSetter;
+
+        FakeParameterCollection collection = FakeParameterCollection.Named("@Id", "@Name", "@Quantity");
+
+        for (int i = 1; i <= 5; i++)
+        {
+            setter!(collection, new RecheckWidget { Id = i, Name = $"n{i}", Quantity = i * 3 });
+
+            Assert.Equal(i, ((IDataParameter)collection[0]).Value);
+            Assert.Equal($"n{i}", ((IDataParameter)collection[1]).Value);
+            Assert.Equal(i * 3, ((IDataParameter)collection[2]).Value);
+        }
+    }
+
+    /// <summary>
+    /// A column whose own name starts with a dialect sigil. The prefix is stripped from the
+    /// parameter's name only - stripping it from the column name too turned <c>"$type"</c> into
+    /// <c>"type"</c> and threw on a correct configuration.
+    /// </summary>
+    [Fact]
+    public void AColumnNameThatStartsWithASigil_StillBinds()
+    {
+        Action<IDataParameterCollection, SigilWidget>? setter =
+            WriteParameterCache<SigilWidget>.InsertValueSetter;
+        Assert.NotNull(setter);
+
+        // Exactly what PrepareInsertParameters would have produced: "@" + ColumnName.
+        FakeParameterCollection collection = FakeParameterCollection.Named("@$type", "@Name");
+
+        setter!(collection, new SigilWidget { Type = 4, Name = "ok" });
+
+        Assert.Equal(4, ((IDataParameter)collection[0]).Value);
+        Assert.Equal("ok", ((IDataParameter)collection[1]).Value);
     }
 
     /// <summary>
