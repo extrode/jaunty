@@ -1,0 +1,22 @@
+<Project>
+
+  <!--
+    The language version is set here, once, and deliberately.
+
+    Every project used to carry <LangVersion>latest</LangVersion>, which made the language
+    version ambient: it resolved to whatever SDK happened to be installed on the machine doing
+    the build. That is how two CS1501 breaks reached CI on 2026-07-29 having compiled clean
+    locally - the developer box was on SDK 10 (C# 14) and CI was pinned to SDK 9 (C# 13), and
+    C# 14's first-class span conversions silently rebound a net472 call to a different overload.
+
+    A fixed number turns that class of defect into a build error on the machine that is behind,
+    naming the version it needs, instead of a green build that fails somewhere else. Raising it
+    is a commit, not an SDK install.
+
+    Requires the .NET 10 SDK. CI installs it in .github/workflows/{ci,release}.yml.
+  -->
+  <PropertyGroup>
+    <LangVersion>14.0</LangVersion>
+  </PropertyGroup>
+
+</Project>
