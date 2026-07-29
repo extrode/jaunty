@@ -55,7 +55,10 @@ internal static class ParameterBinder
         }
 
         // Handle scalar/value-type parameters (int, string, Guid, etc.)
-        // These have no public instance properties to bind by name, so we bind positionally.
+        // AUD-R26: this comment said "so we bind positionally", which is not what BindScalar does and
+        // was part of the same false claim the four Read files carried. There is no position to bind
+        // to - a scalar has no properties, so BindScalar takes the target name from the SQL text and
+        // throws when the SQL names more than one distinct parameter.
         if (IsScalarType(parameters.GetType()))
         {
             BindScalar(command, parameters);
