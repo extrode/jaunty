@@ -70,7 +70,8 @@ internal static class TargetDdlGenerator
 
             ColumnAttribute? colAttr = prop.GetCustomAttribute<ColumnAttribute>();
             var columnName = colAttr?.Name ?? prop.Name;
-            DuplicateColumnGuard.Claim(entityType, columnName, prop, claimed);
+            if (!DuplicateColumnGuard.TryClaim(entityType, columnName, prop, claimed))
+                continue;
             var isPrimaryKey = prop.GetCustomAttribute<KeyAttribute>() is not null;
 
             Type underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;

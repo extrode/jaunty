@@ -263,14 +263,17 @@ internal static class ImportExecutor
         // AUD-R26: the DuckDB.NET DateOnly/TimeOnly special cases and the InvariantCulture
         // Convert.ChangeType that used to live here now live in ReaderValueConverter, shared with
         // DuckDbRead/DuckDbReadAsync - which had never had them, so a TimeSpan property could be
-        // imported but not read back. Sharing also gives the import path enum support it lacked.
+        // imported but not read back.
         //
-        // The fallback stays deliberately different from the read path's: on import the value is
-        // headed for an ADO.NET parameter rather than a typed property, and the provider may well
-        // accept a representation this converter does not recognise, so an unconvertible value is
-        // passed through rather than rejected here.
-        return ReaderValueConverter.TryConvert(value, targetType, out object? converted)
-            ? converted ?? DBNull.Value
+        // convertEnums: false, and the fallback deliberately differs from the read path's. The
+        // destination here is an ADO.NET parameter, not a typed CLR property, so the provider may
+        // accept a representation this converter does not recognise - and for enums specifically the
+        // raw value IS the right thing to bind. Boxing the enum breaks PostgreSQL (Npgsql rejects an
+        // unmapped enum CLR type) and silently rewrites data on SQLite and SQL Server, which infer
+        // the parameter type from Type.GetTypeCode and see an enum as its underlying integer: a text
+        // column that received "Closed" would start receiving 1.
+        return ReaderValueConverter.TryConvert(value, targetType, convertEnums: false, out object? converted)
+            ? converted!
             : value;
     }
 

@@ -47,15 +47,21 @@ namespace Jaunty.FlatFiles.DuckDB.Internals;
 internal static class DuplicateColumnGuard
 {
     /// <summary>
-    /// Throws when two mapped properties of <paramref name="entityType"/> resolve to the same column
-    /// name, compared case-insensitively.
+    /// Records <paramref name="property"/>'s claim on <paramref name="columnName"/>, and reports
+    /// whether the caller should map it.
     /// </summary>
     /// <param name="entityType">The entity being mapped, for the error message.</param>
     /// <param name="columnName">The column name just resolved.</param>
     /// <param name="property">The property that resolved to it.</param>
     /// <param name="seen">Accumulator of column names already claimed, and by which property.</param>
-    /// <exception cref="InvalidOperationException">Thrown on the second claim of a column name.</exception>
-    public static void Claim(
+    /// <returns>
+    /// <see langword="true"/> when the caller should map this property; <see langword="false"/> when
+    /// it is a hidden base declaration already represented by a more-derived one.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when a second, genuinely distinct property claims the same column name.
+    /// </exception>
+    public static bool TryClaim(
         Type entityType,
         string columnName,
         PropertyInfo property,
@@ -63,6 +69,15 @@ internal static class DuplicateColumnGuard
     {
         if (seen.TryGetValue(columnName, out string? firstProperty))
         {
+            // A `new` shadow whose type differs from the hidden member makes GetProperties return
+            // BOTH declarations - measured: `string Code` hiding `object Code` yields two
+            // PropertyInfos, where a same-type shadow collapses to one. Those two are one logical
+            // property, not a collision. GetProperties lists the more-derived declaration first, so
+            // it has already been claimed and this one is skipped. Two genuinely distinct properties
+            // always have distinct names, so name equality is what separates the cases.
+            if (string.Equals(firstProperty, property.Name, StringComparison.Ordinal))
+                return false;
+
             throw new InvalidOperationException(
                 $"Entity '{entityType.Name}' maps more than one property to column '{columnName}': " +
                 $"'{firstProperty}' and '{property.Name}'. Column names are compared " +
@@ -71,10 +86,11 @@ internal static class DuplicateColumnGuard
         }
 
         seen[columnName] = property.Name;
+        return true;
     }
 
     /// <summary>
-    /// Creates the accumulator <see cref="Claim"/> expects.
+    /// Creates the accumulator <see cref="TryClaim"/> expects.
     /// </summary>
     /// <param name="capacity">Expected number of columns.</param>
     /// <returns>An empty, case-insensitive accumulator.</returns>

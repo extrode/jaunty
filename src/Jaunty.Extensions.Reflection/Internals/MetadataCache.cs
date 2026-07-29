@@ -96,7 +96,7 @@ internal static class MetadataCache<T>
         var signature = new ReaderSignature(reader, mode, resolver);
         if (!SettersCache.TryGetValue(signature, out PropertySetter<T>[]? setters))
         {
-            setters = BuildSetters(reader, mode);
+            setters = BuildSetters(reader, mode, resolver);
             SettersCache.TryAdd(signature, setters);
         }
 
@@ -214,7 +214,7 @@ internal static class MetadataCache<T>
         public override int GetHashCode() => _hashCode;
     }
 
-    private static PropertySetter<T>[] BuildSetters(IDataReader reader, MappingMode mode)
+    private static PropertySetter<T>[] BuildSetters(IDataReader reader, MappingMode mode, Func<string, string>? resolver)
     {
         int fieldCount = reader.FieldCount;
         var settersBuffer = new PropertySetter<T>[fieldCount];
@@ -224,7 +224,7 @@ internal static class MetadataCache<T>
         // Build a resolver-aware index if ColumnNameResolver is configured.
         // This maps resolver(propertyName) -> property index so that
         // snake_case columns can match PascalCase properties at query time.
-        Dictionary<string, int>? resolverIndex = BuildResolverIndex();
+        Dictionary<string, int>? resolverIndex = BuildResolverIndex(resolver);
 
         for (int i = 0; i < fieldCount; i++)
         {
@@ -416,9 +416,15 @@ internal static class MetadataCache<T>
         return Expression.Lambda<Func<T, object?>>(box, target).Compile();
     }
 
-    private static Dictionary<string, int>? BuildResolverIndex()
+    // AUD-R26: takes the resolver rather than re-reading JauntyConfig.ColumnNameResolver. GetSetters
+    // snapshots it once and keys both caches on that reference; re-reading here meant the key and
+    // the setters it labels could come from different resolvers. A thread preempted between the
+    // snapshot and this call would build resolver-mapped setters and file them under the
+    // "no resolver" signature - in a process-lifetime cache with no eviction, so every later
+    // no-resolver query of that shape got them forever. That is the same "stale setters forever"
+    // failure the resolver-in-key change was made to fix, reintroduced as a race.
+    private static Dictionary<string, int>? BuildResolverIndex(Func<string, string>? resolver)
     {
-        Func<string, string>? resolver = JauntyConfig.ColumnNameResolver;
         if (resolver == null) return null;
 
         var index = new Dictionary<string, int>(Properties.Length, StringComparer.OrdinalIgnoreCase);

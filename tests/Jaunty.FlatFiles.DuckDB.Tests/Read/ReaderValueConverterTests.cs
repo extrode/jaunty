@@ -1,4 +1,5 @@
 using Jaunty.FlatFiles.Core;
+using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.FlatFiles.FileSources;
 
 namespace Jaunty.FlatFiles.DuckDB.Tests.Read;
@@ -169,6 +170,84 @@ public class ReaderValueConverterTests : IDisposable
         Assert.Contains("Row.Id", ex.Message, StringComparison.Ordinal);
         Assert.Contains("DateOnly", ex.Message, StringComparison.Ordinal);
         Assert.Contains("Int32", ex.Message, StringComparison.Ordinal);
+    }
+
+    // ------------------------------------------------------------------
+    // The import path must NOT convert enums
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// The import path binds its result straight into a <see cref="System.Data.Common.DbParameter"/>,
+    /// where a boxed enum is worse than the raw value. Npgsql rejects an unmapped enum CLR type
+    /// outright; SQLite and SQL Server infer the parameter type from
+    /// <see cref="Type.GetTypeCode(Type)"/>, which reports an enum as its underlying integer - so a
+    /// text column that received <c>"Closed"</c> would silently start receiving <c>1</c>. Measured on
+    /// SQLite: raw string stored <c>Closed</c>, boxed enum stored <c>1</c>.
+    ///
+    /// <para>
+    /// This was a regression introduced while sharing the converter between the two paths, and is the
+    /// reason <c>convertEnums</c> exists rather than the converter simply always converting.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("Closed")]
+    [InlineData(1L)]
+    public void ImportPath_DoesNotConvertEnums(object sourceValue)
+    {
+        bool ok = ReaderValueConverter.TryConvert(
+            sourceValue, typeof(Status), convertEnums: false, out object? converted);
+
+        Assert.False(ok);
+        Assert.Null(converted);
+    }
+
+    [Theory]
+    [InlineData("Closed")]
+    [InlineData(1L)]
+    public void ReadPath_DoesConvertEnums(object sourceValue)
+    {
+        bool ok = ReaderValueConverter.TryConvert(
+            sourceValue, typeof(Status), convertEnums: true, out object? converted);
+
+        Assert.True(ok);
+        Assert.Equal(Status.Closed, converted);
+    }
+
+    [Fact]
+    public void ImportPath_StillConvertsTheDuckDbTypeQuirks()
+    {
+        // convertEnums only gates enums - the DateOnly/TimeOnly handling the import path always had
+        // must survive, since that is what the shared converter was extracted to preserve.
+        Assert.True(ReaderValueConverter.TryConvert(
+            new TimeOnly(1, 30), typeof(TimeSpan), convertEnums: false, out object? span));
+        Assert.Equal(new TimeSpan(1, 30, 0), span);
+
+        Assert.True(ReaderValueConverter.TryConvert(
+            new DateOnly(2024, 1, 5), typeof(DateTime), convertEnums: false, out object? date));
+        Assert.Equal(new DateTime(2024, 1, 5), date);
+    }
+
+    // ------------------------------------------------------------------
+    // Values already assignable to the target pass through untouched
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// <see cref="Convert.ChangeType(object, Type, IFormatProvider)"/> throws for anything not
+    /// <see cref="IConvertible"/>, so routing every mismatch through it would reject an
+    /// <see cref="object"/>-typed property reading a Guid or BLOB column - a read that previously
+    /// bound fine, because the compiled setter's cast succeeded.
+    /// </summary>
+    [Fact]
+    public void ANonConvertibleValueAssignableToTheTarget_PassesThrough()
+    {
+        var guid = Guid.NewGuid();
+
+        Assert.True(ReaderValueConverter.TryConvert(guid, typeof(object), convertEnums: true, out object? boxed));
+        Assert.Equal(guid, boxed);
+
+        byte[] blob = [1, 2, 3];
+        Assert.True(ReaderValueConverter.TryConvert(blob, typeof(object), convertEnums: true, out object? asObject));
+        Assert.Same(blob, asObject);
     }
 
     // ------------------------------------------------------------------
