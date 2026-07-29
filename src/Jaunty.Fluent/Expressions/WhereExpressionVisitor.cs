@@ -240,8 +240,16 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                             }
                             else
                             {
-                                // No length specified - use large number for "rest of string"
-                                _sql.Append(_dialect.GenerateSubstring(escapedColumn, sqlStart.ToString(CultureInfo.InvariantCulture), "8000"));
+                                // AUD-R26: single-argument Substring means "the rest of the string",
+                                // which every engine but SQL Server can say natively. This used to
+                                // emit a literal 8000 - a SQL Server convention, from a
+                                // dialect-neutral visitor, applied to all of them - so anything past
+                                // the 8000th character was silently dropped. Measured against a
+                                // 10,000-character value: SQLite and DuckDB both returned 8,000.
+                                _sql.Append(SubstringToEnd.Generate(
+                                    _dialect,
+                                    escapedColumn,
+                                    sqlStart.ToString(CultureInfo.InvariantCulture)));
                             }
                             return node;
                         }

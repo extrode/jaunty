@@ -7,7 +7,7 @@ namespace Jaunty.Dialects;
 /// Uses `backticks` only for SQL keywords.
 /// Default schema: null (MySQL doesn't use schemas the same way)
 /// </summary>
-internal sealed class MySqlDialect : ISqlDialect
+internal sealed class MySqlDialect : ISqlDialect, ISubstringToEndDialect
 {
     private static readonly HashSet<string> Keywords = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -156,6 +156,10 @@ internal sealed class MySqlDialect : ISqlDialect
     public string GenerateLower(string expression) => $"LOWER({expression})";
     public string GenerateTrim(string expression) => $"TRIM({expression})";
     public string GenerateSubstring(string expression, string start, string length) => $"SUBSTRING({expression}, {start}, {length})";
+
+    /// <summary>MySQL's two-argument SUBSTRING returns the remainder, and needs no sentinel length.</summary>
+    public string GenerateSubstringToEnd(string expression, string start)
+        => $"SUBSTRING({expression}, {start})";
 
     // Date functions - MySQL uses YEAR(), MONTH(), DAY()
     public string GenerateYear(string expression) => $"YEAR({expression})";

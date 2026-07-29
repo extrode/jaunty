@@ -8,7 +8,7 @@ namespace Jaunty.Extensions.Reflection.Dialects;
 /// SQL Server dialect with bulk copy support.
 /// Extends the base dialect to provide SqlBulkCopy provider.
 /// </summary>
-internal sealed class SqlServerDialectWithBulkCopy : ISqlDialect, IDialectWrapper
+internal sealed class SqlServerDialectWithBulkCopy : ISqlDialect, ISubstringToEndDialect, IDialectWrapper
 {
     private readonly SqlServerDialect _inner;
 
@@ -64,6 +64,15 @@ internal sealed class SqlServerDialectWithBulkCopy : ISqlDialect, IDialectWrappe
     public string GenerateLower(string expression) => _inner.GenerateLower(expression);
     public string GenerateTrim(string expression) => _inner.GenerateTrim(expression);
     public string GenerateSubstring(string expression, string start, string length) => _inner.GenerateSubstring(expression, start, length);
+
+    /// <summary>
+    /// Forwards to the wrapped dialect. A wrapper that silently dropped this would make the wrapped
+    /// dialect look like one that never had it, and the caller would fall back to a sentinel length
+    /// - exactly the defect this interface exists to remove. Because the compiler cannot enforce an
+    /// optional interface, <c>SubstringToEndDialectTests</c> pins it instead.
+    /// </summary>
+    public string GenerateSubstringToEnd(string expression, string start)
+        => SubstringToEnd.Generate(_inner, expression, start);
     public string GenerateYear(string expression) => _inner.GenerateYear(expression);
     public string GenerateMonth(string expression) => _inner.GenerateMonth(expression);
     public string GenerateDay(string expression) => _inner.GenerateDay(expression);
