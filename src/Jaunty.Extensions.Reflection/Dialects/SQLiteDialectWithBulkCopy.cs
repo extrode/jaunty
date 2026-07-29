@@ -7,7 +7,7 @@ namespace Jaunty.Extensions.Reflection.Dialects;
 /// SQLite dialect with bulk copy support.
 /// Extends the base dialect to provide optimized INSERT provider.
 /// </summary>
-internal sealed class SQLiteDialectWithBulkCopy : ISqlDialect, ISubstringToEndDialect, IDialectWrapper
+internal sealed class SQLiteDialectWithBulkCopy : ISqlDialect, ISubstringToEndDialect, IDecimalBindingDialect, IDialectWrapper
 {
     private readonly SQLiteDialect _inner;
 
@@ -77,6 +77,16 @@ internal sealed class SQLiteDialectWithBulkCopy : ISqlDialect, ISubstringToEndDi
     /// </summary>
     public string GenerateSubstringToEnd(string expression, string start)
         => SubstringToEnd.Generate(_inner, expression, start);
+
+    /// <summary>
+    /// Forwards to the wrapped dialect, for the same reason as
+    /// <see cref="GenerateSubstringToEnd"/>. Dropping it here would be worse than dropping the
+    /// substring one: installing <c>Jaunty.Extensions.Reflection</c> would quietly reintroduce the
+    /// TEXT-bound-decimal comparison failure that <see cref="IDecimalBindingDialect"/> exists to
+    /// prevent, on the one dialect that needs it. <c>DecimalBindingDialectTests</c> pins it.
+    /// </summary>
+    public object ConvertDecimalParameter(decimal value)
+        => DecimalParameterBinding.Normalize(_inner, value)!;
     public string GenerateYear(string expression) => _inner.GenerateYear(expression);
     public string GenerateMonth(string expression) => _inner.GenerateMonth(expression);
     public string GenerateDay(string expression) => _inner.GenerateDay(expression);

@@ -266,35 +266,57 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     internal bool HasParameter(string name) => _parameters.Contains(name);
 
     /// <summary>
-    /// Binds all accumulated parameters directly to the command via raw ADO.NET (bypasses
-    /// Jaunty's core Query&lt;T&gt;/ParameterBinder). Used by this builder's own SelectAll/
-    /// SelectAllAsync as well as by every GroupedJoinedQueryBuilder{,3,4} (via
-    /// _parent(.{_parent}).BindParameters) for HAVING parameter binding. Some ADO.NET
-    /// providers (observed with System.Data.SQLite) don't correctly compare a bound
-    /// <see cref="decimal"/> parameter against a REAL/numeric column - the comparison silently
-    /// never matches regardless of value - so decimal values are normalized to double before
-    /// binding, matching GroupedQueryBuilder.BindParameters/NormalizeForBinding's fix for the
-    /// same issue on the single-entity path.
-    /// </summary>
-
-    /// <summary>
     /// What this builder binds, in the shape interceptors and <c>JauntyConfig.Logger</c>
     /// already understand. Nested grouped builders hold only a parent reference, so they
     /// cannot reach the parameter collection to report it themselves.
     /// </summary>
     internal object DescribeParameters() => _parameters.ToParameterObject();
+    /// <summary>
+    /// Binds all accumulated parameters directly to the command via raw ADO.NET (bypasses
+    /// Jaunty's core Query&lt;T&gt;/ParameterBinder). Used by this builder's own SelectAll/
+    /// SelectAllAsync as well as by every GroupedJoinedQueryBuilder{,3,4} (via
+    /// _parent(.{_parent}).BindParameters) for HAVING parameter binding.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26 (batch 5, medium/bug). This used to route every value through a local
+    /// <c>NormalizeForBinding</c> that coerced any <see cref="decimal"/> to <see cref="double"/> -
+    /// <c>value is decimal d ? (double)d : value</c> - unconditionally and on every dialect, on the
+    /// strength of one provider's behaviour. It now asks the dialect, via
+    /// <see cref="DecimalParameterBinding"/>: SQLite still gets the conversion, and SQL Server,
+    /// PostgreSQL and MySQL no longer have a <c>DECIMAL(19,4)</c> or <c>NUMERIC</c> comparison
+    /// downgraded to binary floating point on another engine's behalf.
+    /// </para>
+    /// <para>
+    /// The conversion is genuinely needed where it now applies, which took two rounds of
+    /// measurement to establish. Both SQLite providers bind a <see cref="decimal"/> as TEXT.
+    /// Compared against a <em>column</em>, SQLite applies the column's affinity and converts it, so
+    /// <c>WHERE price = @p</c> matches - that is the case the audit measured, and why the coercion
+    /// looked like a workaround for nothing. Compared against an <em>expression</em> there is no
+    /// affinity to apply, and TEXT sorts above every number, so
+    /// <c>HAVING SUM(price) &gt; @p</c> matches no group and <c>&lt; @p</c> matches every group,
+    /// whatever the values are. Removing it outright turned four <c>GroupBy</c>/<c>Having</c>
+    /// integration tests red; that is what caught it.
+    /// </para>
+    /// <para>
+    /// One asymmetry survives, now confined to SQLite. <c>ParameterCollection.BindTo</c> - which
+    /// backs <c>Delete</c>, <c>Update</c>, <c>Insert</c> and the joined <c>Select()</c> that
+    /// delegates to core <c>QueryPartial</c> - binds the <see cref="decimal"/> unchanged, so on
+    /// SQLite a <see cref="decimal"/> compared against a computed expression still fails there.
+    /// Widening the conversion to the core binder would change what core <c>Query</c> returns for
+    /// exact values past 2^53, which is beyond this finding; recorded for round 27 instead.
+    /// </para>
+    /// </remarks>
     internal void BindParameters(IDbCommand command)
     {
         foreach ((string name, object? value) in _parameters.GetAll())
         {
             IDbDataParameter param = command.CreateParameter();
             param.ParameterName = name;
-            param.Value = NormalizeForBinding(value) ?? DBNull.Value;
+            param.Value = DecimalParameterBinding.Normalize(_dialect, value) ?? DBNull.Value;
             command.Parameters.Add(param);
         }
     }
-
-    private static object? NormalizeForBinding(object? value) => value is decimal d ? (double)d : value;
 
     internal string[] GetPrefixedColumns(EntityMetadata metadata, string? alias)
     {

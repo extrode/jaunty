@@ -7,7 +7,7 @@ namespace Jaunty.Dialects;
 /// Uses "quotes" only for SQL keywords.
 /// Default schema: null (SQLite doesn't support schemas)
 /// </summary>
-internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect
+internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect, IDecimalBindingDialect
 {
     private static readonly HashSet<string> Keywords = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -317,6 +317,22 @@ internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect
     {
         return expression is null ? $"{function}(*)" : $"{function}({expression})";
     }
+
+    /// <summary>
+    /// Binds a <see cref="decimal"/> as a <see cref="double"/>. Both SQLite providers bind a
+    /// <see cref="decimal"/> as TEXT, which SQLite converts only when it is compared against a
+    /// column - so <c>WHERE price = @p</c> works and <c>HAVING SUM(price) &gt; @p</c> silently
+    /// matches nothing. See <see cref="IDecimalBindingDialect"/> for the measurements.
+    /// </summary>
+    /// <remarks>
+    /// The cost is real and one-directional: a value past <see cref="double"/>'s 15-17 significant
+    /// digits is no longer bound exactly, so an exact-INTEGER comparison past 2^53 that used to
+    /// match now does not - <c>(double)9007199254740993m</c> is 9007199254740992. That is the
+    /// narrower failure of the two. Without the conversion, every comparison of a
+    /// <see cref="decimal"/> against any computed expression is decided by operand type rather than
+    /// by value, whatever the magnitude.
+    /// </remarks>
+    public object ConvertDecimalParameter(decimal value) => (double)value;
 
     // Bulk copy support - SQLite has no native bulk copy API
     // We provide an optimized path using transactions and prepared statements
