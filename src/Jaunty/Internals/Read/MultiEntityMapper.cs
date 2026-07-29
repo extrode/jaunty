@@ -1,7 +1,7 @@
-using System.Collections.Concurrent;
 using System.Data;
 
 using Jaunty.Configuration;
+using Jaunty.Internals.Parameters;
 
 namespace Jaunty.Internals.Read;
 
@@ -16,7 +16,14 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     // instantiation, so keying on them alone amounted to a single-entry cache: two different
     // multi-entity queries projecting into the same (T1, T2) pair but splitting columns
     // differently would silently reuse the first query's cached split points.
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2>> _cache = new(StringComparer.Ordinal);
+    //
+    // AUD-R26-053: bounded. The key is the result set's column-name list, so it is caller-controlled
+    // through the SELECT list, and this was a ConcurrentDictionary that nothing ever removed from -
+    // a permanent entry per distinct shape, for the process lifetime. See
+    // BoundedCache.SchemaCacheMaxEntries for why the cap is 256 rather than the 4096 the two
+    // parameter caches use.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2>> _cache =
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly Action<T1, T2, IDataRecord> _map;
 
@@ -26,7 +33,8 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     {
         string key = BuildSchemaKey(reader);
 
-        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2>? cached))
+        MultiEntityMapper<T1, T2>? cached = _cache.Get(key);
+        if (cached is not null)
             return cached;
 
         MultiEntityMapper<T1, T2> mapper = CreateMapper(reader);
