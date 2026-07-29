@@ -3,6 +3,7 @@ using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Internals.Parameters;
+using Jaunty.Internals.Write;
 
 namespace Jaunty;
 
@@ -48,8 +49,22 @@ public static partial class Jaunty
 
     internal static int ExecuteBatchCore(IDbConnection connection, string sql, IEnumerable<object> parameterSets, CommandOptions options, CommandType commandType)
     {
+        // AUD-R26: ExecuteBatch executed inline in this file and so reached neither the interceptor
+        // pipeline nor the logger. Reported once for the whole batch rather than once per set: the
+        // batch is one logical operation, and the count is only stated when the caller's sequence
+        // already knows it - draining a lazy IEnumerable to fill in a log line would change this
+        // method's memory behaviour.
+        var batchParameters = new BulkOperationParameters(
+            "ExecuteBatch", null, parameterSets is ICollection<object> known ? known.Count : (int?)null);
+
+        return WriteInterception.Execute(sql, batchParameters, connection, commandType, Body);
+
+        int Body()
+        {
         bool wasClosed = connection.State == ConnectionState.Closed;
         int totalRowsAffected = 0;
+
+        WriteInterception.Log(sql, batchParameters);
 
         try
         {
@@ -105,6 +120,7 @@ public static partial class Jaunty
             if (wasClosed && connection.State != ConnectionState.Closed)
                 connection.Close();
         }
+        }
     }
 
     /// <summary>
@@ -149,10 +165,20 @@ public static partial class Jaunty
             : ExecuteBatchCoreAsync(dbConnection, sql, parameterSets, options, options.CommandType, cancellationToken);
     }
 
-    internal static async ValueTask<int> ExecuteBatchCoreAsync(DbConnection connection, string sql, IEnumerable<object> parameterSets, CommandOptions options, CommandType commandType, CancellationToken cancellationToken)
+    internal static ValueTask<int> ExecuteBatchCoreAsync(DbConnection connection, string sql, IEnumerable<object> parameterSets, CommandOptions options, CommandType commandType, CancellationToken cancellationToken)
     {
+        // AUD-R26 - see the comment on the synchronous ExecuteBatchCore.
+        var batchParameters = new BulkOperationParameters(
+            "ExecuteBatch", null, parameterSets is ICollection<object> known ? known.Count : (int?)null);
+
+        return WriteInterception.ExecuteAsync(sql, batchParameters, connection, commandType, Body, cancellationToken);
+
+        async ValueTask<int> Body()
+        {
         bool wasClosed = connection.State == ConnectionState.Closed;
         int totalRowsAffected = 0;
+
+        WriteInterception.Log(sql, batchParameters);
 
         try
         {
@@ -208,6 +234,7 @@ public static partial class Jaunty
                 await Task.Run(() => connection.Close()).ConfigureAwait(false);
 #endif
             }
+        }
         }
     }
 }
