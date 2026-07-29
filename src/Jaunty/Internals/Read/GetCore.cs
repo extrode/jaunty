@@ -29,7 +29,7 @@ public static partial class Jaunty
         {
             return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
                 cached.SelectByIdSql,
-                new { Id = id },
+                cached.DescribeIdParameter(id),
                 connection,
                 options.CommandType,
                 () => GetByIdSimpleCoreDirect(connection, id, cached, options));
@@ -66,7 +66,7 @@ public static partial class Jaunty
 
             AddGetPrimaryKeyParameter(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
             if (connection is DbConnection dbConnection)
             {
@@ -94,7 +94,7 @@ public static partial class Jaunty
         {
             return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
                 cached.SelectByIdSql,
-                new { Id = id },
+                cached.DescribeIdParameter(id),
                 connection,
                 options.CommandType,
                 () => GetByIdTypedCoreDirect<T, TId>(connection, id, cached, options));
@@ -131,7 +131,7 @@ public static partial class Jaunty
 
             AddGetPrimaryKeyParameter(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
             if (connection is DbConnection dbConnection)
             {
@@ -191,7 +191,7 @@ public static partial class Jaunty
         {
             return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
                 cached.SelectByIdSql,
-                new { Id = id },
+                cached.DescribeIdParameter(id),
                 dbConnection,
                 options.CommandType,
                 () => GetByIdSimpleCoreDirectAsync(dbConnection, id, cached, options, cancellationToken),
@@ -225,7 +225,7 @@ public static partial class Jaunty
 
             AddGetPrimaryKeyParameterAsync(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
 #if NET8_0_OR_GREATER
             DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -265,7 +265,7 @@ public static partial class Jaunty
         {
             return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
                 cached.SelectByIdSql,
-                new { Id = id },
+                cached.DescribeIdParameter(id),
                 dbConnection,
                 options.CommandType,
                 () => GetByIdTypedCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken),
@@ -299,7 +299,7 @@ public static partial class Jaunty
 
             AddGetPrimaryKeyParameterAsync(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
 #if NET8_0_OR_GREATER
             DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
