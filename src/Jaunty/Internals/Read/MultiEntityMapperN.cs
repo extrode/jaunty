@@ -6,6 +6,58 @@ using Jaunty.Configuration;
 
 namespace Jaunty.Internals.Read;
 
+/// <summary>
+/// Validates what <see cref="JauntyConfig.ReflectionMultiMapperResolverN"/> hands back, before the
+/// per-row closures start indexing it.
+/// </summary>
+/// <remarks>
+/// AUD-R26. All five arities called the resolver - a public, settable
+/// <c>Func&lt;Type[], IDataReader, Action&lt;object, IDataRecord&gt;[]&gt;</c> - and then indexed the
+/// returned array at <c>0..N-1</c> from inside closures that run once per row, with no length check.
+/// A third-party resolver returning fewer than N delegates produced an
+/// <c>IndexOutOfRangeException</c> per row that mentioned neither the resolver, nor the arity, nor
+/// the entity types: the one clue that would have pointed at the extension point was absent. The
+/// in-repo implementation always returns exactly N, so nothing in the suite exercised it.
+/// Checking once, where the array arrives, costs nothing per row and names the hook.
+/// </remarks>
+internal static class MultiEntityMapperNGuard
+{
+    public static Action<object, IDataRecord>[] Resolve(
+        Func<Type[], IDataReader, Action<object, IDataRecord>[]> resolver, Type[] types, IDataReader reader)
+    {
+        Action<object, IDataRecord>[]? delegates = resolver(types, reader);
+
+        if (delegates is null)
+            throw new InvalidOperationException(
+                $"JauntyConfig.ReflectionMultiMapperResolverN returned null for arity {types.Length} " +
+                $"({DescribeTypes(types)}). It must return one mapping delegate per entity type.");
+
+        if (delegates.Length < types.Length)
+            throw new InvalidOperationException(
+                $"JauntyConfig.ReflectionMultiMapperResolverN returned {delegates.Length} delegate(s) " +
+                $"for arity {types.Length} ({DescribeTypes(types)}). It must return one per entity " +
+                "type, in the same order as the type array it was given.");
+
+        for (int i = 0; i < types.Length; i++)
+        {
+            if (delegates[i] is null)
+                throw new InvalidOperationException(
+                    $"JauntyConfig.ReflectionMultiMapperResolverN returned a null delegate at index {i} " +
+                    $"for arity {types.Length} ({DescribeTypes(types)}), where the mapper for " +
+                    $"'{types[i].Name}' was expected.");
+        }
+
+        return delegates;
+    }
+
+    private static string DescribeTypes(Type[] types)
+    {
+        var names = new string[types.Length];
+        for (int i = 0; i < types.Length; i++) names[i] = types[i].Name;
+        return string.Join(", ", names);
+    }
+}
+
 // ============================================================
 //  Arity-3
 // ============================================================
@@ -51,7 +103,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3). Ensure Jaunty.Extensions.Reflection is loaded.");
         Type[] types = { typeof(T1), typeof(T2), typeof(T3) };
-        Action<object, IDataRecord>[] delegates = resolver(types, reader);
+        Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
         int idx2 = 1;
@@ -113,7 +165,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4). Ensure Jaunty.Extensions.Reflection is loaded.");
         Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4) };
-        Action<object, IDataRecord>[] delegates = resolver(types, reader);
+        Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
         int idx2 = 1;
@@ -180,7 +232,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4, T5). Ensure Jaunty.Extensions.Reflection is loaded.");
         Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5) };
-        Action<object, IDataRecord>[] delegates = resolver(types, reader);
+        Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
         int idx2 = 1;
@@ -252,7 +304,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4, T5, T6). Ensure Jaunty.Extensions.Reflection is loaded.");
         Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6) };
-        Action<object, IDataRecord>[] delegates = resolver(types, reader);
+        Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
         int idx2 = 1;
@@ -329,7 +381,7 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : n
             throw new InvalidOperationException(
                 "No N-ary multi-mapper found for (T1, T2, T3, T4, T5, T6, T7). Ensure Jaunty.Extensions.Reflection is loaded.");
         Type[] types = { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6), typeof(T7) };
-        Action<object, IDataRecord>[] delegates = resolver(types, reader);
+        Action<object, IDataRecord>[] delegates = MultiEntityMapperNGuard.Resolve(resolver, types, reader);
         int idx1 = 0;
         Action<T1, IDataRecord> applyT1 = (t, r) => delegates[idx1](t!, r);
         int idx2 = 1;

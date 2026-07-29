@@ -157,7 +157,7 @@ public static partial class Jaunty
         {
             return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
                 cached.DeleteByIdSql,
-                new { Id = id },
+                cached.DescribeIdParameter(id),
                 connection,
                 options.CommandType,
                 () => DeleteByIdSimpleCoreDirect<T>(connection, id, cached, options));
@@ -194,7 +194,7 @@ public static partial class Jaunty
 
             AddPrimaryKeyParameter(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
             return command.ExecuteNonQuery();
         }
@@ -217,7 +217,7 @@ public static partial class Jaunty
         {
             return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
                 cached.DeleteByIdSql,
-                new { Id = id },
+                cached.DescribeIdParameter(id),
                 dbConnection,
                 options.CommandType,
                 () => DeleteByIdSimpleCoreDirectAsync<T>(dbConnection, id, cached, options, cancellationToken),
@@ -251,7 +251,7 @@ public static partial class Jaunty
 
             AddPrimaryKeyParameter(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -281,7 +281,7 @@ public static partial class Jaunty
         {
             return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
                 cached.DeleteByIdSql,
-                new { Id = id },
+                cached.DescribeIdParameter(id),
                 connection,
                 options.CommandType,
                 () => DeleteByIdCoreDirect<T, TId>(connection, id, cached, options));
@@ -318,7 +318,7 @@ public static partial class Jaunty
 
             AddPrimaryKeyParameter(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
             return command.ExecuteNonQuery();
         }
@@ -341,7 +341,7 @@ public static partial class Jaunty
         {
             return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
                 cached.DeleteByIdSql,
-                new { Id = id },
+                cached.DescribeIdParameter(id),
                 dbConnection,
                 options.CommandType,
                 () => DeleteByIdCoreDirectAsync<T, TId>(dbConnection, id, cached, options, cancellationToken),
@@ -375,7 +375,7 @@ public static partial class Jaunty
 
             AddPrimaryKeyParameter(command, cached, id!);
 
-            JauntyConfig.Logger?.Invoke(command.CommandText, new { Id = id });
+            JauntyConfig.Logger?.Invoke(command.CommandText, cached.DescribeIdParameter(id));
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
