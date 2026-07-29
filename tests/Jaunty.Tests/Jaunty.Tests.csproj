@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- System.Data.SQLite ships no osx-arm64 native; see the targets file. No-op elsewhere. -->
+  <Import Project="..\..\tools\native\sqlite-interop-osx-arm64\SQLiteInteropOsxArm64.targets" />
+
   <PropertyGroup>
     <TargetFrameworks>net8.0;net472</TargetFrameworks>
     <!-- Run TFMs sequentially to avoid database contention on shared live MariaDB/Postgres instances -->
