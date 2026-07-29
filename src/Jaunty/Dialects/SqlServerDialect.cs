@@ -7,7 +7,7 @@ namespace Jaunty.Dialects;
 /// Uses [brackets] only for SQL keywords.
 /// Default schema: "dbo"
 /// </summary>
-internal sealed class SqlServerDialect : ISqlDialect
+internal sealed class SqlServerDialect : ISqlDialect, ISubstringToEndDialect
 {
     // Common SQL Server reserved keywords
     private static readonly HashSet<string> Keywords = new(StringComparer.OrdinalIgnoreCase)
@@ -244,6 +244,18 @@ internal sealed class SqlServerDialect : ISqlDialect
     public string GenerateLower(string expression) => $"LOWER({expression})";
     public string GenerateTrim(string expression) => $"TRIM({expression})";
     public string GenerateSubstring(string expression, string start, string length) => $"SUBSTRING({expression}, {start}, {length})";
+
+    /// <summary>
+    /// T-SQL has no two-argument SUBSTRING, so this is the one dialect that must still name a
+    /// length. <c>int.MaxValue</c> is the documented idiom: SQL Server returns the whole remainder
+    /// when start + length exceeds the value's length, and no SQL Server string type can hold more
+    /// than 2^31-1 characters, so this cannot truncate the way the previous literal 8000 did.
+    /// A length expression such as <c>DATALENGTH({expression})</c> would also be correct, but it
+    /// evaluates <paramref name="expression"/> twice, and the caller may pass an arbitrary
+    /// expression rather than a bare column reference.
+    /// </summary>
+    public string GenerateSubstringToEnd(string expression, string start)
+        => $"SUBSTRING({expression}, {start}, 2147483647)";
 
     // Date functions - SQL Server uses YEAR(), MONTH(), DAY()
     public string GenerateYear(string expression) => $"YEAR({expression})";

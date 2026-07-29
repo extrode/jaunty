@@ -1,3 +1,6 @@
+using DuckDB.NET.Data;
+
+using Jaunty.Dialects;
 using Jaunty.FlatFiles.DuckDB.Dialects;
 
 namespace Jaunty.FlatFiles.DuckDB.Tests.Dialects;
@@ -225,6 +228,47 @@ public class DuckDbDialectTests
     public void GenerateSubstring_ReturnsSubstring()
     {
         Assert.Equal("SUBSTRING(col, 1, 5)", _dialect.GenerateSubstring("col", "1", "5"));
+    }
+
+    /// <summary>
+    /// AUD-R26. DuckDB is outside the assembly the drift guard
+    /// (<c>SubstringToEndDialectTests.EveryShippingDialect_ImplementsTheOptionalInterface</c>) can
+    /// reach, so it is pinned here instead. Without the optional interface DuckDB would fall back to
+    /// a sentinel length, which is what the finding was about.
+    /// </summary>
+    [Fact]
+    public void GenerateSubstringToEnd_UsesTheTwoArgumentForm()
+    {
+        Assert.IsAssignableFrom<ISubstringToEndDialect>(_dialect);
+        Assert.Equal("SUBSTRING(col, 2)", ((ISubstringToEndDialect)_dialect).GenerateSubstringToEnd("col", "2"));
+        Assert.Equal("SUBSTRING(col, 2)", SubstringToEnd.Generate(_dialect, "col", "2"));
+    }
+
+    /// <summary>
+    /// Executed against DuckDB rather than asserted about: the old hardcoded 8000 returns 8,000 of
+    /// the 9,999 characters available, and the two-argument form returns all of them.
+    /// </summary>
+    [Fact]
+    public void GenerateSubstringToEnd_DoesNotTruncate_AgainstARealConnection()
+    {
+        using var connection = new DuckDBConnection("DataSource=:memory:");
+        connection.Open();
+
+        using (var seed = connection.CreateCommand())
+        {
+            seed.CommandText = "CREATE TABLE t (s VARCHAR); INSERT INTO t VALUES (repeat('x', 10000));";
+            seed.ExecuteNonQuery();
+        }
+
+        string Scalar(string sql)
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = sql;
+            return (string)cmd.ExecuteScalar()!;
+        }
+
+        Assert.Equal(8000, Scalar($"SELECT {_dialect.GenerateSubstring("s", "2", "8000")} FROM t").Length);
+        Assert.Equal(9999, Scalar($"SELECT {SubstringToEnd.Generate(_dialect, "s", "2")} FROM t").Length);
     }
 
     // ==========================================
