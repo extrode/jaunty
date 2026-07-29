@@ -85,6 +85,22 @@ public class MultiEntityArity2InvocationTests : IDisposable
         public string? CustomerName { get; set; }
     }
 
+    [Table("arity2_empty_orders")]
+    public class EmptyOrder
+    {
+        [Key]
+        public int OrderId { get; set; }
+        public string? OrderRef { get; set; }
+    }
+
+    [Table("arity2_empty_customers")]
+    public class EmptyCustomer
+    {
+        [Key]
+        public int CustomerId { get; set; }
+        public string? CustomerName { get; set; }
+    }
+
     private const string JoinSql = """
         SELECT o.OrderId, o.OrderRef, c.CustomerId, c.CustomerName
         FROM orders o JOIN customers c ON c.CustomerId = o.CustomerId
@@ -202,15 +218,21 @@ public class MultiEntityArity2InvocationTests : IDisposable
         });
     }
 
-    /// <summary>An empty result set must not invoke the mapper at all.</summary>
+    /// <summary>
+    /// An empty result set must not invoke the mapper at all - so this has to install the counting
+    /// resolver and assert the count, not merely that the list came back empty.
+    /// </summary>
     [Fact]
     public void NoRowsCostNoInvocations()
     {
+        InstallCountingResolver<EmptyOrder, EmptyCustomer>();
+
         using SqliteConnection connection = Seed(0);
 
-        List<(ShapeOrder, ShapeCustomer)> results =
-            connection.Query<ShapeOrder, ShapeCustomer>(JoinSql);
+        List<(EmptyOrder, EmptyCustomer)> results =
+            connection.Query<EmptyOrder, EmptyCustomer>(JoinSql);
 
         Assert.Empty(results);
+        Assert.Equal(0, _countedCalls);
     }
 }

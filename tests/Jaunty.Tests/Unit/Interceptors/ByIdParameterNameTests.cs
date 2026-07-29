@@ -215,8 +215,10 @@ public class ByIdParameterNameTests : IDisposable
     // ------------------------------------------------------------------
 
     /// <summary>
-    /// The logger sites sit inside the *Direct methods and were a separate set of eight. They are
-    /// reached when no interceptor is registered, so this test deliberately registers none.
+    /// The logger sites sit inside the *Direct methods and were a separate set of eight. The Direct
+    /// methods run on both paths - the pipeline invokes them too - so these sites are always
+    /// reached; registering no interceptor here just isolates the logger from the pipeline
+    /// assertions above.
     /// </summary>
     [Fact]
     public void TheLoggerReportsTheKeyColumnNameToo()
