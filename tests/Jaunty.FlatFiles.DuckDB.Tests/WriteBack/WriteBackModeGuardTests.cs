@@ -76,6 +76,12 @@ public class WriteBackModeGuardTests : IDisposable
             () => _db.Save<InventoryItem>((WriteBackMode)99));
 
         Assert.Equal("mode", ex.ParamName);
+        // Not just the parameter name: the message must carry the offending value. The first draft
+        // wrote it as $"'{{mode}}'", which in C# is a literal "{mode}" - and a test that asserted
+        // only ParamName passed anyway. That is the "assertion that holds regardless of the fix"
+        // shape, caught in review rather than by the suite.
+        Assert.Contains("99", ex.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("{mode}", ex.Message, StringComparison.Ordinal);
         Assert.Equal(before, File.ReadAllText(_csvPath));
     }
 
@@ -88,6 +94,8 @@ public class WriteBackModeGuardTests : IDisposable
             async () => await _db.SaveAsync<InventoryItem>((WriteBackMode)99));
 
         Assert.Equal("mode", ex.ParamName);
+        Assert.Contains("99", ex.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("{mode}", ex.Message, StringComparison.Ordinal);
         Assert.Equal(before, File.ReadAllText(_csvPath));
     }
 
