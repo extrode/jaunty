@@ -1,7 +1,8 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+
+using Jaunty.Internals.Parameters;
 
 namespace Jaunty.Extensions.Reflection;
 
@@ -22,7 +23,11 @@ namespace Jaunty.Extensions.Reflection;
 internal sealed class MultiEntityMapper<T1, T2, T3>
     where T1 : new() where T2 : new() where T3 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3>> Cache = new(StringComparer.OrdinalIgnoreCase);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3>> Cache =
+        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly PropertySetter<T1>[] _t1;
     private readonly PropertySetter<T2>[] _t2;
@@ -69,7 +74,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4>
     where T1 : new() where T2 : new() where T3 : new() where T4 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4>> Cache = new(StringComparer.OrdinalIgnoreCase);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4>> Cache =
+        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly PropertySetter<T1>[] _t1;
     private readonly PropertySetter<T2>[] _t2;
@@ -120,7 +129,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5>
     where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5>> Cache = new(StringComparer.OrdinalIgnoreCase);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5>> Cache =
+        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly PropertySetter<T1>[] _t1;
     private readonly PropertySetter<T2>[] _t2;
@@ -175,7 +188,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6>
     where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6>> Cache = new(StringComparer.OrdinalIgnoreCase);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6>> Cache =
+        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly PropertySetter<T1>[] _t1;
     private readonly PropertySetter<T2>[] _t2;
@@ -234,7 +251,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>
     where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>> Cache = new(StringComparer.OrdinalIgnoreCase);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>> Cache =
+        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly PropertySetter<T1>[] _t1;
     private readonly PropertySetter<T2>[] _t2;

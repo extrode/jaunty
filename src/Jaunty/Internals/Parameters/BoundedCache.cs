@@ -3,6 +3,40 @@ using System.Collections.Concurrent;
 namespace Jaunty.Internals.Parameters;
 
 /// <summary>
+/// Caps for <see cref="BoundedCache{TKey, TValue}"/>, on a non-generic type so a call site can name
+/// one without first naming a closed <c>BoundedCache</c>.
+/// </summary>
+internal static class BoundedCacheLimits
+{
+    /// <summary>
+    /// The cap for caches keyed by a result set's column layout - the multi-entity mappers in
+    /// <c>Internals/Read</c> and the mapper and setter caches in Jaunty.Extensions.Reflection.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Deliberately far below <see cref="BoundedCache{TKey, TValue}.DefaultMaxEntries"/>. That cap
+    /// was chosen for the two process-wide singletons in <c>Internals/Parameters</c>, where 4096
+    /// entries is 4096 entries full stop. The schema caches are <c>static</c> fields on
+    /// <em>generic</em> types, so there is one cache per closed generic instantiation - per entity
+    /// type, and per ordered tuple of entity types for the multi-entity mappers. The same numeric
+    /// cap therefore multiplies by the application's type surface rather than standing alone, and
+    /// AUD-R26-053 measured 586 B per setter-cache entry and 2,047 B per arity-2 mapper entry: 4096
+    /// would have permitted roughly 2.4 MB per entity type and 8.4 MB per mapper tuple.
+    /// </para>
+    /// <para>
+    /// 256 distinct column layouts for one entity type is already well past any hand-written query
+    /// set; a workload that exceeds it is generating SELECT lists, which is the case the cap exists
+    /// for. Eviction is cheap here - a miss rebuilds a <c>PropertySetter</c> array from metadata
+    /// that is itself cached elsewhere, and compiles nothing, since the expression trees are built
+    /// once per entity type in <c>MetadataCache&lt;T&gt;.Snapshot</c>'s constructor. Nor does
+    /// row-by-row mapping reach these caches after the first row: the single-entity and arity-2
+    /// paths both memoize on reader identity in front of them.
+    /// </para>
+    /// </remarks>
+    internal const int SchemaCacheMaxEntries = 256;
+}
+
+/// <summary>
 /// A size-capped, thread-safe cache. Wraps a <see cref="ConcurrentDictionary{TKey, TValue}"/>
 /// and evicts the oldest (least-recently-added) entries once the configured maximum is exceeded.
 /// This prevents unbounded growth when callers embed literals instead of parameters, or generate
@@ -49,6 +83,21 @@ internal sealed class BoundedCache<TKey, TValue>
     internal int Count => _entries.Count;
 
     internal bool TryGetValue(TKey key, out TValue? value) => _entries.TryGetValue(key, out value);
+
+    /// <summary>
+    /// The cached value, or <see langword="null"/> if the key is absent.
+    /// </summary>
+    /// <remarks>
+    /// The <c>Try</c> form's <c>out</c> parameter has to be declared <c>TValue?</c>, because this
+    /// assembly targets netstandard2.0 where <c>MaybeNullWhenAttribute</c> does not exist and so the
+    /// compiler cannot be told the value is non-null on <see langword="true"/>. Callers that return
+    /// the result therefore hit CS8603 and have to either suppress it or re-check a null that
+    /// <c>TValue : class</c> plus "nothing ever stores null" already rules out. Returning the value
+    /// directly makes the flow analysis correct with nothing to suppress, and unlike
+    /// <see cref="GetOrAdd"/> it allocates no factory delegate on the hit path - which matters, as
+    /// these are lookups on the per-result-set mapping path.
+    /// </remarks>
+    internal TValue? Get(TKey key) => _entries.TryGetValue(key, out TValue? value) ? value : null;
 
     internal bool TryAdd(TKey key, TValue value)
     {
