@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -228,16 +229,19 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                         {
                             var startIndex = EvaluateExpression(node.Arguments[0]);
                             // SQL SUBSTRING is 1-based, C# is 0-based
-                            var sqlStart = Convert.ToInt32(startIndex) + 1;
+                            var sqlStart = Convert.ToInt32(startIndex, CultureInfo.InvariantCulture) + 1;
                             if (node.Arguments.Count >= 2)
                             {
                                 var length = EvaluateExpression(node.Arguments[1]);
-                                _sql.Append(_dialect.GenerateSubstring(escapedColumn, sqlStart.ToString(), length?.ToString() ?? "1"));
+                                _sql.Append(_dialect.GenerateSubstring(
+                                    escapedColumn,
+                                    sqlStart.ToString(CultureInfo.InvariantCulture),
+                                    FormatSubstringLength(length)));
                             }
                             else
                             {
                                 // No length specified - use large number for "rest of string"
-                                _sql.Append(_dialect.GenerateSubstring(escapedColumn, sqlStart.ToString(), "8000"));
+                                _sql.Append(_dialect.GenerateSubstring(escapedColumn, sqlStart.ToString(CultureInfo.InvariantCulture), "8000"));
                             }
                             return node;
                         }
@@ -803,6 +807,25 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
     // rather than rewriting every call site, so the shared implementation - including its
     // closure-member fast path - is the only place the behaviour lives.
     private static object? EvaluateExpression(Expression expression) => ExpressionEvaluator.Evaluate(expression);
+
+    /// <summary>
+    /// Formats the length operand of <c>string.Substring(start, length)</c> for the generated SQL.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26: this was <c>length?.ToString() ?? "1"</c>, which formatted a boxed value under the
+    /// ambient <see cref="CultureInfo.CurrentCulture"/> and, on a null operand, silently emitted a
+    /// length of 1 rather than the caller's value. The parameter is typed <see langword="int"/>, so
+    /// null is unreachable through the C# overload; it is rejected rather than substituted so a
+    /// future caller cannot get a one-character result and no diagnostic.
+    /// </remarks>
+    private static string FormatSubstringLength(object? length) => length switch
+    {
+        null => throw new NotSupportedException(
+            "The length argument of Substring(start, length) evaluated to null and cannot be translated to SQL."),
+        IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+        _ => length.ToString() ?? throw new NotSupportedException(
+            "The length argument of Substring(start, length) could not be formatted for SQL.")
+    };
 
     private static string GetOperator(ExpressionType nodeType) => nodeType switch
     {
