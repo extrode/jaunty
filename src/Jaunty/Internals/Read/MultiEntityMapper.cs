@@ -18,14 +18,9 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
     // differently would silently reuse the first query's cached split points.
     private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2>> _cache = new(StringComparer.Ordinal);
 
-    private readonly Action<T1, IDataRecord> _applyT1;
-    private readonly Action<T2, IDataRecord> _applyT2;
+    private readonly Action<T1, T2, IDataRecord> _map;
 
-    private MultiEntityMapper(Action<T1, IDataRecord> applyT1, Action<T2, IDataRecord> applyT2)
-    {
-        _applyT1 = applyT1;
-        _applyT2 = applyT2;
-    }
+    private MultiEntityMapper(Action<T1, T2, IDataRecord> map) => _map = map;
 
     internal static MultiEntityMapper<T1, T2> Build(IDataReader reader)
     {
@@ -48,21 +43,40 @@ internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new(
         return string.Join("\u001F", parts);
     }
 
+    /// <remarks>
+    /// AUD-R26. This used to split the resolver's combined mapper into two one-entity closures -
+    /// <c>(t1, r) =&gt; combined(t1, default!, r)</c> and <c>(t2, r) =&gt; combined(default!, t2, r)</c> -
+    /// which every arity-2 call site then invoked in sequence, once per row. Two problems fell out
+    /// of that, and both disappear by handing the combined mapper straight through.
+    ///
+    /// <para>
+    /// The reflection side's combined delegate starts with <c>MultiEntityMapper&lt;T1, T2&gt;.Get(reader)</c>,
+    /// whose per-reader memoization exists precisely because it is called per row - and every hit is
+    /// validated by <c>ReaderCacheEntry.Matches</c>, which compares <c>reader.GetName(i)</c> across
+    /// the full field count. Calling it twice per row doubled the one cost that memoization was
+    /// added to remove: a 20-column join over 10k rows paid 20k lookups and 400k string comparisons
+    /// where 10k and 200k would do. The N-ary path never had this shape; only arity 2 paid double.
+    /// </para>
+    ///
+    /// <para>
+    /// The <c>default!</c> arguments were the second problem. The reflection side's <c>Map</c>
+    /// null-guards each target, so for a reference type the discarded half was skipped - but
+    /// <c>T1</c>/<c>T2</c> are only constrained to <c>new()</c>, and for a value-type entity
+    /// <c>default</c> is a zeroed struct, not null. That is not null, so <c>Map</c> ran that type's
+    /// full setter list against a boxed throwaway copy and dropped it: work done, twice per row,
+    /// with no observable effect.
+    /// </para>
+    /// </remarks>
     private static MultiEntityMapper<T1, T2> CreateMapper(IDataReader reader)
     {
         if (JauntyConfig.ReflectionMultiMapperResolver?.Invoke(typeof(T1), typeof(T2)) is Action<T1, T2, IDataRecord> combined)
-        {
-            return new MultiEntityMapper<T1, T2>(
-                (t1, r) => combined(t1, default!, r),
-                (t2, r) => combined(default!, t2, r)
-            );
-        }
+            return new MultiEntityMapper<T1, T2>(combined);
 
         throw new InvalidOperationException(
             $"No multi-mapper found for types '{typeof(T1).Name}' and '{typeof(T2).Name}'. " +
             "Ensure 'Jaunty.Extensions.Reflection' is loaded for runtime multi-mapping.");
     }
 
-    internal void ApplyT1(T1 target, IDataRecord record) => _applyT1(target, record);
-    internal void ApplyT2(T2 target, IDataRecord record) => _applyT2(target, record);
+    /// <summary>Populates both targets from one row, in a single pass over the resolved mapper.</summary>
+    internal void Map(T1 target1, T2 target2, IDataRecord record) => _map(target1, target2, record);
 }

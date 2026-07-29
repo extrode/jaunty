@@ -33,7 +33,7 @@ internal static class ForeignKeyToggleCoordinator
     {
         using IDbCommand command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = dialect.GetDisableForeignKeyChecksSql()!;
+        command.CommandText = RequireToggleSql(dialect.GetDisableForeignKeyChecksSql(), dialect, nameof(ISqlDialect.GetDisableForeignKeyChecksSql));
         command.ExecuteNonQuery();
     }
 
@@ -41,7 +41,7 @@ internal static class ForeignKeyToggleCoordinator
     {
         using IDbCommand command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
+        command.CommandText = RequireToggleSql(dialect.GetEnableForeignKeyChecksSql(), dialect, nameof(ISqlDialect.GetEnableForeignKeyChecksSql));
         command.ExecuteNonQuery();
     }
 
@@ -54,7 +54,7 @@ internal static class ForeignKeyToggleCoordinator
         using DbCommand command = connection.CreateCommand();
 #endif
         command.Transaction = transaction;
-        command.CommandText = dialect.GetDisableForeignKeyChecksSql()!;
+        command.CommandText = RequireToggleSql(dialect.GetDisableForeignKeyChecksSql(), dialect, nameof(ISqlDialect.GetDisableForeignKeyChecksSql));
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -67,7 +67,34 @@ internal static class ForeignKeyToggleCoordinator
         using DbCommand command = connection.CreateCommand();
 #endif
         command.Transaction = transaction;
-        command.CommandText = dialect.GetEnableForeignKeyChecksSql()!;
+        command.CommandText = RequireToggleSql(dialect.GetEnableForeignKeyChecksSql(), dialect, nameof(ISqlDialect.GetEnableForeignKeyChecksSql));
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Turns a dialect that claims <see cref="ISqlDialect.SupportsForeignKeyToggle"/> but supplies
+    /// no toggle SQL into an error that names it.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26. These four methods assigned <c>dialect.GetDisableForeignKeyChecksSql()!</c> straight
+    /// to <c>CommandText</c>, and the null-forgiving operator was load-bearing:
+    /// <c>SqlServerDialect</c> genuinely returns null here (SqlServerDialect.cs:217). The only thing
+    /// keeping a null command text away from the provider is that every caller separately checks
+    /// <c>SupportsForeignKeyToggle</c> first (e.g. BulkInsert.cs 158) - two independent members of a
+    /// public interface with no invariant tying them together. A third-party dialect whose answers
+    /// disagree reached the provider with a null <c>CommandText</c> and failed there, naming neither
+    /// the dialect nor the member that lied. Checking here costs one null test per bulk operation,
+    /// not per row.
+    /// </remarks>
+    private static string RequireToggleSql(string? sql, ISqlDialect dialect, string member)
+    {
+        if (string.IsNullOrEmpty(sql))
+            throw new InvalidOperationException(
+                $"Dialect '{dialect.GetType().Name}' reports SupportsForeignKeyToggle = true but its " +
+                $"{member}() returned no SQL. Those two members have to agree: either return the " +
+                "statement that toggles foreign key checks, or report SupportsForeignKeyToggle = false " +
+                "so callers take the path that does not need it.");
+
+        return sql!;
     }
 }
