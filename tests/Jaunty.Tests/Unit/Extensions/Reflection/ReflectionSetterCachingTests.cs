@@ -251,7 +251,7 @@ public class ReflectionSetterCachingTests : IDisposable
     /// </para>
     /// </summary>
     [Fact]
-    public void ConcurrentGetSetters_OnOneReader_DoesNotThrow()
+    public async System.Threading.Tasks.Task ConcurrentGetSetters_OnOneReader_DoesNotThrow()
     {
         var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
 
@@ -277,7 +277,7 @@ public class ReflectionSetterCachingTests : IDisposable
                 });
             }
 
-            System.Threading.Tasks.Task.WaitAll(tasks);
+            await System.Threading.Tasks.Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
         Assert.Empty(exceptions);
@@ -295,7 +295,7 @@ public class ReflectionSetterCachingTests : IDisposable
     /// alternating mode keeps every call on the write path.
     /// </remarks>
     [Fact]
-    public void ConcurrentGetSetters_ForcedMisses_DoNotThrow()
+    public async System.Threading.Tasks.Task ConcurrentGetSetters_ForcedMisses_DoNotThrow()
     {
         var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
 
@@ -322,7 +322,7 @@ public class ReflectionSetterCachingTests : IDisposable
                 });
             }
 
-            System.Threading.Tasks.Task.WaitAll(tasks);
+            await System.Threading.Tasks.Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
         Assert.Empty(exceptions);
