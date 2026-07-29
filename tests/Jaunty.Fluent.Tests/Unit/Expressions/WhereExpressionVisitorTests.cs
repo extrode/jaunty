@@ -418,7 +418,11 @@ public class WhereExpressionVisitorTests
         var visitor = new WhereExpressionVisitor<Product>(_dialect);
         var (sql, parameters) = visitor.Translate(expr);
 
-        Assert.Contains("SUBSTRING([product_name], 4, 8000)", sql);
+        // AUD-R26: was 8000 - a SQL Server convention emitted from a dialect-neutral visitor, which
+        // silently truncated anything longer. TestDialect predates ISubstringToEndDialect and does
+        // not implement it, so this is the fallback path; SubstringToEndTests covers the native
+        // per-dialect forms.
+        Assert.Contains("SUBSTRING([product_name], 4, 2147483647)", sql);
         Assert.Single(parameters, p => p.Value.Equals("t"));
     }
 
