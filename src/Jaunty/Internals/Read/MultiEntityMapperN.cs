@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Concurrent;
 using System.Data;
 
 using Jaunty.Configuration;
+using Jaunty.Internals.Parameters;
 
 namespace Jaunty.Internals.Read;
 
@@ -65,7 +65,11 @@ internal static class MultiEntityMapperNGuard
 /// <summary>Hook for arity-3 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : new() where T3 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3>> _cache = new(StringComparer.Ordinal);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3>> _cache =
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -81,7 +85,8 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
     internal static MultiEntityMapper<T1, T2, T3> Build(IDataReader reader)
     {
         string key = BuildSchemaKey(reader);
-        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3>? cached)) return cached;
+        MultiEntityMapper<T1, T2, T3>? cached = _cache.Get(key);
+        if (cached is not null) return cached;
         MultiEntityMapper<T1, T2, T3> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
@@ -125,7 +130,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3> where T1 : new() where T2 : 
 /// <summary>Hook for arity-4 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T2 : new() where T3 : new() where T4 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4>> _cache = new(StringComparer.Ordinal);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4>> _cache =
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -143,7 +152,8 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
     internal static MultiEntityMapper<T1, T2, T3, T4> Build(IDataReader reader)
     {
         string key = BuildSchemaKey(reader);
-        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4>? cached)) return cached;
+        MultiEntityMapper<T1, T2, T3, T4>? cached = _cache.Get(key);
+        if (cached is not null) return cached;
         MultiEntityMapper<T1, T2, T3, T4> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
@@ -190,7 +200,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4> where T1 : new() where T
 /// <summary>Hook for arity-5 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5>> _cache = new(StringComparer.Ordinal);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5>> _cache =
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -210,7 +224,8 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
     internal static MultiEntityMapper<T1, T2, T3, T4, T5> Build(IDataReader reader)
     {
         string key = BuildSchemaKey(reader);
-        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4, T5>? cached)) return cached;
+        MultiEntityMapper<T1, T2, T3, T4, T5>? cached = _cache.Get(key);
+        if (cached is not null) return cached;
         MultiEntityMapper<T1, T2, T3, T4, T5> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
@@ -260,7 +275,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5> where T1 : new() whe
 /// <summary>Hook for arity-6 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6>> _cache = new(StringComparer.Ordinal);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6>> _cache =
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -282,7 +301,8 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
     internal static MultiEntityMapper<T1, T2, T3, T4, T5, T6> Build(IDataReader reader)
     {
         string key = BuildSchemaKey(reader);
-        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4, T5, T6>? cached)) return cached;
+        MultiEntityMapper<T1, T2, T3, T4, T5, T6>? cached = _cache.Get(key);
+        if (cached is not null) return cached;
         MultiEntityMapper<T1, T2, T3, T4, T5, T6> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;
@@ -335,7 +355,11 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6> where T1 : new()
 /// <summary>Hook for arity-7 multi-entity mapping. Actual implementation provided by Jaunty.Extensions.Reflection.</summary>
 internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : new() where T2 : new() where T3 : new() where T4 : new() where T5 : new() where T6 : new() where T7 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>> _cache = new(StringComparer.Ordinal);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>> _cache =
+        new(StringComparer.Ordinal, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     private readonly Action<T1, IDataRecord> _applyT1;
     private readonly Action<T2, IDataRecord> _applyT2;
@@ -359,7 +383,8 @@ internal sealed class MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> where T1 : n
     internal static MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> Build(IDataReader reader)
     {
         string key = BuildSchemaKey(reader);
-        if (_cache.TryGetValue(key, out MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>? cached)) return cached;
+        MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7>? cached = _cache.Get(key);
+        if (cached is not null) return cached;
         MultiEntityMapper<T1, T2, T3, T4, T5, T6, T7> m = CreateMapper(reader);
         _cache.TryAdd(key, m);
         return m;

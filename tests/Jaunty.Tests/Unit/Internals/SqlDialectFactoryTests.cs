@@ -64,12 +64,41 @@ public class SqlDialectFactoryTests
         Assert.IsType<SQLiteDialect>(SqlDialectFactory.Unwrap(dialect));
     }
 
+    /// <summary>
+    /// AUD-R26 (batch 4): this asserted that an unrecognised connection type receives SQL Server's
+    /// dialect - <c>[bracket]</c> quoting, MERGE-based upsert, SCOPE_IDENTITY(), OFFSET/FETCH
+    /// paging and a 2,100-parameter ceiling, on an engine that need not support any of them. The
+    /// test was pinning the defect: wrong SQL produced silently, where the caller wanted to be
+    /// told. It now asserts the error, and that the error says what to do about it.
+    /// </summary>
     [Fact]
-    public void GetDialect_UnknownConnection_DefaultsToSqlServer()
+    public void GetDialect_UnknownConnection_ThrowsNamingTheType()
     {
         var connection = new UnknownConnection();
-        var dialect = SqlDialectFactory.GetDialect(connection);
-        Assert.IsType<SqlServerDialect>(SqlDialectFactory.Unwrap(dialect));
+
+        var ex = Assert.Throws<InvalidOperationException>(() => SqlDialectFactory.GetDialect(connection));
+
+        Assert.Contains(nameof(UnknownConnection), ex.Message, StringComparison.Ordinal);
+        Assert.Contains("RegisterDialect", ex.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The escape hatch the error points at has to actually work.
+    /// </summary>
+    /// <remarks>
+    /// Uses a connection type of its own rather than <see cref="UnknownConnection"/>: registration
+    /// is process-wide with no unregister, so sharing the type would make this test and the throw
+    /// test above depend on which ran first.
+    /// </remarks>
+    [Fact]
+    public void GetDialect_UnknownConnection_ResolvesOnceADialectIsRegistered()
+    {
+        var connection = new EscapeHatchConnection();
+        var custom = new PostgreSqlDialect();
+
+        SqlDialectFactory.RegisterDialect(nameof(EscapeHatchConnection), custom);
+
+        Assert.Same(custom, SqlDialectFactory.GetDialect(connection));
     }
 
     [Fact]
@@ -81,9 +110,14 @@ public class SqlDialectFactoryTests
         // the stale built-in dialect from the cache.
         var connection = new CacheInvalidationConnection();
 
-        // Prime the cache with the default (SQL Server) resolution.
-        var before = SqlDialectFactory.GetDialect(connection);
-        Assert.IsType<SqlServerDialect>(SqlDialectFactory.Unwrap(before));
+        // AUD-R26: this used to prime the cache by resolving an unregistered type and asserting it
+        // came back as SQL Server - which is the silent fallback that has since been removed, so
+        // priming that way now throws. Registering a first dialect primes the cache just as well
+        // and tests the same thing more directly: a resolution already in the cache must not
+        // survive a later registration for the same type name.
+        var first = new SQLiteDialect();
+        SqlDialectFactory.RegisterDialect(nameof(CacheInvalidationConnection), first);
+        Assert.Same(first, SqlDialectFactory.GetDialect(connection));
 
         var custom = new PostgreSqlDialect();
         SqlDialectFactory.RegisterDialect(nameof(CacheInvalidationConnection), custom);
@@ -100,6 +134,7 @@ public class SqlDialectFactoryTests
     private class MySqlConnection : MockConnectionBase { }
     private class UnknownConnection : MockConnectionBase { }
     private class CacheInvalidationConnection : MockConnectionBase { }
+    private class EscapeHatchConnection : MockConnectionBase { }
 
     private abstract class MockConnectionBase : IDbConnection
     {

@@ -393,26 +393,42 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         _ => throw new NotSupportedException($"Operator '{nodeType}' is not supported.")
     };
 
+    /// <summary>
+    /// Binds all accumulated parameters directly to the command via raw ADO.NET. Unlike
+    /// QueryBuilder/CteBuilder/SetOperationBuilder, which execute through Jaunty's core
+    /// Query&lt;T&gt;/ParameterBinder, this builder binds directly to support arbitrary projected
+    /// shapes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26 (batch 5, medium/bug). This used to route every value through a local
+    /// <c>NormalizeForBinding</c> that coerced any <see cref="decimal"/> to <see cref="double"/> -
+    /// <c>value is decimal d ? (double)d : value</c> - unconditionally and on every dialect, on the
+    /// strength of one provider's behaviour. It now asks the dialect, via
+    /// <see cref="DecimalParameterBinding"/>: SQLite still gets the conversion, and SQL Server,
+    /// PostgreSQL and MySQL no longer have a <c>DECIMAL(19,4)</c> or <c>NUMERIC</c> comparison
+    /// downgraded to binary floating point on another engine's behalf.
+    /// </para>
+    /// <para>
+    /// This builder is where the conversion earns its place, and it is why removing it outright did
+    /// not survive. Every parameter it binds for a HAVING clause is compared against an
+    /// <em>aggregate expression</em>, which is exactly the case both SQLite providers get wrong:
+    /// they bind a <see cref="decimal"/> as TEXT, SQLite has no column affinity to apply to an
+    /// expression operand, and TEXT sorts above every number - so
+    /// <c>HAVING SUM(price) &gt; @p</c> matches no group and <c>&lt; @p</c> matches every group,
+    /// whatever the values are. Four <c>GroupBy</c>/<c>Having</c> integration tests turn red without
+    /// it. See <see cref="IDecimalBindingDialect"/> for the measurements.
+    /// </para>
+    /// </remarks>
     private void BindParameters(IDbCommand command)
     {
         foreach ((string name, object? value) in _parameters.GetAll())
         {
             IDbDataParameter p = command.CreateParameter();
             p.ParameterName = name;
-            p.Value = NormalizeForBinding(value) ?? DBNull.Value;
+            p.Value = DecimalParameterBinding.Normalize(_dialect, value) ?? DBNull.Value;
             command.Parameters.Add(p);
         }
     }
 
-    /// <summary>
-    /// Some ADO.NET providers (observed with System.Data.SQLite) don't correctly compare a
-    /// bound <see cref="decimal"/> parameter against a REAL/numeric column - the comparison
-    /// silently never matches regardless of value (e.g. a HAVING "SUM(price) > @p" with @p
-    /// bound as decimal 150m). SQLite's native numeric storage is INTEGER/REAL (double), so
-    /// normalize decimal values to double before binding. Unlike QueryBuilder/CteBuilder/
-    /// SetOperationBuilder, which execute through Jaunty's core Query&lt;T&gt;/ParameterBinder,
-    /// this builder binds parameters directly via raw ADO.NET (to support arbitrary projected
-    /// TResult shapes), so it doesn't benefit from any type handling that path may apply.
-    /// </summary>
-    private static object? NormalizeForBinding(object? value) => value is decimal d ? (double)d : value;
 }
