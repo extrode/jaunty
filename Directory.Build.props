@@ -18,15 +18,22 @@
 
       - net472: string.Contains(string, StringComparison) rebinds to the MemoryExtensions
         span overload, which does not exist on net472 (fixed at the call sites, 2026-07-29).
-      - Jaunty.Fluent: the expression tree the compiler emits for Enumerable.Contains changes
-        shape, and WhereExpressionVisitor.VisitMethodCall then evaluates an argument that
-        references the lambda parameter, throwing "variable 'p' ... is not defined" at
-        ExpressionEvaluator.cs:40. Four WhereExpressionVisitor/VisitorColumnResolution tests
-        fail under 14.0 and pass under 13.0 and 12.0.
+      - Jaunty.Fluent: for an *array* receiver, ids.Contains(p.Id) rebinds from
+        Enumerable.Contains to MemoryExtensions.Contains(ReadOnlySpan<T>, T), with the array
+        wrapped in ReadOnlySpan<T>.op_Implicit. WhereExpressionVisitor recognised neither the
+        declaring type nor the static form, so it fell through to the constant-evaluation
+        fallback and threw "variable 'p' ... is not defined" (fixed 2026-07-29).
 
-    The second is unfixed, so 13.0 is the honest setting. A repo-wide compiler scan on
-    2026-07-29 found zero C# 14 features in use, so this costs nothing today. Raising it to
-    14.0 requires fixing WhereExpressionVisitor first - tracked in the .NET 10 migration spec.
+    Note what the pin did NOT do for the second one. Expression trees are built by whoever
+    writes the lambda, so a consumer compiling with C# 14 sent that shape to the shipped
+    Jaunty.Fluent no matter what this file says. The pin turned four tests green while the
+    product stayed broken; the visitor is fixed now, and the tests that cover it build the C# 14
+    tree by hand so they hold under this pin. A LangVersion pin is protection against ambient
+    SDK drift in *our* build. It is never protection for the shipped product.
+
+    A repo-wide compiler scan on 2026-07-29 found zero C# 14 features in use, so 13.0 costs
+    nothing today. Raising it to 14.0 is no longer blocked, but it is its own decision - see
+    docs/specs/010-net10-migration/010-spec.md.
 
     Requires the .NET 10 SDK, which CI installs in .github/workflows/{ci,release}.yml; the SDK
     version and the language version are deliberately independent.
