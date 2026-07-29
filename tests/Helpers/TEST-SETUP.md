@@ -107,6 +107,24 @@ With the SQLite native built and no connection strings set, on net8.0:
 
 Of the 2,447 skips, 815 want `JAUNTY_TEST_POSTGRESQL` and 811 want `JAUNTY_TEST_SQLSERVER`.
 
+### Measured baseline, three servers configured
+
+`docker compose up -d postgres mysql mariadb` (the three with arm64 images), seeded with
+`./scripts/reset-test-databases.sh --execute`, `JAUNTY_TEST_SQLSERVER` left unset:
+
+| | Passed | Failed | Skipped |
+|---|---|---|---|
+| `Jaunty.Tests` | 4,403 | 0 | 815 |
+
+The remaining 815 are SQL Server. **Do this before trusting a green run.** The first time
+this stack was brought up it found 16 real failures — a regression from AUD-R26-030 that
+made every no-parameter stored-procedure call throw before reaching the database, on both
+Postgres and MariaDB. It had been invisible for the obvious reason: SQLite has no stored
+procedures, so the only coverage was in the tests that were skipping. See `AUD-R26-032`.
+
+`pwsh` is not required. `scripts/reset-test-databases.sh` is a bash port of
+`reset-test-databases.ps1` with the same dry-run-by-default contract; keep the two in step.
+
 The one failure is `ListTablesCommandTests.Invoke_ConnectionFailure_ReturnsErrorExitCodeAndMessage`
 (expects exit 1, gets 0). It predates the SQLite work and is unrelated to it. Whether it is
 macOS-specific has not been established — the coverage table below reports 34 passing for
