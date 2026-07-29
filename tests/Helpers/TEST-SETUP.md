@@ -64,18 +64,16 @@ Queried from the registries rather than assumed:
 | `mysql:8` | linux/amd64, linux/arm64 |
 | `mariadb:11` | linux/amd64, linux/arm64, +2 |
 
-So `docker compose up -d` brings up three of the four natively. The `mssql` service needs
-amd64 emulation — enable **Settings → General → Use Rosetta for x86_64/amd64 emulation on
-Apple Silicon** in Docker Desktop, or point `JAUNTY_TEST_SQLSERVER` at a real instance
-elsewhere.
+So three of the four run natively and `mssql` runs under amd64 emulation. **Verified working
+on 2026-07-29** — Docker Desktop 29.6.1 on macOS 15 needed no configuration at all: Rosetta
+was already present and `docker run --platform linux/amd64` worked out of the box. SQL Server
+2022 starts, passes its health check, and runs the full suite. `docker-compose.yml` declares
+`platform: linux/amd64` on that service so the mismatch warning does not appear on every
+`up`.
 
-Pointing it elsewhere is the better option anyway: the `CsvImportTests.*_SqlServer_*` tests
-need a SQL Server that can see the runner's filesystem, which no container can — see
-[Known environment limit](#known-environment-limit).
-
-> Not yet verified: whether the emulated `mssql` container is *usable* here, only that it
-> is the only one needing emulation. Docker Desktop is installed on this machine but its
-> daemon was not running when this was written.
+If emulation is ever unavailable, the fallbacks are Docker Desktop's **Settings → General →
+Use Rosetta for x86_64/amd64 emulation on Apple Silicon**, or pointing
+`JAUNTY_TEST_SQLSERVER` at a real instance elsewhere.
 
 ### 3. `dotnet test` at solution level aborts
 
@@ -107,20 +105,37 @@ With the SQLite native built and no connection strings set, on net8.0:
 
 Of the 2,447 skips, 815 want `JAUNTY_TEST_POSTGRESQL` and 811 want `JAUNTY_TEST_SQLSERVER`.
 
-### Measured baseline, three servers configured
+### Measured baseline, all four servers configured
 
-`docker compose up -d postgres mysql mariadb` (the three with arm64 images), seeded with
-`./scripts/reset-test-databases.sh --execute`, `JAUNTY_TEST_SQLSERVER` left unset:
+An arm64 Mac reaches **zero skips**, including the `BULK INSERT` tests. Measured 2026-07-29:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.bulkinsert.yml up -d
+./scripts/reset-test-databases.sh --execute
+# then export the four connection strings from Step 4
+```
 
 | | Passed | Failed | Skipped |
 |---|---|---|---|
-| `Jaunty.Tests` | 4,403 | 0 | 815 |
+| `Jaunty.Tests` (net8.0) | 5,218 | 0 | **0** |
+| `Jaunty.Scaffolding.Tests` | 579 | 0 | **0** |
 
-The remaining 815 are SQL Server. **Do this before trusting a green run.** The first time
-this stack was brought up it found 16 real failures — a regression from AUD-R26-030 that
-made every no-parameter stored-procedure call throw before reaching the database, on both
-Postgres and MariaDB. It had been invisible for the obvious reason: SQLite has no stored
-procedures, so the only coverage was in the tests that were skipping. See `AUD-R26-032`.
+**Do this before trusting a green run.** The first time this stack was brought up it found
+16 real failures — a regression from AUD-R26-030 that made every no-parameter
+stored-procedure call throw before reaching the database, on both Postgres and MariaDB. It
+had been invisible for the obvious reason: SQLite has no stored procedures, so the only
+coverage was in tests that were skipping. See `AUD-R26-032`.
+
+Two things were needed to reach zero, and both are now in the connection strings and compose
+files above:
+
+- **`AllowPublicKeyRetrieval=true`** on the MySQL and MariaDB strings.
+  `Jaunty.Scaffolding.Tests` uses **MySqlConnector**, which refuses MySQL 8's default
+  `caching_sha2_password` over an unencrypted connection without it; `Jaunty.Tests` uses
+  **MySql.Data**, which does not need it. Omitting it skips 8 scaffolding schema-reader
+  tests and nothing else, with the reason buried in a skip message.
+- **`docker-compose.bulkinsert.yml`**, which bind-mounts the repo into the SQL Server
+  container at the identical absolute path. See [Known environment limit](#known-environment-limit).
 
 `pwsh` is not required. `scripts/reset-test-databases.sh` is a bash port of
 `reset-test-databases.ps1` with the same dry-run-by-default contract; keep the two in step.
@@ -322,8 +337,25 @@ The `CsvImportTests.*_SqlServer_*` tests use `BULK INSERT`, which reads the CSV
 
 | SQL Server | Result |
 |---|---|
-| Linux container (`docker-compose.yml`) | fail — the container cannot see the runner's filesystem at all |
+| Linux container (`docker-compose.yml`) | fail — the container cannot see the runner's filesystem |
+| Linux container + `docker-compose.bulkinsert.yml` | **pass** — the repo is bind-mounted at the identical path |
 | Local Windows instance | pass |
+
+**This is no longer a hard limit.** The tests send an absolute host path, so the fix is to
+make that path resolve inside the container:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.bulkinsert.yml up -d mssql
+```
+
+The overlay bind-mounts the repo root at its own absolute path, read-only — `BULK INSERT`
+only reads. Verified 2026-07-29 on macOS arm64: all four `CsvImportTests.*_SqlServer_*`
+pass, and `Jaunty.Tests` reaches 5,218 passing with zero skips.
+
+It is a separate file rather than part of `docker-compose.yml` because `${PWD}` is not an
+environment variable under PowerShell or cmd, so putting it in the base file would break
+`docker compose up` on Windows — where it is unnecessary anyway, a local instance already
+sharing the filesystem with the runner. Run compose from the repo root.
 
 Run them against a local instance by pointing `JAUNTY_TEST_SQLSERVER` at it:
 
