@@ -194,6 +194,82 @@ public class NamingHelperTests
         Assert.Equal(expected, result);
     }
 
+    // AUD-R26: the old "-ses (but not -sses) -> strip -es" rule could not tell Bus+es from
+    // Database+s - both end "...ses" - and stripped two characters from every one of them. These
+    // are ordinary table names, and every one of them scaffolded to a nonsense class name.
+    [Theory]
+    [InlineData("Databases", "Database")]
+    [InlineData("Cases", "Case")]
+    [InlineData("Purchases", "Purchase")]
+    [InlineData("Licenses", "License")]
+    [InlineData("Warehouses", "Warehouse")]
+    [InlineData("Expenses", "Expense")]
+    [InlineData("Responses", "Response")]
+    [InlineData("Courses", "Course")]
+    [InlineData("Houses", "House")]
+    [InlineData("Releases", "Release")]
+    [InlineData("Phases", "Phase")]
+    [InlineData("Leases", "Lease")]
+    [InlineData("Clauses", "Clause")]
+    [InlineData("Causes", "Cause")]
+    public void Singularize_SeNouns_KeepTheirE(string input, string expected)
+        => Assert.Equal(expected, NamingHelper.Singularize(input));
+
+    // The other half of the same rule: singulars that really do end in a sibilant still lose the
+    // -es. Narrowing the rule to "-uses" would not have worked - Houses, Warehouses, Clauses and
+    // Causes all end in -uses too - so this closed class is enumerated.
+    [Theory]
+    [InlineData("Buses", "Bus")]
+    [InlineData("Statuses", "Status")]
+    [InlineData("Campuses", "Campus")]
+    [InlineData("Bonuses", "Bonus")]
+    [InlineData("Viruses", "Virus")]
+    [InlineData("Gases", "Gas")]
+    [InlineData("Lenses", "Lens")]
+    [InlineData("Aliases", "Alias")]
+    [InlineData("Atlases", "Atlas")]
+    [InlineData("Surpluses", "Surplus")]
+    public void Singularize_SibilantSingulars_StillLoseTheEs(string input, string expected)
+        => Assert.Equal(expected, NamingHelper.Singularize(input));
+
+    // AUD-R26: the -ches rule is right for the large -ch class and truncated the small -che one.
+    [Theory]
+    [InlineData("Caches", "Cache")]
+    [InlineData("Niches", "Niche")]
+    [InlineData("Aches", "Ache")]
+    public void Singularize_CheNouns_KeepTheirE(string input, string expected)
+        => Assert.Equal(expected, NamingHelper.Singularize(input));
+
+    [Theory]
+    [InlineData("Branches", "Branch")]
+    [InlineData("Matches", "Match")]
+    [InlineData("Batches", "Batch")]
+    [InlineData("Searches", "Search")]
+    [InlineData("Watches", "Watch")]
+    [InlineData("Patches", "Patch")]
+    public void Singularize_ChNouns_StillLoseTheEs(string input, string expected)
+        => Assert.Equal(expected, NamingHelper.Singularize(input));
+
+    // AUD-R26: a bare -zes rule truncated effectively the whole -ze class. Requiring -zzes fixes
+    // them and still handles the doubled-z plurals.
+    [Theory]
+    [InlineData("Sizes", "Size")]
+    [InlineData("Prizes", "Prize")]
+    [InlineData("Bronzes", "Bronze")]
+    [InlineData("Buzzes", "Buzz")]
+    [InlineData("Quizzes", "Quiz")]
+    public void Singularize_ZPlurals_AreHandledByDoubledZOnly(string input, string expected)
+        => Assert.Equal(expected, NamingHelper.Singularize(input));
+
+    // The closed classes must fire on the trailing PascalCase segment too, which is how a real
+    // table name like "order_statuses" reaches Singularize.
+    [Theory]
+    [InlineData("OrderStatuses", "OrderStatus")]
+    [InlineData("QueryCaches", "QueryCache")]
+    [InlineData("UserAliases", "UserAlias")]
+    public void Singularize_CompoundClosedClassPlurals_ConvertTrailingSegment(string input, string expected)
+        => Assert.Equal(expected, NamingHelper.Singularize(input));
+
     [Theory]
     [InlineData("Status", "Status")]
     [InlineData("Address", "Address")]

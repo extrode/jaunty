@@ -61,6 +61,58 @@ public static class NamingHelper
         ("elves", "elf"),
     ];
 
+    // AUD-R26: singulars that already end in a sibilant, so their plural adds -es.
+    //
+    // The old "-ses (but not -sses) -> strip -es" rule could not tell these from the far larger
+    // class of ordinary -se nouns, because both produce the same ending: Bus+es and Database+s
+    // are both "...ses". It stripped two characters from every one of them, so a great many
+    // ordinary table names scaffolded to nonsense class names - measured: Databases -> "Databas",
+    // Cases -> "Cas", Purchases -> "Purchas", Licenses -> "Licens", Warehouses -> "Warehous",
+    // Expenses -> "Expens", Responses -> "Respons", Courses -> "Cours", Houses -> "Hous",
+    // Releases -> "Releas", Phases -> "Phas", Leases -> "Leas", Clauses -> "Claus",
+    // Causes -> "Caus". Fourteen of the most ordinary table names imaginable.
+    //
+    // Narrowing the rule to "-uses" does not work either - Houses, Warehouses, Clauses and
+    // Causes all end in -uses too. There is no shape that separates them; it is a lexical fact
+    // about each word. So the closed class is enumerated and everything else falls through to
+    // the generic -s rule, exactly as R24 did for the f/fe-alternating -ves plurals.
+    // Ordered longest-suffix-first.
+    private static readonly (string Plural, string Singular)[] SibilantSingulars =
+    [
+        ("surpluses", "surplus"),
+        ("campuses", "campus"),
+        ("censuses", "census"),
+        ("canvases", "canvas"),
+        ("statuses", "status"),
+        ("corpuses", "corpus"),
+        ("quizzes", "quiz"),
+        ("aliases", "alias"),
+        ("atlases", "atlas"),
+        ("viruses", "virus"),
+        ("bonuses", "bonus"),
+        ("biases", "bias"),
+        ("irises", "iris"),
+        ("lenses", "lens"),
+        ("gases", "gas"),
+        ("buses", "bus"),
+    ];
+
+    // AUD-R26: the same problem one class over. The "-ches -> strip -es" rule is right for the
+    // large -ch class (Branches, Matches, Batches, Searches, Watches, Patches) and wrong for the
+    // small -che class, which it truncated: measured Caches -> "Cach", Niches -> "Nich". Here the
+    // regular class is the bigger one, so the exceptions are enumerated rather than the rule
+    // being inverted.
+    private static readonly (string Plural, string Singular)[] CheSingulars =
+    [
+        ("avalanches", "avalanche"),
+        ("moustaches", "moustache"),
+        ("mustaches", "mustache"),
+        ("quiches", "quiche"),
+        ("niches", "niche"),
+        ("caches", "cache"),
+        ("aches", "ache"),
+    ];
+
     /// <summary>
     /// Derives a generated entity class name from a table name, applying PascalCase
     /// conversion, optional singularization, prefix/suffix, and identifier escaping.
@@ -166,27 +218,45 @@ public static class NamingHelper
         if (word.EndsWith("ies", StringComparison.OrdinalIgnoreCase) && word.Length > 4)
             return word[..^3] + "y";
 
-        // -sses, -shes, -ches, -xes, -zes -> remove -es
+        // The closed classes first - a word in either of these would be truncated by the
+        // sibilant rules below (Statuses -> "Statuse" without the first, Caches -> "Cach"
+        // without the second).
+        var sibilant = TrySingularizeBySuffix(word, SibilantSingulars);
+        if (sibilant != null)
+            return sibilant;
+
+        var che = TrySingularizeBySuffix(word, CheSingulars);
+        if (che != null)
+            return che;
+
+        // -sses, -shes, -ches, -xes -> remove -es. These four are safe as shape rules: -sse,
+        // -she and -xe singulars are vanishingly rare, and the -che exceptions are enumerated
+        // above.
         if (word.Length > 3)
         {
             if (word.EndsWith("sses", StringComparison.OrdinalIgnoreCase) ||
                 word.EndsWith("shes", StringComparison.OrdinalIgnoreCase) ||
                 word.EndsWith("ches", StringComparison.OrdinalIgnoreCase) ||
-                word.EndsWith("xes", StringComparison.OrdinalIgnoreCase) ||
-                word.EndsWith("zes", StringComparison.OrdinalIgnoreCase))
+                word.EndsWith("xes", StringComparison.OrdinalIgnoreCase))
                 return word[..^2];
         }
 
-        // -ses (but not -sses) -> remove -es (e.g., Buses -> Bus, Gases -> Gas)
-        if (word.Length > 3 &&
-            word.EndsWith("ses", StringComparison.OrdinalIgnoreCase) &&
-            !word.EndsWith("sses", StringComparison.OrdinalIgnoreCase))
+        // AUD-R26: -zzes, not -zes. A bare -zes rule truncated the ordinary -ze nouns, which are
+        // effectively the whole class - measured Sizes -> "Siz", Prizes -> "Priz",
+        // Bronzes -> "Bronz". English singulars that genuinely end in a bare -z are so rare that
+        // the ones which exist (quiz) double the z when pluralized, so requiring -zzes both
+        // fixes the -ze nouns and still handles Buzzes -> Buzz.
+        if (word.Length > 4 && word.EndsWith("zzes", StringComparison.OrdinalIgnoreCase))
             return word[..^2];
+
+        // Note there is deliberately no general "-ses -> strip -es" rule: see the comment on
+        // SibilantSingulars. Databases, Cases, Houses and their kind reach the generic -s rule
+        // at the end of this method, which is the correct answer for all of them.
 
         // -ves -> -f/-fe, but only for the closed class of words that genuinely alternate
         // (leaves -> leaf, knives -> knife). Ordinary -ve nouns (Waves, Drives, Archives)
         // deliberately fall through to the generic -s rule below.
-        var fAlternating = TrySingularizeFAlternating(word);
+        var fAlternating = TrySingularizeBySuffix(word, FAlternatingPlurals);
         if (fAlternating != null)
             return fAlternating;
 
@@ -202,16 +272,18 @@ public static class NamingHelper
     }
 
     /// <summary>
-    /// Matches one of the closed-class f/fe-alternating plurals, either as the whole word or
-    /// as the trailing PascalCase segment of a compound (BookShelves -> BookShelf). Requiring
-    /// a capital at the segment boundary stops ordinary words that merely *contain* one of
-    /// these endings from matching - "Olives" must stay "Olive", not become "Olife".
+    /// Matches one of a closed class of irregular plurals, either as the whole word or as the
+    /// trailing PascalCase segment of a compound (BookShelves -> BookShelf, OrderStatuses ->
+    /// OrderStatus). Requiring a capital at the segment boundary stops ordinary words that
+    /// merely *contain* one of these endings from matching - "Olives" must stay "Olive", not
+    /// become "Olife".
     /// </summary>
     /// <param name="word">The candidate plural word.</param>
-    /// <returns>The singular form, or null if the word is not an f/fe-alternating plural.</returns>
-    private static string? TrySingularizeFAlternating(string word)
+    /// <param name="table">The closed class to match against, longest suffix first.</param>
+    /// <returns>The singular form, or null if the word is not in the class.</returns>
+    private static string? TrySingularizeBySuffix(string word, (string Plural, string Singular)[] table)
     {
-        foreach ((string plural, string singular) in FAlternatingPlurals)
+        foreach ((string plural, string singular) in table)
         {
             if (word.Length < plural.Length ||
                 !word.EndsWith(plural, StringComparison.OrdinalIgnoreCase))
