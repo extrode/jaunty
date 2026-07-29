@@ -297,8 +297,16 @@ internal static class ImportExecutor
         //   - SQLite: SqliteException
         //   - PostgreSQL: NpgsqlException / PostgresException
         //   - SQL Server: SqlException
-        // We catch DbException (the ADO.NET base class for all provider exceptions) to handle
-        // "table not found" errors specifically, while letting non-database errors propagate.
+        // DbException is the ADO.NET base class they all derive from, and there is no portable code
+        // that means "table not found" - SqliteErrorCode 1, SQLSTATE 42P01 and error 208 are three
+        // unrelated encodings - so the catch below stays broad by necessity.
+        //
+        // AUD-R26-066: what changed is that it no longer *claims* to know why it failed. A
+        // permission denial, a dropped connection, a login failure or a syntax error in the quoted
+        // name all land in the same handler, and the old code reported every one of them as
+        // "Target table 'x' does not exist and CreateTableIfMissing is false" - untrue for all four -
+        // or, when createTableIfMissing was true, discarded the exception entirely and let the
+        // import fail later somewhere less informative.
         try
         {
             DbCommand cmd = targetConnection.CreateCommand();
@@ -326,15 +334,26 @@ internal static class ImportExecutor
         }
         catch (DbException ex)
         {
-            // DbException covers all ADO.NET provider-specific exceptions (table not found, etc.)
             if (!createTableIfMissing)
             {
                 throw new InvalidOperationException(
-                    $"Target table '{tableName}' does not exist and CreateTableIfMissing is false. " +
-                    $"Set CreateTableIfMissing = true to auto-create the table, or create it manually before importing.", ex);
+                    $"Could not read the schema of target table '{tableName}': {ex.Message} " +
+                    "The most likely cause is that the table does not exist and CreateTableIfMissing " +
+                    "is false - set CreateTableIfMissing = true to auto-create it, or create it " +
+                    "manually before importing. If the table does exist, see the inner exception: " +
+                    "a permission denial, a broken connection or an unquotable table name reaches " +
+                    "this handler the same way.", ex);
             }
-            // If createTableIfMissing is true, the table should have been created already.
-            // If it still doesn't exist, there was likely a DDL error that will surface on INSERT.
+
+            // createTableIfMissing is true, so the CREATE TABLE ran a few lines above this call and
+            // the probe should have succeeded. That it did not is information, and it used to be
+            // thrown away - the catch body was a comment and nothing else, and the import went on to
+            // fail during INSERT with whatever the provider said there instead. Surface the real
+            // cause at the point it was detected.
+            throw new InvalidOperationException(
+                $"Target table '{tableName}' could not be read back after CreateTableIfMissing " +
+                $"created it: {ex.Message} See the inner exception - the CREATE TABLE may have " +
+                "failed, or the table may exist but be unreadable by this connection.", ex);
         }
     }
 }

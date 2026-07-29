@@ -58,10 +58,18 @@ internal static class ExpressionTranslator
         return GetColumnName(prop);
     }
 
+    /// <summary>
+    /// AUD-R26-067: the fourth copy of the "[Column] name or property name" rule, and the only one
+    /// that never asked whether the property was mapped at all. It now shares both halves of the
+    /// rule with <see cref="ColumnMappingCache"/> and <see cref="Import.TargetDdlGenerator"/> via
+    /// <see cref="MappedPropertyFilter"/>, and rejects an unmapped property here - naming it and its
+    /// entity - instead of emitting SQL that the provider rejects with a message about a column that
+    /// was never supposed to exist.
+    /// </summary>
     private static string GetColumnName(PropertyInfo prop)
     {
-        ColumnAttribute? attr = prop.GetCustomAttribute<ColumnAttribute>();
-        return attr?.Name ?? prop.Name;
+        MappedPropertyFilter.ThrowIfNotMapped(prop);
+        return MappedPropertyFilter.GetColumnName(prop);
     }
 
     // AUD-R12-127: mirrors DuckDbDialect's private QuoteIdentifier escaping. Callers of
