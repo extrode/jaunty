@@ -18,6 +18,7 @@ public static partial class Jaunty
     /// Inserts multiple entities into the database in a single transaction.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Identity values are populated back onto entities only when the row count and provider
     /// combination routes through the loop-based insert path (one command per entity). The
     /// multi-row VALUES and native bulk-copy paths - used automatically for larger batches on
@@ -25,6 +26,18 @@ public static partial class Jaunty
     /// provider-agnostic way to map a single "last inserted id" back to individual rows within a
     /// batched or native bulk statement. Callers that need populated IDs should use single-row
     /// <see cref="Insert{T}(IDbConnection, T)"/> in a loop, or query the inserted rows back afterward.
+    /// </para>
+    /// <para>
+    /// <b>Constraints are enforced.</b> Every route this method can take - the loop, the multi-row
+    /// VALUES statement and the native bulk-copy path - validates CHECK and FOREIGN KEY constraints.
+    /// That was not always true: on SQL Server above
+    /// <c>BulkCopyConfiguration.MinimumRowsForNativeBulkCopy</c> this used to route to
+    /// <c>SqlBulkCopy</c> without its <c>CheckConstraints</c> option, which bypasses validation by
+    /// documented default, so the same call validated at 50 rows and did not at 50,000 (AUD-R26).
+    /// Use <see cref="BulkInsertIgnoreConstraints{T}(IDbConnection, IEnumerable{T})"/> to opt out
+    /// deliberately, or set <c>BulkCopyConfiguration.DefaultCheckConstraints</c> to
+    /// <see langword="false"/> to opt out globally.
+    /// </para>
     /// </remarks>
     public static int BulkInsert<T>(this IDbConnection connection, IEnumerable<T> entities) where T : new()
     {
@@ -43,7 +56,8 @@ public static partial class Jaunty
     /// </summary>
     /// <remarks>
     /// See <see cref="BulkInsert{T}(IDbConnection, IEnumerable{T})"/> for the identity-population
-    /// caveat: only the loop-based insert path populates entity IDs back.
+    /// caveat (only the loop-based insert path populates entity IDs back) and for constraint
+    /// enforcement, which applies on every route.
     /// </remarks>
     public static int BulkInsert<T>(this IDbConnection connection, IEnumerable<T> entities, CommandOptions options) where T : new()
     {

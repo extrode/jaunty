@@ -315,10 +315,14 @@ public class SqlServerBulkCopyProviderTests
     }
 
     [Fact]
-    public void MapBulkCopyOptions_DefaultOptions_MapsToSqlBulkCopyOptionsDefault()
+    public void MapBulkCopyOptions_DefaultOptions_ChecksConstraints()
     {
         object mapped = MapBulkCopyOptionsMethod.Invoke(null, [new BulkCopyOptions()])!;
 
-        Assert.Equal((int)SqlBulkCopyOptions.Default, (int)mapped);
+        // AUD-R26: this asserted SqlBulkCopyOptions.Default, i.e. that a default BulkCopyOptions
+        // mapped to "no flags" - and no flags is precisely how SqlBulkCopy is told to skip CHECK
+        // and FOREIGN KEY validation. The test was pinning the defect. A default BulkCopyOptions
+        // now carries CheckConstraints, so the mapped flags must include it.
+        Assert.Equal((int)SqlBulkCopyOptions.CheckConstraints, (int)mapped);
     }
 }

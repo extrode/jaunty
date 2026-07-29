@@ -72,9 +72,17 @@ public sealed class BulkCopyOptions
 
     /// <summary>
     /// Gets or sets whether to check constraints during bulk copy.
-    /// Default is false (constraints are not checked).
+    /// Default is <see langword="true"/> - constraints are enforced.
     /// </summary>
-    public bool CheckConstraints { get; set; } = false;
+    /// <remarks>
+    /// AUD-R26. This defaulted to <see langword="false"/> alongside
+    /// <c>BulkCopyConfiguration.DefaultCheckConstraints</c>. Jaunty's own callers always assign it
+    /// explicitly, so flipping the configuration default was enough to fix the reported defect - but
+    /// leaving this one <see langword="false"/> would mean a <see cref="BulkCopyOptions"/> built
+    /// directly, by a custom <c>IBulkCopyProvider</c> or a future call site, silently opted out of
+    /// validation again. The unsafe value should not be the one you get by saying nothing.
+    /// </remarks>
+    public bool CheckConstraints { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the table locking option.

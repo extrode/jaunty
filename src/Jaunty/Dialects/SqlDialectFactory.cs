@@ -55,6 +55,25 @@ public static class SqlDialectFactory
     }
 
     /// <summary>
+    /// Drops every resolved-and-cached dialect so the next <see cref="GetDialect"/> re-runs
+    /// resolution, including the bulk-copy enhancement step.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26. <c>UseNativeBulkCopy()</c> only flips a flag that
+    /// <see cref="GetDialect"/> consults during resolution, and resolutions are cached per
+    /// connection type. So if anything had already resolved a dialect for that connection type -
+    /// one prior query is enough - the cache kept handing back the un-enhanced dialect and
+    /// <c>UseNativeBulkCopy()</c> silently did nothing, permanently, for the life of the process.
+    /// Bulk inserts then quietly took the loop path: correct results, far slower, and no way to
+    /// tell from the outside.
+    /// <para>
+    /// <see cref="RegisterDialect(string, ISqlDialect)"/> already invalidated for exactly this
+    /// reason; enabling bulk copy needed the same treatment and did not have it.
+    /// </para>
+    /// </remarks>
+    internal static void InvalidateResolvedDialects() => _dialectCache.Clear();
+
+    /// <summary>
     /// Registers a custom SQL dialect for a specific connection type.
     /// Custom registrations take priority over built-in dialect resolution.
     /// </summary>

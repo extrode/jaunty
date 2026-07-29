@@ -26,9 +26,31 @@ public static class BulkCopyConfiguration
 
     /// <summary>
     /// Gets or sets whether to check constraints by default during bulk copy.
-    /// Default is false (constraints are not checked).
+    /// Default is <see langword="true"/> - constraints are enforced.
     /// </summary>
-    public static bool DefaultCheckConstraints { get; set; } = false;
+    /// <remarks>
+    /// <para>
+    /// AUD-R26 (batch 6, medium/security). This defaulted to <see langword="false"/>, which made a
+    /// plain <c>BulkInsert&lt;T&gt;</c> silently skip CHECK and FOREIGN KEY validation - but only on
+    /// SQL Server, and only above <see cref="MinimumRowsForNativeBulkCopy"/>. Every other route
+    /// validated: below the threshold the call uses multi-row INSERT, PostgreSQL uses <c>COPY</c>,
+    /// MySQL's native provider is a chunked INSERT, and SQLite has no native provider. Measured:
+    /// the same call with a CHECK-violating row threw at 50 rows and succeeded at 200.
+    /// </para>
+    /// <para>
+    /// A caller who wants the bypass has always had <c>BulkInsertIgnoreConstraints</c>, whose name
+    /// says so and whose remarks disclose it. Plain <c>BulkInsert</c>'s remarks disclosed only an
+    /// identity caveat, so nothing told a reader the two APIs differed on validation - which is the
+    /// entire distinction their names draw.
+    /// </para>
+    /// <para>
+    /// <b>This is a behaviour change.</b> Bulk inserts on SQL Server above the threshold now enforce
+    /// constraints, which is slower and which will surface violations that previously landed in the
+    /// table unreported. Setting this back to <see langword="false"/> restores the old behaviour
+    /// globally; per-call, use <c>BulkInsertIgnoreConstraints</c>.
+    /// </para>
+    /// </remarks>
+    public static bool DefaultCheckConstraints { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the minimum number of rows required to use native bulk copy.
@@ -52,7 +74,7 @@ public static class BulkCopyConfiguration
         DefaultBatchSize = 10000;
         DefaultTimeout = 30;
         DefaultIdentityMode = BulkCopyIdentityMode.Default;
-        DefaultCheckConstraints = false;
+        DefaultCheckConstraints = true;
         MinimumRowsForNativeBulkCopy = 100;
         EnableNativeBulkCopy = true;
     }
