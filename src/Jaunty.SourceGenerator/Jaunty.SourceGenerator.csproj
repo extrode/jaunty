@@ -6,7 +6,6 @@
     <IsPackable>false</IsPackable>
     <!-- Do not include the generator as a lib dependency -->
     <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
     <IsRoslynComponent>true</IsRoslynComponent>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IsTrimmable>false</IsTrimmable>

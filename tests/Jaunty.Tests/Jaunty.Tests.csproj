@@ -9,7 +9,6 @@
     <TestTfmsInParallel>false</TestTfmsInParallel>
     <IsPackable>false</IsPackable>
     <OutputType>Exe</OutputType>
-    <LangVersion>latest</LangVersion>
     <EnableAnalyzers>false</EnableAnalyzers>
     <CodeAnalysisRuleSet Condition="Exists('None.ruleset')">None.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
