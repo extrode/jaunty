@@ -67,6 +67,15 @@ internal static class ParameterCache
             if (p.GetIndexParameters().Length > 0)
                 continue;
 
+            // AUD-R26: same defect class as the indexer above, second variant. A public set-only
+            // property (no `get` accessor) makes Expression.Property throw "Expression must be
+            // readable", an error naming neither Jaunty, the type nor the property. A property
+            // that cannot be read cannot supply a parameter value, so it is not a parameter -
+            // skipping leaves the SQL asking for it to fail as "no value found for '@Name'",
+            // which at least says which one.
+            if (p.GetGetMethod() is null)
+                continue;
+
             result.Add(new ParameterMetadata(p.Name, CreateGetter(p), property: p));
         }
 
