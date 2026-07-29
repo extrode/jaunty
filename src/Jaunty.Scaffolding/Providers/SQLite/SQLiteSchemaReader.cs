@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Text.RegularExpressions;
 
 using Jaunty.Scaffolding.Abstractions;
+using Jaunty.Scaffolding.Internals;
 using Jaunty.Scaffolding.Schema;
 
 namespace Jaunty.Scaffolding.Providers.SQLite;
@@ -64,8 +65,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
             var type = Type.GetType(typeName);
             if (type != null)
             {
-                var connection = (DbConnection)Activator.CreateInstance(type, connStr)!;
-                return connection;
+                return ReflectedConnectionFactory.Create(type, connStr);
             }
         }
 
