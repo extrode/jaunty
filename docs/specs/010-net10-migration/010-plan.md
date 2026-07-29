@@ -3,11 +3,18 @@
 Spec: ./010-spec.md · Created: 2026-07-29 · Revised: 2026-07-30 after adversarial review
 · Status: ready for `/tasks`
 
-> **Revision note.** The 2026-07-29 first draft was reviewed adversarially and six of its claims
-> failed. The centralised pin mechanism it proposed **does not work** — measured, see
-> Data/interfaces. Its "required" acceptance-criteria amendments were partly wrong. Two of its
-> "measured" numbers were not produced by the harness they were attributed to. Everything below
-> that says *measured* now names the command that produced it.
+> **Revision note — two adversarial passes.** The 2026-07-29 first draft failed six claims: the
+> centralised pin mechanism **does not work** (measured), two "required" AC amendments were wrong,
+> and two "measured" numbers were not produced by the harness they were attributed to.
+>
+> The 2026-07-30 rewrite was reviewed again and failed four more. The worst was self-inflicted:
+> its proposed loader assertion was **vacuous** — green in exactly the failure case it existed to
+> catch. That pass also surfaced the largest omission in *both* drafts: **five net8.0-conditioned
+> `PropertyGroup`s** that no version of this plan had scheduled, one of which gates the
+> `IAsyncEnumerable` API. The `LoggingInterceptor` decision was reversed on the same pass.
+>
+> Everything below that says *measured* names the command that produced it. Two counts that were
+> quoted with confidence and were wrong (pins, single-TFM projects) now name their sweep.
 
 ## Approach
 
@@ -27,9 +34,11 @@ quotation and is corrected here.
 
 **The retarget should be one commit — as a judgement, not a forced move.** The first draft argued
 atomicity was compelled by `SkipGetTargetFrameworkProperties="true"` making partial states silently
-wrong. Two problems with that argument. First, the premise is false as stated: **4 of the 31 pins
-carry no `Skip` attribute at all** (`tests/Jaunty.Fluent.SourceGen.Tests` ×1,
-`tests/Jaunty.Scaffolding.Tests` ×2, `tests/Jaunty.SourceGenerator.Tests` ×1). Second, this plan's
+wrong. Two problems with that argument. First, the premise is not universal: 4 of the 31 pins carry
+no `Skip` attribute, though **only one of those four is a `net8.0` pin**
+(`tests/Jaunty.Scaffolding.Tests/Jaunty.Scaffolding.Tests.csproj:46`) — the other three are
+`netstandard2.0` pins and irrelevant to a net8→net10 partial state. The premise fails by one
+migration-relevant pin, not four; an earlier revision of this paragraph inflated that. Second, this plan's
 own risk mitigation — a verification step asserting each net10 test assembly loaded the net10
 `Jaunty.dll` — closes the silent window, and once it is closed a per-area retarget is safe too.
 
@@ -77,29 +86,42 @@ ParameterCache.cs(40)       IL2111    <- method group, NOT IL2072
 |---|---|---|
 | `src/Jaunty/Internals/Parameters/ParameterCache.cs:40` | `Cache.GetOrAdd(type, _ => BuildMetadata(type))` — close over the DAM-annotated `type` from the enclosing signature rather than passing the `BuildMetadata` method group. **Measured: 4 warnings → 3, nothing new.** Add a `TryGetValue` fast path so the closure is not allocated per call. No suppression. | §3.3 |
 | `src/Jaunty/Internals/Parameters/ParameterBinder.cs:81`, `:920` | `#pragma warning disable IL2072` naming spec 009. Unannotatable — `object.GetType()` cannot carry DAM. | §3.3 |
-| `src/Jaunty/Interceptors/LoggingInterceptor.cs:174` | Same named-pragma deferral, for IL2111. **See the decision note below — there is a cheaper route and it was deliberately not taken.** | §3.3 |
-| `src/Jaunty/Interceptors/LoggingInterceptor.cs:202` | The `// AOT-SAFE:` marker goes false the moment `:174` admits a deferral. Update it in the same commit or the AOT scanner's exemption list starts lying. | §3.3 |
+| `src/Jaunty/Interceptors/LoggingInterceptor.cs:196-200` | **Remove the `[DynamicallyAccessedMembers]` annotation** from `GetPublicProperties`' parameter. **Measured: 4 warnings → 2.** No pragma, no AC2 amendment. | §3.3 |
+| `src/Jaunty/Interceptors/LoggingInterceptor.cs:194` | **Rewrite the suppression justification**, which `010-spec.md:67` records as false. Use the honest template already at `ParameterCache.cs:49` — *suppressed pending a source-generated binding path; POCOs must be otherwise rooted*. This is the half that makes the annotation removal safe rather than merely quiet. | §3.3 |
+| `src/Jaunty/Interceptors/LoggingInterceptor.cs:202` | Delete the `// AOT-SAFE:` marker along with the annotation it describes. | §3.3 |
 | `tests/Jaunty.Tests/Unit/Read/TypedKeyGuardTests.cs:79-83` | Rewrite the dead control — see Data/interfaces. | §3.4 |
 | `docs/specs/009-aot-annotation-pass/009-spec.md:141-144` | Scope amendment — see below. | §3.3 |
 
-**Decision, taken 2026-07-30 in the user's absence and reversible.** There is a cheaper fix for
-`LoggingInterceptor.cs:174`: the IL2111 exists only because `GetPublicProperties`' parameter
-carries `[DynamicallyAccessedMembers]` (`:196-200`) and the annotated method is converted to a
-delegate. Removing that annotation removes the diagnostic — **measured, 4 warnings → 2** — and the
-resulting IL2070 is absorbed by the *pre-existing* suppression at `:193-195`, which is not "a
-suppression added for this migration", so AC2 passes with no amendment at all.
+**Decision, taken 2026-07-30 in the user's absence, then reversed the same day after review.**
 
-**Not taken.** `010-spec.md:67` records that suppression's justification — *"anonymous types and
-records whose properties are always preserved"* — as **false for named POCOs**. Satisfying an
-acceptance criterion by routing a real diagnostic into a justification we have already written
-down as untrue converts a visible problem into an invisible one, and 009's whole subject is
-false suppression justifications. The named pragma leaves the deferral greppable. **Cost of the
-choice: AC2 amendment (a) below.** If that trade is judged wrong, the annotation-removal route is
-a two-line change and this paragraph is the record of what it costs.
+The IL2111 at `:174` exists only because `GetPublicProperties`' parameter carries
+`[DynamicallyAccessedMembers]` (`:196-200`) and the annotated method is converted to a delegate.
+Removing the annotation removes the diagnostic — **measured, 4 warnings → 2** — and the resulting
+IL2070 is absorbed by the *pre-existing* suppression at `:193-195`, which is not "a suppression
+added for this migration", so AC2 passes unamended.
+
+I first rejected that on the grounds that `010-spec.md:67` records the `:194` justification as
+**false for named POCOs**, and routing a real diagnostic into a justification we know is untrue
+makes a visible problem invisible. **That reasoning treated the justification text as immutable,
+and it is not.** Correcting false suppression justifications in place is this repo's own
+precedent — round 26 did exactly that for `MappedCache`/`WriteParameterCache`
+(`009-spec.md:31-34, 63-67`), and `ParameterCache.cs:49` already carries the honest template.
+
+So the third option dominates both: **remove the annotation *and* rewrite `:194` honestly, in one
+commit.** Then the diagnostic is absorbed by a suppression that is **true**, the deferral to 009
+stays greppable in that suppression's text and in the 009 scope amendment below, AC2 needs no
+amendment, warnings go 4→2 rather than 4→3, and `LoggingInterceptor` converges on the same shape
+as `ParameterCache` — which this plan already endorses as the correct hand-off to 009. Keeping a
+pragma *and* a dead annotation would have been three artifacts where two suffice, and would have
+treated one defect class two different ways inside one PR.
+
+The annotation is safe to remove because it is a promise the code cannot keep: `GetPublicProperties`
+is private with exactly one call site, `:174`, where the argument is `parameters.GetType()` — a
+runtime type no annotation can reach. It therefore never receives a statically-known type, and
+trimming behaviour is byte-identical with or without it.
 
 Also rejected: rewriting `:174` as a lambda. **Measured — it trades IL2111 for IL2067 at `:175`**
-(`the parameter 't' of method 'lambda expression' does not have matching annotations`). There is
-no suppression-free fix at this site.
+(`the parameter 't' of method 'lambda expression' does not have matching annotations`).
 
 **009 scope amendment**, replacing the first draft's version, which was wrong about `ParameterCache`:
 
@@ -113,9 +135,10 @@ no suppression-free fix at this site.
 
 | Path | Change | Req |
 |---|---|---|
-| `*.csproj` | `net8.0` → `net8.0;net10.0`. **Exact file list to be enumerated in `/tasks`, worktrees excluded** — the first draft said 23, the spec says 22, and a worktree-excluded sweep finds **26 csproj containing the string `net8.0`**. None of the three is trustworthy without an enumeration that distinguishes `<TargetFramework>` from `<TargetFrameworks>` from a pin. |
+| `*.csproj` | `net8.0` → `net8.0;net10.0`. **Exact file list to be enumerated in `/tasks`.** `git ls-files '*.csproj' \| xargs grep -l 'net8\.0'` gives **23** — the tracked, worktree-free, gitignore-respecting count, and the number `/tasks` should start from. An earlier revision said 26 by sweeping untracked files as well; the first draft said 23 by coincidence and the spec says 22. Only an enumeration that distinguishes `<TargetFramework>` from `<TargetFrameworks>` from a pin is worth acting on. |
 | 21 net8.0 pins across 11 csproj | Duplicate the existing exact-TFM ItemGroup idiom for net10.0 — see Data/interfaces. The 10 `netstandard2.0` pins are untouched. |
-| 13 single-TFM projects | These carry `<TargetFramework>`, not `<TargetFrameworks>` — including **both benchmark projects and all four `NativeAOT-*` samples**. Decide per project whether it multi-targets or simply moves to net10. This is the group the first draft's mechanism silently broke. | §3.2 |
+| **5 net8.0-conditioned `PropertyGroup`s** | Widen to include net10.0. **This is the largest thing both earlier drafts missed, and it is worse than the pins.** See below. | §3.2 |
+| single-TFM projects | **19 tracked csproj carry a singular `<TargetFramework>`** (an earlier revision said 13, which was a `Jaunty.slnx`-scoped count quoted as a repo-wide one). Decide per project whether it multi-targets or moves to net10. Two traps: `src/Jaunty.Scaffolding/Jaunty.Scaffolding.csproj:4` uses the **plural** `<TargetFrameworks>` tag with a single value, so a `<TargetFramework>` sweep misses it; and **`NativeAOT-FluentQuery` and `Jaunty.Fluent.SourceGen.Tests` are not in `Jaunty.slnx` at all** — the solution holds 3 of the 4 AOT samples, so no solution-level build or CI step has ever touched the fourth. AC5 says four. | §3.2 |
 | `benchmarks/BENCHMARK-RESULTS.md` | net8 baseline captured on the commit **before** this one. | §3.7 |
 
 ### PR3 — CI, release, AOT
@@ -168,14 +191,60 @@ More lines, and it must be repeated for net11 — but it is greppable, it cannot
 wrong thing, and it is the idiom already in the tree. The first draft named indirection as this
 mechanism's tradeoff and then shipped the indirection anyway; the probe is what settles it.
 
-**Add the four missing `SkipGetTargetFrameworkProperties` attributes** while in these files, so
-the property is genuinely universal afterwards and the sentence in Approach becomes true.
+### The conditioned PropertyGroups — the biggest omission in both earlier drafts
+
+Five `PropertyGroup`s are conditioned on `'$(TargetFramework)' == 'net8.0'` **exactly**. Adding a
+net10.0 target without widening them produces a net10 build that silently loses what they set:
+
+| File:line | What a net10 inner build loses |
+|---|---|
+| `src/Jaunty/Jaunty.csproj:41-45` | `Nullable`, `IsAotCompatible`, **and `ASYNC_ENUMERABLE_SUPPORT`** — net10 `Jaunty.dll` would ship **without the `IAsyncEnumerable` streaming API** and unmarked for AOT |
+| `src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj:24-28` | `Nullable`, `IsAotCompatible`, **`EnableTrimAnalyzer`** — the net10 leg stops running the trim analysis PR1 exists to keep green |
+| `src/Jaunty.Fluent/Jaunty.Fluent.csproj:23-25` | same shape |
+| `tests/Jaunty.Tests/Jaunty.Tests.csproj:16-22` | `ASYNC_ENUMERABLE_SUPPORT` and the `NoWarn` list on the net10 test leg |
+| `tests/Jaunty.Tests/Jaunty.Tests.csproj:40` | `Configuration`-**and**-TFM conditioned; needs the same widening |
+
+**None of these fail loudly.** A missing `DefineConstants` compiles out an API; a missing
+`EnableTrimAnalyzer` reports zero trim warnings, which reads as success. AC2 and AC3 would both go
+green on a net10 build that has quietly lost its streaming API and its trim analysis. Widen every
+one with `$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))` — the idiom
+already at `src/Directory.Build.props:11-12` — and verify by asserting
+`ASYNC_ENUMERABLE_SUPPORT`-gated API is present in the net10 build.
+
+By contrast the one net8.0-conditioned `ItemGroup` that holds `PackageReference`s
+(`src/Jaunty/Jaunty.csproj:36-39`) fails *loudly* on net10 — missing `ILogger`. That asymmetry is
+why the PropertyGroups are the dangerous half and the earlier drafts, which enumerated ItemGroups
+precisely, missed the half that matters.
+
+**The four missing `SkipGetTargetFrameworkProperties` attributes are out of scope.** An earlier
+revision told `/tasks` to add them "so the sentence in Approach becomes true" — editing working
+build config to make prose accurate, and contradicting this plan's own "the 10 `netstandard2.0`
+pins are untouched", since three of the four are netstandard pins. The Approach sentence is
+corrected instead. One-line note in `work/todo.md` if anyone wants them made uniform later.
 
 **Loader assertion (the real safety net).** After the net10 test legs run, assert each test
-assembly loaded the net10 build of `Jaunty.dll` — e.g. check
-`typeof(Jaunty.SomeType).Assembly.Location` resolves under a `net10.0` path, or emit
-`AssemblyInformationalVersion` per TFM and compare. Without this, a forgotten pin is invisible;
-with it, both atomic and incremental retargets are safe.
+assembly loaded the net10 build of `Jaunty.dll`.
+
+**Do not use `Assembly.Location` — it is vacuous here.** A referenced `Jaunty.dll` is copied into
+the *consuming* project's output directory, so on a net10 test leg its `Location` is
+`tests/Jaunty.Tests/bin/…/net10.0/Jaunty.dll` — a path containing `net10.0` — **whether the net8
+or the net10 build was copied there**. The folder name comes from the test project's TFM, not the
+dependency's, so the check is green in exactly the failure case it exists to catch. It is also
+empty in single-file and NativeAOT contexts, so it could not be reused for the AC5 samples.
+
+Use the loaded assembly's own metadata instead:
+
+```csharp
+var tfm = typeof(Jaunty.Jaunty).Assembly
+    .GetCustomAttribute<System.Runtime.Versioning.TargetFrameworkAttribute>()!
+    .FrameworkName;                                   // ".NETCoreApp,Version=v10.0"
+Assert.Equal(".NETCoreApp,Version=v10.0", tfm);
+```
+
+This reads what the dependency was *compiled* as, which is the thing a forgotten pin changes.
+Without a working assertion a forgotten pin is invisible; with it, both atomic and incremental
+retargets are safe — and since this assertion is the stated ground for downgrading atomicity to a
+preference, getting it right is load-bearing twice over.
 
 ### The replacement boxing control
 
@@ -239,7 +308,7 @@ recording is what satisfies AC8. The three `*_AllocatesNothing` tests stay — t
 | §3.7 benchmark baseline before, delta after | PR2 (baseline) + PR3 (delta) |
 | §3.8 `#if NET10_0_OR_GREATER` adoption | **Not covered — deferred with a trigger.** See below |
 | AC1, AC4 | PR2 |
-| AC2 | PR1, with amendment (a) below |
+| AC2 | PR1 — **no amendment needed**, given the reversed `LoggingInterceptor` decision |
 | AC3 | PR3, subject to the DuckDB flake |
 | AC5 | Rescope required — see Risks |
 | AC6, AC7 | PR3 |
@@ -257,9 +326,10 @@ spec.
 The first draft called three of these *required* and said the plan "cannot satisfy the spec as
 written". **That was wrong on two counts** and is corrected here.
 
-- **AC2 (a) — required, and only because of the decision recorded in PR1.** Extend the named
-  exemption to `LoggingInterceptor.cs:174`. Not required if the annotation-removal route is taken
-  instead; see the decision note.
+- **AC2 (a) — NO LONGER REQUIRED.** The first draft demanded the named exemption be extended to
+  `LoggingInterceptor.cs:174`. With the annotation removed and the `:194` justification rewritten
+  honestly (PR1), no suppression is added for this migration and AC2 stands unamended. **Of the
+  three amendments the first draft called mandatory, only (c) survives.**
 - **AC2 (b) — clarification, NOT required.** The first draft claimed AC2 and AC6 were "mutually
   unsatisfiable" without stating that de-fatalising third-party `ilc` diagnostics is not a
   suppression. That conflated build with publish: **AC2 governs `dotnet build`**
