@@ -9,6 +9,189 @@ default lives in `src/Directory.Build.props`.
 
 ## [Unreleased]
 
+Twenty-six audit rounds since `v1.0.0-rc.1`, plus the Dapper-parity and torture-test
+work. The suite runs 12,207 tests green across `net8.0` and `net472` with all four
+server dialects configured.
+
+### Security
+
+Every item here was reachable from caller-supplied input.
+
+- **Identifier-escaping bypass in generated DML/DDL.** Table and column names reached
+  the generated statement unescaped on several paths.
+- **`LIKE` wildcard escaping** in `Contains`/`StartsWith`/`EndsWith` — `%` and `_` in a
+  caller's value were treated as wildcards.
+- **Embedded quotes** unescaped in `ExpressionTranslator` and `ImportExecutor`
+  identifiers, and in `CsvFileSource`'s `Delimiter`/`QuoteChar` SQL.
+- **Alias injection and parameter-name collisions** in joined queries; interpolated
+  parameter placeholder names are now sanitised.
+- **Caller-supplied column names** are validated and escaped in `SelectPartial*` and
+  `ToSql`.
+- **Import paths hardened:** `CsvImport` identifier escaping; the sqlite3 CLI import
+  path validates `dbPath` and dialect-escapes `tableName`; `ImportExecutor` quotes its
+  target per dialect.
+- **Connection strings leaked through interceptors** — the masking prefix gap exposed
+  passwords to interceptor output.
+- **Format-string injection** on a logging path.
+
+### Added
+
+- **`GROUP BY` on joined queries** — 2-way, 3-way and 4-way, via the new
+  `JoinedGroupByExpressionVisitor`. Aggregate and grouping columns are qualified with
+  the table alias, and compound `HAVING` works across joins.
+- **Async multi-entity query parity for arities 3–7**, matching the sync surface.
+- **`CommandOptions` and transaction overloads** across the terminal read methods, bulk
+  `Delete`/`Update`, the join-builder family and `QueryPartialList`. Adds
+  `MultiEntityCommandOptions<T1,T2>` and the missing `QueryStreamAsync<T1,T2>`.
+- **`On<TValue>` parameterised raw-condition overload** on 3- and 4-way joins, and raw
+  join conditions can now name their parameter.
+- **Source-gen-first metadata tier.** `CrudSqlCache` and the fluent resolver consult
+  generated metadata before falling back to reflection. The generator emits
+  `TableName`, `SchemaName` and `PrimaryKeyColumnNames` statics, and the new
+  `IEntityMetadataSource` contract replaces reflection over that generated metadata.
+  Internally `ColumnMetadata` gained `PropertyName`/`PropertyType`/`Getter`/`Setter` so
+  a column no longer requires a `PropertyInfo` (`Property` is now nullable) — it is
+  `internal`, so this changes no public surface.
+- **Dual licensing:** ISL-EULA for binaries, ISL-R for source.
+- **Span-based `array.Contains()`** is recognised for `IN`-clause detection, and `Sql`
+  function comparisons to null translate to `IS NULL`/`IS NOT NULL`.
+- **Reference ports** preserved as samples: Conduit/RealWorld and eShopOnWeb migrated
+  from EF Core, 15 canonical Sakila queries via the fluent API, a NativeAOT sample, and
+  4-dialect docker-compose infrastructure with seed scripts.
+
+### Changed
+
+- **CSV import rejects ragged rows** instead of silently dropping the extra fields.
+- **`ParameterBinder` throws** instead of silently dropping scalar parameters bound to
+  stored procedures.
+- **`SpParameters` overloads treat null as empty** instead of throwing.
+- **`OrderBy`/`Take`/`Skip` are rejected** on set-operation operands and on the outer
+  chain, where they were silently ignored.
+- **`HAVING` rejects closure-captured variables and parameters** rather than emitting
+  SQL that could not bind.
+- **docker-compose host ports remapped** so the test stack cannot collide with a locally
+  installed server: PostgreSQL `5432` → **`5433`**, MySQL `3306` → **`3308`**.
+
+### Removed
+
+- `MultiEntityCommandOptions.Mapper1..MapperN` — per-position custom mapper fields that
+  were never wired to anything.
+- `WriteBackOptions`, which nothing constructed or consumed.
+
+### Fixed
+
+**Transactions and connection lifetime**
+
+- `AsyncTransactionValidator` wired into 8 files: async paths silently dropped a
+  transaction that was not a `DbTransaction`. Sync `command.Transaction` assignments
+  guarded across 12 more.
+- Fluent `QueryBuilder.ExecuteNonQueryAsync` silently dropped a non-`DbTransaction`.
+- `ExecuteQueryMultiple(Async)` leaked its command and connection, and mis-set
+  `CommandType` and the transaction.
+- Sync bulk-write rollback no longer masks the original exception.
+- `GridReader` row loops are wrapped in `try`/`finally` around `Advance()`, and dispose
+  asynchronously in the internal-disposal callback overloads.
+
+**Mapping and metadata**
+
+- `EntityDataReaderCache` cached layout-blind, so a reader with a different column
+  layout reused the wrong plan. The arity-2 `MultiEntityMapper` is now keyed by reader
+  schema; `BuildSchemaKey` was missing its separator, and the layout key components are
+  separated with `0x1F`.
+- Nullable `DateTime`/`Guid` properties made the generator emit uncompilable code, as
+  did three further entity shapes.
+- Get-only and init-only properties are excluded; indexer properties are skipped; the
+  parameter-limit undercount is corrected.
+- Flat-file mapping ignored `[Ignore]` and `[NotMapped]`.
+- The read path baked in `DefaultEnumStorage` while the write path re-checked it.
+
+**Dialects**
+
+- PostgreSQL: `bit`/`bit varying`/`varbit` collapsed to `bool`; dollar-quote misparsing
+  and prefix-detection gaps; `InsertBuilder` identity SQL hardcoded an `'id'` column.
+- SQL Server: `Upsert` MERGE identity-PK bug; `OFFSET`/`FETCH` emitted without
+  `ORDER BY`; the schema reader crashed marking PK columns; user-defined alias types now
+  resolve to their base type; `SqlServerImportDialect` bracket-quotes identifiers.
+- SQLite: composite PKs reported declaration order rather than column order;
+  case-insensitive `LIKE` could not pair with its own patterns; import `Skip` diverged
+  from the sibling dialects.
+- `AND`/`OR` `WHERE`-precedence bug, and `CachedDialectMetadata` double-escaped column
+  names that were already escaped — which broke keyword-named columns.
+
+**Bulk copy and import**
+
+- `BulkCopyOptions.EnableStreaming` was documented but never wired.
+- `SqlServerBulkCopyProvider` returned `-1` instead of the actual `RowsCopied`, did not
+  validate the connection type, and had a null-type guard missing in
+  `MapBulkCopyOptions`. `EntityMetadata.SchemaName` is now passed through
+  `IBulkCopyProvider`.
+- CSV import threw `NotSupportedException` for every engine after `UseNativeBulkCopy()`.
+- `CountCsvRows` honoured neither `CsvImportOptions.Encoding` nor RFC 4180 quoted
+  newlines; `HasHeader=false` was broken; the keyless-entity Skip/Upsert conflict
+  strategy was unguarded.
+- SQL Server `BULK INSERT` now sniffs the CSV's line endings. Under `FORMAT = 'CSV'`,
+  SQL Server expands the `'\n'` `ROWTERMINATOR` escape to `\r\n`, so an LF-only file
+  failed outright with `IID_IColumnsInfo`; `0x0a` fixes that but leaves a trailing CR on
+  a CRLF file.
+- `BulkInsert` undercounted when an id was `> 0`.
+
+**Interceptors and logging**
+
+- `Insert`/`Update`/`Delete`/`GetById` bypassed the interceptor pipeline entirely.
+- `SpParameters` stored-procedure overloads were invisible to interceptors and the
+  logger, as were `QueryStreamMultiEntityCore`/`Fast` for arities 2–7, which also failed
+  to set `CommandType`.
+- Diagnostics never fired without a registered interceptor;
+  `LoggingConfiguration.LogExecutionTime` was a no-op; a premature `MinimumLogLevel`
+  gate blocked slow-query warnings.
+- Interceptor TOCTOU race, and `JauntyConfig.InterceptorPipeline` is restored around
+  `Reset()`.
+
+**Culture**
+
+- Six `Convert.ChangeType` sites parsed numbers under the host's locale rather than
+  invariantly. Scalar conversion is culture-invariant, `GROUP BY` constants are
+  culture-safe, and joined-query `HAVING` literals are parameterised rather than
+  formatted into the SQL.
+
+**Scaffolding and source generator**
+
+- Scaffold writes are atomic; `ScaffoldAsync` propagates cancellation; the LOB
+  `max_length` sentinel is handled.
+- Scaffolded output composes with the source generator instead of colliding with it.
+- Hint-name collisions, string-literal escaping and a `GetValue`-fallback cast.
+- Singularisation only alternates `f`/`fe` for the closed `-ves` class.
+- Computed-column binding and semantic attribute matching.
+
+**Other**
+
+- Swallowed exceptions causing data corruption, dialect state discarded, a `Guid`
+  conversion gap, silent type-guard returns, dispose-on-throw, sync-over-async, and
+  chunking defects, all found by audit.
+- FlatFile registry thread safety, SQL null checks, and an `.xls` write mismatch.
+- `TsvFileSource.GenerateCopyToOptions()` honours `NullString`;
+  `CsvFileSource.GenerateCopyToOptions` honours `Delimiter`/`QuoteChar`/`NullString`.
+
+### Performance
+
+- **The source generator had no incremental caching at all** — every keystroke re-ran
+  the full pipeline.
+- `ResultMapperPlan` looked up column ordinals once per row; `GridReader.Read`/
+  `ReadStream` resolved the mapper before reading rather than after.
+- `EvaluateExpression` compiled an expression tree for every closure-captured value.
+- `TypeHandlerRegistry` resolution moved from per-read to static initialisation.
+- Expression visitors bypassed `CachedDialectMetadata`.
+- Reflection cached for anonymous-object parameter and value binding, for the seven
+  `UseReflectionMapping` resolvers, and for `Write`/`WriteAsync` `MethodInfo` in
+  `PostgreSqlBulkCopyProvider`.
+- `ExecuteBatch` uses `Prepare()`.
+
+### NativeAOT
+
+- Trim-safety attributes added to `CsvImport`'s Npgsql reflection probe.
+
+## [1.0.0-rc.1] - 2026-07-05
+
 ### Changed (2026-07-04 enterprise readiness pass)
 
 - **Versioning switched from CalVer to SemVer.** Dev baseline is `1.0.0-rc.1`;
