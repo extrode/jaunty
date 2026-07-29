@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build-and-test:
     name: Build & Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     services:
       mssql:
         image: mcr.microsoft.com/mssql/server:2022-latest
@@ -135,7 +135,7 @@ jobs:
 
   verify-aot:
     name: Verify NativeAOT Compatibility
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -145,7 +145,7 @@ jobs:
 
   aot-publish:
     name: NativeAOT Publish
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     needs: build-and-test
     steps:
       - name: Checkout
