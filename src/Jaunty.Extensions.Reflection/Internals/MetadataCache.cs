@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 using Jaunty.Configuration;
 using Jaunty.Internals.Entity;
@@ -75,23 +76,98 @@ internal static class MetadataCache<T>
         int fieldCount = reader.FieldCount;
         if (fieldCount == 0) return Array.Empty<PropertySetter<T>>();
 
-        var signature = new ReaderSignature(reader, mode);
-        if (SettersCache.TryGetValue(signature, out PropertySetter<T>[]? cached)) return cached;
+        // AUD-R26: GetTypedMapper<T>'s delegate maps one row to one entity, so this method runs
+        // once per row of every reflection-mapped result set - and building a ReaderSignature
+        // allocates a string[fieldCount + 2] and joins it before the lookup can even be attempted.
+        // The same IDataReader instance is passed for every row of a set, so memoizing on reader
+        // identity gives an O(columns) comparison from the second row onward instead. This mirrors
+        // MultiEntityMapper<T1,T2>'s ReaderCache, which was added for exactly this reason on the
+        // multi-entity path; the single-entity path - the far more common one - never got it.
+        //
+        // Every hit is re-validated against the reader's current schema and mapping mode, because
+        // some providers (Npgsql) recycle a single IDataReader instance across commands on the same
+        // pooled physical connection, so reader identity alone can return setters built for a
+        // different column layout (the AUD-R9-011 regression).
+        Func<string, string>? resolver = JauntyConfig.ColumnNameResolver;
 
-        PropertySetter<T>[] setters = BuildSetters(reader, mode);
-        SettersCache.TryAdd(signature, setters);
+        if (ReaderCache.TryGetValue(reader, out ReaderCacheEntry? entry) && entry.Matches(reader, mode, resolver))
+            return entry.Setters;
+
+        var signature = new ReaderSignature(reader, mode, resolver);
+        if (!SettersCache.TryGetValue(signature, out PropertySetter<T>[]? setters))
+        {
+            setters = BuildSetters(reader, mode);
+            SettersCache.TryAdd(signature, setters);
+        }
+
+        ReaderCache.Remove(reader);
+        ReaderCache.Add(reader, new ReaderCacheEntry(reader, mode, resolver, setters));
+
         return setters;
+    }
+
+    private static readonly ConditionalWeakTable<IDataReader, ReaderCacheEntry> ReaderCache = new();
+
+    /// <summary>
+    /// Per-reader-instance memoization of the resolved setters, validated against the reader's
+    /// current schema on every hit. See the comment in <see cref="GetSetters"/>.
+    /// </summary>
+    private sealed class ReaderCacheEntry
+    {
+        private readonly MappingMode _mode;
+        private readonly Func<string, string>? _resolver;
+        private readonly int _fieldCount;
+        private readonly string[] _columnNames;
+
+        public ReaderCacheEntry(IDataReader reader, MappingMode mode, Func<string, string>? resolver, PropertySetter<T>[] setters)
+        {
+            _mode = mode;
+            _resolver = resolver;
+            _fieldCount = reader.FieldCount;
+            _columnNames = new string[_fieldCount];
+
+            for (int i = 0; i < _fieldCount; i++)
+                _columnNames[i] = reader.GetName(i) ?? string.Empty;
+
+            Setters = setters;
+        }
+
+        public PropertySetter<T>[] Setters { get; }
+
+        public bool Matches(IDataReader reader, MappingMode mode, Func<string, string>? resolver)
+        {
+            if (mode != _mode || !ReferenceEquals(resolver, _resolver) || reader.FieldCount != _fieldCount)
+                return false;
+
+            for (int i = 0; i < _fieldCount; i++)
+            {
+                if (!string.Equals(reader.GetName(i), _columnNames[i], StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     private readonly struct ReaderSignature : IEquatable<ReaderSignature>
     {
         private readonly MappingMode _mode;
+        private readonly Func<string, string>? _resolver;
         private readonly string _schemaKey;
         private readonly int _hashCode;
 
-        public ReaderSignature(IDataReader reader, MappingMode mode)
+        // AUD-R26: the resolver is part of the key. BuildSetters consults
+        // JauntyConfig.ColumnNameResolver to match snake_case columns onto PascalCase properties,
+        // so the setters it produces depend on it - but the key used to be the mapping mode and the
+        // column names only, which meant registering or changing the resolver after a given shape
+        // had been mapped once returned the stale setters forever. Same mutable-process-state
+        // capture this file already re-checks per call for DefaultEnumStorage and
+        // TypeHandlerRegistry; reference equality is the right comparison because a different
+        // delegate instance is a different mapping.
+        public ReaderSignature(IDataReader reader, MappingMode mode, Func<string, string>? resolver)
         {
             _mode = mode;
+            _resolver = resolver;
             int fieldCount = reader.FieldCount;
 
             // Build a stable schema key so equality is based on the actual shape,
@@ -110,6 +186,7 @@ internal static class MetadataCache<T>
         }
 
         public bool Equals(ReaderSignature other) => _mode == other._mode
+               && ReferenceEquals(_resolver, other._resolver)
                && StringComparer.OrdinalIgnoreCase.Equals(_schemaKey, other._schemaKey);
 
         public override bool Equals(object? obj) => obj is ReaderSignature other && Equals(other);
