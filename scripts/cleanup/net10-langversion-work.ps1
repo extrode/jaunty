@@ -18,6 +18,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Anchor on the script's own location so it works from any working directory. Without this the
+# git calls below run wherever the caller happened to be, and the safety gate checks a different
+# repository than the one being cleaned.
+Set-Location (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+
 # --- Safety gate -------------------------------------------------------------------------------
 
 $branch = (git rev-parse --abbrev-ref HEAD).Trim()
