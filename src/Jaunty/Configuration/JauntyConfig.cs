@@ -3,6 +3,7 @@ using System.Data;
 
 using Jaunty.Attributes;
 using Jaunty.Interceptors;
+using Jaunty.Internals;
 using Jaunty.Configuration;
 using Jaunty.TypeHandlers;
 
@@ -80,7 +81,7 @@ public static class JauntyConfig
     public static Func<Type, string>? SchemaNameResolver
     {
         get => _schemaNameResolver;
-        set => _schemaNameResolver = value;
+        set { _schemaNameResolver = value; ConfigurationGeneration.Invalidate(); }
     }
 
     /// <summary>
@@ -89,7 +90,7 @@ public static class JauntyConfig
     public static Func<Type, string>? TableNameResolver
     {
         get => _tableNameResolver;
-        set => _tableNameResolver = value;
+        set { _tableNameResolver = value; ConfigurationGeneration.Invalidate(); }
     }
 
     /// <summary>
@@ -98,7 +99,7 @@ public static class JauntyConfig
     public static Func<string, string>? ColumnNameResolver
     {
         get => _columnNameResolver;
-        set => _columnNameResolver = value;
+        set { _columnNameResolver = value; ConfigurationGeneration.Invalidate(); }
     }
 
     /// <summary>
@@ -136,7 +137,7 @@ public static class JauntyConfig
     public static Func<Type, MappingMode, object>? ReflectionMapperResolver
     {
         get => _reflectionMapperResolver;
-        set => _reflectionMapperResolver = value;
+        set { _reflectionMapperResolver = value; ConfigurationGeneration.Invalidate(); }
     }
 
     /// <summary>
@@ -145,7 +146,7 @@ public static class JauntyConfig
     public static Func<Type, Action<IDbCommand, object>>? ReflectionInsertBinderResolver
     {
         get => _reflectionInsertBinderResolver;
-        set => _reflectionInsertBinderResolver = value;
+        set { _reflectionInsertBinderResolver = value; ConfigurationGeneration.Invalidate(); }
     }
 
     /// <summary>
@@ -154,7 +155,7 @@ public static class JauntyConfig
     public static Func<Type, Action<IDbCommand, object>>? ReflectionUpdateBinderResolver
     {
         get => _reflectionUpdateBinderResolver;
-        set => _reflectionUpdateBinderResolver = value;
+        set { _reflectionUpdateBinderResolver = value; ConfigurationGeneration.Invalidate(); }
     }
 
     /// <summary>
@@ -163,7 +164,7 @@ public static class JauntyConfig
     public static Func<Type, Action<IDbCommand, object>>? ReflectionDeleteBinderResolver
     {
         get => _reflectionDeleteBinderResolver;
-        set => _reflectionDeleteBinderResolver = value;
+        set { _reflectionDeleteBinderResolver = value; ConfigurationGeneration.Invalidate(); }
     }
 
     /// <summary>
@@ -173,7 +174,7 @@ public static class JauntyConfig
     public static Func<Type, object>? ReflectionTableMetadataResolver
     {
         get => _reflectionTableMetadataResolver;
-        set => _reflectionTableMetadataResolver = value;
+        set { _reflectionTableMetadataResolver = value; ConfigurationGeneration.Invalidate(); }
     }
 
     /// <summary>
@@ -183,7 +184,7 @@ public static class JauntyConfig
     public static Func<Type, Type, object>? ReflectionMultiMapperResolver
     {
         get => _reflectionMultiMapperResolver;
-        set => _reflectionMultiMapperResolver = value;
+        set { _reflectionMultiMapperResolver = value; ConfigurationGeneration.Invalidate(); }
     }
 
     /// <summary>
@@ -195,7 +196,7 @@ public static class JauntyConfig
     public static Func<Type[], IDataReader, Action<object, IDataRecord>[]>? ReflectionMultiMapperResolverN
     {
         get => _reflectionMultiMapperResolverN;
-        set => _reflectionMultiMapperResolverN = value;
+        set { _reflectionMultiMapperResolverN = value; ConfigurationGeneration.Invalidate(); }
     }
 
 
@@ -207,7 +208,7 @@ public static class JauntyConfig
     public static Func<Type, IDataReader, object>? SpecialTypeMapperResolver
     {
         get => _specialTypeMapperResolver;
-        set => _specialTypeMapperResolver = value;
+        set { _specialTypeMapperResolver = value; ConfigurationGeneration.Invalidate(); }
     }
 
     /// <summary>
@@ -340,6 +341,33 @@ public static class JauntyConfig
     /// <summary>
     /// Resets all configuration options to their default values.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26 (batch 4, medium/bug). This used to clear the resolver fields and stop there, which
+    /// left the write path unrecoverable: <c>WriteParameterCache&lt;T&gt;</c> and every other cache
+    /// derived from configuration kept whatever they had built before the reset, so re-registering
+    /// a resolver afterwards changed nothing. Bumping
+    /// <see cref="Internals.ConfigurationGeneration"/> retires those entries; the next lookup of
+    /// each rebuilds from the configuration as it stands then.
+    /// </para>
+    /// <para>
+    /// AUD-R26 (batch 4, low/consistency). "All" now means all. Two further process-wide surfaces
+    /// used to survive this call, both of them public and both mutable from a test:
+    /// <see cref="BulkCopyConfiguration"/>'s six settable statics, which had their own
+    /// <see cref="BulkCopyConfiguration.Reset"/> that this method never called, and
+    /// <c>SqlDialectFactory</c>'s custom registrations, which had no reset at all - so a dialect
+    /// registered for a connection type name in one test governed every connection of that name for
+    /// the rest of the process. Given this method's stated purpose is test cleanup, a reader
+    /// reasonably concludes one call restores a clean slate, and now one does.
+    /// </para>
+    /// <para>
+    /// <see cref="DefaultEnumStorage"/> and the capacity settings do not participate in the
+    /// generation counter: nothing compiles them in, every consumer re-reads them per call by
+    /// design (see <c>MetadataCache&lt;T&gt;.CreateFallbackSetter</c> and
+    /// <c>JauntyReflectionExtensions.BuildValueConverter</c>), so invalidating on them would only
+    /// discard work that is still correct.
+    /// </para>
+    /// </remarks>
     public static void Reset()
     {
         _schemaNameResolver = null;
@@ -363,6 +391,13 @@ public static class JauntyConfig
         _queryResultCapacity = 64;
         _csvFieldCapacity = 16;
         TypeHandlerRegistry.Clear();
+        BulkCopyConfiguration.Reset();
+        Dialects.SqlDialectFactory.ResetRegistrations();
+
+        // Last, not first: the individual field writes above each bump the generation already, but
+        // TypeHandlerRegistry and the two surfaces below do not, and a caller that reset
+        // configuration must not be handed an entry built moments earlier from what it just cleared.
+        ConfigurationGeneration.Invalidate();
     }
 
     /// <summary>

@@ -99,8 +99,44 @@ public class WriteFallbackTests : IDisposable
         Assert.Equal(1, result);
     }
 
-    // Note: Upsert is not tested via wrapper because SqlDialectFactory resolves
-    // the dialect from the connection type name. IDbConnectionWrapper's type name
-    // doesn't match any provider, so it defaults to SQL Server dialect which generates
-    // MERGE syntax instead of SQLite's ON CONFLICT syntax.
+    /// <summary>
+    /// AUD-R26 (batch 4). This case used to be excluded, with a note explaining why:
+    /// <c>SqlDialectFactory</c> resolved the dialect from the connection type name,
+    /// <c>IDbConnectionWrapper</c>'s name matched no provider, and the silent fallback handed it SQL
+    /// Server's dialect - which generates <c>MERGE</c> rather than SQLite's <c>ON CONFLICT</c>.
+    ///
+    /// <para>
+    /// That note is the finding in miniature. The suite's other three operations "worked" through
+    /// the wrapper only because INSERT, UPDATE and DELETE happen to look similar across the two
+    /// engines; Upsert is where the dialects diverge, so it was the one that had to be left out.
+    /// Nothing failed - the coverage just quietly stopped at the point where the wrong dialect
+    /// would have shown.
+    /// </para>
+    ///
+    /// <para>
+    /// <c>GetDialect</c> now looks through connection decorators, so the wrapper resolves to
+    /// SQLite's dialect and this works. It is the positive half of the fix: the throw proves Jaunty
+    /// stops guessing, and this proves it stopped guessing by getting it right rather than by
+    /// refusing everything.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void Upsert_ViaWrapper_UsesTheWrappedConnectionsDialect()
+    {
+        var existing = _wrapper.QueryFirst<Category>(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description " +
+            "FROM categories WHERE category_name = @Name",
+            new { Name = "Beverages" });
+
+        existing.Description = "Updated through the wrapper";
+
+        _wrapper.Upsert(existing);
+
+        var reloaded = _wrapper.QueryFirst<Category>(
+            "SELECT category_id AS CategoryId, category_name AS CategoryName, description AS Description " +
+            "FROM categories WHERE category_id = @Id",
+            new { Id = existing.CategoryId });
+
+        Assert.Equal("Updated through the wrapper", reloaded.Description);
+    }
 }

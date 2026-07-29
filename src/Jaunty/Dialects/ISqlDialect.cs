@@ -316,9 +316,23 @@ public interface ISqlDialect
     bool SupportsMultiRowInsert { get; }
 
     /// <summary>
-    /// Gets the maximum number of parameters allowed per SQL statement.
-    /// Used to compute optimal batch sizes for multi-row INSERT operations.
+    /// Gets the maximum number of parameters the engine accepts in a single SQL statement.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is a <b>hard engine limit, not a tuning knob</b>. It is used two ways: to compute batch
+    /// sizes for multi-row INSERT, and - since it is also the point past which the provider would
+    /// fail - as the threshold for rejecting an over-sized <c>IN</c>-clause expansion with a clear
+    /// error instead of an opaque driver exception.
+    /// </para>
+    /// <para>
+    /// AUD-R26 (batch 4): the second use was undocumented, and the omission had a cost. A
+    /// conservative value is harmless for batch sizing and a functional restriction for rejection,
+    /// which is how SQLite came to sit at 999 - the pre-2020 default - and refuse <c>IN</c> lists a
+    /// third of the way to what the engine actually accepts. Implementations must report what the
+    /// engine really allows, ideally measured against the provider they target.
+    /// </para>
+    /// </remarks>
     int MaxParametersPerStatement { get; }
 
     // ==========================================

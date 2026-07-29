@@ -592,17 +592,72 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     public IJoinClause<T, TJoin> InnerJoin<TJoin>(string? alias = null) where TJoin : new()
     {
+        ThrowIfPagedBeforeJoin();
         return new JoinClauseBuilder<T, TJoin>(this, JoinType.Inner, alias);
     }
 
     public IJoinClause<T, TJoin> LeftJoin<TJoin>(string? alias = null) where TJoin : new()
     {
+        ThrowIfPagedBeforeJoin();
         return new JoinClauseBuilder<T, TJoin>(this, JoinType.Left, alias);
     }
 
     public IJoinClause<T, TJoin> RightJoin<TJoin>(string? alias = null) where TJoin : new()
     {
+        ThrowIfPagedBeforeJoin();
         return new JoinClauseBuilder<T, TJoin>(this, JoinType.Right, alias);
+    }
+
+    /// <summary>
+    /// AUD-R26 (batch 5, medium/bug). <c>Take</c>/<c>Skip</c> applied before a join were silently
+    /// discarded. <c>IFromClause&lt;T&gt;.Take</c>/<c>Skip</c> return <c>IFromClause&lt;T&gt;</c>,
+    /// which exposes the join methods, so <c>From&lt;T&gt;().Take(5).InnerJoin&lt;U&gt;()</c>
+    /// compiles - and <c>JoinClauseBuilder.CreateJoinedQuery</c> constructs the
+    /// <c>JoinedQueryBuilder</c> from the connection, dialect, table, schema, alias and join info
+    /// only. <c>_take</c> and <c>_skip</c> are left behind, <c>JoinedQueryBuilder</c> has no field
+    /// for them and <c>IJoinedQuery&lt;,&gt;</c> exposes no <c>Take</c>/<c>Skip</c>, so there is
+    /// nowhere to re-apply them either. Measured against a 3-row table:
+    /// <code>
+    /// From&lt;Item&gt;().Take(1).ToSql()                     -> ... LIMIT 1 OFFSET 0
+    /// From&lt;Item&gt;().Take(1).InnerJoin&lt;Cat&gt;().On(..)  -> no LIMIT at all, 3 rows
+    /// From&lt;Item&gt;("i").Skip(2).InnerJoin&lt;Cat&gt;(..)     -> 3 rows
+    /// </code>
+    /// A caller paging a joined result got the whole table, with no exception and no warning.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This throws rather than carrying the paging across, because the chain does not say which of
+    /// two different results the caller wants: <c>Take(1)</c> written before the join reads as
+    /// "limit the source table, then join" - a derived table - while the only cheap implementation
+    /// is "page the joined result", which is a different set of rows whenever the join is not
+    /// one-to-one. Guessing either way silently would replace one wrong answer with another.
+    /// </para>
+    /// <para>
+    /// The same class of bug, guarded the same way, as
+    /// <see cref="ThrowIfHasOrderingOrPaging"/> for UNION/EXCEPT/INTERSECT: state that belongs to
+    /// the outer query gets attached to an inner one. That guard's message tells the caller to move
+    /// the paging to the outer chain; this one cannot, because the joined query has no paging
+    /// surface to move it to, so it says what to do instead.
+    /// </para>
+    /// <para>
+    /// <c>_conditions</c>, <c>_parameters</c>, <c>_distinct</c> and <c>_orderByColumns</c> are
+    /// dropped by the same line, but none is reachable before a join - <c>Where</c> returns
+    /// <c>IWhereClause&lt;T&gt;</c>, <c>Distinct</c> returns <c>IDistinctClause&lt;T&gt;</c> and
+    /// <c>OrderBy</c> returns <c>IOrderByClause&lt;T&gt;</c>, none of which exposes a join. If any
+    /// of them ever does, it needs the same treatment and this guard needs widening.
+    /// </para>
+    /// </remarks>
+    private void ThrowIfPagedBeforeJoin()
+    {
+        if (_take.HasValue || _skip.HasValue)
+        {
+            throw new NotSupportedException(
+                "Take/Skip applied before a join are not carried into the joined query. Jaunty " +
+                "cannot tell whether you meant to limit the source table before joining or to page " +
+                "the joined result, and the two return different rows whenever the join is not " +
+                "one-to-one. Remove the Take/Skip from before the join, or page the source " +
+                "explicitly and join against the result.");
+        }
     }
 
     #endregion
@@ -1291,7 +1346,17 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     #region Private helpers
 
-    private string BuildSelectSql(string[] columns)
+    private string BuildSelectSql(string[] columns) => BuildSelectSql(columns, includeOrderBy: true);
+
+    /// <param name="columns">Pre-escaped column expressions.</param>
+    /// <param name="includeOrderBy">
+    /// False only from <see cref="WrapScalarInDerivedTable"/> when there is no paging. An ORDER BY
+    /// cannot change an aggregate taken over the whole derived set, and SQL Server rejects ORDER BY
+    /// in a derived table that has no TOP/OFFSET/FOR XML - so emitting it there would turn a
+    /// working query into a syntax error for no gain. With paging it is emitted, because then it
+    /// decides which rows survive.
+    /// </param>
+    private string BuildSelectSql(string[] columns, bool includeOrderBy)
     {
         var sb = new StringBuilder(256);
         sb.Append("SELECT ");
@@ -1319,7 +1384,7 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
         }
 
         // ORDER BY
-        if (_orderByColumns.Count > 0)
+        if (includeOrderBy && _orderByColumns.Count > 0)
         {
             sb.Append(" ORDER BY ");
             for (int i = 0; i < _orderByColumns.Count; i++)
@@ -1339,6 +1404,69 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             return _dialect.GetPagingSql(baseSql, _skip ?? 0, _take ?? int.MaxValue);
         }
 
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// The alias given to the derived table in <see cref="WrapScalarInDerivedTable"/>. SQL Server
+    /// and MySQL both require a derived table to be named; the others accept one. Prefixed so it
+    /// cannot collide with a caller's table or alias.
+    /// </summary>
+    private const string ScalarDerivedTableAlias = "jaunty_scalar_src";
+
+    /// <summary>
+    /// True when a scalar terminal has to run over a derived table rather than straight over the
+    /// base table, because <c>DISTINCT</c>, <c>Take</c> or <c>Skip</c> changes which rows it should
+    /// see.
+    /// </summary>
+    private bool ScalarNeedsDerivedTable => _distinct || _take.HasValue || _skip.HasValue;
+
+    /// <summary>
+    /// AUD-R26 (batch 5, medium/consistency). <see cref="BuildCountSql"/> and
+    /// <see cref="BuildAggregateSql"/> emitted only <c>SELECT ... FROM &lt;table&gt; [WHERE ...]</c>
+    /// and read none of <c>_take</c>, <c>_skip</c> or <c>_distinct</c> - all three of which
+    /// <see cref="BuildSelectSql(string[])"/> honours sixty lines above. Every scalar terminal on
+    /// the builder therefore ignored paging and DISTINCT while every row terminal on the same
+    /// builder honoured them. Measured against a 3-row table:
+    /// <code>
+    /// From&lt;Item&gt;().Count()            = 3
+    /// From&lt;Item&gt;().Take(1).Count()    = 3    LINQ's Take(1).Count() is 1
+    /// From&lt;Item&gt;().Skip(2).Count()    = 3    LINQ's Skip(2).Count() is 1
+    /// From&lt;Item&gt;().Take(1).Sum(CatId) = 4    the full-table sum
+    /// From&lt;Item&gt;().Distinct().Count() = 3    SELECT COUNT(*), not over the DISTINCT rows
+    /// </code>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Wrapping is what makes this correct rather than clamping: an aggregate cannot share a SELECT
+    /// with the LIMIT it is supposed to respect, because the LIMIT would apply to the single row
+    /// the aggregate produces rather than to the rows it consumes. The derived table is the paged -
+    /// or distinct - row set, and the aggregate runs over that.
+    /// </para>
+    /// <para>
+    /// <c>Distinct()</c> on this builder means distinct <em>rows of the projection</em>, which is
+    /// what <see cref="BuildSelectSql(string[])"/> emits, so the derived table carries that meaning
+    /// through unchanged. Note that this makes <c>Distinct().Count(x =&gt; x.Col)</c> a count of
+    /// <c>Col</c> over the distinct rows, not <c>COUNT(DISTINCT Col)</c> - a different question,
+    /// which this builder has no syntax for asking.
+    /// </para>
+    /// <para>
+    /// The unpaged, non-distinct case is left exactly as it was: no derived table, byte-identical
+    /// SQL. That is the overwhelming majority of scalar calls and none of them should pay for this.
+    /// </para>
+    /// </remarks>
+    private string WrapScalarInDerivedTable(string scalarExpression)
+    {
+        bool paged = _take.HasValue || _skip.HasValue;
+        string inner = BuildSelectSql(GetAllColumnNames(), includeOrderBy: paged);
+
+        var sb = new StringBuilder(inner.Length + 64);
+        sb.Append("SELECT ");
+        sb.Append(scalarExpression);
+        sb.Append(" FROM (");
+        sb.Append(inner);
+        sb.Append(") ");
+        sb.Append(ScalarDerivedTableAlias);
         return sb.ToString();
     }
 
@@ -1402,6 +1530,9 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     private string BuildCountSql()
     {
+        if (ScalarNeedsDerivedTable)
+            return WrapScalarInDerivedTable("COUNT(*)");
+
         var sb = new StringBuilder(128);
         sb.Append("SELECT COUNT(*)");
 
@@ -1421,12 +1552,15 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
     private string BuildAggregateSql(string aggregateFunction, string columnName)
     {
+        // columnName is already dialect-escaped - every call site passes the result of
+        // GetColumnNameFromSelector, which is backed by the pre-escaped CachedDialectMetadata.
+        if (ScalarNeedsDerivedTable)
+            return WrapScalarInDerivedTable($"{aggregateFunction}({columnName})");
+
         var sb = new StringBuilder(128);
         sb.Append("SELECT ");
         sb.Append(aggregateFunction);
         sb.Append('(');
-        // columnName is already dialect-escaped - every call site passes the result of
-        // GetColumnNameFromSelector, which is backed by the pre-escaped CachedDialectMetadata.
         sb.Append(columnName);
         sb.Append(')');
 
@@ -1514,6 +1648,14 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             // Empty collection: IN () is always false, NOT IN () is always true
             return negate ? "1=1" : "1=0";
         }
+
+        // AUD-R26: this route expands the collection itself into individually-named scalars, so it
+        // never reached ParameterBinder's ceiling check - .WhereIn(p => p.Id, ids) executed lists
+        // that core's Query("... IN @ids") rejected. Same limit, same wording, both routes.
+        ParameterCeiling.EnsureWithinLimit(
+            _parameters.Count + valueList.Count,
+            _dialect,
+            ParameterCeiling.Describe(_connection, _dialect));
 
         var sb = new StringBuilder();
         sb.Append(escapedColumn);
