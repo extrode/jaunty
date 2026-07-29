@@ -104,6 +104,24 @@ public static class JauntyConfig
     /// <summary>
     /// Gets or sets a global diagnostic logger for SQL commands.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This callback performs no redaction.</b> The second argument is the caller's parameter
+    /// object exactly as supplied - passwords, tokens and keys included. Jaunty masks sensitive
+    /// values only in <see cref="Interceptors.LoggingInterceptor"/>, which applies
+    /// <see cref="LoggingConfiguration.SensitiveParameterNames"/>; nothing in that path runs before
+    /// this delegate. A handler that writes the object to a log, a file or a telemetry sink is
+    /// responsible for its own redaction.
+    /// </para>
+    /// <para>
+    /// AUD-R26 (batch 4, medium/security). This was a one-line summary with no such warning, next to
+    /// a masking feature that made it reasonable to assume Jaunty redacted globally. It does not, and
+    /// this is the hook people reach for first because it needs no dependency injection.
+    /// <see cref="Interceptors.CommandContext.Parameters"/> already carried the equivalent warning;
+    /// this one did not. Register a <see cref="Interceptors.LoggingInterceptor"/> instead if you want
+    /// masking, or call <see cref="LoggingConfiguration.IsSensitiveParameter"/> from your handler.
+    /// </para>
+    /// </remarks>
     public static Action<string, object?>? Logger
     {
         get => _logger;

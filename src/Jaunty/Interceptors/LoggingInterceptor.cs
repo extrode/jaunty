@@ -203,28 +203,16 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
         return type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
     }
 
-    /// <summary>
-    /// Strips a single leading provider-prefix character (e.g. <c>@</c>, <c>:</c>, <c>?</c>, <c>$</c>)
-    /// from a parameter name so it can be matched against configured sensitive parameter names.
-    /// </summary>
-    private static string StripProviderPrefix(string paramName)
-    {
-        if (paramName.Length == 0)
-            return paramName;
-
-        var first = paramName[0];
-        if (first is '@' or ':' or '?' or '$')
-            return paramName.Substring(1);
-
-        return paramName;
-    }
-
     private string FormatParameterValue(string paramName, object? value)
     {
         if (value is null || value == DBNull.Value)
             return "NULL";
 
-        if (_config.SensitiveParameterNames.Contains(paramName) || _config.SensitiveParameterNames.Contains(StripProviderPrefix(paramName)))
+        // AUD-R26: this was two exact-equality lookups, one raw and one prefix-stripped, so the
+        // seeded "Password" masked a parameter called exactly Password and not NewPassword,
+        // PasswordHash or password_hash. The configuration now owns the definition of "sensitive"
+        // and handles the prefix, separators and whole-word matching in one place.
+        if (_config.IsSensitiveParameter(paramName))
             return _config.MaskedValueFormat;
 
         return value switch
