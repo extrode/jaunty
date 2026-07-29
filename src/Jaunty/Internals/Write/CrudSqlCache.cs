@@ -15,7 +15,16 @@ namespace Jaunty.Internals.Write;
 /// </summary>
 internal static class CrudSqlCache
 {
-    private static readonly ConcurrentDictionary<(Type, Type), CachedCrudSql> _cache = new();
+    /// <remarks>
+    /// AUD-R26 (batch 4). The key was the entity type and the connection type only, so the SQL was
+    /// built once and reused whatever happened to the configuration it came from afterwards. Every
+    /// statement here is derived from <c>EntityMetadata</c>, and metadata is derived from
+    /// <c>SchemaNameResolver</c>, <c>TableNameResolver</c>, <c>ColumnNameResolver</c> and
+    /// <c>ReflectionTableMetadataResolver</c> - all public, all settable at any time. Registering a
+    /// column-name resolver after an entity had been written once left the INSERT naming the old
+    /// columns for the life of the process.
+    /// </remarks>
+    private static readonly ConcurrentDictionary<(Type, Type), ConfigurationScoped<CachedCrudSql>> _cache = new();
 
     /// <summary>
     /// Gets or creates cached SQL for the specified entity type and connection.
@@ -25,13 +34,16 @@ internal static class CrudSqlCache
     {
         (Type, Type) key = (typeof(T), connection.GetType());
 
-        if (_cache.TryGetValue(key, out CachedCrudSql? cached))
-            return cached;
+        // Read the generation before the lookup, never after: see ConfigurationGeneration.Current.
+        int generation = ConfigurationGeneration.Current;
+
+        if (_cache.TryGetValue(key, out ConfigurationScoped<CachedCrudSql> cached) && cached.Generation == generation)
+            return cached.Value;
 
         ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
-        cached = BuildCachedSql<T>(dialect);
-        _cache.TryAdd(key, cached);
-        return cached;
+        CachedCrudSql sql = BuildCachedSql<T>(dialect);
+        _cache[key] = new ConfigurationScoped<CachedCrudSql>(generation, sql);
+        return sql;
     }
 
     private static CachedCrudSql BuildCachedSql<T>(ISqlDialect dialect) where T : new()
