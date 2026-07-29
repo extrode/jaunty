@@ -141,7 +141,9 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
-        return connection.QueryAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
+        return parameters is null
+            ? connection.QueryAsync<T>(procedureName, spOptions, cancellationToken)
+            : connection.QueryAsync<T>(procedureName, parameters, spOptions, cancellationToken);
     }
 
     /// <summary>
@@ -274,7 +276,9 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
-        return connection.QueryFirstAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
+        return parameters is null
+            ? connection.QueryFirstAsync<T>(procedureName, spOptions, cancellationToken)
+            : connection.QueryFirstAsync<T>(procedureName, parameters, spOptions, cancellationToken);
     }
 
     /// <summary>
@@ -418,7 +422,9 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
-        return connection.QueryFirstOrDefaultAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
+        return parameters is null
+            ? connection.QueryFirstOrDefaultAsync<T>(procedureName, spOptions, cancellationToken)
+            : connection.QueryFirstOrDefaultAsync<T>(procedureName, parameters, spOptions, cancellationToken);
     }
 
     /// <summary>
@@ -540,7 +546,9 @@ public static partial class Jaunty
         if (string.IsNullOrWhiteSpace(procedureName)) throw new ArgumentException("Procedure name cannot be empty or whitespace.", nameof(procedureName));
 #endif
         var spOptions = new CommandOptions<T>(options.Mapper, options.Transaction, options.CommandTimeout, CommandType.StoredProcedure, options.ExpectedRowCount);
-        return connection.QueryScalarAsync<T>(procedureName, parameters!, spOptions, cancellationToken);
+        return parameters is null
+            ? connection.QueryScalarAsync<T>(procedureName, spOptions, cancellationToken)
+            : connection.QueryScalarAsync<T>(procedureName, parameters, spOptions, cancellationToken);
     }
 
     /// <summary>
