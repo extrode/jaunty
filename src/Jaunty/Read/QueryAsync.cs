@@ -90,8 +90,25 @@ public static partial class Jaunty
     /// <returns>A task containing a list of all entities mapped from the query results.</returns>
     /// <remarks>
     /// <para>
-    /// Supports both <strong>named parameters</strong> (via anonymous objects) and 
-    /// <strong>positional parameters</strong> (via property arrays).
+    /// Parameters bind <strong>by name</strong> in every case. Three shapes are accepted:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>An <strong>anonymous object or POCO</strong> - each public property binds to
+    /// the SQL parameter of the same name, so <c>new { CategoryId = 5 }</c> supplies
+    /// <c>@CategoryId</c>.</description></item>
+    /// <item><description>An <strong>IDictionary&lt;string, object?&gt;</strong> (including
+    /// <see cref="System.Dynamic.ExpandoObject"/>) - each key binds to the SQL parameter of the same
+    /// name.</description></item>
+    /// <item><description>A <strong>single scalar</strong> (<c>int</c>, <c>string</c>, <c>Guid</c>,
+    /// and so on) - bound to the one parameter the SQL names. This is a shorthand for the
+    /// one-parameter case, not positional binding: it throws when the SQL names two or more distinct
+    /// parameters, because a single value cannot say which is which.</description></item>
+    /// </list>
+    /// <para>
+    /// <strong>There is no positional binding.</strong> An array is neither a dictionary nor a scalar,
+    /// so it falls through to the by-name path and is reflected over as an ordinary object - which
+    /// throws, listing the array's own members (<c>Length</c>, <c>Rank</c>, <c>SyncRoot</c>) as the
+    /// available properties. Earlier versions of this documentation claimed otherwise (AUD-R26).
     /// </para>
     /// <para>
     /// Uses <strong>strict mapping mode</strong> - all properties must have matching columns.
@@ -126,11 +143,13 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")
@@ -247,11 +266,13 @@ public static partial class Jaunty
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(sql);
+        ArgumentNullException.ThrowIfNull(parameters);
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
         if (sql is null) throw new ArgumentNullException(nameof(sql));
         if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL cannot be empty or whitespace.", nameof(sql));
+        if (parameters is null) throw new ArgumentNullException(nameof(parameters));
 #endif
         return connection is not DbConnection dbConnection
             ? throw new InvalidOperationException("Async connection requires a DbConnection or its subclass")

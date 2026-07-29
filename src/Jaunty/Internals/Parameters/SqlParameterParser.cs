@@ -86,8 +86,10 @@ internal static class SqlParameterParser
                 }
             }
 
-            // Found parameter (@ for SQL Server/SQLite, $ for DuckDB/PostgreSQL)
-            if (c is '@' or '$')
+            // Found parameter (@ for SQL Server/SQLite, $ for DuckDB/PostgreSQL). A sigil preceded
+            // by an identifier character is part of that identifier, not a placeholder - see
+            // IsSigilInsideIdentifier.
+            if (c is '@' or '$' && !IsSigilInsideIdentifier(sql, i))
             {
                 i = ExtractAndAddParameterName(sql, i + 1, names);
                 continue;
@@ -245,7 +247,7 @@ internal static class SqlParameterParser
                 }
             }
 
-            if (c is '@' or '$')
+            if (c is '@' or '$' && !IsSigilInsideIdentifier(sql, i))
             {
                 i = ExtractAndAddParameterNameClassic(sql, i + 1, len, names);
                 continue;
@@ -332,5 +334,41 @@ internal static class SqlParameterParser
         return i;
     }
 
-    private static bool IsParameterChar(char c) => c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
+    /// <summary>
+    /// The characters that may appear in a parameter name - and, identically, the characters that
+    /// may appear in the body of an unquoted SQL identifier.
+    /// </summary>
+    /// <remarks>
+    /// Internal rather than private because <see cref="ParameterBinder"/> applies the same two rules
+    /// and previously kept its own byte-identical copy. AUD-R26 required all four sigil sites to
+    /// agree; sharing the predicate is what makes that structural instead of a convention.
+    /// </remarks>
+    internal static bool IsParameterChar(char c) => c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
+
+    /// <summary>
+    /// Whether a <c>@</c> or <c>$</c> at <paramref name="sigilPos"/> is part of the identifier it
+    /// sits in rather than the start of a parameter placeholder.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26. Both sigils are legal <em>inside</em> identifiers - <c>$</c> in SQL Server,
+    /// PostgreSQL, Oracle and SQLite, <c>@</c> in SQL Server - and the parser had no positional
+    /// check at all, so it treated any occurrence as a placeholder. Measured against a real
+    /// Microsoft.Data.Sqlite connection: a table named <c>sales$2024</c> made
+    /// <c>SELECT * FROM sales$2024 WHERE id = @Id</c> emit a phantom parameter <c>2024</c>, and
+    /// <c>BuildTemplate</c> then threw because no property matched it. Ordinary SQL against a legacy
+    /// or generated schema simply did not work.
+    /// </para>
+    /// <para>
+    /// A placeholder is always preceded by something that is not an identifier character -
+    /// whitespace, an operator, a comma, an opening paren, or the start of the statement. So the
+    /// preceding character alone disambiguates the two, with no need to track identifier state.
+    /// </para>
+    /// </remarks>
+    internal static bool IsSigilInsideIdentifier(string sql, int sigilPos)
+        => sigilPos > 0 && IsParameterChar(sql[sigilPos - 1]);
+
+    /// <inheritdoc cref="IsSigilInsideIdentifier(string, int)"/>
+    internal static bool IsSigilInsideIdentifier(ReadOnlySpan<char> sql, int sigilPos)
+        => sigilPos > 0 && IsParameterChar(sql[sigilPos - 1]);
 }

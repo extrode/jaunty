@@ -138,113 +138,133 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.InsertSql))
             throw new InvalidOperationException($"Cannot insert entity of type '{typeof(T).Name}': No insertable columns found.");
 
-        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+        var bulkParameters = new BulkOperationParameters("BulkInsert", typeof(T), entityList.Count);
 
-        // Check if native bulk copy should be used. This must run before the SupportsForeignKeyToggle
-        // guard below: the native path honors ignoreConstraints itself via BulkCopyOptions.CheckConstraints
-        // and never touches the session-level FK-toggle pragma, so a dialect that supports native bulk
-        // copy but not session-level toggling (e.g. SQL Server) must still be able to reach it.
-        if (BulkCopyConfiguration.EnableNativeBulkCopy &&
-            dialect.SupportsNativeBulkCopy &&
-            entityList.Count >= BulkCopyConfiguration.MinimumRowsForNativeBulkCopy)
+        // AUD-R26: the whole operation is reported once, not once per statement - a 100,000-row
+        // BulkInsert is one logical write, and firing the pipeline per row would both swamp an
+        // auditor and cost more than the bulk path saves. The body below is unchanged; it lives in
+        // a local function so the transaction, FK-toggle and rollback logic is captured rather than
+        // re-threaded through a new signature.
+
+        return WriteInterception.Execute(
+            cached.InsertSql,
+            bulkParameters,
+            connection,
+            options.CommandType,
+            Body);
+
+        int Body()
         {
-            IBulkCopyProvider? bulkProvider = dialect.CreateBulkCopyProvider();
-            if (bulkProvider != null && bulkProvider.IsSupported)
+            WriteInterception.Log(cached.InsertSql, bulkParameters);
+
+            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+
+            // Check if native bulk copy should be used. This must run before the SupportsForeignKeyToggle
+            // guard below: the native path honors ignoreConstraints itself via BulkCopyOptions.CheckConstraints
+            // and never touches the session-level FK-toggle pragma, so a dialect that supports native bulk
+            // copy but not session-level toggling (e.g. SQL Server) must still be able to reach it.
+            if (BulkCopyConfiguration.EnableNativeBulkCopy &&
+                dialect.SupportsNativeBulkCopy &&
+                entityList.Count >= BulkCopyConfiguration.MinimumRowsForNativeBulkCopy)
             {
-                return BulkInsertNativeCore(connection, entityList, cached, bulkProvider, options, ignoreConstraints);
+                IBulkCopyProvider? bulkProvider = dialect.CreateBulkCopyProvider();
+                if (bulkProvider != null && bulkProvider.IsSupported)
+                {
+                    return BulkInsertNativeCore(connection, entityList, cached, bulkProvider, options, ignoreConstraints);
+                }
             }
-        }
 
-        if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
-            throw new NotSupportedException(
-                $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
-                "Use BulkInsert instead, or disable constraints manually before calling this method.");
+            if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
+                throw new NotSupportedException(
+                    $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
+                    "Use BulkInsert instead, or disable constraints manually before calling this method.");
 
-        ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
-        bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
+            ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
+            bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
 
-        bool wasClosed = connection.State == ConnectionState.Closed;
+            bool wasClosed = connection.State == ConnectionState.Closed;
 
-        // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
-        // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
-        // IDbTransaction through it throws an opaque InvalidCastException. Validate via
-        // AsyncTransactionValidator first (mirroring InsertCoreDirect) so an incompatible
-        // transaction gets Jaunty's clear ArgumentException instead.
-        IDbTransaction? transaction = connection is System.Data.Common.DbConnection
-            ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
-            : options.Transaction;
-        bool ownTransaction = transaction is null;
-
-        try
-        {
-            if (wasClosed) connection.Open();
-
-            if (ignoreConstraints && requiresAutocommit)
-                ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null);
-
-            if (ownTransaction) transaction = connection.BeginTransaction();
-
-            if (ignoreConstraints && !requiresAutocommit)
-                ForeignKeyToggleCoordinator.DisableSync(connection, dialect, transaction);
-
-            int totalInserted = 0;
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring InsertCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
+            IDbTransaction? transaction = connection is System.Data.Common.DbConnection
+                ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                : options.Transaction;
+            bool ownTransaction = transaction is null;
 
             try
             {
-                Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.InsertValueSetter;
-                if (valueSetter == null)
-                    throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
-
-                // Multi-row INSERT reduces round-trips for network databases, but hurts
-                // in-process providers like SQLite where parameter object overhead exceeds savings.
-                // SQLite (incl. the Extensions.Reflection wrapper dialect) must take the
-                // prepared-loop path: multi-row VALUES suffers from quadratic parameter
-                // binding in Microsoft.Data.Sqlite, measured ~16x slower (PROD-120).
-                if (dialect.SupportsMultiRowInsert && entityList.Count > 1 && !IsSqliteDialect(dialect))
-                {
-                    totalInserted = BulkInsertMultiRow(connection, entityList, cached, dialect, transaction, options, valueSetter);
-                }
-                else
-                {
-                    totalInserted = BulkInsertLoop(connection, entityList, cached, transaction, options, valueSetter);
-                }
-
-                if (ignoreConstraints && !requiresAutocommit)
-                    ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction);
-
-                if (ownTransaction) transaction!.Commit();
+                if (wasClosed) connection.Open();
 
                 if (ignoreConstraints && requiresAutocommit)
-                    ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null);
+                    ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null);
 
-                return totalInserted;
+                if (ownTransaction) transaction = connection.BeginTransaction();
+
+                if (ignoreConstraints && !requiresAutocommit)
+                    ForeignKeyToggleCoordinator.DisableSync(connection, dialect, transaction);
+
+                int totalInserted = 0;
+
+                try
+                {
+                    Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.InsertValueSetter;
+                    if (valueSetter == null)
+                        throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
+
+                    // Multi-row INSERT reduces round-trips for network databases, but hurts
+                    // in-process providers like SQLite where parameter object overhead exceeds savings.
+                    // SQLite (incl. the Extensions.Reflection wrapper dialect) must take the
+                    // prepared-loop path: multi-row VALUES suffers from quadratic parameter
+                    // binding in Microsoft.Data.Sqlite, measured ~16x slower (PROD-120).
+                    if (dialect.SupportsMultiRowInsert && entityList.Count > 1 && !IsSqliteDialect(dialect))
+                    {
+                        totalInserted = BulkInsertMultiRow(connection, entityList, cached, dialect, transaction, options, valueSetter);
+                    }
+                    else
+                    {
+                        totalInserted = BulkInsertLoop(connection, entityList, cached, transaction, options, valueSetter);
+                    }
+
+                    if (ignoreConstraints && !requiresAutocommit)
+                        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction);
+
+                    if (ownTransaction) transaction!.Commit();
+
+                    if (ignoreConstraints && requiresAutocommit)
+                        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null);
+
+                    return totalInserted;
+                }
+                catch
+                {
+                    if (ignoreConstraints && !requiresAutocommit)
+                    {
+                        try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction); }
+                        catch { }
+                    }
+
+                    if (ownTransaction)
+                    {
+                        try { transaction?.Rollback(); }
+                        catch { /* Best effort - do not mask the original exception */ }
+                    }
+
+                    if (ignoreConstraints && requiresAutocommit)
+                    {
+                        try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null); }
+                        catch { }
+                    }
+                    throw;
+                }
             }
-            catch
+            finally
             {
-                if (ignoreConstraints && !requiresAutocommit)
-                {
-                    try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction); }
-                    catch { }
-                }
-
-                if (ownTransaction)
-                {
-                    try { transaction?.Rollback(); }
-                    catch { /* Best effort - do not mask the original exception */ }
-                }
-
-                if (ignoreConstraints && requiresAutocommit)
-                {
-                    try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null); }
-                    catch { }
-                }
-                throw;
+                if (ownTransaction) transaction?.Dispose();
+                if (wasClosed && connection.State != ConnectionState.Closed) connection.Close();
             }
-        }
-        finally
-        {
-            if (ownTransaction) transaction?.Dispose();
-            if (wasClosed && connection.State != ConnectionState.Closed) connection.Close();
         }
     }
 

@@ -231,7 +231,7 @@ public static partial class Jaunty
             : BulkDeleteCoreAsync(dbConnection, entities, options, ignoreConstraints: true, cancellationToken);
     }
 
-    private static async ValueTask<int> BulkDeleteCoreAsync<T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : new()
+    private static ValueTask<int> BulkDeleteCoreAsync<T>(DbConnection connection, IEnumerable<T> entities, CommandOptions options, bool ignoreConstraints, CancellationToken cancellationToken) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -243,7 +243,7 @@ public static partial class Jaunty
 
         IList<T> entityList = entities as IList<T> ?? entities.ToList();
         if (entityList.Count == 0)
-            return 0;
+            return new ValueTask<int>(0);
 
         BulkEntityValidator.ThrowIfAnyNull(entityList, nameof(entities));
 
@@ -255,157 +255,178 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.DeleteSql))
             throw new InvalidOperationException($"Cannot delete entity of type '{typeof(T).Name}': Delete SQL could not be generated.");
 
-        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+        var bulkParameters = new BulkOperationParameters("BulkDelete", typeof(T), entityList.Count);
 
-        if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
-            throw new NotSupportedException(
-                $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
-                "Use BulkDeleteAsync instead, or disable constraints manually before calling this method.");
+        // AUD-R26: the whole operation is reported once, not once per statement - a 100,000-row
+        // BulkInsert is one logical write, and firing the pipeline per row would both swamp an
+        // auditor and cost more than the bulk path saves. The body below is unchanged; it lives in
+        // a local function so the transaction, FK-toggle and rollback logic is captured rather than
+        // re-threaded through a new signature.
 
-        ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
-        bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
+        return WriteInterception.ExecuteAsync(
+            cached.DeleteSql,
+            bulkParameters,
+            connection,
+            options.CommandType,
+            Body,
+            cancellationToken);
 
-        // Note: Native bulk DELETE is not widely supported by database providers.
-        // We fall back to standard parameterized DELETE statements.
-
-        bool wasClosed = connection.State == ConnectionState.Closed;
-        DbTransaction? transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
-        bool ownTransaction = transaction is null;
-
-        try
+        async ValueTask<int> Body()
         {
-            if (wasClosed)
-                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            WriteInterception.Log(cached.DeleteSql, bulkParameters);
 
-            if (ignoreConstraints && requiresAutocommit)
-                await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, null, cancellationToken).ConfigureAwait(false);
+            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
 
-            if (ownTransaction)
-            {
-#if NET8_0_OR_GREATER
-                transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-#else
-                transaction = (DbTransaction)connection.BeginTransaction();
-#endif
-            }
+            if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
+                throw new NotSupportedException(
+                    $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
+                    "Use BulkDeleteAsync instead, or disable constraints manually before calling this method.");
 
-            if (ignoreConstraints && !requiresAutocommit)
-                await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, transaction, cancellationToken).ConfigureAwait(false);
+            ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
+            bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
 
-            int totalDeleted = 0;
+            // Note: Native bulk DELETE is not widely supported by database providers.
+            // We fall back to standard parameterized DELETE statements.
+
+            bool wasClosed = connection.State == ConnectionState.Closed;
+            DbTransaction? transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
+            bool ownTransaction = transaction is null;
 
             try
             {
-#if NET8_0_OR_GREATER
-                DbCommand command = connection.CreateCommand();
-                await using var commandDisposer = command.ConfigureAwait(false);
-#else
-                using DbCommand command = connection.CreateCommand();
-#endif
-                command.Transaction = transaction;
-                command.CommandText = cached.DeleteSql;
+                if (wasClosed)
+                    await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
-
-                PrepareDeleteParameters(command, cached.Metadata);
-
-                Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.DeleteValueSetter;
-                if (valueSetter == null)
-                {
-                    throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
-                }
-
-                DbParameterCollection pCollection = command.Parameters;
-
-                // Set first entity values before Prepare() so providers can infer parameter types.
-                // Prepare() is a best-effort optimization; some providers (e.g. SQL Server on .NET Framework)
-                // require explicit DbType on all parameters, which we can't guarantee here.
-                bool isFirst = true;
-                foreach (T? entity in entityList)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    valueSetter(pCollection, entity);
-                    if (isFirst)
-                    {
-                        try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
-                        isFirst = false;
-                    }
-                    totalDeleted += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                }
-
-                if (ignoreConstraints && !requiresAutocommit)
-                    await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, transaction, cancellationToken).ConfigureAwait(false);
+                if (ignoreConstraints && requiresAutocommit)
+                    await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, null, cancellationToken).ConfigureAwait(false);
 
                 if (ownTransaction)
                 {
-#if NET8_0_OR_GREATER
-                    await transaction!.CommitAsync(cancellationToken).ConfigureAwait(false);
-#else
-                    transaction!.Commit();
-#endif
+    #if NET8_0_OR_GREATER
+                    transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+    #else
+                    transaction = (DbTransaction)connection.BeginTransaction();
+    #endif
                 }
 
-                if (ignoreConstraints && requiresAutocommit)
-                    await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, cancellationToken).ConfigureAwait(false);
-
-                return totalDeleted;
-            }
-            catch
-            {
                 if (ignoreConstraints && !requiresAutocommit)
-                {
-                    try
-                    {
-                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, transaction, CancellationToken.None).ConfigureAwait(false);
-                    }
-                    catch { /* Best effort */ }
-                }
+                    await ForeignKeyToggleCoordinator.DisableAsync(connection, dialect, transaction, cancellationToken).ConfigureAwait(false);
 
+                int totalDeleted = 0;
+
+                try
+                {
+    #if NET8_0_OR_GREATER
+                    DbCommand command = connection.CreateCommand();
+                    await using var commandDisposer = command.ConfigureAwait(false);
+    #else
+                    using DbCommand command = connection.CreateCommand();
+    #endif
+                    command.Transaction = transaction;
+                    command.CommandText = cached.DeleteSql;
+
+                    if (options.CommandTimeout.HasValue)
+                        command.CommandTimeout = options.CommandTimeout.Value;
+
+                    PrepareDeleteParameters(command, cached.Metadata);
+
+                    Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.DeleteValueSetter;
+                    if (valueSetter == null)
+                    {
+                        throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
+                    }
+
+                    DbParameterCollection pCollection = command.Parameters;
+
+                    // Set first entity values before Prepare() so providers can infer parameter types.
+                    // Prepare() is a best-effort optimization; some providers (e.g. SQL Server on .NET Framework)
+                    // require explicit DbType on all parameters, which we can't guarantee here.
+                    bool isFirst = true;
+                    foreach (T? entity in entityList)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        valueSetter(pCollection, entity);
+                        if (isFirst)
+                        {
+                            try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
+                            isFirst = false;
+                        }
+                        totalDeleted += await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (ignoreConstraints && !requiresAutocommit)
+                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, transaction, cancellationToken).ConfigureAwait(false);
+
+                    if (ownTransaction)
+                    {
+    #if NET8_0_OR_GREATER
+                        await transaction!.CommitAsync(cancellationToken).ConfigureAwait(false);
+    #else
+                        transaction!.Commit();
+    #endif
+                    }
+
+                    if (ignoreConstraints && requiresAutocommit)
+                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, cancellationToken).ConfigureAwait(false);
+
+                    return totalDeleted;
+                }
+                catch
+                {
+                    if (ignoreConstraints && !requiresAutocommit)
+                    {
+                        try
+                        {
+                            await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, transaction, CancellationToken.None).ConfigureAwait(false);
+                        }
+                        catch { /* Best effort */ }
+                    }
+
+                    if (ownTransaction)
+                    {
+                        try
+                        {
+    #if NET8_0_OR_GREATER
+                            await transaction!.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+    #else
+                            transaction?.Rollback();
+    #endif
+                        }
+                        catch { /* Best effort */ }
+                    }
+
+                    if (ignoreConstraints && requiresAutocommit)
+                    {
+                        try
+                        {
+                            await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, CancellationToken.None).ConfigureAwait(false);
+                        }
+                        catch { /* Best effort */ }
+                    }
+
+                    throw;
+                }
+            }
+            finally
+            {
                 if (ownTransaction)
                 {
-                    try
-                    {
-#if NET8_0_OR_GREATER
-                        await transaction!.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-#else
-                        transaction?.Rollback();
-#endif
-                    }
-                    catch { /* Best effort */ }
+    #if NET8_0_OR_GREATER
+                    if (transaction is not null)
+                        await transaction.DisposeAsync().ConfigureAwait(false);
+    #else
+                    transaction?.Dispose();
+    #endif
                 }
 
-                if (ignoreConstraints && requiresAutocommit)
+                if (wasClosed && connection.State != ConnectionState.Closed)
                 {
-                    try
-                    {
-                        await ForeignKeyToggleCoordinator.EnableAsync(connection, dialect, null, CancellationToken.None).ConfigureAwait(false);
-                    }
-                    catch { /* Best effort */ }
+    #if NET8_0_OR_GREATER
+                    await connection.CloseAsync().ConfigureAwait(false);
+    #else
+                    await Task.Run(() => connection.Close()).ConfigureAwait(false);
+    #endif
                 }
-
-                throw;
-            }
-        }
-        finally
-        {
-            if (ownTransaction)
-            {
-#if NET8_0_OR_GREATER
-                if (transaction is not null)
-                    await transaction.DisposeAsync().ConfigureAwait(false);
-#else
-                transaction?.Dispose();
-#endif
-            }
-
-            if (wasClosed && connection.State != ConnectionState.Closed)
-            {
-#if NET8_0_OR_GREATER
-                await connection.CloseAsync().ConfigureAwait(false);
-#else
-                await Task.Run(() => connection.Close()).ConfigureAwait(false);
-#endif
             }
         }
     }

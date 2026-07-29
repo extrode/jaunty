@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
+using Jaunty.Internals;
 using Jaunty.Interfaces;
 
 namespace Jaunty;
@@ -61,11 +62,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return GetByIdTypedCore<T, TId>(connection, id, default);
     }
 
@@ -82,11 +82,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return GetByIdTypedCore<T, TId>(connection, id, options);
     }
 
@@ -144,11 +143,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return GetByIdTypedCore<T, TId>(connection, id, default) ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
     }
 
@@ -166,11 +164,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return GetByIdTypedCore<T, TId>(connection, id, options) ?? throw new InvalidOperationException($"Entity of type '{typeof(T).Name}' with ID '{id}' not found.");
     }
 
@@ -232,11 +229,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetByIdTypedCoreAsync<T, TId>(dbConnection, id, default, cancellationToken);
@@ -256,11 +252,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         return GetByIdTypedCoreAsync<T, TId>(dbConnection, id, options, cancellationToken);
@@ -329,11 +324,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, default, cancellationToken).ConfigureAwait(false);
@@ -355,11 +349,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         if (connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async connection requires a DbConnection or its subclass");
         var result = await GetByIdTypedCoreAsync<T, TId>(dbConnection, id, options, cancellationToken).ConfigureAwait(false);

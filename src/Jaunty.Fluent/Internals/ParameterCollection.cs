@@ -59,11 +59,19 @@ internal sealed class ParameterCollection
     /// Creates a parameter object suitable for Jaunty's core Query methods.
     /// Uses ExpandoObject which ParameterBinder can read via reflection.
     /// </summary>
-    public object? ToParameterObject()
+    /// <remarks>
+    /// AUD-R26. This returned <see langword="null"/> when there were no parameters, and all 144 call
+    /// sites passed the result straight into a core overload declared <c>object parameters</c> -
+    /// non-nullable - with a <c>!</c> suppressing the warning that was telling the truth. It worked
+    /// only because those overloads did not check, which is the finding this is part of. Now it
+    /// returns an empty <see cref="ExpandoObject"/>: <c>ParameterBinder</c> reads that as an empty
+    /// <c>IDictionary&lt;string, object?&gt;</c> and binds nothing, which is what a fluent query with
+    /// no parameters wants, and the SQL those queries generate has no placeholders to leave unbound.
+    /// The <c>!</c> at the call sites is now redundant rather than wrong; they are left alone because
+    /// rewriting 144 lines for a no-op is risk without benefit.
+    /// </remarks>
+    public object ToParameterObject()
     {
-        if (_parameters.Count == 0)
-            return null;
-
         var expando = new ExpandoObject();
         var dict = (IDictionary<string, object?>)expando;
 

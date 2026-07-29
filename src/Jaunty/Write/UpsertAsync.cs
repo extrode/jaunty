@@ -137,7 +137,7 @@ public static partial class Jaunty
             : UpsertCoreAsync(dbConnection, entity, options, cancellationToken);
     }
 
-    private static async ValueTask<int> UpsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    private static ValueTask<int> UpsertCoreAsync<T>(DbConnection connection, T entity, CommandOptions options, CancellationToken cancellationToken) where T : new()
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
@@ -155,6 +155,18 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.UpsertSql))
             throw new InvalidOperationException($"Cannot upsert entity of type '{typeof(T).Name}': No primary key found or no upsertable columns.");
 
+        // AUD-R26 - see the comment on the synchronous UpsertCore.
+        return WriteInterception.ExecuteAsync(
+            cached.UpsertSql,
+            entity,
+            connection,
+            options.CommandType,
+            () => UpsertCoreDirectAsync(connection, entity, cached, options, cancellationToken),
+            cancellationToken);
+    }
+
+    private static async ValueTask<int> UpsertCoreDirectAsync<T>(DbConnection connection, T entity, CachedCrudSql cached, CommandOptions options, CancellationToken cancellationToken) where T : new()
+    {
         bool wasClosed = connection.State == ConnectionState.Closed;
 
         try
@@ -178,6 +190,8 @@ public static partial class Jaunty
 
             // Bind parameters from entity properties
             BindUpsertParameters(command, entity, cached.Metadata);
+
+            WriteInterception.Log(command.CommandText, entity);
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }

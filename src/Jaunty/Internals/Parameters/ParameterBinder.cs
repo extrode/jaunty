@@ -55,7 +55,10 @@ internal static class ParameterBinder
         }
 
         // Handle scalar/value-type parameters (int, string, Guid, etc.)
-        // These have no public instance properties to bind by name, so we bind positionally.
+        // AUD-R26: this comment said "so we bind positionally", which is not what BindScalar does and
+        // was part of the same false claim the four Read files carried. There is no position to bind
+        // to - a scalar has no properties, so BindScalar takes the target name from the SQL text and
+        // throws when the SQL names more than one distinct parameter.
         if (IsScalarType(parameters.GetType()))
         {
             BindScalar(command, parameters);
@@ -110,6 +113,38 @@ internal static class ParameterBinder
         template = BuildTemplate(type, sql, sqlParamNames, propertyLookup, meta);
         TemplateCache.TryAdd((sql, type, commandType), template);
         template.Bind(command, parameters);
+    }
+
+    /// <summary>
+    /// Re-binds <paramref name="parameters"/> onto a command whose parameter collection this binder
+    /// already populated for the same SQL and the same parameter type, without discarding and
+    /// recreating the provider parameter objects.
+    /// </summary>
+    /// <returns>
+    /// <see langword="true"/> when the values were updated in place; <see langword="false"/> when
+    /// this shape has no cached template - a dictionary, a scalar, a collection-typed property, or
+    /// SQL that needed IN-clause expansion - in which case the caller must
+    /// <c>Parameters.Clear()</c> and call <see cref="Bind"/>.
+    /// </returns>
+    /// <remarks>
+    /// AUD-R26, for <c>ExecuteBatch</c>. Deliberately conservative: it never builds or caches a
+    /// template, so a caller that gets <see langword="false"/> is exactly where it was before, and
+    /// no shape that <see cref="Bind"/> routes through the dynamic path is affected. It is the
+    /// caller's job to establish that the parameter object's runtime type has not changed between
+    /// calls - the templates deliberately do not carry a <c>DbType</c> (the provider infers it from
+    /// the value), so reusing parameter objects across differently-typed values is not something
+    /// this method can make safe on its own.
+    /// </remarks>
+    internal static bool TryRebind(IDbCommand command, object parameters)
+    {
+        if (command.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+            return false;
+
+        if (parameters is IDictionary<string, object?> || IsScalarType(parameters.GetType()))
+            return false;
+
+        return TemplateCache.TryGetValue((command.CommandText, parameters.GetType(), command.GetType()), out CommandTemplate? template)
+            && template!.TryRebind(command, parameters);
     }
 
     private static CommandTemplate BuildTemplate(Type type, string sql, string[] sqlParamNames, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] allMeta)
@@ -246,6 +281,46 @@ internal static class ParameterBinder
                 p.Value = ApplyTypeHandlerIfNeeded(item.Getter(parameters), item.Property) ?? DBNull.Value;
                 pCollection.Add(p);
             }
+        }
+
+        /// <summary>
+        /// Updates the values of a parameter collection this template already populated, instead of
+        /// tearing it down and rebuilding it. Returns <see langword="false"/> when the collection is
+        /// not one this template produced, in which case the caller must fall back to
+        /// <see cref="Bind"/>.
+        /// </summary>
+        /// <remarks>
+        /// AUD-R26. This is what <c>ExecuteBatch</c>'s <c>Prepare()</c> comment already claimed the
+        /// code did - "mirroring BulkInsertLoop" - while the loop actually called
+        /// <c>Parameters.Clear()</c> and a full rebind for every set, so <c>Prepare()</c> was being
+        /// called on a command whose parameter collection was then torn down and rebuilt on every
+        /// subsequent iteration. <c>BulkInsertLoop</c> does the opposite, and that is the point of
+        /// it: bind once, then set <c>.Value</c> in place.
+        /// </remarks>
+        public bool TryRebind(IDbCommand command, object parameters)
+        {
+            IDataParameterCollection pCollection = command.Parameters;
+
+            if (pCollection.Count != items.Length)
+                return false;
+
+            for (int i = 0; i < items.Length; i++)
+            {
+                if (pCollection[i] is not IDbDataParameter p)
+                    return false;
+
+                ref readonly TemplateItem item = ref items[i];
+
+                // Position, not name. The collection was produced by this same template in this same
+                // order, and the caller has already established that the parameter object's runtime
+                // type is unchanged - so item i is the parameter for item i.
+                if (!string.Equals(p.ParameterName, item.Name, StringComparison.Ordinal))
+                    return false;
+
+                p.Value = ApplyTypeHandlerIfNeeded(item.Getter(parameters), item.Property) ?? DBNull.Value;
+            }
+
+            return true;
         }
 
         private IDbDataParameter[] CreateTemplates(IDbCommand command)
@@ -387,7 +462,10 @@ internal static class ParameterBinder
     // ReplaceParametersLiteralAware (skipping string literals, quoted identifiers, comments,
     // dollar-quoted strings, and @@ system variables) so a '$'/'@' inside a literal or comment
     // earlier in the SQL than the real placeholders is never mistaken for the parameter prefix.
-    private static string DetectParameterPrefix(string sql)
+    // Internal rather than private so AUD-R26's sigil-position rule can be tested at this site
+    // directly; the precedent is AUD-R9-011, which promoted PostgreSqlSchemaReader's SQL consts for
+    // the same reason. ParameterBinder is itself internal, so this widens nothing publicly.
+    internal static string DetectParameterPrefix(string sql)
     {
         int len = sql.Length;
         int i = 0;
@@ -445,7 +523,7 @@ internal static class ParameterBinder
                 }
             }
 
-            if (c is '@' or '$')
+            if (c is '@' or '$' && !SqlParameterParser.IsSigilInsideIdentifier(sql, i))
             {
                 // Check that next char is a valid parameter name start
                 if (i + 1 < len && IsParameterChar(sql[i + 1]))
@@ -563,8 +641,8 @@ internal static class ParameterBinder
                 }
             }
 
-            // Genuine parameter placeholder
-            if (c == prefix)
+            // Genuine parameter placeholder - unless the sigil is inside an identifier.
+            if (c == prefix && !SqlParameterParser.IsSigilInsideIdentifier(sql, i))
             {
                 int nameStart = i + 1;
                 int j = nameStart;
@@ -640,8 +718,10 @@ internal static class ParameterBinder
         return typeof(IEnumerable).IsAssignableFrom(type);
     }
 
-    private static bool IsParameterChar(char c) =>
-        c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
+    // AUD-R26: was a byte-identical private copy of SqlParameterParser's. Forwarded rather than
+    // duplicated, because the finding's requirement was that all four sigil sites agree, and two
+    // copies of the rule is how they stop agreeing.
+    private static bool IsParameterChar(char c) => SqlParameterParser.IsParameterChar(c);
 
     private readonly struct CollectionExpansion(string name, IEnumerable items, int count, PropertyInfo? property)
     {
@@ -714,31 +794,77 @@ internal static class ParameterBinder
         }
     }
 
+    /// <summary>
+    /// Binds an <see cref="IDictionary{TKey,TValue}"/> parameter set, matching keys to SQL parameter
+    /// names case-insensitively.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26. This used to look keys up with a bare <c>dictParams.TryGetValue</c>, which uses
+    /// whatever comparer the caller happened to construct the dictionary with, while the object/POCO
+    /// path builds its own <c>OrdinalIgnoreCase</c> lookup. So the two documented-equivalent
+    /// parameter forms disagreed, and the difference was invisible at the call site. Measured against
+    /// Microsoft.Data.Sqlite for <c>... WHERE id = @Id</c>:
+    /// </para>
+    /// <code>
+    /// new { id = 5 }                                                    -> OK
+    /// new Dictionary&lt;string, object?&gt;                  { ["id"] = 5 } -> ArgumentException
+    /// new Dictionary&lt;string, object?&gt;(OrdinalIgnoreCase){ ["id"] = 5 } -> OK
+    /// </code>
+    /// <para>
+    /// A plain <c>Dictionary&lt;string, object?&gt;</c> - the form every example produces by default,
+    /// and what <see cref="System.Dynamic.ExpandoObject"/> presents - is case-sensitive, and nothing
+    /// in the XML docs mentioned it.
+    /// </para>
+    /// <para>
+    /// The caller's own comparer is still tried first, so a dictionary that already matches costs
+    /// nothing extra; the case-insensitive index is built only when a lookup misses, and only once.
+    /// </para>
+    /// <para>
+    /// The <c>paramName</c> on the exceptions here is the literal <c>"parameters"</c>, not
+    /// <c>nameof(dictParams)</c>: every public overload that reaches this method names the argument
+    /// <c>parameters</c>, so the old <c>nameof</c> reported an internal name that appears nowhere in
+    /// the caller's code.
+    /// </para>
+    /// </remarks>
     private static void BindFromDictionary(IDbCommand command, IDictionary<string, object?> dictParams)
     {
         string[] sqlParamNames = SqlParameterParserCache.GetOrAdd(command.CommandText);
         var bound = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
+
+        Dictionary<string, object?>? caseInsensitive = null;
 
         for (int i = 0; i < sqlParamNames.Length; i++)
         {
             string sqlName = sqlParamNames[i];
             if (!bound.Add(sqlName)) continue;
 
-            if (dictParams.TryGetValue(sqlName, out var value))
+            // The caller's comparer first: an exact hit is the common case and must not pay for the
+            // fallback index.
+            if (!dictParams.TryGetValue(sqlName, out object? value))
             {
-                IDbDataParameter p = command.CreateParameter();
-                p.ParameterName = sqlName;
-                p.Value = ApplyTypeHandlerIfNeeded(value, propertyInfo: null) ?? DBNull.Value;
-                command.Parameters.Add(p);
+                caseInsensitive ??= BuildCaseInsensitiveIndex(dictParams);
+
+                if (!caseInsensitive.TryGetValue(sqlName, out value))
+                {
+                    throw new ArgumentException($"No value found in dictionary for SQL parameter '@{sqlName}'.", "parameters");
+                }
             }
-            else
-            {
-                throw new ArgumentException($"No value found in dictionary for SQL parameter '@{sqlName}'.", nameof(dictParams));
-            }
+
+            IDbDataParameter p = command.CreateParameter();
+            p.ParameterName = sqlName;
+            p.Value = ApplyTypeHandlerIfNeeded(value, propertyInfo: null) ?? DBNull.Value;
+            command.Parameters.Add(p);
         }
 
         // Validate unused, mirroring BuildTemplate's strictness for object-based binding: fail
         // fast on a dictionary key the SQL never references, instead of silently ignoring it.
+        //
+        // AUD-R26, secondary: `bound` is OrdinalIgnoreCase while the keys come from the caller's
+        // dictionary, so a genuinely unused differently-cased duplicate ("Id" bound, "ID" unused)
+        // was silently accepted while an unused key of any other spelling threw. It is no longer
+        // reachable - BuildCaseInsensitiveIndex rejects the duplicate outright, because with
+        // case-insensitive matching there is no answer to which of the two the caller meant.
         if (dictParams.Count > bound.Count)
         {
             List<string>? unused = null;
@@ -750,9 +876,43 @@ internal static class ParameterBinder
 
             if (unused is not null)
             {
-                throw new ArgumentException($"Unused parameter keys in dictionary: {string.Join(", ", unused)}. SQL contains no matching parameters.", nameof(dictParams));
+                throw new ArgumentException($"Unused parameter keys in dictionary: {string.Join(", ", unused)}. SQL contains no matching parameters.", "parameters");
             }
         }
+    }
+
+    /// <summary>
+    /// Re-indexes a caller's dictionary under <c>OrdinalIgnoreCase</c>, rejecting keys that differ
+    /// only in case.
+    /// </summary>
+    /// <remarks>
+    /// A case-sensitive dictionary can legitimately hold both <c>"Id"</c> and <c>"ID"</c>. Under
+    /// case-insensitive matching there is no answer to which one <c>@Id</c> meant, and silently
+    /// picking whichever enumerated first is precisely the class of silent wrong-value bug this
+    /// round has been closing elsewhere. Say so instead.
+    /// </remarks>
+    private static Dictionary<string, object?> BuildCaseInsensitiveIndex(IDictionary<string, object?> dictParams)
+    {
+        var index = new Dictionary<string, object?>(dictParams.Count, CommonConstants.OrdinalIgnoreCase);
+
+        foreach (KeyValuePair<string, object?> entry in dictParams)
+        {
+#if NET8_0_OR_GREATER
+            if (!index.TryAdd(entry.Key, entry.Value))
+#else
+            if (index.ContainsKey(entry.Key))
+#endif
+            {
+                throw new ArgumentException(
+                    $"Parameter dictionary contains keys differing only in case ('{entry.Key}'). Parameter names are matched case-insensitively, so this is ambiguous; use one spelling.",
+                    "parameters");
+            }
+#if !NET8_0_OR_GREATER
+            index[entry.Key] = entry.Value;
+#endif
+        }
+
+        return index;
     }
 
     private static void BindAllFromObject(IDbCommand command, object parameters)

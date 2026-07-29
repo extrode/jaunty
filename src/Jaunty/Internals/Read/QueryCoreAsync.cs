@@ -184,14 +184,9 @@ public static partial class Jaunty
 
                         JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-                        object? commandResult = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-
-                        if (commandResult is null or DBNull)
-                            result = default!;
-                        else if (commandResult is T direct)
-                            result = direct;
-                        else
-                            result = ScalarConverter<T>.Convert(commandResult);
+                        // AUD-R26: options.Mapper was accepted and discarded here. See ScalarExecution.
+                        result = await ScalarExecution.ExecuteAsync(command, options.Mapper, cancellationToken)
+                            .ConfigureAwait(false);
 
                         return result;
                     }
@@ -240,15 +235,9 @@ public static partial class Jaunty
 
             JauntyConfig.Logger?.Invoke(command.CommandText, parameters);
 
-            object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-
-            if (result is null or DBNull)
-                return default!;
-
-            if (result is T direct)
-                return direct;
-
-            return ScalarConverter<T>.Convert(result);
+            // AUD-R26: options.Mapper was accepted and discarded here. See ScalarExecution.
+            return await ScalarExecution.ExecuteAsync(command, options.Mapper, cancellationToken)
+                .ConfigureAwait(false);
         }
         finally
         {
