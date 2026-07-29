@@ -84,19 +84,13 @@ public sealed partial class DuckDb
                 if (ordinal >= 0 && !reader.IsDBNull(ordinal))
                 {
                     var value = reader.GetValue(ordinal);
-                    Type targetType = mappingList[i].PropertyType;
-                    if (value != null && value.GetType() != targetType)
-                    {
-                        try
-                        {
-                            value = System.Convert.ChangeType(value, Nullable.GetUnderlyingType(targetType) ?? targetType, CultureInfo.InvariantCulture);
-                        }
-                        catch
-                        {
-                            // If conversion fails, let the property setter handle it
-                        }
-                    }
-                    mappingList[i].Setter(entity, value);
+                    // AUD-R26: routed through the shared converter so the enum and TimeSpan cases
+                    // work here as well as on the import path, and so a value that genuinely cannot
+                    // be converted reports the column and property rather than reaching the compiled
+                    // setter and throwing a bare InvalidCastException that names neither.
+                    mappingList[i].Setter(
+                        entity,
+                        ReaderValueConverter.ConvertOrThrow(value, mappingList[i], typeof(T)));
                 }
             }
             results.Add(entity);
