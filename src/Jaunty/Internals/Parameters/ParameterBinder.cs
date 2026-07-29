@@ -404,13 +404,11 @@ internal static class ParameterBinder
             // still exceed the provider's true parameter maximum while passing a collection-only
             // check.
             int totalParameterCount = totalExpandedCount + (seen.Count - expansions.Count);
-            if (totalParameterCount > dialect.MaxParametersPerStatement)
-            {
-                throw new InvalidOperationException(
-                    $"Collection parameter expansion produces {totalParameterCount} parameters, exceeding the " +
-                    $"{connection.GetType().Name} provider's maximum of {dialect.MaxParametersPerStatement} parameters " +
-                    "per statement. Consider batching the query into smaller chunks.");
-            }
+
+            // AUD-R26: wording and threshold now live in ParameterCeiling, so the three Fluent
+            // routes that expand collections themselves raise the same error rather than none.
+            ParameterCeiling.EnsureWithinLimit(
+                totalParameterCount, dialect, ParameterCeiling.Describe(connection, dialect));
         }
 
         // Second pass: build replacements and expanded params
