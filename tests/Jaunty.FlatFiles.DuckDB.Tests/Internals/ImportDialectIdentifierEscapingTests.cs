@@ -44,8 +44,14 @@ public class ImportDialectIdentifierEscapingTests
             MaliciousTableNameBracket, [("id", typeof(int), true, false)]);
 
         Assert.Contains("[orders]] DROP TABLE users; --] (", sql);
-        // The single-quoted sys.tables existence check is unaffected by bracket-doubling.
-        Assert.Contains("orders] DROP TABLE users; --", sql);
+
+        // AUD-R26-065: the existence check is now OBJECT_ID over the *quoted* name, so it resolves
+        // in the same schema CREATE TABLE will use instead of matching a bare name across every
+        // schema in the database. The name is bracket-doubled inside the literal and then
+        // quote-doubled for the literal itself, so a bracket-based injection cannot escape either
+        // layer.
+        Assert.Contains("IF OBJECT_ID(N'[orders]] DROP TABLE users; --]', N'U') IS NULL", sql);
+        Assert.DoesNotContain("sys.tables", sql);
     }
 
     [Fact]

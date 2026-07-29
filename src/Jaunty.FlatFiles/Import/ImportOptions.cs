@@ -54,8 +54,21 @@ public readonly struct ImportOptions
     /// <param name="createTableIfMissing">Whether to create the target table if it does not exist.</param>
     /// <param name="onProgress">An optional progress callback invoked after each batch.</param>
     /// <param name="dialect">An optional custom import dialect for database-specific SQL generation.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="batchSize"/> is not positive.
+    /// </exception>
     public ImportOptions(int batchSize = 1000, ConflictStrategy onConflict = ConflictStrategy.Error, bool createTableIfMissing = false, Action<long, long?>? onProgress = null, IImportDialect? dialect = null)
     {
+        // AUD-R26-064: reject a non-positive batch size here, where "unset" and "explicitly zero"
+        // are still distinguishable. Both import loops compare `>= batchSize`, so a 0 or negative
+        // value flushed after every single row - silently turning the batched import into a
+        // row-at-a-time one and firing the progress callback per row. The DbBatch path exists
+        // specifically to avoid that round-trip pattern, so the option quietly defeated the
+        // optimisation it configures. `default(ImportOptions)` bypasses this constructor entirely
+        // and still falls back to 1000, which is the behaviour the nullable backing field is for.
+        if (batchSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(batchSize), batchSize, "Batch size must be greater than zero.");
+
         _batchSize = batchSize;
         OnConflict = onConflict;
         CreateTableIfMissing = createTableIfMissing;
