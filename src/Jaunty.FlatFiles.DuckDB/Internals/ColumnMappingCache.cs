@@ -43,7 +43,8 @@ internal static class ColumnMappingCache
 
                 Type underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
                 var columnName = GetColumnName(prop);
-                DuplicateColumnGuard.Claim(type, columnName, prop, claimed);
+                if (!DuplicateColumnGuard.TryClaim(type, columnName, prop, claimed))
+                    continue;
 
                 dict[columnName] = new ColumnMapping
                 {

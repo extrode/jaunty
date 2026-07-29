@@ -38,11 +38,31 @@ internal static class ReaderValueConverter
     /// <param name="targetType">The mapped property's type, which may be <see cref="Nullable{T}"/>.</param>
     /// <param name="converted">The converted value when this returns <see langword="true"/>.</param>
     /// <returns><see langword="true"/> when the value was converted or already had the right type.</returns>
-    public static bool TryConvert(object value, Type targetType, out object? converted)
+    /// <param name="convertEnums">
+    /// Whether an enum target should be converted. <see langword="true"/> on the read path, where
+    /// the destination is a typed CLR property that can hold nothing else. <see langword="false"/>
+    /// on the import path, where the destination is an ADO.NET parameter: handing a provider a boxed
+    /// enum is worse than handing it the raw value. Npgsql rejects an unmapped enum CLR type
+    /// outright, and SQLite and SQL Server infer the parameter type from
+    /// <see cref="Type.GetTypeCode(Type)"/>, which reports an enum as its underlying integral type -
+    /// so a text column that used to receive <c>"Closed"</c> would silently start receiving <c>1</c>.
+    /// Measured on SQLite: raw string stored <c>Closed</c>, boxed enum stored <c>1</c>.
+    /// </param>
+    public static bool TryConvert(object value, Type targetType, bool convertEnums, out object? converted)
     {
         Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
         if (value.GetType() == underlyingType)
+        {
+            converted = value;
+            return true;
+        }
+
+        // A value already assignable to the target needs no conversion, and must not be pushed
+        // through Convert.ChangeType - that throws for anything not IConvertible, which would reject
+        // an object-typed or interface-typed property reading a Guid/BLOB column that previously
+        // bound fine.
+        if (underlyingType.IsInstanceOfType(value))
         {
             converted = value;
             return true;
@@ -62,7 +82,15 @@ internal static class ReaderValueConverter
         }
 
         if (underlyingType.IsEnum)
+        {
+            if (!convertEnums)
+            {
+                converted = null;
+                return false;
+            }
+
             return TryConvertEnum(value, underlyingType, out converted);
+        }
 
         try
         {
@@ -88,7 +116,7 @@ internal static class ReaderValueConverter
     /// <exception cref="InvalidOperationException">Thrown when the value cannot be converted.</exception>
     public static object? ConvertOrThrow(object value, in ColumnMapping mapping, Type entityType)
     {
-        if (TryConvert(value, mapping.PropertyType, out object? converted))
+        if (TryConvert(value, mapping.PropertyType, convertEnums: true, out object? converted))
             return converted;
 
         throw new InvalidOperationException(

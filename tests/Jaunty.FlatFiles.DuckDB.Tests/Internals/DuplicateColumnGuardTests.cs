@@ -56,6 +56,28 @@ public class DuplicateColumnGuardTests
         public string? Second { get; set; }
     }
 
+    private class ShadowBase
+    {
+        public object? Code { get; set; }
+    }
+
+    // A `new` shadow whose TYPE differs from the hidden member is the case where
+    // GetProperties returns both declarations. A same-type shadow collapses to one.
+    private class ShadowDerived : ShadowBase
+    {
+        public new string? Code { get; set; }
+    }
+
+    private class SameTypeShadowBase
+    {
+        public int Code { get; set; }
+    }
+
+    private class SameTypeShadowDerived : SameTypeShadowBase
+    {
+        public new int Code { get; set; }
+    }
+
     private class Distinct
     {
         [Key]
@@ -125,6 +147,46 @@ public class DuplicateColumnGuardTests
 
         Assert.Equal(3, mappings.Count);
         Assert.Equal(3, TargetDdlGenerator.GetColumnDefinitions(typeof(Distinct)).Count);
+    }
+
+    /// <summary>
+    /// Regression: the guard must not mistake a hidden base declaration for a second property.
+    /// `GetProperties(Public | Instance)` returns BOTH `PropertyInfo`s when a `new` shadow changes
+    /// the property type - measured: `string Code` hiding `object Code` yields two, where a
+    /// same-type shadow collapses to one. Those two are one logical property. Rejecting them would
+    /// have broken every FlatFiles.DuckDB surface for an entity that previously worked, since
+    /// `ColumnMappingCache.Get` sits on the read, write, export and import paths alike.
+    /// </summary>
+    [Fact]
+    public void ADifferentlyTypedNewShadow_IsNotACollision()
+    {
+        IReadOnlyDictionary<string, ColumnMapping> mappings = ColumnMappingCache.Get(typeof(ShadowDerived));
+
+        ColumnMapping mapping = Assert.Single(mappings).Value;
+        // The more-derived declaration must win: GetProperties lists it first, and it is the one the
+        // caller means. Last-wins would have picked the hidden base declaration.
+        Assert.Equal(typeof(string), mapping.PropertyType);
+        Assert.Equal(typeof(ShadowDerived), mapping.Property.DeclaringType);
+    }
+
+    [Fact]
+    public void ADifferentlyTypedNewShadow_ProducesOneDdlColumn()
+    {
+        List<(string Name, Type ClrType, bool IsPrimaryKey, bool IsNullable)> columns =
+            TargetDdlGenerator.GetColumnDefinitions(typeof(ShadowDerived));
+
+        (string Name, Type ClrType, bool _, bool __) = Assert.Single(columns);
+        Assert.Equal("Code", Name);
+        Assert.Equal(typeof(string), ClrType);
+    }
+
+    [Fact]
+    public void ASameTypedNewShadow_IsAlsoFine()
+    {
+        // This one never reached the guard - reflection collapses it to a single PropertyInfo - but
+        // it is pinned so the two shadow shapes cannot diverge if the enumeration changes.
+        Assert.Single(ColumnMappingCache.Get(typeof(SameTypeShadowDerived)));
+        Assert.Single(TargetDdlGenerator.GetColumnDefinitions(typeof(SameTypeShadowDerived)));
     }
 
     [Fact]
