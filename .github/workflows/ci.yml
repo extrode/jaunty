@@ -49,6 +49,7 @@ jobs:
           dotnet-version: |
             8.0.x
             9.0.x
+            10.0.x
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -161,6 +162,7 @@ jobs:
           dotnet-version: |
             8.0.x
             9.0.x
+            10.0.x
 
       - name: Install native AOT dependencies
         run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
