@@ -46,7 +46,14 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
             root.Joins[1].Alias ?? _metadata[2].TableName,
             root.Joins[2].Alias ?? _metadata[3].TableName
         ];
-        _visitor = new JoinedGroupByExpressionVisitor(root.Dialect, _metadata, tablePrefixes, keySelector);
+        CachedDialectMetadata[] cachedMetadata =
+        [
+            FluentMetadataCache.GetForDialect<T1>(root.Dialect),
+            FluentMetadataCache.GetForDialect<T2>(root.Dialect),
+            FluentMetadataCache.GetForDialect<T3>(root.Dialect),
+            FluentMetadataCache.GetForDialect<T4>(root.Dialect)
+        ];
+        _visitor = new JoinedGroupByExpressionVisitor(root.Dialect, _metadata, cachedMetadata, tablePrefixes, keySelector);
     }
 
     public IGroupedJoinedQuery4<T1, T2, T3, T4, TKey> Having(Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, bool>> predicate)
