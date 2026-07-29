@@ -24,7 +24,7 @@ jobs:
           ACCEPT_EULA: "Y"
           MSSQL_SA_PASSWORD: ${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }}
         ports:
-          - 1433:1433
+          - 1435:1433
         volumes:
           # Mirror the workspace path: BULK INSERT runs server-side and the
           # CSV import tests pass host paths to the server.
@@ -73,7 +73,7 @@ jobs:
 
       - name: Test - Core (SQLite + SQL Server)
         env:
-          JAUNTY_TEST_SQLSERVER: Server=localhost,1433;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
+          JAUNTY_TEST_SQLSERVER: Server=localhost,1435;Database=Northwind;User Id=sa;Password=${{ vars.CI_MSSQL_SA_PASSWORD || 'JauntyCi2026#x' }};TrustServerCertificate=true;
         run: >-
           dotnet test tests/Jaunty.Tests
           -c Release
