@@ -8,7 +8,7 @@ using Jaunty.Internals.Read;
 namespace Jaunty.Tests.Unit.Internals;
 
 /// <summary>
-/// Tests MultiEntityMapper&lt;T1, T2&gt; Build/ApplyT1/ApplyT2 logic.
+/// Tests MultiEntityMapper&lt;T1, T2&gt; Build/Map logic.
 /// T1 has priority when columns match both types.
 /// Uses real SQLite in-memory connections to produce IDataReader instances.
 /// </summary>
@@ -134,8 +134,7 @@ public class MultiEntityMapperTests : IDisposable
 
         var order = new OrderEntity();
         var detail = new DetailEntity();
-        mapper.ApplyT1(order, reader);
-        mapper.ApplyT2(detail, reader);
+        mapper.Map(order, detail, reader);
 
         Assert.Equal(1, order.OrderId);
         Assert.Equal("Alice", order.CustomerName);
@@ -167,8 +166,7 @@ public class MultiEntityMapperTests : IDisposable
         {
             var order = new OrderEntity();
             var detail = new DetailEntity();
-            mapper.ApplyT1(order, reader);
-            mapper.ApplyT2(detail, reader);
+            mapper.Map(order, detail, reader);
             results.Add((order, detail));
         }
         while (reader.Read());
@@ -197,8 +195,7 @@ public class MultiEntityMapperTests : IDisposable
 
         var t1 = new OverlapT1();
         var t2 = new OverlapT2();
-        mapper.ApplyT1(t1, reader);
-        mapper.ApplyT2(t2, reader);
+        mapper.Map(t1, t2, reader);
 
         // SharedCol should map to T1, not T2
         Assert.Equal(1, t1.T1Id);
@@ -223,8 +220,7 @@ public class MultiEntityMapperTests : IDisposable
 
         var a = new EntityA();
         var b = new EntityB();
-        mapper.ApplyT1(a, reader);
-        mapper.ApplyT2(b, reader);
+        mapper.Map(a, b, reader);
 
         Assert.Equal(1, a.Id);
         Assert.Equal("test", a.Name);
@@ -248,8 +244,7 @@ public class MultiEntityMapperTests : IDisposable
 
         var t1 = new ColumnMappedT1();
         var t2 = new EntityB();
-        mapper.ApplyT1(t1, reader);
-        mapper.ApplyT2(t2, reader);
+        mapper.Map(t1, t2, reader);
 
         Assert.Equal(1, t1.Id);
         Assert.Equal("mapped", t1.Name);
@@ -270,8 +265,7 @@ public class MultiEntityMapperTests : IDisposable
 
         var t1 = new ColumnMappedT1();
         var t2 = new EntityB();
-        mapper.ApplyT1(t1, reader);
-        mapper.ApplyT2(t2, reader);
+        mapper.Map(t1, t2, reader);
 
         Assert.Equal(1, t1.Id);
         Assert.Equal("byProp", t1.Name);
@@ -293,8 +287,7 @@ public class MultiEntityMapperTests : IDisposable
 
         var order = new OrderEntity();
         var detail = new DetailEntity();
-        mapper.ApplyT1(order, reader);
-        mapper.ApplyT2(detail, reader);
+        mapper.Map(order, detail, reader);
 
         Assert.Equal(1, order.OrderId);
         Assert.Equal("Alice", order.CustomerName);
@@ -304,7 +297,7 @@ public class MultiEntityMapperTests : IDisposable
 
     #endregion
 
-    #region ApplyT1 / ApplyT2 - NULL Handling
+    #region Map - NULL Handling
 
     [Fact]
     public void Apply_NullableProperty_NullValue_SetsNull()
@@ -318,8 +311,7 @@ public class MultiEntityMapperTests : IDisposable
 
         var t1 = new NullableT1();
         var t2 = new NullableT2();
-        mapper.ApplyT1(t1, reader);
-        mapper.ApplyT2(t2, reader);
+        mapper.Map(t1, t2, reader);
 
         Assert.Equal(1, t1.Id);
         Assert.Null(t1.NullableName);
@@ -339,15 +331,14 @@ public class MultiEntityMapperTests : IDisposable
 
         var t1 = new NullableT1();
         var t2 = new NullableT2();
-        mapper.ApplyT1(t1, reader);
-        mapper.ApplyT2(t2, reader);
+        mapper.Map(t1, t2, reader);
 
         Assert.Equal("hello", t1.NullableName);
         Assert.Equal(42, t2.NullableValue);
     }
 
     [Fact]
-    public void ApplyT2_NonNullableValueType_NullThrows()
+    public void Map_NonNullableValueTypeOnT2_NullThrows()
     {
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "SELECT 1 AS Id, 'hello' AS NullableName, 2 AS Code, NULL AS StrictValue";
@@ -358,11 +349,15 @@ public class MultiEntityMapperTests : IDisposable
 
         var t1 = new NullableT1();
         var t2 = new NonNullableT2();
-        mapper.ApplyT1(t1, reader);
 
-        var ex = Assert.Throws<InvalidOperationException>(() => mapper.ApplyT2(t2, reader));
+        // AUD-R26 collapsed ApplyT1/ApplyT2 into a single Map call, so T2's failure now surfaces
+        // from the same call that maps T1. The error still has to name the offending property.
+        var ex = Assert.Throws<InvalidOperationException>(() => mapper.Map(t1, t2, reader));
         Assert.Contains("Cannot assign NULL to non-nullable property", ex.Message);
         Assert.Contains("StrictValue", ex.Message);
+
+        // T1 is mapped before T2 is reached, so the successful half still landed.
+        Assert.Equal("hello", t1.NullableName);
     }
 
     #endregion
@@ -382,8 +377,7 @@ public class MultiEntityMapperTests : IDisposable
         // Should not throw — just no properties mapped
         var a = new EntityA();
         var b = new EntityB();
-        mapper.ApplyT1(a, reader);
-        mapper.ApplyT2(b, reader);
+        mapper.Map(a, b, reader);
 
         // Default values remain
         Assert.Equal(0, a.Id);
@@ -451,9 +445,10 @@ public class MultiEntityMapperTests : IDisposable
 
                 Action<SchemaKeyPairT1, SchemaKeyPairT2, IDataRecord> combined = (t1, t2, record) =>
                 {
-                    // Mirrors CreateMapper's real call pattern: ApplyT1 invokes this with a
-                    // non-null t1 and default!/null t2 (and vice versa for ApplyT2) - only
-                    // apply the side that's actually present on this call.
+                    // Null-guarded because the resolver's contract allows either side to be
+                    // absent (the reflection side's own Map does the same). AUD-R26 collapsed the
+                    // core mapper onto a single combined call, so in practice both arrive
+                    // non-null - but the stub must not depend on that.
                     if (t1 is not null)
                     {
                         applyT1 ??= BuildLiveApplier(t1Type, (IDataReader)record);
@@ -476,8 +471,7 @@ public class MultiEntityMapperTests : IDisposable
             var mapperA = global::Jaunty.Internals.Read.MultiEntityMapper<SchemaKeyPairT1, SchemaKeyPairT2>.Build(readerA);
             var t1A = new SchemaKeyPairT1();
             var t2A = new SchemaKeyPairT2();
-            mapperA.ApplyT1(t1A, readerA);
-            mapperA.ApplyT2(t2A, readerA);
+            mapperA.Map(t1A, t2A, readerA);
 
             Assert.Equal(1, t1A.A);
             Assert.Null(t1A.AB);
@@ -492,11 +486,10 @@ public class MultiEntityMapperTests : IDisposable
             var mapperB = global::Jaunty.Internals.Read.MultiEntityMapper<SchemaKeyPairT1, SchemaKeyPairT2>.Build(readerB);
             var t1B = new SchemaKeyPairT1();
             var t2B = new SchemaKeyPairT2();
-            mapperB.ApplyT1(t1B, readerB);
-            mapperB.ApplyT2(t2B, readerB);
+            mapperB.Map(t1B, t2B, readerB);
 
             // With the collision bug, mapperB would be the SAME cached instance as mapperA
-            // (schema key "2ABC" for both), so ApplyT1 would blindly bind ordinal 0 to "A"
+            // (schema key "2ABC" for both), so Map would blindly bind ordinal 0 to "A"
             // (reading readerB's "AB" value = 100 as if it were "A") instead of correctly
             // recognizing there is no "A" column in readerB.
             Assert.Null(t1B.A);
@@ -570,7 +563,7 @@ public class MultiEntityMapperTests : IDisposable
             mapperB.ApplyT3(c2, readerB);
 
             // With the collision bug, mapperB would be the SAME cached instance as
-            // mapperA (schema key "2ABC" for both), so ApplyT1 would blindly bind
+            // mapperA (schema key "2ABC" for both), so Map would blindly bind
             // ordinal 0 to A (reading readerB's "AB" value = 100) instead of correctly
             // recognizing there is no "A" column in readerB.
             Assert.Null(a2.A);
@@ -647,7 +640,7 @@ public class MultiEntityMapperTests : IDisposable
         mapperB.ApplyT3(c2, readerB);
 
         // With the collision bug, mapperB would be the SAME cached instance as mapperA
-        // (schema key "2ABC" for both), so ApplyT1 would blindly bind ordinal 0 to A
+        // (schema key "2ABC" for both), so Map would blindly bind ordinal 0 to A
         // (reading readerB's "AB" value = 100) instead of correctly recognizing there is
         // no "A" column in readerB.
         Assert.Null(a2.A);
