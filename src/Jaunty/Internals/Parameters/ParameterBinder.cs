@@ -115,6 +115,38 @@ internal static class ParameterBinder
         template.Bind(command, parameters);
     }
 
+    /// <summary>
+    /// Re-binds <paramref name="parameters"/> onto a command whose parameter collection this binder
+    /// already populated for the same SQL and the same parameter type, without discarding and
+    /// recreating the provider parameter objects.
+    /// </summary>
+    /// <returns>
+    /// <see langword="true"/> when the values were updated in place; <see langword="false"/> when
+    /// this shape has no cached template - a dictionary, a scalar, a collection-typed property, or
+    /// SQL that needed IN-clause expansion - in which case the caller must
+    /// <c>Parameters.Clear()</c> and call <see cref="Bind"/>.
+    /// </returns>
+    /// <remarks>
+    /// AUD-R26, for <c>ExecuteBatch</c>. Deliberately conservative: it never builds or caches a
+    /// template, so a caller that gets <see langword="false"/> is exactly where it was before, and
+    /// no shape that <see cref="Bind"/> routes through the dynamic path is affected. It is the
+    /// caller's job to establish that the parameter object's runtime type has not changed between
+    /// calls - the templates deliberately do not carry a <c>DbType</c> (the provider infers it from
+    /// the value), so reusing parameter objects across differently-typed values is not something
+    /// this method can make safe on its own.
+    /// </remarks>
+    internal static bool TryRebind(IDbCommand command, object parameters)
+    {
+        if (command.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+            return false;
+
+        if (parameters is IDictionary<string, object?> || IsScalarType(parameters.GetType()))
+            return false;
+
+        return TemplateCache.TryGetValue((command.CommandText, parameters.GetType(), command.GetType()), out CommandTemplate? template)
+            && template!.TryRebind(command, parameters);
+    }
+
     private static CommandTemplate BuildTemplate(Type type, string sql, string[] sqlParamNames, Dictionary<string, ParameterMetadata> propertyLookup, ParameterMetadata[] allMeta)
     {
         var boundNames = new HashSet<string>(CommonConstants.OrdinalIgnoreCase);
@@ -249,6 +281,46 @@ internal static class ParameterBinder
                 p.Value = ApplyTypeHandlerIfNeeded(item.Getter(parameters), item.Property) ?? DBNull.Value;
                 pCollection.Add(p);
             }
+        }
+
+        /// <summary>
+        /// Updates the values of a parameter collection this template already populated, instead of
+        /// tearing it down and rebuilding it. Returns <see langword="false"/> when the collection is
+        /// not one this template produced, in which case the caller must fall back to
+        /// <see cref="Bind"/>.
+        /// </summary>
+        /// <remarks>
+        /// AUD-R26. This is what <c>ExecuteBatch</c>'s <c>Prepare()</c> comment already claimed the
+        /// code did - "mirroring BulkInsertLoop" - while the loop actually called
+        /// <c>Parameters.Clear()</c> and a full rebind for every set, so <c>Prepare()</c> was being
+        /// called on a command whose parameter collection was then torn down and rebuilt on every
+        /// subsequent iteration. <c>BulkInsertLoop</c> does the opposite, and that is the point of
+        /// it: bind once, then set <c>.Value</c> in place.
+        /// </remarks>
+        public bool TryRebind(IDbCommand command, object parameters)
+        {
+            IDataParameterCollection pCollection = command.Parameters;
+
+            if (pCollection.Count != items.Length)
+                return false;
+
+            for (int i = 0; i < items.Length; i++)
+            {
+                if (pCollection[i] is not IDbDataParameter p)
+                    return false;
+
+                ref readonly TemplateItem item = ref items[i];
+
+                // Position, not name. The collection was produced by this same template in this same
+                // order, and the caller has already established that the parameter object's runtime
+                // type is unchanged - so item i is the parameter for item i.
+                if (!string.Equals(p.ParameterName, item.Name, StringComparison.Ordinal))
+                    return false;
+
+                p.Value = ApplyTypeHandlerIfNeeded(item.Getter(parameters), item.Property) ?? DBNull.Value;
+            }
+
+            return true;
         }
 
         private IDbDataParameter[] CreateTemplates(IDbCommand command)
