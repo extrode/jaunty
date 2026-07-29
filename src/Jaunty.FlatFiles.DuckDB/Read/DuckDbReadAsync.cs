@@ -4,6 +4,7 @@ using DuckDB.NET.Data;
 
 using Jaunty.FlatFiles.DuckDB.Internals;
 using System.Globalization;
+using Jaunty.Internals;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -27,8 +28,26 @@ public sealed partial class DuckDb
         return await QueryInternalAsync<T>(sql, parameters, cancellationToken).ConfigureAwait(false);
     }
 
-    private async ValueTask<List<T>> QueryInternalAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CancellationToken cancellationToken) where T : class, new()
+    private ValueTask<List<T>> QueryInternalAsync<T>(string sql, IEnumerable<(string Name, object? Value)> parameters, CancellationToken cancellationToken) where T : class, new()
     {
+        // Materialised once: the caller's sequence is enumerated to bind the command, and
+        // describing it separately for the interceptor and again for the logger would enumerate a
+        // lazy sequence three times - and a sequence that yields different values on re-enumeration
+        // would have the audit record disagree with what was actually bound.
+        (string Name, object? Value)[] materialised =
+            parameters as (string Name, object? Value)[] ?? System.Linq.Enumerable.ToArray(parameters);
+
+        object described = DuckDbObservation.Describe(materialised);
+
+        return CommandObservation.ExecuteAsync(
+            sql, described, _connection, DuckDbObservation.Text,
+            () => QueryInternalDirectAsync<T>(sql, materialised, described, cancellationToken), cancellationToken);
+    }
+
+    private async ValueTask<List<T>> QueryInternalDirectAsync<T>(string sql, (string Name, object? Value)[] parameters, object described, CancellationToken cancellationToken) where T : class, new()
+    {
+        CommandObservation.Log(sql, described);
+
         DuckDBCommand cmd = _connection.CreateCommand();
         await using var cmdDisposer = cmd.ConfigureAwait(false);
         cmd.CommandText = sql;

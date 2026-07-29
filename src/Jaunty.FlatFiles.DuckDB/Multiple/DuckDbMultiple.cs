@@ -5,6 +5,8 @@ using System.Reflection;
 using DuckDB.NET.Data;
 
 using Jaunty.Core;
+using Jaunty.Internals;
+using Jaunty.FlatFiles.DuckDB.Internals;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -75,7 +77,14 @@ public sealed partial class DuckDb
     }
 
     private GridReader ExecuteQueryMultiple(string sql, object? parameters)
+        => CommandObservation.Execute(
+            sql, parameters, _connection, DuckDbObservation.Text,
+            () => ExecuteQueryMultipleDirect(sql, parameters));
+
+    private GridReader ExecuteQueryMultipleDirect(string sql, object? parameters)
     {
+        CommandObservation.Log(sql, parameters);
+
         DuckDBCommand cmd = _connection.CreateCommand();
         try
         {
