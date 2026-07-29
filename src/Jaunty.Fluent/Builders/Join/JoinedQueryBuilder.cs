@@ -299,12 +299,23 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     /// integration tests red; that is what caught it.
     /// </para>
     /// <para>
-    /// One asymmetry survives, now confined to SQLite. <c>ParameterCollection.BindTo</c> - which
-    /// backs <c>Delete</c>, <c>Update</c>, <c>Insert</c> and the joined <c>Select()</c> that
-    /// delegates to core <c>QueryPartial</c> - binds the <see cref="decimal"/> unchanged, so on
-    /// SQLite a <see cref="decimal"/> compared against a computed expression still fails there.
-    /// Widening the conversion to the core binder would change what core <c>Query</c> returns for
-    /// exact values past 2^53, which is beyond this finding; recorded for round 27 instead.
+    /// One asymmetry survives, now confined to SQLite, and it runs the other way from what you would
+    /// expect - <b>this</b> path is the inexact one. The core binder behind <c>Delete</c>,
+    /// <c>Update</c>, <c>Insert</c> and the joined <c>Select()</c> binds the <see cref="decimal"/>
+    /// unchanged, which for a plain column comparison is <em>exact</em>, while the conversion here
+    /// costs precision past 2^53. Measured against SQLite on a column holding 9007199254740993, with
+    /// the same builder and the same <c>Where</c>:
+    /// <code>
+    /// .Where((i, c) =&gt; i.Amount == 9007199254740993m).Select()      -> 1 row
+    /// .Where((i, c) =&gt; i.Amount == 9007199254740993m).SelectBoth()  -> 0 rows
+    /// </code>
+    /// Changing only the terminal changes the answer. This predates the dialect gate - the old
+    /// coercion was unconditional, so it did this on SQLite too - and the gate neither caused nor
+    /// cured it. It cannot be cured by converting less here either: this method binds one flat
+    /// name/value list that carries both WHERE parameters and, via
+    /// <c>GroupedJoinedQueryBuilder</c>, HAVING parameters, and HAVING is the case that needs the
+    /// conversion. Fixing it properly means either scoping the conversion to HAVING parameters or
+    /// casting in the generated SQL; both are round-27 work, recorded under AUD-R26-050.
     /// </para>
     /// </remarks>
     internal void BindParameters(IDbCommand command)
