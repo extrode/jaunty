@@ -231,7 +231,10 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// Reads a scalar value from the first column of the first row of the current result set.
     /// </summary>
     /// <typeparam name="T">The type to convert the scalar value to.</typeparam>
-    /// <param name="options">Optional command options.</param>
+    /// <param name="options">
+    /// Accepted for signature symmetry with the other <c>Read*</c> methods and <b>not used</b>.
+    /// See the remarks.
+    /// </param>
     /// <returns>The scalar value converted to type <typeparamref name="T"/>, or default if there are no rows or the value is null.</returns>
     /// <remarks>
     /// <para>
@@ -242,44 +245,79 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// as "no value" — it propagates as an exception so callers can distinguish an empty/null
     /// result from a real type mismatch.
     /// </para>
+    /// <para>
+    /// AUD-R26-054 (batch 4, low/bug): the finding was that <paramref name="options"/> is never
+    /// referenced while every sibling <c>Read*</c> threads its options into the core it delegates
+    /// to. It is documented rather than wired up, because there is nothing on
+    /// <see cref="CommandOptions"/> that a grid scalar read can honour: <c>Transaction</c>,
+    /// <c>CommandTimeout</c> and <c>CommandType</c> configure the execution of a command that has
+    /// already run by the time a <see cref="GridReader"/> exists, and <c>ExpectedRowCount</c>
+    /// pre-sizes a result list that a scalar does not have. The siblings consume exactly two things
+    /// - <c>ExpectedRowCount</c> and the <c>Mapper</c> on the generic
+    /// <see cref="CommandOptions{T}"/> - and neither has a meaning here. Removing the parameter
+    /// would be a source-breaking change to a public API for no behavioural gain, so it stays and
+    /// says so.
+    /// </para>
     /// </remarks>
     public T? ReadScalar<T>(CommandOptions options = default)
     {
         EnsureNotConsumed();
         try
         {
-            T? result = default;
-            if (reader.Read() && !reader.IsDBNull(0))
-            {
-                try
-                {
-                    if (reader is DbDataReader dbReader)
-                        result = dbReader.GetFieldValue<T>(0);
-                    else
-                    {
-                        var val = reader.GetValue(0);
-                        result = (T)Convert.ChangeType(val, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
-                    }
-                }
-                catch (Exception ex) when (ex is InvalidCastException or NullReferenceException or IndexOutOfRangeException)
-                {
-                    // Some providers (e.g. SQLite) throw from GetFieldValue<T> even though a
-                    // value is present; fall back to GetValue + Convert.ChangeType. If this
-                    // fallback also fails, it is a genuine conversion error and must propagate
-                    // rather than being silently reported as "no value" (default).
-                    if (!reader.IsDBNull(0))
-                    {
-                        var rawValue = reader.GetValue(0);
-                        result = (T)Convert.ChangeType(rawValue, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
-                    }
-                }
-            }
-            return result;
+            return reader.Read() && !reader.IsDBNull(0) ? ConvertScalar<T>(reader) : default;
         }
         finally
         {
             Advance();
         }
+    }
+
+    /// <summary>
+    /// Reads column 0 of the current row as <typeparamref name="T"/>: the provider's own typed
+    /// accessor where it works, and <c>ScalarConverter&lt;T&gt;</c> where it does not.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26-054 (batch 4, low/bug). The fallback used to be
+    /// <c>Convert.ChangeType(value, typeof(T))</c> written out here, while the
+    /// <c>QueryScalar</c>/<c>ExecuteScalar</c> family went through <c>ScalarConverter&lt;T&gt;</c> -
+    /// so the library had two scalar conversion behaviours and the grid had the weaker one.
+    /// <c>Convert.ChangeType</c> handles
+    /// neither a <see cref="Nullable{T}"/> target nor the types that do not implement
+    /// <see cref="IConvertible"/> (<see cref="Guid"/>, <see cref="DateTimeOffset"/>,
+    /// <see cref="TimeSpan"/>, <c>DateOnly</c>, <c>TimeOnly</c>) nor an enum arriving as its name;
+    /// <c>ScalarConverter</c> handles all of them.
+    /// </para>
+    /// <para>
+    /// That mattered most exactly where it was least visible. The fallback's original comment named
+    /// SQLite as a provider that throws from <c>GetFieldValue&lt;T&gt;</c> "even though a value is
+    /// present" - and SQLite is also the provider that stores dates, times and GUIDs as text. So on
+    /// the provider most likely to need the richer conversion, this path was guaranteed to reach the
+    /// poorer one.
+    /// </para>
+    /// <para>
+    /// The typed accessor stays as the fast path rather than being replaced: where it succeeds it is
+    /// the provider's own answer, and narrowing the change to the fallback is what makes the two
+    /// scalar paths agree everywhere they previously disagreed without altering any case that
+    /// already worked. A conversion that genuinely cannot be done still propagates, so callers keep
+    /// the documented distinction between "no value" and "wrong type".
+    /// </para>
+    /// </remarks>
+    private static T? ConvertScalar<T>(IDataReader reader)
+    {
+        if (reader is DbDataReader dbReader)
+        {
+            try
+            {
+                return dbReader.GetFieldValue<T>(0);
+            }
+            catch (Exception ex) when (ex is InvalidCastException or NullReferenceException or IndexOutOfRangeException)
+            {
+                // Provider could not produce T directly; convert from the raw value below.
+            }
+        }
+
+        return ScalarConverter<T>.Convert(reader.GetValue(0));
     }
 
     /// <summary>
@@ -524,6 +562,12 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
     /// <summary>
     /// Asynchronously reads a scalar value from the first column of the first row.
     /// </summary>
+    /// <typeparam name="T">The type to convert the scalar value to.</typeparam>
+    /// <param name="options">
+    /// Accepted for signature symmetry and <b>not used</b> - see <see cref="ReadScalar{T}"/>.
+    /// </param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The scalar value converted to type <typeparamref name="T"/>, or default if there are no rows or the value is null.</returns>
     public async Task<T?> ReadScalarAsync<T>(CommandOptions options = default, CancellationToken cancellationToken = default)
     {
         EnsureNotConsumed();
@@ -532,25 +576,19 @@ public sealed class GridReader(IDataReader reader, IDbConnection connection, boo
         try
         {
             T? result = default;
-            if (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            if (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false)
+                && !await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
             {
                 try
                 {
-                    if (!await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
-                    {
-                        result = await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
-                    }
+                    result = await dbReader.GetFieldValueAsync<T>(0, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex) when (ex is InvalidCastException or NullReferenceException or IndexOutOfRangeException)
                 {
-                    // Same reasoning as the sync ReadScalar<T>: fall back to GetValue +
-                    // Convert.ChangeType, but let a genuine conversion failure propagate
-                    // instead of silently reporting "no value" (default).
-                    if (!await dbReader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
-                    {
-                        var rawValue = dbReader.GetValue(0);
-                        result = (T)Convert.ChangeType(rawValue, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
-                    }
+                    // Same fallback as the sync ReadScalar<T>, and through the same converter - see
+                    // ConvertScalar<T>. A genuine conversion failure still propagates rather than
+                    // being reported as "no value" (default).
+                    result = ScalarConverter<T>.Convert(dbReader.GetValue(0));
                 }
             }
             return result;
