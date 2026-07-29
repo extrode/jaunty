@@ -190,34 +190,34 @@ internal sealed class JoinExpressionVisitor<T1, T2> : ExpressionVisitor
         string propertyName = member.Member.Name;
         string? alias;
         EntityMetadata metadata;
+        CachedDialectMetadata cached;
 
         if (param == _param1)
         {
             alias = _alias1;
             metadata = _metadata1;
+            cached = FluentMetadataCache.GetForDialect<T1>(_dialect);
         }
         else if (param == _param2)
         {
             alias = _alias2;
             metadata = _metadata2;
+            cached = FluentMetadataCache.GetForDialect<T2>(_dialect);
         }
         else
         {
             return null;
         }
 
-        string columnName = propertyName;
-        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].PropertyName == propertyName)
-            {
-                columnName = columns[i].ColumnName;
-                break;
-            }
-        }
-
-        var escaped = _dialect.EscapeColumnName(columnName);
+        // AUD-R26-058: this used to scan metadata.Columns linearly and then call
+        // _dialect.EscapeColumnName - re-running SqlIdentifierValidator's regex match and a keyword
+        // HashSet lookup - once per column reference per query build. AUD-R25 replaced exactly that
+        // with the pre-escaped CachedDialectMetadata lookup and reached WhereExpressionVisitor,
+        // ExistsExpressionVisitor, SelectExpressionVisitor and the arity-3 and arity-4 join
+        // visitors, but not this one: the arity-2 visitor, which is the one the overwhelmingly
+        // common two-table join uses. Same arity-drift pattern round 1 found on the joined
+        // builders, recurring inside the fix for a different finding.
+        var escaped = cached.GetColumnName(propertyName);
         var prefix = alias ?? _dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escaped}";
     }
