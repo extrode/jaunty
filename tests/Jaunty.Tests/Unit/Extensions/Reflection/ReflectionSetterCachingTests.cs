@@ -222,6 +222,97 @@ public class ReflectionSetterCachingTests : IDisposable
             () => MetadataCache<Widget>.GetSetters(reader, MappingMode.Strict));
     }
 
+
+    // ------------------------------------------------------------------
+    // Concurrency
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// The memo write was originally <c>ReaderCache.Remove(reader)</c> followed by
+    /// <c>ReaderCache.Add(reader, entry)</c>. <see cref="System.Runtime.CompilerServices.ConditionalWeakTable{TKey,TValue}"/>'s
+    /// <c>Add</c> throws <see cref="ArgumentException"/> when the key is already present, so that
+    /// pair races with itself: two threads both remove, then both add, and the second throws.
+    /// Measured at 139 failures in 200 rounds of four threads before the fix.
+    ///
+    /// <para>
+    /// A single reader driven from several threads is already outside ADO.NET's contract, so this
+    /// guards the cache's own invariant rather than a supported usage - but the previous code could
+    /// not throw here at all, and a caching layer must not introduce a failure mode the thing it
+    /// caches did not have.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ConcurrentGetSetters_OnOneReader_DoesNotThrow()
+    {
+        var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+
+        for (int round = 0; round < 50; round++)
+        {
+            var reader = new RecycledReader(["Id", "Name"], [1, "one"]);
+            using var gate = new System.Threading.Barrier(4);
+
+            var tasks = new System.Threading.Tasks.Task[4];
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[i] = System.Threading.Tasks.Task.Run(() =>
+                {
+                    gate.SignalAndWait();
+                    try
+                    {
+                        MetadataCache<Widget>.GetSetters(reader, MappingMode.Strict);
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+                    }
+                });
+            }
+
+            System.Threading.Tasks.Task.WaitAll(tasks);
+        }
+
+        Assert.Empty(exceptions);
+    }
+
+    /// <summary>
+    /// The same race, but with each thread presenting a different schema so every call takes the
+    /// write path rather than settling onto the memo after the first round.
+    /// </summary>
+    [Fact]
+    public void ConcurrentGetSetters_AcrossReaders_DoesNotThrow()
+    {
+        var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+        string[][] schemas = [["Id", "Name"], ["Name", "Id"], ["Id"], ["Name"]];
+
+        for (int round = 0; round < 50; round++)
+        {
+            using var gate = new System.Threading.Barrier(schemas.Length);
+
+            var tasks = new System.Threading.Tasks.Task[schemas.Length];
+            for (int i = 0; i < schemas.Length; i++)
+            {
+                string[] schema = schemas[i];
+                tasks[i] = System.Threading.Tasks.Task.Run(() =>
+                {
+                    var reader = new RecycledReader(schema, [.. schema.Select(object (n) => n == "Id" ? 1 : "x")]);
+                    gate.SignalAndWait();
+                    try
+                    {
+                        MetadataCache<Widget>.GetSetters(reader, MappingMode.Projection);
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+                    }
+                });
+            }
+
+            System.Threading.Tasks.Task.WaitAll(tasks);
+        }
+
+        Assert.Empty(exceptions);
+    }
+
     // ------------------------------------------------------------------
 
     /// <summary>
