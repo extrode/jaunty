@@ -43,16 +43,18 @@ for **two different reasons**. Fixing the SQL alone would not make them work. Th
 failure is the part that makes this a spec rather than a patch: it means there is a second,
 undiscovered axis of provider variation, and the fix has to name it.
 
-## 2. The Two Axes
+## 2. The Axes
 
-The core insight, established by direct measurement (`008-research.md`, §2):
+The core insight, established by direct measurement (`008-research.md`, §2). Axes A and B were
+the spec's original scope; axis C was discovered in the round-26 fix phase (AUD-R26-050) and is
+recorded here because it is the same question about a different property of the parameter:
 
-| | Axis A — placeholder syntax | Axis B — parameter name |
-|---|---|---|
-| **Where it appears** | The SQL text: `INSERT ... VALUES ($id)` | `IDbDataParameter.ParameterName` |
-| **Modelled today by** | `ISqlDialect.ParameterPrefix` | *nothing* — always `"@" + column` |
-| **Honoured by** | Fluent only | neither |
-| **Varies by** | SQL grammar of the engine | the ADO.NET provider's name-matching |
+| | Axis A — placeholder syntax | Axis B — parameter name | Axis C — parameter value |
+|---|---|---|---|
+| **Where it appears** | The SQL text: `INSERT ... VALUES ($id)` | `IDbDataParameter.ParameterName` | `IDbDataParameter.Value` |
+| **Modelled today by** | `ISqlDialect.ParameterPrefix` | *nothing* — always `"@" + column` | `IDecimalBindingDialect` (Fluent joined/grouped only) |
+| **Honoured by** | Fluent only | neither | two Fluent builders only |
+| **Varies by** | SQL grammar of the engine | the ADO.NET provider's name-matching | the provider's CLR-to-storage mapping |
 
 These are **independent**. DuckDB needs `$id` in the SQL *and* the bare name `id` on the
 parameter object — supplying `$id` as the name fails, which is exactly the second error
@@ -60,6 +62,29 @@ above. Microsoft.Data.Sqlite accepts the bare name too, with either placeholder 
 
 Jaunty currently models axis A and ignores it in core, and does not model axis B at all.
 This feature closes both.
+
+**Axis C**, added 2026-07-29. Both SQLite providers bind a CLR `decimal` as storage class
+TEXT. SQLite converts a TEXT operand only where it has affinity to apply — against a
+numeric-affinity column it does, so `WHERE price = @p` matches; against a bare expression it
+does not, and TEXT sorts above every number, so `HAVING SUM(price) > @p` matches nothing and
+`< @p` matches everything, at any magnitude. AUD-R26-050 moved the existing unconditional
+`decimal`→`double` coercion behind `IDecimalBindingDialect` so it applies to SQLite alone;
+measured against live PostgreSQL 16, SQL Server 2022 and MySQL 8, the unconditional form had
+been returning **wrong rows** on all three.
+
+That fix is deliberately narrow and leaves this spec three things:
+
+1. **The same core/Fluent split as axis A.** `ParameterCollection.BindTo` and core
+   `ParameterBinder` do not consult the dialect about values, so on SQLite the answer depends
+   on which terminal you call. Measured on a column holding `9007199254740993`, same builder,
+   same `Where`, plain column equality: `.Select()` returns the row, `.SelectBoth()` does not.
+   Axis A's problem statement is "core ignores the dialect, Fluent honours it"; axis C is the
+   same sentence with two Fluent builders on one side and everything else on the other.
+2. **A lossless alternative that changes SQL rather than values.** `SUM(price) > CAST(@p AS
+   NUMERIC)` compares correctly against the TEXT-bound decimal *and* keeps exact integers past
+   2^53, where the `(double)` conversion does not. If axis C is solved in the SQL text it
+   belongs with axis A; if in the bound value, with axis B. That choice is this spec's.
+3. **A capability-discovery problem shared with every optional interface** — see US-6.
 
 ## 3. Vision
 
@@ -125,6 +150,45 @@ without knowing which of Jaunty's internal caches happens to build the SQL.
 - `ISqlDialect`'s XML documentation no longer carries the "Honored by `Jaunty.Fluent` only"
   caveat, because it is no longer true
 
+### US-6: A custom dialect inherits capabilities it cannot know about
+> As an author of a third-party dialect, I want to opt into Jaunty's behaviour for an engine
+> without reimplementing it — and without silently losing behaviour added after I wrote it.
+
+Added 2026-07-29 from AUD-R26-050, which introduced this gap in its narrowest form and could
+not close it from where it sat.
+
+`ISqlDialect` is deliberately extended by *optional* companion interfaces, because it is public
+and this assembly targets netstandard2.0 where a default interface implementation would break
+existing implementers. `ISubstringToEndDialect` documents that trade. The cost is that a dialect
+which does not implement one is indistinguishable from a dialect for an engine that does not
+need it, and the failure is silent in both known cases: `ISubstringToEndDialect` falls back to a
+sentinel length that truncates past 8,000 characters, `IDecimalBindingDialect` returns wrong
+rows from a HAVING clause.
+
+For Jaunty's own dialects this is handled — the four wrappers re-declare, and drift tests pin
+it. A caller's dialect cannot be: **there is nothing to delegate to.** `SQLiteDialect` and its
+siblings are `internal`, so a dialect registered through `SqlDialectFactory.RegisterDialect` for
+a connection Jaunty does not recognise must hand-write ~40 members, and gets no capability it
+was not written to know about. AUD-R26-050 made that concrete — such a dialect over a SQLite
+connection used to get the `decimal` conversion, because the old coercion was unconditional, and
+now cannot.
+
+The affected population is small, and deliberately left so rather than patched: `GetDialect`
+already looks through decorators by conventional property *and* private field, so the common
+wrapped-connection cases — MiniProfiler, OpenTelemetry, DI proxies — resolve to the built-in
+dialect without any registration. What remains needs an opaque wrapper *and* a hand-written
+dialect *and* the affected clause. The reason it belongs here rather than in a patch is that the
+remedy is an extension-point design decision this spec already owns.
+
+**Acceptance Criteria:**
+- A caller can obtain Jaunty's behaviour for a known engine without reimplementing
+  `ISqlDialect` — whether by exposing the built-in dialects, a capability bag, per-capability
+  defaults, or delegation is this spec's call
+- A dialect built that way gains a capability added in a later version without recompiling
+  against it, or the release notes state plainly that it will not
+- The choice is applied to `ISubstringToEndDialect` and `IDecimalBindingDialect` together;
+  solving it for one is solving it for neither
+
 ### US-5: Upgrading does not silently break generated code
 > As a developer upgrading Jaunty, I want a clear failure — not wrong SQL — if my
 > pre-generated entity binders predate the new contract.
@@ -147,9 +211,13 @@ without knowing which of Jaunty's internal caches happens to build the SQL.
 - The reflection binder contract in `Jaunty.Extensions.Reflection` and its three
   `JauntyConfig` resolver hooks
 - `WriteParameterCache<T>`, whose static-generic shape currently admits no dialect dimension
-- `Jaunty.Fluent`'s `ParameterCollection.BindTo`, for axis B
+- `Jaunty.Fluent`'s `ParameterCollection.BindTo`, for axis B — and for axis C, since it is one
+  of the two sides of the split that axis describes
 - The `ISqlDialect` surface: whatever new member axis B requires, and the documentation
   rewrite on `ParameterPrefix`
+- Axis C: whether `IDecimalBindingDialect` stays a value-side conversion, becomes a SQL-side
+  `CAST`, or is subsumed by axis B's member; and the capability-inheritance decision in US-6,
+  which applies equally to `ISubstringToEndDialect`
 
 **Out of scope**
 
@@ -270,3 +338,8 @@ These block `/plan`, not this spec.
   refactor that made the generated-output diff technique routine)
 - `ParameterPrefixLimitationTests` — the executable record of today's behaviour
 - `src/Jaunty/Dialects/ISqlDialect.cs` — the `ParameterPrefix` remarks, to be rewritten here
+- `audit/findings-registry.md` → `AUD-R26-050` (axis C: the measurements, the three-engine
+  wrong-rows result, the terminal-dependent divergence past 2^53, and the `CAST` alternative)
+- `src/Jaunty/Dialects/IDecimalBindingDialect.cs` — axis C as it stands today
+- `src/Jaunty/Dialects/ISubstringToEndDialect.cs` — the optional-interface precedent, and the
+  other capability US-6 has to cover
