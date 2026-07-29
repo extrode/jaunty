@@ -50,14 +50,19 @@ public class ImportDialectResolverTests
     [Fact]
     public void Resolve_MySqlConnectionTypeName_DoesNotFalsePositiveAsSqlServer()
     {
-        // "MySqlConnection" contains "SqlConnection" as a substring; the resolver must not
-        // match it to SqlServerImportDialect. With no MySql dialect registered, it falls back
-        // to the default SqliteImportDialect.
+        // "MySqlConnection" contains "SqlConnection" as a substring; the resolver must not match it
+        // to SqlServerImportDialect.
+        //
+        // AUD-R26: with no MySql dialect registered this used to fall through to the silent
+        // SqliteImportDialect default, so the assertion was "not SQL Server, therefore SQLite". It
+        // now reports the type as unrecognised, which demonstrates the same thing more directly -
+        // the name was not misread as SQL Server - and is the correct outcome for a MySQL target,
+        // which SQLite's DDL and conflict syntax would have failed on anyway.
         using var conn = new MySqlConnection();
-        var dialect = ImportDialectResolver.Resolve(conn, null);
 
-        Assert.IsNotType<SqlServerImportDialect>(dialect);
-        Assert.IsType<SqliteImportDialect>(dialect);
+        var ex = Assert.Throws<InvalidOperationException>(() => ImportDialectResolver.Resolve(conn, null));
+
+        Assert.Contains(nameof(MySqlConnection), ex.Message, StringComparison.Ordinal);
     }
 
     // ------------------------------------------------------------------
@@ -135,17 +140,71 @@ public class ImportDialectResolverTests
     }
 
     // ------------------------------------------------------------------
-    // Fallback for unknown connection types
+    // Unknown connection types
     // ------------------------------------------------------------------
 
+    /// <summary>
+    /// AUD-R26 (batch 7). This asserted the silent fallback to <see cref="SqliteImportDialect"/>,
+    /// which meant a MySQL, MariaDB, Oracle or DuckDB target with no registered dialect was handed
+    /// SQLite's SQL: SQLite type names (TEXT, INTEGER, REAL) in the generated DDL and SQLite's
+    /// INSERT OR IGNORE / ON CONFLICT ... DO UPDATE conflict syntax. On MySQL every one of those is
+    /// a syntax error arriving from the provider with no hint that dialect detection caused it.
+    /// A silent default is only defensible when the default is broadly correct, and SQLite's is the
+    /// narrowest of the three built in here.
+    /// </summary>
     [Fact]
-    public void Resolve_UnknownConnectionType_FallsBackToSqliteDialect()
+    public void Resolve_UnknownConnectionType_ThrowsNamingTheTypeAndTheWayOut()
     {
         using var conn = new FallbackDbConnection();
-        var dialect = ImportDialectResolver.Resolve(conn, null);
 
-        // Built-in fallback is SqliteImportDialect
-        Assert.IsType<SqliteImportDialect>(dialect);
+        var ex = Assert.Throws<InvalidOperationException>(() => ImportDialectResolver.Resolve(conn, null));
+
+        Assert.Contains(nameof(FallbackDbConnection), ex.Message, StringComparison.Ordinal);
+        Assert.Contains("Register", ex.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>An explicitly supplied dialect still short-circuits everything, unknown type or not.</summary>
+    [Fact]
+    public void Resolve_UnknownConnectionType_WithExplicitDialect_UsesIt()
+    {
+        using var conn = new FallbackDbConnection();
+        var explicitDialect = SqlServerImportDialect.Instance;
+
+        Assert.Same(explicitDialect, ImportDialectResolver.Resolve(conn, explicitDialect));
+    }
+
+    /// <summary>
+    /// AUD-R26, same finding's secondary half: the custom registry is a ConcurrentDictionary that
+    /// was iterated with foreach, whose order is unspecified. When two registered substrings both
+    /// match a connection type name, which dialect won was arbitrary and could differ between runs.
+    /// The longer key is the more specific match and now wins deterministically.
+    /// </summary>
+    [Fact]
+    public void Resolve_TwoRegisteredSubstringsBothMatch_ThePreciseOneWins()
+    {
+        ImportDialectResolver.Register("ImportDialectResolverTestsAmbiguous", SqliteImportDialect.Instance);
+        ImportDialectResolver.Register(
+            "ImportDialectResolverTestsAmbiguousSpecific", PostgreSqlImportDialect.Instance);
+
+        using var conn = new ImportDialectResolverTestsAmbiguousSpecificConnection();
+
+        // Both keys are substrings of this type's full name. Without a defined order this assertion
+        // passes or fails depending on dictionary internals.
+        Assert.IsType<PostgreSqlImportDialect>(ImportDialectResolver.Resolve(conn, null));
+    }
+
+    private sealed class ImportDialectResolverTestsAmbiguousSpecificConnection : DbConnection
+    {
+        public override string ConnectionString { get; set; } = "";
+        public override string Database => "";
+        public override string DataSource => "";
+        public override string ServerVersion => "";
+        public override System.Data.ConnectionState State => System.Data.ConnectionState.Closed;
+        public override void ChangeDatabase(string databaseName) { }
+        public override void Close() { }
+        public override void Open() { }
+        protected override System.Data.Common.DbTransaction BeginDbTransaction(System.Data.IsolationLevel isolationLevel) => throw new NotSupportedException();
+        protected override System.Data.Common.DbCommand CreateDbCommand() => throw new NotSupportedException();
     }
 
     // ------------------------------------------------------------------
