@@ -37,7 +37,7 @@ public sealed partial class DuckDb
                     "WriteBackMode.NewFile requires an output path. Use the Save<T>(string outputPath) overload instead.")
                 : new ArgumentOutOfRangeException(
                     nameof(mode), mode,
-                    $"'{{mode}}' is not a defined WriteBackMode. In-place write-back overwrites the source file " +
+                    $"'{mode}' is not a defined WriteBackMode. In-place write-back overwrites the source file " +
                     "irreversibly, so only WriteBackMode.Overwrite is accepted here.");
         }
 

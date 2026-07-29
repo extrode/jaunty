@@ -101,31 +101,6 @@ internal static class MappedPropertyFilter
         property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
 
     /// <summary>
-    /// Throws when <paramref name="property"/> is not a mapped column, naming the property and the
-    /// entity.
-    /// </summary>
-    /// <remarks>
-    /// AUD-R26-067: <c>ExpressionTranslator</c> resolved column names with no mapped check at all, so
-    /// <c>Update&lt;T&gt;</c>/<c>Delete&lt;T&gt;</c> built SQL against a property the rest of the
-    /// library treats as unmapped. It did fail - nothing was corrupted - but it failed at the
-    /// provider, with a message naming neither the entity nor the fact that the property is
-    /// deliberately unmapped: <c>Binder Error: Referenced update column Secret not found in table!</c>
-    /// A caller who has just added <c>[Ignore]</c> to a property has no thread back from that to the
-    /// cause.
-    /// </remarks>
-    public static void ThrowIfNotMapped(PropertyInfo property)
-    {
-        if (IsMapped(property)) return;
-
-        Type? declaring = property.DeclaringType;
-        throw new InvalidOperationException(
-            $"Property '{declaring?.Name}.{property.Name}' is not mapped to a column, so it cannot be " +
-            "used in a flat-file query. A property is unmapped when it carries [Ignore] or " +
-            "[NotMapped], when it is an indexer, or when it is missing a public getter or setter. " +
-            "Remove the attribute to include it, or reference a mapped property instead.");
-    }
-
-    /// <summary>
     /// Returns <see langword="true"/> when <paramref name="property"/> should be treated as a column.
     /// </summary>
     public static bool IsMapped(PropertyInfo property)
