@@ -1,6 +1,7 @@
 using System.Data;
 
 using Jaunty.Core;
+using Jaunty.Internals;
 using Jaunty.Interfaces;
 
 namespace Jaunty;
@@ -84,11 +85,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return DeleteByIdCore<T, TId>(connection, id, default);
     }
 
@@ -99,11 +99,10 @@ public static partial class Jaunty
     {
 #if NET8_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(id);
 #else
         if (connection is null) throw new ArgumentNullException(nameof(connection));
-        if (id is null) throw new ArgumentNullException(nameof(id));
 #endif
+        KeyGuard.ThrowIfNull(id, nameof(id));
         return DeleteByIdCore<T, TId>(connection, id, options);
     }
 
