@@ -58,6 +58,49 @@ public class JauntyLoggingExtensionsTests : IDisposable
         Assert.Same(a, b);
     }
 
+    /// <summary>
+    /// AUD-R26-055 (batch 4, low/consistency). <c>AddJauntyLogging</c> carried the comment
+    /// "Register LoggingConfiguration" above code that did not register it - the instance was only
+    /// captured in the interceptor's factory closure, so <c>GetService&lt;LoggingConfiguration&gt;()</c>
+    /// returned null and an application could not resolve or inspect the configuration it had just
+    /// supplied.
+    /// </summary>
+    [Fact]
+    public void AddJauntyLogging_RegistersTheConfiguration()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(b => b.AddProvider(NullLoggerProvider.Instance));
+        services.AddJauntyLogging();
+
+        var provider = services.BuildServiceProvider();
+
+        Assert.NotNull(provider.GetService<LoggingConfiguration>());
+    }
+
+    /// <summary>
+    /// And it is the caller's configured instance, not a fresh default one - which is the part that
+    /// makes resolving it worth anything. The pre-existing
+    /// <c>AddJauntyLogging_WithConfigureAction_DoesNotThrow</c> only asserted that configuring did
+    /// not throw, so nothing checked that the settings survived.
+    /// </summary>
+    [Fact]
+    public void AddJauntyLogging_RegistersTheCallersConfiguredInstance()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(b => b.AddProvider(NullLoggerProvider.Instance));
+        services.AddJauntyLogging(cfg =>
+        {
+            cfg.LogSql = false;
+            cfg.MinimumLogLevel = LogLevel.Critical;
+        });
+
+        var provider = services.BuildServiceProvider();
+        var resolved = provider.GetRequiredService<LoggingConfiguration>();
+
+        Assert.False(resolved.LogSql);
+        Assert.Equal(LogLevel.Critical, resolved.MinimumLogLevel);
+    }
+
     [Fact]
     public void AddJauntyLogging_WithConfigureAction_DoesNotThrow()
     {
