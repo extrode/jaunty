@@ -5,6 +5,7 @@ using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Interceptors;
 using Jaunty.Internals.Parameters;
+using Jaunty.Internals;
 
 namespace Jaunty;
 
@@ -39,9 +40,13 @@ public static partial class Jaunty
         // caller already has. So wrapping just command-creation-through-ExecuteReader() is safe and
         // matches the interceptor semantics used by the other Query* cores, without requiring the
         // grid's result sets to be materialized upfront.
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
-            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+            return pipeline.ExecuteWithInterception(
                 sql,
                 parameters,
                 connection,
