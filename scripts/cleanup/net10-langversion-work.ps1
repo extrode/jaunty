@@ -5,6 +5,7 @@
 #
 # Dry run (default):  .\scripts\cleanup\net10-langversion-work.ps1
 # Execute:            .\scripts\cleanup\net10-langversion-work.ps1 --execute
+# Also drop worktree: .\scripts\cleanup\net10-langversion-work.ps1 --execute --delete-worktrees
 #
 # DELIBERATELY NOT REMOVED: probe/net10-feasibility. docs/specs/010-net10-migration/010-spec.md
 # section 8 cites it as the evidence record for every measurement in section 2; deleting it makes
@@ -13,7 +14,11 @@
 [CmdletBinding()]
 param(
     [Alias('e')]
-    [switch]$Execute
+    [switch]$Execute,
+
+    # Second flag, required on top of --execute: removing a worktree also discards any
+    # uncommitted state inside it, so it does not ride along with the branch deletions.
+    [switch]$DeleteWorktrees
 )
 
 $ErrorActionPreference = 'Stop'
@@ -79,16 +84,37 @@ foreach ($candidate in $candidates) {
     }
 }
 
-# --- 2. Retained on purpose --------------------------------------------------------------------
+# --- 2. Measurement worktree -------------------------------------------------------------------
 
 Write-Host ''
-Write-Host '2. Retained on purpose' -ForegroundColor Cyan
+Write-Host '2. Measurement worktree' -ForegroundColor Cyan
+
+$worktree = '.worktrees/net10-measure'
+if (Test-Path $worktree) {
+    if ($Execute -and $DeleteWorktrees) {
+        git worktree remove $worktree --force | Out-Null
+        git branch -D probe/net10-measurements | Out-Null   # -D: a probe branch is never merged
+        Write-Host "   removed $worktree and probe/net10-measurements" -ForegroundColor Green
+    }
+    else {
+        Write-Host "   would remove $worktree and branch probe/net10-measurements"
+        Write-Host '   (needs --execute AND --delete-worktrees; holds the net10 retarget + publish output)'
+    }
+}
+else {
+    Write-Host "   $worktree not present"
+}
+
+# --- 3. Retained on purpose --------------------------------------------------------------------
+
+Write-Host ''
+Write-Host '3. Retained on purpose' -ForegroundColor Cyan
 Write-Host '   probe/net10-feasibility  - evidence record for spec 010 section 2; do not delete'
 
-# --- 3. Remaining state ------------------------------------------------------------------------
+# --- 4. Remaining state ------------------------------------------------------------------------
 
 Write-Host ''
-Write-Host '3. Remaining state' -ForegroundColor Cyan
+Write-Host '4. Remaining state' -ForegroundColor Cyan
 $remaining = @(git branch --format='%(refname:short)').Count
 Write-Host "   branches in repo: $remaining"
 Write-Host "   HEAD: $(git rev-parse --short HEAD) on $branch"
