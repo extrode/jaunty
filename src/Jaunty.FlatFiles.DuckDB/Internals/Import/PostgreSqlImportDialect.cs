@@ -26,7 +26,9 @@ internal sealed class PostgreSqlImportDialect : IImportDialect, IQuotedIdentifie
     string IQuotedIdentifierDialect.QuoteIdentifier(string identifier) => QuoteIdentifier(identifier);
 
     /// <inheritdoc />
-    public string MapClrTypeToSqlType(Type clrType) => clrType switch
+    public string MapClrTypeToSqlType(Type clrType) => MapNormalized(ImportTypeMapping.Normalize(clrType));
+
+    private static string MapNormalized(Type clrType) => clrType switch
     {
         _ when clrType == typeof(string) => "TEXT",
         _ when clrType == typeof(int) => "INTEGER",
@@ -41,7 +43,15 @@ internal sealed class PostgreSqlImportDialect : IImportDialect, IQuotedIdentifie
         _ when clrType == typeof(DateTimeOffset) => "TIMESTAMPTZ",
         _ when clrType == typeof(Guid) => "UUID",
         _ when clrType == typeof(byte[]) => "BYTEA",
-        _ => "TEXT"
+        _ when clrType == typeof(DateOnly) => "DATE",
+        _ when clrType == typeof(TimeOnly) => "TIME",
+        _ when clrType == typeof(TimeSpan) => "INTERVAL",
+        _ when clrType == typeof(char) => "CHAR(1)",
+        _ when clrType == typeof(uint) => "BIGINT",
+        _ when clrType == typeof(ulong) => "NUMERIC(20,0)",
+        _ when clrType == typeof(sbyte) => "SMALLINT",
+        _ when clrType == typeof(ushort) => "INTEGER",
+        _ => throw ImportTypeMapping.Unsupported(clrType, "PostgreSQL")
     };
 
     /// <inheritdoc />
@@ -112,7 +122,7 @@ internal sealed class PostgreSqlImportDialect : IImportDialect, IQuotedIdentifie
         {
             if (i > 0) sb.Append(", ");
             (string? name, Type? clrType, bool isPrimaryKey, bool isNullable) = columns[i];
-            sb.Append($"{QuoteIdentifier(name)} {MapClrTypeToSqlType(clrType)}");
+            sb.Append($"{QuoteIdentifier(name)} {ImportTypeMapping.MapForColumn(MapClrTypeToSqlType, name, clrType)}");
             if (isPrimaryKey) sb.Append(" PRIMARY KEY");
             if (!isNullable && !isPrimaryKey) sb.Append(" NOT NULL");
         }
