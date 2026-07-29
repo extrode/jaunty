@@ -6,6 +6,7 @@ using System.Dynamic;
 using System.Linq;
 
 using Jaunty.Configuration;
+using Jaunty.Internals.Read;
 
 namespace Jaunty.Extensions.Reflection;
 
@@ -176,6 +177,11 @@ public static class SpecialTypeMappers
 
         for (int i = 0; i < fieldCount; i++)
             columnNames[i] = reader.GetName(i);
+
+        // AUD-R26: the same indexer collapse QueryPartialList had. The finding named both sites and
+        // required that any fix cover both "so they cannot drift again", so the rule is shared rather
+        // than copied - this is the sibling untyped-row path behind Query<Dictionary<string, object>>.
+        columnNames = DuplicateColumnNames.Disambiguate(columnNames);
 
         if (valueType == typeof(object))
         {
