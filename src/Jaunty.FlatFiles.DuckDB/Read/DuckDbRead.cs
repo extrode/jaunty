@@ -5,6 +5,7 @@ using DuckDB.NET.Data;
 using Jaunty.FlatFiles.DuckDB.Internals;
 using Jaunty.Fluent;
 using System.Globalization;
+using Jaunty.Internals;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -47,7 +48,14 @@ public sealed partial class DuckDb
     }
 
     private List<T> QueryInternal<T>(string sql, (string Name, object? Value)[] parameters) where T : class, new()
+        => CommandObservation.Execute(
+            sql, DuckDbObservation.Describe(parameters), _connection, DuckDbObservation.Text,
+            () => QueryInternalDirect<T>(sql, parameters));
+
+    private List<T> QueryInternalDirect<T>(string sql, (string Name, object? Value)[] parameters) where T : class, new()
     {
+        CommandObservation.Log(sql, DuckDbObservation.Describe(parameters));
+
         using DuckDBCommand cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
 

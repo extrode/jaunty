@@ -1,6 +1,7 @@
 using System.Data;
 
 using Jaunty.Fluent.Internals;
+using Jaunty.Internals;
 
 namespace Jaunty.Fluent;
 
@@ -12,59 +13,77 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     public List<IDictionary<string, object?>> SelectPartial(string columns)
     {
         string sql = BuildSelectPartialSql(columns);
-        var results = new List<IDictionary<string, object?>>();
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
-
-        try
+        List<IDictionary<string, object?>> Body()
         {
-            using IDataReader reader = command.ExecuteReader();
+            var results = new List<IDictionary<string, object?>>();
 
-            while (reader.Read())
-                results.Add(MapToDictionary(reader));
-        }
-        finally
-        {
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
-        }
+                _connection.Open();
 
-        return results;
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                    results.Add(MapToDictionary(reader));
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
+            }
+
+            return results;
+        }
     }
 
     public List<T> SelectPartial<T>(string columns, Func<IDataReader, T> mapper)
     {
         string sql = BuildSelectPartialSql(columns);
-        var results = new List<T>();
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
-
-        try
+        List<T> Body()
         {
-            using IDataReader reader = command.ExecuteReader();
+            var results = new List<T>();
 
-            while (reader.Read())
-                results.Add(mapper(reader));
-        }
-        finally
-        {
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
-        }
+                _connection.Open();
 
-        return results;
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                    results.Add(mapper(reader));
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
+            }
+
+            return results;
+        }
     }
 
     public IDictionary<string, object?> SelectPartialFirst(string columns)
@@ -83,23 +102,32 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 1);
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
+        IDictionary<string, object?>? Body()
+        {
 
-        try
-        {
-            using IDataReader reader = command.ExecuteReader();
-            return reader.Read() ? MapToDictionary(reader) : null;
-        }
-        finally
-        {
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
+                _connection.Open();
+
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+                return reader.Read() ? MapToDictionary(reader) : null;
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
+            }
         }
     }
 
@@ -107,23 +135,32 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     {
         string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 1);
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
+        T? Body()
+        {
 
-        try
-        {
-            using IDataReader reader = command.ExecuteReader();
-            return reader.Read() ? mapper(reader) : default;
-        }
-        finally
-        {
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
+                _connection.Open();
+
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+                return reader.Read() ? mapper(reader) : default;
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
+            }
         }
     }
 
@@ -142,71 +179,89 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     public IDictionary<string, object?>? SelectPartialSingleOrDefault(string columns)
     {
         string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 2);
-        IDictionary<string, object?>? result = null;
-        int count = 0;
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
-
-        try
+        IDictionary<string, object?>? Body()
         {
-            using IDataReader reader = command.ExecuteReader();
+            IDictionary<string, object?>? result = null;
+            int count = 0;
 
-            while (reader.Read())
-            {
-                count++;
-                if (count > 1)
-                    throw new InvalidOperationException("Sequence contains more than one element.");
-                result = MapToDictionary(reader);
-            }
-        }
-        finally
-        {
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
-        }
+                _connection.Open();
 
-        return result;
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    count++;
+                    if (count > 1)
+                        throw new InvalidOperationException("Sequence contains more than one element.");
+                    result = MapToDictionary(reader);
+                }
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
+            }
+
+            return result;
+        }
     }
 
     public T? SelectPartialSingleOrDefault<T>(string columns, Func<IDataReader, T> mapper)
     {
         string sql = _dialect.GetPagingSql(BuildSelectPartialSql(columns), 0, 2);
-        T? result = default;
-        int count = 0;
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
-
-        try
+        T? Body()
         {
-            using IDataReader reader = command.ExecuteReader();
+            T? result = default;
+            int count = 0;
 
-            while (reader.Read())
-            {
-                count++;
-                if (count > 1)
-                    throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.");
-                result = mapper(reader);
-            }
-        }
-        finally
-        {
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
-        }
+                _connection.Open();
 
-        return result;
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    count++;
+                    if (count > 1)
+                        throw new InvalidOperationException($"Sequence contains more than one element of type '{typeof(T).Name}'.");
+                    result = mapper(reader);
+                }
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
+            }
+
+            return result;
+        }
     }
 
     private static IDictionary<string, object?> MapToDictionary(IDataReader reader)

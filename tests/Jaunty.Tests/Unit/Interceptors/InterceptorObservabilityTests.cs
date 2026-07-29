@@ -229,11 +229,11 @@ public class InterceptorObservabilityTests : IDisposable
                 string trimmed = lines[i].TrimStart();
 
                 // Prose may discuss it; code may not.
-                if (trimmed.StartsWith("//", StringComparison.Ordinal) || trimmed.StartsWith('*'))
+                if (trimmed.StartsWith("//", StringComparison.Ordinal) || trimmed.StartsWith("*", StringComparison.Ordinal))
                     continue;
 
-                if (lines[i].Contains("HasInterceptors", StringComparison.Ordinal))
-                    offenders.Add($"{Path.GetRelativePath(source.FullName, file)}:{i + 1}");
+                if (lines[i].IndexOf("HasInterceptors", StringComparison.Ordinal) >= 0)
+                    offenders.Add($"{file.Substring(source.FullName.Length).TrimStart(Path.DirectorySeparatorChar)}:{i + 1}");
             }
         }
 

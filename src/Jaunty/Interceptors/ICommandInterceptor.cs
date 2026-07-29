@@ -25,6 +25,19 @@ namespace Jaunty.Interceptors;
 /// <c>QueryFirst</c>, <c>QuerySingle</c>, <c>GetAll</c>) do invoke interceptors, as do all write
 /// operations. If you need auditing or telemetry to cover a query, use the non-streaming form.
 /// </para>
+/// <para>
+/// <b>Interceptors are not the only way to observe.</b> Subscribing to the <c>"Jaunty"</c>
+/// <see cref="System.Diagnostics.DiagnosticListener"/> is enough on its own - registering an
+/// <see cref="ICommandInterceptor"/> purely to switch telemetry on is not required, and used to be.
+/// </para>
+/// <para>
+/// <b>Coverage across assemblies.</b> The fluent API (<c>Jaunty.Fluent</c>) and the DuckDB flat-file
+/// API (<c>Jaunty.FlatFiles.DuckDB</c>) route their reads and writes through the same pipeline as
+/// core. Two DuckDB areas do not, deliberately: the session setup statements that install and load
+/// DuckDB extensions and probe a source's schema, which are Jaunty's own plumbing rather than the
+/// caller's data access; and <c>ImportCsv</c>'s row-copy loop, which is tracked as the remaining
+/// part of AUD-R26-041.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>

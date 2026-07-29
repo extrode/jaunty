@@ -4,6 +4,7 @@ using DuckDB.NET.Data;
 
 using Jaunty.FlatFiles.DuckDB.Dialects;
 using Jaunty.FlatFiles.Interfaces;
+using Jaunty.Internals;
 
 namespace Jaunty.FlatFiles.DuckDB.Internals;
 
@@ -26,6 +27,19 @@ internal static class TablePromoter
 
         var sql = dialect.GeneratePromoteToTableSql(source);
 
+        CommandObservation.Execute(sql, null, connection, DuckDbObservation.Text, () =>
+        {
+            PromoteDirect(connection, sql);
+            return true;
+        });
+
+        source.IsPromotedToTable = true;
+    }
+
+    private static void PromoteDirect(DuckDBConnection connection, string sql)
+    {
+        CommandObservation.Log(sql, null);
+
         using DuckDBTransaction transaction = connection.BeginTransaction();
         try
         {
@@ -40,8 +54,6 @@ internal static class TablePromoter
             try { transaction.Rollback(); } catch { }
             throw;
         }
-
-        source.IsPromotedToTable = true;
     }
 
     /// <summary>
@@ -58,6 +70,17 @@ internal static class TablePromoter
 
         var sql = dialect.GeneratePromoteToTableSql(source);
 
+        await CommandObservation.ExecuteAsync(sql, null, connection, DuckDbObservation.Text,
+            async () => { await PromoteDirectAsync(connection, sql, cancellationToken).ConfigureAwait(false); return true; },
+            cancellationToken).ConfigureAwait(false);
+
+        source.IsPromotedToTable = true;
+    }
+
+    private static async ValueTask PromoteDirectAsync(DuckDBConnection connection, string sql, CancellationToken cancellationToken)
+    {
+        CommandObservation.Log(sql, null);
+
         DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using (transaction.ConfigureAwait(false))
         {
@@ -68,7 +91,5 @@ internal static class TablePromoter
             await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
-
-        source.IsPromotedToTable = true;
     }
 }

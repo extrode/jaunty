@@ -6,6 +6,7 @@ using System.Text;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals;
 
 namespace Jaunty.Fluent;
 
@@ -112,6 +113,11 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
     }
 
     private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector)
+        => CommandObservation.Execute(
+            sql, _parent._parent._parent.DescribeParameters(), _parent._parent._parent.Connection, CommandType.Text,
+            () => ExecuteQueryDirect(sql, selector));
+
+    private List<TResult> ExecuteQueryDirect<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector)
     {
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
@@ -122,6 +128,8 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
         using IDbCommand command = connection.CreateCommand();
         command.CommandText = sql;
         _parent._parent._parent.BindParameters(command);
+
+        CommandObservation.Log(sql, _parent._parent._parent.DescribeParameters());
 
         var wasClosed = connection.State == ConnectionState.Closed;
         if (wasClosed) connection.Open();
@@ -144,6 +152,11 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
     }
 
     private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CancellationToken cancellationToken)
+        => await CommandObservation.ExecuteAsync(
+            sql, _parent._parent._parent.DescribeParameters(), _parent._parent._parent.Connection, CommandType.Text,
+            () => ExecuteQueryDirectAsync(sql, selector, cancellationToken), cancellationToken).ConfigureAwait(false);
+
+    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<TResult>(string sql, Expression<Func<IGroupingJoined4<TKey, T1, T2, T3, T4>, TResult>> selector, CancellationToken cancellationToken)
     {
         IDbConnection connection = _parent._parent._parent.Connection;
         if (connection is not DbConnection dbConn)
@@ -157,6 +170,8 @@ internal sealed class GroupedJoinedQueryBuilder4<T1, T2, T3, T4, TKey> : IGroupe
         using DbCommand command = dbConn.CreateCommand();
         command.CommandText = sql;
         _parent._parent._parent.BindParameters(command);
+
+        CommandObservation.Log(sql, _parent._parent._parent.DescribeParameters());
 
         bool wasClosed = connection.State == ConnectionState.Closed;
         if (wasClosed) await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);

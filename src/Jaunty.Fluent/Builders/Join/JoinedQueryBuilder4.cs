@@ -7,6 +7,7 @@ using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals;
 
 namespace Jaunty.Fluent;
 
@@ -372,37 +373,46 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).Concat(t4Columns).ToArray();
 
         string sql = _parent._parent.BuildSelectSql(allColumns);
-        var results = new List<(T1, T2, T3, T4)>();
 
-        using IDbCommand command = _parent._parent.Connection.CreateCommand();
-        command.CommandText = sql;
-        _parent._parent.BindParameters(command);
+        return CommandObservation.Execute(
+            sql, _parent._parent.DescribeParameters(), _parent._parent.Connection, CommandType.Text, Body);
 
-        bool wasClosed = _parent._parent.Connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _parent._parent.Connection.Open();
-
-        try
+        List<(T1, T2, T3, T4)> Body()
         {
-            using IDataReader reader = command.ExecuteReader();
-            Dictionary<string, int> ordinals = JoinedQueryBuilder<T1, T2>.BuildOrdinalLookup(reader);
+            var results = new List<(T1, T2, T3, T4)>();
 
-            while (reader.Read())
-            {
-                T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_", ordinals);
-                T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_", ordinals);
-                T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_", ordinals);
-                T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, "t4_", ordinals);
-                results.Add((t1, t2, t3, t4));
-            }
-        }
-        finally
-        {
+            using IDbCommand command = _parent._parent.Connection.CreateCommand();
+            command.CommandText = sql;
+            _parent._parent.BindParameters(command);
+
+            CommandObservation.Log(sql, _parent._parent.DescribeParameters());
+
+            bool wasClosed = _parent._parent.Connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _parent._parent.Connection.Close();
-        }
+                _parent._parent.Connection.Open();
 
-        return results;
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+                Dictionary<string, int> ordinals = JoinedQueryBuilder<T1, T2>.BuildOrdinalLookup(reader);
+
+                while (reader.Read())
+                {
+                    T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_", ordinals);
+                    T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_", ordinals);
+                    T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_", ordinals);
+                    T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, "t4_", ordinals);
+                    results.Add((t1, t2, t3, t4));
+                }
+            }
+            finally
+            {
+                if (wasClosed)
+                    _parent._parent.Connection.Close();
+            }
+
+            return results;
+        }
     }
 
     // AUD-R12: these previously fetched the entire result set via Select() and took the
@@ -501,37 +511,46 @@ internal sealed partial class JoinedQuery4Builder<T1, T2, T3, T4> : IJoinedQuery
         string[] allColumns = t1Columns.Concat(t2Columns).Concat(t3Columns).Concat(t4Columns).ToArray();
 
         string sql = _parent._parent.BuildSelectSql(allColumns);
-        var results = new List<(T1, T2, T3, T4)>();
 
-        using DbCommand command = dbConnection.CreateCommand();
-        command.CommandText = sql;
-        _parent._parent.BindParameters(command);
+        return await CommandObservation.ExecuteAsync(
+            sql, _parent._parent.DescribeParameters(), _parent._parent.Connection, CommandType.Text, Body, cancellationToken).ConfigureAwait(false);
 
-        bool wasClosed = _parent._parent.Connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-        try
+        async ValueTask<List<(T1, T2, T3, T4)>> Body()
         {
-            using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-            Dictionary<string, int> ordinals = JoinedQueryBuilder<T1, T2>.BuildOrdinalLookup(reader);
+            var results = new List<(T1, T2, T3, T4)>();
 
-            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-            {
-                T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_", ordinals);
-                T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_", ordinals);
-                T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_", ordinals);
-                T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, "t4_", ordinals);
-                results.Add((t1, t2, t3, t4));
-            }
-        }
-        finally
-        {
+            using DbCommand command = dbConnection.CreateCommand();
+            command.CommandText = sql;
+            _parent._parent.BindParameters(command);
+
+            CommandObservation.Log(sql, _parent._parent.DescribeParameters());
+
+            bool wasClosed = _parent._parent.Connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _parent._parent.Connection.Close();
-        }
+                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-        return results;
+            try
+            {
+                using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                Dictionary<string, int> ordinals = JoinedQueryBuilder<T1, T2>.BuildOrdinalLookup(reader);
+
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    T1? t1 = JoinedQueryBuilder<T1, T2>.MapEntity<T1>(t1Metadata, reader, "t1_", ordinals);
+                    T2? t2 = JoinedQueryBuilder<T1, T2>.MapEntity<T2>(t2Metadata, reader, "t2_", ordinals);
+                    T3? t3 = JoinedQueryBuilder<T1, T2>.MapEntity<T3>(t3Metadata, reader, "t3_", ordinals);
+                    T4? t4 = JoinedQueryBuilder<T1, T2>.MapEntity<T4>(t4Metadata, reader, "t4_", ordinals);
+                    results.Add((t1, t2, t3, t4));
+                }
+            }
+            finally
+            {
+                if (wasClosed)
+                    _parent._parent.Connection.Close();
+            }
+
+            return results;
+        }
     }
 
     // AUD-R12: same fetch-all-then-take-first issue as the sync members above - delegate to

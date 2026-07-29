@@ -4,6 +4,8 @@ using System.Reflection;
 using DuckDB.NET.Data;
 
 using Jaunty.Core;
+using Jaunty.Internals;
+using Jaunty.FlatFiles.DuckDB.Internals;
 
 namespace Jaunty.FlatFiles.DuckDB;
 
@@ -68,8 +70,15 @@ public sealed partial class DuckDb
         return await ExecuteQueryMultipleAsync(sql, parameters, cancellationToken).ConfigureAwait(false);
     }
 
-    private async ValueTask<GridReader> ExecuteQueryMultipleAsync(string sql, object? parameters, CancellationToken cancellationToken)
+    private ValueTask<GridReader> ExecuteQueryMultipleAsync(string sql, object? parameters, CancellationToken cancellationToken)
+        => CommandObservation.ExecuteAsync(
+            sql, parameters, _connection, DuckDbObservation.Text,
+            () => ExecuteQueryMultipleDirectAsync(sql, parameters, cancellationToken), cancellationToken);
+
+    private async ValueTask<GridReader> ExecuteQueryMultipleDirectAsync(string sql, object? parameters, CancellationToken cancellationToken)
     {
+        CommandObservation.Log(sql, parameters);
+
         DuckDBCommand cmd = _connection.CreateCommand();
         try
         {

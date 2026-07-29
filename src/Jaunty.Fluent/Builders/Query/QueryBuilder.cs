@@ -11,6 +11,7 @@ using Jaunty.Internals.Entity;
 using Jaunty.Internals.Parameters;
 using Jaunty.Configuration;
 using System.Globalization;
+using Jaunty.Internals;
 
 namespace Jaunty.Fluent;
 
@@ -1746,6 +1747,11 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     }
 
     private int ExecuteNonQuery(string sql, CommandOptions options = default)
+        => CommandObservation.Execute(
+            sql, _parameters.ToParameterObject(), _connection, System.Data.CommandType.Text,
+            () => ExecuteNonQueryDirect(sql, options));
+
+    private int ExecuteNonQueryDirect(string sql, CommandOptions options)
     {
         var wasClosed = _connection.State == System.Data.ConnectionState.Closed;
         try
@@ -1773,6 +1779,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
 
             _parameters.BindTo(command);
 
+            CommandObservation.Log(sql, _parameters.ToParameterObject());
+
             return command.ExecuteNonQuery();
         }
         finally
@@ -1783,6 +1791,11 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
     }
 
     private async Task<int> ExecuteNonQueryAsync(string sql, CommandOptions options, CancellationToken cancellationToken)
+        => await CommandObservation.ExecuteAsync(
+            sql, _parameters.ToParameterObject(), _connection, System.Data.CommandType.Text,
+            () => ExecuteNonQueryDirectAsync(sql, options, cancellationToken), cancellationToken).ConfigureAwait(false);
+
+    private async ValueTask<int> ExecuteNonQueryDirectAsync(string sql, CommandOptions options, CancellationToken cancellationToken)
     {
         if (_connection is not System.Data.Common.DbConnection dbConnection)
             throw new InvalidOperationException("Async operations require a DbConnection.");
@@ -1803,6 +1816,8 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
                 command.CommandTimeout = options.CommandTimeout.Value;
 
             _parameters.BindTo(command);
+
+            CommandObservation.Log(sql, _parameters.ToParameterObject());
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
