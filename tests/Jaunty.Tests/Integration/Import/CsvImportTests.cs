@@ -434,6 +434,18 @@ public class CsvImportTests : IClassFixture<DialectFixture>
     // =============================================
     // SQL Server (BULK INSERT)
     // =============================================
+    //
+    // These four cases require the SQL Server instance to be able to read the path the test hands
+    // it. BULK INSERT resolves the path on the *server* host, under the account SQL Server runs as,
+    // so a containerised or remote instance without a bind mount covering the repository will fail
+    // no matter what the test does - the file exists here and not there.
+    //
+    // AUD-R26 (batch 4). That requirement was never stated, here or in the API, and this suite is
+    // itself an instance of the finding: it hands a developer-machine path to a container and the
+    // client-side File.Exists check passed it straight through. The check has since been moved to
+    // the paths that actually read the file here, and a server-side failure now says which machine
+    // resolved the path - so when these fail on a machine without the mount, the error says so
+    // rather than reporting a file that plainly exists.
 
     [Theory]
     [SqlServer]

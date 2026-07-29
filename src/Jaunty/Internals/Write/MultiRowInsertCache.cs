@@ -15,12 +15,17 @@ namespace Jaunty.Internals.Write;
 /// </summary>
 internal static class MultiRowInsertCache
 {
-    // Not keyed by column layout, unlike _getterCache below: this is safe only because
-    // ColumnMetadataHelper.GetInsertableColumns(metadata) is deterministic per entity type (the
-    // column set/order for T never varies across calls). If that ever changes, this cache would
-    // need a layout key too, or it could hand back SQL whose @col_row parameter names don't match
-    // the getters _getterCache produces for the new layout.
-    private static readonly ConcurrentDictionary<(Type EntityType, Type ConnectionType, int BatchSize), string> _cache = new();
+    // Not keyed by column layout, unlike _getterCache below. The old justification was that
+    // ColumnMetadataHelper.GetInsertableColumns(metadata) is deterministic per entity type, so the
+    // column set and order for T never varies across calls - and AUD-R26 (batch 4) established that
+    // it does vary, because metadata is built from JauntyConfig's schema/table/column name resolvers
+    // and those are public and settable at any time. That is exactly the failure the old comment
+    // predicted: SQL whose @col_row parameter names no longer match the getters _getterCache
+    // produces for the new layout.
+    //
+    // The generation on the entry closes it without a layout key: _getterCache already keys on the
+    // layout, so the two agree by construction once a configuration change retires this entry.
+    private static readonly ConcurrentDictionary<(Type EntityType, Type ConnectionType, int BatchSize), ConfigurationScoped<string>> _cache = new();
 
     // Keyed by (entity type, column layout) - not just entity type - so a second bulk insert of
     // the same T with a different column subset/order gets its own correctly-matching getters
@@ -84,11 +89,14 @@ internal static class MultiRowInsertCache
     {
         (Type entityType, Type connectionType, int batchSize) key = (entityType, connectionType, batchSize);
 
-        if (_cache.TryGetValue(key, out string? cached))
-            return cached;
+        // Read the generation before the lookup, never after: see ConfigurationGeneration.Current.
+        int generation = ConfigurationGeneration.Current;
+
+        if (_cache.TryGetValue(key, out ConfigurationScoped<string> cached) && cached.Generation == generation)
+            return cached.Value;
 
         string sql = Build(metadata, dialect, batchSize);
-        _cache.TryAdd(key, sql);
+        _cache[key] = new ConfigurationScoped<string>(generation, sql);
         return sql;
     }
 

@@ -1,10 +1,10 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Runtime.CompilerServices;
 
 using Jaunty.Configuration;
+using Jaunty.Internals.Parameters;
 
 namespace Jaunty.Extensions.Reflection;
 
@@ -17,7 +17,11 @@ namespace Jaunty.Extensions.Reflection;
 /// </remarks>
 internal sealed class MultiEntityMapper<T1, T2> where T1 : new() where T2 : new()
 {
-    private static readonly ConcurrentDictionary<string, MultiEntityMapper<T1, T2>> Cache = new(StringComparer.OrdinalIgnoreCase);
+    // AUD-R26-053: bounded. The key is the result set's column-name list - caller-controlled through
+    // the SELECT list - and this was a ConcurrentDictionary that nothing ever removed from, so every
+    // distinct shape left a permanent entry. See BoundedCache.SchemaCacheMaxEntries for the cap.
+    private static readonly BoundedCache<string, MultiEntityMapper<T1, T2>> Cache =
+        new(StringComparer.OrdinalIgnoreCase, BoundedCacheLimits.SchemaCacheMaxEntries);
 
     // Per-reader-instance memoization: GetTypedMultiMapper's delegate calls Get(reader) on every
     // row of a result set, and the same IDataReader instance is passed for every row of that

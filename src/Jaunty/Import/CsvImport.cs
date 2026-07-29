@@ -33,6 +33,44 @@ public static class CsvImportExtensions
     /// <param name="filePath">The absolute path to the CSV file.</param>
     /// <param name="options">Optional import configuration.</param>
     /// <returns>The number of rows imported (approximate for some engines).</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>Which machine reads the file depends on the engine.</b> <paramref name="filePath"/> is
+    /// not resolved in one place, and the difference decides whether a path on the calling machine
+    /// is the right thing to pass:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>
+    /// <b>SQLite</b> - read <b>here</b>, by the sqlite3 CLI for a file-backed database or by
+    /// Jaunty's own prepared-statement fallback for an in-memory one.
+    /// </description></item>
+    /// <item><description>
+    /// <b>MySQL/MariaDB</b> - read <b>here</b>. <c>LOAD DATA LOCAL INFILE</c> streams the file from
+    /// the client driver, which requires the server to permit <c>local_infile</c>.
+    /// </description></item>
+    /// <item><description>
+    /// <b>PostgreSQL</b> - read <b>here</b> when Npgsql exposes <c>BeginTextImport</c>, which
+    /// streams <c>COPY ... FROM STDIN</c>. Where that is unavailable - a non-Npgsql provider, or a
+    /// trimmed build - it falls back to server-side <c>COPY ... FROM '&lt;path&gt;'</c>, and the
+    /// path is then the <b>server's</b>.
+    /// </description></item>
+    /// <item><description>
+    /// <b>SQL Server</b> - read <b>on the database server</b>, always. <c>BULK INSERT ... FROM</c>
+    /// resolves the path on the server host, under the account SQL Server runs as, and the caller
+    /// additionally needs <c>ADMINISTER BULK OPERATIONS</c> (or <c>bulkadmin</c>). A path from the
+    /// calling machine is meaningful only when the two are the same host. To import a file that
+    /// lives here, use <c>BulkInsert&lt;T&gt;</c> instead.
+    /// </description></item>
+    /// </list>
+    /// <para>
+    /// AUD-R26 (batch 4, medium/consistency). None of this was documented, and the file-existence
+    /// precondition was applied to all four engines before dispatch - so against a remote server it
+    /// passed and gave false assurance, while a file that existed <em>on the server</em> and not
+    /// here was rejected outright, making the server-side capability unreachable. The check now runs
+    /// only on the paths that read the file here, and a server-side failure reports which machine
+    /// resolved the path.
+    /// </para>
+    /// </remarks>
     public static long ImportCsv(this IDbConnection connection, string tableName, string filePath, CsvImportOptions? options = null)
     {
 #if NET8_0_OR_GREATER
@@ -44,9 +82,6 @@ public static class CsvImportExtensions
         if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentException("Table name is required.", nameof(tableName));
         if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("File path is required.", nameof(filePath));
 #endif
-
-        if (!File.Exists(filePath))
-            throw new FileNotFoundException($"CSV file not found: {filePath}", filePath);
 
         ValidateIdentifier(tableName, nameof(tableName));
 
@@ -73,6 +108,44 @@ public static class CsvImportExtensions
     /// <summary>
     /// Imports a CSV file into the specified table using the database engine's native bulk import (async).
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Which machine reads the file depends on the engine.</b> <paramref name="filePath"/> is
+    /// not resolved in one place, and the difference decides whether a path on the calling machine
+    /// is the right thing to pass:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>
+    /// <b>SQLite</b> - read <b>here</b>, by the sqlite3 CLI for a file-backed database or by
+    /// Jaunty's own prepared-statement fallback for an in-memory one.
+    /// </description></item>
+    /// <item><description>
+    /// <b>MySQL/MariaDB</b> - read <b>here</b>. <c>LOAD DATA LOCAL INFILE</c> streams the file from
+    /// the client driver, which requires the server to permit <c>local_infile</c>.
+    /// </description></item>
+    /// <item><description>
+    /// <b>PostgreSQL</b> - read <b>here</b> when Npgsql exposes <c>BeginTextImport</c>, which
+    /// streams <c>COPY ... FROM STDIN</c>. Where that is unavailable - a non-Npgsql provider, or a
+    /// trimmed build - it falls back to server-side <c>COPY ... FROM '&lt;path&gt;'</c>, and the
+    /// path is then the <b>server's</b>.
+    /// </description></item>
+    /// <item><description>
+    /// <b>SQL Server</b> - read <b>on the database server</b>, always. <c>BULK INSERT ... FROM</c>
+    /// resolves the path on the server host, under the account SQL Server runs as, and the caller
+    /// additionally needs <c>ADMINISTER BULK OPERATIONS</c> (or <c>bulkadmin</c>). A path from the
+    /// calling machine is meaningful only when the two are the same host. To import a file that
+    /// lives here, use <c>BulkInsert&lt;T&gt;</c> instead.
+    /// </description></item>
+    /// </list>
+    /// <para>
+    /// AUD-R26 (batch 4, medium/consistency). None of this was documented, and the file-existence
+    /// precondition was applied to all four engines before dispatch - so against a remote server it
+    /// passed and gave false assurance, while a file that existed <em>on the server</em> and not
+    /// here was rejected outright, making the server-side capability unreachable. The check now runs
+    /// only on the paths that read the file here, and a server-side failure reports which machine
+    /// resolved the path.
+    /// </para>
+    /// </remarks>
     public static async ValueTask<long> ImportCsvAsync(this DbConnection connection, string tableName, string filePath, CsvImportOptions? options = null, CancellationToken cancellationToken = default)
     {
 #if NET8_0_OR_GREATER
@@ -84,9 +157,6 @@ public static class CsvImportExtensions
         if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentException("Table name is required.", nameof(tableName));
         if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("File path is required.", nameof(filePath));
 #endif
-
-        if (!File.Exists(filePath))
-            throw new FileNotFoundException($"CSV file not found: {filePath}", filePath);
 
         ValidateIdentifier(tableName, nameof(tableName));
 
@@ -114,6 +184,8 @@ public static class CsvImportExtensions
 
     private static long ImportSqlite(IDbConnection connection, string tableName, string filePath, CsvImportOptions options)
     {
+        RequireFileOnThisMachine(filePath);
+
         // Get the database file path from the connection string
         string? dbPath = ExtractSqliteDbPath(connection.ConnectionString);
         if (dbPath is null || IsSqliteInMemoryDataSource(dbPath))
@@ -174,6 +246,7 @@ public static class CsvImportExtensions
         // the sqlite3 CLI directly - see AUD-R11 batch-04). Fail loudly instead of silently
         // importing the sentinel as literal text.
         ThrowIfNullValueUnsupported(options, "sqlite3 CLI import");
+        ThrowIfEncodingUnsupported(options, "sqlite3 CLI import");
 
         // Build sqlite3 commands
         var commands = new StringBuilder();
@@ -370,6 +443,11 @@ public static class CsvImportExtensions
             MethodInfo? beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
             if (beginTextImport != null)
             {
+                // This branch streams the file from here, so its absence here is an error Jaunty
+                // can diagnose. The server-side fallback below is not gated on it - see
+                // RequireFileOnThisMachine.
+                RequireFileOnThisMachine(filePath);
+
                 using var writer = (IDisposable)beginTextImport.Invoke(connection, new object[] { copyCommand })!;
                 var textWriter = (TextWriter)writer;
 
@@ -383,10 +461,19 @@ public static class CsvImportExtensions
                 return CountCsvRows(filePath, options.HasHeader, options.Quote, options.Encoding);
             }
 
-            // Fallback: Use COPY FROM with file path (requires server access to file)
+            // Fallback: Use COPY FROM with file path (requires server access to file).
+            // Deliberately not preceded by RequireFileOnThisMachine: the server opens this one, so
+            // the caller's filesystem says nothing about whether it will work.
             using IDbCommand cmd = connection.CreateCommand();
             cmd.CommandText = $"COPY {escapedTable} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}'{BuildPostgresCopyExtraOptions(options)})";
-            return cmd.ExecuteNonQuery();
+            try
+            {
+                return cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                throw ServerSideImportFailure(filePath, "PostgreSQL server-side COPY FROM", ex);
+            }
         }
         finally
         {
@@ -413,6 +500,11 @@ public static class CsvImportExtensions
             MethodInfo? beginTextImport = connection.GetType().GetMethod("BeginTextImport", new[] { typeof(string) });
             if (beginTextImport != null)
             {
+                // This branch streams the file from here, so its absence here is an error Jaunty
+                // can diagnose. The server-side fallback below is not gated on it - see
+                // RequireFileOnThisMachine.
+                RequireFileOnThisMachine(filePath);
+
                 using var writer = (IDisposable)beginTextImport.Invoke(connection, new object[] { copyCommand })!;
                 var textWriter = (TextWriter)writer;
 
@@ -428,7 +520,14 @@ public static class CsvImportExtensions
 
             using DbCommand cmd = connection.CreateCommand();
             cmd.CommandText = $"COPY {escapedTable} FROM '{filePath.Replace("'", "''")}' WITH (FORMAT csv, HEADER {(options.HasHeader ? "true" : "false")}, DELIMITER '{options.Delimiter}'{BuildPostgresCopyExtraOptions(options)})";
-            return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                throw ServerSideImportFailure(filePath, "PostgreSQL server-side COPY FROM", ex);
+            }
         }
         finally
         {
@@ -450,6 +549,8 @@ public static class CsvImportExtensions
     private static long ImportMySql(IDbConnection connection, string tableName, string filePath, CsvImportOptions options)
     {
         ThrowIfNullValueUnsupported(options, "MySQL/MariaDB LOAD DATA");
+        ThrowIfEncodingUnsupported(options, "MySQL/MariaDB LOAD DATA");
+        RequireFileOnThisMachine(filePath);
 
         bool wasClosed = connection.State == ConnectionState.Closed;
         try
@@ -487,6 +588,8 @@ public static class CsvImportExtensions
     private static async ValueTask<long> ImportMySqlAsync(DbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken)
     {
         ThrowIfNullValueUnsupported(options, "MySQL/MariaDB LOAD DATA");
+        ThrowIfEncodingUnsupported(options, "MySQL/MariaDB LOAD DATA");
+        RequireFileOnThisMachine(filePath);
 
         bool wasClosed = connection.State == ConnectionState.Closed;
         try
@@ -535,6 +638,7 @@ public static class CsvImportExtensions
     private static long ImportSqlServer(IDbConnection connection, string tableName, string filePath, CsvImportOptions options)
     {
         ThrowIfNullValueUnsupported(options, "SQL Server BULK INSERT");
+        ThrowIfEncodingUnsupported(options, "SQL Server BULK INSERT");
 
         bool wasClosed = connection.State == ConnectionState.Closed;
         try
@@ -559,7 +663,14 @@ public static class CsvImportExtensions
             sb.Append(')');
 
             cmd.CommandText = sb.ToString();
-            return cmd.ExecuteNonQuery();
+            try
+            {
+                return cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                throw ServerSideImportFailure(filePath, "SQL Server BULK INSERT", ex);
+            }
         }
         finally
         {
@@ -570,6 +681,7 @@ public static class CsvImportExtensions
     private static async ValueTask<long> ImportSqlServerAsync(DbConnection connection, string tableName, string filePath, CsvImportOptions options, CancellationToken cancellationToken)
     {
         ThrowIfNullValueUnsupported(options, "SQL Server BULK INSERT");
+        ThrowIfEncodingUnsupported(options, "SQL Server BULK INSERT");
 
         bool wasClosed = connection.State == ConnectionState.Closed;
         try
@@ -594,7 +706,14 @@ public static class CsvImportExtensions
             sb.Append(')');
 
             cmd.CommandText = sb.ToString();
-            return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                return await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                throw ServerSideImportFailure(filePath, "SQL Server BULK INSERT", ex);
+            }
         }
         finally
         {
@@ -736,6 +855,86 @@ public static class CsvImportExtensions
     // MySQL's LOAD DATA and SQL Server's BULK INSERT have no clause for substituting an arbitrary
     // string as NULL (unlike Postgres COPY's NULL option or the sqlite3 CLI's .nullvalue), so rather
     // than silently importing the sentinel as literal text, fail loudly if a caller configured one.
+    /// <summary>
+    /// Requires the CSV file to exist on the machine running this code. Only for import paths that
+    /// read it here.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26 (batch 4, medium/consistency). This check used to sit in <c>ImportCsv</c> and
+    /// <c>ImportCsvAsync</c>, ahead of dialect dispatch, and so applied to all four engines. Only
+    /// some of them read the file here. SQLite (both the CLI and the prepared-statement fallback)
+    /// and MySQL's <c>LOAD DATA LOCAL INFILE</c> do; PostgreSQL does when Npgsql's
+    /// <c>BeginTextImport</c> is available and does not when it falls back to server-side
+    /// <c>COPY ... FROM</c>; SQL Server's <c>BULK INSERT ... FROM</c> never does.
+    /// </para>
+    /// <para>
+    /// The finding described the consequence as false assurance - against a remote server the check
+    /// passes and the statement then fails there, or worse reads a <em>different</em> file that
+    /// happens to exist at that path on the server host. It is also worse than that: because the
+    /// check ran unconditionally and before dispatch, a file that exists on the database server and
+    /// not on the calling machine - which is precisely what <c>BULK INSERT</c> is for - was rejected
+    /// with <see cref="FileNotFoundException"/> before anything was sent. The capability was
+    /// unreachable, not merely undocumented.
+    /// </para>
+    /// </remarks>
+    private static void RequireFileOnThisMachine(string filePath)
+    {
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException($"CSV file not found: {filePath}", filePath);
+    }
+
+    /// <summary>
+    /// Reports a failure from a server-side import in terms of <em>which machine</em> resolves the
+    /// path, which is the thing a caller looking at their own filesystem cannot see.
+    /// </summary>
+    /// <remarks>
+    /// The provider's own message is accurate but describes the server's filesystem
+    /// ("Cannot bulk load. The file ... does not exist or you don't have file access rights") while
+    /// the caller is looking at theirs. Stating whether the path exists here is the whole diagnosis:
+    /// present here and absent there means the two machines are different, and absent in both means
+    /// an ordinary typo. The provider exception is kept as the inner exception - it carries the
+    /// error number and the server's own wording, and nothing here is a substitute for that.
+    /// </remarks>
+    private static InvalidOperationException ServerSideImportFailure(string filePath, string importMethodName, Exception inner)
+    {
+        string clientSide = File.Exists(filePath)
+            ? "That path exists on the calling machine, which means the database server is a different machine (or the account it runs as cannot read the path)."
+            : "That path does not exist on the calling machine either.";
+
+        return new InvalidOperationException(
+            $"{importMethodName} failed for '{filePath}'. This import path is resolved by the database server, " +
+            $"not by the process calling Jaunty, so the file must be readable by the server. {clientSide} " +
+            "The account also needs the server's bulk-load permission (ADMINISTER BULK OPERATIONS, or membership " +
+            "of bulkadmin). To import a file that lives on the calling machine, use a client-side route instead - " +
+            "SQL Server's BulkInsert<T>, or one of the engines whose import streams from here.",
+            inner);
+    }
+
+    /// <summary>
+    /// Rejects a non-default <see cref="CsvImportOptions.Encoding"/> on an import path that cannot
+    /// honour it.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26 (batch 4, low/consistency). <c>Encoding</c> is read only where .NET opens the file -
+    /// the SQLite prepared-statement fallback and PostgreSQL's <c>COPY FROM STDIN</c>. On the
+    /// sqlite3 CLI, <c>LOAD DATA LOCAL INFILE</c> and <c>BULK INSERT</c> something else opens it and
+    /// the setting was discarded in silence, so a caller who set Latin-1 for a Latin-1 file got
+    /// UTF-8 behaviour and mojibake with nothing to indicate why. <c>NullValue</c> already failed
+    /// loudly on these paths; this makes the type's two unhonourable options behave alike. The
+    /// default is not rejected, because UTF-8 is what these paths produce anyway.
+    /// </remarks>
+    private static void ThrowIfEncodingUnsupported(CsvImportOptions options, string importMethodName)
+    {
+        if (options.Encoding is not null && options.Encoding.CodePage != Encoding.UTF8.CodePage)
+            throw new NotSupportedException(
+                $"CsvImportOptions.Encoding is not supported by the {importMethodName} import path - " +
+                "the file is opened by the database engine rather than by Jaunty, so the encoding is the " +
+                $"engine's to determine and '{options.Encoding.WebName}' cannot be applied. Leave Encoding at its " +
+                "default (UTF-8), or import into an in-memory SQLite database or PostgreSQL, whose paths read the " +
+                "file here and honour it.");
+    }
+
     private static void ThrowIfNullValueUnsupported(CsvImportOptions options, string importMethodName)
     {
         if (options.NullValue != null)

@@ -29,7 +29,9 @@ internal sealed class SqlServerImportDialect : IImportDialect, IQuotedIdentifier
     string IQuotedIdentifierDialect.QuoteIdentifier(string identifier) => QuoteIdentifier(identifier);
 
     /// <inheritdoc />
-    public string MapClrTypeToSqlType(Type clrType) => clrType switch
+    public string MapClrTypeToSqlType(Type clrType) => MapNormalized(ImportTypeMapping.Normalize(clrType));
+
+    private static string MapNormalized(Type clrType) => clrType switch
     {
         _ when clrType == typeof(string) => "NVARCHAR(MAX)",
         _ when clrType == typeof(int) => "INT",
@@ -44,7 +46,15 @@ internal sealed class SqlServerImportDialect : IImportDialect, IQuotedIdentifier
         _ when clrType == typeof(DateTimeOffset) => "DATETIMEOFFSET",
         _ when clrType == typeof(Guid) => "UNIQUEIDENTIFIER",
         _ when clrType == typeof(byte[]) => "VARBINARY(MAX)",
-        _ => "NVARCHAR(MAX)"
+        _ when clrType == typeof(DateOnly) => "DATE",
+        _ when clrType == typeof(TimeOnly) => "TIME",
+        _ when clrType == typeof(TimeSpan) => "TIME",
+        _ when clrType == typeof(char) => "NCHAR(1)",
+        _ when clrType == typeof(uint) => "BIGINT",
+        _ when clrType == typeof(ulong) => "DECIMAL(20,0)",
+        _ when clrType == typeof(sbyte) => "SMALLINT",
+        _ when clrType == typeof(ushort) => "INT",
+        _ => throw ImportTypeMapping.Unsupported(clrType, "SQL Server")
     };
 
     /// <inheritdoc />
@@ -150,7 +160,7 @@ internal sealed class SqlServerImportDialect : IImportDialect, IQuotedIdentifier
         {
             if (i > 0) sb.Append(", ");
             (string? name, Type? clrType, bool isPrimaryKey, bool isNullable) = columns[i];
-            sb.Append($"{QuoteIdentifier(name)} {MapClrTypeToSqlType(clrType)}");
+            sb.Append($"{QuoteIdentifier(name)} {ImportTypeMapping.MapForColumn(MapClrTypeToSqlType, name, clrType)}");
             if (isPrimaryKey) sb.Append(" PRIMARY KEY");
             if (!isNullable && !isPrimaryKey) sb.Append(" NOT NULL");
         }

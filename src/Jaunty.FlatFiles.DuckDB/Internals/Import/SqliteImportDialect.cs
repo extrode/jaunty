@@ -26,7 +26,9 @@ internal sealed class SqliteImportDialect : IImportDialect, IQuotedIdentifierDia
     string IQuotedIdentifierDialect.QuoteIdentifier(string identifier) => QuoteIdentifier(identifier);
 
     /// <inheritdoc />
-    public string MapClrTypeToSqlType(Type clrType) => clrType switch
+    public string MapClrTypeToSqlType(Type clrType) => MapNormalized(ImportTypeMapping.Normalize(clrType));
+
+    private static string MapNormalized(Type clrType) => clrType switch
     {
         _ when clrType == typeof(string) => "TEXT",
         _ when clrType == typeof(int) => "INTEGER",
@@ -41,7 +43,15 @@ internal sealed class SqliteImportDialect : IImportDialect, IQuotedIdentifierDia
         _ when clrType == typeof(DateTimeOffset) => "TEXT",
         _ when clrType == typeof(Guid) => "TEXT",
         _ when clrType == typeof(byte[]) => "BLOB",
-        _ => "TEXT"
+        _ when clrType == typeof(DateOnly) => "TEXT",
+        _ when clrType == typeof(TimeOnly) => "TEXT",
+        _ when clrType == typeof(TimeSpan) => "TEXT",
+        _ when clrType == typeof(char) => "TEXT",
+        _ when clrType == typeof(uint) => "INTEGER",
+        _ when clrType == typeof(ulong) => "INTEGER",
+        _ when clrType == typeof(sbyte) => "INTEGER",
+        _ when clrType == typeof(ushort) => "INTEGER",
+        _ => throw ImportTypeMapping.Unsupported(clrType, "SQLite")
     };
 
     /// <inheritdoc />
@@ -123,7 +133,7 @@ internal sealed class SqliteImportDialect : IImportDialect, IQuotedIdentifierDia
         {
             if (i > 0) sb.Append(", ");
             (string? name, Type? clrType, bool isPrimaryKey, bool isNullable) = columns[i];
-            sb.Append($"{QuoteIdentifier(name)} {MapClrTypeToSqlType(clrType)}");
+            sb.Append($"{QuoteIdentifier(name)} {ImportTypeMapping.MapForColumn(MapClrTypeToSqlType, name, clrType)}");
             if (isPrimaryKey) sb.Append(" PRIMARY KEY");
             if (!isNullable && !isPrimaryKey) sb.Append(" NOT NULL");
         }
