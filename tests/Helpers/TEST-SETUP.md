@@ -2,6 +2,10 @@
 
 How to set up the databases the Jaunty integration tests run against.
 
+> **On an Apple Silicon Mac, read [Apple Silicon](#apple-silicon-macos-arm64) first.** Three
+> of the assumptions below do not hold there: SQLite needs a one-time build step, the SQL
+> Server image has no arm64 build, and `dotnet test` without `-f net8.0` aborts the run.
+
 ## Quick Start
 
 SQLite needs no setup — the fixture is committed:
@@ -27,6 +31,87 @@ SQLite fixture is edited in place. `scripts/reset-test-databases.ps1 --execute` 
 and recreates each database, then re-seeds. Re-seeding alone is not enough: the seed
 scripts only recreate the 13 Northwind tables, so test-created ones (`bulk_*`,
 `csv_import_test`, `execute_test`, `get_test`, `scaffold_test_*`) would survive.
+
+---
+
+## Apple Silicon (macOS arm64)
+
+This guide was written from the Windows machine, where everything below is a non-issue.
+Three things differ on an arm64 Mac. Measured 2026-07-29.
+
+### 1. SQLite is not setup-free
+
+`System.Data.SQLite.Core` ships no `osx-arm64` native, and its `osx-x64` one is plain
+x86_64 Mach-O, so it cannot load into an arm64 process. Until this is built, **every test
+touching `System.Data.SQLite` fails** — 1,099 of 1,099 failures in `Jaunty.Tests` and all
+887 in `Jaunty.Fluent.Tests` had that single cause.
+
+```bash
+tools/native/sqlite-interop-osx-arm64/build.sh    # once per machine, ~1 min
+```
+
+See that directory's README for why it is more than a recompile. Nothing else on this page
+changes, and CI is unaffected.
+
+### 2. SQL Server has no arm64 image
+
+Queried from the registries rather than assumed:
+
+| Image | Platforms |
+|---|---|
+| `mcr.microsoft.com/mssql/server:2022-latest` | **linux/amd64 only** |
+| `postgres:16` | linux/amd64, linux/arm64, +5 |
+| `mysql:8` | linux/amd64, linux/arm64 |
+| `mariadb:11` | linux/amd64, linux/arm64, +2 |
+
+So `docker compose up -d` brings up three of the four natively. The `mssql` service needs
+amd64 emulation — enable **Settings → General → Use Rosetta for x86_64/amd64 emulation on
+Apple Silicon** in Docker Desktop, or point `JAUNTY_TEST_SQLSERVER` at a real instance
+elsewhere.
+
+Pointing it elsewhere is the better option anyway: the `CsvImportTests.*_SqlServer_*` tests
+need a SQL Server that can see the runner's filesystem, which no container can — see
+[Known environment limit](#known-environment-limit).
+
+> Not yet verified: whether the emulated `mssql` container is *usable* here, only that it
+> is the only one needing emulation. Docker Desktop is installed on this machine but its
+> daemon was not running when this was written.
+
+### 3. `dotnet test` at solution level aborts
+
+`Jaunty.Tests` multi-targets `net8.0;net472`, and .NET Framework cannot host on macOS. The
+net472 run does not fail — it **aborts the whole invocation**, so projects queued behind it
+never execute and the summary looks short rather than broken.
+
+```bash
+dotnet test tests/Jaunty.Tests/Jaunty.Tests.csproj -f net8.0    # not `dotnet test`
+```
+
+That also means the Mac cannot cover net472 at all. The Windows machine is the only place
+that TFM runs, which is worth remembering before concluding a change is verified.
+
+### Measured baseline, unconfigured
+
+With the SQLite native built and no connection strings set, on net8.0:
+
+| | Passed | Failed | Skipped |
+|---|---|---|---|
+| `Jaunty.Tests` | 2,763 | 0 | 2,447 |
+| `Jaunty.Fluent.Tests` | 1,182 | 0 | 0 |
+| `Jaunty.Scaffolding.Tests` | 555 | 0 | 24 |
+| `Jaunty.FlatFiles.DuckDB.Tests` | 578 | 0 | 0 |
+| `Jaunty.FlatFiles.Tests` | 185 | 0 | 0 |
+| `Jaunty.SourceGenerator.Tests` | 72 | 0 | 0 |
+| `Jaunty.Fluent.SourceGen.Tests` | 9 | 0 | 8 |
+| `Jaunty.Scaffolding.Cli.Tests` | 33 | **1** | 0 |
+
+Of the 2,447 skips, 815 want `JAUNTY_TEST_POSTGRESQL` and 811 want `JAUNTY_TEST_SQLSERVER`.
+
+The one failure is `ListTablesCommandTests.Invoke_ConnectionFailure_ReturnsErrorExitCodeAndMessage`
+(expects exit 1, gets 0). It predates the SQLite work and is unrelated to it. Whether it is
+macOS-specific has not been established — the coverage table below reports 34 passing for
+that assembly on Windows, which suggests it may be, but that is one run on each platform and
+not a conclusion.
 
 ---
 
