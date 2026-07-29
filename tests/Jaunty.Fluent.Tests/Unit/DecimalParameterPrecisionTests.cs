@@ -18,12 +18,13 @@ namespace Jaunty.Fluent.Tests.Unit;
 /// The finding proposed removing it outright, on the grounds that the provider bug it cites could
 /// not be reproduced. Removing it turns four <c>GroupBy</c>/<c>Having</c> integration tests red, so
 /// the bug is real; what the re-measurement missed is <em>when</em> it fires. Both SQLite providers
-/// bind a <see cref="decimal"/> as TEXT. Against a <em>column</em>, SQLite applies the column's
-/// affinity to the TEXT operand and converts it, so <c>WHERE price = @p</c> matches - that is the
-/// case the audit probed, and it is why the coercion looked unnecessary. Against an
-/// <em>expression</em> there is no affinity to apply, and TEXT sorts above every number, so
+/// bind a <see cref="decimal"/> as TEXT. Against a column with <em>numeric affinity</em>, SQLite
+/// applies that affinity to the TEXT operand and converts it, so <c>WHERE price = @p</c> matches -
+/// that is the case the audit probed, and it is why the coercion looked unnecessary. Against a
+/// <em>bare expression</em> there is no affinity to apply, and TEXT sorts above every number, so
 /// <c>HAVING SUM(price) &gt; @p</c> matches no group and <c>&lt; @p</c> matches every group,
-/// whatever the values are. Not only aggregates - <c>WHERE price * 1 &gt; @p</c> fails the same way.
+/// whatever the values are. Not only aggregates - <c>WHERE price * 1 &gt; @p</c> fails the same way,
+/// though the fluent translator emits no arithmetic, so HAVING is the only route to it from here.
 /// </para>
 ///
 /// <para>
@@ -198,6 +199,15 @@ public class DecimalParameterPrecisionTests : IDisposable
     /// <c>GroupedJoinedQueryBuilder</c>'s HAVING clauses. Converting uniformly per dialect is the
     /// decision being recorded here, not an oversight - on SQLite it costs exactness past 2^53 on a
     /// column comparison, which is the narrower of the two failures.
+    ///
+    /// <para>
+    /// That cost is real and observable, so it is stated rather than implied: against SQLite, a
+    /// column holding 9007199254740993 is matched by <c>Select()</c> and missed by
+    /// <c>SelectBoth()</c> for the same <c>Where</c>. It is not new - the coercion this replaced was
+    /// unconditional and did the same - but this path is the inexact one of the two, and neither
+    /// scoping the conversion to HAVING parameters nor casting in the generated SQL was in scope
+    /// here. Both are recorded under AUD-R26-050 for round 27.
+    /// </para>
     /// </summary>
     [Fact]
     public void TheJoinedPathStillConvertsADecimalOnSqlite()
