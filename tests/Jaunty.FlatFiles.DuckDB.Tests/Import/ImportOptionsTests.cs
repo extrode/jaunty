@@ -33,14 +33,39 @@ public class ImportOptionsTests
         Assert.Equal(250, options.BatchSize);
     }
 
-    [Fact]
-    public void ExplicitZeroBatchSize_IsRespectedRatherThanFallingBackToDefault()
+    /// <summary>
+    /// AUD-R26-064: this used to assert that an explicit 0 was <em>respected</em>, on the reasoning
+    /// that 0 must stay distinguishable from "unset". The distinction is real and still holds - see
+    /// the test below - but respecting the value was the wrong conclusion from it. Both import loops
+    /// compare <c>rows &gt;= batchSize</c>, so 0 flushed after every single row: a batched import
+    /// silently became a row-at-a-time one, with the progress callback firing per row, and the
+    /// <c>DbBatch</c> path exists specifically to avoid that round-trip pattern. There is no reading
+    /// of "batch size 0" that a caller could want, so it is now rejected where "unset" and
+    /// "explicitly zero" are still telling apart.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(int.MinValue)]
+    public void NonPositiveBatchSize_IsRejected(int batchSize)
     {
-        // An explicit 0 must be distinguished from "unset" (default(ImportOptions)) — the fallback
-        // to 1000 should only apply when the struct was never constructed at all.
-        var options = new ImportOptions(batchSize: 0);
+        ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
+            () => new ImportOptions(batchSize: batchSize));
 
-        Assert.Equal(0, options.BatchSize);
+        Assert.Equal("batchSize", ex.ParamName);
+    }
+
+    /// <summary>
+    /// And the distinction the nullable backing field exists for is unchanged: a
+    /// <c>default(ImportOptions)</c> bypasses the constructor entirely - so it never sees the new
+    /// guard - and still falls back to 1000 rather than reporting the zero-initialized 0.
+    /// </summary>
+    [Fact]
+    public void DefaultStruct_BypassesTheGuard_AndStillFallsBackToTheDocumentedDefault()
+    {
+        var options = default(ImportOptions);
+
+        Assert.Equal(1000, options.BatchSize);
     }
 
     [Fact]
