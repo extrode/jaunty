@@ -212,6 +212,15 @@ public sealed class Scaffolder
 
         if (string.IsNullOrWhiteSpace(options.Namespace))
             throw new ArgumentException("Namespace is required.", nameof(options));
+
+        // AUD-R26: the namespace is interpolated straight into the generated file. Checked here,
+        // before a connection is opened, so a typo is reported against the option the user set
+        // rather than as a compiler error in a file they then have to read backwards.
+        if (!NamingHelper.IsValidNamespace(options.Namespace))
+            throw new ArgumentException(
+                $"Namespace '{options.Namespace}' is not a valid C# namespace. It must be a " +
+                "dot-separated sequence of identifiers, each starting with a letter or underscore.",
+                nameof(options));
     }
 
     /// <summary>
