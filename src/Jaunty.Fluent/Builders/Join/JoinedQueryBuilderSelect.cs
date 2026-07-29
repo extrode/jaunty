@@ -261,9 +261,26 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     /// Materialises the joined rows, optionally bounded.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// AUD-R26-057: the limit did not exist, so SelectFirstBoth called this and indexed [0] -
     /// materialising and mapping every joined row to return one. SelectWithMapper already took a
     /// limit for the same job; this is the sibling that did not.
+    /// </para>
+    /// <para>
+    /// AUD-R26-060, knowingly left open here: this helper and its two neighbours
+    /// (<c>SelectWithMapping</c>, <c>SelectWithMapper</c>) build and execute their own command, so
+    /// a caller's transaction and timeout cannot reach it - the terminals that route through them
+    /// (<c>SelectBoth</c>, <c>Select&lt;T&gt;</c>, <c>Select&lt;T&gt;(mapper)</c>, the
+    /// <c>SelectFirst</c>/<c>SelectFirstOrDefault</c> mapper overloads and <c>SelectFirstBoth</c>)
+    /// carry no <see cref="CommandOptions"/> overload. The neighbours that delegate to core
+    /// (<c>Select</c>, <c>SelectFirst</c>, <c>SelectSingle</c>, <c>Count</c>, <c>LongCount</c>) all
+    /// do. Closing this uniformly means the same set of overloads on arities 2, 3 and 4, sync and
+    /// async, on both <c>IJoinedQuery</c> and the partial-select family - roughly sixty new public
+    /// methods. Doing arity 2 alone would relocate the inconsistency rather than remove it, so this
+    /// is a public-API decision rather than a defect fix and is carried forward deliberately. The
+    /// two places that had no options path at all - <c>InsertBuilder</c> and
+    /// <c>GroupedQueryBuilder</c> - were fixed under AUD-R26-060; see <c>FluentCommandOptions</c>.
+    /// </para>
     /// </remarks>
     private List<(TFrom From, TJoin Joined)> SelectBothInternal(int? limit = null)
     {

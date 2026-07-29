@@ -1,5 +1,7 @@
 using System.Linq.Expressions;
 
+using Jaunty.Core;
+
 namespace Jaunty.Fluent;
 
 /// <summary>
@@ -49,9 +51,25 @@ public interface IGroupedQuery<T, TKey> where T : new()
     List<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector);
 
     /// <summary>
+    /// Projects the grouped results into a new type, using the supplied
+    /// <paramref name="options"/> for the command.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-060: the grouped builder executes its own command instead of delegating to core,
+    /// and so had no way to accept a transaction or a timeout at all.
+    /// </remarks>
+    List<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options);
+
+    /// <summary>
     /// Projects the grouped results into a new type asynchronously.
     /// </summary>
     Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Projects the grouped results into a new type asynchronously, using the supplied
+    /// <paramref name="options"/> for the command.
+    /// </summary>
+    Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the generated SQL for debugging purposes.
