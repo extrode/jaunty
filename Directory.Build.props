@@ -13,10 +13,26 @@
     naming the version it needs, instead of a green build that fails somewhere else. Raising it
     is a commit, not an SDK install.
 
-    Requires the .NET 10 SDK. CI installs it in .github/workflows/{ci,release}.yml.
+    Why 13.0 and not 14.0. C# 14's first-class span conversions change overload resolution on
+    calls that were previously unambiguous, and Jaunty has two known casualties:
+
+      - net472: string.Contains(string, StringComparison) rebinds to the MemoryExtensions
+        span overload, which does not exist on net472 (fixed at the call sites, 2026-07-29).
+      - Jaunty.Fluent: the expression tree the compiler emits for Enumerable.Contains changes
+        shape, and WhereExpressionVisitor.VisitMethodCall then evaluates an argument that
+        references the lambda parameter, throwing "variable 'p' ... is not defined" at
+        ExpressionEvaluator.cs:40. Four WhereExpressionVisitor/VisitorColumnResolution tests
+        fail under 14.0 and pass under 13.0 and 12.0.
+
+    The second is unfixed, so 13.0 is the honest setting. A repo-wide compiler scan on
+    2026-07-29 found zero C# 14 features in use, so this costs nothing today. Raising it to
+    14.0 requires fixing WhereExpressionVisitor first - tracked in the .NET 10 migration spec.
+
+    Requires the .NET 10 SDK, which CI installs in .github/workflows/{ci,release}.yml; the SDK
+    version and the language version are deliberately independent.
   -->
   <PropertyGroup>
-    <LangVersion>14.0</LangVersion>
+    <LangVersion>13.0</LangVersion>
   </PropertyGroup>
 
 </Project>
