@@ -3,6 +3,7 @@ using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Internals.Parameters;
+using Jaunty.Internals;
 using Jaunty.Internals.Write;
 
 namespace Jaunty;
@@ -75,14 +76,14 @@ public static partial class Jaunty
         var batchParameters = new BulkOperationParameters(
             "ExecuteBatch", null, parameterSets is ICollection<object> known ? known.Count : (int?)null);
 
-        return WriteInterception.Execute(sql, batchParameters, connection, commandType, Body);
+        return CommandObservation.Execute(sql, batchParameters, connection, commandType, Body);
 
         int Body()
         {
         bool wasClosed = connection.State == ConnectionState.Closed;
         int totalRowsAffected = 0;
 
-        WriteInterception.Log(sql, batchParameters);
+        CommandObservation.Log(sql, batchParameters);
 
         try
         {
@@ -242,14 +243,14 @@ public static partial class Jaunty
         var batchParameters = new BulkOperationParameters(
             "ExecuteBatch", null, parameterSets is ICollection<object> known ? known.Count : (int?)null);
 
-        return WriteInterception.ExecuteAsync(sql, batchParameters, connection, commandType, Body, cancellationToken);
+        return CommandObservation.ExecuteAsync(sql, batchParameters, connection, commandType, Body, cancellationToken);
 
         async ValueTask<int> Body()
         {
         bool wasClosed = connection.State == ConnectionState.Closed;
         int totalRowsAffected = 0;
 
-        WriteInterception.Log(sql, batchParameters);
+        CommandObservation.Log(sql, batchParameters);
 
         try
         {

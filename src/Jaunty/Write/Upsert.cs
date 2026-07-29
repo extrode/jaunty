@@ -152,7 +152,7 @@ public static partial class Jaunty
         // single-entity write that never reached the interceptor pipeline, unlike Insert/Update/
         // Delete which all route through their *Core.cs equivalents. It is fully buffered, so the
         // streaming exemption in ICommandInterceptor's remarks does not apply to it.
-        return WriteInterception.Execute(
+        return CommandObservation.Execute(
             cached.UpsertSql,
             entity,
             connection,
@@ -190,7 +190,7 @@ public static partial class Jaunty
             // Bind parameters from entity properties (all non-identity, non-computed columns)
             BindUpsertParameters(command, entity, cached.Metadata);
 
-            WriteInterception.Log(command.CommandText, entity);
+            CommandObservation.Log(command.CommandText, entity);
 
             return command.ExecuteNonQuery();
         }

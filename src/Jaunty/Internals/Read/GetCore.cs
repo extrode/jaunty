@@ -10,6 +10,8 @@ using JauntyConfig = Jaunty.Configuration.JauntyConfig;
 using Jaunty.Interfaces;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Parameters;
+using Jaunty.Interceptors;
+using Jaunty.Internals;
 
 namespace Jaunty;
 
@@ -25,9 +27,13 @@ public static partial class Jaunty
         // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
         // established pattern in GetAllCore.cs so GetById participates in registered
         // ICommandInterceptor auditing/logging the same way GetAll/Query/etc. do.
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
-            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+            return pipeline.ExecuteWithInterception(
                 cached.SelectByIdSql,
                 cached.DescribeIdParameter(id),
                 connection,
@@ -90,9 +96,13 @@ public static partial class Jaunty
 
         // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
         // established pattern in GetAllCore.cs.
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
-            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+            return pipeline.ExecuteWithInterception(
                 cached.SelectByIdSql,
                 cached.DescribeIdParameter(id),
                 connection,
@@ -187,9 +197,13 @@ public static partial class Jaunty
 
         // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
         // established pattern in GetAllCore.cs.
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
-            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+            return await pipeline.ExecuteWithInterceptionAsync(
                 cached.SelectByIdSql,
                 cached.DescribeIdParameter(id),
                 dbConnection,
@@ -261,9 +275,13 @@ public static partial class Jaunty
 
         // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
         // established pattern in GetAllCore.cs.
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
-            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+            return await pipeline.ExecuteWithInterceptionAsync(
                 cached.SelectByIdSql,
                 cached.DescribeIdParameter(id),
                 dbConnection,

@@ -4,6 +4,7 @@ using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals;
 using Jaunty.Internals.Write;
 
 namespace Jaunty;
@@ -248,7 +249,7 @@ public static partial class Jaunty
         // a local function so the transaction, FK-toggle and rollback logic is captured rather than
         // re-threaded through a new signature.
 
-        return WriteInterception.Execute(
+        return CommandObservation.Execute(
             cached.UpdateSql,
             bulkParameters,
             connection,
@@ -257,7 +258,7 @@ public static partial class Jaunty
 
         int Body()
         {
-            WriteInterception.Log(cached.UpdateSql, bulkParameters);
+            CommandObservation.Log(cached.UpdateSql, bulkParameters);
 
             ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
 
