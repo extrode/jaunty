@@ -278,8 +278,31 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                 var escapedColumn = GetEscapedColumnName(memberExpr);
                 var columnName = GetRawColumnName(memberExpr);
 
-                var values = enumerable.Cast<object>().ToList();
-                if (values.Count == 0)
+                // AUD-R26-056: this was enumerable.Cast<object>().ToList(), which built a whole
+                // List<object> - allocated by doubling, so a reallocation chain - purely to learn
+                // the count and then read each element once, in order, straight into _parameters.
+                // A collection that already knows its own size does not need the copy at all.
+                // Buffering is still required for anything that does not, because the count has to
+                // be known before any SQL is appended (the empty case emits "1 = 0" instead of an
+                // IN clause) and a bare IEnumerable may be single-pass or have side effects, so it
+                // cannot be walked twice. QueryBuilder.BuildInClause already made this distinction
+                // for the same job.
+                System.Collections.ICollection? sized = collection as System.Collections.ICollection;
+                List<object?>? buffered = null;
+                int valueCount;
+
+                if (sized is not null)
+                {
+                    valueCount = sized.Count;
+                }
+                else
+                {
+                    buffered = new List<object?>();
+                    foreach (object? item in enumerable) buffered.Add(item);
+                    valueCount = buffered.Count;
+                }
+
+                if (valueCount == 0)
                 {
                     _sql.Append("1 = 0"); // Empty collection always false
                     return node;
@@ -291,22 +314,53 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                 // Where/And/Or - so it is a lower bound on the statement total. That is the right
                 // direction to err for a guard whose old failure mode was refusing valid queries.
                 ParameterCeiling.EnsureWithinLimit(
-                    _parameters.Count + values.Count,
+                    _parameters.Count + valueCount,
                     _dialect,
                     _dialect.GetType().Name);
 
                 _sql.Append(escapedColumn);
                 _sql.Append(" IN (");
-                for (int i = 0; i < values.Count; i++)
+                int valueIndex = 0;
+                foreach (object? value in (System.Collections.IEnumerable?)buffered ?? enumerable)
                 {
-                    if (i > 0) _sql.Append(", ");
-                    var paramName = GetParameterName($"{columnName}_{i}");
+                    if (valueIndex > 0) _sql.Append(", ");
+                    var paramName = GetParameterName($"{columnName}_{valueIndex}");
                     _sql.Append(paramName);
-                    _parameters.Add((paramName, values[i]));
+                    _parameters.Add((paramName, value));
+                    valueIndex++;
                 }
                 _sql.Append(')');
                 return node;
             }
+        }
+
+        // AUD-R26-056: nothing above matched, so this expression is about to be handed to
+        // EvaluateExpression, which compiles it with Expression.Lambda(...).Compile(). That works
+        // for a call that does not touch the lambda parameter - Helper.Now(), a captured local's
+        // method - and throws "variable 'p' of type 'Item' referenced from scope '', but it is not
+        // defined" for one that does. That message names neither the method nor the limitation, and
+        // it is what a caller got for the obvious next thing to try after seeing that both halves
+        // work on their own:
+        //
+        //     p.Name.ToUpper()          translates       p.Name.Contains("alp")   translates
+        //     p.Name.ToUpper().Contains("ALP")           does not
+        //
+        // because the string handler above requires node.Object to be a MemberExpression over the
+        // parameter, and a chained call's receiver is another MethodCallExpression. Same failure
+        // mode AUD-R12 and R16 fixed for column-to-column and string.Length comparisons: an
+        // expression still referencing the lambda parameter reaching Compile(). Checking for that
+        // first turns an unexplained runtime crash into a diagnosable one, for every unsupported
+        // parameter-referencing call rather than only the chained-string shape.
+        if (ReferencesLambdaParameter(node))
+        {
+            throw new NotSupportedException(
+                $"Cannot translate '{node}' to SQL. " +
+                $"'{node.Method.DeclaringType?.Name}.{node.Method.Name}' is not supported in a Where " +
+                "expression in this position. String methods (Contains, StartsWith, EndsWith, ToUpper, " +
+                "ToLower, Trim, Substring) are translated only when applied directly to a mapped " +
+                "property, so 'p.Name.ToUpper()' translates but 'p.Name.ToUpper().Contains(...)' does " +
+                "not - a chained call's receiver is another method call, not a column. Rewrite the " +
+                "condition to use a single method call on the property, or express it as raw SQL.");
         }
 
         // Fallback: evaluate and use as constant
@@ -322,6 +376,36 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
             _parameters.Add((paramName, result));
         }
         return node;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="expression"/> still contains a reference to the lambda's parameter,
+    /// which is what makes it impossible to evaluate as a constant.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-056. <c>EvaluateExpression</c> closes over nothing, so a surviving
+    /// <see cref="ParameterExpression"/> makes <c>Expression.Lambda(...).Compile()</c> throw at
+    /// runtime with a message about an undefined variable. Detecting it beforehand is what lets the
+    /// caller be told which method was not translatable.
+    /// </remarks>
+    private static bool ReferencesLambdaParameter(Expression expression)
+    {
+        var finder = new ParameterFinder();
+        finder.Visit(expression);
+        return finder.Found;
+    }
+
+    private sealed class ParameterFinder : ExpressionVisitor
+    {
+        public bool Found { get; private set; }
+
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            Found = true;
+            return node;
+        }
+
+        public override Expression? Visit(Expression? node) => Found ? node : base.Visit(node);
     }
 
     private Expression HandleSqlFunction(MethodCallExpression node)
