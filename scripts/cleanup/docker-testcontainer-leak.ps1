@@ -1,12 +1,19 @@
+#!/usr/bin/env pwsh
 # docker-testcontainer-leak.ps1
 #
 # Written 2026-07-30 after vmmemWSL was found holding 15.7GB with 136 running containers, 133 of
 # them Testcontainers left behind by CI runs on the self-hosted runner in the Debian WSL distro.
 # The oldest had been up 18 hours. Reaps those, and nothing else.
 #
-# Dry run (default):   pwsh -NoProfile -File .\scripts\cleanup\docker-testcontainer-leak.ps1
-# Remove stopped:      pwsh -NoProfile -File .\scripts\cleanup\docker-testcontainer-leak.ps1 --execute
-# Also kill running:   pwsh -NoProfile -File .\scripts\cleanup\docker-testcontainer-leak.ps1 --execute --kill-running
+# This is a PowerShell script. It must be run with pwsh, not from bash/sh.
+#
+# Dry run (default):   pwsh -NoProfile -File ./scripts/cleanup/docker-testcontainer-leak.ps1
+# Remove stopped:      pwsh -NoProfile -File ./scripts/cleanup/docker-testcontainer-leak.ps1 -e
+# Also kill running:   pwsh -NoProfile -File ./scripts/cleanup/docker-testcontainer-leak.ps1 -e --kill-running
+#
+# The double-dash spellings (--execute, --kill-running, --ignore-active-ci) are accepted too, via
+# $Rest below: PowerShell's own binder rejects them ("a positional parameter cannot be found"), but
+# the cleanup-script interface is defined as working in both shells, so they are normalised by hand.
 #
 # DELIBERATELY NOT REMOVED: torture-mysql, torture-mariadb, torture-postgres. Those are named
 # fixtures, not leaks, and the seeded-baseline policy depends on them surviving. The filter is the
@@ -25,10 +32,25 @@ param(
     [switch]$KillRunning,
 
     # The safety gate below refuses to touch anything while a CI job is executing. This overrides it.
-    [switch]$IgnoreActiveCi
+    [switch]$IgnoreActiveCi,
+
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$Rest
 )
 
 $ErrorActionPreference = 'Stop'
+
+foreach ($arg in @($Rest)) {
+    switch ($arg) {
+        '--execute'          { $Execute = $true }
+        '-e'                 { $Execute = $true }
+        '--kill-running'     { $KillRunning = $true }
+        '--ignore-active-ci' { $IgnoreActiveCi = $true }
+        default {
+            if ($arg) { throw "Unknown argument '$arg'. Accepted: --execute/-e, --kill-running, --ignore-active-ci." }
+        }
+    }
+}
 
 $Label = 'label=org.testcontainers'
 
