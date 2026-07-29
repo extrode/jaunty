@@ -387,7 +387,10 @@ internal static class ParameterBinder
     // ReplaceParametersLiteralAware (skipping string literals, quoted identifiers, comments,
     // dollar-quoted strings, and @@ system variables) so a '$'/'@' inside a literal or comment
     // earlier in the SQL than the real placeholders is never mistaken for the parameter prefix.
-    private static string DetectParameterPrefix(string sql)
+    // Internal rather than private so AUD-R26's sigil-position rule can be tested at this site
+    // directly; the precedent is AUD-R9-011, which promoted PostgreSqlSchemaReader's SQL consts for
+    // the same reason. ParameterBinder is itself internal, so this widens nothing publicly.
+    internal static string DetectParameterPrefix(string sql)
     {
         int len = sql.Length;
         int i = 0;
@@ -445,7 +448,7 @@ internal static class ParameterBinder
                 }
             }
 
-            if (c is '@' or '$')
+            if (c is '@' or '$' && !SqlParameterParser.IsSigilInsideIdentifier(sql, i))
             {
                 // Check that next char is a valid parameter name start
                 if (i + 1 < len && IsParameterChar(sql[i + 1]))
@@ -563,8 +566,8 @@ internal static class ParameterBinder
                 }
             }
 
-            // Genuine parameter placeholder
-            if (c == prefix)
+            // Genuine parameter placeholder - unless the sigil is inside an identifier.
+            if (c == prefix && !SqlParameterParser.IsSigilInsideIdentifier(sql, i))
             {
                 int nameStart = i + 1;
                 int j = nameStart;
@@ -640,8 +643,10 @@ internal static class ParameterBinder
         return typeof(IEnumerable).IsAssignableFrom(type);
     }
 
-    private static bool IsParameterChar(char c) =>
-        c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
+    // AUD-R26: was a byte-identical private copy of SqlParameterParser's. Forwarded rather than
+    // duplicated, because the finding's requirement was that all four sigil sites agree, and two
+    // copies of the rule is how they stop agreeing.
+    private static bool IsParameterChar(char c) => SqlParameterParser.IsParameterChar(c);
 
     private readonly struct CollectionExpansion(string name, IEnumerable items, int count, PropertyInfo? property)
     {
