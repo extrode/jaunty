@@ -7,7 +7,7 @@ namespace Jaunty.Dialects;
 /// Uses "quotes" only for SQL keywords.
 /// Default schema: null (SQLite doesn't support schemas)
 /// </summary>
-internal sealed class SQLiteDialect : ISqlDialect
+internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect
 {
     private static readonly HashSet<string> Keywords = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -171,6 +171,14 @@ internal sealed class SQLiteDialect : ISqlDialect
     public string GenerateLower(string expression) => $"LOWER({expression})";
     public string GenerateTrim(string expression) => $"TRIM({expression})";
     public string GenerateSubstring(string expression, string start, string length) => $"SUBSTR({expression}, {start}, {length})";
+
+    /// <summary>
+    /// SQLite's two-argument SUBSTR returns the remainder and needs no sentinel length. Measured:
+    /// against a 10,000-character value <c>SUBSTR(s, 2, 8000)</c> returns 8,000 characters while
+    /// <c>SUBSTR(s, 2)</c> returns 9,999. SQLite does not accept the ANSI <c>FROM</c> form.
+    /// </summary>
+    public string GenerateSubstringToEnd(string expression, string start)
+        => $"SUBSTR({expression}, {start})";
 
     // Date functions - SQLite uses strftime with CAST for integer comparison
     public string GenerateYear(string expression) => $"CAST(strftime('%Y', {expression}) AS INTEGER)";

@@ -7,7 +7,7 @@ namespace Jaunty.Dialects;
 /// Uses "quotes" only for SQL keywords.
 /// Default schema: "public"
 /// </summary>
-internal sealed class PostgreSqlDialect : ISqlDialect
+internal sealed class PostgreSqlDialect : ISqlDialect, ISubstringToEndDialect
 {
     private static readonly HashSet<string> Keywords = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -141,6 +141,10 @@ internal sealed class PostgreSqlDialect : ISqlDialect
     public string GenerateLower(string expression) => $"LOWER({expression})";
     public string GenerateTrim(string expression) => $"TRIM({expression})";
     public string GenerateSubstring(string expression, string start, string length) => $"SUBSTRING({expression} FROM {start} FOR {length})";
+
+    /// <summary>Omitting FOR is the ANSI SQL form for "to the end", and needs no sentinel length.</summary>
+    public string GenerateSubstringToEnd(string expression, string start)
+        => $"SUBSTRING({expression} FROM {start})";
 
     // Date functions - PostgreSQL uses EXTRACT
     public string GenerateYear(string expression) => $"EXTRACT(YEAR FROM {expression})";
