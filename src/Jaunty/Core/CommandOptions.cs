@@ -152,6 +152,30 @@ public readonly struct CommandOptions<T>(Func<IDataReader, T>? mapper = null, ID
     /// </summary>
     /// <param name="options">The generic command options to convert.</param>
     /// <returns>A non-generic <see cref="CommandOptions"/> with the same transaction, timeout, and command type.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b><see cref="Mapper"/> and <see cref="ExpectedRowCount"/> do not survive this conversion</b>,
+    /// and because it is <em>implicit</em> there is no cast at the call site to say so: passing a
+    /// <c>CommandOptions&lt;Product&gt;</c> to an API whose parameter is the non-generic
+    /// <see cref="CommandOptions"/> compiles clean and silently drops both.
+    /// </para>
+    /// <para>
+    /// AUD-R26-054 (batch 4, low/consistency). Neither field can be carried: <see cref="CommandOptions"/>
+    /// has no member for either one, and <see cref="Mapper"/> is typed on <typeparamref name="T"/>,
+    /// so a non-generic target could not hold it even if a field were added. The conversion is left
+    /// implicit rather than made explicit because that would be a source-breaking change to a
+    /// shipped public API.
+    /// </para>
+    /// <para>
+    /// It is documented rather than fixed because as of this writing nothing can be lost that the
+    /// destination could have used. Every public API taking a non-generic <see cref="CommandOptions"/>
+    /// is a scalar read, a non-query, a dictionary projection, or a multi-entity overload that takes
+    /// its <c>map</c> delegate as an explicit parameter - none consults a mapper, and none builds a
+    /// list a row-count hint could pre-size. That is a property of the current API surface, not a
+    /// guarantee: <b>an API that maps entities must take <see cref="CommandOptions{T}"/>, never the
+    /// non-generic form</b>, or this conversion starts losing a mapper the caller supplied.
+    /// </para>
+    /// </remarks>
     public static implicit operator CommandOptions(CommandOptions<T> options) => new(options.Transaction, options.CommandTimeout, options.CommandType);
 }
 
