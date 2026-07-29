@@ -12,8 +12,26 @@ namespace Jaunty.Internals.Read;
 /// Caches the mapper delegate for entity types that implement <see cref="IMapped{T}"/>.
 /// This is the primary path for Source Generated mappers.
 /// </summary>
+/// <remarks>
+/// Spec 009. Resolution goes through <see cref="IGeneratedAccessors{T}"/> first, which hands over the
+/// generated mapper as a delegate. The reflection below is now only reached by types the generator
+/// did not produce - a hand-written <see cref="IMapped{T}"/>, or a <c>[Table]</c> entity compiled
+/// against a Jaunty old enough to predate the interface.
+/// </remarks>
 internal static class MappedCache<T> where T : new()
 {
+    /// <summary>
+    /// <typeparamref name="T"/>'s source-generated accessors, or <see langword="null"/> when
+    /// <typeparamref name="T"/> is not source-generated.
+    /// </summary>
+    /// <remarks>
+    /// Declared first on purpose: static field initialisers run in textual order, and both fields
+    /// below read this one. Resolved once per closed generic rather than once per accessor, so the
+    /// <c>new T()</c> the cast needs is paid a single time - the same cost
+    /// <c>WriteParameterCache&lt;T&gt;.ResolveMetadata</c> already pays.
+    /// </remarks>
+    private static readonly IGeneratedAccessors<T>? Accessors = ResolveAccessors();
+
     internal static readonly Func<IDataReader, T>? Mapper = ResolveMapper();
 
     /// <summary>
@@ -23,11 +41,26 @@ internal static class MappedCache<T> where T : new()
     /// </summary>
     internal static readonly Func<IDataReader, Func<IDataReader, T>>? MapperFactory = ResolveMapperFactory();
 
+    /// <summary>
+    /// Casts <typeparamref name="T"/> to its generated accessors. No reflection over members: the
+    /// interface check and the cast are all that is needed, mirroring
+    /// <c>SourceGeneratedMetadataResolver.TryBuild&lt;T&gt;</c>.
+    /// </summary>
+    private static IGeneratedAccessors<T>? ResolveAccessors()
+        => typeof(IGeneratedAccessors<T>).IsAssignableFrom(typeof(T))
+            ? (IGeneratedAccessors<T>)new T()
+            : null;
+
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "T is reflected over by method name with no [DynamicDependency], [DynamicallyAccessedMembers] or ILLink descriptor arranging preservation - the suppression hides the report, it does not make the reflection safe. Measured (AUD-R26): samples/NativeAOT-Basic published with PublishAot=true still throws 'No mapper found for type Product'. Annotating T does satisfy the analyzer, but propagates the obligation up through DrDispatcher.Resolve<T>, QueryCore<T> and up to 645 public generic overloads carrying a new()-constrained type parameter (counted from compiled metadata, 2026-07-29), so the real fix is an API-wide annotation pass - specified in docs/specs/009-aot-annotation-pass. Until then, NativeAOT consumers must ensure their entity types are otherwise rooted.")]
+    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "Reached only when T is not source-generated - a source-generated T implements IGeneratedAccessors<T> and returns above, with no reflection. The remaining population is a hand-written IMapped<T>, whose CreateRowMapper this cannot arrange to preserve: the consumer must root it (for example with [DynamicDependency]) or implement IGeneratedAccessors<T>. The generator reports JAUNTYGEN002 for exactly this case, so it is a build-time warning rather than a trimmed-away method discovered at runtime. Spec 009.")]
 #endif
     private static Func<IDataReader, Func<IDataReader, T>>? ResolveMapperFactory()
     {
+        // Source-generated: the delegate is handed over directly, so the generated CreateRowMapper
+        // is statically referenced and survives trimming.
+        if (Accessors is not null)
+            return Accessors.RowMapperFactory;
+
         if (!typeof(IMapped<T>).IsAssignableFrom(typeof(T)))
             return null;
 
@@ -41,10 +74,15 @@ internal static class MappedCache<T> where T : new()
     }
 
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "T is reflected over by method name with no [DynamicDependency], [DynamicallyAccessedMembers] or ILLink descriptor arranging preservation - the suppression hides the report, it does not make the reflection safe. Measured (AUD-R26): samples/NativeAOT-Basic published with PublishAot=true still throws 'No mapper found for type Product'. Annotating T does satisfy the analyzer, but propagates the obligation up through DrDispatcher.Resolve<T>, QueryCore<T> and up to 645 public generic overloads carrying a new()-constrained type parameter (counted from compiled metadata, 2026-07-29), so the real fix is an API-wide annotation pass - specified in docs/specs/009-aot-annotation-pass. Until then, NativeAOT consumers must ensure their entity types are otherwise rooted.")]
+    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "Reached only when T is not source-generated - a source-generated T implements IGeneratedAccessors<T> and returns above, with no reflection. The remaining population is a hand-written IMapped<T>, whose ReadEntity this cannot arrange to preserve: the consumer must root it (for example with [DynamicDependency]) or implement IGeneratedAccessors<T>. The generator reports JAUNTYGEN002 for exactly this case, so it is a build-time warning rather than a trimmed-away method discovered at runtime. Spec 009.")]
 #endif
     private static Func<IDataReader, T>? ResolveMapper()
     {
+        // Source-generated: see ResolveMapperFactory. Below net8.0 the accessor's delegate
+        // constructs a fresh T per row, matching the instance fallback further down.
+        if (Accessors is not null)
+            return Accessors.RowMapper;
+
         // For NativeAOT, we check if the type implements IMapped<T>
         if (typeof(IMapped<T>).IsAssignableFrom(typeof(T)))
         {
