@@ -76,10 +76,23 @@ public class GetReturnValueCultureTests
     public void ANegativeStringReturnValue_ParsesUnderEveryCulture(string culture)
         => Assert.Equal(-42, UnderCulture(culture, () => WithReturnValue("-42").GetReturnValue()));
 
+#if NET8_0_OR_GREATER
     /// <summary>
     /// The control. If the runtime is in invariant-globalization mode every culture collapses to the
     /// invariant one and the theory above proves nothing, so this asserts the divergence is real on
     /// this host before the assertions that depend on it are believed.
+    ///
+    /// <para>
+    /// net8.0+ only, and the guard stays. The divergence is an ICU fact, not a universal one:
+    /// .NET Core resolves these cultures through ICU, where ar-SA and fa-IR carry a non-ASCII
+    /// negative sign, while .NET Framework resolves them through Windows NLS, where all four
+    /// report <c>NegativeSign == "-"</c> and <c>Convert.ToInt32("-42")</c> returns -42 everywhere.
+    /// Measured on this host 2026-07-29 against CLR 4.0.30319.42000. On net472 the control would
+    /// therefore fail for a reason that says nothing about globalization-invariant mode, which is
+    /// the only thing it exists to detect. The fix under test - routing GetReturnValue through
+    /// ScalarConverter's pinned InvariantCulture - is still exercised on net472 by the theories
+    /// above.
+    /// </para>
     /// </summary>
     [Fact]
     public void TheCultureDivergence_IsRealOnThisHost()
@@ -101,6 +114,7 @@ public class GetReturnValueCultureTests
             "the runtime is probably in invariant-globalization mode, and these tests are not exercising " +
             "what they claim to.");
     }
+#endif
 
     [Theory]
     [InlineData("ar-SA")]
