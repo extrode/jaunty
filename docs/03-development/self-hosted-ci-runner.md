@@ -93,6 +93,18 @@ gh api repos/beparey/Jaunty/actions/runners --jq '.runners[] | "\(.name) \(.stat
   you, so a job that leaves state behind can influence the next one. `actions/checkout` cleans the
   tree, but not Docker volumes or anything written outside the workspace.
 
+## Runner-specific workflow changes
+
+Two things in the workflows exist only because of the self-hosted runner. Both are harmless on
+hosted runners, so there is nothing to undo when billing is restored.
+
+- `runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}` — see above.
+- `DOTNET_INSTALL_DIR: ${{ runner.tool_cache }}/dotnet` on every `actions/setup-dotnet` step.
+  The action installs into `/usr/share/dotnet` by default. On this runner that path already holds
+  Debian's root-owned .NET 10 SDK, so the unprivileged runner user cannot write to it and the step
+  fails with a wall of `mkdir: Permission denied`. `runner.tool_cache` is writable on hosted and
+  self-hosted alike.
+
 ## Troubleshooting
 
 **Runner shows `offline`.** The service is not running. `wsl -d Debian -- bash -lc 'cd
