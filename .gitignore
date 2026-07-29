@@ -360,3 +360,6 @@ MigrationBackup/
 !.editorconfig
 !.gitattributes
 packout/
+
+# Locally built macOS arm64 SQLite.Interop (see tools/native/sqlite-interop-osx-arm64/README.md)
+tools/native/sqlite-interop-osx-arm64/artifacts/
