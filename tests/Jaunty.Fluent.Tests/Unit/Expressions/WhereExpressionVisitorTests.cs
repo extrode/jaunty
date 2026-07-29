@@ -757,6 +757,96 @@ public class WhereExpressionVisitorTests
         Assert.DoesNotContain(" IN (", sql);
     }
 
+    // C# 14's first-class span conversions rebind an array receiver from Enumerable.Contains to
+    // MemoryExtensions.Contains(ReadOnlySpan<T>, T). The repo is pinned to LangVersion 13, so
+    // these trees are built by hand in the exact shape the C# 14 compiler emits (verified against
+    // the .NET 10 SDK). A consumer compiling with C# 14 hands this shape to the shipped visitor
+    // whatever Jaunty itself was built with, so the pin does not stand in for these tests.
+
+    private static Expression<Func<Product, bool>> SpanContains<TValue>(TValue[] values, string property)
+        where TValue : IEquatable<TValue>
+    {
+        var parameter = Expression.Parameter(typeof(Product), "p");
+        var member = Expression.Property(parameter, property);
+        var toSpan = typeof(ReadOnlySpan<TValue>).GetMethod("op_Implicit", new[] { typeof(TValue[]) })!;
+        var contains = typeof(MemoryExtensions).GetMethods()
+            .Single(m => m.Name == "Contains"
+                && m.IsGenericMethodDefinition
+                && m.GetParameters().Length == 2
+                && m.GetParameters()[0].ParameterType.IsGenericType
+                && m.GetParameters()[0].ParameterType.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>))
+            .MakeGenericMethod(typeof(TValue));
+
+        var body = Expression.Call(contains, Expression.Call(toSpan, Expression.Constant(values)), member);
+        return Expression.Lambda<Func<Product, bool>>(body, parameter);
+    }
+
+    [Fact]
+    public void Visit_SpanContains_GeneratesInClause()
+    {
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(SpanContains(new[] { 1, 2, 3 }, nameof(Product.ProductId)));
+
+        Assert.Contains("IN", sql);
+        Assert.Equal(3, parameters.Count);
+    }
+
+    [Fact]
+    public void Visit_SpanContains_SingleItem_GeneratesInClause()
+    {
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(SpanContains(new[] { 42 }, nameof(Product.ProductId)));
+
+        Assert.Contains("IN", sql);
+        Assert.Single(parameters);
+    }
+
+    [Fact]
+    public void Visit_SpanContains_EmptyCollection_GeneratesFalse()
+    {
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(SpanContains(Array.Empty<int>(), nameof(Product.ProductId)));
+
+        Assert.Equal("1 = 0", sql);
+        Assert.Empty(parameters);
+    }
+
+    [Fact]
+    public void Visit_SpanContains_StringArray_GeneratesInClause()
+    {
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+        var (sql, parameters) = visitor.Translate(SpanContains(new[] { "Chai", "Chang" }, nameof(Product.ProductName)));
+
+        Assert.Contains("IN", sql);
+        Assert.Equal(2, parameters.Count);
+    }
+
+    [Fact]
+    public void Visit_SpanContains_ProducesTheSameSqlAsEnumerableContains()
+    {
+        var ids = new[] { 1, 2, 3 };
+        Expression<Func<Product, bool>> enumerableForm = p => ids.Contains(p.ProductId);
+
+        var (spanSql, spanParameters) = new WhereExpressionVisitor<Product>(_dialect)
+            .Translate(SpanContains(ids, nameof(Product.ProductId)));
+        var (enumerableSql, enumerableParameters) = new WhereExpressionVisitor<Product>(_dialect)
+            .Translate(enumerableForm);
+
+        Assert.Equal(enumerableSql, spanSql);
+        Assert.Equal(enumerableParameters.Select(p => p.Value), spanParameters.Select(p => p.Value));
+    }
+
+    [Fact]
+    public void Visit_UnsupportedMethodOnTheEntity_ThrowsNotSupportedNamingTheMethod()
+    {
+        Expression<Func<Product, bool>> expr = p => p.ProductName.Normalize() == "Chai";
+        var visitor = new WhereExpressionVisitor<Product>(_dialect);
+
+        var ex = Assert.Throws<NotSupportedException>(() => visitor.Translate(expr));
+
+        Assert.Contains("Normalize", ex.Message);
+    }
+
     #endregion
 
     #region Duplicate Parameter Handling
