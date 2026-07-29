@@ -11,6 +11,7 @@ using Jaunty.Dialects;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Parameters;
 using Jaunty.Internals.Write;
+using Jaunty.Internals.Read;
 
 namespace Jaunty;
 
@@ -446,11 +447,16 @@ public static partial class Jaunty
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
 
         object? result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-        bool inserted = result is not null and not DBNull;
-        if (inserted)
-            idSetter(entity, Convert.ToInt64(result));
 
-        return inserted ? 1 : 0;
+        // AUD-R26: ScalarConverter pins InvariantCulture; Convert.ToInt64 did not, so a provider
+        // that returns the generated key as a string parsed under the host locale. Restructured
+        // rather than suppressed with `!` - the compiler cannot see non-nullness through a bool
+        // local, and `!` is how the two null-guard defects in this round were introduced.
+        if (result is null or DBNull)
+            return 0;
+
+        idSetter(entity, ScalarConverter<long>.Convert(result));
+        return 1;
     }
 
     /// <summary>

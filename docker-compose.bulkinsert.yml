@@ -1,0 +1,26 @@
+# Optional overlay: let the containerised SQL Server run the BULK INSERT tests.
+#
+# `CsvImportTests.*_SqlServer_*` use BULK INSERT, which reads the CSV **server-side**
+# from a path the client sends. The tests send absolute host paths, so a container
+# that cannot see the host filesystem fails all four with:
+#
+#   Cannot bulk load. The file "/…/data/basic.csv" does not exist or you don't have
+#   file access rights.
+#
+# Bind-mounting the repo at the *identical* absolute path makes those paths resolve
+# inside the container, and the tests pass. Read-only: BULK INSERT only reads.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.bulkinsert.yml up -d mssql
+#
+# Run it from the repo root — ${PWD} is what makes host and container paths match.
+#
+# This is a separate file rather than part of docker-compose.yml because ${PWD} is
+# not an environment variable under PowerShell or cmd, so putting it in the base file
+# would break `docker compose up` on Windows. On Windows it is also unnecessary: a
+# local SQL Server instance already shares the filesystem with the test runner.
+
+services:
+  mssql:
+    volumes:
+      - mssql_data:/var/opt/mssql
+      - ${PWD}:${PWD}:ro

@@ -44,6 +44,13 @@ public static partial class Jaunty
             {
                 using DbCommand command = dbConnection.CreateCommand();
                 command.CommandText = cached.SelectAllSql;
+                // AUD-R26: previously reported to the interceptor pipeline but never applied, so an
+                // interceptor was told the command was a stored procedure while it ran as text.
+                // Guarded exactly as QueryCore guards it: CommandOptions<T> is a struct, so a
+                // `default` options value carries CommandType 0, which is not a valid enum member
+                // and which providers reject outright.
+                if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                    command.CommandType = options.CommandType;
 
                 command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
@@ -53,7 +60,10 @@ public static partial class Jaunty
                 JauntyConfig.Logger?.Invoke(command.CommandText, null);
 
                 using DbDataReader reader = command.ExecuteReader();
-                var list = new List<T>(JauntyConfig.QueryResultCapacity);
+                // AUD-R26: GetAll accepted CommandOptions<T>.ExpectedRowCount and discarded it, while
+                // every QueryCore result list honours it. GetAll is the API where the caller is most
+                // likely to know the table size.
+                var list = new List<T>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
                 if (!reader.Read())
                     return list;
 
@@ -66,6 +76,13 @@ public static partial class Jaunty
             {
                 using IDbCommand command = connection.CreateCommand();
                 command.CommandText = cached.SelectAllSql;
+                // AUD-R26: previously reported to the interceptor pipeline but never applied, so an
+                // interceptor was told the command was a stored procedure while it ran as text.
+                // Guarded exactly as QueryCore guards it: CommandOptions<T> is a struct, so a
+                // `default` options value carries CommandType 0, which is not a valid enum member
+                // and which providers reject outright.
+                if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                    command.CommandType = options.CommandType;
 
                 if (options.Transaction is not null)
                     command.Transaction = options.Transaction;
@@ -76,7 +93,10 @@ public static partial class Jaunty
                 JauntyConfig.Logger?.Invoke(command.CommandText, null);
 
                 using IDataReader reader = command.ExecuteReader();
-                var list = new List<T>(JauntyConfig.QueryResultCapacity);
+                // AUD-R26: GetAll accepted CommandOptions<T>.ExpectedRowCount and discarded it, while
+                // every QueryCore result list honours it. GetAll is the API where the caller is most
+                // likely to know the table size.
+                var list = new List<T>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
                 if (!reader.Read())
                     return list;
 
@@ -130,6 +150,13 @@ public static partial class Jaunty
             using DbCommand command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.SelectAllSql;
+            // AUD-R26: previously reported to the interceptor pipeline but never applied, so an
+            // interceptor was told the command was a stored procedure while it ran as text.
+            // Guarded exactly as QueryCore guards it: CommandOptions<T> is a struct, so a
+            // `default` options value carries CommandType 0, which is not a valid enum member
+            // and which providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
@@ -145,7 +172,10 @@ public static partial class Jaunty
             using DbDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 #endif
 
-            var list = new List<T>(JauntyConfig.QueryResultCapacity);
+            // AUD-R26: GetAll accepted CommandOptions<T>.ExpectedRowCount and discarded it, while
+            // every QueryCore result list honours it. GetAll is the API where the caller is most
+            // likely to know the table size.
+            var list = new List<T>(options.ExpectedRowCount ?? JauntyConfig.QueryResultCapacity);
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 return list;
 
@@ -189,6 +219,13 @@ public static partial class Jaunty
 
             using IDbCommand command = connection.CreateCommand();
             command.CommandText = cached.SelectAllSql;
+            // AUD-R26: previously reported to the interceptor pipeline but never applied, so an
+            // interceptor was told the command was a stored procedure while it ran as text.
+            // Guarded exactly as QueryCore guards it: CommandOptions<T> is a struct, so a
+            // `default` options value carries CommandType 0, which is not a valid enum member
+            // and which providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
             if (options.Transaction is not null)
                 command.Transaction = options.Transaction;
@@ -222,6 +259,13 @@ public static partial class Jaunty
 
             using DbCommand command = dbConnection.CreateCommand();
             command.CommandText = cached.SelectAllSql;
+            // AUD-R26: previously reported to the interceptor pipeline but never applied, so an
+            // interceptor was told the command was a stored procedure while it ran as text.
+            // Guarded exactly as QueryCore guards it: CommandOptions<T> is a struct, so a
+            // `default` options value carries CommandType 0, which is not a valid enum member
+            // and which providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 
@@ -261,6 +305,13 @@ public static partial class Jaunty
             using DbCommand command = dbConnection.CreateCommand();
 #endif
             command.CommandText = cached.SelectAllSql;
+            // AUD-R26: previously reported to the interceptor pipeline but never applied, so an
+            // interceptor was told the command was a stored procedure while it ran as text.
+            // Guarded exactly as QueryCore guards it: CommandOptions<T> is a struct, so a
+            // `default` options value carries CommandType 0, which is not a valid enum member
+            // and which providers reject outright.
+            if (options.CommandType is CommandType.StoredProcedure or CommandType.TableDirect)
+                command.CommandType = options.CommandType;
 
             command.Transaction = AsyncTransactionValidator.RequireDbTransaction(options.Transaction);
 

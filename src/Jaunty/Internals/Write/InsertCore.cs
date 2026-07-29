@@ -5,6 +5,7 @@ using Jaunty.Core;
 using Jaunty.Internals.Write;
 
 using JauntyConfig = Jaunty.Configuration.JauntyConfig;
+using Jaunty.Internals.Read;
 
 namespace Jaunty;
 
@@ -69,7 +70,7 @@ public static partial class Jaunty
             if (cached.HasIdentityKey)
             {
                 var result = command.ExecuteScalar();
-                long id = result is null or DBNull ? 0 : Convert.ToInt64(result);
+                long id = result is null or DBNull ? 0 : ScalarConverter<long>.Convert(result);
 
                 if (id > 0)
                     WriteParameterCache<T>.IdSetter?.Invoke(entity, id);
@@ -140,7 +141,7 @@ public static partial class Jaunty
             if (cached.HasIdentityKey)
             {
                 var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-                long id = result is null or DBNull ? 0 : Convert.ToInt64(result);
+                long id = result is null or DBNull ? 0 : ScalarConverter<long>.Convert(result);
 
                 if (id > 0)
                     WriteParameterCache<T>.IdSetter?.Invoke(entity, id);
