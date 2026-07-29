@@ -195,11 +195,11 @@ Server not running, firewall, wrong port, or the container's port is not publish
 ## Test Coverage Summary
 
 With all four configured against the `docker-compose.yml` stack and SQL Server pointed
-at a **local** instance, the suite runs **12,207 passing / 0 failed / 0 skipped**:
+at a **local** instance, the suite runs **12,426 passing / 0 failed / 0 skipped**:
 
 | Assembly | net8.0 | net472 |
 |---|---|---|
-| Jaunty.Tests | 5,028 | 4,787 |
+| Jaunty.Tests | 5,028 | 5,006 |
 | Jaunty.Fluent.Tests | 1,157 | — |
 | Jaunty.FlatFiles.DuckDB.Tests | 547 | — |
 | Jaunty.Scaffolding.Tests | 436 | — |
@@ -207,8 +207,10 @@ at a **local** instance, the suite runs **12,207 passing / 0 failed / 0 skipped*
 | Jaunty.SourceGenerator.Tests | 67 | — |
 | Jaunty.Scaffolding.Cli.Tests | 34 | — |
 
-Unconfigured — no `appsettings.json` and no environment variables — the same suite runs
-**7,416 passing / 0 failed / 4,791 skipped**. The two totals agree: 7,416 + 4,791 = 12,207.
+Unconfigured — no environment variables, and `appsettings.json` either absent or blank — the
+same suite runs **7,528 passing / 0 failed / 4,898 skipped**. The two totals agree:
+7,528 + 4,898 = 12,426. The skips are 2,437 in each `Jaunty.Tests` TFM plus 24 in
+`Jaunty.Scaffolding.Tests`.
 
 ### Known environment limit
 
