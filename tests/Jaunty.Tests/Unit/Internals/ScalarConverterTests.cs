@@ -142,6 +142,7 @@ public class ScalarConverterTests
         }
     }
 
+    // Guard stays: DateOnly/TimeOnly are .NET 6+ types that do not exist on net472 at all.
 #if NET8_0_OR_GREATER
     // AUD-R14: DateOnly/TimeOnly don't implement IConvertible either, so like Guid/DateTimeOffset/
     // TimeSpan above, System.Convert.ChangeType cannot produce them from a string - a provider
