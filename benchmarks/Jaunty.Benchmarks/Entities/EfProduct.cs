@@ -1,5 +1,7 @@
 using System.Data.Common;
 
+using Jaunty.Benchmarks.Config;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace Jaunty.Benchmarks.Entities;
@@ -42,7 +44,12 @@ public class BenchmarkDbContext : DbContext
             case "mariadb":
                 // Pomelo cannot use an already-open DbConnection (it tries to set the connection string).
                 // Use the connection string directly; Pomelo manages its own connection lifecycle.
-                var connStr = _connection.ConnectionString;
+                //
+                // Take it from DatabaseSetup, not from _connection.ConnectionString: MySqlConnector
+                // drops the password from the latter once the connection is open unless
+                // PersistSecurityInfo=true, so the EF Core MariaDB cases used to fail every
+                // iteration with "Access denied for user 'root' (using password: NO)" and report NA.
+                var connStr = DatabaseSetup.GetConnectionString(DatabaseProvider.MariaDb);
                 optionsBuilder.UseMySql(connStr, ServerVersion.AutoDetect(connStr));
                 break;
         }
