@@ -662,17 +662,25 @@ public static class CsvImportExtensions
     // already safe to embed as-is.
     private static string EscapeSqlCharLiteral(char c) => c == '\'' ? "''" : c.ToString();
 
-    // Both branches return a HEX terminator rather than the '\n' escape.
+    // Both branches return a HEX terminator rather than the '\n' escape, because the escape is
+    // interpreted differently depending on the OS SQL Server runs on. Measured 2026-07-29 with the
+    // same two files against a local Windows instance and an Ubuntu container, reading DATALENGTH
+    // of the last column back (17 = clean, 18 = a CR survived):
     //
-    // AUD-R26: the previous version mapped a CRLF file to '\n' on the premise that BULK INSERT
-    // under FORMAT = 'CSV' expands that escape to \r\n. It does not - '\n' matches a bare LF, so
-    // the CR of each CRLF row survived as a trailing character on the last column, which is exactly
-    // what ImportCsv_SqlServer_CrlfLineEndings_TrailingCarriageReturnStripped observed: the row
-    // round-tripped as "alice@example.com\r". The escape form is also what makes an LF-only file
-    // fail outright with "Cannot obtain the required interface (IID_IColumnsInfo)".
+    //   file  | '\n'                             | 0x0a          | 0x0d0a
+    //   ------+----------------------------------+---------------+----------------
+    //   CRLF  | Windows clean / Linux TRAILING CR | TRAILING CR   | clean on both
+    //   LF    | Windows ERROR / Linux clean       | clean on both | ERROR on both
     //
-    // 0x0d0a and 0x0a state the bytes exactly and are subject to no escape interpretation at all,
-    // so each file shape gets the terminator it actually has.
+    // Windows expands '\n' to \r\n; Linux takes it literally as 0x0a. Only the hex pair is right on
+    // both, and hex is subject to no escape interpretation at all, so each file shape gets the
+    // terminator it actually has regardless of where the server runs.
+    //
+    // AUD-R26: an earlier version emitted '\n' for CRLF, which is correct on Windows only. That is
+    // why it passed the whole CsvImportTests suite against a local instance and failed exactly one
+    // test in CI - ImportCsv_SqlServer_CrlfLineEndings_TrailingCarriageReturnStripped, where the row
+    // round-tripped as "alice@example.com\r". The LF-only case fails outright rather than quietly,
+    // with "Cannot obtain the required interface (IID_IColumnsInfo)".
     //
     // BULK INSERT reads the file server-side, so the path need not be readable from here at all;
     // when it is not, fall back to CRLF, which is what a file staged for a Windows SQL Server is
