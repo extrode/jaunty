@@ -319,10 +319,13 @@ internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect, IDeci
     }
 
     /// <summary>
-    /// Binds a <see cref="decimal"/> as a <see cref="double"/>. Both SQLite providers bind a
-    /// <see cref="decimal"/> as TEXT, which SQLite converts only when it is compared against a
-    /// column - so <c>WHERE price = @p</c> works and <c>HAVING SUM(price) &gt; @p</c> silently
-    /// matches nothing. See <see cref="IDecimalBindingDialect"/> for the measurements.
+    /// Binds a <see cref="decimal"/> as a <see cref="double"/>. Both SQLite providers - measured on
+    /// System.Data.SQLite 1.0.119 and Microsoft.Data.Sqlite 10.0.3 - bind a <see cref="decimal"/> as
+    /// TEXT, which SQLite converts only where there is affinity to apply it: against a column with
+    /// numeric affinity it works, so <c>WHERE price = @p</c> matches, while against a bare
+    /// expression <c>HAVING SUM(price) &gt; @p</c> silently matches nothing. See
+    /// <see cref="IDecimalBindingDialect"/> for the measurements and for the narrower exceptions on
+    /// both sides of that rule.
     /// </summary>
     /// <remarks>
     /// The cost is real and one-directional: a value past <see cref="double"/>'s 15-17 significant
