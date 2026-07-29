@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Core;
+using Jaunty.Internals;
 using Jaunty.Internals.Write;
 
 namespace Jaunty;
@@ -156,7 +157,7 @@ public static partial class Jaunty
             throw new InvalidOperationException($"Cannot upsert entity of type '{typeof(T).Name}': No primary key found or no upsertable columns.");
 
         // AUD-R26 - see the comment on the synchronous UpsertCore.
-        return WriteInterception.ExecuteAsync(
+        return CommandObservation.ExecuteAsync(
             cached.UpsertSql,
             entity,
             connection,
@@ -191,7 +192,7 @@ public static partial class Jaunty
             // Bind parameters from entity properties
             BindUpsertParameters(command, entity, cached.Metadata);
 
-            WriteInterception.Log(command.CommandText, entity);
+            CommandObservation.Log(command.CommandText, entity);
 
             return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }

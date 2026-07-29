@@ -5,6 +5,7 @@ using Jaunty.Configuration;
 using Jaunty.Core;
 using Jaunty.Internals.Parameters;
 using Jaunty.Interceptors;
+using Jaunty.Internals;
 
 namespace Jaunty;
 
@@ -23,10 +24,14 @@ public static partial class Jaunty
 #endif
 
         // Use InterceptorPipeline if registered, otherwise execute directly
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
             int result = 0;
-            JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+            pipeline.ExecuteWithInterception(
                 sql,
                 parameters,
                 connection,
@@ -138,10 +143,14 @@ public static partial class Jaunty
         var dbConnection = connection as DbConnection;
 
         // Use InterceptorPipeline if registered, otherwise execute directly
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
             int result = 0;
-            await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+            await pipeline.ExecuteWithInterceptionAsync(
                 sql,
                 parameters,
                 connection,

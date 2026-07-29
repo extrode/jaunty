@@ -7,6 +7,7 @@ using Jaunty.Core;
 using Jaunty.Internals.Read;
 using Jaunty.Internals.Write;
 using Jaunty.Interceptors;
+using Jaunty.Internals;
 
 namespace Jaunty;
 
@@ -19,9 +20,13 @@ public static partial class Jaunty
         // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
         // established pattern in ExecuteReader.cs so GetAll participates in registered
         // ICommandInterceptor auditing/logging the same way Query/QueryFirst/etc. do.
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
-            return JauntyConfig.InterceptorPipeline.ExecuteWithInterception(
+            return pipeline.ExecuteWithInterception(
                 cached.SelectAllSql,
                 null,
                 connection,
@@ -120,9 +125,13 @@ public static partial class Jaunty
         // Use InterceptorPipeline if registered, otherwise execute directly - mirrors the
         // established pattern in ExecuteReaderAsync.cs so GetAllAsync participates in registered
         // ICommandInterceptor auditing/logging the same way QueryAsync/QueryFirstAsync/etc. do.
-        if (JauntyConfig.InterceptorPipeline?.HasInterceptors == true)
+        // One resolution, one read: CommandObservation decides whether anything is watching
+        // (interceptor, diagnostics subscriber, or both) and hands back what to route through.
+        InterceptorPipeline? pipeline = CommandObservation.Observer;
+
+        if (pipeline is not null)
         {
-            return await JauntyConfig.InterceptorPipeline.ExecuteWithInterceptionAsync(
+            return await pipeline.ExecuteWithInterceptionAsync(
                 cached.SelectAllSql,
                 null,
                 dbConnection,
