@@ -106,7 +106,7 @@ public class SensitiveParameterMaskingTests
 
         string line = await LogLineFor(parameters);
 
-        Assert.False(line.Contains("hunter2", StringComparison.Ordinal),
+        Assert.False(line.IndexOf("hunter2", StringComparison.Ordinal) >= 0,
             $"Parameter '{parameterName}' logged its value in clear. Matching was exact, so only a " +
             $"parameter spelled exactly like a seeded name was masked. Logged: {line}");
 
