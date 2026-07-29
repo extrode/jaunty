@@ -23,6 +23,70 @@ internal static class MappedPropertyFilter
     private const string NotMappedAttributeTypeName = "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute";
 
     /// <summary>
+    /// Returns the mapped properties of <paramref name="entityType"/>, with hidden base declarations
+    /// removed.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26: <c>GetProperties(Public | Instance)</c> returns BOTH declarations when a <c>new</c>
+    /// shadow changes the property type - measured: <c>string Code</c> hiding <c>object Code</c>
+    /// yields two <see cref="PropertyInfo"/>s, where a same-type shadow collapses to one because
+    /// reflection hides by name <em>and</em> signature. Those two are one logical property, so
+    /// everything downstream must see only the most-derived declaration.
+    ///
+    /// <para>
+    /// Resolved by comparing <see cref="MemberInfo.DeclaringType"/> rather than by relying on
+    /// enumeration order. <c>GetProperties</c> has listed the most-derived declaration first in every
+    /// CoreCLR release, but the documentation explicitly does not guarantee order - and if it ever
+    /// flipped, the hidden base declaration would silently win, giving the wrong property type in
+    /// both the mapping and the generated DDL with no diagnostic.
+    /// </para>
+    ///
+    /// <para>
+    /// A single type cannot declare two same-name non-indexer properties, and indexers are filtered
+    /// out below, so two same-name entries in one enumeration can only ever be a hide chain.
+    /// </para>
+    /// </remarks>
+    /// <param name="entityType">The entity to enumerate.</param>
+    /// <returns>The mapped properties, one per logical property.</returns>
+    public static List<PropertyInfo> GetMappedProperties(Type entityType)
+    {
+        PropertyInfo[] all = entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        var byName = new Dictionary<string, int>(all.Length, StringComparer.Ordinal);
+        var result = new List<PropertyInfo>(all.Length);
+
+        for (int i = 0; i < all.Length; i++)
+        {
+            PropertyInfo property = all[i];
+            if (!IsMapped(property)) continue;
+
+            if (byName.TryGetValue(property.Name, out int existingIndex))
+            {
+                if (IsMoreDerivedThan(property, result[existingIndex]))
+                    result[existingIndex] = property;
+
+                continue;
+            }
+
+            byName[property.Name] = result.Count;
+            result.Add(property);
+        }
+
+        return result;
+    }
+
+    private static bool IsMoreDerivedThan(PropertyInfo candidate, PropertyInfo incumbent)
+    {
+        Type? candidateType = candidate.DeclaringType;
+        Type? incumbentType = incumbent.DeclaringType;
+
+        if (candidateType is null || incumbentType is null || candidateType == incumbentType)
+            return false;
+
+        // candidate is more derived when the incumbent's declaring type is one of its bases.
+        return incumbentType.IsAssignableFrom(candidateType);
+    }
+
+    /// <summary>
     /// Returns <see langword="true"/> when <paramref name="property"/> should be treated as a column.
     /// </summary>
     public static bool IsMapped(PropertyInfo property)
