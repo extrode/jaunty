@@ -240,124 +240,144 @@ public static partial class Jaunty
         if (string.IsNullOrEmpty(cached.UpdateSql))
             throw new InvalidOperationException($"Cannot update entity of type '{typeof(T).Name}': No updateable columns found.");
 
-        ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
+        var bulkParameters = new BulkOperationParameters("BulkUpdate", typeof(T), entityList.Count);
 
-        if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
-            throw new NotSupportedException(
-                $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
-                "Use BulkUpdate instead, or disable constraints manually before calling this method.");
+        // AUD-R26: the whole operation is reported once, not once per statement - a 100,000-row
+        // BulkInsert is one logical write, and firing the pipeline per row would both swamp an
+        // auditor and cost more than the bulk path saves. The body below is unchanged; it lives in
+        // a local function so the transaction, FK-toggle and rollback logic is captured rather than
+        // re-threaded through a new signature.
 
-        ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
-        bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
+        return WriteInterception.Execute(
+            cached.UpdateSql,
+            bulkParameters,
+            connection,
+            options.CommandType,
+            Body);
 
-        // Note: Native bulk UPDATE is not widely supported by database providers.
-        // Most databases (SQL Server, PostgreSQL, MySQL) don't have native bulk UPDATE APIs.
-        // We fall back to standard parameterized UPDATE statements which are still efficient
-        // when executed within a single transaction.
-
-        bool wasClosed = connection.State == ConnectionState.Closed;
-
-        // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
-        // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
-        // IDbTransaction through it throws an opaque InvalidCastException. Validate via
-        // AsyncTransactionValidator first (mirroring InsertCoreDirect) so an incompatible
-        // transaction gets Jaunty's clear ArgumentException instead.
-        IDbTransaction? transaction = connection is System.Data.Common.DbConnection
-            ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
-            : options.Transaction;
-        bool ownTransaction = transaction is null;
-
-        try
+        int Body()
         {
-            if (wasClosed)
-                connection.Open();
+            WriteInterception.Log(cached.UpdateSql, bulkParameters);
 
-            if (ignoreConstraints && requiresAutocommit)
-                ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null);
+            ISqlDialect dialect = SqlDialectFactory.GetDialect(connection);
 
-            if (ownTransaction)
-                transaction = connection.BeginTransaction();
+            if (ignoreConstraints && !dialect.SupportsForeignKeyToggle)
+                throw new NotSupportedException(
+                    $"The database provider ({connection.GetType().Name}) does not support session-level foreign key toggling. " +
+                    "Use BulkUpdate instead, or disable constraints manually before calling this method.");
 
-            if (ignoreConstraints && !requiresAutocommit)
-                ForeignKeyToggleCoordinator.DisableSync(connection, dialect, transaction);
+            ForeignKeyToggleCoordinator.ValidateTransactionCompatibility(ignoreConstraints, dialect, options.Transaction, connection.GetType().Name);
+            bool requiresAutocommit = ForeignKeyToggleCoordinator.RequiresPreTransactionToggle(ignoreConstraints, dialect);
 
-            int totalUpdated = 0;
+            // Note: Native bulk UPDATE is not widely supported by database providers.
+            // Most databases (SQL Server, PostgreSQL, MySQL) don't have native bulk UPDATE APIs.
+            // We fall back to standard parameterized UPDATE statements which are still efficient
+            // when executed within a single transaction.
+
+            bool wasClosed = connection.State == ConnectionState.Closed;
+
+            // A DbConnection's IDbCommand.Transaction setter is DbCommand's explicit interface
+            // implementation, which casts to DbTransaction internally - assigning a non-DbTransaction
+            // IDbTransaction through it throws an opaque InvalidCastException. Validate via
+            // AsyncTransactionValidator first (mirroring InsertCoreDirect) so an incompatible
+            // transaction gets Jaunty's clear ArgumentException instead.
+            IDbTransaction? transaction = connection is System.Data.Common.DbConnection
+                ? AsyncTransactionValidator.RequireDbTransaction(options.Transaction)
+                : options.Transaction;
+            bool ownTransaction = transaction is null;
 
             try
             {
-                using IDbCommand command = connection.CreateCommand();
-                command.Transaction = transaction;
-                command.CommandText = cached.UpdateSql;
+                if (wasClosed)
+                    connection.Open();
 
-                if (options.CommandTimeout.HasValue)
-                    command.CommandTimeout = options.CommandTimeout.Value;
+                if (ignoreConstraints && requiresAutocommit)
+                    ForeignKeyToggleCoordinator.DisableSync(connection, dialect, null);
 
-                PrepareUpdateParameters(command, cached.Metadata);
+                if (ownTransaction)
+                    transaction = connection.BeginTransaction();
 
-                Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.UpdateValueSetter;
-                if (valueSetter == null)
+                if (ignoreConstraints && !requiresAutocommit)
+                    ForeignKeyToggleCoordinator.DisableSync(connection, dialect, transaction);
+
+                int totalUpdated = 0;
+
+                try
                 {
-                    throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
-                }
+                    using IDbCommand command = connection.CreateCommand();
+                    command.Transaction = transaction;
+                    command.CommandText = cached.UpdateSql;
 
-                IDataParameterCollection pCollection = command.Parameters;
+                    if (options.CommandTimeout.HasValue)
+                        command.CommandTimeout = options.CommandTimeout.Value;
 
-                // Set first entity values before Prepare() so providers can infer parameter types.
-                // Prepare() is a best-effort optimization; some providers (e.g. SQL Server on .NET Framework)
-                // require explicit DbType on all parameters, which we can't guarantee here.
-                bool isFirst = true;
-                foreach (T? entity in entityList)
-                {
-                    valueSetter(pCollection, entity);
-                    if (isFirst)
+                    PrepareUpdateParameters(command, cached.Metadata);
+
+                    Action<IDataParameterCollection, T>? valueSetter = WriteParameterCache<T>.UpdateValueSetter;
+                    if (valueSetter == null)
                     {
-                        try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
-                        isFirst = false;
+                        throw new InvalidOperationException($"No parameter binder found for type '{typeof(T).Name}'. Ensure source generation or reflection extension is used.");
                     }
-                    totalUpdated += command.ExecuteNonQuery();
+
+                    IDataParameterCollection pCollection = command.Parameters;
+
+                    // Set first entity values before Prepare() so providers can infer parameter types.
+                    // Prepare() is a best-effort optimization; some providers (e.g. SQL Server on .NET Framework)
+                    // require explicit DbType on all parameters, which we can't guarantee here.
+                    bool isFirst = true;
+                    foreach (T? entity in entityList)
+                    {
+                        valueSetter(pCollection, entity);
+                        if (isFirst)
+                        {
+                            try { command.Prepare(); } catch { /* Best effort — not all providers support this */ }
+                            isFirst = false;
+                        }
+                        totalUpdated += command.ExecuteNonQuery();
+                    }
+
+                    if (ignoreConstraints && !requiresAutocommit)
+                        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction);
+
+                    if (ownTransaction)
+                        transaction!.Commit();
+
+                    if (ignoreConstraints && requiresAutocommit)
+                        ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null);
+
+                    return totalUpdated;
                 }
+                catch
+                {
+                    if (ignoreConstraints && !requiresAutocommit)
+                    {
+                        try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction); }
+                        catch { /* Best effort */ }
+                    }
 
-                if (ignoreConstraints && !requiresAutocommit)
-                    ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction);
+                    if (ownTransaction)
+                    {
+                        try { transaction?.Rollback(); }
+                        catch { /* Best effort - do not mask the original exception */ }
+                    }
 
-                if (ownTransaction)
-                    transaction!.Commit();
+                    if (ignoreConstraints && requiresAutocommit)
+                    {
+                        try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null); }
+                        catch { /* Best effort */ }
+                    }
 
-                if (ignoreConstraints && requiresAutocommit)
-                    ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null);
-
-                return totalUpdated;
+                    throw;
+                }
             }
-            catch
+            finally
             {
-                if (ignoreConstraints && !requiresAutocommit)
-                {
-                    try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, transaction); }
-                    catch { /* Best effort */ }
-                }
-
                 if (ownTransaction)
-                {
-                    try { transaction?.Rollback(); }
-                    catch { /* Best effort - do not mask the original exception */ }
-                }
+                    transaction?.Dispose();
 
-                if (ignoreConstraints && requiresAutocommit)
-                {
-                    try { ForeignKeyToggleCoordinator.EnableSync(connection, dialect, null); }
-                    catch { /* Best effort */ }
-                }
-
-                throw;
+                if (wasClosed && connection.State != ConnectionState.Closed)
+                    connection.Close();
             }
-        }
-        finally
-        {
-            if (ownTransaction)
-                transaction?.Dispose();
-
-            if (wasClosed && connection.State != ConnectionState.Closed)
-                connection.Close();
         }
     }
 }
