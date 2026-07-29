@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 using Jaunty.Scaffolding.Abstractions;
@@ -24,6 +25,16 @@ public sealed class EntityCodeGenerator : ICodeGenerator
     /// <inheritdoc />
     public string GenerateEntity(TableSchema table, CodeGeneratorOptions options)
     {
+        // AUD-R26: GenerateEntity is public API in its own right, so the namespace is checked
+        // here as well as in Scaffolder.ValidateOptions - a caller using the generator directly
+        // gets the same guarantee. A namespace containing a semicolon would otherwise inject
+        // arbitrary top-level C# into every generated file and still parse cleanly.
+        if (!NamingHelper.IsValidNamespace(options.Namespace))
+            throw new ArgumentException(
+                $"Namespace '{options.Namespace}' is not a valid C# namespace. It must be a " +
+                "dot-separated sequence of identifiers, each starting with a letter or underscore.",
+                nameof(options));
+
         var sb = new StringBuilder();
 
         // Usings
@@ -226,11 +237,51 @@ public sealed class EntityCodeGenerator : ICodeGenerator
     }
 
     /// <summary>
-    /// Escapes backslashes and double quotes so an arbitrary database identifier can be safely
-    /// embedded in a generated C# string literal (e.g. inside [Table("...")]/[Column("...")]).
+    /// Escapes an arbitrary database identifier so it can be embedded in a generated C# string
+    /// literal (e.g. inside [Table("...")]/[Column("...")]).
     /// </summary>
+    /// <remarks>
+    /// AUD-R26: this handled backslashes and double quotes but not control characters, and a
+    /// regular C# string literal cannot span a line. A quoted identifier may contain one -
+    /// <c>CREATE TABLE t ("line1\nline2" TEXT)</c> is accepted by SQLite and by SQL Server in
+    /// bracket form. Measured: such a column emitted
+    /// <code>
+    ///     [Jaunty.Attributes.Column("line1
+    ///     line2")]
+    /// </code>
+    /// which does not compile (CS1010, newline in constant). Escaping only the two characters
+    /// that break *most* identifiers left the generator producing a file the user cannot build,
+    /// with the cause several steps removed from the table it came from.
+    /// </remarks>
     private static string EscapeStringLiteral(string value)
     {
-        return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        var sb = new StringBuilder(value.Length);
+
+        foreach (char c in value)
+        {
+            switch (c)
+            {
+                case '\\': sb.Append("\\\\"); break;
+                case '"': sb.Append("\\\""); break;
+                case '\0': sb.Append("\\0"); break;
+                case '\a': sb.Append("\\a"); break;
+                case '\b': sb.Append("\\b"); break;
+                case '\f': sb.Append("\\f"); break;
+                case '\n': sb.Append("\\n"); break;
+                case '\r': sb.Append("\\r"); break;
+                case '\t': sb.Append("\\t"); break;
+                case '\v': sb.Append("\\v"); break;
+                default:
+                    // Any other control character - including the Unicode line separators
+                    // U+2028/U+2029, which the C# lexer also treats as line terminators.
+                    if (char.IsControl(c) || c is '\u0085' or '\u2028' or '\u2029')
+                        sb.Append("\\u").Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
+                    else
+                        sb.Append(c);
+                    break;
+            }
+        }
+
+        return sb.ToString();
     }
 }

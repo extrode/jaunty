@@ -56,6 +56,49 @@ public sealed class FlatFileOptions
     public List<IFileSource> Sources { get; } = new();
 
     /// <summary>
+    /// Adds <paramref name="source"/>, rejecting a table name already taken by another source.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26: every <c>AddXxx&lt;T&gt;</c> resolves its table name from the entity type, so
+    /// registering two sources for one entity gave both the same name - and nothing objected at any
+    /// layer. <c>Sources</c> is a plain list, <c>DuckDbDialect.GenerateCreateViewSql</c> emits
+    /// <c>CREATE OR REPLACE VIEW</c>, and <c>DuckDb._sources</c> is a last-wins dictionary keyed on
+    /// entity type. Measured: <c>AddCsv&lt;Sales&gt;(a)</c> then <c>AddCsv&lt;Sales&gt;(b)</c>
+    /// constructed successfully and returned only b's rows - a's were silently gone.
+    ///
+    /// <para>
+    /// "Load two files into one entity" is a natural thing to write and the library does support it,
+    /// through the multi-path constructor - so the error names it rather than just refusing.
+    /// <c>CREATE OR REPLACE</c> stays as it is: re-registering a source deliberately through the
+    /// public <c>RegisterSource</c> is a supported operation, and this check is what separates that
+    /// from an accidental collision at configuration time.
+    /// </para>
+    /// </remarks>
+    /// <param name="source">The source to add.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when another source already uses the same table name.
+    /// </exception>
+    private void AddUnique(IFileSource source)
+    {
+        for (int i = 0; i < Sources.Count; i++)
+        {
+            if (!string.Equals(Sources[i].TableName, source.TableName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            throw new InvalidOperationException(
+                $"A file source for table '{source.TableName}' is already registered " +
+                $"(entity '{Sources[i].EntityType.Name}', path '{Sources[i].FilePath}'). " +
+                "Two sources cannot share a table name - the second would silently replace the " +
+                "first. To read several files as one table, pass them to the source's multi-path " +
+                "constructor instead, e.g. new CsvFileSource(tableName, new[] { pathA, pathB }, " +
+                "typeof(TEntity)). To map a second file to a different table, give its entity a " +
+                "distinct [Table(\"...\")] name.");
+        }
+
+        Sources.Add(source);
+    }
+
+    /// <summary>
     /// Registers a CSV file source mapped to the specified entity type.
     /// The table name is resolved from the entity's <c>[Table]</c> attribute, or the class name lowercased.
     /// </summary>
@@ -64,7 +107,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new CsvFileSource(tableName, filePath, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -77,7 +120,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new TsvFileSource(tableName, filePath, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -90,7 +133,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new ParquetFileSource(tableName, filePath, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -103,7 +146,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new JsonFileSource(tableName, filePath, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -119,7 +162,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new ExcelFileSource(tableName, filePath, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -135,7 +178,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new DeltaLakeFileSource(tableName, filePath, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -151,7 +194,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new IcebergFileSource(tableName, filePath, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -162,7 +205,7 @@ public sealed class FlatFileOptions
     /// <param name="source">The file source to register.</param>
     public FlatFileOptions AddSource(IFileSource source)
     {
-        Sources.Add(source ?? throw new ArgumentNullException(nameof(source)));
+        AddUnique(source ?? throw new ArgumentNullException(nameof(source)));
         return this;
     }
 
@@ -182,7 +225,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         TSource source = factory(tableName, filePath, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -194,7 +237,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new CsvFileSource(tableName, filePaths, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -206,7 +249,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new TsvFileSource(tableName, filePaths, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -218,7 +261,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new ParquetFileSource(tableName, filePaths, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -230,7 +273,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new JsonFileSource(tableName, filePaths, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 
@@ -242,7 +285,7 @@ public sealed class FlatFileOptions
         var tableName = TableNameResolver.Resolve<T>();
         var source = new ExcelFileSource(tableName, filePaths, typeof(T));
         configure?.Invoke(source);
-        Sources.Add(source);
+        AddUnique(source);
         return this;
     }
 }

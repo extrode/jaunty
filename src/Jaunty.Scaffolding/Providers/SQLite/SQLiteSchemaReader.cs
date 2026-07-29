@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Text.RegularExpressions;
 
 using Jaunty.Scaffolding.Abstractions;
+using Jaunty.Scaffolding.Internals;
 using Jaunty.Scaffolding.Schema;
 
 namespace Jaunty.Scaffolding.Providers.SQLite;
@@ -64,8 +65,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
             var type = Type.GetType(typeName);
             if (type != null)
             {
-                var connection = (DbConnection)Activator.CreateInstance(type, connStr)!;
-                return connection;
+                return ReflectedConnectionFactory.Create(type, connStr);
             }
         }
 
@@ -155,8 +155,7 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         // Get the CREATE TABLE statement to check for WITHOUT ROWID, which suppresses
         // rowid aliasing for INTEGER PRIMARY KEY columns.
         var createSql = await GetCreateTableSqlAsync(connection, tableName, cancellationToken).ConfigureAwait(false);
-        var isWithoutRowId = createSql != null &&
-            Regex.IsMatch(createSql, @"\)\s*WITHOUT\s+ROWID\s*;?\s*$", RegexOptions.IgnoreCase);
+        var isWithoutRowId = createSql != null && IsWithoutRowId(createSql);
 
         // Use PRAGMA table_info to get column information
         using DbCommand cmd = connection.CreateCommand();
@@ -216,6 +215,181 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         return (columns, keyColumns);
     }
 
+    /// <summary>
+    /// Reports whether a CREATE TABLE statement carries the WITHOUT ROWID table option.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26: this was previously <c>Regex.IsMatch(sql, @"\)\s*WITHOUT\s+ROWID\s*;?\s*$")</c>,
+    /// which requires the option to be the *only* thing after the column list and to sit
+    /// immediately against the closing paren. SQLite accepts a comma-separated list of table
+    /// options in either order, so both of these were misread as rowid tables:
+    /// <code>
+    /// CREATE TABLE t(...) STRICT, WITHOUT ROWID     -- ")" is not adjacent to WITHOUT
+    /// CREATE TABLE t(...) WITHOUT ROWID, STRICT     -- ", STRICT" follows, so "$" does not match
+    /// </code>
+    /// The consequence is not cosmetic: a single-column INTEGER PRIMARY KEY in such a table
+    /// was reported with <c>IsIdentity = true</c>, but WITHOUT ROWID tables get no rowid
+    /// aliasing and never auto-generate the key, so the scaffolded entity tells callers to
+    /// omit a value the database will not supply.
+    ///
+    /// <para>
+    /// Relaxing the anchor to a bare <c>\bWITHOUT\s+ROWID\b</c> search over the whole statement
+    /// is not sufficient either - it false-positives on <c>CREATE TABLE t(a INTEGER PRIMARY KEY,
+    /// "without rowid" TEXT)</c>, which is a rowid table with an awkwardly named column. So the
+    /// column-definition body is skipped by matching its parentheses (respecting <c>'..'</c>,
+    /// <c>"..'"</c>, <c>`..`</c> and <c>[..]</c> quoting and both comment forms) and only the
+    /// table-options tail that follows it is searched.
+    /// </para>
+    ///
+    /// <para>
+    /// Verified against SQLite itself - <c>SELECT rowid FROM t</c> fails with "no such column:
+    /// rowid" exactly on WITHOUT ROWID tables - for the two option orderings above, the quoted
+    /// -column trap, a lowercase spelling, a nested <c>CHECK (b IN (1,2,3))</c>, a column named
+    /// <c>"weird)name"</c>, and a plain rowid table. This agrees with SQLite on all of them; the
+    /// old pattern disagreed on two.
+    /// </para>
+    /// </remarks>
+    internal static bool IsWithoutRowId(string createSql)
+    {
+        var depth = 0;
+        var sawBody = false;
+        var i = 0;
+
+        while (i < createSql.Length)
+        {
+            char ch = createSql[i];
+
+            // Quoted string literals and quoted identifiers. SQLite doubles the quote character
+            // to escape it, so a doubled quote continues the run rather than ending it.
+            if (ch is '\'' or '"' or '`')
+            {
+                char quote = ch;
+                i++;
+                while (i < createSql.Length)
+                {
+                    if (createSql[i] != quote)
+                    {
+                        i++;
+                        continue;
+                    }
+
+                    if (i + 1 < createSql.Length && createSql[i + 1] == quote)
+                    {
+                        i += 2;
+                        continue;
+                    }
+
+                    i++;
+                    break;
+                }
+
+                continue;
+            }
+
+            if (ch == '[')
+            {
+                i++;
+                while (i < createSql.Length && createSql[i] != ']')
+                    i++;
+                if (i < createSql.Length)
+                    i++;
+                continue;
+            }
+
+            if (ch == '-' && i + 1 < createSql.Length && createSql[i + 1] == '-')
+            {
+                while (i < createSql.Length && createSql[i] != '\n')
+                    i++;
+                continue;
+            }
+
+            if (ch == '/' && i + 1 < createSql.Length && createSql[i + 1] == '*')
+            {
+                i += 2;
+                while (i + 1 < createSql.Length && !(createSql[i] == '*' && createSql[i + 1] == '/'))
+                    i++;
+                i = Math.Min(i + 2, createSql.Length);
+                continue;
+            }
+
+            if (ch == '(')
+            {
+                depth++;
+                sawBody = true;
+                i++;
+                continue;
+            }
+
+            if (ch == ')')
+            {
+                depth--;
+                i++;
+
+                // The column-definition body has closed; everything left is table options.
+                if (sawBody && depth == 0)
+                    return TailDeclaresWithoutRowId(createSql, i);
+
+                continue;
+            }
+
+            i++;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Scans the table-options tail for the WITHOUT ROWID option, reading it as two bare
+    /// keywords rather than as text. A regex over the raw tail would also match the option
+    /// spelled inside a comment - <c>CREATE TABLE t (a INT) /* WITHOUT ROWID */</c> - which
+    /// declares nothing.
+    /// </summary>
+    private static bool TailDeclaresWithoutRowId(string sql, int start)
+    {
+        var sawWithout = false;
+
+        var i = start;
+        while (i < sql.Length)
+        {
+            char ch = sql[i];
+
+            if (ch == '-' && i + 1 < sql.Length && sql[i + 1] == '-')
+            {
+                while (i < sql.Length && sql[i] != '\n')
+                    i++;
+                continue;
+            }
+
+            if (ch == '/' && i + 1 < sql.Length && sql[i + 1] == '*')
+            {
+                i += 2;
+                while (i + 1 < sql.Length && !(sql[i] == '*' && sql[i + 1] == '/'))
+                    i++;
+                i = Math.Min(i + 2, sql.Length);
+                continue;
+            }
+
+            if (!char.IsLetter(ch) && ch != '_')
+            {
+                i++;
+                continue;
+            }
+
+            var wordStart = i;
+            while (i < sql.Length && (char.IsLetterOrDigit(sql[i]) || sql[i] == '_'))
+                i++;
+
+            ReadOnlySpan<char> word = sql.AsSpan(wordStart, i - wordStart);
+
+            if (sawWithout && word.Equals("ROWID".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            sawWithout = word.Equals("WITHOUT".AsSpan(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        return false;
+    }
+
     private static async Task<string?> GetCreateTableSqlAsync(
         DbConnection connection,
         string tableName,
@@ -251,23 +425,82 @@ public sealed class SQLiteSchemaReader : ISchemaReader
         };
     }
 
+    /// <summary>
+    /// Reads the table's foreign keys, resolving references that name no parent column.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26: the <c>to</c> field of PRAGMA foreign_key_list is NULL whenever the constraint
+    /// omits the parent column list - <c>REFERENCES parent</c> rather than
+    /// <c>REFERENCES parent(id)</c> - which is ordinary, widely used SQLite. The previous
+    /// <c>reader.GetString(4)</c> threw <c>InvalidOperationException: The data is NULL at
+    /// ordinal 4</c> on the first such constraint, and since foreign keys are read inside the
+    /// per-table loop of <see cref="ReadSchemaAsync"/>, that aborted the scaffold of the whole
+    /// database, not just the one table.
+    ///
+    /// <para>
+    /// Such a reference targets the parent's primary key, and for a composite key the
+    /// <c>seq</c> field gives the position within it. Measured: for
+    /// <c>p2(x TEXT, y TEXT, PRIMARY KEY (y, x))</c> and
+    /// <c>FOREIGN KEY (a,b) REFERENCES p2</c>, SQLite reports seq=0 from=a and seq=1 from=b
+    /// with both <c>to</c> values NULL, and the explicit spelling
+    /// <c>REFERENCES p2(y,x)</c> reports to=y then to=x. So the parent key ordered by its
+    /// PRAGMA table_info pk ordinal - which is declaration order, y then x, not the physical
+    /// order x then y - indexed by seq reproduces the explicit form exactly.
+    /// </para>
+    /// </remarks>
     private static async Task<List<ForeignKeyInfo>> ReadForeignKeysAsync(
         DbConnection connection,
         string tableName,
         CancellationToken cancellationToken)
     {
-        var foreignKeys = new List<ForeignKeyInfo>();
+        var rows = new List<(int Seq, string ReferencedTable, string FromColumn, string? ToColumn)>();
 
-        using DbCommand cmd = connection.CreateCommand();
-        cmd.CommandText = $"PRAGMA foreign_key_list('{EscapeForPragmaLiteral(tableName)}')";
-
-        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        using (DbCommand cmd = connection.CreateCommand())
         {
-            // PRAGMA foreign_key_list returns: id, seq, table, from, to, on_update, on_delete, match
-            var referencedTable = reader.GetString(2);
-            var fromColumn = reader.GetString(3);
-            var toColumn = reader.GetString(4);
+            cmd.CommandText = $"PRAGMA foreign_key_list('{EscapeForPragmaLiteral(tableName)}')";
+
+            using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                // PRAGMA foreign_key_list returns: id, seq, table, from, to, on_update, on_delete, match
+                rows.Add((
+                    reader.GetInt32(1),
+                    reader.GetString(2),
+                    reader.GetString(3),
+                    reader.IsDBNull(4) ? null : reader.GetString(4)));
+            }
+        }
+
+        // One lookup per distinct parent, not per row, so a composite implicit key costs a
+        // single extra PRAGMA. Populated lazily - a schema whose references all name their
+        // parent column issues no extra queries at all.
+        Dictionary<string, List<string>>? parentKeys = null;
+
+        var foreignKeys = new List<ForeignKeyInfo>(rows.Count);
+        foreach ((int seq, string referencedTable, string fromColumn, string? toColumn) in rows)
+        {
+            var referencedColumn = toColumn;
+
+            if (referencedColumn is null)
+            {
+                parentKeys ??= new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+                if (!parentKeys.TryGetValue(referencedTable, out List<string>? keyColumns))
+                {
+                    keyColumns = await GetPrimaryKeyColumnsAsync(connection, referencedTable, cancellationToken)
+                        .ConfigureAwait(false);
+                    parentKeys[referencedTable] = keyColumns;
+                }
+
+                // A parent with no primary key, or fewer key columns than the child names, is a
+                // constraint SQLite itself rejects at DML time with "foreign key mismatch" - there
+                // is no column to point at, so the row is dropped rather than reported with an
+                // invented target.
+                if (seq >= keyColumns.Count)
+                    continue;
+
+                referencedColumn = keyColumns[seq];
+            }
 
             foreignKeys.Add(new ForeignKeyInfo
             {
@@ -275,11 +508,43 @@ public sealed class SQLiteSchemaReader : ISchemaReader
                 ForeignKeyColumn = fromColumn,
                 ReferencedSchema = null,
                 ReferencedTable = referencedTable,
-                ReferencedColumn = toColumn
+                ReferencedColumn = referencedColumn
             });
         }
 
         return foreignKeys;
+    }
+
+    /// <summary>
+    /// Returns a table's primary-key columns in declaration order - the order given by the
+    /// PRAGMA table_info pk ordinal, which for <c>PRIMARY KEY (y, x)</c> is y then x however
+    /// the columns are physically laid out.
+    /// </summary>
+    private static async Task<List<string>> GetPrimaryKeyColumnsAsync(
+        DbConnection connection,
+        string tableName,
+        CancellationToken cancellationToken)
+    {
+        var keyColumns = new List<(int Ordinal, string ColumnName)>();
+
+        using DbCommand cmd = connection.CreateCommand();
+        cmd.CommandText = $"PRAGMA table_info('{EscapeForPragmaLiteral(tableName)}')";
+
+        using DbDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            var pkOrdinal = reader.GetInt32(5);
+            if (pkOrdinal != 0)
+                keyColumns.Add((pkOrdinal, reader.GetString(1)));
+        }
+
+        keyColumns.Sort(static (a, b) => a.Ordinal.CompareTo(b.Ordinal));
+
+        var result = new List<string>(keyColumns.Count);
+        foreach ((int _, string columnName) in keyColumns)
+            result.Add(columnName);
+
+        return result;
     }
 
     private static string ExtractDatabaseName(string connectionString)
