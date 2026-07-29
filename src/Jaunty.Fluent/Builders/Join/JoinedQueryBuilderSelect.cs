@@ -5,6 +5,7 @@ using Jaunty.Core;
 using Jaunty.Fluent.Internals;
 using Jaunty.Configuration;
 using Jaunty.Internals.Read;
+using Jaunty.Internals;
 
 namespace Jaunty.Fluent;
 
@@ -239,70 +240,88 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
         string[] allColumns = fromColumns.Concat(joinColumns).ToArray();
 
         string sql = BuildSelectSql(allColumns);
-        var results = new List<(TFrom, TJoin)>();
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
-
-        try
+        List<(TFrom From, TJoin Joined)> Body()
         {
-            using IDataReader reader = command.ExecuteReader();
-            Dictionary<string, int> ordinals = BuildOrdinalLookup(reader);
+            var results = new List<(TFrom, TJoin)>();
 
-            while (reader.Read())
-            {
-                TFrom? fromObj = MapEntity<TFrom>(_fromMetadata, reader, "f_", ordinals);
-                TJoin? joinObj = MapEntity<TJoin>(_joinMetadata, reader, "j_", ordinals);
-                results.Add((fromObj, joinObj));
-            }
-        }
-        finally
-        {
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
-        }
+                _connection.Open();
 
-        return results;
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+                Dictionary<string, int> ordinals = BuildOrdinalLookup(reader);
+
+                while (reader.Read())
+                {
+                    TFrom? fromObj = MapEntity<TFrom>(_fromMetadata, reader, "f_", ordinals);
+                    TJoin? joinObj = MapEntity<TJoin>(_joinMetadata, reader, "j_", ordinals);
+                    results.Add((fromObj, joinObj));
+                }
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
+            }
+
+            return results;
+        }
     }
 
     private List<T> SelectWithMapping<T>(MappingMode mode, int? limit = null)
         where T : new()
     {
         string sql = BuildSelectPartialSql("*");
-        if (limit.HasValue)
-            sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
-        var results = new List<T>();
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
-
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
-
-        try
+        List<T> Body()
         {
-            using IDataReader reader = command.ExecuteReader();
-            EnsureNoAmbiguousColumns(reader);
-            Func<IDataReader, T> mapper = DrDispatcher.Resolve<T>(reader, default, mode);
+            if (limit.HasValue)
+                sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
-            while (reader.Read())
-                results.Add(mapper(reader));
-        }
-        finally
-        {
+            var results = new List<T>();
+
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
-        }
+                _connection.Open();
 
-        return results;
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+                EnsureNoAmbiguousColumns(reader);
+                Func<IDataReader, T> mapper = DrDispatcher.Resolve<T>(reader, default, mode);
+
+                while (reader.Read())
+                    results.Add(mapper(reader));
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
+            }
+
+            return results;
+        }
     }
 
     private static CommandOptions<TResult> ToTypedOptions<TResult>(CommandOptions options) =>
@@ -325,32 +344,41 @@ internal partial class JoinedQueryBuilder<TFrom, TJoin>
     private List<T> SelectWithMapper<T>(Func<IDataReader, T> mapper, int? limit = null)
     {
         string sql = BuildSelectPartialSql("*");
-        if (limit.HasValue)
-            sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
-        var results = new List<T>();
+        return CommandObservation.Execute(
+            sql, DescribeParameters(), _connection, CommandType.Text, Body);
 
-        using IDbCommand command = _connection.CreateCommand();
-        command.CommandText = sql;
-        BindParameters(command);
-
-        bool wasClosed = _connection.State == ConnectionState.Closed;
-        if (wasClosed)
-            _connection.Open();
-
-        try
+        List<T> Body()
         {
-            using IDataReader reader = command.ExecuteReader();
+            if (limit.HasValue)
+                sql = _dialect.GetPagingSql(sql, 0, limit.Value);
 
-            while (reader.Read())
-                results.Add(mapper(reader));
-        }
-        finally
-        {
+            var results = new List<T>();
+
+            using IDbCommand command = _connection.CreateCommand();
+            command.CommandText = sql;
+            BindParameters(command);
+
+            CommandObservation.Log(sql, DescribeParameters());
+
+            bool wasClosed = _connection.State == ConnectionState.Closed;
             if (wasClosed)
-                _connection.Close();
-        }
+                _connection.Open();
 
-        return results;
+            try
+            {
+                using IDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                    results.Add(mapper(reader));
+            }
+            finally
+            {
+                if (wasClosed)
+                    _connection.Close();
+            }
+
+            return results;
+        }
     }
 }

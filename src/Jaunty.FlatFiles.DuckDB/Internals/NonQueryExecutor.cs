@@ -3,6 +3,7 @@ using System.Data;
 using DuckDB.NET.Data;
 
 using Jaunty.Core;
+using Jaunty.Internals;
 
 namespace Jaunty.FlatFiles.DuckDB.Internals;
 
@@ -32,7 +33,14 @@ internal static class NonQueryExecutor
     /// <param name="options">Command options (transaction, timeout) to apply.</param>
     /// <returns>The number of rows affected.</returns>
     public static int Execute(DuckDBConnection connection, string sql, List<DuckDBParameter> parameters, CommandOptions options)
+        => CommandObservation.Execute(
+            sql, DuckDbObservation.Describe(parameters), connection, DuckDbObservation.Text,
+            () => ExecuteDirect(connection, sql, parameters, options));
+
+    private static int ExecuteDirect(DuckDBConnection connection, string sql, List<DuckDBParameter> parameters, CommandOptions options)
     {
+        CommandObservation.Log(sql, DuckDbObservation.Describe(parameters));
+
         using DuckDBCommand cmd = connection.CreateCommand();
         cmd.CommandText = sql;
         ApplyOptions(cmd, options);
@@ -66,13 +74,25 @@ internal static class NonQueryExecutor
     /// <param name="options">Command options (transaction, timeout) to apply.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation.</param>
     /// <returns>The number of rows affected.</returns>
-    public static async ValueTask<int> ExecuteAsync(
+    public static ValueTask<int> ExecuteAsync(
+        DuckDBConnection connection,
+        string sql,
+        List<DuckDBParameter> parameters,
+        CommandOptions options,
+        CancellationToken cancellationToken)
+        => CommandObservation.ExecuteAsync(
+            sql, DuckDbObservation.Describe(parameters), connection, DuckDbObservation.Text,
+            () => ExecuteDirectAsync(connection, sql, parameters, options, cancellationToken), cancellationToken);
+
+    private static async ValueTask<int> ExecuteDirectAsync(
         DuckDBConnection connection,
         string sql,
         List<DuckDBParameter> parameters,
         CommandOptions options,
         CancellationToken cancellationToken)
     {
+        CommandObservation.Log(sql, DuckDbObservation.Describe(parameters));
+
         DuckDBCommand cmd = connection.CreateCommand();
         await using var cmdDisposer = cmd.ConfigureAwait(false);
         cmd.CommandText = sql;

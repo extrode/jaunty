@@ -276,6 +276,13 @@ internal sealed partial class JoinedQueryBuilder<TFrom, TJoin> : IJoinedQuery<TF
     /// binding, matching GroupedQueryBuilder.BindParameters/NormalizeForBinding's fix for the
     /// same issue on the single-entity path.
     /// </summary>
+
+    /// <summary>
+    /// What this builder binds, in the shape interceptors and <c>JauntyConfig.Logger</c>
+    /// already understand. Nested grouped builders hold only a parent reference, so they
+    /// cannot reach the parameter collection to report it themselves.
+    /// </summary>
+    internal object DescribeParameters() => _parameters.ToParameterObject();
     internal void BindParameters(IDbCommand command)
     {
         foreach ((string name, object? value) in _parameters.GetAll())

@@ -8,6 +8,7 @@ using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals;
 
 namespace Jaunty.Fluent;
 
@@ -130,6 +131,11 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     }
 
     private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+        => CommandObservation.Execute(
+            sql, _parameters.ToParameterObject(), _connection, CommandType.Text,
+            () => ExecuteQueryDirect(sql, selector));
+
+    private List<TResult> ExecuteQueryDirect<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
     {
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
         (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
@@ -140,6 +146,8 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         using IDbCommand command = _connection.CreateCommand();
         command.CommandText = sql;
         BindParameters(command);
+
+        CommandObservation.Log(sql, _parameters.ToParameterObject());
 
         var wasClosed = _connection.State == ConnectionState.Closed;
         if (wasClosed) _connection.Open();
@@ -162,6 +170,11 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     }
 
     private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken)
+        => await CommandObservation.ExecuteAsync(
+            sql, _parameters.ToParameterObject(), _connection, CommandType.Text,
+            () => ExecuteQueryDirectAsync(sql, selector, cancellationToken), cancellationToken).ConfigureAwait(false);
+
+    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken)
     {
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
@@ -175,6 +188,8 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         using DbCommand command = dbConn.CreateCommand();
         command.CommandText = sql;
         BindParameters(command);
+
+        CommandObservation.Log(sql, _parameters.ToParameterObject());
 
         bool wasClosed = _connection.State == ConnectionState.Closed;
         if (wasClosed) await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);

@@ -9,6 +9,7 @@ using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
 using Jaunty.Internals.Parameters;
+using Jaunty.Internals;
 
 namespace Jaunty.Fluent;
 
@@ -187,32 +188,43 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
 
     private long ExecuteInsert(string sql)
     {
-        var wasClosed = _connection.State == ConnectionState.Closed;
-        try
+        // If there's an identity column, the identity-retrieval SQL is appended to the same
+        // command so it executes in the same batch/round-trip as the INSERT. Deciding that up
+        // front means what is reported to interceptors is what actually executes.
+        bool hasIdentity = HasIdentityColumn();
+        string commandText = hasIdentity ? BuildInsertWithIdentitySql(sql) : sql;
+
+        return CommandObservation.Execute(
+            commandText, _parameters.ToParameterObject(), _connection, CommandType.Text, Body);
+
+        long Body()
         {
-            if (wasClosed)
-                _connection.Open();
-
-            using IDbCommand command = _connection.CreateCommand();
-            _parameters.BindTo(command);
-
-            // If there's an identity column, append the identity-retrieval SQL to the
-            // same command so it executes in the same batch/round-trip as the INSERT.
-            if (HasIdentityColumn())
+            var wasClosed = _connection.State == ConnectionState.Closed;
+            try
             {
-                command.CommandText = BuildInsertWithIdentitySql(sql);
-                var result = command.ExecuteScalar();
-                return Convert.ToInt64(result, CultureInfo.InvariantCulture);
-            }
+                if (wasClosed)
+                    _connection.Open();
 
-            command.CommandText = sql;
-            command.ExecuteNonQuery();
-            return 1; // 1 row affected
-        }
-        finally
-        {
-            if (wasClosed && _connection.State != ConnectionState.Closed)
-                _connection.Close();
+                using IDbCommand command = _connection.CreateCommand();
+                _parameters.BindTo(command);
+                command.CommandText = commandText;
+
+                CommandObservation.Log(commandText, _parameters.ToParameterObject());
+
+                if (hasIdentity)
+                {
+                    var result = command.ExecuteScalar();
+                    return Convert.ToInt64(result, CultureInfo.InvariantCulture);
+                }
+
+                command.ExecuteNonQuery();
+                return 1; // 1 row affected
+            }
+            finally
+            {
+                if (wasClosed && _connection.State != ConnectionState.Closed)
+                    _connection.Close();
+            }
         }
     }
 
@@ -221,32 +233,41 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         if (_connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async operations require a DbConnection.");
 
-        var wasClosed = dbConnection.State == ConnectionState.Closed;
-        try
+        bool hasIdentity = HasIdentityColumn();
+        string commandText = hasIdentity ? BuildInsertWithIdentitySql(sql) : sql;
+
+        return await CommandObservation.ExecuteAsync(
+            commandText, _parameters.ToParameterObject(), _connection, CommandType.Text,
+            Body, cancellationToken).ConfigureAwait(false);
+
+        async ValueTask<long> Body()
         {
-            if (wasClosed)
-                await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-            using DbCommand command = dbConnection.CreateCommand();
-            _parameters.BindTo(command);
-
-            // If there's an identity column, append the identity-retrieval SQL to the
-            // same command so it executes in the same batch/round-trip as the INSERT.
-            if (HasIdentityColumn())
+            var wasClosed = dbConnection.State == ConnectionState.Closed;
+            try
             {
-                command.CommandText = BuildInsertWithIdentitySql(sql);
-                var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-                return Convert.ToInt64(result, CultureInfo.InvariantCulture);
-            }
+                if (wasClosed)
+                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            command.CommandText = sql;
-            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            return 1; // 1 row affected
-        }
-        finally
-        {
-            if (wasClosed && dbConnection.State != ConnectionState.Closed)
-                dbConnection.Close();
+                using DbCommand command = dbConnection.CreateCommand();
+                _parameters.BindTo(command);
+                command.CommandText = commandText;
+
+                CommandObservation.Log(commandText, _parameters.ToParameterObject());
+
+                if (hasIdentity)
+                {
+                    var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+                    return Convert.ToInt64(result, CultureInfo.InvariantCulture);
+                }
+
+                await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                return 1; // 1 row affected
+            }
+            finally
+            {
+                if (wasClosed && dbConnection.State != ConnectionState.Closed)
+                    dbConnection.Close();
+            }
         }
     }
 

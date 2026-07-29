@@ -7,6 +7,7 @@ using System.Text;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals;
 
 namespace Jaunty.Fluent;
 
@@ -97,6 +98,11 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
     }
 
     private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector)
+        => CommandObservation.Execute(
+            sql, _parent.DescribeParameters(), _parent.Connection, CommandType.Text,
+            () => ExecuteQueryDirect(sql, selector));
+
+    private List<TResult> ExecuteQueryDirect<TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector)
     {
         (string[] _, string[] aliases) = _visitor.TranslateSelect(selector);
         GroupedJoinedResultMapper.ResultMapperPlan plan = GroupedJoinedResultMapper.ResultMapperPlan.Resolve<TResult>(aliases);
@@ -106,6 +112,8 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
         using IDbCommand command = _parent.Connection.CreateCommand();
         command.CommandText = sql;
         _parent.BindParameters(command);
+
+        CommandObservation.Log(sql, _parent.DescribeParameters());
 
         var wasClosed = _parent.Connection.State == ConnectionState.Closed;
         if (wasClosed) _parent.Connection.Open();
@@ -128,6 +136,11 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
     }
 
     private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CancellationToken cancellationToken)
+        => await CommandObservation.ExecuteAsync(
+            sql, _parent.DescribeParameters(), _parent.Connection, CommandType.Text,
+            () => ExecuteQueryDirectAsync(sql, selector, cancellationToken), cancellationToken).ConfigureAwait(false);
+
+    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<TResult>(string sql, Expression<Func<IGroupingJoined<TKey, TFrom, TJoin>, TResult>> selector, CancellationToken cancellationToken)
     {
         if (_parent.Connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
@@ -140,6 +153,8 @@ internal sealed class GroupedJoinedQueryBuilder<TFrom, TJoin, TKey> : IGroupedJo
         using DbCommand command = dbConn.CreateCommand();
         command.CommandText = sql;
         _parent.BindParameters(command);
+
+        CommandObservation.Log(sql, _parent.DescribeParameters());
 
         bool wasClosed = _parent.Connection.State == ConnectionState.Closed;
         if (wasClosed) await dbConn.OpenAsync(cancellationToken).ConfigureAwait(false);
