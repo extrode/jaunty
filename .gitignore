@@ -363,3 +363,6 @@ packout/
 
 # Locally built macOS arm64 SQLite.Interop (see tools/native/sqlite-interop-osx-arm64/README.md)
 tools/native/sqlite-interop-osx-arm64/artifacts/
+
+# Git worktrees - never tracked
+.worktrees/
