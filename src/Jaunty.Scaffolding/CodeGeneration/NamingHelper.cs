@@ -326,6 +326,56 @@ public static class NamingHelper
     }
 
     /// <summary>
+    /// Determines whether a string is a well-formed C# namespace - a dot-separated sequence of
+    /// valid identifiers, each optionally verbatim-escaped with <c>@</c>.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26: the namespace is interpolated straight into <c>namespace {0};</c> and was never
+    /// checked. Malformed values produced a file the user could not compile, with only a Roslyn
+    /// error to work backwards from - measured: "My Namespace" gives CS1514, "123Bad" gives
+    /// CS1001, "Foo-Bar" gives CS0116. Worse, a value containing a semicolon injects arbitrary
+    /// top-level C# into **every** generated file and still parses cleanly: the namespace
+    /// <c>Foo.Bar;public class Pwn{}//</c> emitted
+    /// <c>namespace Foo.Bar;public class Pwn{}//;</c> with zero parse errors. That matters
+    /// because <c>ScaffoldOptions</c> is public library API, so a host application may pass a
+    /// namespace it derived from configuration or from a request, not only from a developer
+    /// typing <c>--namespace</c>.
+    /// </remarks>
+    /// <param name="ns">The candidate namespace.</param>
+    /// <returns>True if the string can be emitted as a namespace declaration.</returns>
+    public static bool IsValidNamespace(string ns)
+    {
+        if (string.IsNullOrWhiteSpace(ns))
+            return false;
+
+        foreach (var part in ns.Split('.'))
+        {
+            // A verbatim identifier is legal here, and is the only way to name a segment that
+            // collides with a keyword.
+            var isVerbatim = part.Length > 0 && part[0] == '@';
+            var identifier = isVerbatim ? part[1..] : part;
+
+            if (identifier.Length == 0)
+                return false;
+
+            if (!char.IsLetter(identifier[0]) && identifier[0] != '_')
+                return false;
+
+            for (int i = 1; i < identifier.Length; i++)
+            {
+                if (!char.IsLetterOrDigit(identifier[i]) && identifier[i] != '_')
+                    return false;
+            }
+
+            // Unescaped keywords are rejected; the @-escaped form above is accepted.
+            if (!isVerbatim && IsCSharpKeyword(identifier))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Makes a string a valid C# identifier by escaping it if necessary.
     /// </summary>
     /// <param name="name">The name to escape.</param>
