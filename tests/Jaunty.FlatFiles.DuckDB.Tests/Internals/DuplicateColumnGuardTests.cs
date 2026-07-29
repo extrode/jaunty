@@ -180,6 +180,32 @@ public class DuplicateColumnGuardTests
         Assert.Equal(typeof(string), ClrType);
     }
 
+    /// <summary>
+    /// The collapse must not depend on <c>GetProperties</c> enumeration order. CoreCLR has always
+    /// listed the most-derived declaration first, but the documentation explicitly does not guarantee
+    /// it - and if that flipped, the hidden base declaration would silently win, giving the wrong
+    /// property type in both the mapping and the generated DDL with no diagnostic. This asserts the
+    /// selection is made by comparing declaring types, by checking it against the enumeration in
+    /// both directions.
+    /// </summary>
+    [Fact]
+    public void TheMostDerivedShadowWins_RegardlessOfEnumerationOrder()
+    {
+        List<System.Reflection.PropertyInfo> collapsed =
+            MappedPropertyFilter.GetMappedProperties(typeof(ShadowDerived));
+
+        System.Reflection.PropertyInfo only = Assert.Single(collapsed);
+        Assert.Equal(typeof(ShadowDerived), only.DeclaringType);
+
+        // Reflection's own order, whatever it is, must contain both declarations for this entity -
+        // otherwise the test above is vacuous and the collapse is never exercised.
+        System.Reflection.PropertyInfo[] raw = typeof(ShadowDerived).GetProperties(
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+        Assert.Equal(2, raw.Length);
+        Assert.Contains(raw, p => p.DeclaringType == typeof(ShadowBase));
+        Assert.Contains(raw, p => p.DeclaringType == typeof(ShadowDerived));
+    }
+
     [Fact]
     public void ASameTypedNewShadow_IsAlsoFine()
     {

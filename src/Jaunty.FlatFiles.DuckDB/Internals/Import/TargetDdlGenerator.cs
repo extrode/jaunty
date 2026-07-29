@@ -34,9 +34,8 @@ internal static class TargetDdlGenerator
         PropertyInfo? keyProperty = null;
         string? keyColumnName = null;
 
-        foreach (PropertyInfo prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (PropertyInfo prop in MappedPropertyFilter.GetMappedProperties(entityType))
         {
-            if (!MappedPropertyFilter.IsMapped(prop)) continue;
             if (prop.GetCustomAttribute<KeyAttribute>() is null) continue;
 
             if (keyProperty is not null)
@@ -64,14 +63,11 @@ internal static class TargetDdlGenerator
         // meanwhile collapsed them to one. See DuplicateColumnGuard.
         Dictionary<string, string> claimed = DuplicateColumnGuard.NewClaimSet(4);
 
-        foreach (PropertyInfo prop in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (PropertyInfo prop in MappedPropertyFilter.GetMappedProperties(entityType))
         {
-            if (!MappedPropertyFilter.IsMapped(prop)) continue;
-
             ColumnAttribute? colAttr = prop.GetCustomAttribute<ColumnAttribute>();
             var columnName = colAttr?.Name ?? prop.Name;
-            if (!DuplicateColumnGuard.TryClaim(entityType, columnName, prop, claimed))
-                continue;
+            DuplicateColumnGuard.Claim(entityType, columnName, prop, claimed);
             var isPrimaryKey = prop.GetCustomAttribute<KeyAttribute>() is not null;
 
             Type underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
