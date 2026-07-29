@@ -305,8 +305,7 @@ public static partial class Jaunty
                 var t1 = new T1();
                 var t2 = new T2();
 
-                mapping.ApplyT1(t1, reader);
-                mapping.ApplyT2(t2, reader);
+                mapping.Map(t1, t2, reader);
 
                 results.Add((t1, t2));
             }
@@ -342,8 +341,7 @@ public static partial class Jaunty
                 var t1 = new T1();
                 var t2 = new T2();
 
-                mapping.ApplyT1(t1, reader);
-                mapping.ApplyT2(t2, reader);
+                mapping.Map(t1, t2, reader);
 
                 results.Add(map(t1, t2));
             }
@@ -609,8 +607,7 @@ public static partial class Jaunty
             var t1 = new T1();
             var t2 = new T2();
 
-            mapping.ApplyT1(t1, reader);
-            mapping.ApplyT2(t2, reader);
+            mapping.Map(t1, t2, reader);
 
             return (t1, t2);
         });
@@ -881,8 +878,7 @@ public static partial class Jaunty
             var t1 = new T1();
             var t2 = new T2();
 
-            mapping.ApplyT1(t1, reader);
-            mapping.ApplyT2(t2, reader);
+            mapping.Map(t1, t2, reader);
 
             return (t1, t2);
         });
@@ -1149,8 +1145,7 @@ public static partial class Jaunty
             var t1 = new T1();
             var t2 = new T2();
 
-            mapping.ApplyT1(t1, reader);
-            mapping.ApplyT2(t2, reader);
+            mapping.Map(t1, t2, reader);
 
             return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : (t1, t2);
         });
@@ -1430,8 +1425,7 @@ public static partial class Jaunty
             var t1 = new T1();
             var t2 = new T2();
 
-            mapping.ApplyT1(t1, reader);
-            mapping.ApplyT2(t2, reader);
+            mapping.Map(t1, t2, reader);
 
             return reader.Read() ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.") : ((T1, T2)?)(t1, t2);
         });
@@ -1770,8 +1764,7 @@ public static partial class Jaunty
                 var t1 = new T1();
                 var t2 = new T2();
 
-                mapping.ApplyT1(t1, reader);
-                mapping.ApplyT2(t2, reader);
+                mapping.Map(t1, t2, reader);
 
                 yield return (t1, t2);
             }
