@@ -236,14 +236,17 @@ Environment variables take priority over `appsettings.json`:
 ```bash
 export JAUNTY_TEST_SQLSERVER="Server=localhost,1433;Database=Northwind;User Id=sa;Password=Torture_Test_Pwd1!;TrustServerCertificate=true;"
 export JAUNTY_TEST_POSTGRESQL="Host=localhost;Port=5433;Database=northwind;Username=postgres;Password=Torture_Test_Pwd1!"
-export JAUNTY_TEST_MYSQL="Server=localhost;Port=3308;Database=northwind;Uid=root;Pwd=Torture_Test_Pwd1!;SslMode=Disabled;AllowLoadLocalInfile=true"
-export JAUNTY_TEST_MARIADB="Server=localhost;Port=3307;Database=northwind;Uid=root;Pwd=Torture_Test_Pwd1!;SslMode=Disabled;AllowLoadLocalInfile=true"
+export JAUNTY_TEST_MYSQL="Server=localhost;Port=3308;Database=northwind;Uid=root;Pwd=Torture_Test_Pwd1!;SslMode=Disabled;AllowPublicKeyRetrieval=True;AllowLoadLocalInfile=true"
+export JAUNTY_TEST_MARIADB="Server=localhost;Port=3307;Database=northwind;Uid=root;Pwd=Torture_Test_Pwd1!;SslMode=Disabled;AllowPublicKeyRetrieval=True;AllowLoadLocalInfile=true"
 ```
 
 Notes on the MySQL/MariaDB string:
 
 - `SslMode=Disabled` — MySqlConnector's enum has no `None`; that value throws
   `Requested value 'None' was not found`.
+- `AllowPublicKeyRetrieval=True` — required by `Jaunty.Scaffolding.Tests`; omitting it
+  silently skips 8 tests rather than failing. See [Measured baseline, all four servers
+  configured](#measured-baseline-all-four-servers-configured).
 - `AllowLoadLocalInfile=true` — required by the `LOAD DATA LOCAL INFILE` import tests.
 
 Or use a settings file. `appsettings.json` is gitignored, so a fresh checkout has none —
