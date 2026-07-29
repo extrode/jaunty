@@ -86,7 +86,7 @@ public class DecimalBindingDialectTests
     public void EverySqliteDialect_DeclaresTheConversion()
     {
         string[] missing = [.. ShippingDialects()
-            .Where(t => t.Name.Contains("SQLite", StringComparison.OrdinalIgnoreCase))
+            .Where(t => t.Name.IndexOf("SQLite", StringComparison.OrdinalIgnoreCase) >= 0)
             .Where(t => !typeof(IDecimalBindingDialect).IsAssignableFrom(t))
             .Select(t => t.FullName!)];
 
@@ -105,7 +105,7 @@ public class DecimalBindingDialectTests
     public void NoOtherDialect_DeclaresTheConversion()
     {
         string[] unexpected = [.. ShippingDialects()
-            .Where(t => !t.Name.Contains("SQLite", StringComparison.OrdinalIgnoreCase))
+            .Where(t => t.Name.IndexOf("SQLite", StringComparison.OrdinalIgnoreCase) < 0)
             .Where(t => typeof(IDecimalBindingDialect).IsAssignableFrom(t))
             .Select(t => t.FullName!)];
 
