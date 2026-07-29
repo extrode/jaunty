@@ -59,6 +59,8 @@ public class DrDispatcherTests : IDisposable
         [Ignore]
         public bool WasMappedByCustomMapper { get; set; }
 
+        // IMapped<T>.ReadEntity is a static abstract interface member on net8.0+ and an instance
+        // method on net472, which does not support static abstract members.
 #if NET8_0_OR_GREATER
         public static MappedItem ReadEntity(IDataReader reader)
 #else

@@ -256,7 +256,6 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
         Assert.True(count > 0);
     }
 
-#if NET8_0_OR_GREATER
     [Theory]
     [SqlServer]
     [Postgres]
@@ -323,7 +322,6 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
 
         Assert.Equal(3, categories.Count);
     }
-#endif
 
     #region ReadPartialFirstAsync / ReadPartialFirstOrDefaultAsync
 
@@ -500,7 +498,6 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
 
     #endregion
 
-#if NET8_0_OR_GREATER
     [Theory]
     [SqlServer]
     [Postgres]
@@ -518,7 +515,6 @@ public class GridReaderAsyncTests : IClassFixture<DialectFixture>
         // GridReader self-opened the connection, so DisposeAsync should close it again.
         Assert.Equal(ConnectionState.Closed, connection.State);
     }
-#endif
 
     [Theory]
     [SqlServer]
