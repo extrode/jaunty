@@ -56,8 +56,23 @@ internal static class MetadataCache<T>
             contexts.Add(new PropertyContext<T>(property, setter, getter, column.PropertyName, column.ColumnName, isNonNullable));
 
             nameToIndex[column.ColumnName] = i;
+        }
 
-            if (!column.ColumnName.Equals(column.PropertyName, StringComparison.OrdinalIgnoreCase))
+        // AUD-R26: property names are registered as a *fallback* alias, in a second pass, and only
+        // where the name is not already a real column name. Doing both in one pass let a later
+        // property's alias overwrite an earlier property's actual column mapping. Measured on
+        // `A [Column("B")]` + `B [Column("C")]` against a reader of (Id, B, C): B's alias replaced
+        // "B" -> A with "B" -> B, so A was never populated *and* B received column B's value
+        // instead of its own column C, which was left unmapped entirely. Silent corruption, not
+        // just a silent drop - a property held a value belonging to a different column.
+        for (int i = 0; i < columns.Length; i++)
+        {
+            ColumnMetadata column = columns[i];
+
+            if (column.ColumnName.Equals(column.PropertyName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (!nameToIndex.ContainsKey(column.PropertyName))
                 nameToIndex[column.PropertyName] = i;
         }
 

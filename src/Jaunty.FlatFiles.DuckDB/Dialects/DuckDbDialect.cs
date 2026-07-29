@@ -11,7 +11,7 @@ namespace Jaunty.FlatFiles.DuckDB.Dialects;
 /// SQL dialect for DuckDB, implementing both <see cref="ISqlDialect"/> for standard SQL generation
 /// and <see cref="IFlatFileDialect"/> for flat file-specific operations.
 /// </summary>
-public sealed class DuckDbDialect : IFlatFileDialect
+public sealed class DuckDbDialect : IFlatFileDialect, ISubstringToEndDialect
 {
     /// <summary>
     /// Singleton instance of the DuckDB dialect.
@@ -188,6 +188,15 @@ public sealed class DuckDbDialect : IFlatFileDialect
 
     /// <inheritdoc />
     public string GenerateSubstring(string expression, string start, string length) => $"SUBSTRING({expression}, {start}, {length})";
+
+    /// <summary>
+    /// DuckDB's two-argument SUBSTRING returns the remainder and needs no sentinel length. Measured:
+    /// against a 10,000-character value <c>SUBSTRING(s, 2, 8000)</c> returns 8,000 characters while
+    /// <c>SUBSTRING(s, 2)</c> returns 9,999. DuckDB also accepts the ANSI <c>FROM</c> form; the
+    /// comma form is used here to match this dialect's three-argument sibling above.
+    /// </summary>
+    public string GenerateSubstringToEnd(string expression, string start)
+        => $"SUBSTRING({expression}, {start})";
 
     /// <inheritdoc />
     public string GenerateYear(string expression) => $"EXTRACT(YEAR FROM {expression})";
