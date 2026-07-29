@@ -9,6 +9,17 @@ namespace Jaunty.Tests.Unit.Internals;
 /// registration/cache-invalidation behavior, plus dialect-generation edge cases that are
 /// unique to specific dialect instances and are not already covered by the canonical dialect
 /// test suite in Unit/Dialects/SqlDialectTests.cs.
+///
+/// <para>
+/// AUD-R26: the engine assertions below go through <see cref="SqlDialectFactory.Unwrap"/> rather
+/// than type-testing the <see cref="SqlDialectFactory.GetDialect"/> result directly. Once anything
+/// in the process has called <c>UseNativeBulkCopy()</c>, resolution returns a
+/// <c>...DialectWithBulkCopy</c> wrapper that delegates rather than derives, so a direct
+/// <c>Assert.IsType</c> fails for every engine. That is process-wide, one-way state set by another
+/// test class in another xUnit collection, so whether it has happened yet depends on run order -
+/// these tests passed or failed by luck. Unwrapping asks the question they actually mean: which
+/// engine did the factory resolve, regardless of decoration.
+/// </para>
 /// </summary>
 [Collection("Dialect Factory State")]
 public class SqlDialectFactoryTests
@@ -18,7 +29,7 @@ public class SqlDialectFactoryTests
     {
         var connection = new SQLiteConnection();
         var dialect = SqlDialectFactory.GetDialect(connection);
-        Assert.IsType<SQLiteDialect>(dialect);
+        Assert.IsType<SQLiteDialect>(SqlDialectFactory.Unwrap(dialect));
     }
 
     [Fact]
@@ -26,7 +37,7 @@ public class SqlDialectFactoryTests
     {
         var connection = new SqlConnection();
         var dialect = SqlDialectFactory.GetDialect(connection);
-        Assert.IsType<SqlServerDialect>(dialect);
+        Assert.IsType<SqlServerDialect>(SqlDialectFactory.Unwrap(dialect));
     }
 
     [Fact]
@@ -34,7 +45,7 @@ public class SqlDialectFactoryTests
     {
         var connection = new NpgsqlConnection();
         var dialect = SqlDialectFactory.GetDialect(connection);
-        Assert.IsType<PostgreSqlDialect>(dialect);
+        Assert.IsType<PostgreSqlDialect>(SqlDialectFactory.Unwrap(dialect));
     }
 
     [Fact]
@@ -42,7 +53,7 @@ public class SqlDialectFactoryTests
     {
         var connection = new MySqlConnection();
         var dialect = SqlDialectFactory.GetDialect(connection);
-        Assert.IsType<MySqlDialect>(dialect);
+        Assert.IsType<MySqlDialect>(SqlDialectFactory.Unwrap(dialect));
     }
 
     [Fact]
@@ -50,7 +61,7 @@ public class SqlDialectFactoryTests
     {
         var connection = new SqliteConnection();
         var dialect = SqlDialectFactory.GetDialect(connection);
-        Assert.IsType<SQLiteDialect>(dialect);
+        Assert.IsType<SQLiteDialect>(SqlDialectFactory.Unwrap(dialect));
     }
 
     [Fact]
@@ -58,7 +69,7 @@ public class SqlDialectFactoryTests
     {
         var connection = new UnknownConnection();
         var dialect = SqlDialectFactory.GetDialect(connection);
-        Assert.IsType<SqlServerDialect>(dialect);
+        Assert.IsType<SqlServerDialect>(SqlDialectFactory.Unwrap(dialect));
     }
 
     [Fact]
@@ -72,7 +83,7 @@ public class SqlDialectFactoryTests
 
         // Prime the cache with the default (SQL Server) resolution.
         var before = SqlDialectFactory.GetDialect(connection);
-        Assert.IsType<SqlServerDialect>(before);
+        Assert.IsType<SqlServerDialect>(SqlDialectFactory.Unwrap(before));
 
         var custom = new PostgreSqlDialect();
         SqlDialectFactory.RegisterDialect(nameof(CacheInvalidationConnection), custom);

@@ -95,9 +95,18 @@ public class ListTablesCommandTests : IDisposable
     [Fact]
     public async Task Invoke_ConnectionFailure_ReturnsErrorExitCodeAndMessage()
     {
+        // The unopenable path has to be unopenable on the platform running the test. This was
+        // hardcoded to Z:\jaunty-cli-test-nonexistent-dir\test.db, which is a missing drive on
+        // Windows but an ordinary (if oddly named) relative filename on macOS and Linux - SQLite
+        // created it in the working directory, the command succeeded, and the test asserting exit
+        // code 1 got 0. Building the path from a real temp root plus a directory that does not
+        // exist fails to open everywhere.
+        string missingDirectory = Path.Combine(
+            Path.GetTempPath(), "jaunty-cli-test-nonexistent-" + Guid.NewGuid().ToString("N"));
+
         var command = new ListTablesCommand();
         ParseResult result = command.Parse([
-            "--connection", @"Data Source=Z:\jaunty-cli-test-nonexistent-dir\test.db",
+            "--connection", $"Data Source={Path.Combine(missingDirectory, "test.db")}",
             "--provider", "SQLite"
         ]);
 

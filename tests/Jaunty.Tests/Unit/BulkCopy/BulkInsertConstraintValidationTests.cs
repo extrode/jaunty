@@ -46,10 +46,6 @@ public class BulkInsertConstraintValidationTests : IDisposable
 
     public BulkInsertConstraintValidationTests()
     {
-        JauntyReflectionExtensions.UseReflectionMapping();
-        JauntyReflectionExtensions.UseNativeBulkCopy();
-        BulkCopyConfiguration.Reset();
-
         _connection = new SqlConnection(ConnectionString);
         try
         {
@@ -60,6 +56,15 @@ public class BulkInsertConstraintValidationTests : IDisposable
             _connection.Dispose();
             Assert.Skip($"SQL Server not reachable: {ex.Message}");
         }
+
+        // Order matters: UseNativeBulkCopy() is process-wide, one-way and (since AUD-R26) actually
+        // invalidates the dialect cache, so from here on every GetDialect returns a bulk-copy
+        // wrapper for the rest of the run. Doing it before the skip check meant a skipped test still
+        // changed how unrelated test classes saw dialect resolution - a real defect this file
+        // introduced, and one that only showed up when SQL Server was unreachable.
+        JauntyReflectionExtensions.UseReflectionMapping();
+        JauntyReflectionExtensions.UseNativeBulkCopy();
+        BulkCopyConfiguration.Reset();
 
         Exec("""
             IF OBJECT_ID('dbo.jaunty_constraint_probe', 'U') IS NOT NULL
