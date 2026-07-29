@@ -1,4 +1,3 @@
-#if NET8_0_OR_GREATER
 using System.Data;
 using System.Reflection;
 
@@ -323,4 +322,3 @@ public class SqlServerBulkCopyProviderTests
         Assert.Equal((int)SqlBulkCopyOptions.Default, (int)mapped);
     }
 }
-#endif

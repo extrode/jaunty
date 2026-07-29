@@ -1,4 +1,3 @@
-#if NET8_0_OR_GREATER
 using System.Data;
 using System.Data.Common;
 using System.Data.SQLite;
@@ -452,4 +451,3 @@ internal sealed class IntSequenceReader(int rowCount) : IDataReader
 }
 
 #endregion
-#endif

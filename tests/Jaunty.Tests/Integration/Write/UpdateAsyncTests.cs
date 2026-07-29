@@ -111,7 +111,6 @@ public class UpdateAsyncTests : IClassFixture<DialectFixture>
         Assert.Equal("Original", GetNameById(connection, entity.Id));
     }
 
-#if NET8_0_OR_GREATER
     [Theory]
     [SqlServer]
     [Postgres]
@@ -150,5 +149,4 @@ public class UpdateAsyncTests : IClassFixture<DialectFixture>
             new { Id = id });
         Assert.Equal("UpdatedWithCancellationToken", result.Name);
     }
-#endif
 }
