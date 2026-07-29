@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
+using Jaunty.Core;
 using Jaunty.Dialects;
 using Jaunty.Fluent.Expressions;
 using Jaunty.Fluent.Internals;
@@ -47,15 +48,24 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
     }
 
     public List<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+        => Select(selector, default);
+
+    // AUD-R26-060: this builder creates and executes its own command rather than delegating to
+    // core, and until now that meant it silently ignored the caller's transaction and timeout -
+    // there was no overload to pass them through at all. See FluentCommandOptions.
+    public List<TResult> Select<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
     {
         var sql = BuildSelectSql(selector);
-        return ExecuteQuery<TResult>(sql, selector);
+        return ExecuteQuery<TResult>(sql, selector, options);
     }
 
-    public async Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken = default)
+    public Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken = default)
+        => SelectAsync(selector, default, cancellationToken);
+
+    public async Task<List<TResult>> SelectAsync<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken = default)
     {
         var sql = BuildSelectSql(selector);
-        return await ExecuteQueryAsync<TResult>(sql, selector, cancellationToken).ConfigureAwait(false);
+        return await ExecuteQueryAsync<TResult>(sql, selector, options, cancellationToken).ConfigureAwait(false);
     }
 
     public string ToSql<TResult>(Expression<Func<IGrouping<TKey, T>, TResult>> selector)
@@ -130,12 +140,12 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return sb.ToString();
     }
 
-    private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+    private List<TResult> ExecuteQuery<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
         => CommandObservation.Execute(
-            sql, _parameters.ToParameterObject(), _connection, CommandType.Text,
-            () => ExecuteQueryDirect(sql, selector));
+            sql, _parameters.ToParameterObject(), _connection, FluentCommandOptions.Describe(options),
+            () => ExecuteQueryDirect(sql, selector, options));
 
-    private List<TResult> ExecuteQueryDirect<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector)
+    private List<TResult> ExecuteQueryDirect<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options)
     {
         var visitor = new GroupByExpressionVisitor<T, TKey>(_dialect, _groupByColumns);
         (string[] _, string[] aliases) = visitor.TranslateSelect(selector);
@@ -145,6 +155,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
         using IDbCommand command = _connection.CreateCommand();
         command.CommandText = sql;
+        FluentCommandOptions.Apply(command, _connection, options);
         BindParameters(command);
 
         CommandObservation.Log(sql, _parameters.ToParameterObject());
@@ -169,12 +180,12 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
         return results;
     }
 
-    private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken)
+    private async Task<List<TResult>> ExecuteQueryAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
         => await CommandObservation.ExecuteAsync(
-            sql, _parameters.ToParameterObject(), _connection, CommandType.Text,
-            () => ExecuteQueryDirectAsync(sql, selector, cancellationToken), cancellationToken).ConfigureAwait(false);
+            sql, _parameters.ToParameterObject(), _connection, FluentCommandOptions.Describe(options),
+            () => ExecuteQueryDirectAsync(sql, selector, options, cancellationToken), cancellationToken).ConfigureAwait(false);
 
-    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CancellationToken cancellationToken)
+    private async ValueTask<List<TResult>> ExecuteQueryDirectAsync<TResult>(string sql, Expression<Func<IGrouping<TKey, T>, TResult>> selector, CommandOptions options, CancellationToken cancellationToken)
     {
         if (_connection is not DbConnection dbConn)
             throw new InvalidOperationException("Async operations require a DbConnection.");
@@ -187,6 +198,7 @@ internal sealed class GroupedQueryBuilder<T, TKey> : IGroupedQuery<T, TKey> wher
 
         using DbCommand command = dbConn.CreateCommand();
         command.CommandText = sql;
+        FluentCommandOptions.Apply(command, dbConn, options);
         BindParameters(command);
 
         CommandObservation.Log(sql, _parameters.ToParameterObject());
