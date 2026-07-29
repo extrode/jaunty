@@ -191,7 +191,14 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
     }
 
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Used for anonymous types and records whose properties are always preserved by the compiler.")]
+    // AUD-R26-055: the justification here used to read "Used for anonymous types and records whose
+    // properties are always preserved by the compiler" - verbatim the claim round 3 established as
+    // false and rewrote in ParameterCache.BuildMetadata. This method is reached with
+    // parameters.GetType() for any parameters object, exactly as that one is. The code was already
+    // correct: preservation comes from the [DynamicallyAccessedMembers] annotation on the parameter
+    // below, not from anything about anonymous types. Only the stale justification was wrong, and
+    // round 3's stated goal was that these two could not drift apart again.
+    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Preservation comes from the [DynamicallyAccessedMembers(PublicProperties)] annotation on the type parameter, not from the argument being an anonymous type: this is called with parameters.GetType() for any named or anonymous parameters object passed to a Query/Execute API. Mirrors ParameterCache.BuildMetadata, which carries the same annotation for the same reason.")]
 #endif
     private static PropertyInfo[] GetPublicProperties(
 #if NET5_0_OR_GREATER
