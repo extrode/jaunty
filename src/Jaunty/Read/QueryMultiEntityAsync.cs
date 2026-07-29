@@ -368,8 +368,7 @@ public static partial class Jaunty
                 var t1 = new T1();
                 var t2 = new T2();
 
-                mapping.ApplyT1(t1, dbReader);
-                mapping.ApplyT2(t2, dbReader);
+                mapping.Map(t1, t2, dbReader);
 
                 results.Add((t1, t2));
             }
@@ -424,8 +423,7 @@ public static partial class Jaunty
                 var t1 = new T1();
                 var t2 = new T2();
 
-                mapping.ApplyT1(t1, dbReader);
-                mapping.ApplyT2(t2, dbReader);
+                mapping.Map(t1, t2, dbReader);
 
                 results.Add(map(t1, t2));
             }
@@ -772,8 +770,7 @@ public static partial class Jaunty
             var t1 = new T1();
             var t2 = new T2();
 
-            mapping.ApplyT1(t1, dbReader);
-            mapping.ApplyT2(t2, dbReader);
+            mapping.Map(t1, t2, dbReader);
 
             return (t1, t2);
         }, cancellationToken);
@@ -1130,8 +1127,7 @@ public static partial class Jaunty
             var t1 = new T1();
             var t2 = new T2();
 
-            mapping.ApplyT1(t1, dbReader);
-            mapping.ApplyT2(t2, dbReader);
+            mapping.Map(t1, t2, dbReader);
 
             return (t1, t2);
         }, cancellationToken);
@@ -1479,8 +1475,7 @@ public static partial class Jaunty
             var t1 = new T1();
             var t2 = new T2();
 
-            mapping.ApplyT1(t1, dbReader);
-            mapping.ApplyT2(t2, dbReader);
+            mapping.Map(t1, t2, dbReader);
 
             return await dbReader.ReadAsync(ct).ConfigureAwait(false)
                 ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
@@ -1843,8 +1838,7 @@ public static partial class Jaunty
             var t1 = new T1();
             var t2 = new T2();
 
-            mapping.ApplyT1(t1, dbReader);
-            mapping.ApplyT2(t2, dbReader);
+            mapping.Map(t1, t2, dbReader);
 
             return await dbReader.ReadAsync(ct).ConfigureAwait(false)
                 ? throw new InvalidOperationException($"Sequence contains more than one element of type '({typeof(T1).Name}, {typeof(T2).Name})'.")
