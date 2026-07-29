@@ -217,7 +217,7 @@ public class InterceptorObservabilityTests : IDisposable
 
         foreach (string file in Directory.EnumerateFiles(source.FullName, "*.cs", SearchOption.AllDirectories))
         {
-            if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            if (file.IndexOf($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) >= 0)
                 continue;
 
             if (Path.GetFileName(file) is "InterceptorPipeline.cs" or "CommandObservation.cs")
