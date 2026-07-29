@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Scaffolding.Abstractions;
+using Jaunty.Scaffolding.Internals;
 using Jaunty.Scaffolding.Schema;
 
 namespace Jaunty.Scaffolding.Providers.PostgreSql;
@@ -99,7 +100,7 @@ public sealed class PostgreSqlSchemaReader : ISchemaReader
     {
         var type = Type.GetType("Npgsql.NpgsqlConnection, Npgsql");
         if (type != null)
-            return (DbConnection)Activator.CreateInstance(type, connectionString)!;
+            return ReflectedConnectionFactory.Create(type, connectionString);
 
         throw new InvalidOperationException("Could not find PostgreSQL provider. Please install Npgsql.");
     }
