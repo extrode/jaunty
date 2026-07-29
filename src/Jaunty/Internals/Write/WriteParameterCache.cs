@@ -25,6 +25,19 @@ internal static class WriteParameterCache<T> where T : new()
     /// </summary>
     public static readonly Action<T, long>? IdSetter = CreateIdSetter();
 
+    /// <summary>
+    /// <typeparamref name="T"/>'s source-generated accessors, or <see langword="null"/> when
+    /// <typeparamref name="T"/> is not source-generated.
+    /// </summary>
+    /// <remarks>
+    /// Spec 009. Resolved once per closed generic - not once per binder, and not once per
+    /// <see cref="Bindings"/> rebuild - so the <c>new T()</c> the cast needs is paid a single time.
+    /// Declared above <see cref="_bindings"/> deliberately: static initialisers run in textual order
+    /// and <see cref="Bindings.Build"/> reads this field.
+    /// </remarks>
+    private static readonly IGeneratedAccessors<T>? Accessors =
+        typeof(IGeneratedAccessors<T>).IsAssignableFrom(typeof(T)) ? (IGeneratedAccessors<T>)new T() : null;
+
     private static volatile Bindings _bindings = Bindings.Build();
 
     public static Action<IDbCommand, T>? InsertBinder => Current().InsertBinder;
@@ -75,9 +88,14 @@ internal static class WriteParameterCache<T> where T : new()
             // Read the generation before building, never after: see ConfigurationGeneration.Current.
             var bindings = new Bindings { Generation = ConfigurationGeneration.Current };
 
-            bindings.InsertBinder = TryGetGeneratedBinder("BindInsert") ?? TryGetReflectionBinder(JauntyConfig.ReflectionInsertBinderResolver);
-            bindings.UpdateBinder = TryGetGeneratedBinder("BindUpdate") ?? TryGetReflectionBinder(JauntyConfig.ReflectionUpdateBinderResolver);
-            bindings.DeleteBinder = TryGetGeneratedBinder("BindDelete") ?? TryGetReflectionBinder(JauntyConfig.ReflectionDeleteBinderResolver);
+            // Spec 009: the generated binder comes from IGeneratedAccessors<T> when T is
+            // source-generated - a delegate handed over directly, so BindInsert/BindUpdate/BindDelete
+            // are statically referenced and survive trimming. TryGetGeneratedBinder's reflection is
+            // now only for types the generator did not produce. Resolution order is unchanged:
+            // generated, then reflection-by-name, then the JauntyConfig resolver.
+            bindings.InsertBinder = Accessors?.InsertBinder ?? TryGetGeneratedBinder("BindInsert") ?? TryGetReflectionBinder(JauntyConfig.ReflectionInsertBinderResolver);
+            bindings.UpdateBinder = Accessors?.UpdateBinder ?? TryGetGeneratedBinder("BindUpdate") ?? TryGetReflectionBinder(JauntyConfig.ReflectionUpdateBinderResolver);
+            bindings.DeleteBinder = Accessors?.DeleteBinder ?? TryGetGeneratedBinder("BindDelete") ?? TryGetReflectionBinder(JauntyConfig.ReflectionDeleteBinderResolver);
 
             // Value setters for bulk operations: update values on existing parameters by index.
             // PrepareXxxParameters has already created provider-native parameters on the command;
@@ -331,7 +349,7 @@ internal static class WriteParameterCache<T> where T : new()
     }
 
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "T is reflected over by method name with no [DynamicDependency], [DynamicallyAccessedMembers] or ILLink descriptor arranging preservation - the suppression hides the report, it does not make the reflection safe. Measured (AUD-R26): samples/NativeAOT-Basic published with PublishAot=true still throws 'No mapper found for type Product'. Annotating T does satisfy the analyzer, but propagates the obligation up through DrDispatcher.Resolve<T>, QueryCore<T> and up to 645 public generic overloads carrying a new()-constrained type parameter (counted from compiled metadata, 2026-07-29), so the real fix is an API-wide annotation pass - specified in docs/specs/009-aot-annotation-pass. Until then, NativeAOT consumers must ensure their entity types are otherwise rooted.")]
+    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "Reached only when T is not source-generated - a source-generated T implements IGeneratedAccessors<T>, so Bindings.Build takes the delegate from there and never calls this. The remaining population is a hand-written entity supplying its own BindInsert/BindUpdate/BindDelete by convention, which this cannot arrange to preserve: the consumer must root those members (for example with [DynamicDependency]) or implement IGeneratedAccessors<T>. Spec 009.")]
 #endif
     private static Action<IDbCommand, T>? TryGetGeneratedBinder(string methodName)
     {
