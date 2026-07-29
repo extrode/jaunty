@@ -1,6 +1,8 @@
 using Jaunty.FlatFiles.Core;
 using Jaunty.FlatFiles.Interfaces;
 
+using Jaunty.FlatFiles.Internals;
+
 namespace Jaunty.FlatFiles.FileSources;
 
 /// <summary>
@@ -64,9 +66,7 @@ public sealed class JsonFileSource : IFileSource
     public JsonFileSource(string tableName, string[] filePaths, Type entityType)
     {
         TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
-        if (filePaths is null) throw new ArgumentNullException(nameof(filePaths));
-        if (filePaths.Length == 0) throw new ArgumentException("At least one file path is required.", nameof(filePaths));
-        if (filePaths[0] is null) throw new ArgumentNullException(nameof(filePaths), "File path must not be null.");
+        FilePathValidator.ThrowIfInvalid(filePaths, nameof(filePaths));
         FilePaths = filePaths;
         FilePath = filePaths[0];
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
