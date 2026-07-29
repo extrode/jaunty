@@ -2,74 +2,93 @@ using System.Linq.Expressions;
 
 using Jaunty.Attributes;
 using Jaunty.FlatFiles.DuckDB.Internals;
+using Jaunty.FlatFiles.DuckDB.Tests.Helpers;
 
 namespace Jaunty.FlatFiles.DuckDB.Tests.Internals;
 
 /// <summary>
-/// AUD-R26-067 (round 26, batch 7, low/bug). <c>ExpressionTranslator.GetColumnName</c> was a fourth,
-/// independent copy of the "[Column] name or property name" rule, and the only one that never asked
-/// whether the property was mapped at all - so <c>Update&lt;T&gt;</c> and <c>Delete&lt;T&gt;</c> built
-/// SQL against a property the rest of the library treats as unmapped.
+/// AUD-R26-067 (round 26, batch 7, low/bug), and the measurement that changed what "fixing" it means.
 ///
 /// <para>
-/// It did fail, so nothing was corrupted, but it failed at the provider with a message naming neither
-/// the entity nor the reason:
-/// <c>Binder Error: Referenced update column Secret not found in table!</c> for the update, and
-/// <c>Binder Error: Referenced column "Secret" not found in FROM clause!</c> for the delete. A caller
-/// who has just added <c>[Ignore]</c> to a property has no thread back from that to the cause.
+/// The finding: <c>ExpressionTranslator.GetColumnName</c> was a fourth, independent copy of the
+/// "[Column] name or property name" rule, and the only one that never asked whether the property was
+/// mapped - so <c>Update&lt;T&gt;</c>/<c>Delete&lt;T&gt;</c> built SQL against a property the rest of
+/// the library treats as unmapped, and failed at the provider with
+/// <c>Binder Error: Referenced column "Secret" not found in FROM clause!</c>, naming neither the
+/// entity nor the reason.
 /// </para>
 ///
 /// <para>
-/// <c>MappedPropertyFilter</c> exists (AUD-R25) precisely because two copies of this rule had already
-/// drifted; <c>ColumnMappingCache</c> and <c>TargetDdlGenerator</c> were brought under it then, for
-/// the filtering half. Both halves now live there and all four sites share them.
+/// <b>The duplication was fixed; the guard was not, because it is a regression.</b> Both halves of
+/// the rule now live in <c>MappedPropertyFilter</c> and all four sites share them. But rejecting
+/// unmapped properties in the translator - which a first attempt did - breaks working code: the
+/// registered view exposes every column in the <em>file</em>, not the entity's mapped subset, so an
+/// <c>[Ignore]</c>d property ("do not materialise this") whose column is present in the CSV is
+/// legitimately usable in a predicate. Measured both ways below.
+/// </para>
+///
+/// <para>
+/// The finding's own repro used a property with no matching file column, where the provider does
+/// reject the SQL - so the complaint is real but narrower than the guard. Which of the entity's
+/// mapping and the file's columns defines the queryable surface is a design decision, carried to
+/// round 27.
 /// </para>
 /// </summary>
-public class UnmappedPropertyGuardTests
+public class UnmappedPropertyGuardTests : IDisposable
 {
-    private class Row
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), $"jaunty_unmapped_{Guid.NewGuid():N}");
+    private readonly string _csv;
+
+    public class Row
     {
         public int Id { get; set; }
         public string? Name { get; set; }
 
+        /// <summary>Marked "do not materialise", but the CSV has the column.</summary>
         [Ignore]
-        public string? Ignored { get; set; }
+        public string? Audited { get; set; }
 
         [Column("renamed_column")]
         public string? Renamed { get; set; }
-
-        public string ReadOnly => "no setter";
     }
 
-    private static string Resolve(Expression<Func<Row, object>> selector) =>
-        ExpressionTranslator.ResolveColumnName(selector);
-
-    [Fact]
-    public void AnIgnoredProperty_IsRejectedByNameWithItsEntity()
+    public UnmappedPropertyGuardTests()
     {
-        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
-            () => Resolve(r => r.Ignored!));
+        Directory.CreateDirectory(_dir);
+        _csv = Path.Combine(_dir, "rows.csv");
+        File.WriteAllText(_csv, "Id,Name,Audited\n1,a,yes\n2,b,no\n");
+    }
 
-        Assert.Contains("Row.Ignored", ex.Message, StringComparison.Ordinal);
-        Assert.Contains("[Ignore]", ex.Message, StringComparison.Ordinal);
+    public void Dispose()
+    {
+        try { Directory.Delete(_dir, true); } catch { }
     }
 
     /// <summary>
-    /// A get-only property is unmapped for a different reason - <c>MappedPropertyFilter.IsMapped</c>
-    /// requires both accessors - and must be rejected the same way rather than reaching the provider.
+    /// The measurement that vetoed the guard. Without it: 1 row deleted. With it:
+    /// <c>InvalidOperationException</c> before any SQL is built. This is the test that must be
+    /// changed deliberately if the design decision ever goes the other way.
     /// </summary>
     [Fact]
-    public void AGetOnlyProperty_IsRejectedToo()
+    public void AnIgnoredPropertyWhoseColumnExistsInTheFile_IsStillUsableInAPredicate()
     {
-        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
-            () => Resolve(r => r.ReadOnly));
+        var options = new FlatFileOptions();
+        options.AddCsv<Row>(_csv);
+        using var db = new DuckDb(options);
 
-        Assert.Contains("Row.ReadOnly", ex.Message, StringComparison.Ordinal);
+        int deleted = db.Delete<Row>(r => r.Audited == "yes");
+
+        Assert.Equal(1, deleted);
+        // Table name comes from the entity, not the file: AddCsv<Row> registers "row".
+        Assert.Single(db.Query<Row>("SELECT * FROM row"));
     }
 
     // ------------------------------------------------------------------
-    // What must keep working
+    // The half that was fixed: one copy of the naming rule, shared by all four sites
     // ------------------------------------------------------------------
+
+    private static string Resolve(Expression<Func<Row, object>> selector) =>
+        ExpressionTranslator.ResolveColumnName(selector);
 
     [Fact]
     public void AnOrdinaryProperty_ResolvesToItsOwnName()
@@ -84,15 +103,29 @@ public class UnmappedPropertyGuardTests
     }
 
     /// <summary>
-    /// The naming half of the rule moved to <c>MappedPropertyFilter</c> so the four sites cannot
-    /// drift again; this is the assertion that the translator reads the same answer that
-    /// <c>ColumnMappingCache</c> and <c>TargetDdlGenerator</c> now do.
+    /// The translator must read the same answer <c>ColumnMappingCache</c> and
+    /// <c>TargetDdlGenerator</c> now do - that shared rule is what AUD-R26-067 actually delivered.
     /// </summary>
     [Fact]
     public void TheTranslatorAgreesWithTheSharedRule()
     {
         System.Reflection.PropertyInfo renamed = typeof(Row).GetProperty(nameof(Row.Renamed))!;
+        System.Reflection.PropertyInfo name = typeof(Row).GetProperty(nameof(Row.Name))!;
 
         Assert.Equal(MappedPropertyFilter.GetColumnName(renamed), Resolve(r => r.Renamed!));
+        Assert.Equal(MappedPropertyFilter.GetColumnName(name), Resolve(r => r.Name!));
+    }
+
+    /// <summary>
+    /// And the filtering half still excludes the property from everything that maps <em>values</em> -
+    /// which is what <c>[Ignore]</c> means, and why the property being queryable is not a
+    /// contradiction.
+    /// </summary>
+    [Fact]
+    public void TheIgnoredPropertyIsStillExcludedFromValueMapping()
+    {
+        Assert.DoesNotContain(
+            MappedPropertyFilter.GetMappedProperties(typeof(Row)),
+            p => p.Name == nameof(Row.Audited));
     }
 }
