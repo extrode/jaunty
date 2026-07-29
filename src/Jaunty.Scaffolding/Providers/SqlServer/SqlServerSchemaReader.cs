@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 
 using Jaunty.Scaffolding.Abstractions;
+using Jaunty.Scaffolding.Internals;
 using Jaunty.Scaffolding.Schema;
 
 namespace Jaunty.Scaffolding.Providers.SqlServer;
@@ -107,7 +108,7 @@ public sealed class SqlServerSchemaReader : ISchemaReader
 #pragma warning restore IL2057
             if (type != null)
             {
-                return (DbConnection)Activator.CreateInstance(type, connectionString)!;
+                return ReflectedConnectionFactory.Create(type, connectionString);
             }
         }
 

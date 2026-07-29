@@ -1,3 +1,5 @@
+using System.Data.Common;
+
 using Jaunty.Scaffolding.Abstractions;
 using Jaunty.Scaffolding.CodeGeneration;
 using Jaunty.Scaffolding.Configuration;
@@ -135,8 +137,41 @@ public sealed class Scaffolder
         // across both public APIs.
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return ScaffoldResult.Failed(ex.Message);
+            return ScaffoldResult.Failed(Describe(ex));
         }
+    }
+
+    /// <summary>
+    /// Flattens an exception chain into one message.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26: reporting <c>ex.Message</c> alone discards the cause whenever a provider wraps
+    /// it, and ADO.NET providers wrap routinely. The reflection wrapper that produced the worst
+    /// case is fixed at its source in <see cref="Internals.ReflectedConnectionFactory"/>, but a
+    /// nested cause is normal enough - a connection failure whose real reason is a socket error,
+    /// for instance - that the top-level message is often the least informative part of the chain.
+    /// </remarks>
+    private static string Describe(Exception ex)
+    {
+        var message = ex.Message;
+
+        Exception? inner = ex.InnerException;
+        var depth = 0;
+
+        // Bounded: a corrupt or self-referential chain must not produce an unbounded string.
+        while (inner is not null && depth < 5)
+        {
+            if (!string.IsNullOrWhiteSpace(inner.Message) &&
+                !message.Contains(inner.Message, StringComparison.Ordinal))
+            {
+                message = message + " -> " + inner.Message;
+            }
+
+            inner = inner.InnerException;
+            depth++;
+        }
+
+        return message;
     }
 
     /// <summary>
@@ -179,13 +214,46 @@ public sealed class Scaffolder
             throw new ArgumentException("Namespace is required.", nameof(options));
     }
 
+    /// <summary>
+    /// Infers the provider from the shape of a connection string.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26: this used to run <c>Contains</c> over the lowercased connection string as one
+    /// flat blob, which meant every heuristic also matched against the **values** - including the
+    /// password. Measured: <c>Server=prod;Initial Catalog=Sales;User Id=sa;Password=hunter2.dbx</c>
+    /// was detected as **SQLite**, purely because the password contains ".db", and the scaffold
+    /// then failed with "unable to open database file" - a message that points nowhere near the
+    /// cause. The same string with the password <c>hunter2</c> detected correctly as SqlServer.
+    /// A value could equally contain "database=" or "host=" and tip any of the other rules.
+    ///
+    /// <para>
+    /// The rules themselves are unchanged; they are now evaluated against the parsed key set,
+    /// with only the data-source and port values ever inspected. <see cref="DbConnectionStringBuilder"/>
+    /// lives in System.Data.Common, so parsing costs no provider dependency.
+    /// </para>
+    /// </remarks>
     internal static DatabaseProvider DetectProvider(string connectionString)
     {
-        var lower = connectionString.ToLowerInvariant();
+        Dictionary<string, string>? keys = TryParseConnectionString(connectionString);
 
-        // SQLite detection
-        if (lower.Contains(".db") || lower.Contains(".sqlite") ||
-            (lower.Contains("data source=") && !lower.Contains("initial catalog=") && !lower.Contains("database=")))
+        // Unparseable: keep the historical fallback rather than guessing. Opening the connection
+        // is what will report the malformed string, and now does so with the real message.
+        if (keys is null)
+            return DatabaseProvider.SqlServer;
+
+        var hasDataSource = keys.ContainsKey("data source") || keys.ContainsKey("datasource") ||
+                            keys.ContainsKey("filename");
+        var hasDatabase = keys.ContainsKey("database");
+        var hasInitialCatalog = keys.ContainsKey("initial catalog");
+        var hasServer = keys.ContainsKey("server");
+        var hasUserId = keys.ContainsKey("user id") || keys.ContainsKey("userid");
+
+        // SQLite detection. A file extension is only meaningful on the data-source value itself.
+        if (TryGetValue(keys, out var dataSource, "data source", "datasource", "filename") &&
+            HasSqliteFileExtension(dataSource))
+            return DatabaseProvider.SQLite;
+
+        if (hasDataSource && !hasInitialCatalog && !hasDatabase)
             return DatabaseProvider.SQLite;
 
         // PostgreSQL detection - checked before SQL Server because Npgsql accepts "Server="
@@ -195,23 +263,76 @@ public sealed class Scaffolder
         // not used by SQL Server, so either signal is safe to check ahead of SQL Server without
         // reclassifying genuine "Server=/Database=/User Id=" SQL Server connection strings
         // (which carry neither "host=" nor "port=5432").
-        if (lower.Contains("database=") && (lower.Contains("username=") || lower.Contains("user id=")) &&
-            (lower.Contains("host=") || lower.Contains("port=5432")))
+        var isPostgresPort = keys.TryGetValue("port", out var port) &&
+                             port.Trim().Equals("5432", StringComparison.Ordinal);
+
+        if (hasDatabase && (keys.ContainsKey("username") || hasUserId) &&
+            (keys.ContainsKey("host") || isPostgresPort))
             return DatabaseProvider.PostgreSql;
 
         // SQL Server detection
-        if ((lower.Contains("server=") || lower.Contains("data source=")) &&
-            (lower.Contains("initial catalog=") || lower.Contains("database=")) &&
-            (lower.Contains("trusted_connection=") || lower.Contains("user id=") || lower.Contains("integrated security=")))
+        if ((hasServer || hasDataSource) &&
+            (hasInitialCatalog || hasDatabase) &&
+            (keys.ContainsKey("trusted_connection") || hasUserId || keys.ContainsKey("integrated security")))
             return DatabaseProvider.SqlServer;
 
         // MySQL detection (after SQL Server since both can have server= and database=)
-        if (lower.Contains("server=") && lower.Contains("database=") &&
-            (lower.Contains("uid=") || lower.Contains("user=")))
+        if (hasServer && hasDatabase && (keys.ContainsKey("uid") || keys.ContainsKey("user")))
             return DatabaseProvider.MySql;
 
         // Default to SQL Server
         return DatabaseProvider.SqlServer;
+    }
+
+    /// <summary>
+    /// Parses a connection string into its key/value pairs, with keys lowercased and trimmed.
+    /// Returns null when the string is not a well-formed connection string at all.
+    /// </summary>
+    private static Dictionary<string, string>? TryParseConnectionString(string connectionString)
+    {
+        try
+        {
+            var builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
+            var keys = new Dictionary<string, string>(builder.Count, StringComparer.OrdinalIgnoreCase);
+
+            foreach (string key in builder.Keys.Cast<string>())
+                keys[key.Trim()] = builder[key]?.ToString() ?? string.Empty;
+
+            return keys;
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    private static bool TryGetValue(Dictionary<string, string> keys, out string value, params string[] candidates)
+    {
+        foreach (var candidate in candidates)
+        {
+            if (keys.TryGetValue(candidate, out string? found))
+            {
+                value = found;
+                return true;
+            }
+        }
+
+        value = string.Empty;
+        return false;
+    }
+
+    private static bool HasSqliteFileExtension(string dataSource)
+    {
+        // Trailing SQLite URI query parameters ("file:app.db?mode=ro") are not part of the path.
+        var path = dataSource;
+        var query = path.IndexOf('?');
+        if (query >= 0)
+            path = path[..query];
+
+        return path.EndsWith(".db", StringComparison.OrdinalIgnoreCase) ||
+               path.EndsWith(".db3", StringComparison.OrdinalIgnoreCase) ||
+               path.EndsWith(".sqlite", StringComparison.OrdinalIgnoreCase) ||
+               path.EndsWith(".sqlite3", StringComparison.OrdinalIgnoreCase);
     }
 
     private static (ISchemaReader, ITypeMapper) GetProviderComponents(DatabaseProvider provider)
