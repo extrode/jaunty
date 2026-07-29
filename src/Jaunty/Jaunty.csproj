@@ -9,7 +9,6 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-		<LangVersion>latest</LangVersion>
 		<!-- ASYNC_ENUMERABLE_SUPPORT on ns2.0 too (via Microsoft.Bcl.AsyncInterfaces):
 		     both TFMs expose the same IAsyncEnumerable streaming API. -->
 		<DefineConstants>$(DefineConstants);AsyncInterfaces;ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
@@ -40,7 +39,6 @@
 	</ItemGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
-		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
 		<IsAotCompatible>true</IsAotCompatible>
 		<DefineConstants>$(DefineConstants);ASYNC_ENUMERABLE_SUPPORT</DefineConstants>
