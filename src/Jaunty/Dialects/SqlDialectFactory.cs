@@ -122,6 +122,29 @@ public static class SqlDialectFactory
     internal static void InvalidateResolvedDialects() => _dialectCache.Clear();
 
     /// <summary>
+    /// Drops every custom dialect registration along with the resolved-dialect cache, returning
+    /// resolution to the built-in names alone.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26 (batch 4, low/consistency). <c>_customDialects</c> is populated by the public
+    /// <see cref="RegisterDialect(string, ISqlDialect)"/> overloads and had no reset of any kind, so
+    /// a dialect registered for a connection type name in one test governed every connection of that
+    /// name for the remainder of the process. <c>JauntyConfig.Reset()</c> - documented as resetting
+    /// "all configuration options" and intended for test cleanup - now calls this, so one call
+    /// really does restore a clean slate.
+    /// <para>
+    /// The registration order matters: the custom map is cleared first, so a resolution racing this
+    /// call can repopulate the resolved cache from the built-ins but never from a registration that
+    /// has already been dropped.
+    /// </para>
+    /// </remarks>
+    internal static void ResetRegistrations()
+    {
+        _customDialects.Clear();
+        _dialectCache.Clear();
+    }
+
+    /// <summary>
     /// Registers a custom SQL dialect for a specific connection type.
     /// Custom registrations take priority over built-in dialect resolution.
     /// </summary>

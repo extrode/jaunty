@@ -9,6 +9,7 @@ using System.Reflection;
 using Jaunty.Configuration;
 using Jaunty.Dialects;
 using Jaunty.Extensions.Reflection.Dialects;
+using Jaunty.Internals;
 using Jaunty.Internals.Entity;
 using Jaunty.Attributes;
 using Jaunty.TypeHandlers;
@@ -101,12 +102,44 @@ public static class JauntyReflectionExtensions
     private static readonly MethodInfo GetTypedDeleteBinderMethod = NonPublicStatic(nameof(GetTypedDeleteBinder));
     private static readonly MethodInfo GetTypedMultiMapperMethod = NonPublicStatic(nameof(GetTypedMultiMapper));
 
-    private static readonly ConcurrentDictionary<Type, object> TableMetadataCache = new();
-    private static readonly ConcurrentDictionary<(Type Type, MappingMode Mode), object> MapperCache = new();
-    private static readonly ConcurrentDictionary<Type, Action<IDbCommand, object>> InsertBinderCache = new();
-    private static readonly ConcurrentDictionary<Type, Action<IDbCommand, object>> UpdateBinderCache = new();
-    private static readonly ConcurrentDictionary<Type, Action<IDbCommand, object>> DeleteBinderCache = new();
-    private static readonly ConcurrentDictionary<(Type, Type), object> MultiMapperCache = new();
+    // AUD-R26 (batch 4). Every one of these is derived from entity metadata, and metadata is built
+    // from JauntyConfig's schema/table/column name resolvers - public, settable at any time. Keyed
+    // on the entity type alone, the first resolution of a given T fixed its columns for the life of
+    // the process, so a resolver registered afterwards was invisible to the whole package: the
+    // caches below, MetadataCache<T> underneath them, and CrudSqlCache above them all kept the
+    // pre-change answer. ConfigurationScoped tags each entry with the generation it was built
+    // under; see Jaunty.Internals.ConfigurationGeneration.
+    private static readonly ConcurrentDictionary<Type, ConfigurationScoped<object>> TableMetadataCache = new();
+    private static readonly ConcurrentDictionary<(Type Type, MappingMode Mode), ConfigurationScoped<object>> MapperCache = new();
+    private static readonly ConcurrentDictionary<Type, ConfigurationScoped<Action<IDbCommand, object>>> InsertBinderCache = new();
+    private static readonly ConcurrentDictionary<Type, ConfigurationScoped<Action<IDbCommand, object>>> UpdateBinderCache = new();
+    private static readonly ConcurrentDictionary<Type, ConfigurationScoped<Action<IDbCommand, object>>> DeleteBinderCache = new();
+    private static readonly ConcurrentDictionary<(Type, Type), ConfigurationScoped<object>> MultiMapperCache = new();
+
+    /// <summary>
+    /// <see cref="ConcurrentDictionary{TKey,TValue}.GetOrAdd(TKey, Func{TKey, TValue})"/> with the
+    /// configuration generation as part of what counts as a hit.
+    /// </summary>
+    /// <remarks>
+    /// The build delegates passed in are all non-capturing (<c>static</c>) lambdas, which the
+    /// compiler caches, so routing them through here costs no allocation over the GetOrAdd calls it
+    /// replaces. Two threads racing on the same key both build and the last write wins; both results
+    /// were built from the configuration they recorded, so either is correct.
+    /// </remarks>
+    private static TValue GetOrBuild<TKey, TValue>(
+        ConcurrentDictionary<TKey, ConfigurationScoped<TValue>> cache, TKey key, Func<TKey, TValue> build)
+        where TKey : notnull
+    {
+        // Read the generation before the lookup, never after: see ConfigurationGeneration.Current.
+        int generation = ConfigurationGeneration.Current;
+
+        if (cache.TryGetValue(key, out ConfigurationScoped<TValue> cached) && cached.Generation == generation)
+            return cached.Value;
+
+        TValue value = build(key);
+        cache[key] = new ConfigurationScoped<TValue>(generation, value);
+        return value;
+    }
 
     // Keyed on arity, not on the type arguments: the constructed generic method still has to be
     // built per type-set, but the name lookup - a string concatenation plus a reflection search -
@@ -117,10 +150,10 @@ public static class JauntyReflectionExtensions
         typeof(JauntyReflectionExtensions).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static)!;
 
     private static object ResolveTableMetadata(Type type) =>
-        TableMetadataCache.GetOrAdd(type, static t => MetadataBuildMethod.MakeGenericMethod(t).Invoke(null, null)!);
+        GetOrBuild(TableMetadataCache, type, static t => MetadataBuildMethod.MakeGenericMethod(t).Invoke(null, null)!);
 
     private static object ResolveMapper(Type type, MappingMode mode) =>
-        MapperCache.GetOrAdd((type, mode), static key =>
+        GetOrBuild(MapperCache, (Type: type, Mode: mode), static key =>
         {
             var mapperFactory = (Func<MappingMode, Func<IDataReader, object>>)
                 GetTypedMapperMethod.MakeGenericMethod(key.Type).Invoke(null, null)!;
@@ -140,19 +173,19 @@ public static class JauntyReflectionExtensions
     }
 
     private static Action<IDbCommand, object> ResolveInsertBinder(Type type) =>
-        InsertBinderCache.GetOrAdd(type, static t =>
+        GetOrBuild(InsertBinderCache, type, static t =>
             (Action<IDbCommand, object>)GetTypedInsertBinderMethod.MakeGenericMethod(t).Invoke(null, null)!);
 
     private static Action<IDbCommand, object> ResolveUpdateBinder(Type type) =>
-        UpdateBinderCache.GetOrAdd(type, static t =>
+        GetOrBuild(UpdateBinderCache, type, static t =>
             (Action<IDbCommand, object>)GetTypedUpdateBinderMethod.MakeGenericMethod(t).Invoke(null, null)!);
 
     private static Action<IDbCommand, object> ResolveDeleteBinder(Type type) =>
-        DeleteBinderCache.GetOrAdd(type, static t =>
+        GetOrBuild(DeleteBinderCache, type, static t =>
             (Action<IDbCommand, object>)GetTypedDeleteBinderMethod.MakeGenericMethod(t).Invoke(null, null)!);
 
     private static object ResolveMultiMapper(Type t1, Type t2) =>
-        MultiMapperCache.GetOrAdd((t1, t2), static key =>
+        GetOrBuild(MultiMapperCache, (t1, t2), static key =>
             GetTypedMultiMapperMethod.MakeGenericMethod(key.Item1, key.Item2).Invoke(null, null)!);
 
     // Guarded: the attribute's netstandard2.0 SDK polyfill is internal to its own file, so it is

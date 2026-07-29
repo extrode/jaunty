@@ -17,33 +17,102 @@ namespace Jaunty.Internals.Write;
 /// </summary>
 internal static class WriteParameterCache<T> where T : new()
 {
-    public static readonly Action<IDbCommand, T>? InsertBinder;
-    public static readonly Action<IDbCommand, T>? UpdateBinder;
-    public static readonly Action<IDbCommand, T>? DeleteBinder;
+    /// <summary>
+    /// Derived from <typeparamref name="T"/>'s own interfaces rather than from configuration, so
+    /// this genuinely is fixed for the lifetime of the process and is not part of
+    /// <see cref="Bindings"/>. Rebuilding it on a configuration change would recompile an expression
+    /// tree to reach the same answer.
+    /// </summary>
+    public static readonly Action<T, long>? IdSetter = CreateIdSetter();
 
-    public static readonly Action<IDataParameterCollection, T>? InsertValueSetter;
-    public static readonly Action<IDataParameterCollection, T>? UpdateValueSetter;
-    public static readonly Action<IDataParameterCollection, T>? DeleteValueSetter;
+    private static volatile Bindings _bindings = Bindings.Build();
 
-    public static readonly Action<T, long>? IdSetter;
+    public static Action<IDbCommand, T>? InsertBinder => Current().InsertBinder;
+    public static Action<IDbCommand, T>? UpdateBinder => Current().UpdateBinder;
+    public static Action<IDbCommand, T>? DeleteBinder => Current().DeleteBinder;
 
-    static WriteParameterCache()
+    public static Action<IDataParameterCollection, T>? InsertValueSetter => Current().InsertValueSetter;
+    public static Action<IDataParameterCollection, T>? UpdateValueSetter => Current().UpdateValueSetter;
+    public static Action<IDataParameterCollection, T>? DeleteValueSetter => Current().DeleteValueSetter;
+
+    /// <summary>
+    /// Everything this type derives from <see cref="JauntyConfig"/>, tagged with the configuration
+    /// generation it was derived under.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26 (batch 4, medium/bug). These were <c>static readonly</c> fields assigned in a static
+    /// constructor, which meant the binder resolvers were read exactly once per entity type per
+    /// process. If that constructor ran while they were null - which <c>JauntyConfig.Reset()</c>
+    /// guarantees, and which the documented NativeAOT startup workaround makes easy to hit by
+    /// touching a write before calling <c>UseReflectionMapping()</c> - then <c>Insert&lt;T&gt;</c>,
+    /// <c>Update&lt;T&gt;</c> and <c>Delete&lt;T&gt;</c> were broken for that <c>T</c> forever, and
+    /// re-registering the resolver did nothing. Measured: three consecutive inserts after
+    /// re-registration, all three failing with "No parameter binder found for type 'Item'" - whose
+    /// advice, "ensure source generation or reflection extension is used", was actively misleading
+    /// because the extension <em>was</em> loaded.
+    /// </para>
+    /// <para>
+    /// The read path never had this: <c>DrDispatcher</c> consults
+    /// <c>JauntyConfig.ReflectionMapperResolver</c> per resolution, so clearing it breaks reads and
+    /// restoring it fixes them. Two halves of one configuration surface, one recoverable and one
+    /// not. This makes the write half behave like the read half without giving up the caching -
+    /// see <see cref="ConfigurationGeneration"/>.
+    /// </para>
+    /// </remarks>
+    private sealed class Bindings
     {
-        InsertBinder = TryGetGeneratedBinder("BindInsert") ?? TryGetReflectionBinder(JauntyConfig.ReflectionInsertBinderResolver);
-        UpdateBinder = TryGetGeneratedBinder("BindUpdate") ?? TryGetReflectionBinder(JauntyConfig.ReflectionUpdateBinderResolver);
-        DeleteBinder = TryGetGeneratedBinder("BindDelete") ?? TryGetReflectionBinder(JauntyConfig.ReflectionDeleteBinderResolver);
+        public int Generation { get; private set; }
+        public Action<IDbCommand, T>? InsertBinder { get; private set; }
+        public Action<IDbCommand, T>? UpdateBinder { get; private set; }
+        public Action<IDbCommand, T>? DeleteBinder { get; private set; }
+        public Action<IDataParameterCollection, T>? InsertValueSetter { get; private set; }
+        public Action<IDataParameterCollection, T>? UpdateValueSetter { get; private set; }
+        public Action<IDataParameterCollection, T>? DeleteValueSetter { get; private set; }
 
-        // Value setters for bulk operations: update values on existing parameters by index.
-        // PrepareXxxParameters has already created provider-native parameters on the command;
-        // the value setter just walks the collection and sets .Value for each matching param.
-        // Metadata is resolved once here (rather than separately inside each Create*ValueSetter)
-        // since ResolveMetadata() re-instantiates new T() and rebuilds EntityMetadata from scratch.
-        EntityMetadata? metadata = ResolveMetadata();
-        InsertValueSetter = InsertBinder != null ? CreateInsertValueSetter(metadata) : null;
-        UpdateValueSetter = UpdateBinder != null ? CreateUpdateValueSetter(metadata) : null;
-        DeleteValueSetter = DeleteBinder != null ? CreateDeleteValueSetter(metadata) : null;
+        public static Bindings Build()
+        {
+            // Read the generation before building, never after: see ConfigurationGeneration.Current.
+            var bindings = new Bindings { Generation = ConfigurationGeneration.Current };
 
-        IdSetter = CreateIdSetter();
+            bindings.InsertBinder = TryGetGeneratedBinder("BindInsert") ?? TryGetReflectionBinder(JauntyConfig.ReflectionInsertBinderResolver);
+            bindings.UpdateBinder = TryGetGeneratedBinder("BindUpdate") ?? TryGetReflectionBinder(JauntyConfig.ReflectionUpdateBinderResolver);
+            bindings.DeleteBinder = TryGetGeneratedBinder("BindDelete") ?? TryGetReflectionBinder(JauntyConfig.ReflectionDeleteBinderResolver);
+
+            // Value setters for bulk operations: update values on existing parameters by index.
+            // PrepareXxxParameters has already created provider-native parameters on the command;
+            // the value setter just walks the collection and sets .Value for each matching param.
+            // Metadata is resolved once here (rather than separately inside each Create*ValueSetter)
+            // since ResolveMetadata() re-instantiates new T() and rebuilds EntityMetadata from scratch.
+            EntityMetadata? metadata = ResolveMetadata();
+            bindings.InsertValueSetter = bindings.InsertBinder != null ? CreateInsertValueSetter(metadata) : null;
+            bindings.UpdateValueSetter = bindings.UpdateBinder != null ? CreateUpdateValueSetter(metadata) : null;
+            bindings.DeleteValueSetter = bindings.DeleteBinder != null ? CreateDeleteValueSetter(metadata) : null;
+
+            return bindings;
+        }
+    }
+
+    /// <summary>
+    /// The bindings for the configuration as it stands, rebuilding them if it has moved since they
+    /// were built.
+    /// </summary>
+    /// <remarks>
+    /// Two threads racing here both build and both publish; whichever writes last wins and both
+    /// answers are equally valid, since each was built from the configuration it recorded. A build
+    /// overtaken by a concurrent configuration change publishes a snapshot tagged with the older
+    /// generation, so the next read rebuilds rather than keeping it - the race costs a wasted build,
+    /// never a stale answer.
+    /// </remarks>
+    private static Bindings Current()
+    {
+        Bindings current = _bindings;
+        if (current.Generation == ConfigurationGeneration.Current)
+            return current;
+
+        Bindings rebuilt = Bindings.Build();
+        _bindings = rebuilt;
+        return rebuilt;
     }
 
     private static Action<IDataParameterCollection, T>? CreateInsertValueSetter(EntityMetadata? metadata)
