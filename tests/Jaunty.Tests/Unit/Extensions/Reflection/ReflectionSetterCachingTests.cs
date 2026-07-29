@@ -90,6 +90,11 @@ public class ReflectionSetterCachingTests : IDisposable
         var reader = new RecycledReader([], []);
 
         Assert.Empty(MetadataCache<Widget>.GetSetters(reader, MappingMode.Strict));
+
+        // The early return happens before the memo is written, so the same reader gaining columns
+        // later must build real setters rather than keep returning the empty array.
+        reader.Recycle(["Id", "Name"], [1, "one"]);
+        Assert.Equal(2, MetadataCache<Widget>.GetSetters(reader, MappingMode.Strict).Length);
     }
 
     // ------------------------------------------------------------------
@@ -99,8 +104,11 @@ public class ReflectionSetterCachingTests : IDisposable
     [Fact]
     public void RecycledReader_WithFewerColumns_RebuildsSetters()
     {
+        // Mode is held constant at Projection. An earlier version of this test used Strict then
+        // Projection, so the memo missed on the mode check alone and the test passed even with the
+        // field-count and column-name re-validation deleted outright - it guarded nothing.
         var reader = new RecycledReader(["Id", "Name"], [1, "one"]);
-        PropertySetter<Widget>[] wide = MetadataCache<Widget>.GetSetters(reader, MappingMode.Strict);
+        PropertySetter<Widget>[] wide = MetadataCache<Widget>.GetSetters(reader, MappingMode.Projection);
 
         reader.Recycle(["Name"], ["only-name"]);
         PropertySetter<Widget>[] narrow = MetadataCache<Widget>.GetSetters(reader, MappingMode.Projection);
@@ -132,8 +140,9 @@ public class ReflectionSetterCachingTests : IDisposable
     [Fact]
     public void RecycledReader_WithDifferentColumnNames_RebuildsSetters()
     {
+        // Mode held constant - see the note in RecycledReader_WithFewerColumns_RebuildsSetters.
         var reader = new RecycledReader(["Id", "Name"], [1, "one"]);
-        PropertySetter<Widget>[] first = MetadataCache<Widget>.GetSetters(reader, MappingMode.Strict);
+        PropertySetter<Widget>[] first = MetadataCache<Widget>.GetSetters(reader, MappingMode.Projection);
 
         reader.Recycle(["Id", "Unrelated"], [1, "x"]);
         PropertySetter<Widget>[] second = MetadataCache<Widget>.GetSetters(reader, MappingMode.Projection);
@@ -275,30 +284,36 @@ public class ReflectionSetterCachingTests : IDisposable
     }
 
     /// <summary>
-    /// The same race, but with each thread presenting a different schema so every call takes the
-    /// write path rather than settling onto the memo after the first round.
+    /// The same race, but the memo is forced to miss on every call so each thread reaches the write
+    /// path rather than settling onto a hit after the first round.
     /// </summary>
+    /// <remarks>
+    /// An earlier version of this test gave each thread its <em>own</em> reader. Distinct readers are
+    /// distinct <see cref="System.Runtime.CompilerServices.ConditionalWeakTable{TKey,TValue}"/> keys,
+    /// and the race is a same-key <c>Add</c> throwing - so that version could not fail against the
+    /// racy pattern no matter how many rounds it ran. All threads now share one reader, and the
+    /// alternating mode keeps every call on the write path.
+    /// </remarks>
     [Fact]
-    public void ConcurrentGetSetters_AcrossReaders_DoesNotThrow()
+    public void ConcurrentGetSetters_ForcedMisses_DoNotThrow()
     {
         var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
-        string[][] schemas = [["Id", "Name"], ["Name", "Id"], ["Id"], ["Name"]];
 
         for (int round = 0; round < 50; round++)
         {
-            using var gate = new System.Threading.Barrier(schemas.Length);
+            var reader = new RecycledReader(["Id", "Name"], [1, "one"]);
+            using var gate = new System.Threading.Barrier(4);
 
-            var tasks = new System.Threading.Tasks.Task[schemas.Length];
-            for (int i = 0; i < schemas.Length; i++)
+            var tasks = new System.Threading.Tasks.Task[4];
+            for (int i = 0; i < tasks.Length; i++)
             {
-                string[] schema = schemas[i];
+                MappingMode mode = i % 2 == 0 ? MappingMode.Strict : MappingMode.Projection;
                 tasks[i] = System.Threading.Tasks.Task.Run(() =>
                 {
-                    var reader = new RecycledReader(schema, [.. schema.Select(object (n) => n == "Id" ? 1 : "x")]);
                     gate.SignalAndWait();
                     try
                     {
-                        MetadataCache<Widget>.GetSetters(reader, MappingMode.Projection);
+                        MetadataCache<Widget>.GetSetters(reader, mode);
                     }
                     catch (Exception ex)
                     {
