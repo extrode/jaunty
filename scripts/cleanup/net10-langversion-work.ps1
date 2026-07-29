@@ -49,7 +49,9 @@ $candidates = @(
     'fix/langversion-13',                # pin corrected 14.0 -> 13.0 after the C# 14 bisect
     'docs/spec-010-net10',               # the .NET 10 migration spec
     'fix/csharp14-span-contains',        # MemoryExtensions.Contains translation
-    'docs/spec-010-corrections'          # spec 010 factual corrections + Q1
+    'docs/spec-010-corrections',         # spec 010 factual corrections + Q1
+    'docs/todo-net10-followups',         # follow-ups recorded in work/todo.md
+    'fix/cleanup-script-cwd'             # this script, anchored on its own location
 )
 
 Write-Host ''
