@@ -3,6 +3,9 @@ version: "3.8"
 services:
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    # No arm64 image exists for this one. Stated explicitly so Apple silicon runs it
+    # under emulation instead of warning about a platform mismatch on every up.
+    platform: linux/amd64
     container_name: torture-mssql
     ports:
       - "1433:1433"
