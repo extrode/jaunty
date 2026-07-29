@@ -149,7 +149,7 @@ internal static class WriteParameterCache<T> where T : new()
     }
 
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "T is reflected over by method name with no [DynamicDependency], [DynamicallyAccessedMembers] or ILLink descriptor arranging preservation - the suppression hides the report, it does not make the reflection safe. Measured (AUD-R26): samples/NativeAOT-Basic published with PublishAot=true still throws 'No mapper found for type Product'. Annotating T does satisfy the analyzer, but propagates the obligation up through DrDispatcher.Resolve<T>, QueryCore<T> and the ~300 public generic read overloads, so the real fix is an API-wide annotation pass tracked separately. Until then, NativeAOT consumers must ensure their entity types are otherwise rooted.")]
+    [UnconditionalSuppressMessage("AOT", "IL2090", Justification = "T is reflected over by method name with no [DynamicDependency], [DynamicallyAccessedMembers] or ILLink descriptor arranging preservation - the suppression hides the report, it does not make the reflection safe. Measured (AUD-R26): samples/NativeAOT-Basic published with PublishAot=true still throws 'No mapper found for type Product'. Annotating T does satisfy the analyzer, but propagates the obligation up through DrDispatcher.Resolve<T>, QueryCore<T> and up to 645 public generic overloads carrying a new()-constrained type parameter (counted from compiled metadata, 2026-07-29), so the real fix is an API-wide annotation pass - specified in docs/specs/009-aot-annotation-pass. Until then, NativeAOT consumers must ensure their entity types are otherwise rooted.")]
 #endif
     private static Action<IDbCommand, T>? TryGetGeneratedBinder(string methodName)
     {
