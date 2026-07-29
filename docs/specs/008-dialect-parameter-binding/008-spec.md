@@ -212,10 +212,50 @@ These block `/plan`, not this spec.
    SqlClient, Npgsql and MySqlConnector.** If universal, axis B needs no new `ISqlDialect`
    member at all — it becomes one rule applied everywhere, which is a far smaller change.
    If not, axis B needs a dialect member.
-2. **How is that verified?** CI provides SQL Server only. PostgreSQL and MySQL have no CI
+
+   **Evidence added 2026-07-29** (round 26, batch 3, `ParameterBinder.cs`, left open and
+   deferred here rather than fixed): Jaunty *already* names parameters both ways, and the
+   split is internal, not dialectal. The user-SQL path names them **bare** —
+   `CommandTemplate.CreateTemplates` takes the name from `SqlParameterParser`, which strips the
+   sigil, and `BindDynamic`, `BindScalar`, `BindFromDictionary` and `BindAllFromObject` all do
+   the same. The entity-CRUD path names them with a literal `@` — `WriteParameterHelper`,
+   `GetCore`, `DeleteCore`, `Upsert`, and the generated and reflection binders.
+
+   That matters because the bare-naming path is `Query`/`Execute` with parameters: the
+   most-exercised API in the library, covered against SQL Server by CI. So bare naming is
+   demonstrably fine on SqlClient and Microsoft.Data.Sqlite today, in production code, with no
+   dialect member involved. Two of the four unverified providers are answered by code that has
+   been shipping. That does not prove universality — Npgsql and MySqlConnector are still
+   open — but it shifts the burden: the question is now whether any provider *rejects* bare
+   naming, not whether any accepts it.
+
+   `008-research.md` §3.3 lists `ParameterBinder.cs` only as "detects a prefix … already
+   sigil-aware" and does not record that it also *names* parameters, bare, at five sites. That
+   omission should be corrected when this spec is planned.
+2. **How is that verified?** ~~CI provides SQL Server only. PostgreSQL and MySQL have no CI
    service and no Testcontainers dependency in the repo. Adding either is a real cost and
-   should be decided deliberately — the constitution requires integration tests against real
+   should be decided deliberately~~ — the constitution requires integration tests against real
    databases, not fakes.
+
+   **Revised 2026-07-29, measured.** The premise was that this needs new test infrastructure.
+   It does not — the infrastructure is already there and only wants a server.
+
+   `Jaunty.Tests` integration tests are dialect-parameterised theories that skip themselves
+   when no connection string is configured, reading `JAUNTY_TEST_{SQLSERVER, POSTGRESQL,
+   MYSQL, MARIADB}` or `ConnectionStrings:*`. A local run on 2026-07-29 skipped **815 tests
+   for want of `JAUNTY_TEST_POSTGRESQL` and 811 for want of `JAUNTY_TEST_SQLSERVER`** — the
+   same assertions the SQLite dialect runs today, already written, already wired, waiting on a
+   connection string.
+
+   `.github/workflows/ci.yml` confirms the other half: one `mssql` service, one
+   `JAUNTY_TEST_SQLSERVER` env var. Adding PostgreSQL and MySQL is therefore a `services:`
+   block and one environment variable each, not a Testcontainers dependency and not new test
+   code. That is a much smaller decision than this question assumed, and it unblocks question
+   1 directly: run the existing suite against Npgsql and MySqlConnector and read the answer
+   off the results.
+
+   What it does *not* settle is CI cost and flakiness on shared services, which is still a
+   deliberate call — but it is a cost question, not a feasibility one.
 3. **Does `ParameterPrefix` survive, or is it replaced?** If axis B needs a member, two
    near-identical prefix concepts on one interface is a trap. A single member describing both
    axes may be better than two.
