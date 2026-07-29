@@ -3,6 +3,7 @@ using System.Data.Common;
 
 using Jaunty.Core;
 using Jaunty.Configuration;
+using Jaunty.Internals.Read;
 
 namespace Jaunty;
 
@@ -21,6 +22,13 @@ public static partial class Jaunty
     /// whose names differ only by case - or two identically named columns, the usual
     /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
     /// alias such columns in the SQL if you need both.
+    /// <para>
+    /// <strong>Duplicate column names.</strong> Keys are compared case-insensitively, so a result set
+    /// with two columns of the same name - <c>SELECT o.Id, c.Id FROM Orders o JOIN Customers c ...</c>,
+    /// or the same name differing only in case - cannot put both under one key. The first occurrence
+    /// keeps the bare name and each later one gains an <c>_N</c> suffix (<c>Id</c>, <c>Id_2</c>), so no
+    /// value is lost. Alias the columns in your SQL if you want names you chose.
+    /// </para>
     /// </remarks>
     public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql)
     {
@@ -52,6 +60,13 @@ public static partial class Jaunty
     /// whose names differ only by case - or two identically named columns, the usual
     /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
     /// alias such columns in the SQL if you need both.
+    /// <para>
+    /// <strong>Duplicate column names.</strong> Keys are compared case-insensitively, so a result set
+    /// with two columns of the same name - <c>SELECT o.Id, c.Id FROM Orders o JOIN Customers c ...</c>,
+    /// or the same name differing only in case - cannot put both under one key. The first occurrence
+    /// keeps the bare name and each later one gains an <c>_N</c> suffix (<c>Id</c>, <c>Id_2</c>), so no
+    /// value is lost. Alias the columns in your SQL if you want names you chose.
+    /// </para>
     /// </remarks>
     public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql, object parameters)
     {
@@ -82,6 +97,13 @@ public static partial class Jaunty
     /// whose names differ only by case - or two identically named columns, the usual
     /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
     /// alias such columns in the SQL if you need both.
+    /// <para>
+    /// <strong>Duplicate column names.</strong> Keys are compared case-insensitively, so a result set
+    /// with two columns of the same name - <c>SELECT o.Id, c.Id FROM Orders o JOIN Customers c ...</c>,
+    /// or the same name differing only in case - cannot put both under one key. The first occurrence
+    /// keeps the bare name and each later one gains an <c>_N</c> suffix (<c>Id</c>, <c>Id_2</c>), so no
+    /// value is lost. Alias the columns in your SQL if you want names you chose.
+    /// </para>
     /// </remarks>
     public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql, CommandOptions options)
     {
@@ -115,6 +137,13 @@ public static partial class Jaunty
     /// whose names differ only by case - or two identically named columns, the usual
     /// <c>SELECT a.id, b.id FROM a JOIN b</c> shape - only the last is kept, with no diagnostic;
     /// alias such columns in the SQL if you need both.
+    /// <para>
+    /// <strong>Duplicate column names.</strong> Keys are compared case-insensitively, so a result set
+    /// with two columns of the same name - <c>SELECT o.Id, c.Id FROM Orders o JOIN Customers c ...</c>,
+    /// or the same name differing only in case - cannot put both under one key. The first occurrence
+    /// keeps the bare name and each later one gains an <c>_N</c> suffix (<c>Id</c>, <c>Id_2</c>), so no
+    /// value is lost. Alias the columns in your SQL if you want names you chose.
+    /// </para>
     /// </remarks>
     public static List<IDictionary<string, object?>> QueryPartialList(this IDbConnection connection, string sql, object parameters, CommandOptions options)
     {
@@ -187,6 +216,11 @@ public static partial class Jaunty
             var columnNames = new string[reader.FieldCount];
             for (int i = 0; i < columnNames.Length; i++)
                 columnNames[i] = reader.GetName(i);
+
+            // AUD-R26: two columns of the same name would otherwise collapse to one dictionary key,
+            // silently dropping a value. See DuplicateColumnNames for why this renames rather than
+            // throws, and why the first occurrence keeps the bare name.
+            columnNames = DuplicateColumnNames.Disambiguate(columnNames);
 
             while (reader.Read())
             {
