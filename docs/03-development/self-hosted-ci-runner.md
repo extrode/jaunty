@@ -92,6 +92,11 @@ gh api repos/beparey/Jaunty/actions/runners --jq '.runners[] | "\(.name) \(.stat
 - The runner reuses one working directory across runs. It is not the clean VM a hosted runner gives
   you, so a job that leaves state behind can influence the next one. `actions/checkout` cleans the
   tree, but not Docker volumes or anything written outside the workspace.
+- **CI competes with the local test suite for memory.** A CI run adds a second SQL Server container
+  on top of the four `torture-*` databases. On 2026-07-29 that combination OOM-killed all four
+  (`docker ps -a` showed `Exited (137)`) in the middle of a local `dotnet test`, which then reported
+  hundreds of MariaDB and Postgres failures that had nothing to do with the code. If a local run
+  fails wholesale against one provider, check `docker ps` before believing it.
 
 ## Runner-specific workflow changes
 
@@ -104,6 +109,11 @@ hosted runners, so there is nothing to undo when billing is restored.
   Debian's root-owned .NET 10 SDK, so the unprivileged runner user cannot write to it and the step
   fails with a wall of `mkdir: Permission denied`. `runner.tool_cache` is writable on hosted and
   self-hosted alike.
+- The `mssql` service container publishes **1435**, not 1433. A hosted runner gets a private VM, so
+  1433 was free; this runner shares a Docker engine and a localhost with `torture-mssql`, which
+  already owns 1433. With both on 1433 whichever starts second fails to bind, and Docker leaves the
+  loser running with no host mapping at all — the container looks healthy while nothing can reach
+  it. `JAUNTY_TEST_SQLSERVER` in the workflow points at `localhost,1435` to match.
 
 ## Troubleshooting
 
