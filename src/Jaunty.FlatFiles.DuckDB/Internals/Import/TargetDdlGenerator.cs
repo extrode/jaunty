@@ -70,7 +70,13 @@ internal static class TargetDdlGenerator
             DuplicateColumnGuard.Claim(entityType, columnName, prop, claimed);
             var isPrimaryKey = prop.GetCustomAttribute<KeyAttribute>() is not null;
 
-            Type underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+            // AUD-R26 (batch 7, medium/bug). Normalize here as well as unwrapping Nullable<T>,
+            // because this is the only place that holds the PropertyInfo: [EnumStorage] is a
+            // per-property attribute and MapClrTypeToSqlType(Type) cannot see it. Resolving the
+            // enum's storage type here means the column matches what the write path will actually
+            // put in it - a string column for EnumStorage.String, the underlying integral type's
+            // column for Numeric - rather than the text column every enum used to get.
+            Type underlyingType = ImportTypeMapping.Normalize(prop.PropertyType, prop);
             var isNullable = Nullable.GetUnderlyingType(prop.PropertyType) is not null
                 || (!prop.PropertyType.IsValueType && prop.PropertyType != typeof(string));
 
