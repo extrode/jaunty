@@ -187,7 +187,35 @@ internal sealed class SQLiteDialect : ISqlDialect, ISubstringToEndDialect
 
     // Multi-row insert support
     public bool SupportsMultiRowInsert => true;
-    public int MaxParametersPerStatement => 999;
+    /// <summary>
+    /// SQLite's <c>SQLITE_MAX_VARIABLE_NUMBER</c>, 32,766 on every build Jaunty ships against.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AUD-R26 (batch 4, medium/bug). This was 999 - the pre-3.32 (2020) default - which understated
+    /// the real limit by a factor of 33. Because
+    /// <see cref="Internals.Parameters.ParameterBinder"/> enforces this value as a hard rejection
+    /// rather than only as a batch-sizing hint, Jaunty refused <c>IN</c>-clause expansions the
+    /// provider ran without complaint: a 1,000-id <c>WHERE Id IN @Ids</c> failed with advice to
+    /// batch, on a statement the engine would have executed.
+    /// </para>
+    /// <para>
+    /// Measured against this repo's own package graph - Microsoft.Data.Sqlite 10.0.3 over
+    /// SQLitePCLRaw.bundle_e_sqlite3 3.0.3, sqlite 3.50.4 - by binding N parameters to a real
+    /// <c>IN</c> list and executing it. 999, 1,000, 1,500, 5,000, 20,000 and 32,766 all succeed;
+    /// 32,767 and above fail with <c>SQLite Error 1: 'too many SQL variables'</c>. The boundary is
+    /// exactly 32,766, so that is the value, not a round number near it.
+    /// </para>
+    /// <para>
+    /// The other three dialects were already correct (SQL Server 2,100, PostgreSQL and MySQL
+    /// 65,535); SQLite was the outlier, and it is this repo's default development database. The
+    /// value is a property of the *native* build, so a caller who supplies an older sqlite than any
+    /// current package ships will now get the provider's "too many SQL variables" instead of
+    /// Jaunty's message. That trade is deliberate: refusing valid queries for everyone is worse than
+    /// a less friendly error for a pre-2020 build.
+    /// </para>
+    /// </remarks>
+    public int MaxParametersPerStatement => 32766;
 
     // Upsert support - SQLite 3.24+ supports ON CONFLICT
     public bool SupportsUpsert => true;

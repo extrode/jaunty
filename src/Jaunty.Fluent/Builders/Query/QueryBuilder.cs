@@ -1515,6 +1515,14 @@ internal sealed class QueryBuilder<T> : IFromClause<T>, IWhereClause<T>, IOrderB
             return negate ? "1=1" : "1=0";
         }
 
+        // AUD-R26: this route expands the collection itself into individually-named scalars, so it
+        // never reached ParameterBinder's ceiling check - .WhereIn(p => p.Id, ids) executed lists
+        // that core's Query("... IN @ids") rejected. Same limit, same wording, both routes.
+        ParameterCeiling.EnsureWithinLimit(
+            _parameters.Count + valueList.Count,
+            _dialect,
+            ParameterCeiling.Describe(_connection, _dialect));
+
         var sb = new StringBuilder();
         sb.Append(escapedColumn);
         sb.Append(negate ? " NOT IN (" : " IN (");

@@ -571,25 +571,52 @@ public class ParameterBinderTests
 
     // R16: the parameter-limit guard checked only the expanded collection's own count against
     // dialect.MaxParametersPerStatement, ignoring non-collection scalar parameters in the same
-    // statement. SQLiteDialect.MaxParametersPerStatement is 999, so 2 scalar params + a 998-item
-    // collection stayed under the guard's old (collection-only) count of 998 while the true total
-    // of 1000 exceeds the provider's real limit - exactly the opaque driver-level failure the
-    // guard exists to turn into a clear, fail-fast exception. The connection only needs to be an
-    // object whose Type.Name SqlDialectFactory recognizes ("SQLiteConnection"); it is never opened.
+    // statement - so a collection that fit on its own could still push the statement's true total
+    // past the provider's limit, which is exactly the opaque driver-level failure the guard exists
+    // to turn into a clear, fail-fast exception. The connection only needs to be an object whose
+    // Type.Name SqlDialectFactory recognizes ("SQLiteConnection"); it is never opened.
+    //
+    // AUD-R26: the sizes are derived from the dialect rather than hardcoded. They used to be 998
+    // items and a literal "999", which pinned the ceiling as much as the behaviour under test and
+    // had to be edited when the SQLite ceiling was corrected to its measured value of 32,766. The
+    // property this test is about - scalars count toward the total - is independent of the number.
     [Fact]
     public void Bind_CollectionPlusScalarParamsExceedingLimit_ThrowsInvalidOperationException()
     {
+        int ceiling = new global::Jaunty.Dialects.SQLiteDialect().MaxParametersPerStatement;
+
         var command = new MockDbCommand("SELECT * FROM items WHERE a = @A AND b = @B AND id IN @Ids")
         {
             Connection = new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
         };
-        var ids = Enumerable.Range(1, 998).ToArray();
+
+        // One short of the ceiling on its own, so only counting the two scalars as well takes the
+        // statement over it.
+        var ids = Enumerable.Range(1, ceiling - 1).ToArray();
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
             ParameterBinder.Bind(command, new { A = 1, B = 2, Ids = ids }));
 
-        Assert.Contains("1000 parameters", ex.Message);
-        Assert.Contains("999", ex.Message);
+        Assert.Contains($"{ceiling + 1} parameters", ex.Message);
+        Assert.Contains(ceiling.ToString(System.Globalization.CultureInfo.InvariantCulture), ex.Message);
+    }
+
+    // The other side of the same guard: a collection that is exactly at the ceiling, with nothing
+    // else in the statement, must bind rather than throw. Without this, the test above passes just
+    // as well against a guard that rejects everything.
+    [Fact]
+    public void Bind_CollectionExactlyAtLimit_DoesNotThrow()
+    {
+        int ceiling = new global::Jaunty.Dialects.SQLiteDialect().MaxParametersPerStatement;
+
+        var command = new MockDbCommand("SELECT * FROM items WHERE id IN @Ids")
+        {
+            Connection = new System.Data.SQLite.SQLiteConnection("Data Source=:memory:")
+        };
+
+        ParameterBinder.Bind(command, new { Ids = Enumerable.Range(1, ceiling).ToArray() });
+
+        Assert.Equal(ceiling, command.Parameters.Count);
     }
 
     [Fact]

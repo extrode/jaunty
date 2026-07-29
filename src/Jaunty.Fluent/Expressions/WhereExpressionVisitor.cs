@@ -5,6 +5,7 @@ using System.Text;
 using Jaunty.Dialects;
 using Jaunty.Fluent.Internals;
 using Jaunty.Internals.Entity;
+using Jaunty.Internals.Parameters;
 
 namespace Jaunty.Fluent.Expressions;
 
@@ -283,6 +284,16 @@ internal sealed class WhereExpressionVisitor<T> : ExpressionVisitor where T : ne
                     _sql.Append("1 = 0"); // Empty collection always false
                     return node;
                 }
+
+                // AUD-R26: like QueryBuilder.BuildInClause, this expands the collection itself into
+                // individually-named scalars and so never reached ParameterBinder's ceiling check.
+                // The count is this visitor's own - a query can span several visitors, one per
+                // Where/And/Or - so it is a lower bound on the statement total. That is the right
+                // direction to err for a guard whose old failure mode was refusing valid queries.
+                ParameterCeiling.EnsureWithinLimit(
+                    _parameters.Count + values.Count,
+                    _dialect,
+                    _dialect.GetType().Name);
 
                 _sql.Append(escapedColumn);
                 _sql.Append(" IN (");
