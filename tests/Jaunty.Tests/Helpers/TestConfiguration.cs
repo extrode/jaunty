@@ -1,3 +1,4 @@
+// System.Text.Json is not referenced on net472; the #else branch below hand-parses instead.
 #if NET8_0_OR_GREATER
 using System.Text.Json;
 #endif

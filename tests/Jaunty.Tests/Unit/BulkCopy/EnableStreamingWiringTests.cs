@@ -1,4 +1,3 @@
-#if NET8_0_OR_GREATER
 using System.Reflection;
 
 using Jaunty.Configuration;
@@ -107,4 +106,3 @@ public class EnableStreamingWiringTests
         return (PropertyInfo?)field!.GetValue(null);
     }
 }
-#endif
