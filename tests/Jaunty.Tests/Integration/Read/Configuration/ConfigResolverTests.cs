@@ -1,3 +1,4 @@
+// System.Buffers/Span are unavailable on net472; ToSnakeCase has a non-span #else branch below.
 #if NET8_0_OR_GREATER
 using System.Buffers;
 #endif

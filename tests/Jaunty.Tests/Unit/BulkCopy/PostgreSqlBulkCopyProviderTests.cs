@@ -1,4 +1,3 @@
-#if NET8_0_OR_GREATER
 using System.Collections.Concurrent;
 using System.Data;
 using System.Reflection;
@@ -278,4 +277,3 @@ public class PostgreSqlBulkCopyProviderTests
         Assert.Equal(4, cache.Count);
     }
 }
-#endif

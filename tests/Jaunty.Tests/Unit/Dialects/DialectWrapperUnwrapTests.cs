@@ -1,4 +1,3 @@
-#if NET8_0_OR_GREATER
 using System.Data;
 
 using Jaunty.Configuration;
@@ -236,4 +235,3 @@ public class DialectWrapperUnwrapTests
         public string GenerateWindowAggregate(string function, string? expression) => _d.GenerateWindowAggregate(function, expression);
     }
 }
-#endif

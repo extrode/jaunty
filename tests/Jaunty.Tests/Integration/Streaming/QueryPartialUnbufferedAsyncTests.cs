@@ -1,4 +1,3 @@
-#if NET8_0_OR_GREATER
 using Jaunty.Core;
 using Jaunty.Tests.Entities;
 using Jaunty.Tests.Helpers.Dialects;
@@ -128,4 +127,3 @@ public class QueryPartialUnbufferedAsyncTests : IClassFixture<DialectFixture>
         Assert.Equal(0, count);
     }
 }
-#endif
