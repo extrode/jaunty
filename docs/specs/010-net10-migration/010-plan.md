@@ -166,9 +166,11 @@ The first draft proposed a `JauntyPinnedTfm` property in root `Directory.Build.p
 
 Root `Directory.Build.props` is imported **before** the csproj body, so `$(TargetFramework)` is
 visible there only when it arrives as a *global* property — i.e. in the inner builds of a
-multi-targeting project. For the **13 single-TFM projects** the condition evaluates against an
-empty string and every reference pins net8.0 while the project itself builds net10.0. Those 13
-include both benchmark projects (AC7's evidence) and all four `NativeAOT-*` samples (AC5's proof):
+multi-targeting project. For the **19 single-TFM projects** (`010-tasks.md` enumerates them; this
+paragraph said 13 in an earlier revision, the same `Jaunty.slnx`-scoped figure corrected above) the
+condition evaluates against an empty string and every reference pins net8.0 while the project itself
+builds net10.0. They include both benchmark projects (AC7's evidence) and all four `NativeAOT-*`
+samples (AC5's proof):
 the mechanism would have silently benchmarked and AOT-published the **net8** build of `Jaunty.dll`.
 
 A second defect in the same proposal: it claimed the pins' enclosing `ItemGroup Condition` widens
