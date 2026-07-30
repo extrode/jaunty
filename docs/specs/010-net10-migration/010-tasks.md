@@ -123,7 +123,9 @@ files** are untouched.
   measure.** Blocks T20.
 - [x] **T9** *(done 2026-07-30 — all 5 widened; verified per-TFM by `dotnet msbuild -getProperty`
   evaluation, not compile: net8/net10 receive each group, net472/ns2.0 unchanged. Compile proof
-  lands with T14.)* Widen the **5 net8.0-conditioned `PropertyGroup`s** — files:
+  lands with T14. **Still owed: the `ASYNC_ENUMERABLE_SUPPORT`-member presence test on the net10
+  build — lands with T13's loader assertion, same new test file.**)*
+  Widen the **5 net8.0-conditioned `PropertyGroup`s** — files:
   `src/Jaunty/Jaunty.csproj:41-45`, `src/Jaunty.FlatFiles/…:24-28`, `src/Jaunty.Fluent/…:23-25`,
   `tests/Jaunty.Tests/…:16-22`, `tests/Jaunty.Tests/…:40` — covers: §3.2, AC2, AC3 — done when:
   each condition uses
@@ -137,7 +139,12 @@ files** are untouched.
   Done when additionally: a test asserts an `ASYNC_ENUMERABLE_SUPPORT`-gated member is present in
   the net10 build, and `IsAotCompatible`/`EnableTrimAnalyzer` are confirmed set on the net10 inner
   build via `dotnet msbuild -getProperty:`.
-- [ ] **T10** Add `net10.0` to the **19** solution projects — files: the 19 enumerated above —
+- [x] **T10** *(done 2026-07-30 — 19 files, exactly one tag change each, scripted with a
+  1-replacement assertion per file and a lookbehind guard so `src/Jaunty:5`'s commented tag stayed
+  commented. No target dropped: 3 × `ns2.0;net8.0;net10.0`, `Jaunty.Tests` `net8.0;net10.0;net472`,
+  `Scaffolding`'s plural-single caught, 13 singular tags renamed to plural. Verified by
+  `-getProperty:TargetFrameworks` evaluation; compile proof is T14's.)*
+  Add `net10.0` to the **19** solution projects — files: the 19 enumerated above —
   covers: §3.2, AC1, AC4 — done when: every one targets `net8.0;net10.0` (or `netstandard2.0;net8.0;net10.0`),
   no existing target is dropped, and `src/Jaunty.SourceGenerator` is untouched. Traps: `<TargetFramework>`
   → `<TargetFrameworks>` requires the **tag rename**, not just a value edit;
