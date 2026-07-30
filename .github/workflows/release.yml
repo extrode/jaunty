@@ -49,6 +49,15 @@ jobs:
           --framework net8.0
           --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
 
+      # net10 leg (spec 010 T18): same suites on the second shipped target.
+      - name: Test net10 (SQLite core + all local suites)
+        run: >-
+          dotnet test Jaunty.slnx
+          -c Release
+          --no-build
+          --framework net10.0
+          --filter "FullyQualifiedName~Sqlite | FullyQualifiedName~Jaunty.Fluent.Tests | FullyQualifiedName~Jaunty.Scaffolding.Tests | FullyQualifiedName~Jaunty.FlatFiles | FullyQualifiedName~Jaunty.SourceGenerator.Tests"
+
       - name: Pack
         run: >-
           dotnet pack Jaunty.slnx
