@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 
 using Jaunty.Dialects;
 
@@ -98,7 +98,9 @@ public class SqlDialectFactoryTests
 
         SqlDialectFactory.RegisterDialect(nameof(EscapeHatchConnection), custom);
 
-        Assert.Same(custom, SqlDialectFactory.GetDialect(connection));
+        // Unwrap for the same AUD-R26 reason as the engine tests above: once anything in the
+        // process has enabled bulk copy, resolution returns a decorator around this instance.
+        Assert.Same(custom, SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(connection)));
     }
 
     [Fact]
@@ -117,12 +119,12 @@ public class SqlDialectFactoryTests
         // survive a later registration for the same type name.
         var first = new SQLiteDialect();
         SqlDialectFactory.RegisterDialect(nameof(CacheInvalidationConnection), first);
-        Assert.Same(first, SqlDialectFactory.GetDialect(connection));
+        Assert.Same(first, SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(connection)));
 
         var custom = new PostgreSqlDialect();
         SqlDialectFactory.RegisterDialect(nameof(CacheInvalidationConnection), custom);
 
-        var after = SqlDialectFactory.GetDialect(connection);
+        var after = SqlDialectFactory.Unwrap(SqlDialectFactory.GetDialect(connection));
         Assert.Same(custom, after);
     }
 
