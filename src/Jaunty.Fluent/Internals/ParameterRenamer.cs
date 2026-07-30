@@ -22,9 +22,29 @@ internal static class ParameterRenamer
 
         foreach ((string? name, object? value) in parameters.GetAll())
         {
-            // Detect prefix from the parameter name itself (@ or $)
-            var paramPrefix = name.Length > 0 && name[0] is '@' or '$' ? name[0].ToString() : "@";
-            var baseName = name.TrimStart('@').TrimStart('$');
+            // AUD-R26-056: ':' was missing from this set and TrimStart stripped repeats.
+            //
+            // Without ':', an Oracle-style parameter was mis-parsed rather than renamed: paramPrefix
+            // fell back to "@", baseName stayed ":p0" because TrimStart('@').TrimStart('$') strips
+            // neither, the search pattern became "@:p0" and matched nothing in the SQL, and the
+            // parameter was registered as "@sq0_:p0". The result is broken SQL - a placeholder the
+            // outer query never binds - rather than a merge that fails loudly. Two neighbours in
+            // this assembly already accept all three sigils (ParameterCollection.ToParameterObject
+            // and JoinParameterName.Qualify); this was the only one that did not, and it is the one
+            // that rewrites SQL text.
+            //
+            // TrimStart also stripped *repeated* leading sigils, so a name like "@@rowcount"
+            // collapsed to base "rowcount" and produced a pattern that could not match the SQL it
+            // came from. Removing exactly one sigil - as JoinParameterName.Qualify does - keeps the
+            // pattern faithful to the original name.
+            //
+            // Not reachable through a shipped dialect today: all four return "@" from
+            // ParameterPrefix. It is exactly the assumption docs/specs/008-dialect-parameter-binding
+            // sets out to remove, so it is fixed with that work in view rather than found again
+            // afterwards.
+            bool hasSigil = name.Length > 0 && name[0] is '@' or '$' or ':';
+            var paramPrefix = hasSigil ? name.Substring(0, 1) : "@";
+            var baseName = hasSigil ? name.Substring(1) : name;
             var newName = $"{paramPrefix}{prefix}_{baseName}";
 
             // Replace in SQL - use word boundary to avoid partial matches

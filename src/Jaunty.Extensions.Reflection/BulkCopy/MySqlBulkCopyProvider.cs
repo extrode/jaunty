@@ -58,6 +58,16 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
             // R16: options.BatchSize must cap rows-per-statement - the MaxParametersPerStatement
             // ceiling alone left BatchSize completely unused, so callers had no way to shrink the
             // chunk size (e.g. to limit statement/packet size or transaction lock duration).
+
+            // AUD-R26-061: options.CheckConstraints, options.TableLock and options.IdentityMode are
+            // not read here, for three different reasons. CheckConstraints is not expressible - this
+            // provider issues ordinary multi-row INSERTs, which always enforce constraints, so the
+            // behaviour is permanently that of true. TableLock has no INSERT-level hint in MySQL;
+            // approximating it with LOCK TABLES would carry different transactional semantics than
+            // the flag implies. IdentityMode is inert on every provider, not just this one -
+            // EntityDataReader streams EntityMetadata.InsertColumns, which excludes identity
+            // columns, so the identity value never reaches any bulk copy at all. Documented per
+            // provider on BulkCopyOptions; pinned by BulkCopyIdentityModeTests.
             int rowsPerChunk = Math.Max(1, Math.Min(options.BatchSize, MaxParametersPerStatement / Math.Max(1, columnCount)));
 
             int total = 0;
@@ -137,6 +147,16 @@ internal sealed class MySqlBulkCopyProvider : IBulkCopyProvider
                 columnNames[i] = data.GetName(i);
 
             // R16: see the sync CopyToServer for why BatchSize must cap rows-per-statement here too.
+
+            // AUD-R26-061: options.CheckConstraints, options.TableLock and options.IdentityMode are
+            // not read here, for three different reasons. CheckConstraints is not expressible - this
+            // provider issues ordinary multi-row INSERTs, which always enforce constraints, so the
+            // behaviour is permanently that of true. TableLock has no INSERT-level hint in MySQL;
+            // approximating it with LOCK TABLES would carry different transactional semantics than
+            // the flag implies. IdentityMode is inert on every provider, not just this one -
+            // EntityDataReader streams EntityMetadata.InsertColumns, which excludes identity
+            // columns, so the identity value never reaches any bulk copy at all. Documented per
+            // provider on BulkCopyOptions; pinned by BulkCopyIdentityModeTests.
             int rowsPerChunk = Math.Max(1, Math.Min(options.BatchSize, MaxParametersPerStatement / Math.Max(1, columnCount)));
 
             int total = 0;

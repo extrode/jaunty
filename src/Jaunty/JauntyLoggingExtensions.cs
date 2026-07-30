@@ -51,9 +51,16 @@ public static class JauntyLoggingExtensions
         if (services is null)
             throw new ArgumentNullException(nameof(services));
 
-        // Register LoggingConfiguration
         var config = new LoggingConfiguration();
         configure?.Invoke(config);
+
+        // AUD-R26-055: this comment said "Register LoggingConfiguration" and sat above code that
+        // did not register it - the instance was only captured in the closure below, so
+        // sp.GetService<LoggingConfiguration>() returned null and an application could not resolve
+        // or inspect the configuration it had just supplied. Registering it makes the comment true
+        // and costs nothing. A second AddJauntyLogging call replaces this registration, matching
+        // how the interceptor registration below already behaves.
+        services.AddSingleton(config);
 
         // Register the logger and interceptor
         services.AddSingleton(sp =>
