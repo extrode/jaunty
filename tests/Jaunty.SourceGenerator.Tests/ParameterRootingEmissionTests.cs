@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 namespace Jaunty.SourceGenerator.Tests;
 
 /// <summary>
-/// Spec 010. Jaunty binds a parameters object by reflecting over its public properties, and on a
+/// Spec 011. Jaunty binds a parameters object by reflecting over its public properties, and on a
 /// NativeAOT publish the trimmer removes those getters - measured on <c>samples/NativeAOT-Basic</c>,
 /// 2026-07-30, as <c>No property found on type '&lt;&gt;f__AnonymousType0`1' matching SQL parameter
 /// '@Id'. Available properties:</c> with the list empty. Spec 009's remedy was unavailable here: a

@@ -6,7 +6,7 @@ using System.Reflection;
 namespace Jaunty.Tests.Unit;
 
 /// <summary>
-/// Spec 010. <see cref="JauntyAot"/> is a set of no-op methods whose entire effect is the
+/// Spec 011. <see cref="JauntyAot"/> is a set of no-op methods whose entire effect is the
 /// <see cref="DynamicallyAccessedMembersAttribute"/> on their type parameters: that attribute is what
 /// makes the trimmer keep a parameters object's property getters, and it is what the source generator's
 /// emitted rooting relies on.

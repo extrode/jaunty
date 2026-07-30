@@ -144,7 +144,7 @@ public partial class JauntyGenerator : IIncrementalGenerator
                 spc.ReportDiagnostic(Diagnostic.Create(HandWrittenMapperNotTrimSafeDescriptor, m.Location, m.TypeName));
         });
 
-        // Spec 010. Unlike everything above, this reads the consumer's *call sites* rather than their
+        // Spec 011. Unlike everything above, this reads the consumer's *call sites* rather than their
         // type declarations: the parameter objects passed to Query/Execute are frequently anonymous
         // and are never declared as entities, so the call site is the only place their types are
         // knowable. See ParameterRooting.cs.
