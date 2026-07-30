@@ -2,7 +2,7 @@
 
 > spec.md — The "what" and "why". No technical implementation details.
 
-Status: **implementing — close-out pending AC7 (benchmark delta, running)** · Created: 2026-07-29 · Updated: 2026-07-30 (T1–T19 done; AC2 deferral clause struck; AC6 awaits the owner's push)
+Status: **done** · Created: 2026-07-29 · Updated: 2026-07-30 (T1–T21 done; AC2 deferral clause struck and amended; AC7 delta −2.1%/−3.4% no regression; AC6's behavioural CI proof lands with the owner's next push) 
 · Origin: SDK/CI divergence investigation, 2026-07-29
 
 ---
@@ -343,7 +343,7 @@ Command per claim, run 2026-07-30 on the dev tree unless noted. Full per-task de
 | AC4 | met | same T14 run: net472 leg 2944/5381 green (loads ns2.0 build, loader-asserted); ns2.0 compiled in the same slnx build |
 | AC5 | met | `dotnet publish samples/<S> -c Release -f <tfm> -r win-x64` ×8 → all exit 0; binaries run exit 0 ×8; `diff` of stdout per sample → byte-identical all four; ilc warnings 0/0 on three samples, WithReflection same-set rolled/unrolled (T19) |
 | AC6 | pending CI | workflows edited (T17, T18, T19) and YAML-parsed; behavioural proof is the next push's run — the runner cannot be exercised without pushing, which is the owner's action |
-| AC7 | pending | net8 baseline recorded (`benchmarks/BENCHMARK-RESULTS.md`, SHA `ed7b013a`, T8); net10 run launched 2026-07-30, delta lands with T20 |
+| AC7 | met | `dotnet run -c Release -f net10.0 --no-build -- --filter "*" --join` (T20, 2026-07-30, 48:58): 672/692 completed, same 20 comparison-lib failures as baseline, none Jaunty; median delta all cases −2.1%, Jaunty methods −3.4% — no regression; delta and PostgreSql-tail attribution (identical in hand-coded ADO.NET, environmental) recorded in `benchmarks/BENCHMARK-RESULTS.md` |
 | AC8 | met | `dotnet test tests/Jaunty.Tests -f net8.0 --filter FullyQualifiedName~TypedKeyGuard` — control rewritten to an escaping-box sink (net10's escape analysis elides the old form; measured 0 vs 239,952 boxes) with reason recorded in the class doc (T6) |
 
 ## 9. References
