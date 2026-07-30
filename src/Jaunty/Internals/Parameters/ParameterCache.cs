@@ -32,7 +32,7 @@ internal static class ParameterCache
     /// <param name="type">The entity type to get parameter metadata for.</param>
     /// <returns>An array of parameter metadata for all public properties.</returns>
     /// <remarks>
-    /// Spec 010. This used to declare
+    /// Spec 011. This used to declare
     /// <c>[DynamicallyAccessedMembers(PublicProperties)]</c> on <paramref name="type"/>. The
     /// annotation was removed because it was not true and could not become true: every caller reaches
     /// here through <c>parameters.GetType()</c> on an <c>object</c>, which carries no annotation, so
@@ -61,7 +61,7 @@ internal static class ParameterCache
     /// <returns>An array of parameter metadata, one per public property.</returns>
     /// <remarks>
     /// The one place in the parameter path that actually reflects, and so the one honest place for the
-    /// suppression. Spec 010 arranges preservation from outside: the source generator reads the
+    /// suppression. Spec 011 arranges preservation from outside: the source generator reads the
     /// consumer's <c>Query</c>/<c>Execute</c> call sites and emits
     /// <c>JauntyAot.PreserveParameters&lt;T&gt;()</c> for each parameters type into a module
     /// initializer, so the getters this enumerates are statically required by the consumer's own
@@ -70,7 +70,7 @@ internal static class ParameterCache
     /// publish.
     /// </remarks>
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "The type arrives as parameters.GetType() from an object, so no annotation can flow here and none is declared (spec 010 removed the one that used to be, because it produced three warnings and preserved nothing). Preservation is arranged at the consumer's call sites: the source generator emits JauntyAot.PreserveParameters<T>() for every parameters type it can see there. Call sites it cannot see are reported as JAUNTYGEN003 rather than left to fail at runtime.")]
+    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "The type arrives as parameters.GetType() from an object, so no annotation can flow here and none is declared (spec 011 removed the one that used to be, because it produced three warnings and preserved nothing). Preservation is arranged at the consumer's call sites: the source generator emits JauntyAot.PreserveParameters<T>() for every parameters type it can see there. Call sites it cannot see are reported as JAUNTYGEN003 rather than left to fail at runtime.")]
 #endif
     private static ParameterMetadata[] BuildMetadata(Type type)
     {

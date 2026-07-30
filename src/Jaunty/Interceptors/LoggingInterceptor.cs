@@ -195,7 +195,7 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
     // from the [DynamicallyAccessedMembers(PublicProperties)] annotation on the type parameter" - but
     // this is reached with parameters.GetType(), and a Type obtained that way carries no annotation,
     // so nothing was propagated to preserve anything. The annotation's only effect was to move the
-    // warning to the caller. Spec 010 removed it and states where preservation actually comes from.
+    // warning to the caller. Spec 011 removed it and states where preservation actually comes from.
     // The correction that matters: round 26 fixed the sentence about anonymous types and left the
     // mechanism claim unexamined, which is the same mistake one layer in.
     [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "The type arrives as parameters.GetType(), so no annotation can flow here and none is declared. Logging is also the benign case: if trimming has removed the getters this logs fewer parameters, where the same trimming makes ParameterCache fail the query outright. Preservation for both comes from the generated call-site rooting described on ParameterCache.BuildMetadata.")]

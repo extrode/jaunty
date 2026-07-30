@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Jaunty.SourceGenerator;
 
 /// <summary>
-/// Spec 010. Emits trimmer-rooting calls for the parameter objects the consumer passes to Jaunty, so
+/// Spec 011. Emits trimmer-rooting calls for the parameter objects the consumer passes to Jaunty, so
 /// their property getters survive a trimmed or NativeAOT publish.
 /// </summary>
 /// <remarks>
@@ -64,7 +64,7 @@ public partial class JauntyGenerator
 
     /// <summary>
     /// Reported when a Jaunty call site passes a parameters object whose type cannot be rooted from
-    /// generated code, so its property getters may be trimmed. Spec 010.
+    /// generated code, so its property getters may be trimmed. Spec 011.
     /// </summary>
     /// <remarks>
     /// Warning, not error, and for the same reason as <c>JAUNTYGEN002</c>: the code is correct on the
@@ -584,7 +584,7 @@ public partial class JauntyGenerator
         sb.AppendLine("{");
         sb.AppendLine("    /// <summary>");
         sb.AppendLine("    /// Tells the trimmer to keep the public properties of every type this assembly passes to a");
-        sb.AppendLine("    /// Jaunty API as a parameters object. Generated; see Jaunty.JauntyAot and spec 010.");
+        sb.AppendLine("    /// Jaunty API as a parameters object. Generated; see Jaunty.JauntyAot and spec 011.");
         sb.AppendLine("    /// </summary>");
         sb.AppendLine("    internal static class JauntyAotParameterRoots");
         sb.AppendLine("    {");

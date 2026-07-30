@@ -9,7 +9,7 @@ namespace Jaunty;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Spec 010. Jaunty reads a parameters object by reflecting over its public properties
+/// Spec 011. Jaunty reads a parameters object by reflecting over its public properties
 /// (<c>ParameterCache</c>), and nothing in that path tells the trimmer those properties are needed.
 /// On a NativeAOT publish the getters are removed and binding fails at runtime with
 /// <c>No property found on type 'X' matching SQL parameter '@Id'. Available properties:</c> - the

@@ -280,7 +280,7 @@ public static class SqlDialectFactory
     {
         Type connectionType = connection.GetType();
 
-        // Spec 010: not a `GetOrAdd(type, BuildInnerConnectionAccessor)` method group. Passing a
+        // Spec 011: not a `GetOrAdd(type, BuildInnerConnectionAccessor)` method group. Passing a
         // method whose parameter carried [DynamicallyAccessedMembers] as a delegate produced IL2111,
         // and the trimmer was right - it cannot see through a delegate. The annotation is gone too
         // (it could never be satisfied from a GetType()), leaving the honest suppression on the
