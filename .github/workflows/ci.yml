@@ -10,12 +10,29 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Every push to dev ran CI twice: once for the push, and once as a pull_request
+# sync of the standing dev -> main PR (#18), whose head branch is dev itself.
+# Concurrency cannot collapse the pair - github.ref is refs/heads/dev for one
+# and refs/pull/18/merge for the other, so they occupy different groups - and
+# the trigger cannot either, because pull_request.branches filters the BASE
+# branch, not the head. Hence a job-level condition.
+#
+# pull_request runs are skipped when the head branch is one that push already
+# covers. A feature or dependabot PR into dev still runs, which is the case that
+# matters: pushes only fire on dev and main, so skipping those PRs would leave
+# them untested. Branch protection is unaffected - the head SHA is identical, so
+# the push run's checks appear on the PR as the same commit's checks.
+
 # The SQL Server service uses a throwaway credential for the ephemeral CI
 # container only. Override with the CI_MSSQL_SA_PASSWORD repository variable
 # if desired.
 jobs:
   build-and-test:
     name: Build & Test
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.ref != 'dev' &&
+       github.event.pull_request.head.ref != 'main')
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     services:
       mssql:
@@ -138,6 +155,10 @@ jobs:
 
   verify-aot:
     name: Verify NativeAOT Compatibility
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.ref != 'dev' &&
+       github.event.pull_request.head.ref != 'main')
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - name: Checkout
@@ -146,6 +167,10 @@ jobs:
       - name: Run NativeAOT verification
         run: pwsh scripts/Verify-NativeAOT.ps1
 
+  # No duplicate-run condition here, deliberately. `needs` already skips this job
+  # when build-and-test is skipped, and an explicit `if` would REPLACE the
+  # implicit success() check on that dependency - which would let the publish
+  # start after a failed test run.
   aot-publish:
     name: NativeAOT Publish
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
