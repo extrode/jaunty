@@ -296,7 +296,19 @@ files** are untouched.
   leg. Two live CI facts to expect: pushes currently queue **two runs per SHA** (a known open
   issue), and the runner's Docker is a WSL2-backed Docker Desktop that must be up for the service
   container.
-- [ ] **T19** AOT publish leg — files: `.github/workflows/ci.yml:182-189` — covers: §3.6, AC5, AC6 —
+- [x] **T19** 2026-07-30. ci.yml `aot-publish`: net8 publish kept as control, net10 leg added,
+  size check covers both. `-f` is now mandatory on both — the Cli multi-targets, and the old
+  framework-less step would have failed outright. AC5 verified locally, win-x64, all four samples
+  × both TFMs: **8/8 publish exit 0, 8/8 run exit 0, stdout byte-identical net8 vs net10 in all
+  four** (in-memory SQLite, no timings/paths to normalize). `NativeAOT-Basic`'s predicted 009
+  runtime failure ("No mapper found") is gone — it passes outright on both targets. ilc
+  diagnostics: Basic/CustomMapper/FluentQuery **0 warnings both legs** (the T11 IL3050 fix holds
+  under real ilc); WithReflection has the same Extensions.Reflection warnings both legs, rolled up
+  (IL2104+IL3053) on net8 and unrolled (50 sites, all in that assembly) on net10 — a
+  TrimmerSingleWarn presentation change, not new diagnostics. Sizes: Basic 3837→3732 KB (−2%),
+  WithReflection 5234→5356 (+2%), CustomMapper 3728→3578 (−4%), FluentQuery 4899→5001 (+2%).
+  Original task text follows.
+  AOT publish leg — files: `.github/workflows/ci.yml:182-189` — covers: §3.6, AC5, AC6 —
   done when: the net8 publish is **kept as the control**, `-f net10.0` is added, the size check
   survives, and each sample satisfies the three rescoped AC5 checks (publish exit 0 with no new
   `ilc` diagnostic; exit code equals net8; stdout equals net8 modulo timings and paths).
