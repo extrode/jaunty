@@ -153,7 +153,25 @@ internal sealed class SqlServerImportDialect : IImportDialect, IQuotedIdentifier
         IReadOnlyList<(string Name, Type ClrType, bool IsPrimaryKey, bool IsNullable)> columns)
     {
         var sb = new StringBuilder();
-        sb.Append($"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '{tableName.Replace("'", "''")}') ");
+
+        // AUD-R26-065: OBJECT_ID resolves the name the same way CREATE TABLE below will - in the
+        // connection's default schema, or in an explicitly named one - instead of matching a bare
+        // name across every schema in the database.
+        //
+        // The old guard was `IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '<table>')`, and
+        // sys.tables holds one row per table per schema with no schema predicate applied. An
+        // unrelated staging.orders or archive.orders therefore suppressed the creation of
+        // dbo.orders, and the import's INSERT then ran against a table that was never made - or,
+        // worse, against a same-named table in another schema that the connection's default schema
+        // happened to resolve to. sys.tables exposes schema_id precisely so this can be qualified;
+        // OBJECT_ID does the qualification for us and accepts a schema-qualified name unchanged.
+        //
+        // Still not atomic, and cannot be made so in one statement: two importers starting together
+        // both pass the check and one gets "There is already an object named 'x'". PostgreSQL and
+        // SQLite avoid this for free with CREATE TABLE IF NOT EXISTS, which SQL Server has no
+        // equivalent of. Serialising it needs an application lock or a caught error 2714 around the
+        // whole create, which is the caller's transaction to own rather than this generator's.
+        sb.Append($"IF OBJECT_ID(N'{QuoteIdentifier(tableName).Replace("'", "''")}', N'U') IS NULL ");
         sb.Append($"CREATE TABLE {QuoteIdentifier(tableName)} (");
 
         for (int i = 0; i < columns.Count; i++)

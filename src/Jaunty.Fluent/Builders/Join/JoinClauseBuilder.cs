@@ -99,20 +99,15 @@ internal sealed class JoinClauseBuilder<TFrom, TJoin> : IJoinClause<TFrom, TJoin
 
     private string GetColumnName<T>(string propertyName, string? alias) where T : new()
     {
+        // AUD-R26-058: AUD-R25 replaced this linear scan plus per-reference re-escape with the
+        // pre-escaped CachedDialectMetadata lookup across the where/exists/select visitors and the
+        // arity-3 and arity-4 join visitors, and left this site on the old shape. EscapeColumnName
+        // re-runs SqlIdentifierValidator's regex match and a keyword HashSet lookup on every column
+        // reference of every query build; the cache does it once per (entity, dialect) pair.
         EntityMetadata metadata = FluentMetadataCache.GetMetadata<T>();
-        IReadOnlyList<ColumnMetadata> columns = metadata.Columns;
+        CachedDialectMetadata cached = FluentMetadataCache.GetForDialect<T>(_fromBuilder.Dialect);
 
-        string columnName = propertyName;
-        for (int i = 0; i < columns.Count; i++)
-        {
-            if (columns[i].PropertyName == propertyName)
-            {
-                columnName = columns[i].ColumnName;
-                break;
-            }
-        }
-
-        var escaped = _fromBuilder.Dialect.EscapeColumnName(columnName);
+        var escaped = cached.GetColumnName(propertyName);
         var prefix = alias ?? _fromBuilder.Dialect.EscapeTableName(metadata.SchemaName, metadata.TableName);
         return $"{prefix}.{escaped}";
     }

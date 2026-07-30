@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Reflection;
 
+using Jaunty.Internals.Read;
+
 namespace Jaunty.Fluent.Internals;
 
 /// <summary>
@@ -140,27 +142,25 @@ internal static class GroupedJoinedResultMapper
     }
 
     /// <summary>
-    /// Converts a raw ADO.NET value to the target property/parameter type. <see cref="Convert.ChangeType(object, Type)"/>
-    /// cannot target enum types (always throws <see cref="InvalidCastException"/>) or <see cref="Guid"/>/<see cref="char"/>
-    /// from an arbitrary source string, so those are special-cased before falling back to it. Shared by every
-    /// reflection-based group/join result mapper (GroupedQueryBuilder, GroupedJoinedQueryBuilder/3/4,
-    /// JoinedQueryBuilder&lt;TFrom,TJoin&gt;) so they can't drift out of sync with each other.
+    /// Converts a raw ADO.NET value to the target property/parameter type.
     /// </summary>
-    public static object ConvertColumnValue(object value, Type targetType)
-    {
-        if (targetType.IsEnum)
-        {
-            return value is string enumString
-                ? Enum.Parse(targetType, enumString, ignoreCase: true)
-                : Enum.ToObject(targetType, Convert.ChangeType(value, Enum.GetUnderlyingType(targetType), CultureInfo.InvariantCulture));
-        }
-
-        if (targetType == typeof(Guid))
-            return value is Guid guid ? guid : Guid.Parse(value.ToString()!);
-
-        if (targetType == typeof(char) && value is string charString)
-            return charString.Length > 0 ? charString[0] : '\0';
-
-        return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
-    }
+    /// <remarks>
+    /// <para>
+    /// AUD-R26-062. This used to be its own implementation, and its summary claimed the mappers
+    /// that share it "can't drift out of sync with each other" - true within this assembly, and
+    /// beside the point: two more implementations of the same contract lived in Jaunty and
+    /// Jaunty.Extensions.Reflection, and all three disagreed on <see cref="Guid"/>,
+    /// <see cref="char"/>, <see cref="Nullable{T}"/> unwrapping and the date/time types.
+    /// </para>
+    /// <para>
+    /// The behaviour now lives in <see cref="DbValueConversion"/>, which documents each divergence
+    /// and which way it was settled. Two changes are visible from here: a <see cref="Nullable{T}"/>
+    /// target no longer has to be unwrapped by the caller (it was the only one of the three that
+    /// required that), and <see cref="DateTimeOffset"/>/<see cref="TimeSpan"/>/<c>DateOnly</c>/
+    /// <c>TimeOnly</c> now convert from a string instead of throwing - which is what a SQLite
+    /// column returned as ISO-8601-ish text does.
+    /// </para>
+    /// </remarks>
+    public static object ConvertColumnValue(object value, Type targetType) =>
+        DbValueConversion.Convert(value, targetType);
 }
