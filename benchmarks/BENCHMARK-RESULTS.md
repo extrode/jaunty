@@ -170,3 +170,31 @@ Each benchmark runs two jobs:
 ---
 
 *Raw BenchmarkDotNet reports: `benchmarks/Jaunty.Benchmarks/BenchmarkDotNet.Artifacts/results/`*
+
+---
+
+## Spec 010 net8 baseline (pre-net10-retarget) — 2026-07-30
+
+**Commit `ed7b013a`** (last net8-only tree) · `dotnet run -c Release --no-build -- --filter "*" --join`
+from `benchmarks/Jaunty.Benchmarks` · net8.0 · full artifacts (gitignored):
+`docs/benchmark-artifacts/results/BenchmarkRun-joined-2026-07-30-15-33-18-report.{csv,md}`.
+This is the reference T20 diffs the net10 run against; the tables above are an older curated run
+and are NOT the baseline.
+
+**692 cases, 672 completed.** The 20 failures are all comparison libraries, none Jaunty:
+EF Core AddRange+Save ×6 (SqlServer IDENTITY_INSERT), RepoDb InsertAll ×12 and RepoDb Insert ×2
+(same identity error + Npgsql 42804 boolean/bigint on `discontinued`) — pre-existing harness/schema
+mismatches, recorded as-is.
+
+Headline warm means (Jaunty vs Dapper), for at-a-glance drift checks — T20 diffs the full CSV:
+
+| Case | Jaunty | Dapper |
+|---|---:|---:|
+| Query 1 row (Sqlite) | 8.04 μs / 2,812 B | 5.33 μs / 1,760 B |
+| Query 10k rows (Sqlite) | 11.67 ms / 1.62 MB | 8.58 ms / 2.26 MB |
+| QueryFirst (Sqlite) | 6.63 μs | 5.94 μs |
+| QueryScalar (Sqlite) | 2.60 μs | 2.75 μs |
+| Insert (Sqlite) | 35.9 μs | 47.8 μs |
+| BulkInsert 100 (Sqlite) | 284 μs | 753 μs |
+| BulkInsert 10k (PostgreSql) | 81.1 ms | 1,812 ms |
+| BulkInsert 10k (MariaDb) | 66.6 ms | 20,619 ms |
