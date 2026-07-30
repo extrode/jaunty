@@ -5,7 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <LangVersion>latest</LangVersion>
     <!-- Suppress all warnings in test projects -->
     <NoWarn>$(NoWarn);CS1591;CS8618;CS8602;CS8603;CS8604;CS8625;xUnit1026;xUnit1051;xUnit2009;xUnit2010;xUnit2013;xUnit2017</NoWarn>
   </PropertyGroup>
