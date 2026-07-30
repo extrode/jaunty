@@ -86,7 +86,7 @@ ParameterCache.cs(40)       IL2111    <- method group, NOT IL2072
 |---|---|---|
 | `src/Jaunty/Internals/Parameters/ParameterCache.cs:40` | `Cache.GetOrAdd(type, _ => BuildMetadata(type))` — close over the DAM-annotated `type` from the enclosing signature rather than passing the `BuildMetadata` method group. **Measured: 4 warnings → 3, nothing new.** Add a `TryGetValue` fast path so the closure is not allocated per call. No suppression. | §3.3 |
 | `src/Jaunty/Internals/Parameters/ParameterBinder.cs:81`, `:920` | `#pragma warning disable IL2072` naming spec 009. Unannotatable — `object.GetType()` cannot carry DAM. | §3.3 |
-| `src/Jaunty/Interceptors/LoggingInterceptor.cs:196-200` | **Remove the `[DynamicallyAccessedMembers]` annotation** from `GetPublicProperties`' parameter. **Measured: 4 warnings → 2.** No pragma, no AC2 amendment. | §3.3 |
+| `src/Jaunty/Interceptors/LoggingInterceptor.cs:196-200` | **Remove the `[DynamicallyAccessedMembers]` annotation** from `GetPublicProperties`' parameter. **Measured 2026-07-30: clears exactly the one `IL2111`, 3 diagnostics → 2** in the probe worktree with the `ParameterCache` closure fix already in place; 4 → 2 for the two fixes together. An earlier draft credited the whole 4 → 2 to this change alone, which was wrong. Note also that suppressing `IL2111` instead would clear the same one diagnostic — **the count is not what separates the two options; the AC2 amendment is.** No pragma, no AC2 amendment. | §3.3 |
 | `src/Jaunty/Interceptors/LoggingInterceptor.cs:194` | **Rewrite the suppression justification**, which `010-spec.md:67` records as false. Use the honest template already at `ParameterCache.cs:49` — *suppressed pending a source-generated binding path; POCOs must be otherwise rooted*. This is the half that makes the annotation removal safe rather than merely quiet. | §3.3 |
 | `src/Jaunty/Interceptors/LoggingInterceptor.cs:202` | Delete the `// AOT-SAFE:` marker along with the annotation it describes. | §3.3 |
 | `tests/Jaunty.Tests/Unit/Read/TypedKeyGuardTests.cs:79-83` | Rewrite the dead control — see Data/interfaces. | §3.4 |
@@ -110,7 +110,7 @@ precedent — round 26 did exactly that for `MappedCache`/`WriteParameterCache`
 So the third option dominates both: **remove the annotation *and* rewrite `:194` honestly, in one
 commit.** Then the diagnostic is absorbed by a suppression that is **true**, the deferral to 009
 stays greppable in that suppression's text and in the 009 scope amendment below, AC2 needs no
-amendment, warnings go 4→2 rather than 4→3, and `LoggingInterceptor` converges on the same shape
+amendment, and `LoggingInterceptor` converges on the same shape
 as `ParameterCache` — which this plan already endorses as the correct hand-off to 009. Keeping a
 pragma *and* a dead annotation would have been three artifacts where two suffice, and would have
 treated one defect class two different ways inside one PR.
@@ -166,9 +166,11 @@ The first draft proposed a `JauntyPinnedTfm` property in root `Directory.Build.p
 
 Root `Directory.Build.props` is imported **before** the csproj body, so `$(TargetFramework)` is
 visible there only when it arrives as a *global* property — i.e. in the inner builds of a
-multi-targeting project. For the **13 single-TFM projects** the condition evaluates against an
-empty string and every reference pins net8.0 while the project itself builds net10.0. Those 13
-include both benchmark projects (AC7's evidence) and all four `NativeAOT-*` samples (AC5's proof):
+multi-targeting project. For the **19 single-TFM projects** (`010-tasks.md` enumerates them; this
+paragraph said 13 in an earlier revision, the same `Jaunty.slnx`-scoped figure corrected above) the
+condition evaluates against an empty string and every reference pins net8.0 while the project itself
+builds net10.0. They include both benchmark projects (AC7's evidence) and all four `NativeAOT-*`
+samples (AC5's proof):
 the mechanism would have silently benchmarked and AOT-published the **net8** build of `Jaunty.dll`.
 
 A second defect in the same proposal: it claimed the pins' enclosing `ItemGroup Condition` widens
