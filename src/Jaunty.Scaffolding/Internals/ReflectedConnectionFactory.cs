@@ -44,6 +44,7 @@ internal static class ReflectedConnectionFactory
     {
         try
         {
+            // AOT-SAFE: connectionType carries [DynamicallyAccessedMembers(PublicConstructors)], satisfied at every call site by Type.GetType(<literal>), which the trimmer handles intrinsically.
             return (DbConnection)Activator.CreateInstance(connectionType, connectionString)!;
         }
         catch (TargetInvocationException ex) when (ex.InnerException is not null)
