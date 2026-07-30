@@ -14,7 +14,7 @@ namespace Jaunty.SourceGenerator;
 /// Source generator that creates entity mappers for classes marked with table mapping attributes.
 /// </summary>
 [Generator]
-public class JauntyGenerator : IIncrementalGenerator
+public partial class JauntyGenerator : IIncrementalGenerator
 {
     /// <summary>
     /// Reported when two mapped properties resolve to the same effective column name (a literal
@@ -143,6 +143,12 @@ public class JauntyGenerator : IIncrementalGenerator
             if (mapper is { } m)
                 spc.ReportDiagnostic(Diagnostic.Create(HandWrittenMapperNotTrimSafeDescriptor, m.Location, m.TypeName));
         });
+
+        // Spec 010. Unlike everything above, this reads the consumer's *call sites* rather than their
+        // type declarations: the parameter objects passed to Query/Execute are frequently anonymous
+        // and are never declared as entities, so the call site is the only place their types are
+        // knowable. See ParameterRooting.cs.
+        RegisterParameterRooting(context);
     }
 
     /// <summary>

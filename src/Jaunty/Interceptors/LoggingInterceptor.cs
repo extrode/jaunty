@@ -191,22 +191,17 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
     }
 
 #if NET5_0_OR_GREATER
-    // AUD-R26-055: the justification here used to read "Used for anonymous types and records whose
-    // properties are always preserved by the compiler" - verbatim the claim round 3 established as
-    // false and rewrote in ParameterCache.BuildMetadata. This method is reached with
-    // parameters.GetType() for any parameters object, exactly as that one is. The code was already
-    // correct: preservation comes from the [DynamicallyAccessedMembers] annotation on the parameter
-    // below, not from anything about anonymous types. Only the stale justification was wrong, and
-    // round 3's stated goal was that these two could not drift apart again.
-    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Preservation comes from the [DynamicallyAccessedMembers(PublicProperties)] annotation on the type parameter, not from the argument being an anonymous type: this is called with parameters.GetType() for any named or anonymous parameters object passed to a Query/Execute API. Mirrors ParameterCache.BuildMetadata, which carries the same annotation for the same reason.")]
+    // AUD-R26-055 replaced a false justification here with a second one. It said "preservation comes
+    // from the [DynamicallyAccessedMembers(PublicProperties)] annotation on the type parameter" - but
+    // this is reached with parameters.GetType(), and a Type obtained that way carries no annotation,
+    // so nothing was propagated to preserve anything. The annotation's only effect was to move the
+    // warning to the caller. Spec 010 removed it and states where preservation actually comes from.
+    // The correction that matters: round 26 fixed the sentence about anonymous types and left the
+    // mechanism claim unexamined, which is the same mistake one layer in.
+    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "The type arrives as parameters.GetType(), so no annotation can flow here and none is declared. Logging is also the benign case: if trimming has removed the getters this logs fewer parameters, where the same trimming makes ParameterCache fail the query outright. Preservation for both comes from the generated call-site rooting described on ParameterCache.BuildMetadata.")]
 #endif
-    private static PropertyInfo[] GetPublicProperties(
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
-#endif
-        Type type)
+    private static PropertyInfo[] GetPublicProperties(Type type)
     {
-        // AOT-SAFE: parameter annotated with DynamicallyAccessedMembers(PublicProperties); trimmer preserves the members it reflects over
         return type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
     }
 

@@ -278,8 +278,15 @@ public static class SqlDialectFactory
     /// </remarks>
     private static bool TryGetInnerConnection(IDbConnection connection, out IDbConnection? inner)
     {
-        Func<IDbConnection, IDbConnection?>? accessor =
-            _innerConnectionAccessors.GetOrAdd(connection.GetType(), BuildInnerConnectionAccessor);
+        Type connectionType = connection.GetType();
+
+        // Spec 010: not a `GetOrAdd(type, BuildInnerConnectionAccessor)` method group. Passing a
+        // method whose parameter carried [DynamicallyAccessedMembers] as a delegate produced IL2111,
+        // and the trimmer was right - it cannot see through a delegate. The annotation is gone too
+        // (it could never be satisfied from a GetType()), leaving the honest suppression on the
+        // reflection itself.
+        if (!_innerConnectionAccessors.TryGetValue(connectionType, out Func<IDbConnection, IDbConnection?>? accessor))
+            accessor = _innerConnectionAccessors.GetOrAdd(connectionType, BuildInnerConnectionAccessor(connectionType));
 
         inner = accessor?.Invoke(connection);
 
@@ -309,12 +316,7 @@ public static class SqlDialectFactory
     [UnconditionalSuppressMessage("AOT", "IL2070",
         Justification = "Optional decorator probe. When trimming removes the member this returns null and GetDialect throws a message naming the type, rather than falling back to a guessed dialect.")]
 #endif
-    private static Func<IDbConnection, IDbConnection?>? BuildInnerConnectionAccessor(
-#if NET5_0_OR_GREATER
-        [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicFields)]
-#endif
-        Type connectionType)
+    private static Func<IDbConnection, IDbConnection?>? BuildInnerConnectionAccessor(Type connectionType)
     {
         // First the conventional public property, by name. This is the shape real decorators use
         // and the cheapest to be confident about.
