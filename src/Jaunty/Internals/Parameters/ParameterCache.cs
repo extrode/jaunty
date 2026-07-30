@@ -74,6 +74,7 @@ internal static class ParameterCache
 #endif
     private static ParameterMetadata[] BuildMetadata(Type type)
     {
+        // AOT-SAFE: preservation comes from generated call-site rooting - JauntyAot.PreserveParameters<T>() is emitted for every parameters type the generator can see; unseen call sites get JAUNTYGEN003 at build. Spec 011.
         PropertyInfo[] props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
         var result = new List<ParameterMetadata>(props.Length);
 
