@@ -17,6 +17,7 @@ public sealed partial class DuckDb
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _multipleParameterPropertyCache = new();
 
     private static PropertyInfo[] GetCachedParameterProperties(Type parametersType)
+        // AOT-SAFE: FlatFiles.DuckDB is reflection-based by design and on no AOT publish path; see MappedPropertyFilter.
         => _multipleParameterPropertyCache.GetOrAdd(parametersType, static t => t.GetProperties());
 
     /// <summary>

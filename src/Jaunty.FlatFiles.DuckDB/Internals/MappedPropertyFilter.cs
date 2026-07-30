@@ -50,6 +50,7 @@ internal static class MappedPropertyFilter
     /// <returns>The mapped properties, one per logical property.</returns>
     public static List<PropertyInfo> GetMappedProperties(Type entityType)
     {
+        // AOT-SAFE: FlatFiles.DuckDB maps by reflection by design and is on no AOT publish path - no NativeAOT sample or the Scaffolding CLI references it. A trimmed consumer fails loudly at first map, not silently.
         PropertyInfo[] all = entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         var byName = new Dictionary<string, int>(all.Length, StringComparer.Ordinal);
         var result = new List<PropertyInfo>(all.Length);
