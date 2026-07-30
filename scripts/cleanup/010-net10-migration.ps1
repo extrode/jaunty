@@ -37,6 +37,10 @@ $branches = @(
     'feat/010-t18-net10-ci-legs'
     'feat/010-t19-aot-publish-leg'
     'feat/010-t21-close-out'
+    # Same-session follow-ups (2026-07-30), merged to dev alongside 010:
+    'fix/mysql-schemareader-il2057'
+    'fix/sqldialectfactory-order-flake'
+    'chore/dependabot-runtime-bumps'
 )
 
 $failed = $false
