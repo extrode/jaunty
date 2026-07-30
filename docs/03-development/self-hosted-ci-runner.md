@@ -11,7 +11,7 @@ The job was not started because recent account payments have failed
 or your spending limit needs to be increased.
 ```
 
-Actions itself is still enabled on the repo (`gh api repos/beparey/Jaunty/actions/permissions`
+Actions itself is still enabled on the repo (`gh api repos/beparey/jaunty/actions/permissions`
 returns `"enabled": true`) — only the **hosted** minutes are blocked. GitHub does not bill minutes
 for self-hosted runners, so a runner on the dev machine sidesteps the block without touching a
 single workflow step.
@@ -32,7 +32,7 @@ runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
 So switching back once billing is fixed is one command:
 
 ```bash
-gh variable delete CI_RUNNER --repo beparey/Jaunty
+gh variable delete CI_RUNNER --repo beparey/jaunty
 ```
 
 The runner itself:
@@ -76,7 +76,7 @@ systemd is enabled in this distro (`/etc/wsl.conf` has `systemd=true`), so the s
 distro restart. Confirm GitHub sees it:
 
 ```bash
-gh api repos/beparey/Jaunty/actions/runners --jq '.runners[] | "\(.name) \(.status)"'
+gh api repos/beparey/jaunty/actions/runners --jq '.runners[] | "\(.name) \(.status)"'
 ```
 
 `online` means the next push runs here.
@@ -125,7 +125,7 @@ with the distro, but the distro still has to be running.
 see step 1.
 
 **Jobs queue forever.** Either no runner matches the labels, or `CI_RUNNER` names something that
-does not exist. `gh variable list --repo beparey/Jaunty` and compare against the runner's labels.
+does not exist. `gh variable list --repo beparey/jaunty` and compare against the runner's labels.
 
 **A job passes here and would fail on hosted.** The runner is Debian with the .NET 10 SDK already
 installed; hosted was `ubuntu-latest`. `actions/setup-dotnet` still pins 8.0.x and 9.0.x per the
