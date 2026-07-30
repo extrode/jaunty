@@ -9,6 +9,20 @@
 
     <!-- NativeAOT -->
     <PublishAot>true</PublishAot>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <!-- Spec 010 T15: ilc-time IL2104/IL3053 from THIRD-PARTY assemblies only, kept visible in the
+         publish log but not fatal (src/Directory.Build.props TreatWarningsAsErrors would otherwise
+         promote them). Seven offenders measured on the 2026-07-30 clean publish (the spec's list
+         of six plus System.Configuration.ConfigurationManager); retire per line as they update:
+           Microsoft.Data.SqlClient, MySqlConnector, Microsoft.IdentityModel.Tokens,
+           System.Configuration.ConfigurationManager,
+           and from the net10 NativeAOT runtime pack itself:
+           System.Private.DataContractSerialization, Microsoft.CSharp, System.Linq.Expressions.
+         First-party IL diagnostics stay fatal - the IL2057 at SQLiteSchemaReader.cs:65 (T16) must
+         NOT be added here. -->
+    <WarningsNotAsErrors>IL2104;IL3053</WarningsNotAsErrors>
 
     <!-- .NET Tool configuration -->
     <PackAsTool>true</PackAsTool>
