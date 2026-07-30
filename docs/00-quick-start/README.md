@@ -26,7 +26,7 @@ var products = connection.Query<Product>(
 
 ```bash
 # Clone the repository
-git clone https://github.com/beparey/Jaunty.git
+git clone https://github.com/beparey/jaunty.git
 cd Jaunty
 
 # Build all targets

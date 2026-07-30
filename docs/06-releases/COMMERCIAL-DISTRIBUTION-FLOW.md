@@ -140,7 +140,7 @@ Also standard practice, three tiers — pick per deal size:
 
 ## 6. Concrete recommended setup for Jaunty (solo vendor, today)
 
-1. Keep `beparey/Jaunty` private (product + source of truth).
+1. Keep `beparey/jaunty` private (product + source of truth).
 2. Create public `jaunty-docs` (docs site + benchmarks + changelog) and
    `jaunty-samples` — the storefront.
 3. Wire release.yml to GitHub Packages (`GITHUB_TOKEN`) — kills the NUGET_API_KEY
