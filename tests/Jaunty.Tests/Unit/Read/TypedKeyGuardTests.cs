@@ -19,6 +19,16 @@ namespace Jaunty.Tests.Unit.Read;
 /// <c>ThrowIfNull(Guid)</c> 3,200,000 (32 per call). <see cref="KeyGuard.ThrowIfNull"/> allocated
 /// zero for both.
 /// </para>
+///
+/// <para>
+/// 010 T6: .NET 10's escape analysis elides the <c>ThrowIfNull</c> box outright - measured through
+/// <see cref="Measure"/> on 2026-07-30, the old form allocated 239,952 bytes on net8 (the box
+/// survives only until tier-up) and 0 on net10. The original comparison is therefore true on
+/// net8/net472 and moot on net10, and the old form can no longer serve as the control: a workload
+/// the JIT can prove dead proves nothing about the harness. The control below boxes into a static
+/// sink instead, which escapes by construction on every runtime (2,400,000 bytes on both net8 and
+/// net10 through the same harness).
+/// </para>
 /// </summary>
 public class TypedKeyGuardTests
 {
@@ -73,14 +83,21 @@ public class TypedKeyGuardTests
 
     /// <summary>
     /// The control. Without it a passing test above proves only that the measurement is blind - this
-    /// is what shows the harness does see a box when there is one to see.
+    /// is what shows the harness does see a box when there is one to see. The workload boxes into a
+    /// static sink because it must escape: .NET 10 elides the non-escaping
+    /// <c>ArgumentNullException.ThrowIfNull(id)</c> box this test used until 010 T6 (see the class
+    /// remarks). Asserts <c>&gt; 0</c> and never a magnitude - almost every store is dead after the
+    /// first, so a future JIT that elides dead static stores would leave exactly one box, and a
+    /// magnitude assertion would turn into a JIT-version tripwire.
     /// </summary>
     [Fact]
-    public void TheOldFormStillBoxes_WhichIsWhatMakesTheMeasurementMeaningful()
+    public void AnEscapingBox_IsSeen_WhichIsWhatMakesTheMeasurementMeaningful()
     {
         int id = 42;
-        Assert.True(Measure(() => ArgumentNullException.ThrowIfNull(id), 100_000) > 0);
+        Assert.True(Measure(() => _boxSink = id, 100_000) > 0);
     }
+
+    private static object? _boxSink;
 
 #endif
 
