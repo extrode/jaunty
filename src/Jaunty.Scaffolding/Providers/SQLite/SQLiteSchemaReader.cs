@@ -53,21 +53,16 @@ public sealed class SQLiteSchemaReader : ISchemaReader
 
     private static DbConnection CreateConnection(string connectionString)
     {
-        // Try to load Microsoft.Data.Sqlite first, then System.Data.SQLite
-        (string, string connectionString)[] connectionTypes = new[]
-        {
-            ("Microsoft.Data.Sqlite.SqliteConnection, Microsoft.Data.Sqlite", connectionString),
-            ("System.Data.SQLite.SQLiteConnection, System.Data.SQLite", connectionString),
-        };
+        // Try to load Microsoft.Data.Sqlite first, then System.Data.SQLite.
+        // Literal type names, not a loop over an array: the trim analyzer only recognizes
+        // Type.GetType on a string it can see (IL2057, fatal at ilc on the NativeAOT publish -
+        // spec 010 T16), and the PostgreSQL reader already uses this form. Under NativeAOT a
+        // literal for an unreferenced assembly simply returns null and falls through.
+        var type = Type.GetType("Microsoft.Data.Sqlite.SqliteConnection, Microsoft.Data.Sqlite")
+                ?? Type.GetType("System.Data.SQLite.SQLiteConnection, System.Data.SQLite");
 
-        foreach ((string? typeName, string? connStr) in connectionTypes)
-        {
-            var type = Type.GetType(typeName);
-            if (type != null)
-            {
-                return ReflectedConnectionFactory.Create(type, connStr);
-            }
-        }
+        if (type != null)
+            return ReflectedConnectionFactory.Create(type, connectionString);
 
         throw new InvalidOperationException(
             "Could not find SQLite provider. Please install Microsoft.Data.Sqlite or System.Data.SQLite.");

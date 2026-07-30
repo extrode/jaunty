@@ -256,13 +256,25 @@ files** are untouched.
 
 ## PR3 — CI, release, AOT
 
-- [ ] **T15** `WarningsNotAsErrors` for the third-party `ilc` diagnostics — files:
+- [x] **T15** 2026-07-30. `<WarningsNotAsErrors>IL2104;IL3053</WarningsNotAsErrors>` conditioned
+  on net10.0 in the Cli csproj; the clean publish measured **seven** offenders, not six — the
+  spec's list plus `System.Configuration.ConfigurationManager` (IL2104) — all named in the
+  comment. All flow as warnings; publish completes. Original task text follows.
+  `WarningsNotAsErrors` for the third-party `ilc` diagnostics — files:
   `src/Jaunty.Scaffolding.Cli/Jaunty.Scaffolding.Cli.csproj` — covers: §3.6, AC6 — done when:
   `<WarningsNotAsErrors>IL2104;IL3053</WarningsNotAsErrors>` is conditioned on net10.0 with a
   comment naming the six offending assemblies so it can be retired one dependency at a time.
   De-fatalising a *third-party publish* diagnostic is not an AC2 suppression: AC2 governs
   `dotnet build`, while `IL2104`/`IL3053` come from `ilc` at publish, which AC2's build never runs.
-- [ ] **T16** `SQLiteSchemaReader.cs:65` `IL2057` — **confirm or clear on a clean publish** — files:
+- [x] **T16** 2026-07-30. **Confirmed on a clean publish** (Trim analysis error IL2057, ilc exit
+  -1 — the incremental-analysis trap, exactly as the plan warned) and **fixed properly**: the
+  loop over an array of type names became two literal `Type.GetType` calls chained with `??`, the
+  recognized form the PostgreSQL reader already used. No pragma, no suppression. Clean re-publish:
+  IL2057 gone, 36 MB native exe runs (`--version` → 1.0.0-rc.1, exit 0); Scaffolding suites
+  555×2 + 34×2 green. Related out-of-scope find: `MySQLSchemaReader.cs:99` suppresses the same
+  IL2057 with a pre-existing `#pragma` ("trusted source" — the wrong rationale; availability, not
+  trust, is the issue) — noted in `work/todo.md`. Original task text follows.
+  `SQLiteSchemaReader.cs:65` `IL2057` — **confirm or clear on a clean publish** — files:
   `src/Jaunty.Scaffolding/Providers/SQLite/SQLiteSchemaReader.cs` — covers: §3.3, AC2 — done when:
   a clean publish either reproduces it (then fix it properly) or shows it gone (then record that).
   It is **first-party**, so `010-spec.md:252-256` explicitly forbids sweeping it into T15's
