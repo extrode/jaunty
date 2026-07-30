@@ -117,7 +117,14 @@ files** are untouched.
 
 ## PR2 — the retarget
 
-- [ ] **T8** Capture the net8 benchmark baseline **before any retarget commit** — files:
+- [x] **T8** 2026-07-30. Run launched from the `ed7b013a` tree (pre-T10), completed exit 0:
+  692 cases, 672 with results; the 20 failures are all comparison libraries (EF Core / RepoDb
+  identity-insert + Npgsql type mismatches), zero Jaunty cases failed. Recorded in
+  `benchmarks/BENCHMARK-RESULTS.md` § "Spec 010 net8 baseline"; full joined CSV at
+  `docs/benchmark-artifacts/results/BenchmarkRun-joined-2026-07-30-15-33-18-report.csv`
+  (gitignored, local only — T20 must diff against it on this machine).
+  Original task text follows.
+  Capture the net8 benchmark baseline **before any retarget commit** — files:
   `benchmarks/BENCHMARK-RESULTS.md` — covers: §3.7, AC7 — done when: a full net8 run is recorded
   with its commit SHA. **Ordering is load-bearing: once T10 lands there is no net8-only tree to
   measure.** Blocks T20.
