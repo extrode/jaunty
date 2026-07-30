@@ -151,7 +151,20 @@ files** are untouched.
   `src/Jaunty.Scaffolding/Jaunty.Scaffolding.csproj:4` already uses the **plural** tag with a single
   value so a singular-tag sweep misses it; `src/Jaunty/Jaunty.csproj:5`'s commented-out tag must
   stay commented.
-- [ ] **T11** Duplicate the **21 net8.0 pins** for net10.0 across the **11** files enumerated above
+- [x] **T11** 2026-07-30. All 21 pins duplicated per the idiom; verified by
+  `-getItem:ProjectReference -p:TargetFramework=net10.0` on all 11 files — zero net8
+  `SetTargetFramework` values leak into the net10 evaluation. The first net10 leg compiles exposed
+  two latent defects, both fixed on this branch: `src/Jaunty/Jaunty.csproj:38`'s
+  Microsoft.Extensions package group was `== 'net8.0'` (CS0234 on every M.E. using — widened to
+  `IsTargetFrameworkCompatible`), and `ExpressionEvaluator.cs`'s compile fallback hit net10-only
+  IL3050 (non-generic `Expression.Lambda` is `[RequiresDynamicCode]` in net10 ref assemblies —
+  rewritten to generic `Lambda<Func<object?>>` + `Expression.Convert`; exceptions now surface
+  unwrapped, which the tests already tolerate via `InnerException ?? ex`; 1267/1267 Fluent tests
+  green on net8.0 AND net10.0). Third find: `Jaunty.Extensions.Reflection`'s NoWarn gained
+  IL2060;IL2075 — net10's trim analyzer flags MakeGenericMethod/PropertyType.GetMethod sites
+  net8's did not, and `src/Directory.Build.props` makes them errors.
+  Original task text follows.
+  Duplicate the **21 net8.0 pins** for net10.0 across the **11** files enumerated above
   — covers: §3.2, AC1 — done when: each net8-pinned `ProjectReference` has a net10 sibling in an
   `ItemGroup Condition="'$(TargetFramework)' == 'net10.0'"`, per the existing idiom at
   `src/Jaunty.FlatFiles/Jaunty.FlatFiles.csproj:30-45`.
@@ -162,7 +175,12 @@ files** are untouched.
   AOT-published the net8 build. The 10 `netstandard2.0` pins stay as they are; the 4 missing
   `SkipGetTargetFrameworkProperties` attributes are **out of scope** (3 of the 4 are netstandard
   pins) — one line in `work/todo.md` instead.
-- [ ] **T12** Decide the **4 tracked non-solution projects** — files: `samples/NativeAOT-FluentQuery`,
+- [x] **T12** 2026-07-30. Decisions below executed: `NativeAOT-FluentQuery` retargeted
+  `net8.0;net10.0`, built locally 0 warnings / 0 errors on both TFMs (`--no-incremental`) **before**
+  the `Jaunty.slnx` entry landed, then added to `/samples/`; `Fluent.SourceGen.Tests` retargeted
+  with pins split per TFM; `SakilaQueries` and `MangleMap` stay net8.0 as recorded.
+  Original task text follows.
+  Decide the **4 tracked non-solution projects** — files: `samples/NativeAOT-FluentQuery`,
   `tests/Jaunty.Fluent.SourceGen.Tests`, `samples/torture-test-sakila-queries/SakilaQueries.csproj`,
   `tools/native/…/MangleMap.csproj` — covers: §3.2, AC5 — done when: each is retargeted or
   explicitly recorded as staying on net8.0 with a reason.
@@ -177,8 +195,10 @@ files** are untouched.
     lands, not discovered broken by CI.**
   - `tests/Jaunty.Fluent.SourceGen.Tests` — **retargeted, pins duplicated with T11's.** It is the
     only test coverage of Fluent source-gen; leaving it net8-only would silently exclude that
-    surface from net10 the way `NativeAOT-FluentQuery` was excluded from AC5. Its 3 pins are
-    outside T11's 21 (it is not in the solution), so T11's count grows to 24 or its note says why.
+    surface from net10 the way `NativeAOT-FluentQuery` was excluded from AC5. *(Correction at
+    implementation time: its 2 net8 pins were already inside T11's 21 — the enumeration counted
+    tracked files, not solution membership; the third pin is the ns2.0 SourceGenerator analyzer
+    pin, which stays. The count stays 21.)*
   - `SakilaQueries` — **stays net8.0.** Torture-test scratch: a one-off validation artifact,
     exercised manually, never shipped, no AC references it. Retargeting adds a build to maintain
     and proves nothing 010 claims.
