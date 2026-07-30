@@ -11,6 +11,8 @@ using Jaunty.Internals.Entity;
 using Jaunty.Internals.Parameters;
 using Jaunty.Internals;
 
+using Jaunty.Core;
+
 namespace Jaunty.Fluent;
 
 /// <summary>
@@ -115,22 +117,38 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         return Value(column, value);
     }
 
-    public long Insert()
+    public long Insert() => Insert(default);
+
+    /// <summary>
+    /// Executes the insert, enlisting it in <paramref name="options"/>'s transaction and honouring
+    /// its command timeout.
+    /// </summary>
+    /// <remarks>
+    /// AUD-R26-060: before this overload existed there was no way to pass a transaction to a fluent
+    /// insert at all - <c>IIntoClause</c>/<c>IValuesClause</c> declared no options overload and
+    /// <c>ExecuteInsert</c> took no options parameter - while <c>QueryBuilder.Delete</c>,
+    /// <c>Update</c>, <c>Select</c> and friends all carried one.
+    /// </remarks>
+    public long Insert(CommandOptions options)
     {
         if (_columns.Count == 0)
             throw new InvalidOperationException("Insert() requires at least one value to be specified.");
 
         var sql = BuildInsertSql();
-        return ExecuteInsert(sql);
+        return ExecuteInsert(sql, options);
     }
 
-    public async Task<long> InsertAsync(CancellationToken cancellationToken = default)
+    public Task<long> InsertAsync(CancellationToken cancellationToken = default) =>
+        InsertAsync(default, cancellationToken);
+
+    /// <inheritdoc cref="Insert(CommandOptions)"/>
+    public async Task<long> InsertAsync(CommandOptions options, CancellationToken cancellationToken = default)
     {
         if (_columns.Count == 0)
             throw new InvalidOperationException("InsertAsync() requires at least one value to be specified.");
 
         var sql = BuildInsertSql();
-        return await ExecuteInsertAsync(sql, cancellationToken).ConfigureAwait(false);
+        return await ExecuteInsertAsync(sql, options, cancellationToken).ConfigureAwait(false);
     }
 
     public string ToSql() => BuildInsertSql();
@@ -186,7 +204,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         return $"{insertSql}; {identitySql}";
     }
 
-    private long ExecuteInsert(string sql)
+    private long ExecuteInsert(string sql, CommandOptions options)
     {
         // If there's an identity column, the identity-retrieval SQL is appended to the same
         // command so it executes in the same batch/round-trip as the INSERT. Deciding that up
@@ -195,7 +213,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         string commandText = hasIdentity ? BuildInsertWithIdentitySql(sql) : sql;
 
         return CommandObservation.Execute(
-            commandText, _parameters.ToParameterObject(), _connection, CommandType.Text, Body);
+            commandText, _parameters.ToParameterObject(), _connection, FluentCommandOptions.Describe(options), Body);
 
         long Body()
         {
@@ -208,6 +226,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
                 using IDbCommand command = _connection.CreateCommand();
                 _parameters.BindTo(command);
                 command.CommandText = commandText;
+                FluentCommandOptions.Apply(command, _connection, options);
 
                 CommandObservation.Log(commandText, _parameters.ToParameterObject());
 
@@ -228,7 +247,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         }
     }
 
-    private async Task<long> ExecuteInsertAsync(string sql, CancellationToken cancellationToken)
+    private async Task<long> ExecuteInsertAsync(string sql, CommandOptions options, CancellationToken cancellationToken)
     {
         if (_connection is not DbConnection dbConnection)
             throw new InvalidOperationException("Async operations require a DbConnection.");
@@ -237,7 +256,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
         string commandText = hasIdentity ? BuildInsertWithIdentitySql(sql) : sql;
 
         return await CommandObservation.ExecuteAsync(
-            commandText, _parameters.ToParameterObject(), _connection, CommandType.Text,
+            commandText, _parameters.ToParameterObject(), _connection, FluentCommandOptions.Describe(options),
             Body, cancellationToken).ConfigureAwait(false);
 
         async ValueTask<long> Body()
@@ -251,6 +270,7 @@ internal sealed class InsertBuilder<T> : IIntoClause<T>, IValuesClause<T>
                 using DbCommand command = dbConnection.CreateCommand();
                 _parameters.BindTo(command);
                 command.CommandText = commandText;
+                FluentCommandOptions.Apply(command, dbConnection, options);
 
                 CommandObservation.Log(commandText, _parameters.ToParameterObject());
 

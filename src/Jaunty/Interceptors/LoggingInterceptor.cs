@@ -191,15 +191,17 @@ public sealed class LoggingInterceptor : ISyncCommandInterceptor
     }
 
 #if NET5_0_OR_GREATER
-    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "Reflects over the properties of whatever object was passed as command parameters, which is a runtime Type and so cannot be annotated. Anonymous types and records are preserved by the compiler, but a named POCO passed as parameters is not, and under trimming or NativeAOT its properties may be removed - the log line then omits them. Logging is diagnostic and never affects the query, so this degrades output rather than behaviour. Suppressed pending a source-generated parameter-binding path (spec 009, the same limitation ParameterCache.BuildMetadata carries); callers using NativeAOT publish today must ensure their parameter POCOs are otherwise rooted if they want parameter logging.")]
+    // AUD-R26-055 replaced a false justification here with a second one. It said "preservation comes
+    // from the [DynamicallyAccessedMembers(PublicProperties)] annotation on the type parameter" - but
+    // this is reached with parameters.GetType(), and a Type obtained that way carries no annotation,
+    // so nothing was propagated to preserve anything. The annotation's only effect was to move the
+    // warning to the caller. Spec 011 removed it and states where preservation actually comes from.
+    // The correction that matters: round 26 fixed the sentence about anonymous types and left the
+    // mechanism claim unexamined, which is the same mistake one layer in.
+    [UnconditionalSuppressMessage("AOT", "IL2070", Justification = "The type arrives as parameters.GetType(), so no annotation can flow here and none is declared. Logging is also the benign case: if trimming has removed the getters this logs fewer parameters, where the same trimming makes ParameterCache fail the query outright. Preservation for both comes from the generated call-site rooting described on ParameterCache.BuildMetadata.")]
 #endif
     private static PropertyInfo[] GetPublicProperties(Type type)
     {
-        // AOT-SAFE: reflection over an unannotated runtime Type, suppressed above with the trimming
-        // limitation stated. The DynamicallyAccessedMembers annotation this parameter used to carry
-        // was removed on 2026-07-30: the sole call site passes parameters.GetType(), so no caller
-        // ever supplied a statically-known type for the trimmer to act on, and converting the
-        // annotated method to a delegate at the GetOrAdd above raised IL2111 for nothing.
         return type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
     }
 
