@@ -64,7 +64,7 @@ the four sites do not share a single fix. They split three ways:
 |---|---|---|
 | `ParameterCache.cs:40` (IL2111) | Distinct and self-contained | The DAM-annotated `Type` is already in hand at `:36-38`; closing over it instead of passing the method group restores flow analysis. No suppression, ~5 lines. Use a `TryGetValue` fast path so the closure does not allocate per call. |
 | `ParameterBinder.cs:81`, `:920` (IL2072) | 009's hazard class | Both pass `parameters.GetType()` off an unannotatable `object`. No annotation can express this; it needs the source-generated binding path 009 exists to build. |
-| `LoggingInterceptor.cs:174` (IL2111) | Third case | No annotated `Type` to close over, so a lambda merely trades IL2111 for IL2067. Its existing suppression at `:194` ("anonymous types and records whose properties are always preserved") is **false for named POCOs**, which is the same defect class 009 was opened to correct. |
+| `LoggingInterceptor.cs:174` (IL2111) | Third case | No annotated `Type` to close over, so a lambda merely trades IL2111 for IL2067. Its existing suppression at `:194` ("anonymous types and records whose properties are always preserved") is **false for named POCOs**, which is the same defect class 009 was opened to correct. **RESOLVED 2026-07-30 by a third route neither this row nor the plan first considered: delete the `[DynamicallyAccessedMembers]` annotation.** It was decorative — the only call site passes `parameters.GetType()`, an unannotated runtime `Type`, so no caller ever gave the trimmer a statically-known type to act on, and the annotation's sole effect was to raise IL2111 when the method was converted to a delegate. Measured 3 → 2 diagnostics on a clean net10 build, no suppression added, AC2 unrelaxed. `:194`'s false justification and `:202`'s stale `AOT-SAFE` marker were rewritten in the same commit. |
 
 So the sequencing is: fix `ParameterCache.cs:40` here and independently; **widen 009's scope** to
 cover `LoggingInterceptor` and the two `ParameterBinder` sites, or move them into this spec. As
@@ -285,11 +285,33 @@ one failure being a pre-existing timing flake.
    no ILLink diagnostic silenced by a suppression added for this migration — except the
    `ParameterBinder.cs:81/:920` pair, which is deferred to 009 by name if 009 has not landed. Any
    other new suppression fails this criterion.
+   **Measured on a clean build** (`--no-incremental`, or `dotnet clean` first). This is not a
+   formality: ILLink analysis is skipped on an up-to-date compile, so an incremental build reported
+   0 diagnostics on net10 where a clean build of the same tree reported 4. An incremental result is
+   not evidence for this criterion.
+   Amended 2026-07-30: the `LoggingInterceptor.cs:174` `IL2111` needed **no** suppression in the
+   end — the `[DynamicallyAccessedMembers]` annotation causing it was decorative, since the sole
+   call site passes an unannotated `parameters.GetType()`, so removing it cleared the diagnostic
+   outright. AC2 therefore stands unrelaxed.
 3. All five CI suites — including FlatFiles/DuckDB, unmeasured at spec time — pass on **both**
    `net8.0` and `net10.0` with **0 failures**, and the skip count is no higher than the current
    net8.0 baseline given the same environment.
 4. `net472` and `netstandard2.0` continue to build and test unchanged.
-5. The four `samples/NativeAOT-*` projects publish with `PublishAot=true` and run correctly.
+5. The four `samples/NativeAOT-*` projects publish with `PublishAot=true` on `net10.0`, and each
+   published binary **behaves no worse than the same sample published on `net8.0`**.
+   Rescoped 2026-07-30 — "run correctly" was unmeetable before this migration began and so could
+   never have been a test of it: `009-spec.md:27-30` records `NativeAOT-Basic` already failing at
+   runtime on `net8.0` with `No mapper found for type Product`. Holding a retarget to a bar its
+   starting point does not clear would have made AC5 permanently red for a reason 010 does not own.
+   Concretely, per sample, and this is the whole criterion — no interpretation left to the reader:
+   - `dotnet publish -f net10.0 /p:PublishAot=true` exits 0, and `ilc` emits no diagnostic that is
+     not already present in the `net8.0` publish of the same sample.
+   - The published binary's **exit code** on net10 equals its exit code on net8.
+   - The published binary's **stdout** on net10 matches net8, ignoring only wall-clock timings and
+     absolute paths.
+   A sample that fails identically on both targets **passes** AC5; the failure itself belongs to
+   009. A sample that works on net8 and fails on net10 fails AC5, which is the regression this
+   criterion exists to catch.
 6. CI, release and AOT-publish workflows are green on the self-hosted runner.
 7. Benchmark results are re-baselined and the delta against net8.0 recorded in
    `benchmarks/BENCHMARK-RESULTS.md`.
